@@ -123,6 +123,23 @@ final class GameScreenModel {
         inlineMainOverlayWidth = width
     }
 
+    /// How far the iOS side panel reaches past the chrome's trailing content edge: the
+    /// trailing safe-area inset plus the chrome padding. The panel runs to the screen
+    /// edge, the top menu stops at the safe area.
+    private(set) var inlineSidebarTrailingOverhang: CGFloat = 0
+
+    /// The part of the visible side panel that overlaps the top menu's row.
+    var topMenuTrailingReservation: CGFloat {
+        guard isInlineSidebarVisible else { return 0 }
+        return max(0, inlineMainOverlayWidth - inlineSidebarTrailingOverhang)
+    }
+
+    func updateInlineSidebarTrailingOverhang(_ overhang: CGFloat) {
+        let overhang = overhang.isFinite ? max(0, overhang) : 0
+        guard inlineSidebarTrailingOverhang != overhang else { return }
+        inlineSidebarTrailingOverhang = overhang
+    }
+
     func updateTopGameMenuHeight(_ height: CGFloat) {
         let height = height.isFinite ? max(0, height) : 0
         guard topGameMenuHeight != height else { return }

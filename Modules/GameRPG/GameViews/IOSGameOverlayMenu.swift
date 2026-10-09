@@ -41,7 +41,7 @@ struct IOSGameOverlayMenu: View {
                         spacing: itemSpacing
                     )
                 }
-                .padding(.trailing, gameScreenModel.isInlineSidebarVisible ? gameScreenModel.inlineMainOverlayWidth : 0)
+                .padding(.trailing, gameScreenModel.topMenuTrailingReservation)
             } else {
                 HStack(spacing: itemSpacing) {
                     IOSGameOverlayCloseButton()

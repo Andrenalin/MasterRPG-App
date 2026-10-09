@@ -37,6 +37,19 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
         ZStack(alignment: .topLeading) {
             sideOverlay()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+#if os(iOS)
+                // The slot must touch the safe-area edges: with the chrome padding in
+                // between, the panel's `ignoresSafeArea()` has no horizontal effect and
+                // the panel stops short of the screen edge, while the navigation stack
+                // inside it still insets its content by the full safe area.
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.safeAreaInsets.trailing
+                } action: { trailingInset in
+                    gameScreenModel.updateInlineSidebarTrailingOverhang(trailingInset + horizontalPadding)
+                }
+#else
+                .padding(.horizontal, horizontalPadding)
+#endif
                 .zIndex(10)
 
             moduleMenuOverlay()
@@ -44,6 +57,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #if os(iOS)
                 .padding(.top, topContentInset)
 #endif
+                .padding(.horizontal, horizontalPadding)
                 .zIndex(20)
 
 #if !os(visionOS)
@@ -54,6 +68,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                     // row, one standard spacing step below the menu field.
                     .padding(.top, topContentInset)
 #endif
+                    .padding(.horizontal, horizontalPadding)
                     .transition(.move(edge: .leading))
                     .zIndex(30)
             }
@@ -62,6 +77,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
             toolBarOverlay()
                 .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(.horizontal, horizontalPadding)
                 .zIndex(40)
 
             menuOverlay()
@@ -73,13 +89,17 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 }
 #endif
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.horizontal, horizontalPadding)
                 .zIndex(50)
         }
-        .padding(.horizontal, 4)
         .padding(.trailing, valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 20))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showDice)
     }
+
+    /// Applied per layer instead of to the whole stack, so the iOS side panel can reach
+    /// the screen edge.
+    private var horizontalPadding: CGFloat { 4 }
 
 #if os(iOS)
     private var topContentInset: CGFloat {

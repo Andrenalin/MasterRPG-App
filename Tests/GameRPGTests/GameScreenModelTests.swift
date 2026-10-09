@@ -124,6 +124,24 @@ struct GameScreenModelTests {
         #expect(model.mapTrailingViewportReservation == 0)
     }
 
+    @Test("Top menu only reserves the part of the side panel inside the safe area")
+    func topMenuReservationExcludesTrailingOverhang() {
+        let model = GameScreenModel()
+        model.updateInlineMainOverlayWidth(300)
+        model.updateInlineSidebarTrailingOverhang(88)
+
+        #expect(model.topMenuTrailingReservation == 0)
+
+        model.showMainTab = .game
+        #expect(model.topMenuTrailingReservation == 212)
+
+        model.updateInlineSidebarTrailingOverhang(.infinity)
+        #expect(model.topMenuTrailingReservation == 300)
+
+        model.updateInlineSidebarTrailingOverhang(400)
+        #expect(model.topMenuTrailingReservation == 0)
+    }
+
     @Test("3D table remains local to the main game display")
     func inlineTableSupportExcludesExternalPlayerDisplay() {
         #expect(GameMapContentType.master.supportsInlineThreeDTable)
