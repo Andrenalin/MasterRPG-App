@@ -18,8 +18,6 @@ import GeneratorRPG
 
 struct ExtendedTabRouteDestinationView: View {
     let route: ExtendedTabRoute
-    let tabId = KnownRoutes.mainTabId
-
     @Environment(AppModel.self) private var appModel
 
     var body: some View {

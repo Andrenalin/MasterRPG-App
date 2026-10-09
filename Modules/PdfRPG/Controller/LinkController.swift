@@ -28,7 +28,7 @@ extension LinkController: LinkControllable {
                         let result = try await gameController.createGameData(for: itemId)
                         shareResult.networkActions?.game(result, .generic, nil)
                     } catch {
-                        Logger.linkController.error("Failed to create game data for \(itemId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Logger.linkController.error("Failed to create game data for \(itemId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                     }
                 }
             }

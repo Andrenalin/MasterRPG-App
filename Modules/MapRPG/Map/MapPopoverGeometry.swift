@@ -29,6 +29,14 @@ struct MapPopoverPlacement: Equatable, Sendable {
     let isFullyVisible: Bool
 }
 
+/// Measures of a popover panel that its content shares, also the 3D table's in GameRPG.
+public enum MapPopoverLayout {
+    /// The space between a panel's edge and its content, and between its buttons: half of the
+    /// default `padding()` inset. It was a literal 8 with the same comment in eight places.
+    /// See CODE_AUDIT_21 §8.5.
+    public static let contentInset: CGFloat = 8
+}
+
 /// Pure layout math for the non-modal pin popover. The popover lives in
 /// viewport space, so it follows its pin while the canvas pans or zooms.
 enum MapPopoverGeometry {

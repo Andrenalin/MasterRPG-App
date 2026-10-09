@@ -16,10 +16,6 @@ extension RPGMap {
         set { entries = NSSet(array: newValue) }
     }
 
-    func entryOrNew(for uuid: UUID) -> RPGMapEntry {
-        childOrNew(uuid, in: entryModels)
-    }
-
     var mapPinModels: [RPGMapPin] {
         get { RPGMapPin.sortedArray(from: mapPins) }
         set { mapPins = NSSet(array: newValue) }

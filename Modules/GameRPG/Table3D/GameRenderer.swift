@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS)
+import CoreRPG
 import TabletopKit
 import RealityKit
 import SwiftUI
@@ -96,7 +97,7 @@ final class GameRenderer: TabletopGame.RenderDelegate {
             didLoadAssets = true
         } catch {
             Logger.gameTable.error(
-                "Failed to load the plain wood table: \(error.localizedDescription, privacy: .public)"
+                "Failed to load the plain wood table: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)"
             )
         }
     }

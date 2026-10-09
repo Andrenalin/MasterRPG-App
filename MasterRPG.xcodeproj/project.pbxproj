@@ -50,7 +50,7 @@
 		59A110012F88000000000001 /* MasterRPGSpotlightIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A110052F88000000000001 /* MasterRPGSpotlightIndexer.swift */; };
 		59A110022F88000000000001 /* MasterRPGShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A110042F88000000000001 /* MasterRPGShortcuts.swift */; };
 		59A110032F88000000000001 /* MasterRPGSpotlightIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A110052F88000000000001 /* MasterRPGSpotlightIndexer.swift */; };
-		59AC00012F99000000000001 /* AppShortcuts.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 59AC00022F99000000000001 /* AppShortcuts.xcstrings */; };
+		59AC00012F99000000000001 /* AppShortcuts.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */; };
 		59B573092F87FB7D0014508E /* RPGResources.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E4B27022CD79E2E009AB4D1 /* RPGResources.framework */; };
 		59C0D00130A100000094885F /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		59C0D00230A100000094885F /* RPGResourcesDebug.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -1784,7 +1784,6 @@
 		599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeneratorRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		59A110042F88000000000001 /* MasterRPGShortcuts.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MasterRPGShortcuts.swift; sourceTree = "<group>"; };
 		59A110052F88000000000001 /* MasterRPGSpotlightIndexer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MasterRPGSpotlightIndexer.swift; sourceTree = "<group>"; };
-		59AC00022F99000000000001 /* AppShortcuts.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = AppShortcuts.xcstrings; sourceTree = "<group>"; };
 		59CE1E9C2E84F011009C6CB5 /* GameRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GameRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuMainCommand.swift; sourceTree = "<group>"; };
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -2700,7 +2699,6 @@
 				8EC4E48128DDAAF300D0279F /* macOS */,
 				8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */,
 				59A110042F88000000000001 /* MasterRPGShortcuts.swift */,
-				59AC00022F99000000000001 /* AppShortcuts.xcstrings */,
 				59A110052F88000000000001 /* MasterRPGSpotlightIndexer.swift */,
 				5978B4142F7E613F00818159 /* Menu */,
 				8E83E4CA2E841B4400A1095C /* MyAppPackage.swift */,
@@ -6961,8 +6959,6 @@
 				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -7008,8 +7004,6 @@
 				INFOPLIST_FILE = Sources/DiceRollerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DiceRollerWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -7313,7 +7307,6 @@
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
 				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
@@ -7336,8 +7329,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
@@ -7382,7 +7373,6 @@
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
 				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
 				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
 				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
@@ -7408,8 +7398,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
@@ -7603,8 +7591,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
@@ -7652,8 +7638,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
@@ -8958,8 +8942,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
@@ -9026,8 +9008,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;

@@ -77,7 +77,7 @@ public struct ExportProgressPanelView: View {
                         navigator.dismiss()
                         finishAction()
                     } label: {
-                        Label { Text("Ok", bundle: .module) } icon: { Image(systemName: "checkmark") }
+                        Label { Text("OK", bundle: .module) } icon: { Image(systemName: "checkmark") }
                     }
                     .disabled(outcome == .notStarted || outcome == .running)
                 }

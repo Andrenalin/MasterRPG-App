@@ -27,6 +27,7 @@ struct GameDiceResultPopover: View {
     let networkActions: NetworkActions?
 
     @Environment(\.physicalMetrics) private var physicalMetrics
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var content: GameDiceResultContent.Kind? {
         guard game.shownDiceGroups.contains(group) else { return nil }
@@ -67,8 +68,7 @@ struct GameDiceResultPopover: View {
             if let content {
                 game.mapRoot.viewController.tablePopoverLabel(isInteractive: content == .own) {
                     GameDiceResultContent(root: root, kind: content)
-                        // Half of the default `padding()` inset, as in the pin action menu.
-                        .padding(8)
+                        .padding(MapPopoverLayout.contentInset)
                 }
                 .environment(diceDisplayModel)
                 .environment(appGameStateModel)
@@ -86,7 +86,9 @@ struct GameDiceResultPopover: View {
                 .transition(.opacity)
             }
         }
-        .animation(.default, value: content)
+        // An opacity fade; none with Reduce Motion, like the app's other animations.
+        // See CODE_AUDIT_21 §8.4.
+        .animation(reduceMotion ? nil : .default, value: content)
     }
 
     /// Seat 0 is always the game master (see `GameTableModel.assignSeatsForSharePlay`).

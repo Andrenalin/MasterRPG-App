@@ -12,10 +12,6 @@ extension RPGTable {
         get { RPGTableEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGTableEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGTable: SpotlightIndexerAttribute {

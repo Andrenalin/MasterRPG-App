@@ -62,7 +62,6 @@ public protocol ViewControllable: Sendable {
     /// Needed when the model is not in the database yet, e.g. an imported item under review.
     @MainActor func thumbnailRowView(for model: any ItemDataAccessible) -> AnyView
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
-    @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
     /// Same as `rowViewer(source:destination:)`, but lets a caller that has
     /// already resolved `source`/`destination`'s models (typically by
     /// reading `RootManager.itemRootController(for:)?.itemControllable`
@@ -97,7 +96,6 @@ public extension ViewControllable {
     @MainActor func thumbnailRowView(for itemId: UUID) -> AnyView { AnyView(EmptyView()) }
     @MainActor func thumbnailRowView(for model: any ItemDataAccessible) -> AnyView { thumbnailRowView(for: model.id) }
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
-    @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView {
         rowViewer(source: source, destination: destination)
     }

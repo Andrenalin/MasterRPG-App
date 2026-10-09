@@ -58,7 +58,7 @@ extension PlayerController {
                     do {
                         try await root.audioRoot.audioGameControllable.play(with: model.data)
                     } catch {
-                        Logger.networking.error("PlayerController: Failed to start audio playback for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        Logger.networking.error("PlayerController: Failed to start audio playback for \(model.data.id, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                     }
                 } else {
                     // The master device initiates playback; other SharePlay

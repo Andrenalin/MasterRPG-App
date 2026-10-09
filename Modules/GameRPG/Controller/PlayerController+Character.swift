@@ -66,7 +66,7 @@ extension PlayerController {
             return
         } catch {
             // characterId can identify a specific player's Character — private. See CODE_AUDIT_Game §6.3.
-            Logger.networking.error("PlayerController: Failed to send character \(characterId, privacy: .private): \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("PlayerController: Failed to send character \(characterId, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 }

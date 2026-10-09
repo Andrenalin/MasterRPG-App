@@ -103,22 +103,6 @@
         }
       }
     },
-    "%lld / %lld tokens" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld / %lld Token"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%lld / %lld โทเคน"
-          }
-        }
-      }
-    },
     "%lld Instructions" : {
       "localizations" : {
         "de" : {
@@ -185,23 +169,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "%lld tokens" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Token"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%lld โทเคน"
           }
         }
       }
@@ -352,23 +319,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "การผจญภัย"
-          }
-        }
-      }
-    },
-    "Adventure: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abenteuer: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การผจญภัย: %@"
           }
         }
       }
@@ -661,23 +611,6 @@
         }
       }
     },
-    "Close" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schließen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ปิด"
-          }
-        }
-      }
-    },
     "Content policy prevented analysis." : {
       "localizations" : {
         "de" : {
@@ -802,23 +735,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สร้าง “%@” แล้ว"
-          }
-        }
-      }
-    },
-    "Decoding Failure: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dekodierungsfehler: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การถอดรหัสล้มเหลว: %@"
           }
         }
       }
@@ -1001,23 +917,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปิดใช้งาน Apple Intelligence ในการตั้งค่าระบบ"
-          }
-        }
-      }
-    },
-    "Error" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fehler"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้อผิดพลาด"
           }
         }
       }
@@ -1284,23 +1183,6 @@
         }
       }
     },
-    "Generate" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้าง"
-          }
-        }
-      }
-    },
     "Generating sheet content" : {
       "localizations" : {
         "de" : {
@@ -1361,23 +1243,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวสร้าง"
-          }
-        }
-      }
-    },
-    "Guardrail Violation: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardrail-Verstoß: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การละเมิด Guardrail: %@"
           }
         }
       }
@@ -1496,23 +1361,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "คำขอไม่ถูกต้อง: %@"
-          }
-        }
-      }
-    },
-    "Memory exceeded: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speicher überschritten: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "หน่วยความจำเกิน: %@"
           }
         }
       }
@@ -1661,39 +1509,6 @@
         }
       }
     },
-    "Not selected" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht ausgewählt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ยังไม่ได้เลือก"
-          }
-        }
-      }
-    },
-    "Not Supported" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht unterstützt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่รองรับ"
-          }
-        }
-      }
-    },
     "Note" : {
       "localizations" : {
         "de" : {
@@ -1754,23 +1569,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปิดเมื่อสร้าง"
-          }
-        }
-      }
-    },
-    "Other error: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sonstiger Fehler: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้อผิดพลาดอื่น: %@"
           }
         }
       }
@@ -1888,23 +1686,6 @@
         }
       }
     },
-    "Rate Limit exceeded: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ratenlimit überschritten: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เกินขีดจำกัดอัตราการใช้งาน: %@"
-          }
-        }
-      }
-    },
     "Rate limit exceeded. Please try again in %@ seconds." : {
       "localizations" : {
         "de" : {
@@ -1991,23 +1772,6 @@
         }
       }
     },
-    "Save" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speichern"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บันทึก"
-          }
-        }
-      }
-    },
     "Schema contains unsupported constraint: %@." : {
       "localizations" : {
         "de" : {
@@ -2052,40 +1816,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เลือกค่าที่ดึงมาเพื่อนำไปใช้กับ %@"
-          }
-        }
-      }
-    },
-    "Selected" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgewählt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือกแล้ว"
-          }
-        }
-      }
-    },
-    "Send message" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nachricht senden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ส่งข้อความ"
           }
         }
       }
@@ -2166,22 +1896,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รอสรุป"
-          }
-        }
-      }
-    },
-    "Supported" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unterstützt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รองรับแล้ว"
           }
         }
       }
@@ -2512,23 +2226,6 @@
         }
       }
     },
-    "Type your message..." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nachricht eingeben …"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "พิมพ์ข้อความของคุณ..."
-          }
-        }
-      }
-    },
     "Type your request..." : {
       "localizations" : {
         "de" : {
@@ -2641,23 +2338,6 @@
         }
       }
     },
-    "Untitled" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ohne Titel"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่มีชื่อ"
-          }
-        }
-      }
-    },
     "Upgrade to use Apple Intelligence" : {
       "localizations" : {
         "de" : {
@@ -2734,22 +2414,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวสร้างใด?"
-          }
-        }
-      }
-    },
-    "Your current language %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktuelle Sprache: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ภาษาปัจจุบันของคุณ: %@"
           }
         }
       }

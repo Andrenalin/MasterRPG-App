@@ -100,7 +100,7 @@ public enum AdventureShortcutCatalog {
         } catch {
             // Previously `try?`-discarded with no logging, unlike every other Spotlight
             // call in this module. See CODE_AUDIT §5.8.
-            Logger.appIntents.error("Adventure reindexAll failed: \(error.localizedDescription, privacy: .public)")
+            Logger.appIntents.error("Adventure reindexAll failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 }

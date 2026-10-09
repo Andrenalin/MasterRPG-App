@@ -473,17 +473,6 @@
         }
       }
     },
-    "Import Failed" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import fehlgeschlagen"
-          }
-        }
-      }
-    },
     "Importer" : {
       "localizations" : {
         "de" : {

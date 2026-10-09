@@ -12,10 +12,6 @@ extension RPGDice {
         get { RPGDiceEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGDiceEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGDice: SpotlightIndexerAttribute {

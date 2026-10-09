@@ -114,6 +114,8 @@ private struct ImporterFanButton: View {
     let duration: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Follows Dynamic Type; it was a fixed 32 pt.
+    @ScaledMetric private var buttonSize = ImporterFanLayout.buttonSize
 
     var body: some View {
         Button(action: item.action) {
@@ -122,10 +124,14 @@ private struct ImporterFanButton: View {
             } icon: {
                 Image(systemName: item.systemImage)
             }
-            .frame(width: ImporterFanLayout.buttonSize, height: ImporterFanLayout.buttonSize)
+            .frame(width: buttonSize, height: buttonSize)
             .opacity(isExpanded ? 1 : 0)
         }
         .allowsHitTesting(isExpanded)
+        // Also out of reach of the keyboard and the tvOS focus engine while collapsed: hidden
+        // by opacity alone the buttons could still be focused and pressed.
+        // See CODE_AUDIT_21 §8.4.
+        .disabled(!isExpanded)
         .accessibilityHidden(!isExpanded)
         .selectedRoundButton(title: item.title, module: module, isSelected: false)
         .offset(offset)

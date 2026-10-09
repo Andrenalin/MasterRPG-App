@@ -38,13 +38,13 @@ final class FoundryImportModel {
     private(set) var reviewSession: ExternalImportReviewSession?
     private(set) var result: ExternalImportResult?
     private(set) var sourceResolution: ExternalImportSourceResolution?
-    private(set) var selectedSourceScopeID: UUID?
+    private(set) var selectedSourceScopeId: UUID?
     private(set) var archiveWarning: String?
     private(set) var commitError: String?
     private(set) var isSourceSelectionLocked = false
     var selectedCategories = FoundryImportCategory.privacySafeDefaults
 
-    var canPrepareReview: Bool { selectedSourceScopeID != nil }
+    var canPrepareReview: Bool { selectedSourceScopeId != nil }
 
     var canChooseAnotherSource: Bool {
         switch loadState {
@@ -88,7 +88,7 @@ final class FoundryImportModel {
         reviewSession = nil
         result = nil
         sourceResolution = nil
-        selectedSourceScopeID = nil
+        selectedSourceScopeId = nil
         sourceDescriptor = nil
         archiveWarning = nil
         commitError = nil
@@ -140,9 +140,9 @@ final class FoundryImportModel {
             sourceResolution = resolution
             switch resolution {
             case .resolved(let scopeID):
-                selectedSourceScopeID = scopeID
+                selectedSourceScopeId = scopeID
             case .requiresSelection:
-                selectedSourceScopeID = nil
+                selectedSourceScopeId = nil
             }
             loadState = .preflight
         } catch is CancellationError {
@@ -155,7 +155,7 @@ final class FoundryImportModel {
     }
 
     func prepareReview(rootManager: RootManager) async {
-        guard let selectedUrl, sourceDescriptor != nil, let selectedSourceScopeID else {
+        guard let selectedUrl, sourceDescriptor != nil, let selectedSourceScopeId else {
             loadState = .failed("Choose whether this file updates an existing import or creates a new source.")
             return
         }
@@ -172,7 +172,7 @@ final class FoundryImportModel {
                 let mapped = try await FoundryVTTDomainMapper().map(
                     package: package,
                     sourceURL: selectedUrl,
-                    sourceScopeID: selectedSourceScopeID,
+                    sourceScopeID: selectedSourceScopeId,
                     selectedCategories: selectedCategories,
                     resourceLoader: resourceLoader
                 )
@@ -190,7 +190,7 @@ final class FoundryImportModel {
                 let mapped = try await UniversalVTTDomainMapper().map(
                     document: universalVTT,
                     sourceURL: selectedUrl,
-                    sourceScopeID: selectedSourceScopeID,
+                    sourceScopeID: selectedSourceScopeId,
                     resourceLoader: resourceLoader
                 )
                 let session = ExternalImportReviewSession(batch: mapped.batch)
@@ -214,8 +214,8 @@ final class FoundryImportModel {
 
     func commit(appModel: AppModel) async {
         guard let reviewSession, let mappedImport, let selectedUrl, let sourceDescriptor,
-              let selectedSourceScopeID,
-              let claimIntent = sourceClaimIntent(for: selectedSourceScopeID) else { return }
+              let selectedSourceScopeId,
+              let claimIntent = sourceClaimIntent(for: selectedSourceScopeId) else { return }
         let requestedSelectionId = selectionId
         guard let importToken = appModel.beginExternalImport() else {
             commitError = "Another external import is currently committing. Wait for it to finish and try again."
@@ -249,7 +249,7 @@ final class FoundryImportModel {
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             switch claimResult {
             case .claimed(let claimedScopeID):
-                guard claimedScopeID == selectedSourceScopeID else {
+                guard claimedScopeID == selectedSourceScopeId else {
                     await remapReview(
                         to: claimedScopeID,
                         rootManager: appModel.root
@@ -269,7 +269,7 @@ final class FoundryImportModel {
                     existing: existing,
                     proposedScopeID: proposedScopeID
                 )
-                self.selectedSourceScopeID = nil
+                self.selectedSourceScopeId = nil
                 commitError = "Source identity changed while this review was open. Choose its identity and prepare the review again."
                 loadState = .preflight
                 return
@@ -286,7 +286,7 @@ final class FoundryImportModel {
             loadState = .finalizing
             let archive = FoundryImportArchive(
                 id: mappedImport.archiveID,
-                sourceScopeID: selectedSourceScopeID,
+                sourceScopeID: selectedSourceScopeId,
                 sourceFormat: sourceDescriptor.format,
                 sourceSemanticKey: sourceDescriptor.semanticKey,
                 sourceFileName: selectedUrl.lastPathComponent,
@@ -302,7 +302,7 @@ final class FoundryImportModel {
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             do {
                 try await sourceRegistry.register(
-                    scopeID: selectedSourceScopeID,
+                    scopeID: selectedSourceScopeId,
                     descriptor: sourceDescriptor
                 )
             } catch {
@@ -330,12 +330,12 @@ final class FoundryImportModel {
     func chooseExistingSource(scopeID: UUID) {
         guard case .requiresSelection(let existing, _) = sourceResolution,
               existing.contains(where: { $0.scopeID == scopeID }) else { return }
-        selectedSourceScopeID = scopeID
+        selectedSourceScopeId = scopeID
     }
 
     func chooseNewSource() {
         guard case .requiresSelection(_, let proposedScopeID) = sourceResolution else { return }
-        selectedSourceScopeID = proposedScopeID
+        selectedSourceScopeId = proposedScopeID
     }
 
     func reportSelectionError(_ error: any Error) {
@@ -349,7 +349,7 @@ final class FoundryImportModel {
         reviewSession = nil
         result = nil
         sourceResolution = nil
-        selectedSourceScopeID = nil
+        selectedSourceScopeId = nil
         sourceDescriptor = nil
         loadState = .failed(error.localizedDescription)
     }
@@ -403,7 +403,7 @@ final class FoundryImportModel {
         mappedImport = nil
         reviewSession = nil
         sourceResolution = .resolved(scopeID: canonicalScopeID)
-        selectedSourceScopeID = canonicalScopeID
+        selectedSourceScopeId = canonicalScopeID
         loadState = .preflight
         await prepareReview(rootManager: rootManager)
         if loadState == .review {

@@ -21,7 +21,11 @@ struct MapEditor: View {
         self.trailingViewportReservation = trailingViewportReservation
         self.configuration = configuration
         mapEditController = MapEditController(editController: editController)
-        _session = State(
+        // Built on first use, once. As a `State` initial value it was built on every init of
+        // this view, with its viewport, pin model, room store over all entries and history,
+        // and every instance but the first was thrown away: thousands of room nodes per
+        // parent render on a hex map. See CODE_AUDIT_21 §7.9.
+        _session = CoreRPG.LazyState(
             wrappedValue: MapEditorSession(
                 map: map,
                 image: image,
@@ -45,7 +49,7 @@ struct MapEditor: View {
     private let configuration: MapEditorConfiguration
     private let mapEditController: MapEditController
 
-    @State private var session: MapEditorSession
+    @CoreRPG.LazyState private var session: MapEditorSession
 
     private var canvasConfiguration: MapCanvasConfiguration {
         MapCanvasConfiguration(

@@ -73,12 +73,41 @@ struct MapPassiveRoomCanvas: View {
         .accessibilityHidden(true)
     }
 
+    /// The rooms that can be seen, shown ones first. Rooms outside the visible part of the map
+    /// are left out: every pan or zoom frame used to draw all of them, which on a hex map is
+    /// up to 20,000 cells, each with its own clipped layer in the fog. One pass instead of two
+    /// maps and two filters. See CODE_AUDIT_21 §7.8.
     private var orderedSnapshots: [MapRoomSnapshot] {
-        let snapshots = rooms.roomNodes.filter { $0.id != excludingEntryId }.map {
-            MapRoomSnapshot(path: $0.path, bounds: $0.bounds, isShown: $0.entry.isShown)
+        let visible = Self.visibleContentRect(transform: transform, viewportSize: viewportSize)
+        var shown: [MapRoomSnapshot] = []
+        var hidden: [MapRoomSnapshot] = []
+        for node in rooms.roomNodes where node.id != excludingEntryId && node.bounds.intersects(visible) {
+            let snapshot = MapRoomSnapshot(path: node.path, bounds: node.bounds, isShown: node.entry.isShown)
+            if snapshot.isShown {
+                shown.append(snapshot)
+            } else {
+                hidden.append(snapshot)
+            }
         }
-        return snapshots.filter(\.isShown) + snapshots.filter { !$0.isShown }
+        return shown + hidden
     }
+
+    /// The part of the map content the viewport shows, grown by the widest boundary stroke so a
+    /// room just outside still draws the half of its outline that reaches in. The whole plane
+    /// for a transform that cannot be inverted.
+    static func visibleContentRect(transform: ViewportTransform, viewportSize: CGSize) -> CGRect {
+        guard transform.scale.isFinite, transform.scale > 0,
+              transform.offset.x.isFinite, transform.offset.y.isFinite else { return .infinite }
+        return CGRect(
+            x: -transform.offset.x / transform.scale,
+            y: -transform.offset.y / transform.scale,
+            width: viewportSize.width / transform.scale,
+            height: viewportSize.height / transform.scale
+        ).insetBy(dx: -boundaryStrokeMargin, dy: -boundaryStrokeMargin)
+    }
+
+    /// Half of the widest boundary stroke (12 in increased contrast), with room to spare.
+    private static let boundaryStrokeMargin: CGFloat = 16
 
     private func draw(snapshots: [MapRoomSnapshot], in context: inout GraphicsContext) {
         switch (phase, displayMode) {

@@ -333,7 +333,7 @@ extension ExternalImportReviewSession {
         // snapshots first; imported models are restored by `mutations` below.
         for repairSnapshot in repairSnapshots.reversed() {
             guard let controller = rootManager.rootModel(for: repairSnapshot.module)?.itemControllable else {
-                errors.append("Could not restore \(repairSnapshot.module.title) repair state: controller unavailable.")
+                errors.append(String(localized: "Could not restore \(repairSnapshot.module.title) repair state: controller unavailable.", bundle: .module))
                 continue
             }
             for (itemId, model) in repairSnapshot.beforeRepair {
@@ -348,7 +348,7 @@ extension ExternalImportReviewSession {
                     try controller.replaceForExternalImport(model: model, isInsert: true)
                 } catch {
                     errors.append(
-                        "Could not restore \(repairSnapshot.module.title) item after repair: \(error.localizedDescription)"
+                        String(localized: "Could not restore \(repairSnapshot.module.title) item after repair: \(error.localizedDescription)", bundle: .module)
                     )
                 }
             }
@@ -356,7 +356,7 @@ extension ExternalImportReviewSession {
 
         for mutation in mutations.reversed() {
             guard let controller = rootManager.rootModel(for: mutation.module)?.itemControllable else {
-                errors.append("Could not restore \(mutation.module.title) item: controller unavailable.")
+                errors.append(String(localized: "Could not restore \(mutation.module.title) item: controller unavailable.", bundle: .module))
                 continue
             }
             do {
@@ -367,7 +367,7 @@ extension ExternalImportReviewSession {
                 }
             } catch {
                 errors.append(
-                    "Could not restore \(mutation.module.title) item \(mutation.itemId.uuidString): \(error.localizedDescription)"
+                    String(localized: "Could not restore \(mutation.module.title) item \(mutation.itemId.uuidString): \(error.localizedDescription)", bundle: .module)
                 )
             }
         }
@@ -383,13 +383,13 @@ extension ExternalImportReviewSession {
         for created in createdFiles.reversed() {
             guard let fileController = rootManager.rootModel(for: created.module)?
                 .itemControllable.fileUrlDataController else {
-                errors.append("Could not remove \(created.fileUrl.rawUrl.lastPathComponent): file controller unavailable.")
+                errors.append(String(localized: "Could not remove \(created.fileUrl.rawUrl.lastPathComponent): file controller unavailable.", bundle: .module))
                 continue
             }
             do {
                 try await deleteCreatedFile(created.fileUrl, using: fileController)
             } catch {
-                errors.append("Could not remove \(created.fileUrl.rawUrl.lastPathComponent): \(error.localizedDescription)")
+                errors.append(String(localized: "Could not remove \(created.fileUrl.rawUrl.lastPathComponent): \(error.localizedDescription)", bundle: .module))
             }
         }
         return errors

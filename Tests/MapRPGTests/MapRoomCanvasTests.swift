@@ -2,6 +2,7 @@
 
 #if canImport(Testing)
 import CoreGraphics
+import CoreRPG
 import SwiftUI
 import Testing
 
@@ -85,6 +86,35 @@ struct MapRoomCanvasTests {
 
         #expect(normalPlan != nil)
         #expect(pathologicalPlan == nil)
+    }
+
+    // CODE_AUDIT_21 §7.8: only the rooms the viewport shows are drawn.
+    @Test func visibleContentRectFollowsPanAndZoom() {
+        let viewport = CGSize(width: 400, height: 200)
+
+        let unscaled = MapPassiveRoomCanvas.visibleContentRect(transform: .identity, viewportSize: viewport)
+        // Grown by the boundary stroke margin on every side.
+        #expect(unscaled == CGRect(x: -16, y: -16, width: 432, height: 232))
+
+        let zoomed = MapPassiveRoomCanvas.visibleContentRect(
+            transform: ViewportTransform(scale: 2, offset: CGPoint(x: -200, y: -100)),
+            viewportSize: viewport
+        )
+        #expect(zoomed == CGRect(x: 84, y: 34, width: 232, height: 132))
+        #expect(zoomed.intersects(CGRect(x: 150, y: 80, width: 10, height: 10)))
+        #expect(!zoomed.intersects(CGRect(x: 0, y: 0, width: 50, height: 20)))
+    }
+
+    @Test func visibleContentRectIsEverythingForAnUnusableTransform() {
+        let viewport = CGSize(width: 400, height: 200)
+        for transform in [
+            ViewportTransform(scale: 0),
+            ViewportTransform(scale: .nan),
+            ViewportTransform(scale: 1, offset: CGPoint(x: CGFloat.infinity, y: 0))
+        ] {
+            let rect = MapPassiveRoomCanvas.visibleContentRect(transform: transform, viewportSize: viewport)
+            #expect(rect.intersects(CGRect(x: 90_000, y: -90_000, width: 1, height: 1)))
+        }
     }
 
     private func polygonPath(_ coordinates: [CGPoint]) -> Path {

@@ -192,19 +192,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::FileBrowserPickerView
-    @Test("FileBrowserPickerView")
-    func fileBrowserPickerView() {
-        assertCoreSnapshot("FileBrowserPickerView") {
-            FileBrowserPickerView(
-                shown: .constant(false),
-                pickerType: .open,
-                fileNameSuggestion: "adventure.pdf",
-                handler: { _ in }
-            )
-        }
-    }
-
     // snapshot-root: CoreRPG::ImportChooseUrlView
     @Test("ImportChooseUrlView")
     func importChooseUrlView() {
@@ -265,14 +252,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::ModalPresentCloseButton
-    @Test("ModalPresentCloseButton")
-    func modalPresentCloseButton() {
-        assertCoreSnapshot("ModalPresentCloseButton") {
-            ModalPresentCloseButton(isPresented: .constant(true))
-        }
-    }
-
     // snapshot-root: CoreRPG::HeaderContentScrollView
     @Test("HeaderContentScrollView")
     func headerContentScrollView() {
@@ -293,33 +272,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                         Text("Adventure row \(index)")
                     }
                 }
-            }
-        }
-    }
-
-    // snapshot-root: CoreRPG::HeaderFooterContentScrollView
-    @Test("HeaderFooterContentScrollView")
-    func headerFooterContentScrollView() {
-        assertCoreSnapshot("HeaderFooterContentScrollView") {
-            HeaderFooterContentScrollView(model: HeaderFooterScrollModel()) {
-                HStack {
-                    Image(systemName: "chevron.left")
-                    Spacer()
-                    Text("Apple Store")
-                }
-                .padding()
-            } content: {
-                Form {
-                    ForEach(1...12, id: \.self) { index in
-                        Text("Adventure row \(index)")
-                    }
-                }
-            } footer: {
-                Label("Mage", systemImage: "gear")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-            } background: {
-                Rectangle().fill(Color.orange.gradient)
             }
         }
     }

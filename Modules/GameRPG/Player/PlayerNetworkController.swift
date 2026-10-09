@@ -83,6 +83,10 @@ final class PlayerNetworkController: Sendable {
     private var listenerRetryTask: Task<Void, Never>?
     private var listenerRetryAttempt = 0
     private var reconnectDeadlineTask: Task<Void, Never>?
+    /// When the reconnect attempt that is waiting for its handshake was accepted.
+    private var reconnectAttemptStart: ContinuousClock.Instant?
+    /// See `GameLimits.reconnectHandshakeGrace`; a property so a test need not wait for it.
+    var reconnectHandshakeGrace = GameLimits.reconnectHandshakeGrace
     /// Bumped by every `stop()`. `restart(connection:)` suspends before it installs the new
     /// connection and compares this afterwards, so a connection accepted for a session that
     /// was stopped meanwhile is dropped instead of installed. See CODE_AUDIT_21 §3.3.
@@ -281,6 +285,7 @@ private extension PlayerNetworkController {
         // See CODE_AUDIT_Join §3.1, CODE_AUDIT_20 §3.9.
         let replaced = networkModel.connectionController
         networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
+        reconnectAttemptStart = .now
         await replaced?.cancel()
         await networkModel.connectionController?.startConnection()
         enforceReconnectDeadline(for: id)
@@ -294,6 +299,10 @@ private extension PlayerNetworkController {
             try? await Task.sleep(for: GameLimits.handshakeDeadline)
             guard !Task.isCancelled, let self, self.isCurrentConnection(id), self.networkModel.connectionState == .notReady else { return }
             Logger.playerNetworkController.debug("PlayerNetworkController: Reconnect handshake deadline expired")
+            // A failure for that source. The cancellation below ends in `lostConnection`, which
+            // only clears the entry, so a peer that never finished TLS was admitted again at
+            // once and held the reconnect slot for as long as it liked. See CODE_AUDIT_21 §6.2.
+            await self.connectionThrottle.resolve(id: id, succeeded: false)
             await self.networkModel.connectionController?.cancel()
         }
     }
@@ -573,14 +582,38 @@ extension PlayerNetworkController: ListenerManagerDelegate {
         // Only a lost player takes a connection, and only one at a time. The listener stays up
         // either way: it is retired when a connection authenticates, so one unauthenticated or
         // foreign connection can no longer end the reconnect. See CODE_AUDIT_Join §5.1.
-        guard networkModel.connectionState == .lost else {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Dropping connection attempt outside a reconnect")
-            return
+        //
+        // An attempt that is still unauthenticated after the grace period gives way to a newer
+        // connection and counts as a failure of its source: a stalled peer used to keep every
+        // other connection, the master's among them, out for the whole handshake deadline,
+        // while the master gives up after a few dials. See CODE_AUDIT_21 §6.2.
+        if let stalledId = stalledReconnectAttemptId() {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Replacing a stalled reconnect attempt")
+            let generation = stopGeneration
+            await connectionThrottle.resolve(id: stalledId, succeeded: false)
+            // A stop during that suspension ended the reconnect.
+            guard generation == stopGeneration, isAwaitingReconnect else { return }
+        } else {
+            guard networkModel.connectionState == .lost else {
+                Logger.playerNetworkController.debug("PlayerNetworkController: Dropping connection attempt outside a reconnect")
+                return
+            }
         }
         Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
         networkModel.reset(isConnected: false)
         networkModel.reset(state: .notReady)
         await restart(connection: connection)
+    }
+}
+
+private extension PlayerNetworkController {
+    /// The reconnect attempt that has waited for its handshake longer than the grace period.
+    func stalledReconnectAttemptId() -> ConnectionController.ID? {
+        guard isAwaitingReconnect, networkModel.connectionState == .notReady,
+              let id = networkModel.connectionController?.id,
+              let start = reconnectAttemptStart,
+              ContinuousClock.now - start >= reconnectHandshakeGrace else { return nil }
+        return id
     }
 }
 

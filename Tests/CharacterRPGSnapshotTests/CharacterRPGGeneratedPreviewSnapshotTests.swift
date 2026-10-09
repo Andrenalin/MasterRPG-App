@@ -81,14 +81,6 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CharacterRPG::AddGroupButton
-    @Test("AddGroupButton")
-    func snapshotAddGroupButton() async throws {
-        try await assertPreviewSnapshot("AddGroupButton") {
-            CharacterRPG.AddGroupButton(root: .preview, model: .preview)
-        }
-    }
-
     // snapshot-root: CharacterRPG::AddLinkButton
     @Test("AddLinkButton")
     func snapshotAddLinkButton() async throws {

@@ -63,7 +63,36 @@ extension EditController {
     }
         
     func resetPhoto(image: AKImage?, itemId: UUID) async throws {
+#if os(macOS)
         let data = image?.jpegData(compressionQuality: JPEGQuality.export)
+#else
+        // Encoded off the main actor: a 48 MP camera photo hitched the UI.
+        // See CODE_AUDIT_21 §7.10.
+        let data = await Self.encodedJPEG(image)
+#endif
         try await resetFile(data: data, itemId: itemId, path: "")
     }
+
+    /// Stores the picked or dropped image `data` as the item's photo. Returns `false` when the
+    /// data is no image. Decoding and encoding run off the main actor, and the image is decoded
+    /// at most at the size the app shows images at; the library and drop paths used to decode
+    /// and re-encode at full resolution on the main actor. See CODE_AUDIT_21 §7.10.
+    func resetPhoto(data: Data, itemId: UUID) async throws -> Bool {
+        guard let jpeg = await Self.importedJPEG(from: data) else { return false }
+        try await resetFile(data: jpeg, itemId: itemId, path: "")
+        return true
+    }
+
+    @concurrent
+    private static func importedJPEG(from data: Data) async -> Data? {
+        (AKImage.boundedDecode(from: data) ?? AKImage(data: data))?
+            .jpegData(compressionQuality: JPEGQuality.export)
+    }
+
+#if !os(macOS)
+    @concurrent
+    private static func encodedJPEG(_ image: AKImage?) async -> Data? {
+        image?.jpegData(compressionQuality: JPEGQuality.export)
+    }
+#endif
 }

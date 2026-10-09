@@ -117,10 +117,4 @@ extension RuleEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension RuleEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: NetworkModules.rule.icon))
-    }
-}
-
 #endif

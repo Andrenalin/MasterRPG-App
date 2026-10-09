@@ -104,10 +104,4 @@ extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
     }
 }
 
-extension AdventureEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "wand.and.stars"))
-    }
-}
-
 #endif

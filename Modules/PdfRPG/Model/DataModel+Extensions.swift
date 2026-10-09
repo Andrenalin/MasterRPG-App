@@ -12,10 +12,6 @@ extension RPGPdf {
         get { RPGPdfEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGPdfEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGPdf: SpotlightIndexerAttribute {

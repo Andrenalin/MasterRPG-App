@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(visionOS)
+import CoreRPG
 import RealityKit
 import SwiftUI
 import os.log
@@ -27,7 +28,7 @@ struct OrnamentsView: View {
                                 do {
                                     try await model.generateSpatial3DImage()
                                 } catch {
-                                    Logger.photoSpace.error("Spatial3DImage generation failed: \(error.localizedDescription, privacy: .public)")
+                                    Logger.photoSpace.error("Spatial3DImage generation failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                                     model.spatial3DImageState = .notGenerated
                                 }
                             }

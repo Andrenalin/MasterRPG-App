@@ -44,6 +44,10 @@ actor ConnectionController: Identifiable {
     private var sendTask: Task<Void, Never>?
     private let outbound: AsyncStream<OutboundMessage>
     private let outboundContinuation: AsyncStream<OutboundMessage>.Continuation
+    /// The bytes handed to `outbound` that `connection.send` has not finished with. The stream
+    /// itself is unbounded, and every element keeps its whole encoded frame.
+    /// See CODE_AUDIT_21 §6.3.
+    private var queuedOutboundBytes = 0
     /// A message can arrive before the `.ready` state update is handled; the delegate still hears
     /// `readyConnection` first.
     private var readyReported = false
@@ -173,14 +177,33 @@ extension ConnectionController: ConnectionControllable {
             Logger.connectionController.error("Connection: \(uuid, privacy: .public) Skipped sending a message that could not be encoded")
             return
         }
+        guard connection != nil else { return }
+        // A peer that stops reading (poor Wi-Fi, a backgrounded device that still answers
+        // keepalives) used to make this device keep every later map, photo and PDF frame until
+        // the system ended the game for everyone. Such a connection is dropped instead: the
+        // player reconnects and is brought up to date. One frame always goes out, whatever its
+        // size. See CODE_AUDIT_21 §6.3.
+        if queuedOutboundBytes > 0, queuedOutboundBytes + content.count > GameLimits.maximumOutboundQueuedBytes {
+            let uuid = id.uuidString
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Dropped: \(self.queuedOutboundBytes, privacy: .public) bytes are still queued for a peer that does not read them")
+            teardown()
+            Task { await self.connectionFailed(message: "outbound queue over its limit", isAuthenticationFailure: false) }
+            return
+        }
+        queuedOutboundBytes += content.count
         outboundContinuation.yield(OutboundMessage(type: type, content: content))
+    }
+
+    /// A queued frame left the queue, sent or failed.
+    private func outboundFinished(byteCount: Int) {
+        queuedOutboundBytes = max(0, queuedOutboundBytes - byteCount)
     }
 
     private func sendFailed(error: any Error) async {
         // A send still in flight when the owner cancelled completes with an error too.
         guard !wasCancelledLocally else { return }
         let uuid = id.uuidString
-        Logger.connectionController.error("Connection: \(uuid, privacy: .public) Send failed \(error.localizedDescription, privacy: .public)")
+        Logger.connectionController.error("Connection: \(uuid, privacy: .public) Send failed \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         teardown()
         await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
     }
@@ -207,7 +230,7 @@ private extension ConnectionController {
             await reportReady()
 
         case let .failed(error):
-            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(error.localizedDescription, privacy: .public)")
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             teardown()
             await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
 
@@ -227,7 +250,7 @@ private extension ConnectionController {
             // terminal here; other waiting reasons (no route, permission pending) stay
             // transient. Without this a wrong code only showed up as a 12 s join timeout.
             guard case .tls = error else { break }
-            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Handshake rejected \(error.localizedDescription, privacy: .public)")
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Handshake rejected \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             teardown()
             // Classified like the `.failed` path: a transient TLS close/abort on flaky
             // Wi-Fi must not count toward the wrong-code lockout. See CODE_AUDIT_18 §5.18.
@@ -288,6 +311,7 @@ private extension ConnectionController {
             for await message in outbound {
                 do {
                     try await connection.send(message.content, metadata: NWProtocolFramer.Message(gameMessageType: message.type))
+                    await self?.outboundFinished(byteCount: message.content.count)
                     Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Sent \(message.content.count, privacy: .public) bytes")
                 } catch {
                     guard !Task.isCancelled else { return }
@@ -314,7 +338,7 @@ private extension ConnectionController {
             // separate end-of-stream result. Either way the delegate hears that the connection
             // died, and the loop stops. See CODE_AUDIT_Network §5.6.
             let uuid = id.uuidString
-            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error.localizedDescription, privacy: .public)")
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             teardown()
             await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
             return
@@ -339,7 +363,8 @@ extension ConnectionController {
 
     func connectionFailed(message: String, isAuthenticationFailure: Bool) async {
         let uuid = id.uuidString
-        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(message, privacy: .public)")
+        // `message` is an error description, which can name a host. See CODE_AUDIT_21 §6.9.
+        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(message, privacy: .private)")
         // See `terminalOutcomeReported`'s own doc — the `.cancelled` that
         // `cancel()` (called by every path that reaches this) always
         // produces afterward must not also report `lostConnection()`.

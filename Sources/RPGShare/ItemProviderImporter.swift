@@ -174,13 +174,14 @@ private extension ItemProviderImporter {
     }
 
     private nonisolated static func downsampled(_ source: CGImageSource) -> Data? {
-        let thumbnailOptions: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: maximumDownsampledPixelDimension,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceShouldCacheImmediately: true,
-        ]
-        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions as CFDictionary) else {
+        // The header is checked before anything is decoded: an image declaring more pixels than
+        // the shared limit is not decoded inside the extension's memory budget at all.
+        // See CODE_AUDIT_21 §9.5.
+        guard ImageDownsampler.declaredSize(of: source) != .overLimits,
+              let thumbnail = ImageDownsampler.downsampledImage(
+                  from: source,
+                  maxPixelSize: maximumDownsampledPixelDimension
+              ) else {
             return nil
         }
         let output = NSMutableData()

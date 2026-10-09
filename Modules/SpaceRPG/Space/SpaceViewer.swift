@@ -768,13 +768,13 @@ private extension SpaceViewer {
                 localized: "The 3D model format could not be read: \(error.localizedDescription)",
                 bundle: .module
             )
-            Logger.spaceViewer.error("Decoding error loading 3D entity: \(error.localizedDescription, privacy: .public)")
+            Logger.spaceViewer.error("Decoding error loading 3D entity: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         } catch {
             loadError = String(
                 localized: "The 3D model could not be loaded: \(error.localizedDescription)",
                 bundle: .module
             )
-            Logger.spaceViewer.error("Error loading 3D entity from URL: \(error.localizedDescription, privacy: .public)")
+            Logger.spaceViewer.error("Error loading 3D entity from URL: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
 
         hasLoaded = true

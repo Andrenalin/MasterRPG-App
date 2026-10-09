@@ -136,7 +136,7 @@ extension EditController {
             guard target.displayState == DisplayStateMask.groupHidden.rawValue else {
                 if target.groupId == itemId, let groupItem = editModel(for: valueId) {
                     groupItem.parentId = nil
-                    groupItem.displayState = 1
+                    groupItem.displayState = DisplayStateMask.groupHidden.rawValue
                     save(updated: groupItem, message: String(localized: "Repair group item", bundle: .module).localizedString)
                     return entry
                 }
@@ -178,7 +178,7 @@ extension EditController {
             // An item that no longer belongs to any group becomes a normal, visible top-level
             // item; hiding it would lose it from every list. See CODE_AUDIT_Character §9.16 and
             // CODE_AUDIT_18 §9.6.
-            groupItem.displayState = 0
+            groupItem.displayState = DisplayStateMask.fullVisible.rawValue
         }
         save(
             updated: groupItem,

@@ -177,7 +177,7 @@ private struct AnalyzingView: View {
     if let url = PreviewAssetFixture.url(.pdf),
        let pdfDocument = PDFDocument(url: url) {
         PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
-            Logger.generatorRPG.debug("Analyzed: \(content.title, privacy: .public)")
+            Logger.generatorRPG.debug("Analyzed: \(content.title, privacy: .private)")
         }
     } else {
         Text(verbatim: "PDF fixture is available in Debug previews")

@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor @Observable
 private final class PreviewItemModel {
-    typealias Entry = EmtpyEntryViewModel
+    typealias Entry = EmptyEntryViewModel
 
     nonisolated let id: UUID
     var name: String
@@ -13,7 +13,7 @@ private final class PreviewItemModel {
     var tags: [String]
     var displayState: Int
     var isGroupHiddenToggle: Bool
-    var entries: [EmtpyEntryViewModel]
+    var entries: [EmptyEntryViewModel]
     var fileUrl: FileUrl?
     var parentId: UUID?
 
@@ -26,7 +26,7 @@ private final class PreviewItemModel {
         description: String = "",
         tags: [String] = [],
         fileUrl: FileUrl? = nil,
-        entries: [EmtpyEntryViewModel] = []
+        entries: [EmptyEntryViewModel] = []
     ) {
         self.id = id
         self._name = name
@@ -40,7 +40,7 @@ private final class PreviewItemModel {
         self._parentId = nil
     }
 
-    subscript(entryId: UUID) -> EmtpyEntryViewModel {
+    subscript(entryId: UUID) -> EmptyEntryViewModel {
         get { entries.first { $0.id == entryId } ?? .empty }
         set { entries = entries.map { $0.id == entryId ? newValue : $0 } }
     }
@@ -62,16 +62,16 @@ private final class PreviewItemModel {
 
 extension SingleItemImportModel {
     static var preview: SingleItemImportModel {
-        var bg = EmtpyEntryViewModel.empty
+        var bg = EmptyEntryViewModel.empty
         bg.name = "Background"
         bg.content = "Born in Frosthold, trained as a border scout."
-        var notes = EmtpyEntryViewModel.empty
+        var notes = EmptyEntryViewModel.empty
         notes.name = "Notes"
         notes.content = "Knows the old password for the Black Keep."
-        var bg2 = EmtpyEntryViewModel.empty
+        var bg2 = EmptyEntryViewModel.empty
         bg2.name = "Background"
         bg2.content = "Born in Frosthold, now serving aboard The Dread."
-        var ability = EmtpyEntryViewModel.empty
+        var ability = EmptyEntryViewModel.empty
         ability.name = "Abilities"
         ability.content = "Mist step, shadow blend."
 
@@ -90,7 +90,7 @@ extension SingleItemImportModel {
             fileUrl: FileUrl(fileId: UUID(), url: URL(filePath: "/portraits/mara.png"), location: .appCloud, module: "photo", relativeUrl: nil),
             entries: [bg2, ability]
         )
-        var mergedBg = EmtpyEntryViewModel.empty
+        var mergedBg = EmptyEntryViewModel.empty
         mergedBg.name = "Background"
         mergedBg.content = "Born in Frosthold, now serving aboard The Dread."
         let mergedItem = PreviewItemModel(
@@ -110,49 +110,49 @@ extension SingleItemImportModel {
     }
 
     static var previewConflictingEntries: SingleItemImportModel {
-        var existingHistory = EmtpyEntryViewModel.empty
+        var existingHistory = EmptyEntryViewModel.empty
         existingHistory.name = "History"
         existingHistory.content = "Founded in the third age by refugees from the Sunken Isles, Thornwall grew from a fishing village into a trade fortress. Its eastern gate has never been breached in four centuries of recorded conflict."
 
-        var existingNPCs = EmtpyEntryViewModel.empty
+        var existingNPCs = EmptyEntryViewModel.empty
         existingNPCs.name = "Key NPCs"
         existingNPCs.content = "Mayor Brynn Holt - pragmatic, bribeable. Captain Sera - loyal to the crown above all else. The Fence known only as Dusty - last seen near the harbour, whereabouts now unknown."
 
-        var existingSecrets = EmtpyEntryViewModel.empty
+        var existingSecrets = EmptyEntryViewModel.empty
         existingSecrets.name = "Secrets"
         existingSecrets.content = "A hidden passage beneath the granary connects to the old smugglers' dock. Only the mayor and Dusty know its exact location. The passage floods at high tide."
 
-        var existingOverview = EmtpyEntryViewModel.empty
+        var existingOverview = EmptyEntryViewModel.empty
         existingOverview.name = "Overview"
         existingOverview.content = "Thornwall stands at the junction of the Ashen coast and the inland trade road, a modest but strategically vital settlement that has remained neutral for four generations."
         var importedOverview = existingOverview
         importedOverview.content = "Thornwall is a chokepoint. Whoever controls its amber flow controls the northern economy. The Guild knows this. So does the Crown."
 
-        var existingFactions = EmtpyEntryViewModel.empty
+        var existingFactions = EmptyEntryViewModel.empty
         existingFactions.name = "Factions"
         existingFactions.content = "Amber Merchants' Guild (dominant), Fisher's Brotherhood (declining since the new dock taxes), The Watch (formally neutral, unofficially bought by the Guild over the past two years)."
 
-        var existingEconomy = EmtpyEntryViewModel.empty
+        var existingEconomy = EmptyEntryViewModel.empty
         existingEconomy.name = "Economy"
         existingEconomy.content = "Primary exports: amber, salted fish, timber. The amber trade accounts for nearly 60% of all town revenue. A blocked sea lane could destabilise the entire settlement within weeks."
 
-        var importedRumors = EmtpyEntryViewModel.empty
+        var importedRumors = EmptyEntryViewModel.empty
         importedRumors.name = "Rumors"
         importedRumors.content = "Locals whisper that the mayor sold passage rights to a Thieves' Guild convoy last season. The harbour tax records were allegedly altered to conceal three shipments of untaxed amber."
 
-        var importedEvents = EmtpyEntryViewModel.empty
+        var importedEvents = EmptyEntryViewModel.empty
         importedEvents.name = "Recent Events"
         importedEvents.content = "A fire destroyed the western warehouse district three weeks ago. No cause was officially determined. Six bodies recovered; two remain unidentified. Guild marks were found on the salvage."
 
-        var importedTradeRoutes = EmtpyEntryViewModel.empty
+        var importedTradeRoutes = EmptyEntryViewModel.empty
         importedTradeRoutes.name = "Trade Routes"
         importedTradeRoutes.content = "Three overland routes connect Thornwall to the interior. The southern road through Mirewood is fastest but now subject to Guild tolls. The coastal path is longer but avoids all checkpoints."
 
-        var importedMilitary = EmtpyEntryViewModel.empty
+        var importedMilitary = EmptyEntryViewModel.empty
         importedMilitary.name = "Military Presence"
         importedMilitary.content = "Twelve Watch soldiers nominally under the mayor's command. Six mercenaries recently hired by the Merchants' Guild. No naval force - the harbour is entirely undefended from the sea."
 
-        var importedDangers = EmtpyEntryViewModel.empty
+        var importedDangers = EmptyEntryViewModel.empty
         importedDangers.name = "Dangers"
         importedDangers.content = "Thieves' Guild expansion. Potential arson if the mayor fails to cooperate. Unknown buyer for stolen amber manifests. At least one Guild informant is embedded inside The Watch."
 

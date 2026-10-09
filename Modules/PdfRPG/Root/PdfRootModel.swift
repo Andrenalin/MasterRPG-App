@@ -180,13 +180,6 @@ extension PdfRootModel {
 
     public static let thumbnailSize: CGSize = .init(width: 64.0, height: 64.0)
 
-    @MainActor
-    public func listItems() -> [PdfModel] {
-        itemController.itemDataModel.items.map {
-            itemController.itemOrEmpty(for: $0)
-        }
-    }
-
     public func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }

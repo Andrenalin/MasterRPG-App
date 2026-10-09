@@ -102,10 +102,4 @@ extension CharacterEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension CharacterEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "list.bullet.rectangle"))
-    }
-}
-
 #endif

@@ -125,7 +125,7 @@ extension RPGSharePlayController {
                     session.leave()
                     return
                 }
-                Logger.sharePlay.debug("Session \(session.description, privacy: .public) state: \(self.printState(), privacy: .public)")
+                Logger.sharePlay.debug("Session \(session.description, privacy: .private) state: \(self.printState(), privacy: .public)")
 
                 await self.configureGroupSession(session)
                 guard self.sessionObserverLifecycle.canConfigure(
@@ -173,7 +173,7 @@ extension RPGSharePlayController {
     }
 
     func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) async {
-        Logger.sharePlay.debug("Configure Session \(groupSession.description, privacy: .public) state: \(self.printState(), privacy: .public)")
+        Logger.sharePlay.debug("Configure Session \(groupSession.description, privacy: .private) state: \(self.printState(), privacy: .public)")
 
         // An invalidated-state worker resets synchronously, then performs its
         // delegate cleanup asynchronously. Do not let sessions() configure a
@@ -354,6 +354,7 @@ extension RPGSharePlayController {
                     package: message,
                     from: context.source.id
                 ),
+                   self.admitsInboundPackage(completedPackage, from: context.source.id),
                    let decodedMessage = await Self.decodedMessage(from: completedPackage) {
                     let size = Self.formattedByteCount(decodedMessage.byteCount)
                     Logger.sharePlay.debug("Chunked ✓: received \(message.total, privacy: .public) packages, assembled size \(size, privacy: .public) from \(context.source.id, privacy: .public)")

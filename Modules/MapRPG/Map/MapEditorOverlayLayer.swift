@@ -189,21 +189,18 @@ private struct MapNeedleActionMenuRow: View {
     let point: MapNeedlePointModel
 
     var body: some View {
-        GlassEffectContainerAll {
-            HStack(spacing: 8) {
-                ForEach(NeedleMapPinButtonType.allCases, id: \.self) { type in
-                    MapPopoverButton(
-                        title: Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module),
-                        systemImage: type.systemImage,
-                        tint: type == .remove ? .red : .teal
-                    ) {
-                        perform(type)
-                    }
+        HStack(spacing: MapPopoverLayout.contentInset) {
+            ForEach(NeedleMapPinButtonType.allCases, id: \.self) { type in
+                MapPopoverButton(
+                    title: Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module),
+                    systemImage: type.systemImage,
+                    tint: type == .remove ? .red : .teal
+                ) {
+                    perform(type)
                 }
             }
         }
-        // Half of the default `padding()` inset.
-        .padding(8)
+        .padding(MapPopoverLayout.contentInset)
     }
 
     private func perform(_ type: NeedleMapPinButtonType) {

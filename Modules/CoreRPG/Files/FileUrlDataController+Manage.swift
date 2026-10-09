@@ -143,13 +143,26 @@ extension FileUrlDataController {
             return cacheURL
         }
 
-        let temporaryUrl = try await remoteFileDownloader(fileUrl.rawUrl)
+        // One download per cache file, however many readers ask for it at once.
+        // See CODE_AUDIT_21 §7.5.
+        let remoteUrl = fileUrl.rawUrl
+        try await RemoteDownloadsInFlight.shared.run(cachePath: cacheURL.path(percentEncoded: false)) {
+            try await downloadIntoRemoteCache(from: remoteUrl, to: cacheURL)
+        }
+        return cacheURL
+    }
+
+    private func downloadIntoRemoteCache(from remoteUrl: URL, to cacheURL: URL) async throws {
+        let temporaryUrl = try await remoteFileDownloader(remoteUrl)
+        // The download is moved into the cache; whatever is left of it afterwards is removed.
+        // It used to be copied and the original stayed in `tmp`, up to 256 MiB per remote item,
+        // until the system cleared it. See CODE_AUDIT_21 §7.5.
+        defer { try? FileManager.default.removeItem(at: temporaryUrl) }
         try Task.checkCancellation()
         // A remote item may come from a peer; never cache an unbounded download.
         // See CODE_AUDIT_15 §6.3.
         let downloadedSize = (try? temporaryUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard downloadedSize <= Self.maximumRemoteFileBytes else {
-            try? FileManager.default.removeItem(at: temporaryUrl)
             throw URLError(.dataLengthExceedsMaximum)
         }
         try await FileManager.default.createDirectory(
@@ -157,20 +170,19 @@ extension FileUrlDataController {
             withIntermediateDirectories: true
         )
         do {
-            try await FileManager.default.copyItem(
+            try await FileManager.default.moveItem(
                 coordinatingAccessFrom: temporaryUrl,
                 to: cacheURL
             )
         } catch {
-            // Multiple consumers can request the same uncached file together. The
-            // first completed copy wins; later copies may safely reuse that result.
+            // The cache file can be there already (another process of the app group, an
+            // import that restored it); that result is as good.
             guard FileManager.default.fileExists(
                 atPath: cacheURL.path(percentEncoded: false)
             ) else {
                 throw error
             }
         }
-        return cacheURL
     }
 
     func cacheRemoteData(

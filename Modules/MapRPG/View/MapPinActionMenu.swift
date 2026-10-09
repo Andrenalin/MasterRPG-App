@@ -17,21 +17,20 @@ struct MapPinActionMenuStack: View {
     @Namespace private var photoSpace
 
     var body: some View {
-        GlassEffectContainerAll {
-            VStack(spacing: 8) {
-                ForEach(context.actions, id: \.self) { type in
-                    // The panel is glass already: flat buttons, no glass inside glass.
-                    MapPinActionMenuButton(pin: model.pin, type: type) {
-                        model.perform(type, context: context)
-                    }
-                    .applyIf(type == .photo) {
-                        $0.matchedTransitionSource(id: type.label, in: photoSpace)
-                    }
+        // No glass container: the panel is glass already and the buttons are flat (no glass inside
+        // glass), so a container around them had no glass children and did nothing.
+        // See CODE_AUDIT_21 §8.4.
+        VStack(spacing: MapPopoverLayout.contentInset) {
+            ForEach(context.actions, id: \.self) { type in
+                MapPinActionMenuButton(pin: model.pin, type: type) {
+                    model.perform(type, context: context)
+                }
+                .applyIf(type == .photo) {
+                    $0.matchedTransitionSource(id: type.label, in: photoSpace)
                 }
             }
         }
-        // Half of the default `padding()` inset.
-        .padding(8)
+        .padding(MapPopoverLayout.contentInset)
         .modifier(
             MapPinPhotoSelectionModifier(
                 model: model,
@@ -53,22 +52,19 @@ struct MapPinGameActionMenu: View {
 
     private var layout: AnyLayout {
         axis == .vertical
-            ? AnyLayout(VStackLayout(spacing: 8))
-            : AnyLayout(HStackLayout(spacing: 8))
+            ? AnyLayout(VStackLayout(spacing: MapPopoverLayout.contentInset))
+            : AnyLayout(HStackLayout(spacing: MapPopoverLayout.contentInset))
     }
 
     var body: some View {
-        GlassEffectContainerAll {
-            layout {
-                ForEach(actions, id: \.self) { type in
-                    MapPinActionMenuButton(pin: pin, type: type) {
-                        perform(type)
-                    }
+        layout {
+            ForEach(actions, id: \.self) { type in
+                MapPinActionMenuButton(pin: pin, type: type) {
+                    perform(type)
                 }
             }
         }
-        // Half of the default `padding()` inset.
-        .padding(8)
+        .padding(MapPopoverLayout.contentInset)
     }
 }
 

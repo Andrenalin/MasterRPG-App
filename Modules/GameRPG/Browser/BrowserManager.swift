@@ -42,8 +42,17 @@ final class BrowserManager {
     /// Setup screens currently showing this browser's games.
     @ObservationIgnored private var screenDemand = 0
 
-    init(serviceType: GameServiceType = .player) {
+    /// Services tracked at once. A device advertising thousands of services used to stall the
+    /// browse screen and the main actor on every browse update. See CODE_AUDIT_21 §6.6.
+    static let maximumTrackedServices = 256
+
+    /// Whether services that disappear are collected in `removed`. Only a player drains that
+    /// list (`takeRemoved()`); on the master's browser it grew for the whole hosting session.
+    private let recordsRemovals: Bool
+
+    init(serviceType: GameServiceType = .player, recordsRemovals: Bool = true) {
         self.serviceType = serviceType
+        self.recordsRemovals = recordsRemovals
     }
 
     isolated deinit {
@@ -203,15 +212,26 @@ final class BrowserManager {
     }
 
     func updateGames(from endpoints: [DiscoveredService]) {
+        let endpoints = Array(endpoints.prefix(Self.maximumTrackedServices))
         let newNames = Set(endpoints.map { $0.name })
         let newlyRemoved = games.filter { !newNames.contains($0.endpointName) }
-        if !newlyRemoved.isEmpty {
+        if recordsRemovals, !newlyRemoved.isEmpty {
             removed.append(contentsOf: newlyRemoved)
+            if removed.count > Self.maximumTrackedServices {
+                removed.removeFirst(removed.count - Self.maximumTrackedServices)
+            }
         }
         games.removeAll { !newNames.contains($0.endpointName) }
+        // By name, once: a `firstIndex` per result was quadratic on the main actor.
+        // See CODE_AUDIT_21 §6.6.
+        var indexByName: [String: Int] = [:]
+        for (index, game) in games.enumerated() where indexByName[game.endpointName] == nil {
+            indexByName[game.endpointName] = index
+        }
         for endpoint in endpoints {
             let sessionId = endpoint.txtRecord[NWTXTRecord.sessionKey]
-            guard let index = games.firstIndex(where: { $0.endpointName == endpoint.name }) else {
+            guard let index = indexByName[endpoint.name] else {
+                indexByName[endpoint.name] = games.count
                 games.append(
                     BrowserGameModel(
                         id: UUID(),

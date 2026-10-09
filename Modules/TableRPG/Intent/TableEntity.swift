@@ -106,10 +106,4 @@ extension TableEntityQuery: @preconcurrency IndexedEntityQuery {
     }
 }
 
-extension TableEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "tablecells.fill"))
-    }
-}
-
 #endif

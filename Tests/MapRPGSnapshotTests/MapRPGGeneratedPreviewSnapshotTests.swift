@@ -19,20 +19,6 @@ import TipKit
 @MainActor
 @Suite(.serialized, .snapshots, .tags(.snapshot))
 struct MapRPGGeneratedPreviewSnapshotTests {
-    // snapshot-root: MapRPG::AnimatedMap
-    @Test("AnimatedMap")
-    func snapshotAnimatedMap() async throws {
-        try await assertPreviewSnapshot("AnimatedMap") {
-            MapRPG.AnimatedMap(
-                itemId: MapModel.previewId,
-                image: AKImage(),
-                date: Date(timeIntervalSince1970: 1_700_000_000),
-                size: CGSize(width: 320, height: 240),
-                initialEntryId: MapEntryModel.previewId
-            )
-        }
-    }
-
     // snapshot-root: MapRPG::ChooseMapPinsButton
     @Test("ChooseMapPinsButton")
     func snapshotChooseMapPinsButton() async throws {

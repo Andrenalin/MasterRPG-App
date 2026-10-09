@@ -378,7 +378,7 @@ extension DiceModel {
     }
     
     var maxValue: Int {
-        dice.reduce(0) { $0 + $1.die.max }
+        dice.reduce(0) { $0.saturatingSum($1.die.max) }
     }
     
     var minFirstValue: Int {

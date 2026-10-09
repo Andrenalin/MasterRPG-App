@@ -410,6 +410,10 @@ public extension ImportControllable {
     }
 }
 
+/// The import log, to ask whether info-level messages are recorded before building one that is
+/// expensive to build. See CODE_AUDIT_21 §7.2.
+private let importReviewLog = OSLog(subsystem: Logger.subsystem, category: "ImportController")
+
 private extension ImportControllable {
     @MainActor
     func token() async -> Int {
@@ -684,6 +688,9 @@ private extension ImportControllable {
             return
         }
 
+        // The summary below compares every property and entry again, only to be logged at the
+        // info level. See CODE_AUDIT_21 §7.2.
+        guard importReviewLog.isEnabled(type: .info) else { return }
         let reviewDifferences = reviewPropertyDifferences(in: itemModel) + reviewEntryDifferences(in: itemModel)
         let commonDifferences = commonItemDifferences(existing: existing, imported: imported)
         let reviewSummary = reviewDifferences.importLogSummary
@@ -768,15 +775,15 @@ private extension ImportControllable {
         let importedIds = imported.map(\.id)
         appendImportDifference("entry.ids", existingIds.map(\.uuidString).joined(separator: ","), importedIds.map(\.uuidString).joined(separator: ","), to: &differences)
 
-        let allIds = (existingIds + importedIds).reduce(into: [UUID]()) { result, id in
-            if !result.contains(id) {
-                result.append(id)
-            }
-        }
+        // Indexed by id, see `SingleItemImportModel.from(item:)`. See CODE_AUDIT_21 §7.2.
+        var seenIds: Set<UUID> = []
+        let allIds = (existingIds + importedIds).filter { seenIds.insert($0).inserted }
+        let existingById = Dictionary(existing.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let importedById = Dictionary(imported.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         for id in allIds {
-            let existingEntry = existing.first { $0.id == id }
-            let importedEntry = imported.first { $0.id == id }
+            let existingEntry = existingById[id]
+            let importedEntry = importedById[id]
             let entryPrefix = "entry \(id.uuidString)"
 
             guard let existingEntry, let importedEntry else {

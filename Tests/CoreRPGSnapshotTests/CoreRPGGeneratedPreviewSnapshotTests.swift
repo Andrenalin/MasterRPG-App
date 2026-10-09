@@ -74,14 +74,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::FileImporterViewWrapper
-    @Test("FileImporterViewWrapper")
-    func snapshotFileImporterViewWrapper() async throws {
-        try await assertPreviewSnapshot("FileImporterViewWrapper") {
-            CoreRPG.FileImporterViewWrapper(controller: FakeViewController(), itemId: .fixture1, preopen: false, layoutDown: false)
-        }
-    }
-
     // snapshot-root: CoreRPG::DumpingEnvironment
     // REMOVED: `DumpingEnvironment` no longer exists in CoreRPG; this generated test was
     // never regenerated after its removal. Pre-existing staleness, unrelated to this
@@ -203,16 +195,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
             )
             .environment(AppWindowSizeModel())
             .environment(ScenesManager())
-        }
-    }
-
-    // snapshot-root: CoreRPG::AltOpenWindowButton
-    @Test("AltOpenWindowButton")
-    func snapshotAltOpenWindowButton() async throws {
-        try await assertPreviewSnapshot("AltOpenWindowButton") {
-            CoreRPG.AltOpenWindowButton(module: .adventure)
-                .environment(ScenesManager())
-                .environment(OptionKeyDownModel())
         }
     }
 
@@ -766,14 +748,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::ModalCloseOkButton
-    @Test("ModalCloseOkButton")
-    func snapshotModalCloseOkButton() async throws {
-        try await assertPreviewSnapshot("ModalCloseOkButton") {
-            CoreRPG.ModalCloseOkButton(dismissAction: {})
-        }
-    }
-
     // snapshot-root: CoreRPG::TagItemRow
     @Test("TagItemRow")
     func snapshotTagItemRow() async throws {
@@ -1209,15 +1183,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::AltLinkWindowCommandView
-    @Test("AltLinkWindowCommandView")
-    func snapshotAltLinkWindowCommandView() async throws {
-        try await assertPreviewSnapshot("AltLinkWindowCommandView") {
-            CoreRPG.AltLinkWindowCommandView(title: "Adventure Link", networkModule: .adventure, key: "l")
-                .environment(ScenesManager())
-        }
-    }
-
     // snapshot-root: CoreRPG::BatchExtractionButton
     @Test("BatchExtractionButton")
     func snapshotBatchExtractionButton() async throws {
@@ -1504,15 +1469,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::GeneratedSheetEntryContextMenu
-    @Test("GeneratedSheetEntryContextMenu")
-    func snapshotGeneratedSheetEntryContextMenu() async throws {
-        try await assertPreviewSnapshot("GeneratedSheetEntryContextMenu") {
-            CoreRPG.GeneratedSheetEntryContextMenu(canRefine: true, takeOverAction: {}, refineAction: {}, deleteAction: {})
-                .padding()
-        }
-    }
-
     // snapshot-root: CoreRPG::SheetContextMenuView
     @Test("SheetContextMenuView")
     func snapshotSheetContextMenuView() async throws {
@@ -1705,14 +1661,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::AnimatorView
-    @Test("AnimatorView")
-    func snapshotAnimatorView() async throws {
-        try await assertPreviewSnapshot("AnimatorView") {
-            CoreRPG.AnimatorView(animates: false)
-        }
-    }
-
     // snapshot-root: CoreRPG::DropItemModuleArea
     @Test("DropItemModuleArea")
     func snapshotDropItemModuleArea() async throws {
@@ -1789,16 +1737,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 }
             }
             .padding()
-        }
-    }
-
-    // snapshot-root: CoreRPG::RotatePhotoView
-    @Test("RotatePhotoView")
-    func snapshotRotatePhotoView() async throws {
-        try await assertPreviewSnapshot("RotatePhotoView") {
-            CoreRPG.RotatePhotoView(image: nil, degrees: 0, size: CGSize(width: 40, height: 300)) {
-                Image(systemName: "square.and.arrow.up")
-            }
         }
     }
 

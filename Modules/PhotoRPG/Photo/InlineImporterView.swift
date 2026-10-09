@@ -52,7 +52,7 @@ private struct InlineImporterContentView: View {
 #endif
 
     @State private var showImporter = false
-    @State private var showRemoteURLImporter = false
+    @State private var showRemoteUrlImporter = false
     @State private var showCamera = false
     @State private var showLibrary = false
     @State private var showImagePlayground = false
@@ -79,7 +79,7 @@ private struct InlineImporterContentView: View {
             }
         }
         .remoteFileURLImporter(
-            isPresented: $showRemoteURLImporter,
+            isPresented: $showRemoteUrlImporter,
             editControllable: root.editController,
             itemId: itemId
         )
@@ -101,11 +101,10 @@ private struct InlineImporterContentView: View {
             Task {
                 do {
                     guard let data = try await localItem.loadTransferable(type: Data.self),
-                          let image = AKImage(data: data) else {
+                          try await root.editController.resetPhoto(data: data, itemId: id) else {
                         importErrorMessage = String(localized: "The selected photo could not be loaded.", bundle: .module)
                         return
                     }
-                    await update(id: id, image: image)
                 } catch {
                     importErrorMessage = error.localizedDescription
                 }
@@ -130,11 +129,10 @@ private struct InlineImporterContentView: View {
             Task {
                 do {
                     guard let data = try await ItemController.importImageFromProviders(providers) else { return }
-                    guard let image = AKImage(data: data) else {
+                    guard try await root.editController.resetPhoto(data: data, itemId: id) else {
                         importErrorMessage = String(localized: "The dropped image could not be loaded.", bundle: .module)
                         return
                     }
-                    await update(id: id, image: image)
                 } catch {
                     importErrorMessage = error.localizedDescription
                 }
@@ -170,7 +168,7 @@ private struct InlineImporterContentView: View {
     private func show(_ type: PhotoImporterButtonType) {
         switch type {
         case .file: showImporter.toggle()
-        case .url: showRemoteURLImporter.toggle()
+        case .url: showRemoteUrlImporter.toggle()
         case .library: showLibrary.toggle()
         case .camera: showCamera.toggle()
         case .playground: showImagePlayground.toggle()

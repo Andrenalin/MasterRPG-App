@@ -112,7 +112,7 @@ extension MasterController {
                 // actually materialized yet (e.g. an undownloaded iCloud
                 // placeholder) rather than genuinely missing. See
                 // CODE_AUDIT_Network §5.12.
-                Logger.networking.error("MasterController: Failed to import shared PDF \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
+                Logger.networking.error("MasterController: Failed to import shared PDF \(model.data.id, privacy: .public) as canonical copy: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 await send(
                     type: .reveal,
                     subtype: .failed,

@@ -102,10 +102,4 @@ extension MapEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension MapEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "map"))
-    }
-}
-
 #endif

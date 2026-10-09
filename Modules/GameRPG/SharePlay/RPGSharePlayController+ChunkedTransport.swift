@@ -53,9 +53,16 @@ extension RPGSharePlayController {
         // physically attributed announcement to the later Journal callback.
         // Enqueueing is deliberately before Journal publication; delivery may
         // still race, and the receiver retains that race in a bounded queue.
+        //
+        // One SHA-256 pass over the attachment for this send. The announcement, the Journal
+        // metadata and the late announcement each hashed the whole payload (up to 100 MB) again,
+        // on the main actor, at the moment content is revealed. See CODE_AUDIT_21 §7.3.
+        let payloadDigest: Data? = prepared.usesJournalTransport
+            ? prepared.model.data.data.map { GameNetworkModel.journalDigest(for: $0) }
+            : nil
         let journalAnnouncement: GameNetworkModel? = if prepared.usesJournalTransport,
                                                         journalTracker.shouldPublish(model: prepared.model) {
-            Self.journalAdmissionMetadata(for: prepared.model)
+            Self.journalAdmissionMetadata(for: prepared.model, payloadDigest: payloadDigest)
         } else {
             nil
         }
@@ -84,10 +91,9 @@ extension RPGSharePlayController {
         if prepared.usesJournalTransport,
            let attachmentData = prepared.model.data.data, let journal {
             let moduleKey = prepared.model.data.type
-            // `journalMetadata(for:)` hashes the full attachment; this send's model
-            // never changes underneath these closures, so hash once and reuse it
-            // instead of re-hashing on every branch below.
-            let journalMetadataForModel = Self.journalMetadata(for: prepared.model)
+            // This send's model never changes underneath these closures, so the metadata is
+            // built once, from the digest computed above, and reused on every branch below.
+            let journalMetadataForModel = Self.journalMetadata(for: prepared.model, payloadDigest: payloadDigest)
             let publication = journalPublicationQueue.enqueue(
                 for: moduleKey,
                 byteCount: attachmentData.count,
@@ -137,7 +143,8 @@ extension RPGSharePlayController {
                 if journalAdmissionAlreadyEnqueued {
                     freshJournalAdmissionSucceeded = true
                 } else if let lateAdmission = Self.journalAdmissionMetadata(
-                    for: prepared.model
+                    for: prepared.model,
+                    payloadDigest: payloadDigest
                 ) {
                     // The tracker can change while this publication waits in
                     // the per-module queue. If planned reuse becomes a fresh
@@ -195,7 +202,7 @@ extension RPGSharePlayController {
                     }
                     return result
                 case .failed(let errorDescription):
-                    Logger.sharePlay.error("Journal ✕: message \(prepared.model.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(prepared.model.data.type.token, privacy: .public) and id: \(prepared.model.data.id, privacy: .public) error: \(errorDescription, privacy: .public)")
+                    Logger.sharePlay.error("Journal ✕: message \(prepared.model.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(prepared.model.data.type.token, privacy: .public) and id: \(prepared.model.data.id, privacy: .public) error: \(errorDescription, privacy: .private)")
                 case .timedOut:
                     Logger.sharePlay.error("Journal ⌛: message \(prepared.model.counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment; module is degraded to Messenger until the add returns")
                 case .unavailable:
@@ -385,7 +392,7 @@ extension RPGSharePlayController {
             // by the limiter and performs late cleanup in a fresh task.
             return false
         } catch {
-            Logger.sharePlay.error("Cannot remove \(reason, privacy: .public) Journal attachment for module \(module.token, privacy: .public) after bounded retries: \(error.localizedDescription, privacy: .public)")
+            Logger.sharePlay.error("Cannot remove \(reason, privacy: .public) Journal attachment for module \(module.token, privacy: .public) after bounded retries: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             return false
         }
     }
@@ -563,10 +570,12 @@ extension RPGSharePlayController {
         }
     }
 
-    static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
+    /// - Parameter payloadDigest: The digest of the model's payload when the caller has it
+    ///   already; it is computed here otherwise. See CODE_AUDIT_21 §7.3.
+    static func journalMetadata(for model: GameNetworkModel, payloadDigest: Data? = nil) -> GameNetworkModel {
         var metadata = model
         if let payload = model.data.data {
-            metadata.journalPayloadDigest = GameNetworkModel.journalDigest(for: payload)
+            metadata.journalPayloadDigest = payloadDigest ?? GameNetworkModel.journalDigest(for: payload)
         }
         // Journal developer metadata and Messenger reuse events are real
         // presentations. Only the separate fresh-publication announcement is
@@ -595,20 +604,22 @@ extension RPGSharePlayController {
     /// fresh player Photo/PDF/Space Journal attachment. The stable sender and
     /// message ID are intentionally preserved verbatim for correlation.
     static func playerJournalAdmissionMetadata(
-        for model: GameNetworkModel
+        for model: GameNetworkModel,
+        payloadDigest: Data? = nil
     ) -> GameNetworkModel? {
         guard model.isPlayerFilePresentationEvent,
               model.data.data != nil,
               model.messageID != nil
         else { return nil }
 
-        var metadata = journalMetadata(for: model)
+        var metadata = journalMetadata(for: model, payloadDigest: payloadDigest)
         metadata.journalAdmissionOnly = true
         return metadata.isPlayerJournalAdmissionMetadata ? metadata : nil
     }
 
     static func masterJournalAdmissionMetadata(
-        for model: GameNetworkModel
+        for model: GameNetworkModel,
+        payloadDigest: Data? = nil
     ) -> GameNetworkModel? {
         guard model.isMasterJournalEnvelope,
               model.data.data != nil
@@ -617,18 +628,19 @@ extension RPGSharePlayController {
         // Audio targeting is intentionally normalized by journalMetadata. The
         // exact normalized envelope is both Messenger's admission fingerprint
         // and GroupSessionJournal's developer metadata.
-        var metadata = journalMetadata(for: model)
+        var metadata = journalMetadata(for: model, payloadDigest: payloadDigest)
         metadata.journalAdmissionOnly = true
         return metadata.isMasterJournalAdmissionMetadata ? metadata : nil
     }
 
     static func journalAdmissionMetadata(
-        for model: GameNetworkModel
+        for model: GameNetworkModel,
+        payloadDigest: Data? = nil
     ) -> GameNetworkModel? {
         if model.sender.isMaster {
-            return masterJournalAdmissionMetadata(for: model)
+            return masterJournalAdmissionMetadata(for: model, payloadDigest: payloadDigest)
         }
-        return playerJournalAdmissionMetadata(for: model)
+        return playerJournalAdmissionMetadata(for: model, payloadDigest: payloadDigest)
     }
 
     /// Rebuilds the participant-attributed Messenger half for an attachment
@@ -792,6 +804,16 @@ extension RPGSharePlayController {
         return (model, data.count)
     }
 
+    /// Whether a reassembled package is decoded: not once its sender is over the per-minute
+    /// byte budget. See `SharePlayInboundByteBudget`, CODE_AUDIT_21 §6.5.
+    func admitsInboundPackage(_ package: SharePlayCompletedPackage, from participantId: UUID) -> Bool {
+        guard inboundByteBudget.admit(package.byteCount, from: participantId) else {
+            Logger.sharePlay.error("Dropped a \(package.byteCount, privacy: .public) byte package from \(participantId, privacy: .public): over the inbound byte budget")
+            return false
+        }
+        return true
+    }
+
     @discardableResult
     func sendChunked(
         _ data: Data,
@@ -859,7 +881,7 @@ extension RPGSharePlayController {
                 state: .failed,
                 for: model
             )
-            Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+            Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public), packages \(packageCount, privacy: .public), error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             return .retryableFailure
         }
     }
@@ -936,6 +958,7 @@ extension RPGSharePlayController {
         tasks = [:]
         participantPlayers = [:]
         packageReceiver.reset()
+        inboundByteBudget.reset()
         gameModel?.attachments = [:]
         if groupSession != nil {
             groupSession?.leave()

@@ -137,7 +137,7 @@ extension MasterController {
                     return true
                 } catch {
                     // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
-                    Logger.networking.error("MasterController: Cannot serve proxy request locally \(model.debugDescription, privacy: .private): \(error.localizedDescription, privacy: .public)")
+                    Logger.networking.error("MasterController: Cannot serve proxy request locally \(model.debugDescription, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 }
             }
             // The host lacks the data itself — ask the master as the host. The

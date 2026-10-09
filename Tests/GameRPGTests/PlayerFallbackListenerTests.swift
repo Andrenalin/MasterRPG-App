@@ -88,6 +88,23 @@ struct PlayerFallbackListenerTests {
         #expect(listener.calledStopListening == 0)
     }
 
+    // CODE_AUDIT_21 §6.2: a peer that never finishes its handshake held the only reconnect slot.
+    @Test("A reconnect attempt that stalls gives way to a newer connection")
+    func stalledAttemptIsReplaced() async {
+        let listener = GameListenerAbstractionMock()
+        let (controller, _) = await makeLostPlayer(listener: listener)
+        controller.reconnectHandshakeGrace = .zero
+        await controller.listenerNewConnection(pendingConnection())
+        let stalledId = controller.networkModel.connectionController?.id
+
+        await controller.listenerNewConnection(pendingConnection())
+
+        #expect(controller.networkModel.connectionController?.id != stalledId)
+        #expect(controller.networkModel.connectionState == .notReady)
+        #expect(listener.calledStopListening == 0)
+        await controller.stop()
+    }
+
     @Test("A reconnect that authenticates retires the listener")
     func successRetiresListener() async {
         let listener = GameListenerAbstractionMock()

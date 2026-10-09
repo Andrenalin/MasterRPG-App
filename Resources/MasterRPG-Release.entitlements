@@ -25,7 +25,5 @@
 	<array>
 		<string>group.de.andretrettin.MasterRPG</string>
 	</array>
-	<key>com.apple.security.device.audio-input</key>
-	<true/>
 </dict>
 </plist>

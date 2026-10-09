@@ -101,7 +101,7 @@ final class ListenerManager: ListenerManaging {
                 guard let self, self.runGeneration == generation else { return }
                 self.state = .cancelled
             } catch {
-                Logger.listenerController.error("ListenerManager: Error \(error.localizedDescription, privacy: .public)")
+                Logger.listenerController.error("ListenerManager: Error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 guard let self, self.runGeneration == generation else { return }
                 self.state = .stopped
                 // `run()` throwing (e.g. `GameListener(for:using:)` itself failing) previously
@@ -135,10 +135,10 @@ final class ListenerManager: ListenerManaging {
             state = .waitingForConnection
             await delegate?.listenerReady()
         case .waiting(let error):
-            Logger.listenerController.debug("ListenerManager: Waiting \(error.localizedDescription, privacy: .public)")
+            Logger.listenerController.debug("ListenerManager: Waiting \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             await delegate?.listenerWaiting(error)
         case .failed(let error):
-            Logger.listenerController.error("ListenerManager: Failed \(error.localizedDescription, privacy: .public)")
+            Logger.listenerController.error("ListenerManager: Failed \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             state = .stopped
             await delegate?.listenerCancelled()
         case .cancelled:
@@ -248,7 +248,7 @@ actor ListenerServerController {
         case .waiting(let error):
             continuation.yield(.waiting(error))
         case .failed(let error):
-            Logger.listenerController.error("ListenerManager: \(listenerName, privacy: .private) failed \(error.localizedDescription, privacy: .public)")
+            Logger.listenerController.error("ListenerManager: \(listenerName, privacy: .private) failed \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             continuation.yield(.failed(error))
             continuation.finish()
         case .cancelled:

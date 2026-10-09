@@ -71,7 +71,7 @@ private struct InlineImporterContentView: View {
     @State private var canScan: Bool = false
 
     @State private var showImporter = false
-    @State private var showRemoteURLImporter = false
+    @State private var showRemoteUrlImporter = false
     @State private var showScanner = false
     @State private var importErrorMessage: String?
 
@@ -102,7 +102,7 @@ private struct InlineImporterContentView: View {
             }
         }
         .remoteFileURLImporter(
-            isPresented: $showRemoteURLImporter,
+            isPresented: $showRemoteUrlImporter,
             editControllable: root.editController,
             itemId: itemId
         )
@@ -157,7 +157,7 @@ private struct InlineImporterContentView: View {
     private func show(_ type: ImporterButtonType) {
         switch type {
         case .file: showImporter.toggle()
-        case .url: showRemoteURLImporter.toggle()
+        case .url: showRemoteUrlImporter.toggle()
         case .scanner: showScanner.toggle()
         }
     }

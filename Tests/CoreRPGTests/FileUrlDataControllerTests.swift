@@ -409,7 +409,9 @@ struct FileAccessTests {
         )
 
         let firstRead = try await sut.loadData(for: fileURL)
-        try FileManager.default.removeItem(at: sourceURL)
+        // The download is moved into the cache, not copied: nothing of it stays in `tmp`.
+        // See CODE_AUDIT_21 §7.5.
+        #expect(!FileManager.default.fileExists(atPath: sourceURL.path(percentEncoded: false)))
         let secondRead = try await sut.loadData(for: fileURL)
 
         #expect(firstRead == expectedData)

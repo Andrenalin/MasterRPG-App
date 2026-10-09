@@ -266,29 +266,29 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
     public var errorDescription: String? {
         switch self {
         case .commitAlreadyRunning:
-            "An external import is already running."
+            String(localized: "An external import is already running.", bundle: .module)
         case .commitAlreadyCompleted:
-            "This external import has already completed."
+            String(localized: "This external import has already completed.", bundle: .module)
         case .duplicateItem(let itemId, let module):
-            "Item \(itemId.uuidString) occurs more than once in the \(module.title) import batch."
+            String(localized: "Item \(itemId.uuidString) occurs more than once in the \(module.title) import batch.", bundle: .module)
         case .unsupportedModule(let module):
-            "The \(module.title) module cannot receive this import."
+            String(localized: "The \(module.title) module cannot receive this import.", bundle: .module)
         case .incompatibleModel(let itemId, let module):
-            "Item \(itemId.uuidString) is not compatible with the \(module.title) module."
+            String(localized: "Item \(itemId.uuidString) is not compatible with the \(module.title) module.", bundle: .module)
         case .missingFileController(let itemId, let module):
-            "Item \(itemId.uuidString) has an attachment, but \(module.title) cannot store files."
+            String(localized: "Item \(itemId.uuidString) has an attachment, but \(module.title) cannot store files.", bundle: .module)
         case .attachmentSizeMismatch(_, let expected, let actual):
-            "Attachment size mismatch: expected \(expected) bytes but loaded \(actual)."
+            String(localized: "Attachment size mismatch: expected \(expected) bytes but loaded \(actual).", bundle: .module)
         case .attachmentHashMismatch:
-            "Attachment integrity validation failed."
+            String(localized: "Attachment integrity validation failed.", bundle: .module)
         case .attachmentInstallFailed:
-            "The attachment could not be installed."
+            String(localized: "The attachment could not be installed.", bundle: .module)
         case .duplicateAttachmentFileID(let fileID):
-            "More than one selected attachment uses file id \(fileID.uuidString)."
+            String(localized: "More than one selected attachment uses file id \(fileID.uuidString).", bundle: .module)
         case .itemChangedDuringImport(let itemId, let module):
-            "\(module.title) item \(itemId.uuidString) changed on this device while its attachment was installed. Nothing was imported; start the import again."
+            String(localized: "\(module.title) item \(itemId.uuidString) changed on this device while its attachment was installed. Nothing was imported; start the import again.", bundle: .module)
         case .rollbackIncomplete(let originalError, let rollbackErrors):
-            "The import failed (\(originalError)), and rollback was incomplete: \(rollbackErrors.joined(separator: "; "))"
+            String(localized: "The import failed (\(originalError)), and rollback was incomplete: \(rollbackErrors.joined(separator: "; "))", bundle: .module)
         }
     }
 }

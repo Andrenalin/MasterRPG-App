@@ -302,7 +302,7 @@ private struct FoundrySourceIdentitySection: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            if model.selectedSourceScopeID == entry.scopeID {
+                            if model.selectedSourceScopeId == entry.scopeID {
                                 Image(systemName: "checkmark.circle.fill")
                             }
                         }
@@ -315,7 +315,7 @@ private struct FoundrySourceIdentitySection: View {
                         Text("Import as a new source", bundle: .module)
                         Spacer()
                         if case .requiresSelection(_, let proposedScopeID) = model.sourceResolution,
-                           model.selectedSourceScopeID == proposedScopeID {
+                           model.selectedSourceScopeId == proposedScopeID {
                             Image(systemName: "checkmark.circle.fill")
                         }
                     }
@@ -507,10 +507,12 @@ private struct FoundryExternalImportReviewView: View {
                 }
             }
 
+            // Grouped once per body. The filter ran over every batch item once per module,
+            // about thirteen passes over a large package on each state change.
+            // See CODE_AUDIT_21 §7.10.
+            let itemsByModule = Dictionary(grouping: mappedImport.batch.items.filter { !$0.isAuxiliary }, by: \.module)
             ForEach(NetworkModules.allCases, id: \.self) { module in
-                let moduleItems = mappedImport.batch.items.filter {
-                    $0.module == module && !$0.isAuxiliary
-                }
+                let moduleItems = itemsByModule[module] ?? []
                 if !moduleItems.isEmpty {
                     Section {
                         ForEach(moduleItems) { item in

@@ -367,8 +367,11 @@ public extension FileUrlDataController {
         let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: destination)
         guard exists else { return fileUrl }
         let destinationPath = Self.normalizedPath(destination)
+        // By name first, like `isSameStoredFile`. See CODE_AUDIT_21 §7.1.
+        let destinationName = destination.lastPathComponent
         let isReferenced = referencedFileUrls.contains { referenced in
-            storedLocation(of: referenced).map { Self.normalizedPath($0) == destinationPath } ?? false
+            guard let location = storedLocation(of: referenced), location.lastPathComponent == destinationName else { return false }
+            return Self.normalizedPath(location) == destinationPath
         }
         if !isReferenced,
            let existingHash = try? await FileManager.default.contentHash(coordinatingAccessAt: destination),
@@ -389,8 +392,14 @@ public extension FileUrlDataController {
     }
 
     /// Whether two references resolve to the same stored file.
+    ///
+    /// The file names are compared first: two names are never one file, and that needs no
+    /// file-system call. The full comparison resolves symlinks for both paths, and the import
+    /// and game-end checks run it for every imported file against every library item.
+    /// See CODE_AUDIT_21 §7.1.
     func isSameStoredFile(_ lhs: FileUrl, _ rhs: FileUrl) -> Bool {
-        guard let lhsLocation = storedLocation(of: lhs), let rhsLocation = storedLocation(of: rhs) else { return false }
+        guard let lhsLocation = storedLocation(of: lhs), let rhsLocation = storedLocation(of: rhs),
+              lhsLocation.lastPathComponent == rhsLocation.lastPathComponent else { return false }
         return Self.normalizedPath(lhsLocation) == Self.normalizedPath(rhsLocation)
     }
 

@@ -47,7 +47,7 @@ extension PdfRootModel {
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
         } catch {
-            Logger.appIntents.debug("Failed to donate OpenPdfIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+            Logger.appIntents.debug("Failed to donate OpenPdfIntent for Siri/Shortcuts: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
 #endif
     }

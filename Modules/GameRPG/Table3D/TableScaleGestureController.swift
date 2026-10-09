@@ -79,7 +79,7 @@ final class TableScaleGestureController {
                 processHandAnchor(update.anchor)
             }
         } catch {
-            Logger.sharePlay.error("Hand tracking session error: \(error.localizedDescription, privacy: .public)")
+            Logger.sharePlay.error("Hand tracking session error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

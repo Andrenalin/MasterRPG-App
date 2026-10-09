@@ -121,10 +121,4 @@ extension PhotoEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension PhotoEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: NetworkModules.photo.icon))
-    }
-}
-
 #endif

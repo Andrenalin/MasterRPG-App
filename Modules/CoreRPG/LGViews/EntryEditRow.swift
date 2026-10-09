@@ -35,13 +35,13 @@ public struct EntryEditRow: View {
                 HStack {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: listDisplayModel, entryId: entry.id)
                     
-                    if editController.additioanlEnrtryViewType == .custom {
+                    if editController.additionalEntryViewType == .custom {
                         editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), entry: entry, textModel: nil)
                     }
                 }
             }
             
-            if editController.additioanlEnrtryViewType == .inline {
+            if editController.additionalEntryViewType == .inline {
                 editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), entry: entry, textModel: linkTextModel)
             } else {
                 LinkHighlightTextView(model: linkTextModel)
@@ -51,7 +51,7 @@ public struct EntryEditRow: View {
             }
             
             if !hasThumbnail {
-                if editController.additioanlEnrtryViewType == .custom {
+                if editController.additionalEntryViewType == .custom {
                     editController.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: root.configurable.module), entry: entry, textModel: nil)
                 }
             }

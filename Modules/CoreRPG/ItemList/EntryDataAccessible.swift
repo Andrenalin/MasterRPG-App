@@ -36,10 +36,10 @@ public extension EntryDataAccessible {
     }
 }
 
-public struct EmtpyEntryViewModel: EntryDataAccessible, Identifiable, Equatable, Sendable {
-    public static let empty: EmtpyEntryViewModel = EmtpyEntryViewModel()
-    public static func newChild(id: UUID) -> EmtpyEntryViewModel {
-        EmtpyEntryViewModel(childId: id)
+public struct EmptyEntryViewModel: EntryDataAccessible, Identifiable, Equatable, Sendable {
+    public static let empty: EmptyEntryViewModel = EmptyEntryViewModel()
+    public static func newChild(id: UUID) -> EmptyEntryViewModel {
+        EmptyEntryViewModel(childId: id)
     }
 
     public var id: UUID = UUID()
@@ -48,7 +48,7 @@ public struct EmtpyEntryViewModel: EntryDataAccessible, Identifiable, Equatable,
     public var content: String = ""
     public var displayState: Int = 0
     
-    public func duplicate() -> EmtpyEntryViewModel {
+    public func duplicate() -> EmptyEntryViewModel {
         self
     }
     

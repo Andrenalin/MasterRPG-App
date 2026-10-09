@@ -11,10 +11,8 @@ import SwiftUI
 
 @MainActor @Observable
 final class MapEditModel: Sendable {
-    let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
-    let selectionTable: ItemSelectionModel = ItemSelectionModel()
 }
 
 struct EditController: Sendable {
@@ -95,7 +93,7 @@ extension EditController: EntryDataEditable {
     }
     
     public var thumbnailEntryViewType: ThumbnailEntryViewType { .photo }
-    public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
+    public var additionalEntryViewType: AdditionalEntryViewType { .custom }
 
     @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView {
         AnyView(AdditionalEntryRow(source: source, entry: entry).equatable())

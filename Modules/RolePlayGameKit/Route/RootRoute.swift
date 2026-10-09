@@ -112,10 +112,6 @@ extension RootRoute: NavigationDestination {
         RouteDestinationView(route: self)
     }
     
-    public static var allTabs: [RootRoute] {
-        [.game, .adventures, .values, .rules, .pdfs, .tables, .maps, .photos, .audios, .space, .weathers, .dice, .settings, .search]
-    }
-
     public static var visionTabs: [RootRoute] {
         [.game, .adventures, .values, .search, .settings]
     }

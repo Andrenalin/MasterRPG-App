@@ -273,16 +273,17 @@ public extension CoreDataController {
             // uuid row) the record in between. See CODE_AUDIT_16 §3.11.
             do {
                 try await context.perform {
-                    let existingUUIDs = try self.existingUUIDsInContext(uniqueOperations.map { $0.id })
+                    // One fetch for all rows. After the batched existence check every update and
+                    // delete fetched its row on its own: n single-row fetches for an import of
+                    // n items. See CODE_AUDIT_21 §7.4.
+                    let existingRows = try self.existingRowsInContext(uniqueOperations.map { $0.id })
                     for operation in uniqueOperations {
                         if operation.isDeletion {
-                            if existingUUIDs.contains(operation.id), let existing = self.fetchCoreData(uuid: operation.id) {
+                            if let existing = existingRows[operation.id] {
                                 self.context.delete(existing)
                             }
-                        } else if existingUUIDs.contains(operation.id) {
-                            if let existing = self.fetchCoreData(uuid: operation.id) {
-                                operation.updater(operation.model, existing)
-                            }
+                        } else if let existing = existingRows[operation.id] {
+                            operation.updater(operation.model, existing)
                         } else {
                             let new = DataType(context: self.context)
                             operation.updater(operation.model, new)
@@ -398,6 +399,25 @@ public extension CoreDataController {
     /// Batch exists check for multiple UUIDs
     /// Must be called on the context's queue. A failed lookup throws rather than reading as
     /// "nothing exists".
+    /// The rows with these uuids, as the context sees them: an object fetch includes the
+    /// context's unsaved inserts and leaves out its unsaved deletes, which is what
+    /// `existingUUIDsInContext` works out by hand for its dictionary fetch. Of rows sharing a
+    /// uuid the first fetched is taken, as `fetchCoreData(uuid:)` does.
+    /// See CODE_AUDIT_20 §5.7, CODE_AUDIT_21 §7.4.
+    func existingRowsInContext(_ uuids: [UUID]) throws -> [UUID: DataType] {
+        guard !uuids.isEmpty else { return [:] }
+        let request = DataType.fetchRequest()
+        request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
+        request.includesPendingChanges = true
+        guard let rows = try context.fetch(request) as? [DataType] else { return [:] }
+        var rowsByUUID: [UUID: DataType] = [:]
+        for row in rows where !row.isDeleted {
+            guard let uuid = row.uuid, rowsByUUID[uuid] == nil else { continue }
+            rowsByUUID[uuid] = row
+        }
+        return rowsByUUID
+    }
+
     func existingUUIDsInContext(_ uuids: [UUID]) throws -> Set<UUID> {
         guard !uuids.isEmpty else { return Set() }
         let request = NSFetchRequest<NSDictionary>(entityName: String(describing: DataType.self))

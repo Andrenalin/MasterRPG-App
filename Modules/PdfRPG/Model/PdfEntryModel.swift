@@ -86,10 +86,3 @@ extension PdfEntryModel: ItemDiffComparable {
     }
 }
 
-extension PdfEntryModel {
-    public static func createEntry(content: String, page: String, bounds: CGRect) -> PdfEntryModel {
-        let name = String(content.split(separator: " ").first ?? "Unnamed")
-        let entry = PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: page, bounds: bounds)
-        return entry
-    }
-}

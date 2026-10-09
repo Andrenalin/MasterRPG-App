@@ -13,15 +13,6 @@ import PDFKit
 @MainActor
 @Suite(.serialized, .snapshots, .tags(.snapshot))
 struct GeneratorRPGGeneratedPreviewSnapshotTests {
-    // snapshot-root: GeneratorRPG::CheckLanguageSupport
-    @Test("CheckLanguageSupport")
-    func snapshotCheckLanguageSupport() async throws {
-        try await assertPreviewSnapshot("CheckLanguageSupport") {
-            GeneratorRPG.CheckLanguageSupport()
-                .environment(FoundationManager())
-        }
-    }
-
     // snapshot-root: GeneratorRPG::FoundationBasicView
     @Test("FoundationBasicView")
     func snapshotFoundationBasicView() async throws {
@@ -39,14 +30,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("IntelligenceUnavailableView") {
             GeneratorRPG.IntelligenceUnavailableView()
                 .environment(FoundationManager())
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::TokenUsageBar
-    @Test("TokenUsageBar")
-    func snapshotTokenUsageBar() async throws {
-        try await assertPreviewSnapshot("TokenUsageBar") {
-            GeneratorRPG.TokenUsageBar(currentTokenCount: 4_200, maxContextSize: 8_192, tokenUsageFraction: 0.51)
         }
     }
 

@@ -242,7 +242,7 @@ extension PlayerController {
                     // but this item was already removed from the deferred
                     // queue above, so ask the master to resend instead of
                     // only logging. See CODE_AUDIT_Network §5.23.
-                    Logger.networking.error("PlayerController: Deferred Space reveal failed: \(error.localizedDescription, privacy: .public)")
+                    Logger.networking.error("PlayerController: Deferred Space reveal failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                     let request = await response(for: model, isSuccess: true, requestData: true)
                     await sendUpstream(model: request)
                 }

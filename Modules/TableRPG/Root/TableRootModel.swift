@@ -215,13 +215,6 @@ extension TableRootModel {
 // Other
 
 public extension TableRootModel {
-    @MainActor
-    func listItems() -> [TableModel] {
-        itemController.itemDataModel.items.map {
-            itemController.itemOrEmpty(for: $0)
-        }
-    }
-
     func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }

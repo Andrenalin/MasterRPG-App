@@ -17,7 +17,7 @@ public struct FileImporterView: View {
     let module: NetworkModules
 
     @State private var showImporter = false
-    @State private var showRemoteURLImporter = false
+    @State private var showRemoteUrlImporter = false
     /// A picker failure, shown instead of being dropped: a failed pick looked like nothing
     /// happened. See CODE_AUDIT_Folder §8.6.
     @State private var pickerError: String?
@@ -40,17 +40,17 @@ public struct FileImporterView: View {
                 .selectedRoundButton(title: importFileTitle, module: module, isSelected: showImporter)
 
                 Button {
-                    showRemoteURLImporter.toggle()
+                    showRemoteUrlImporter.toggle()
                 } label: {
                     Label {
                         Text(importUrlTitle)
                     } icon: {
                         Image(systemName: "link.badge.plus")
-                            .symbolVariant(showRemoteURLImporter ? .circle.fill : .none)
+                            .symbolVariant(showRemoteUrlImporter ? .circle.fill : .none)
                             .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     }
                 }
-                .selectedRoundButton(title: importUrlTitle, module: module, isSelected: showRemoteURLImporter)
+                .selectedRoundButton(title: importUrlTitle, module: module, isSelected: showRemoteUrlImporter)
             }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
                 switch result {
@@ -77,7 +77,7 @@ public struct FileImporterView: View {
                 Text(verbatim: pickerError ?? "")
             }
             .remoteFileURLImporter(
-                isPresented: $showRemoteURLImporter,
+                isPresented: $showRemoteUrlImporter,
                 editControllable: editControllable,
                 itemId: itemId
             )

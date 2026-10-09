@@ -10,6 +10,24 @@ struct PersistenceIssueBannerViewModifier: ViewModifier {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// What the banner says, as far as VoiceOver is told: its headline, and what it counts.
+    private struct AnnouncedIssue: Equatable {
+        let headline: String
+        let saveError: String?
+        let fileError: String?
+        let discardedEditCount: Int
+    }
+
+    private var announcedIssue: AnnouncedIssue? {
+        guard center.hasIssue else { return nil }
+        return AnnouncedIssue(
+            headline: String(localized: PersistenceIssueBanner.headline(for: center)),
+            saveError: center.saveError,
+            fileError: center.fileError,
+            discardedEditCount: center.discardedEditCount
+        )
+    }
+
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .top) {
@@ -19,13 +37,13 @@ struct PersistenceIssueBannerViewModifier: ViewModifier {
                 }
             }
             .animation(reduceMotion ? nil : .default, value: center.hasIssue)
-            .onChange(of: center.hasIssue) { _, hasIssue in
-                // VoiceOver is told when edits fail to save or are discarded; the banner alone
-                // appears silently. See CODE_AUDIT_20 §8.3.
-                guard hasIssue else { return }
-                AccessibilityNotification.Announcement(
-                    String(localized: PersistenceIssueBanner.headline(for: center))
-                ).post()
+            // VoiceOver is told when edits fail to save or are discarded; the banner alone appears
+            // silently. Keyed on the headline, not on `hasIssue`: a second issue that arrives
+            // while the banner is up changes what it says and was not announced.
+            // See CODE_AUDIT_20 §8.3, CODE_AUDIT_21 §8.4.
+            .onChange(of: announcedIssue) { _, issue in
+                guard let issue else { return }
+                AccessibilityNotification.Announcement(issue.headline).post()
             }
     }
 }
@@ -77,7 +95,7 @@ struct PersistenceIssueBanner: View {
             .buttonStyle(.borderless)
         }
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .background(.regularMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
         .padding(.horizontal)
     }
 }

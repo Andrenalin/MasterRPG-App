@@ -66,7 +66,7 @@ extension EditController {
         } else {
             name = String(localized: "Unnamed", bundle: .module).localizedString
         }
-        return PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: page, bounds: bounds, displayState: 0)
+        return PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: page, bounds: bounds, displayState: DisplayStateMask.fullVisible.rawValue)
     }
 }
 
@@ -108,7 +108,7 @@ extension EditController {
                 content: section.summary,
                 pageNumber: pageNumberString,
                 bounds: .zero,
-                displayState: 0
+                displayState: DisplayStateMask.fullVisible.rawValue
             )
             newEntries.append(entry)
         }

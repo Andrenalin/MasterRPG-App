@@ -60,7 +60,7 @@ public final class AppSettingsModel: Sendable {
     public var firstLaunch: Bool = true {
         didSet {
             guard oldValue != firstLaunch else { return }
-            defaults?.set(firstLaunch, forKey: AppSettingsModel.firstLunchKey)
+            defaults?.set(firstLaunch, forKey: AppSettingsModel.firstLaunchKey)
         }
     }
     
@@ -172,7 +172,7 @@ public final class AppSettingsModel: Sendable {
     // MARK: - Init Settings
     
     private func initSettings(from defaults: UserDefaults) {
-        firstLaunch = defaults.value(forKey: AppSettingsModel.firstLunchKey) as? Bool ?? true
+        firstLaunch = defaults.value(forKey: AppSettingsModel.firstLaunchKey) as? Bool ?? true
         appColorScheme = AppColorScheme(rawValue: defaults.integer(forKey: AppSettingsModel.appColorSchemeKey)) ?? .system
         recentThemeIDs = defaults.stringArray(forKey: AppSettingsModel.recentThemeIDsKey)?
             .compactMap(AppThemeID.init(rawValue:)) ?? []
@@ -235,7 +235,9 @@ public final class AppSettingsModel: Sendable {
     // MARK: - Keys
     
     private static let migrationKey = "MasterRPGMigrationAppGroup"
-    private static let firstLunchKey = "FirstLunchMasterRPG"
+    /// The stored key keeps its historic spelling: renaming it would reset the flag on every
+    /// installed device. See CODE_AUDIT_21 §9.9.
+    private static let firstLaunchKey = "FirstLunchMasterRPG"
     private static let appColorSchemeKey = "appColorScheme"
     private static let appThemeIDKey = "appThemeID"
     private static let recentThemeIDsKey = "recentThemeIDs"

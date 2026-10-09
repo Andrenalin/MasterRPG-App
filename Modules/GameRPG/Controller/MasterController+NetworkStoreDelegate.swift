@@ -313,7 +313,7 @@ extension MasterController {
             return false
         } catch {
             // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
-            Logger.networking.error("MasterController: Failed to process \(model.debugDescription, privacy: .private): \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("MasterController: Failed to process \(model.debugDescription, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             return false
         }
     }

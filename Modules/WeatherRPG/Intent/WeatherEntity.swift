@@ -100,10 +100,4 @@ extension WeatherEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension WeatherEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "cloud.bolt.rain"))
-    }
-}
-
 #endif

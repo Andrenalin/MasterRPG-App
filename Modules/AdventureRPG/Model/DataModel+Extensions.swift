@@ -12,10 +12,6 @@ extension RPGAdventure {
         get { RPGAdventureEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGAdventureEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGAdventure: SpotlightIndexerAttribute {

@@ -6,7 +6,7 @@ import Foundation
 struct SheetEntryReviewPreviewFixture {
     init(isExpanded: Bool = true) {
         let itemId = UUID()
-        var existingEntry = EmtpyEntryViewModel.empty
+        var existingEntry = EmptyEntryViewModel.empty
         existingEntry.id = UUID()
         existingEntry.name = "Hidden Door"
         existingEntry.content = "A concealed stone passage."

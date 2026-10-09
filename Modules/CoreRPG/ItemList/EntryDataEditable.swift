@@ -37,7 +37,7 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID
 
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
-    var additioanlEnrtryViewType: AdditionalEntryViewType { get }
+    var additionalEntryViewType: AdditionalEntryViewType { get }
     
     @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView
     
@@ -139,7 +139,7 @@ public extension EntryDataEditable {
     }
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
-    var additioanlEnrtryViewType: AdditionalEntryViewType { .none }
+    var additionalEntryViewType: AdditionalEntryViewType { .none }
     
     @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }
     

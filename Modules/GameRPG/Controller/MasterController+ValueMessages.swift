@@ -99,7 +99,7 @@ extension MasterController {
             // no way to learn the import failed. Tell the player explicitly
             // so it can clear that flag and retry `sendCharacter()`. See
             // CODE_AUDIT_Network §5.24.
-            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             await send(
                 type: .update,
                 subtype: .failed,

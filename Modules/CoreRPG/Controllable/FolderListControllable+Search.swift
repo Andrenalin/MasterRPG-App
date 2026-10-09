@@ -11,6 +11,11 @@ extension FolderListControllable {
     /// this function only caches model identity and restores open state.
     func resetFilter() {
         listModel.list = buildList()
+        // Rows of this module's items that no longer exist; a row of another module's item (the
+        // link inspector) never had a model here and is left alone. See CODE_AUDIT_21 §7.6.
+        listModel.pruneCache { row in
+            row.model != nil && itemControllable.itemSync(for: row.source.itemId) == nil
+        }
         // When a detail model is active (scoped inspector / focused character inspector),
         // also rebuild it so toggle actions are immediately reflected in the detail view.
         // Without this, resetFilter only updates listModel.list (the main list) while the

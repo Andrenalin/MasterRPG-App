@@ -219,10 +219,6 @@ extension RuleRootModel: ItemRootControllable {
 extension RuleRootModel: RootExportControllable {}
 
 public extension RuleRootModel {
-    func listItems() -> [RuleModel] {
-        itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }
-    }
-
     func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }

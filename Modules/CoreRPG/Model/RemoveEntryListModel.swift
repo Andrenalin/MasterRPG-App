@@ -28,7 +28,7 @@ public final class RemoveEntryListModel {
 struct RemoveLinkTreeModel: Identifiable {
     var item: ItemRowModel
     var link: AffectedItemModel?
-    var canRemoved: Bool
+    var canRemove: Bool
     var counter: Int
     
     var id: UUID {

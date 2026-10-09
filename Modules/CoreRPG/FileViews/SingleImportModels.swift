@@ -225,19 +225,40 @@ extension SingleItemImportModel {
         let existingEntries = item.existing?.entries ?? []
         let importedEntries = item.imported?.entries ?? []
         let mergedEntries = item.merged.entries
+        // Indexed by id once. Collecting the ids with `Array.contains` and then three
+        // `first(where:)` per entry was quadratic, and hex cells are entries: a map with a few
+        // thousand of them cost tens of millions of comparisons per item.
+        // See CODE_AUDIT_21 §7.2.
+        func firstById(_ entries: [any EntryDataAccessible]) -> [UUID: any EntryDataAccessible] {
+            Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        }
+        let existingById = firstById(existingEntries)
+        let importedById = firstById(importedEntries)
+        let mergedById = firstById(mergedEntries)
+        var seenIds: Set<UUID> = []
         let entries = (existingEntries + importedEntries + mergedEntries)
             .map(\.id)
-            .reduce(into: [UUID]()) { if !$0.contains($1) { $0.append($1) } }
-            .map { SingleItemImportModel.from(item: item, entryId: $0) }
+            .filter { seenIds.insert($0).inserted }
+            .map { id in
+                SingleItemImportModel.from(entry: SingleReviewEntry(
+                    existing: existingById[id],
+                    imported: importedById[id],
+                    merged: mergedById[id]
+                ))
+            }
 
         return SingleItemImportModel(item: item, properties: props, entries: entries, references: [])
     }
 
     static func from(item: SingleReviewItem, entryId: UUID) -> SingleEntryImportModel {
-        let existing = item.existing?.entries.first(where: { $0.id == entryId })
-        let imported = item.imported?.entries.first(where: { $0.id == entryId })
-        let merged = item.merged.entries.first(where: { $0.id == entryId })
-        let entry = SingleReviewEntry(existing: existing, imported: imported, merged: merged)
+        from(entry: SingleReviewEntry(
+            existing: item.existing?.entries.first(where: { $0.id == entryId }),
+            imported: item.imported?.entries.first(where: { $0.id == entryId }),
+            merged: item.merged.entries.first(where: { $0.id == entryId })
+        ))
+    }
+
+    static func from(entry: SingleReviewEntry) -> SingleEntryImportModel {
         let props = [
             SingleReviewEntryProperty(
                 id: UUID(),

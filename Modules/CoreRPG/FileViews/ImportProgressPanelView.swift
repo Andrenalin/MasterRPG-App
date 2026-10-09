@@ -218,7 +218,7 @@ public struct ImportProgressPanelView: View {
                                 navigator.dismiss()
                             } label: {
                                 Label {
-                                    Text("Ok", bundle: .module)
+                                    Text("OK", bundle: .module)
                                 } icon: {
                                     Image(systemName: "checkmark")
                                 }
@@ -230,9 +230,9 @@ public struct ImportProgressPanelView: View {
                 .themedSurface()
             }
         }
-        .onChange(of: initialURL, initial: true) { _, newURL in
-            guard let newURL, importRequest == nil, proposedUrl == nil else { return }
-            proposedUrl = newURL
+        .onChange(of: initialURL, initial: true) { _, newUrl in
+            guard let newUrl, importRequest == nil, proposedUrl == nil else { return }
+            proposedUrl = newUrl
             importModel.importMode = .manual
         }
         .onChange(of: outcome, initial: false) { old, new in

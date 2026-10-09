@@ -45,6 +45,8 @@ struct GamePinActionMenu: View {
     let game: GameTableModel
     let viewport: GameTableViewport
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// The pin the popover is open on: selected, and already projected into the table view.
     private var presentedPin: MapPinModel? {
         guard game.isGameMaster,
@@ -68,8 +70,9 @@ struct GamePinActionMenu: View {
                 .transition(.opacity)
             }
         }
-        // Fades the popover in and out; following the pin stays immediate.
-        .animation(.default, value: presentedPin?.id)
+        // Fades the popover in and out; following the pin stays immediate. No fade with
+        // Reduce Motion. See CODE_AUDIT_21 §8.4.
+        .animation(reduceMotion ? nil : .default, value: presentedPin?.id)
     }
 }
 

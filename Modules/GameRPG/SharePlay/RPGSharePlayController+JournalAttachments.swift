@@ -57,7 +57,7 @@ extension RPGSharePlayController {
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
-                Logger.sharePlay.error("Exception in load attachment metaData \(error.localizedDescription, privacy: .public)")
+                Logger.sharePlay.error("Exception in load attachment metaData \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
 
@@ -152,7 +152,7 @@ extension RPGSharePlayController {
                 // retryable for the next journal snapshot after the short local
                 // retry window, and use the messenger repair path immediately.
                 journalTracker.retryProcessing(attachmentId: attachment.id)
-                Logger.sharePlay.warning("Journal attachment \(attachment.id, privacy: .public) remained unavailable after retries: \(error.localizedDescription, privacy: .public). Requesting messenger recovery.")
+                Logger.sharePlay.warning("Journal attachment \(attachment.id, privacy: .public) remained unavailable after retries: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private). Requesting messenger recovery.")
                 // Reveal metadata can still use an exact-version local copy.
                 // Store/update metadata needs an explicit byte request because
                 // its normal handlers may ACK or fail without asking again.

@@ -39,13 +39,6 @@ public extension PhotoRootModel {
         return (image, model.degrees)
     }
 
-    @MainActor
-    func listItems() -> [PhotoModel] {
-        itemController.itemDataModel.items.map {
-            itemController.itemOrEmpty(for: $0)
-        }
-    }
-
     func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }

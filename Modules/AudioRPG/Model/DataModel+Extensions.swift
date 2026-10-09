@@ -12,10 +12,6 @@ extension RPGAudio {
         get { RPGAudioEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGAudioEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGAudio: SpotlightIndexerAttribute {

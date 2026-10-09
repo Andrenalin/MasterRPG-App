@@ -93,7 +93,7 @@ private extension AudioPlayerSession {
             // already implicit for `.playback` + `.longFormAudio`.
             try audioSession.setCategory(.playback, mode: .default, policy: .longFormAudio)
         } catch {
-            Logger.audioController.error("An error occurred setting the audio session category: \(error.localizedDescription, privacy: .public)")
+            Logger.audioController.error("An error occurred setting the audio session category: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -112,7 +112,7 @@ private extension AudioPlayerSession {
             // setActive is a blocking AVAudioSession call — keep it off the main actor.
             try audioSession.setActive(true)
         } catch {
-            Logger.audioController.error("An error occurred activating the audio session: \(error.localizedDescription, privacy: .public)")
+            Logger.audioController.error("An error occurred activating the audio session: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

@@ -22,16 +22,6 @@ struct GameRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::GameToolBarButtonView
-    @Test("GameToolBarButtonView")
-    func gameToolBarButtonView() async throws {
-        try await assertDynamicSnapshot("GameToolBarButtonView") {
-            GameToolBarButtonView(valueType: .adventure, showType: .constant(.adventure))
-                .environment(ScenesManager())
-                .padding()
-        }
-    }
-
     // snapshot-root: GameRPG::SharingOptionsSection
     @Test("SharingOptionsSection")
     func sharingOptionsSection() async throws {

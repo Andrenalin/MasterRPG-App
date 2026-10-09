@@ -595,7 +595,7 @@ struct EditControllerTests {
 
         #expect(sut.canAddGroups)
         #expect(sut.linkModules == [.value, .dice, .pdf, .table])
-        #expect(sut.additioanlEnrtryViewType == .inline)
+        #expect(sut.additionalEntryViewType == .inline)
         _ = sut.additionalRowView(for: ItemRowModel(itemId: itemId, entryId: targetEntry.id, typeId: .value), entry: targetEntry, textModel: nil)
         _ = sut.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: itemId, entryId: targetEntry.id, typeId: .value))
         _ = sut.quickEditorDestination(itemRowModel: ItemRowModel(itemId: itemId, typeId: .value))

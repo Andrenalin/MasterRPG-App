@@ -297,7 +297,7 @@ extension GameNetworkModel: MessageMapper {
         do {
             return try JSONCoding.decoder.decode(GameNetworkModel.self, from: data)
         } catch {
-            Logger.networking.error("GameNetworkModel: Failed to decode inbound message: \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("GameNetworkModel: Failed to decode inbound message: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return nil
     }

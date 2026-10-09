@@ -62,8 +62,6 @@ public final class DataBaseModel {
     public private(set) var hasError: Bool = false
     public private(set) var errorMessage: String?
     public private(set) var canRecover: Bool = false
-    public private(set) var accountAvailable: Bool = false
-    
     public var hasCloudKit = false
     public var hasContextSet = false
     public var coreDataInitModel: CoreDataInitModel?

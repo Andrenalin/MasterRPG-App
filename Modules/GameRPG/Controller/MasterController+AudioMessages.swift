@@ -157,7 +157,7 @@ extension MasterController {
             }
         } catch {
             gameModel.audioTransferPlayers[id]?.subtract(newPlayers)
-            Logger.networking.error("MasterController: Cannot prepare pending audio \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("MasterController: Cannot prepare pending audio \(id, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             scheduleAudioPlayRetry(id: id)
         }
     }
@@ -200,7 +200,7 @@ extension MasterController {
     /// sender only — unlike the broadcast `.show` sends of the success paths — because the
     /// failure is specific to this one contribution. See CODE_AUDIT_Network §5.12.
     private func reportFailedAudioContribution(_ model: GameNetworkModel, error: any Error) async {
-        Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
+        Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         await send(
             type: .reveal,
             subtype: .failed,
@@ -229,7 +229,7 @@ extension MasterController {
             do {
                 try await root.audioRoot.audioGameControllable.play(with: data)
             } catch {
-                Logger.networking.error("MasterController: Failed to start audio playback for \(data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                Logger.networking.error("MasterController: Failed to start audio playback for \(data.id, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
     }

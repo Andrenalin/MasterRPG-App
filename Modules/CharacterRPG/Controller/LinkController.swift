@@ -149,7 +149,7 @@ extension LinkController: LinkControllable {
                 } else {
                     let updateChild = child.copy()
                     updateChild.parentId = item.id
-                    updateChild.displayState = 1
+                    updateChild.displayState = DisplayStateMask.groupHidden.rawValue
                     itemController.replace(model: updateChild, isInsert: false)
                 }
             }

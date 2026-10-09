@@ -227,13 +227,6 @@ extension CharacterRootModel {
 // MARK: - Actions
 
 extension CharacterRootModel {
-    @MainActor
-    public func listItems() -> [ValueModel] {
-        itemController.itemDataModel.items.map {
-            itemController.itemOrEmpty(for: $0)
-        }
-    }
-
     public func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }

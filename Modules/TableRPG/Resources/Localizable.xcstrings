@@ -213,23 +213,6 @@
         }
       }
     },
-    "Cancel" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abbrechen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ยกเลิก"
-          }
-        }
-      }
-    },
     "Choose the results for each generated table." : {
       "localizations" : {
         "de" : {
@@ -252,23 +235,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Schließen"
-          }
-        }
-      }
-    },
-    "Confirm" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bestätigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ยืนยัน"
           }
         }
       }
@@ -567,23 +533,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รายการ"
-          }
-        }
-      }
-    },
-    "Entries replaced" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einträge ersetzt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แทนที่รายการแล้ว"
           }
         }
       }
@@ -976,23 +925,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "An alle senden"
-          }
-        }
-      }
-    },
-    "Share" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teilen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แชร์"
           }
         }
       }

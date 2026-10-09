@@ -801,47 +801,47 @@ public enum FoundryImportError: Error, Equatable, LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .fileTooLarge(let size):
-            "The Foundry package is too large (\(size) bytes)."
+            String(localized: "The Foundry package is too large (\(size) bytes).", bundle: .module)
         case .invalidArchive(let reason):
-            "The Foundry ZIP archive is invalid: \(reason)"
+            String(localized: "The Foundry ZIP archive is invalid: \(reason)", bundle: .module)
         case .encryptedArchive:
-            "Encrypted ZIP archives are not supported."
+            String(localized: "Encrypted ZIP archives are not supported.", bundle: .module)
         case .unsupportedZIPCompression(let method):
-            "ZIP compression method \(method) is not supported."
+            String(localized: "ZIP compression method \(Int(method)) is not supported.", bundle: .module)
         case .unsupportedLevelDBCompression(let method):
-            "LevelDB compression method \(method) is not supported."
+            String(localized: "LevelDB compression method \(Int(method)) is not supported.", bundle: .module)
         case .unsupportedLevelDBLog(let path):
-            "The mutable LevelDB log \(path) contains data that cannot be imported safely. Compact the Foundry pack first."
+            String(localized: "The mutable LevelDB log \(path) contains data that cannot be imported safely. Compact the Foundry pack first.", bundle: .module)
         case .unsupportedLevelDBTableSet(let pack, let tableCount):
-            "The Foundry compendium \(pack) contains \(tableCount) LevelDB tables. Import currently requires a compacted pack with exactly one table."
+            String(localized: "The Foundry compendium \(pack) contains \(tableCount) LevelDB tables. Import currently requires a compacted pack with exactly one table.", bundle: .module)
         case .corruptLevelDB(let reason):
-            "The Foundry compendium database is corrupt: \(reason)"
+            String(localized: "The Foundry compendium database is corrupt: \(reason)", bundle: .module)
         case .missingManifest:
-            "The package does not contain a supported Foundry manifest."
+            String(localized: "The package does not contain a supported Foundry manifest.", bundle: .module)
         case .ambiguousManifest:
-            "The package contains more than one equally likely Foundry manifest."
+            String(localized: "The package contains more than one equally likely Foundry manifest.", bundle: .module)
         case .invalidManifest(let reason):
-            "The Foundry package manifest is invalid: \(reason)"
+            String(localized: "The Foundry package manifest is invalid: \(reason)", bundle: .module)
         case .invalidDocument(let pack, let key):
-            "The Foundry compendium \(pack) contains an invalid document at \(key)."
+            String(localized: "The Foundry compendium \(pack) contains an invalid document at \(key).", bundle: .module)
         case .missingPack(let name):
-            "The Foundry compendium \(name) is missing."
+            String(localized: "The Foundry compendium \(name) is missing.", bundle: .module)
         case .tooManyDocuments(let count):
-            "The Foundry package contains too many documents (\(count))."
+            String(localized: "The Foundry package contains too many documents (\(count)).", bundle: .module)
         case .tooManyUniversalVTTElements(let count):
-            "The Universal VTT map contains too many geometry elements (\(count))."
+            String(localized: "The Universal VTT map contains too many geometry elements (\(count)).", bundle: .module)
         case .resourceUnavailable(let path):
-            "The Foundry resource \(path) is not packaged in the selected artifact."
+            String(localized: "The Foundry resource \(path) is not packaged in the selected artifact.", bundle: .module)
         case .duplicateResourceRequest:
-            "A Foundry resource was requested more than once in the same batch."
+            String(localized: "A Foundry resource was requested more than once in the same batch.", bundle: .module)
         case .sourceMismatch:
-            "The selected Foundry source does not match the package that was inspected."
+            String(localized: "The selected Foundry source does not match the package that was inspected.", bundle: .module)
         case .resourceIntegrityFailure(let path):
-            "The Foundry resource \(path) changed or failed its integrity check."
+            String(localized: "The Foundry resource \(path) changed or failed its integrity check.", bundle: .module)
         case .bareManifestRequiresContainer(let filename):
-            "Select the folder or ZIP package containing \(filename), not the manifest file by itself."
+            String(localized: "Select the folder or ZIP package containing \(filename), not the manifest file by itself.", bundle: .module)
         case .unsupportedSource:
-            "Select a supported Foundry package, document export, database, bridge file, or Universal VTT map."
+            String(localized: "Select a supported Foundry package, document export, database, bridge file, or Universal VTT map.", bundle: .module)
         }
     }
 }

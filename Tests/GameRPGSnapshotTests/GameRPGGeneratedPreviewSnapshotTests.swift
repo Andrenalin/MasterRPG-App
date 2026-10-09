@@ -42,15 +42,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::BattleRoundSidebarButton
-    @Test("BattleRoundSidebarButton")
-    func snapshotBattleRoundSidebarButton() async throws {
-        try await assertPreviewSnapshot("BattleRoundSidebarButton") {
-            GameRPG.BattleRoundSidebarButton()
-                .environment(GameScreenModel())
-        }
-    }
-
     // snapshot-root: GameRPG::BattleRoundWindowView
     @Test("BattleRoundWindowView")
     func snapshotBattleRoundWindowView() async throws {
@@ -118,14 +109,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
                 sceneId: SceneId.sceneId(for: .map)
             )
             .environment(ScenesManager())
-        }
-    }
-
-    // snapshot-root: GameRPG::IOSGameConnectionStatusView
-    @Test("IOSGameConnectionStatusView")
-    func snapshotIOSGameConnectionStatusView() async throws {
-        try await assertPreviewSnapshot("IOSGameConnectionStatusView") {
-            GameRPG.IOSGameConnectionStatusView(status: .sharePlayWaiting)
         }
     }
 
@@ -398,29 +381,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::OverlayGameSideContent
-    @Test("OverlayGameSideContent")
-    func snapshotOverlayGameSideContent() async throws {
-        try await assertPreviewSnapshot("OverlayGameSideContent") {
-            GameRPG.OverlayGameSideContent(
-                side: Color.red.frame(width: 180),
-                toolbar: Button(action: {}) {
-                    Label {
-                        Text(verbatim: "Clear")
-                    } icon: {
-                        Image(systemName: "eraser")
-                    }
-                },
-                dice: Label {
-                    Text(verbatim: "Dice")
-                } icon: {
-                    Image(systemName: "dice")
-                },
-                showsDice: true
-            )
-        }
-    }
-
     // snapshot-root: GameRPG::OverlayMasterTabBar
     @Test("OverlayMasterTabBar")
     func snapshotOverlayMasterTabBar() async throws {
@@ -648,14 +608,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     func snapshotSelectedAdventureView() async throws {
         try await assertPreviewSnapshot("SelectedAdventureView") {
             GameRPG.SelectedAdventureView(root: .preview)
-        }
-    }
-
-    // snapshot-root: GameRPG::SelectedMasterView
-    @Test("SelectedMasterView")
-    func snapshotSelectedMasterView() async throws {
-        try await assertPreviewSnapshot("SelectedMasterView") {
-            GameRPG.SelectedMasterView(root: .preview)
         }
     }
 

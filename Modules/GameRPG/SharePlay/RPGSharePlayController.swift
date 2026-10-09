@@ -663,6 +663,7 @@ final class RPGSharePlayController {
     var gameModel: GameRootModel?
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
+    var inboundByteBudget = SharePlayInboundByteBudget()
 
     // Kept alive through session resets so the player can re-join automatically
     // when SharePlay becomes available again for a running game. Only cancelled

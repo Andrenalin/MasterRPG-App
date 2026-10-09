@@ -31,8 +31,8 @@ public extension ItemControllable {
     }
     
     @MainActor func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessible) async {
-        if let oldFileUlr = item.fileUrl {
-            await cacheControllable?.remove(itemId: oldFileUlr.fileId)
+        if let oldFileUrl = item.fileUrl {
+            await cacheControllable?.remove(itemId: oldFileUrl.fileId)
         }
         item.fileUrl = fileUrl
     }

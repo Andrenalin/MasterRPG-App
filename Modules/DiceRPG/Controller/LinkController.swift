@@ -32,7 +32,7 @@ extension LinkController: LinkControllable {
                 } catch {
                     // `try?` previously discarded this error with no trace —
                     // a failed share silently did nothing. See CODE_AUDIT §5.8.
-                    Logger.linkController.error("Dice: failed to share game data for \(itemId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    Logger.linkController.error("Dice: failed to share game data for \(itemId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 }
             }
             return text

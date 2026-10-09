@@ -57,7 +57,7 @@ public extension ViewController {
             do {
                 try await root.gameController.play(id: id, shouldPlay: true)
             } catch {
-                Logger.gameController.error("ViewController: Failed to start audio playback for \(id?.uuidString ?? "current", privacy: .public): \(error.localizedDescription, privacy: .public)")
+                Logger.gameController.error("ViewController: Failed to start audio playback for \(id?.uuidString ?? "current", privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
         return AudioPlayerView()

@@ -136,6 +136,20 @@ extension FolderListModel {
         list.remove(atOffsets: offsets)
     }
 
+    /// Drops the cached rows `isGone` names, except those in the list. The cache gained a row
+    /// for every id ever shown and lost one only on a local delete, so the rows of items that
+    /// sync, an import rollback or a game end removed stayed for the life of the list model,
+    /// each holding its item model. See CODE_AUDIT_21 §7.6.
+    func pruneCache(isGone: (FolderListItemModel) -> Bool) {
+        guard !cacheListModels.isEmpty else { return }
+        let listed = Set(list.map(\.id))
+        let stale = cacheListModels.values.filter { !listed.contains($0.id) && isGone($0) }.map(\.id)
+        guard !stale.isEmpty else { return }
+        for id in stale {
+            cacheListModels.removeValue(forKey: id)
+        }
+    }
+
     /// The row with this row id.
     func row(id: UUID) -> FolderListItemModel? {
         indexedRows().byId[id]

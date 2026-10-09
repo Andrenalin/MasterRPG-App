@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS) || os(macOS)
+import CoreRPG
 import Foundation
 import RealityKit
 import RPGTabletopGameContent
@@ -49,7 +50,7 @@ final class PortableGameRenderer {
             root.addChild(try await TableAssetFactory.makePlainWoodTable())
             didLoadAssets = true
         } catch {
-            Logger.gameTable.error("Failed to load portable wood table: \(error.localizedDescription, privacy: .public)")
+            Logger.gameTable.error("Failed to load portable wood table: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

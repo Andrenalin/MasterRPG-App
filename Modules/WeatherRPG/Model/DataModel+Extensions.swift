@@ -12,10 +12,6 @@ extension RPGWeather {
         get { RPGWeatherEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGWeatherEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGWeather: SpotlightIndexerAttribute {

@@ -117,10 +117,4 @@ extension PdfEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension PdfEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "apple.books.pages"))
-    }
-}
-
 #endif

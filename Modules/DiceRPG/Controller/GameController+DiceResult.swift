@@ -62,7 +62,8 @@ extension GameController {
                 orderedDice.enumerated().forEach { index, die in
                     let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
                     die.result.forEach { diceValue in
-                        result += resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions)
+                        // Saturating: a decoded reroll value can be any `Int`. See CODE_AUDIT_21 §6.7.
+                        result = result.saturatingSum(resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions))
                     }
                 }
                 result = result.saturatingSum(item.modifier.saturatingInt)
@@ -116,7 +117,7 @@ extension GameController {
         let allResults = onlyFirstDie ? [dice.first?.result.first ?? 0] : dice.compactMap { $0.result.first }
         let matchesDiceValue = allResults.contains(where: { value in values.contains(where: { $0.isDiceValue(value) }) })
         if matchesDiceValue { return true }
-        let result = allResults.reduce(0) { $0 + $1 }
+        let result = allResults.reduce(0) { $0.saturatingSum($1) }
         return values.contains(where: { $0.isResultValue(result) })
     }
 
@@ -136,7 +137,9 @@ extension GameController {
         let maxDieValue = item.dice.first?.die.max ?? 1
         guard item.addDiceEvery > 0 else { return maxDieValue }
         let maxValue = item.compareValue.saturatingInt
-        return max(0, min((maxValue + maxDieValue) - item.addDiceEvery * index, maxDieValue))
+        // `addDiceEvery` is decoded as it comes. See CODE_AUDIT_21 §6.7.
+        let reduction = item.addDiceEvery.saturatingProduct(index)
+        return max(0, min(maxValue.saturatingSum(maxDieValue).saturatingSum(reduction == .min ? .max : -reduction), maxDieValue))
     }
     
     @MainActor

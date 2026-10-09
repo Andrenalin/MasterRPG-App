@@ -212,7 +212,7 @@ extension AudioController {
                 return try await Self.loadingRemovingOnFailure(request, from: tempUrl)
             }
         } catch {
-            Logger.audioController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
+            Logger.audioController.error("Cannot read audio from file url: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
 
         do {
@@ -222,7 +222,7 @@ extension AudioController {
                 return try await Self.loadingRemovingOnFailure(request, from: tempUrl)
             }
         } catch {
-            Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
+            Logger.audioController.error("Cannot read audio from data: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return audioAsset
     }
@@ -253,7 +253,7 @@ extension AudioController {
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         } catch {
-            Logger.audioController.error("Cannot create the audio track folder: \(error.localizedDescription, privacy: .public)")
+            Logger.audioController.error("Cannot create the audio track folder: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return directory
     }()

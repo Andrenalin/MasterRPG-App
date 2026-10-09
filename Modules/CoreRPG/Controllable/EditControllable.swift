@@ -304,7 +304,7 @@ public extension EditControllable {
         entries.append(entry)
         item.entries = entries
 
-        reset(displayState: 1, itemId: childId, forceSave: forceSave)
+        reset(displayState: DisplayStateMask.groupHidden.rawValue, itemId: childId, forceSave: forceSave)
         save(updated: item, message: String(localized: "Add groupped item", bundle: .module).localizedString, forceSave: forceSave)
     }
 
@@ -315,7 +315,7 @@ public extension EditControllable {
         entries.removeAll(where: { $0.childId == childId })
         item.entries = entries
         
-        reset(displayState: 0, itemId: childId)
+        reset(displayState: DisplayStateMask.fullVisible.rawValue, itemId: childId)
         save(updated: item, message: String(localized: "Remove groupped item", bundle: .module).localizedString)
     }
 }
@@ -603,7 +603,7 @@ public extension EditControllable {
                 await delete(itemId: entry.childId, visited: visited)
             } else if !item.specialCategory {
                 linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
-                reset(displayState: 0, itemId: entry.childId)
+                reset(displayState: DisplayStateMask.fullVisible.rawValue, itemId: entry.childId)
             }
         }
 

@@ -116,7 +116,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         listenerRestartAttempt = 0
         startListener()
 
-        networkModel.browserManager = BrowserManager(serviceType: proxy ? .proxyClient : .master)
+        networkModel.browserManager = BrowserManager(serviceType: proxy ? .proxyClient : .master, recordsRemovals: false)
         networkModel.browserManager?.start()
         observeConnections()
     }
@@ -157,7 +157,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         } else {
             // Recreate a browser that was dropped while hosting, so returning players are
             // redialed again. See CODE_AUDIT_18 §5.14.
-            networkModel.browserManager = BrowserManager(serviceType: networkModel.isProxyHosting ? .proxyClient : .master)
+            networkModel.browserManager = BrowserManager(serviceType: networkModel.isProxyHosting ? .proxyClient : .master, recordsRemovals: false)
             networkModel.browserManager?.start()
             observeConnections()
         }

@@ -95,7 +95,7 @@ final class Board {
             material.color = .init(texture: .init(texture))
         } catch {
             Logger.gameTable.error(
-                "Failed to create the board texture: \(error.localizedDescription, privacy: .public)"
+                "Failed to create the board texture: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)"
             )
             material.color = .init(tint: .gray)
         }

@@ -85,7 +85,7 @@ public enum MapShortcutCatalog {
         do {
             try await CSSearchableIndex.default().indexAppEntities(entities)
         } catch {
-            Logger.appIntents.debug("Failed to reindex Map entities for Spotlight: \(error.localizedDescription, privacy: .public)")
+            Logger.appIntents.debug("Failed to reindex Map entities for Spotlight: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 }

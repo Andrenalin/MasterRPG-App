@@ -14,7 +14,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
         self.die = die
         self.color = DieModel.resolvedColor(color, for: die)
         self.rotation = rotation
-        self.result = result
+        self.result = Self.boundedResults(result, die: die)
         self.displayState = displayState
     }
 
@@ -51,6 +51,19 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
         case displayState
     }
     
+    /// Most results one die keeps: its roll and its rerolls.
+    static let maximumResultCount = 100
+
+    /// The results a die can show: each between 0 and the die's side count, and no more than
+    /// `maximumResultCount` of them. A roll a peer reports, or a decoded die, can carry any
+    /// `Int`; `Int.max` twice trapped in every sum over the results and crashed the game master
+    /// and each player showing that player's dice. Every way a die gets results passes here.
+    /// See CODE_AUDIT_21 §6.7.
+    static func boundedResults(_ results: [Int], die: RawDie) -> [Int] {
+        let highest = die.max
+        return results.prefix(maximumResultCount).map { Swift.min(Swift.max($0, 0), highest) }
+    }
+
     public init(from decoder: any Decoder) throws {
         let container: KeyedDecodingContainer<DieModel.CodingKeys> = try decoder.container(keyedBy: DieModel.CodingKeys.self)
         
@@ -58,7 +71,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
         self.die = try container.decode(RawDie.self, forKey: DieModel.CodingKeys.die)
         self.color = try container.decodeIfPresent(String.self, forKey: DieModel.CodingKeys.color) ?? "G"
         self.rotation = try container.decode(Double.self, forKey: DieModel.CodingKeys.rotation)
-        self.result = try container.decode([Int].self, forKey: DieModel.CodingKeys.result)
+        self.result = Self.boundedResults(try container.decode([Int].self, forKey: DieModel.CodingKeys.result), die: die)
         self.displayState = try container.decode(Int.self, forKey: DieModel.CodingKeys.displayState)
         
     }

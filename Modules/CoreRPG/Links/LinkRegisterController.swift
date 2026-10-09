@@ -164,7 +164,9 @@ public extension LinkRegisterController {
         guard !affectedIds.isEmpty, let context = model.context else { return }
         model.pendingAffectedSourceIds.removeAll()
 
-        let currentLinks = model.items.values.joined().filter { affectedIds.contains($0.source.itemId) }
+        // From the index by source: filtering every link of the register scanned all of them on
+        // the main actor for each save. See CODE_AUDIT_21 §7.4.
+        let currentLinks = affectedIds.flatMap { model.sourceItems[$0] ?? [] }
 
         // Context-based delete + insert (not `NSBatchDeleteRequest`/`NSBatchInsertRequest`):
         // `LinkReferenceDataModel` is CloudKit-mirrored and batch requests bypass the export,

@@ -68,7 +68,7 @@ final class GameProtocol: NWProtocolFramerImplementation {
             // connection. `markFailed` fails the connection cleanly instead
             // — the same idiom already used just below for a
             // declared-length violation. See CODE_AUDIT_Network §5.10.
-            Logger.networking.error("Hit error writing: \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("Hit error writing: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             framer.markFailed(error: .posix(.EIO))
         }
     }

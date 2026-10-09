@@ -67,7 +67,7 @@ struct EditControllerTests {
         #expect(linkRoute == .linkSelection(row))
         #expect(quickRoute == .quickEditor(itemId))
         #expect(sut.thumbnailEntryViewType == .photo)
-        #expect(sut.additioanlEnrtryViewType == .custom)
+        #expect(sut.additionalEntryViewType == .custom)
         #expect(sut.create(name: "Hall", content: "North").name == "Hall")
         _ = sut.fileUrlDataController
         _ = sut.additionalRowView(for: row, entry: MapEntryModel.empty(entryId), textModel: nil)

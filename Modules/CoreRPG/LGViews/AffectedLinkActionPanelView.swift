@@ -44,12 +44,12 @@ public struct AffectedLinkActionPanelView: View {
             .frame(minHeight: 300)
             // Plural-aware: "Mark for remove N Item" read wrong for any count but one.
             // See CODE_AUDIT_Folder §8.5.
-            .navigationTitle(Text("Mark \(removeEntryList.linkTree.filter { $0.canRemoved }.count) items for removal", bundle: .module))
+            .navigationTitle(Text("Mark \(removeEntryList.linkTree.filter { $0.canRemove }.count) items for removal", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .destructiveAction) {
                     Button {
-                        let removedItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? $0.item : nil }
-                        let restoredItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? nil : $0.item }
+                        let removedItems = removeEntryList.linkTree.compactMap { $0.canRemove ? $0.item : nil }
+                        let restoredItems = removeEntryList.linkTree.compactMap { $0.canRemove ? nil : $0.item }
                         isResolved = true
                         if let action {
                             action(removedItems)
@@ -126,7 +126,7 @@ private extension AffectedLinkActionPanelView {
         if overwrite {
             return false
         }
-        return removeEntryList.linkTree.filter { $0.canRemoved }.isEmpty
+        return removeEntryList.linkTree.filter { $0.canRemove }.isEmpty
     }
     
     /// Item rows use the theme's panel colour; rows of items that link to it use the system red,
@@ -168,9 +168,9 @@ private extension AffectedLinkActionPanelView {
         var result: [RemoveLinkTreeModel] = []
         for item in removeItems {
             let links = await affectedItems(itemControllable: itemControllable, for: item)
-            var items = [RemoveLinkTreeModel(item: item, link: nil, canRemoved: links.isEmpty, counter: links.count)]
+            var items = [RemoveLinkTreeModel(item: item, link: nil, canRemove: links.isEmpty, counter: links.count)]
             items.append(contentsOf: links.map {
-                RemoveLinkTreeModel(item: ItemRowModel(itemId: $0.id, typeId: item.typeId), link: $0, canRemoved: false, counter: 0)
+                RemoveLinkTreeModel(item: ItemRowModel(itemId: $0.id, typeId: item.typeId), link: $0, canRemove: false, counter: 0)
             })
             result.append(contentsOf: items)
         }
@@ -189,7 +189,7 @@ private struct AffectedLinkHeaderRow: View {
         HStack {
             if item.counter == 0 {
                 Image(systemName: "checkmark")
-            } else if item.canRemoved {
+            } else if item.canRemove {
                 Button(action: toggle) {
                     Label {
                         Text("Unmark", bundle: .module)
@@ -215,6 +215,6 @@ private struct AffectedLinkHeaderRow: View {
 
     private func toggle() {
         guard let index = removeEntryList.linkTree.firstIndex(where: { $0.id == item.id }) else { return }
-        withAnimation { removeEntryList.linkTree[index].canRemoved.toggle() }
+        withAnimation { removeEntryList.linkTree[index].canRemove.toggle() }
     }
 }

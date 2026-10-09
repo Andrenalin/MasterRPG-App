@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import GameController
 import SwiftUI
 
 // The map editor's popover: a glass panel with an arrow pointing at its source,
@@ -113,6 +114,12 @@ private struct MapPopoverPanelBackground: ViewModifier {
 private struct MapPopoverDismissal: ViewModifier {
     let onDismiss: () -> Void
 
+#if os(macOS)
+    private static let hasHardwareKeyboard = true
+#elseif !os(tvOS)
+    private static var hasHardwareKeyboard: Bool { GCKeyboard.coalesced != nil }
+#endif
+
 #if !os(tvOS)
     @FocusState private var isFocused: Bool
 #endif
@@ -133,7 +140,13 @@ private struct MapPopoverDismissal: ViewModifier {
                 onDismiss()
                 return .handled
             }
-            .task { isFocused = true }
+            .task {
+                // Only where a key can be pressed. Taken unconditionally, the focus left a text
+                // field that was being edited as soon as a pin was selected, and with it the
+                // on-screen keyboard. See CODE_AUDIT_21 §8.4.
+                guard Self.hasHardwareKeyboard else { return }
+                isFocused = true
+            }
 #endif
     }
 }
@@ -293,7 +306,7 @@ private struct MapPopoverButtonSize: ViewModifier {
 
     func body(content: Content) -> some View {
 #if os(tvOS) || os(visionOS)
-        content.padding(8)
+        content.padding(MapPopoverLayout.contentInset)
 #else
         content.frame(width: diameter, height: diameter)
 #endif

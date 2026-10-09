@@ -275,7 +275,7 @@ extension MasterController {
                     )
                 }
             } catch {
-                Logger.networking.error("MasterController: Deferred map recovery failed for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                Logger.networking.error("MasterController: Deferred map recovery failed for \(model.data.id, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
     }
@@ -318,7 +318,7 @@ extension MasterController {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            Logger.networking.error("MasterController: Map recovery failed for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Logger.networking.error("MasterController: Map recovery failed for \(model.data.id, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             await sendMapRecoveryFailed(for: model, origin: origin)
             return nil
         }

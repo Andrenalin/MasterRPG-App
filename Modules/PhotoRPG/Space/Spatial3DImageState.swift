@@ -48,7 +48,7 @@ enum Spatial3DImageState {
         do {
             loadedSpatial3DImage = try await ImagePresentationComponent.Spatial3DImage(contentsOf: url)
         } catch {
-            Logger.photoSpace.error("Unable to initialize spatial 3D image: \(error.localizedDescription, privacy: .public)")
+            Logger.photoSpace.error("Unable to initialize spatial 3D image: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             return
         }
 
@@ -77,7 +77,7 @@ enum Spatial3DImageState {
         } catch is CancellationError {
             // A new photo superseded this conversion.
         } catch {
-            Logger.photoSpace.error("Spatial3DImage generation failed: \(error.localizedDescription, privacy: .public)")
+            Logger.photoSpace.error("Spatial3DImage generation failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

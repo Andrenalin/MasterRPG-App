@@ -83,7 +83,7 @@ extension DataController: CoreDataSnapshotPersistable {
             name: CRDT(string: model.name ?? "", defaultValue: ""),
             content: CRDT(string: model.content ?? "", defaultValue: ""),
             adventureId: CRDT(string: model.adventureUUID ?? "", defaultValue: nil),
-            displayState: 0
+            displayState: DisplayStateMask.fullVisible.rawValue
         )
     }
 

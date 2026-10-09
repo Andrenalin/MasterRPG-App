@@ -121,15 +121,6 @@ private extension FoundryMediaNormalizer {
     /// the reference comes from an explicitly audio-scoped document such as a PlaylistSound.
     static let contextDependentAudioFilenameExtensions: Set<String> = ["mp4", "webm"]
 
-    /// Per-axis bound on an image's declared pixel dimensions, checked from the header before
-    /// anything is decoded.
-    static let maximumDecodedImageDimension = 16_384
-    /// Bound on the declared pixel count. The image is decoded downsampled (see
-    /// `maximumOutputPixelSize`), but a decoder that cannot downsample while decoding may still
-    /// need the full bitmap once: 150 MP is about 600 MB. 400 MP allowed a small, highly
-    /// compressible file to claim 1.6 GB, twice (decode and redraw), which killed the app during
-    /// the commit and bypassed its rollback. See CODE_AUDIT §6.1, CODE_AUDIT_Folder §6.4.
-    static let maximumDecodedImagePixelCount = 150_000_000
     /// Longest edge of the stored JPEG: the size the app decodes images at anyway.
     static var maximumOutputPixelSize: CGFloat { AKImage.maximumDecodedPixelSize }
 
@@ -174,28 +165,17 @@ private extension FoundryMediaNormalizer {
             throw FoundryMediaNormalizationError.invalidImage
         }
 
-        // Read the declared dimensions from the header before decoding — the actual
-        // decompression bomb this guards against never gets the chance to allocate.
-        guard let headerProperties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-              let width = (headerProperties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
-              let height = (headerProperties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue,
-              width > 0, height > 0,
-              width <= maximumDecodedImageDimension,
-              height <= maximumDecodedImageDimension,
-              width * height <= maximumDecodedImagePixelCount else {
+        // The declared dimensions are read from the header before decoding, and the image is
+        // decoded downsampled by ImageIO, never above the size the app displays: both through
+        // the shared helper. See CODE_AUDIT_Folder §6.4, CODE_AUDIT_21 §9.5.
+        guard case .withinLimits(let width, let height) = ImageDownsampler.declaredSize(of: source) else {
             throw FoundryMediaNormalizationError.invalidImage
         }
-
-        // Decoded downsampled by ImageIO, never above the size the app displays, with the
-        // orientation applied. The full-size decode plus a full-size redraw needed two bitmaps of
-        // the declared size. See CODE_AUDIT_Folder §6.4.
         let longestEdge = CGFloat(max(width, height))
-        guard let decoded = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceShouldCacheImmediately: true,
-                kCGImageSourceThumbnailMaxPixelSize: min(longestEdge, maximumOutputPixelSize),
-            ] as CFDictionary),
+        guard let decoded = ImageDownsampler.downsampledImage(
+            from: source,
+            maxPixelSize: min(longestEdge, maximumOutputPixelSize)
+        ),
               decoded.width > 0,
               decoded.height > 0 else {
             throw FoundryMediaNormalizationError.invalidImage

@@ -98,10 +98,4 @@ extension GeneratorEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension GeneratorEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "apple.intelligence"))
-    }
-}
-
 #endif

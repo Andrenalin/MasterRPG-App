@@ -169,7 +169,7 @@ struct Die20: EntityEquipment {
             self.entity = try DieAssets.entity(named: "D20Blue")
         } catch {
             Logger.gameTable.error(
-                "Failed to load the bundled D20Blue RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
+                "Failed to load the bundled D20Blue RealityKit asset: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); using a procedural fallback mesh"
             )
             self.entity = Self.makeFallbackEntity()
         }
@@ -187,7 +187,7 @@ struct Die20: EntityEquipment {
             self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         } catch {
             Logger.gameTable.error(
-                "Failed to prepare the D20 roll sound: \(error.localizedDescription, privacy: .public)"
+                "Failed to prepare the D20 roll sound: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)"
             )
             self.audioPlaybackController = nil
         }
@@ -309,7 +309,7 @@ struct Die: EntityEquipment {
             self.entity = try DieAssets.entity(named: "Die")
         } catch {
             Logger.gameTable.error(
-                "Failed to load the bundled Die RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
+                "Failed to load the bundled Die RealityKit asset: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); using a procedural fallback mesh"
             )
             self.entity = Self.makeFallbackEntity()
         }
@@ -321,7 +321,7 @@ struct Die: EntityEquipment {
             self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         } catch {
             Logger.gameTable.error(
-                "Failed to prepare the Die roll sound: \(error.localizedDescription, privacy: .public)"
+                "Failed to prepare the Die roll sound: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)"
             )
             self.audioPlaybackController = nil
         }

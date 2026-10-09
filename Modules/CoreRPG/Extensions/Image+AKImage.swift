@@ -159,6 +159,60 @@ public extension AKImage {
 
 #endif
 
+/// The one ImageIO downsampling path, with the limits on an image's *declared* size. The app's
+/// display decode, the Foundry import and the share extension each had their own copy of the
+/// thumbnail options, and only the Foundry copy read the header before decoding.
+/// See CODE_AUDIT_21 §9.5.
+public enum ImageDownsampler {
+    /// Per-axis bound on the declared pixel dimensions.
+    public static let maximumDeclaredDimension = 16_384
+    /// Bound on the declared pixel count. The image is decoded downsampled, but a decoder that
+    /// cannot downsample while decoding may still need the full bitmap once: 150 MP is about
+    /// 600 MB. See CODE_AUDIT §6.1, CODE_AUDIT_Folder §6.4.
+    public static let maximumDeclaredPixelCount = 150_000_000
+
+    public enum DeclaredSize: Equatable, Sendable {
+        /// The header names no usable pixel size.
+        case unknown
+        case withinLimits(width: Int, height: Int)
+        case overLimits
+    }
+
+    /// The pixel size the image's header declares, read before anything is decoded, so a
+    /// decompression bomb never gets the chance to allocate.
+    public static func declaredSize(of source: CGImageSource) -> DeclaredSize {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue else {
+            return .unknown
+        }
+        return declaredSize(width: width, height: height)
+    }
+
+    public static func declaredSize(width: Int, height: Int) -> DeclaredSize {
+        guard width > 0, height > 0 else { return .unknown }
+        guard width <= maximumDeclaredDimension,
+              height <= maximumDeclaredDimension,
+              width * height <= maximumDeclaredPixelCount else {
+            return .overLimits
+        }
+        return .withinLimits(width: width, height: height)
+    }
+
+    /// Decodes the first image of `source` downsampled by ImageIO to at most `maxPixelSize` on
+    /// its longest edge, with the orientation applied, instead of decoding it at native size
+    /// and scaling afterwards.
+    public static func downsampledImage(from source: CGImageSource, maxPixelSize: CGFloat) -> CGImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+}
+
 public extension AKImage {
     /// A downsampled decode paired with the scale factor relating it back to the
     /// original image's pixel coordinate space, so rects defined against the source
@@ -230,13 +284,7 @@ public extension AKImage {
     }
 
     private static func downsampledThumbnail(from source: CGImageSource, maxPixelSize: CGFloat) -> DownsampledResult? {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
-        ]
-        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        guard let cgImage = ImageDownsampler.downsampledImage(from: source, maxPixelSize: maxPixelSize) else { return nil }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let originalWidth = (properties?[kCGImagePropertyPixelWidth] as? CGFloat) ?? CGFloat(cgImage.width)
         let scale = originalWidth > 0 ? CGFloat(cgImage.width) / originalWidth : 1

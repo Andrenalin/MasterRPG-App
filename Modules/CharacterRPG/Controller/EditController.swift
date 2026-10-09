@@ -15,7 +15,6 @@ final class ValueEditModel: Sendable {
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false)
-    let selectionTable: ItemSelectionModel = ItemSelectionModel()
 }
 
 public struct LinkCharacterModuleTransferable: LinkDataTransferable {
@@ -139,7 +138,7 @@ extension EditController {
 extension EditController {
     public var linkModules: [NetworkModules] { [.value, .dice, .pdf, .table] }
     
-    public var additioanlEnrtryViewType: AdditionalEntryViewType { .inline }
+    public var additionalEntryViewType: AdditionalEntryViewType { .inline }
     
     @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView {
         AnyView(AdditionalEntryRow(source: source, entry: entry, textModel: textModel).equatable())

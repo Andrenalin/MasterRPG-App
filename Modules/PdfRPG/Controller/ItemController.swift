@@ -44,7 +44,7 @@ extension ItemController {
         } catch is CancellationError {
             return nil
         } catch {
-            Logger.itemController.error("Failed to download PDF for \(fileUrl.fileId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            Logger.itemController.error("Failed to download PDF for \(fileUrl.fileId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         guard !Task.isCancelled else { return nil }
         // Decode off the MainActor: `fileUrlDataController` is @MainActor-isolated, so its
