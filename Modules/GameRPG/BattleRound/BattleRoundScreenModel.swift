@@ -223,7 +223,7 @@ final class BattleRoundScreenModel {
             characterId: characterId,
             entryId: entryId
         ) else { return false }
-        controller.root.mapRoot.mapGameControllable.battleRoundSettings.addName(entry.name, for: kind)
+        controller.root.mapRoot.mapGameControllable.battleRoundSettings.addName(entry.name.withoutLink(), for: kind)
         refreshConfiguredValues(controller: controller)
         return true
     }

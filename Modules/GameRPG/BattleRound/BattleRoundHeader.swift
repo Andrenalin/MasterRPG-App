@@ -21,7 +21,9 @@ struct BattleRoundHeader: View {
                 )
                 Spacer(minLength: BattleRoundSpacing.standard)
                 BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
-                BattleRoundHeaderActions(isRunning: isRunning, controller: controller)
+                if isRunning {
+                    BattleRoundHeaderActions(controller: controller)
+                }
             }
 
             VStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
@@ -34,8 +36,10 @@ struct BattleRoundHeader: View {
                     Spacer(minLength: 4)
                     BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 }
-                BattleRoundHeaderActions(isRunning: isRunning, controller: controller)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                if isRunning {
+                    BattleRoundHeaderActions(controller: controller)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
         }
         .padding(.horizontal, 16)
