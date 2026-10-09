@@ -143,6 +143,99 @@ struct BattleRoundConfiguredValueScanningTests {
         )
     }
 
+    /// The usual shape of a Character's root level: "Ini"/"HP" are `.number`
+    /// entries whose value is a link to the real stat on another table.
+    @Test("Root-level Ini and HP entries that are value links prefill initiative and health")
+    func rootLevelValueLinksResolveInitiativeAndHealth() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let (sut, combatantId) = try startBattleWithEmptyMonster(root: root)
+
+        let iniStat = ValueEntryModel(id: UUID(), name: "Ini", type: .number, value: "14")
+        let hpStat = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "30")
+        let stats = ValueModel(id: UUID(), name: "Stats", entries: [iniStat, hpStat])
+        root.characterRoot.itemController.replace(model: stats, isInsert: true)
+
+        let characterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Goblin",
+                entries: [
+                    ValueEntryModel(id: UUID(), name: "Ini", type: .number, value: stats.url(linkNumber: 0, entryId: iniStat.id)),
+                    ValueEntryModel(id: UUID(), name: "HP", type: .number, value: stats.url(linkNumber: 0, entryId: hpStat.id))
+                ]
+            ),
+            isInsert: true
+        )
+
+        #expect(root.battleRoundController.assignCharacter(combatantId, characterId))
+
+        let combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        #expect(combatant.initiative == 14)
+        #expect(sut.healthPercent(for: combatant) == 100)
+    }
+
+    /// Same as above, but the entries are `.text` — a link typed or imported
+    /// rather than added through the link picker (which forces `.number`).
+    @Test("Root-level text-typed Ini and HP value links prefill initiative and health")
+    func rootLevelTextValueLinksResolveInitiativeAndHealth() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let (sut, combatantId) = try startBattleWithEmptyMonster(root: root)
+
+        let iniStat = ValueEntryModel(id: UUID(), name: "Ini", type: .number, value: "14")
+        let hpStat = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "30")
+        let stats = ValueModel(id: UUID(), name: "Stats", entries: [iniStat, hpStat])
+        root.characterRoot.itemController.replace(model: stats, isInsert: true)
+
+        let characterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Goblin",
+                entries: [
+                    ValueEntryModel(id: UUID(), name: "Initiative", type: .text, value: stats.url(linkNumber: 0, entryId: iniStat.id)),
+                    ValueEntryModel(id: UUID(), name: "Hit Points", type: .text, value: stats.url(linkNumber: 0, entryId: hpStat.id))
+                ]
+            ),
+            isInsert: true
+        )
+
+        #expect(root.battleRoundController.assignCharacter(combatantId, characterId))
+
+        let combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        #expect(combatant.initiative == 14)
+        #expect(sut.healthPercent(for: combatant) == 100)
+    }
+
+    /// Character is the one module whose entry *names* may carry a markdown
+    /// link (`nameWithLink`), so the name scan must compare the visible text.
+    @Test("Ini and HP entries whose name carries a link are matched by their visible name")
+    func linkInEntryNameMatchesVisibleName() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let (sut, combatantId) = try startBattleWithEmptyMonster(root: root)
+
+        let iniName = " [Ini](RPG://TABLES/0/\(UUID().uuidString)/\(UUID().uuidString))"
+        let hpName = " [HP](RPG://TABLES/0/\(UUID().uuidString)/\(UUID().uuidString))"
+        let characterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Goblin",
+                entries: [
+                    ValueEntryModel(id: UUID(), name: iniName, type: .number, value: "12"),
+                    ValueEntryModel(id: UUID(), name: hpName, type: .number, value: "20")
+                ]
+            ),
+            isInsert: true
+        )
+
+        #expect(root.battleRoundController.assignCharacter(combatantId, characterId))
+
+        let combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        #expect(combatant.initiative == 12)
+        #expect(sut.healthPercent(for: combatant) == 100)
+    }
+
     /// Starts a battle on a fresh map with a single non-player pin that
     /// carries no `characterId`, mirroring a monster token dropped before
     /// its stat block is chosen.

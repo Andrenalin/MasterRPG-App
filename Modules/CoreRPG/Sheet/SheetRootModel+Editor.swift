@@ -103,6 +103,18 @@ extension SheetRootModel {
         return editable.itemControllable.itemSync(for: groupId)
     }
 
+    /// Re-syncs the tree after the link picker (`EditorLinkView`, opened from a row's
+    /// "Add Links" context menu) wrote links into `source`'s entry. The picker goes
+    /// straight through the edit controller, so unlike a link drop (`addLink(link:...)`)
+    /// this model never sees the mutation on its own — see `ItemEditorModel.finishLinkSelection`.
+    func updateAfterLinkSelection(source: ItemRowModel) {
+        updateFromRoot()
+
+        guard let entryId = source.entryId, let entryModel = findEntryModel(entryId: entryId, in: sheetModel) else { return }
+        linkTextModel[.entry(entryId)]?.reset(text: entryModel.name)
+        linkTextModel[.entryContent(entryId)]?.reset(text: entryModel.description)
+    }
+
     private func findEntryModel(entryId: UUID, in model: SheetModel) -> SheetModel? {
         if model.source.entryId == entryId { return model }
         for entry in model.entries {

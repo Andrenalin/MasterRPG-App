@@ -26,13 +26,13 @@ extension GameController {
     ) -> ValueEntryModel? {
         guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
         let normalizedNames = names
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .map(Self.comparableName)
             .filter { !$0.isEmpty }
         guard !normalizedNames.isEmpty else { return nil }
 
         let item = gameItem(for: characterId)
         if let direct = item.entries.first(where: { entry in
-            let entryName = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let entryName = Self.comparableName(entry.name)
             return normalizedNames.contains {
                 entryName.localizedCaseInsensitiveCompare($0) == .orderedSame
             }
@@ -57,6 +57,12 @@ extension GameController {
             return found
         }
         return nil
+    }
+
+    /// Character entry names may carry a markdown link (`nameWithLink` in
+    /// `EditController.update`), so names are compared by their visible text.
+    private static func comparableName(_ name: String) -> String {
+        name.withoutLink().trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Searches `characterId`'s own entries first, then descends into any
@@ -131,10 +137,8 @@ extension GameController {
             }
         }
         guard let candidate,
-              candidate.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                  .localizedCaseInsensitiveCompare(
-                      path.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                  ) == .orderedSame else {
+              Self.comparableName(candidate.name)
+                  .localizedCaseInsensitiveCompare(Self.comparableName(path.name)) == .orderedSame else {
             return nil
         }
         return candidate
@@ -148,7 +152,20 @@ extension GameController {
         guard let entry = gameEntry(characterId: characterId, entryId: entryId) else {
             return nil
         }
-        return root.linkController.calculate(entry: entry) ?? entry.value
+        if let calculated = root.linkController.calculate(entry: entry) {
+            return calculated
+        }
+        // A `.text` entry can still hold a value link (typed or imported; only
+        // the link picker switches the entry to `.number`). Resolve it like a
+        // number so callers get the linked value instead of raw markdown.
+        guard LinkReplaceController.links(for: entry.value).contains(where: { $0.module == .value }),
+              let resolved = calculatedValue(entry.value, type: .decimal),
+              let number = Double(resolved) else {
+            return entry.value
+        }
+        return number == number.rounded() && abs(number) < Double(Int.max)
+            ? "\(Int(number))"
+            : resolved
     }
 
     @MainActor

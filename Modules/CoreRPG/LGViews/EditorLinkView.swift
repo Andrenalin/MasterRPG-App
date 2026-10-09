@@ -46,6 +46,9 @@ public struct EditorLinkView: View {
                     let resolvedRoot = destinationModule.flatMap { editorLinkModel.rootManager?.itemRootController(for: $0) } ?? root
                     guard let editControllable = resolvedRoot.editControllable as? (any EntryDataEditable) else { return }
                     editorLinkModel.addLinkAndReset(editController: editControllable, destinationItemId: model.id, destinationEntryId: selectedEntryId)
+                    if let selectedEntryId {
+                        editControllable.editorModel.finishLinkSelection(itemId: model.id, entryId: selectedEntryId)
+                    }
                 }
                 .searchItemList(listControllable: editorLinkModel.folderListController)
         }

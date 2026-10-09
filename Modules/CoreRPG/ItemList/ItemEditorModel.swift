@@ -30,7 +30,29 @@ public final class ItemEditorModel: Sendable {
     public var gameSheetRootModel: SheetRootModel?
     public let sheetEditorModel: SheetEditorModel
 
-    
+    /// The sheet that opened the link picker for one of this module's entries, and that
+    /// entry. The picker (`EditorLinkView`) writes the links straight through the edit
+    /// controller, so the sheet showing the entry never sees the change on its own. It is
+    /// not necessarily this module's `sheetRootModel`: a linked item's entries are also
+    /// shown nested in another module's sheet, which is why the opener registers itself.
+    @ObservationIgnored private weak var linkSelectionSheetRootModel: SheetRootModel?
+    @ObservationIgnored private var linkSelectionSource: ItemRowModel?
+
+    func beginLinkSelection(for source: ItemRowModel, in sheetRootModel: SheetRootModel) {
+        linkSelectionSource = source
+        linkSelectionSheetRootModel = sheetRootModel
+    }
+
+    /// Reconciles the sheet registered by `beginLinkSelection(for:in:)` once the picker
+    /// added its links. A picker opened for another entry (e.g. from the entry editor)
+    /// leaves the registration alone.
+    func finishLinkSelection(itemId: UUID, entryId: UUID) {
+        guard let source = linkSelectionSource, source.itemId == itemId, source.entryId == entryId else { return }
+        linkSelectionSheetRootModel?.updateAfterLinkSelection(source: source)
+        linkSelectionSource = nil
+        linkSelectionSheetRootModel = nil
+    }
+
     @ObservationIgnored public var undoManaged: UndoManaged<ModelType?>
 
     /// The undo and redo values that belong to a folder edit made on the library, not on what
