@@ -135,8 +135,10 @@ extension MasterController {
                 )
                 await send(type: .update, subtype: .photoList, updated: photoList)
             case .generic:
-                // Compatibility with older players that uploaded a generic
-                // photo update. Their bytes are never authoritative.
+                // A player names a photo the master has while another player
+                // misses it (`PlayerController.shareFileItem`): the master
+                // broadcasts its canonical copy. Older players uploaded their
+                // bytes here; those are never authoritative.
                 guard root.gameModel.gameControl.features.photoSharing else { return nil }
                 if let canonical = try? await root.photoRoot.gameControllable.createGameData(for: model.data.id) {
                     gameModel.markSentGameItem(

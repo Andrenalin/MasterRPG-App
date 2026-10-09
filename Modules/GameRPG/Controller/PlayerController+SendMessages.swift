@@ -67,6 +67,10 @@ extension PlayerController {
         }
         if message.type == .audio {
             guard root.gameModel.gameControl.features.audioSharing else { return }
+            if actionType == .generic {
+                await shareAudio(message)
+                return
+            }
         }
         if message.type == .dice {
             guard root.gameModel.gameControl.features.dicePlayers else { return }
@@ -74,21 +78,37 @@ extension PlayerController {
         await send(type: .update, subType: actionType, updated: message)
     }
 
-    /// Shared `.reveal` relay skeleton for the three file-backed modules
+    /// The game master's copy is canonical: where it has the audio, the player only names it
+    /// and the master delivers it to the players still missing it. The bytes go along only
+    /// for audio the master has never seen, which it adopts as its own copy.
+    private func shareAudio(_ fullData: NetworkCodableDataType) async {
+        let masterHasAudio = root.audioRoot.audioGameControllable.isAudioAvailable(
+            itemId: fullData.id,
+            for: root.gameModel.gameConfig.master.id
+        )
+        let outgoing = masterHasAudio
+            ? NetworkCodableDataType(id: fullData.id, type: fullData.type, version: fullData.version)
+            : fullData
+        await send(type: .update, subType: .generic, updated: outgoing)
+    }
+
+    /// Shared share skeleton for the three file-backed modules
     /// (Pdf, Photo, Space) — `sharePdf`/`sharePhoto`/`shareSpace` below
     /// previously hand-duplicated this exact control flow, differing only
     /// in which module's accessors they called and the `NetworkModules`
     /// case passed to `setGameUpdateType`. Every other module-specific
     /// concern (Space's `spaceSharing` feature gate) stays in that module's
     /// own thin wrapper. See CODE_AUDIT_10 §9.2.
+    ///
+    /// A player never uploads a file the game master already has: it names the
+    /// item and the master delivers its own copy to whoever misses it.
     private func shareFileItem(
         _ fullData: NetworkCodableDataType,
         updateType: NetworkModules,
         masterVersion: (_ itemId: UUID, _ masterId: UUID) -> Int?,
         isAvailable: (_ itemId: UUID, _ playerId: UUID, _ masterId: UUID) -> Bool,
         allPlayersReported: (_ itemId: UUID) -> Bool,
-        setCurrent: (_ itemId: UUID) async -> Bool,
-        markAvailableToCurrentPlayers: (_ itemId: UUID, _ version: Int, _ masterId: UUID) -> Void
+        setCurrent: (_ itemId: UUID) async -> Bool
     ) async {
         // `PlayerController` is itself `@MainActor`, so this is already a
         // same-actor synchronous read — no actor hop needed.
@@ -97,21 +117,32 @@ extension PlayerController {
         let senderIsAvailable = isAvailable(fullData.id, playerId, masterId)
         let matchesBaseline = baseline == fullData.effectiveAssetVersion
 
-        let outgoing: NetworkCodableDataType
         if senderIsAvailable, matchesBaseline {
-            let allPlayersHaveIt = allPlayersReported(fullData.id)
-            outgoing = NetworkCodableDataType(
+            let reference = NetworkCodableDataType(
                 id: fullData.id,
                 type: fullData.type,
                 version: fullData.version,
-                data: allPlayersHaveIt ? nil : fullData.data,
+                data: nil,
                 assetVersion: fullData.assetVersion,
                 contentVersion: fullData.contentVersion
             )
+            let allPlayersHaveIt = allPlayersReported(fullData.id)
             if await setCurrent(fullData.id) {
                 gameModel.setGameUpdateType(updateType)
             }
-        } else if baseline == nil {
+            if allPlayersHaveIt {
+                // Everyone holds the master's version: the reference presents it to the group.
+                await send(type: .reveal, subType: .show, updated: reference)
+            } else {
+                // Someone misses it. Only the master is asked, and it broadcasts its
+                // canonical copy to the group (`MasterController`'s `.update/.generic`).
+                await send(type: .update, subType: .generic, updated: reference)
+            }
+            return
+        }
+
+        let outgoing: NetworkCodableDataType
+        if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
             // edit of an item the master already owns, there is no canonical
             // baseline to defer to. Attach the full bytes so the master can
@@ -130,10 +161,6 @@ extension PlayerController {
         }
 
         await send(type: .reveal, subType: .show, updated: outgoing)
-
-        if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            markAvailableToCurrentPlayers(fullData.id, baseline, masterId)
-        }
     }
 
     private func sharePhoto(_ fullData: NetworkCodableDataType) async {
@@ -143,10 +170,7 @@ extension PlayerController {
             masterVersion: { root.photoRoot.photoGameControllable.masterVersion(for: $0, masterId: $1) },
             isAvailable: { root.photoRoot.photoGameControllable.isPhotoAvailable(itemId: $0, for: $1, masterId: $2) },
             allPlayersReported: { root.photoRoot.gameControllable.allPlayersReported(for: $0) },
-            setCurrent: { await root.photoRoot.gameControllable.setCurrent(itemId: $0) },
-            markAvailableToCurrentPlayers: {
-                root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(itemId: $0, version: $1, masterId: $2)
-            }
+            setCurrent: { await root.photoRoot.gameControllable.setCurrent(itemId: $0) }
         )
     }
 
@@ -157,10 +181,7 @@ extension PlayerController {
             masterVersion: { root.pdfRoot.pdfGameControllable.masterVersion(for: $0, masterId: $1) },
             isAvailable: { root.pdfRoot.pdfGameControllable.isPdfAvailable(itemId: $0, for: $1, masterId: $2) },
             allPlayersReported: { root.pdfRoot.gameControllable.allPlayersReported(for: $0) },
-            setCurrent: { await root.pdfRoot.gameControllable.setCurrent(itemId: $0) },
-            markAvailableToCurrentPlayers: {
-                root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(itemId: $0, version: $1, masterId: $2)
-            }
+            setCurrent: { await root.pdfRoot.gameControllable.setCurrent(itemId: $0) }
         )
     }
 
@@ -172,10 +193,7 @@ extension PlayerController {
             masterVersion: { root.spaceRoot.spaceGameControllable.masterVersion(for: $0, masterId: $1) },
             isAvailable: { root.spaceRoot.spaceGameControllable.isSpaceAvailable(itemId: $0, for: $1, masterId: $2) },
             allPlayersReported: { root.spaceRoot.gameControllable.allPlayersReported(for: $0) },
-            setCurrent: { await root.spaceRoot.gameControllable.setCurrent(itemId: $0) },
-            markAvailableToCurrentPlayers: {
-                root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(itemId: $0, version: $1, masterId: $2)
-            }
+            setCurrent: { await root.spaceRoot.gameControllable.setCurrent(itemId: $0) }
         )
     }
 

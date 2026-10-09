@@ -21,6 +21,8 @@ public protocol AudioGameStorable: Sendable {
     @discardableResult
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) -> Bool
     @MainActor func missingPlayers(for itemId: UUID) -> [UUID]
+    /// Whether `playerId` reported `itemId` and, for a playlist, each of its tracks.
+    @MainActor func isAudioAvailable(itemId: UUID, for playerId: UUID) -> Bool
     func hasLocalAudioData(for itemId: UUID) async -> Bool
     @MainActor func play(with data: NetworkCodableDataType) async throws
     func shouldPlay(with data: NetworkCodableDataType) -> Bool
@@ -88,6 +90,19 @@ extension GameController: GameControllable {
             missing.formUnion(missingPlayers(for: entry.audioId, visited: visited))
         }
         return missing
+    }
+
+    @MainActor func isAudioAvailable(itemId: UUID, for playerId: UUID) -> Bool {
+        isAudioAvailable(itemId: itemId, for: playerId, visited: [])
+    }
+
+    @MainActor private func isAudioAvailable(itemId: UUID, for playerId: UUID, visited: Set<UUID>) -> Bool {
+        guard !visited.contains(itemId) else { return true }
+        guard gameModel.playerReport(for: itemId).contains(playerId) else { return false }
+        let visited = visited.union([itemId])
+        return gameItem(for: itemId).entries.allSatisfy {
+            isAudioAvailable(itemId: $0.audioId, for: playerId, visited: visited)
+        }
     }
 
     /// The players a share of `itemId` lists. A player counts as reported once they have

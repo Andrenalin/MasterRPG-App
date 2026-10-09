@@ -54,7 +54,7 @@ extension MasterController {
                 // bytes over an *existing* master-owned copy with no check
                 // at all — this restores that check. See CODE_AUDIT_Game §6.2.
                 do {
-                    let canonical = try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
+                    let canonical = try await canonicalAudioReveal(for: model.data.id)
                     await send(type: .reveal, subtype: .show, updated: canonical)
                 } catch ItemGameStorableError.itemMissing {
                     guard model.data.data != nil else { return nil }
@@ -94,6 +94,19 @@ extension MasterController {
             }
             return nil
         }
+    }
+
+    /// The master's own copy of an audio a player shared: the file for as long as a player
+    /// misses it, the reference alone once everyone has it.
+    private func canonicalAudioReveal(for itemId: UUID) async throws -> NetworkCodableDataType {
+        let controllable = root.audioRoot.gameControllable
+        guard await controllable.itemControllable.item(for: itemId) != nil else {
+            throw ItemGameStorableError.itemMissing
+        }
+        guard root.audioRoot.audioGameControllable.missingPlayers(for: itemId).isEmpty else {
+            return try await controllable.createGameData(for: itemId)
+        }
+        return await controllable.share(id: itemId)
     }
 
     /// Sends every player the authoritative report list: who has which audio.

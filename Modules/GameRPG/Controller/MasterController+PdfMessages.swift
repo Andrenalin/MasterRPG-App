@@ -135,8 +135,10 @@ extension MasterController {
                 )
                 await send(type: .update, subtype: .pdfList, updated: pdfList)
             case .generic:
-                // Compatibility with older players: answer with the canonical
-                // master asset, but never import the peer's bytes.
+                // A player names a PDF the master has while another player
+                // misses it (`PlayerController.shareFileItem`): answer with the
+                // canonical master asset. Older players uploaded their bytes
+                // here; those are never imported.
                 guard await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id) else { return nil }
                 if let canonical = try? await root.pdfRoot.gameControllable.createGameData(for: model.data.id) {
                     gameModel.markSentGameItem(

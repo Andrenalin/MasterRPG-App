@@ -190,7 +190,7 @@ struct PlayerControllerTests {
         #expect(restoredItem?.name == item?.name)
     }
 
-    @Test("Player photo share chooses baseline request, full data, then reference from availability")
+    @Test("Player photo share chooses baseline request, master delivery, then reference from availability")
     func playerPhotoShareUsesAvailability() async throws {
         let env = try await PlayerControllerTestEnvironment.create()
         try await MockRoot.importTestData(
@@ -238,8 +238,9 @@ struct PlayerControllerTests {
         #expect(sent.data.data == nil)
         #expect(sent.usesFileJournal == false)
 
-        // Once the sender has the exact master version, include bytes while
-        // any reported participant is still missing the photo.
+        // Once the sender has the exact master version, it never uploads the
+        // bytes: while a participant is still missing the photo, it asks the
+        // master alone, which broadcasts its canonical copy.
         env.root.photoRoot.photoGameControllable.setMasterVersion(
             itemId: photoId,
             version: baseline,
@@ -255,19 +256,25 @@ struct PlayerControllerTests {
         await env.playerController.game(message: photoData, actionType: .generic)
 
         sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sent.type == .reveal)
-        #expect(sent.subType == .show)
+        #expect(sent.type == .update)
+        #expect(sent.subType == .generic)
+        #expect(sent.effectiveAudience == .master)
         #expect(sent.data.effectiveAssetVersion == baseline)
-        #expect(sent.data.data == photoData.data)
-        #expect(sent.usesFileJournal)
-        #expect(env.root.photoRoot.photoGameControllable.isPhotoAvailable(
+        #expect(sent.data.data == nil)
+        #expect(sent.usesFileJournal == false)
+        #expect(!env.root.photoRoot.photoGameControllable.isPhotoAvailable(
             itemId: photoId,
             for: missingPlayerId,
             masterId: masterId
         ))
 
-        // The full Journal reveal marks the current roster available, so the
-        // next reveal carries only the canonical reference.
+        // The master's broadcast marks the current roster available, so the
+        // next share presents the canonical reference to the group.
+        env.root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
+            itemId: photoId,
+            version: baseline,
+            masterId: masterId
+        )
         await env.playerController.game(message: photoData, actionType: .generic)
 
         sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)

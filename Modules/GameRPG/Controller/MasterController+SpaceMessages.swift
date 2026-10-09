@@ -187,8 +187,10 @@ extension MasterController {
                     counter: model.counter
                 )
             case .generic:
-                // Compatibility with older players. Peer bytes never replace the
-                // game master's canonical Space asset.
+                // A player names a Space the master has while another player
+                // misses it (`PlayerController.shareFileItem`): the master
+                // broadcasts its canonical copy. Peer bytes of older players
+                // never replace the game master's canonical Space asset.
                 guard root.gameModel.gameControl.features.spaceSharing else { return nil }
                 if let canonical = try? await root.spaceRoot.gameControllable.createGameData(for: model.data.id) {
                     gameModel.markSentGameItem(
