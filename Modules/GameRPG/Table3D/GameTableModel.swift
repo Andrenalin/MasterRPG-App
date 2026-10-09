@@ -67,7 +67,7 @@ final class GameTableModel: Sendable {
     var diceOverflowCount: Int?
 
     /// The dice groups — a seat's dice, or one guest's — that have been rolled and lie still, so
-    /// their result popover is up. Kept up to date by `updateDiceResults(snapshot:visualState:)`
+    /// their result popover is up. This device's own seat is among them before a roll, too. Kept up to date by `updateDiceResults(snapshot:visualState:)`
     /// on every frame.
     var shownDiceGroups: Set<TableDiceGroup> = []
     /// The dice of the players without a table, at the guest seat: who has which dice of that
@@ -80,9 +80,9 @@ final class GameTableModel: Sendable {
     /// Where each dice group's result popover stands.
     @ObservationIgnored
     var diceResultPopovers: [TableDiceGroup: TablePopoverAnchor] = [:]
-    /// Since when each group's rolled dice have been lying still with the same faces.
+    /// Since when each group's dice have been lying still with the same values.
     @ObservationIgnored
-    var diceRestingSince: [TableDiceGroup: (faces: [Int], start: ContinuousClock.Instant)] = [:]
+    var diceRestingSince: [TableDiceGroup: (values: [Int], start: ContinuousClock.Instant)] = [:]
     /// The dice sheet `applyDiceRoll` last mirrored onto the local seat, and which of its dice
     /// each table die stands for, so a die tossed by hand can be rolled by its sheet.
     @ObservationIgnored

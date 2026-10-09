@@ -25,12 +25,12 @@ public struct GameTableView: View {
     @State private var scaleController = TableScaleGestureController()
     @State private var accessibilitySubscriptions: [any Cancellable] = []
     /// Screen-local dice UI state (editing/player-dice toggles) for the
-    /// ornament's dice action bar — mirrors `MasterGameScreen`'s own
+    /// dice result attachments — mirrors `MasterGameScreen`'s own
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
-    /// Backs `WindowOpenButton` (leading ornament, row 2) and the trailing
-    /// window-menu ornament's own buttons — mirrors `MasterGameScreen`/
+    /// Backs `WindowOpenButton` and `GameTableSideMenu` (front ornament,
+    /// row 1) — mirrors `MasterGameScreen`/
     /// `PlayerGameScreen`'s own `gameScreenModel`, likewise owned per-screen
     /// rather than shared through `GameRoot`.
     @State private var gameScreenModel = GameScreenModel()
@@ -197,7 +197,7 @@ public struct GameTableView: View {
         // `RealityView` — attaching it inside the `if let loadedGame` branch
         // anchored to the RealityView's own subtree instead of the volume's
         // bounds.
-        // `.parent(.bottomLeadingFront)`, not `.scene(.bottomLeading)`: the
+        // `.parent(.bottomFront)`, not `.scene(.bottom)`: the
         // 2D `UnitPoint` anchor has no Z, so SwiftUI picked a depth for us
         // that landed mid-volume (inside/behind the table) instead of at the
         // front face, level with the window's grab handle. `.parent(_:)`
@@ -205,16 +205,24 @@ public struct GameTableView: View {
         // another one, its "parent" is the Scene, same anchor space as
         // `.scene(_:)`, just with the front (+z, toward the viewer) pinned
         // explicitly. Requires visionOS 26+ (this app's floor).
+        // Horizontally centered on that front face (with `.top` content
+        // alignment, so the stack hangs centered below the volume's front
+        // edge) rather than at its leading corner, where it sat off to the
+        // side of the user's own seat.
         // Requires `AppWindowSizeModel`, `\.networkActions`, and
         // `AppGameStateModel` on the scene, none of which a bare
         // `RealityView` gets for free — see `WindowVisionList`.
         //
-        // The window-controls row (row 1) and dice action bar (row 3 — same
-        // view `MasterGameScreen` ornaments at `.bottomLeading` on the flat
-        // Game screen) sit alongside the map toolbar (row 2) in this one
-        // stacked ornament rather than as their own separate ornaments —
-        // that would leave multiple ornaments contending for anchor points
-        // instead of a shared VStack giving that stacking for free. Row 1 is
+        // The window-controls row (row 1) sits alongside the map toolbar
+        // (row 2) in this one stacked ornament rather than as its own
+        // separate ornament — that would leave multiple ornaments contending
+        // for anchor points instead of a shared VStack giving that stacking
+        // for free. The stack as a whole is centered on the front face, but
+        // its rows are leading-aligned to each other, so the map toolbar
+        // starts under the window controls' own first button. No dice action
+        // bar here (the flat Game screen's `.bottomLeading` ornament has
+        // one): the table shows the dice themselves and their result
+        // attachments, so the edit/overlay toggles aren't needed. Row 1 is
         // every window-opening button the table volume offers —
         // `WindowOpenButton` (the floating adventure/character window
         // toggle) plus `GameTableSideMenu` (the *other* module windows) —
@@ -222,18 +230,18 @@ public struct GameTableView: View {
         // ornament this view used to have: with only `WindowOpenButton`
         // moved here and `GameTableSideMenu` left as its own
         // `.bottomTrailingFront` ornament, the module-window buttons stayed
-        // visually split across two corners for no real reason once one of
+        // visually split across two places for no real reason once one of
         // them had already moved — see `WindowOpenButton`'s own doc for why
         // it moved in the first place. Placed above the map toolbar (rather
         // than below it, where it first landed) so the table's own window
         // controls read as the top of the stack. No manual Y
         // `.offset(...)` on the stack itself — an up-then-down row-height
-        // estimate was tried here to compensate for the two extra rows and
+        // estimate was tried here to compensate for the extra rows and
         // ended up clipping the ornament against the volume's own bounds
         // on-device; removed rather than tuned further, since the
         // anchor/padding below already positions the stack correctly on its
         // own without it.
-        .ornament(attachmentAnchor: .parent(.bottomLeadingFront), contentAlignment: .topLeading) {
+        .ornament(attachmentAnchor: .parent(.bottomFront), contentAlignment: .top) {
             if let game {
                 VStack(alignment: .leading) {
                     // `GameTableSideMenu` is deliberately bare (no own
@@ -241,10 +249,9 @@ public struct GameTableView: View {
                     // `WindowOpenButton` share this one glass group instead
                     // of nesting one inside another — see that struct's own
                     // doc. No extra `.padding()` here, matching row 2
-                    // (`GameTableToolbar`) and row 3 (the dice bar's own
-                    // `GlassEffectContainerAll`, similarly unpadded) — this
-                    // row stays flush with the others under the shared
-                    // VStack's leading alignment instead of indenting itself.
+                    // (`GameTableToolbar`) — this row stays flush with it
+                    // under the shared VStack's leading alignment instead of
+                    // indenting itself.
                     GlassEffectContainerAll {
                         HStack {
                             WindowOpenButton(root: root)
@@ -261,9 +268,6 @@ public struct GameTableView: View {
                         .environment(gameScreenModel)
 
                     GameTableNoticesView(game: game)
-
-                    root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
-                        .environment(diceDisplayModel)
                 }
                 .padding(.top)
             }
@@ -280,11 +284,11 @@ public struct GameTableView: View {
         // Mirrors the currently focused character-sheet dice set onto this
         // player's own seat dice — both its shape (count and type per die,
         // so switching focus without rolling still updates the table) and
-        // every rolled result. Watches `focusedDiceSignature`, not
+        // every rolled result. Watches `focusedDice`, not
         // `focusItemIds` alone — re-rolling the already-focused dice
         // mutates `DiceModel.dice[].result` in place without the focus id
         // array itself changing, so that alone wouldn't fire this.
-        .onChange(of: focusedDiceSignature, initial: false) { _, _ in
+        .onChange(of: focusedDice, initial: false) { _, _ in
             guard let game else { return }
             applyCurrentFocusedDiceRoll(to: game)
         }
@@ -456,13 +460,6 @@ public struct GameTableView: View {
         }
     }
 
-    /// Everything about the currently-focused character-sheet dice set that
-    /// should re-mirror it onto the 3D table: which set is focused at all
-    /// (`focusId`, so deselecting is also a change), its shape — side count
-    /// per die, so switching from e.g. "2d20" to "4d6" without rolling still
-    /// updates the table — and every rolled result. Changes on every roll,
-    /// including a re-roll of the same dice, unlike `focusItemIds` alone
-    /// (which only changes when the *selection* changes).
     /// The last shared roll of every player who is not on Vision Pro, as the dice overlay has
     /// it, reduced to the dice the table has: d20 and d6.
     private var guestRolls: [TableGuestRoll] {
@@ -478,12 +475,20 @@ public struct GameTableView: View {
             }
     }
 
-    private var focusedDiceSignature: [Int] {
+    /// Everything about the currently-focused character-sheet dice set that
+    /// should re-mirror it onto the 3D table: which set is focused at all
+    /// (so deselecting is also a change, and so is a copy taking its place:
+    /// the popover's compare value editor focuses one), its shape — side
+    /// count per die, so switching from e.g. "2d20" to "4d6" without rolling
+    /// still updates the table — and every rolled result. Changes on every
+    /// roll, including a re-roll of the same dice, unlike `focusItemIds`
+    /// alone (which only changes when the *selection* changes).
+    private var focusedDice: TableFocusedDice? {
         guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
               let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
-            return []
+            return nil
         }
-        return diceModel.dice.flatMap { [$0.die.max] + $0.result }
+        return TableFocusedDice(diceModel)
     }
 
 }

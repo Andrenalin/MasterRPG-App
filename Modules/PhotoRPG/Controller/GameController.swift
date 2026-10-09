@@ -14,6 +14,9 @@ public protocol PhotoGameControllable: Sendable {
     @MainActor func markPhotoAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID)
     @MainActor func markPhotoAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func removePhotoReports(for playerId: UUID)
+    /// The photo a show-photo event presented, `nil` until one arrives. See `PhotoGamePresentationModel`.
+    @MainActor var presentedPhotoId: UUID? { get }
+    @MainActor func presentPhoto(itemId: UUID)
 }
 
 /// Default implementations forwarding to `FileVersionGameControllable` —
@@ -55,6 +58,7 @@ struct GameController: Sendable {
 
         self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.versionLedger = PlayerVersionLedger()
+        self.presentationModel = PhotoGamePresentationModel()
     }
 
     let itemController: ItemController
@@ -62,6 +66,7 @@ struct GameController: Sendable {
 
     let gameModel: ItemGameModel
     let versionLedger: PlayerVersionLedger
+    let presentationModel: PhotoGamePresentationModel
 }
 
 // gameItem(for:)/setGame(item:itemId:)/currentItem() come from
@@ -74,6 +79,7 @@ extension GameController: GameControllable {
 
     @MainActor func resetGameState() {
         versionLedger.reset()
+        presentationModel.reset()
     }
 }
 
@@ -82,7 +88,13 @@ extension GameController: FileVersionGameControllable {
     static var fileModuleType: NetworkModules { .photo }
 }
 
-extension GameController: PhotoGameControllable {}
+extension GameController: PhotoGameControllable {
+    @MainActor var presentedPhotoId: UUID? { presentationModel.presentedItemId }
+
+    @MainActor func presentPhoto(itemId: UUID) {
+        presentationModel.present(itemId: itemId)
+    }
+}
 
 public struct PhotoListRequest: FileListRequest {
     public let list: [UUID: Int]

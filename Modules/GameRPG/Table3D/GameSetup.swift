@@ -54,7 +54,7 @@ final class GameSetup {
      respectively) with the map centered in a 0.25 m margin
      (`GameMetrics.mapMargin`) and six seats around it: the master centered
      on the near (+Z, South) short edge — the side the volumetric window's
-     own default viewing position, and this view's ornaments/dice-bar,
+     own default viewing position, and this view's ornament,
      already face (see `WindowVisionList`, `GameTableView`) — with the
      table's long sides running away from the viewer along Z instead of
      spanning left-right in front of them. Four more seats flank those long

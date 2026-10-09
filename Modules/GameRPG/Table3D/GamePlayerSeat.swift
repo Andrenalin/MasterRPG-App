@@ -18,7 +18,7 @@ struct PlayerSeat: TableSeat {
     the master on the far (-Z, North) short edge. Each seat faces the
     center of the table. The master sits on the near short edge
     specifically so it lines up with the volumetric window's own default
-    viewing position and this view's ornaments/dice-bar (see `GameSetup`'s
+    viewing position and this view's ornament (see `GameSetup`'s
     own doc for why — without an active SharePlay session, nothing else
     rotates the table to face whichever seat is claimed).
     `assignSeatsForSharePlay` claims seats 1...4 in this array's order, so

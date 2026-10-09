@@ -64,6 +64,13 @@ public extension ViewController {
             .environment(root)
     }
 
+    /// The button that rolls the focused dice, on its own: the 3D table's dice popover puts it
+    /// in front of the result.
+    @MainActor func diceRollButtonView(root: DiceRootModel) -> some View {
+        DiceFocusRollButton()
+            .environment(root)
+    }
+
     @MainActor func diceResultView(root: DiceRootModel) -> some View {
         DiceFocusResult()
             .environment(root)

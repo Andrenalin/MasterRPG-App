@@ -26,8 +26,8 @@ extension GameTableModel {
     /// Only slots whose synced value or pose actually changes are submitted: each `addAction` is a
     /// SharePlay message and plays the toss sound, so re-parking already-parked dice was pure noise.
     ///
-    /// A die the sheet has not rolled yet is mirrored as `TableDieValue.unrolled`, so no device
-    /// shows a result for it. A die tossed by hand got its value from the sheet already (see
+    /// A die the sheet has not rolled yet is mirrored as `TableDieValue.unrolled`, so no other
+    /// seat shows a result for it. A die tossed by hand got its value from the sheet already (see
     /// `rollTossedDie(_:)`) and stays where it landed until the sheet gives it another one.
     func applyDiceRoll(_ diceModel: DiceModel) {
         mirroredSheet = nil
