@@ -65,48 +65,48 @@ private struct GameView: View {
 /// falls back to the horizontal bars and the vertical bar's safe-area inset goes away.
 private struct GameHorizontalBarsModifier: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 27.1, *) {
+//        if #available(iOS 27.1, *) {
+//            content
+//                .modifier(GameReclaimedTopModifier())
+//                .toolbarVerticalBehavior(.disabled)
+//        } else {
             content
-                .modifier(GameReclaimedTopModifier())
-                .toolbarVerticalBehavior(.disabled)
-        } else {
-            content
-        }
+//        }
     }
 }
 
 /// Without the vertical bar the system reserves a top band for the status bar, which the
 /// game hides. Where that band only exists because of a camera block in the top trailing
 /// corner, the game uses it and tells the top menu how wide the corner is.
-@available(iOS 27.1, *)
-private struct GameReclaimedTopModifier: ViewModifier {
-    @Environment(\.layoutDirection) private var layoutDirection
-    @State private var cornerWidth: CGFloat = 0
-
-    func body(content: Content) -> some View {
-        let isLeftToRight = layoutDirection == .leftToRight
-        content
-            .environment(\.gameTopTrailingOcclusionWidth, cornerWidth)
-            .ignoresSafeArea(.container, edges: cornerWidth > 0 ? .top : [])
-            // Measured outside the modifier above, so the result doesn't feed back into it.
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                // The corner is a physical screen corner; only the left-to-right top menu
-                // ends there.
-                guard isLeftToRight else { return 0 }
-                let frame = proxy.frame(in: .global)
-                let insets = proxy.safeAreaInsets
-                return GameTopOcclusion.reclaimableCornerWidth(
-                    topInset: insets.top,
-                    screenWidth: frame.maxX + insets.trailing,
-                    occlusions: proxy.reservedRegions(kind: .occlusion, layoutDirectionBehavior: .fixed).map {
-                        $0.frame.offsetBy(dx: frame.minX, dy: frame.minY)
-                    }
-                )
-            } action: { width in
-                cornerWidth = width
-            }
-    }
-}
+//@available(iOS 27.1, *)
+//private struct GameReclaimedTopModifier: ViewModifier {
+//    @Environment(\.layoutDirection) private var layoutDirection
+//    @State private var cornerWidth: CGFloat = 0
+//
+//    func body(content: Content) -> some View {
+//        let isLeftToRight = layoutDirection == .leftToRight
+//        content
+//            .environment(\.gameTopTrailingOcclusionWidth, cornerWidth)
+//            .ignoresSafeArea(.container, edges: cornerWidth > 0 ? .top : [])
+//            // Measured outside the modifier above, so the result doesn't feed back into it.
+//            .onGeometryChange(for: CGFloat.self) { proxy in
+//                // The corner is a physical screen corner; only the left-to-right top menu
+//                // ends there.
+//                guard isLeftToRight else { return 0 }
+//                let frame = proxy.frame(in: .global)
+//                let insets = proxy.safeAreaInsets
+//                return GameTopOcclusion.reclaimableCornerWidth(
+//                    topInset: insets.top,
+//                    screenWidth: frame.maxX + insets.trailing,
+//                    occlusions: proxy.reservedRegions(kind: .occlusion, layoutDirectionBehavior: .fixed).map {
+//                        $0.frame.offsetBy(dx: frame.minX, dy: frame.minY)
+//                    }
+//                )
+//            } action: { width in
+//                cornerWidth = width
+//            }
+//    }
+//}
 #endif
 
 struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
