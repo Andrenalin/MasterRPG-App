@@ -35,7 +35,7 @@ enum DieAssets {
         }
         let resource = try AudioFileResource.load(
             named: path,
-            from: "static_scene.usda",
+            from: "dice_sounds.usda",
             in: tabletopGameContentBundle
         )
         audioResources[path] = resource
