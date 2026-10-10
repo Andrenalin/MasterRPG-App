@@ -34,7 +34,15 @@ struct OverlayGameMenu: View {
             }
         )
 #elseif os(tvOS)
-        OverlayGameMenuTvMenuView(root: root, isMaster: isMaster, playerController: playerController, marginWidth: marginWidth)
+        OverlayGameMenuTvMenuView(
+            root: root,
+            isMaster: isMaster,
+            playerController: playerController,
+            marginWidth: marginWidth,
+            onToggle: { newValue in
+                handleMainTabToggle(isShown: newValue, isMaster: isMaster)
+            }
+        )
 #else
         IOSGameOverlayMenu(
             root: root,
@@ -140,13 +148,25 @@ private struct OverlayGameMenuTvMenuView: View {
     let isMaster: Bool
     let playerController: PlayerController?
     let marginWidth: CGFloat
+    let onToggle: (_ isShown: Bool) -> Void
+
+    @Environment(GameScreenModel.self) private var gameScreenModel
 
     var body: some View {
+        @Bindable var gameScreenModel = gameScreenModel
+
         HStack {
             if isMaster || root.gameModel.gameType != .observer {
                 GameDiceToggleButton()
             }
             Spacer()
+            // An observer has no adventure or character side view to show.
+            if isMaster || root.gameModel.gameType != .observer {
+                GameMainTabToggleButtonView(isMaster: isMaster, isShown: $gameScreenModel.showMainTabIOS)
+                    .onChange(of: gameScreenModel.showMainTabIOS) { _, newValue in
+                        onToggle(newValue)
+                    }
+            }
             OverlayGameMenuWifiView(root: root, isMaster: isMaster, playerController: playerController, marginWidth: marginWidth)
             OverlayGameMenuCloseFieldView(marginWidth: marginWidth)
         }

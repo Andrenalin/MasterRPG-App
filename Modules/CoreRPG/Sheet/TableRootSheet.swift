@@ -61,7 +61,8 @@ public struct TableRootSheet: View {
         
         @Bindable var sheetRootModel = sheetRootModel
 
-        TableSheetView(root: root, model: sheetRootModel, addSearchable: valueFor(iOS: true, macOS: configuration.addToolbar, tvOS: true, visionOS: true))
+        // The Apple TV game view is a display for the table: no search field there.
+        TableSheetView(root: root, model: sheetRootModel, addSearchable: valueFor(iOS: true, macOS: configuration.addToolbar, tvOS: !configuration.isGame, visionOS: true))
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #endif

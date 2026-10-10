@@ -37,6 +37,11 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 
     var body: some View {
         Group {
+#if os(tvOS)
+            // No selection button on Apple TV: a button around the row takes the focus
+            // for itself, so the dice buttons and links inside it could never be focused.
+            SheetEntryRowContentView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult, isEditTypePickerPresented: $isEditTypePickerPresented)
+#else
             // Review placeholders have no tap-to-select behavior — same as before.
             if entryModel.isReviewPlaceholder {
                 SheetEntryRowContentView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult, isEditTypePickerPresented: $isEditTypePickerPresented)
@@ -71,6 +76,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 .accessibilityLabel(primaryActionAccessibilityLabel)
                 .accessibilityValue(generatedSelectionAccessibilityValue)
             }
+#endif
         }
         .id(entryModel.source.entryId ?? entryModel.source.itemId)
         .sheetBorderColor(level: parentModel.level)

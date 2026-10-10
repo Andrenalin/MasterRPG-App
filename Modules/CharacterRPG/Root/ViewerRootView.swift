@@ -66,8 +66,8 @@ private struct ReaderSheetView: View {
                 // `CharacterRootModel.startGameSheetRootModel(itemId:)` already
                 // resolves this at game join (see `GameController.startGame(for:)`),
                 // so the common case reads it here on the very first render — the
-                // `onChange` below only still needs to run for the rare case where
-                // this view appears outside that flow, or the player switches
+                // `onChange` below only still needs to run where this view appears
+                // outside that flow (a proxy), or the player switches
                 // characters. A plain read of an existing `@Observable` value is
                 // not a body-mutation, unlike the removed computed property this
                 // replaced — see CODE_AUDIT_Character §8.3.
@@ -80,6 +80,12 @@ private struct ReaderSheetView: View {
                         dismissAction: dismissAction,
                         externalSheetRootModel: sheetRootModel
                     )
+                } else {
+                    // A `Group` without content has no view to carry the `onChange`
+                    // below, so it never ran and the panel stayed empty whenever the
+                    // character arrives after game join (a proxy on Apple TV gets it
+                    // from its host player, so `startGame(for:)` had none to resolve).
+                    Color.clear
                 }
             } else {
                 TableRootSheet(

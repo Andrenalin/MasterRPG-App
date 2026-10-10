@@ -28,9 +28,10 @@ extension View {
     /// itself where there is no stack): keeps it inside the top safe area and, in the
     /// compact layout, below the top menu wherever the status bar and navigation bar don't
     /// already clear it (no top safe area and no or a compact navigation bar, as on
-    /// iPhone Duo).
+    /// iPhone Duo). On tvOS the top menu's buttons always lie over the panel, so its
+    /// content always starts below them.
     func gameSidePanelContent() -> some View {
-#if os(iOS)
+#if os(iOS) || os(tvOS)
         modifier(GameSidePanelContentModifier())
 #else
         self
@@ -50,10 +51,12 @@ extension View {
     }
 }
 
-#if os(iOS)
+#if os(iOS) || os(tvOS)
 private struct GameSidePanelContentModifier: ViewModifier {
     @Environment(GameScreenModel.self) private var gameScreenModel
+#if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
     @State private var systemTopInset: CGFloat?
 
     func body(content: Content) -> some View {
@@ -70,15 +73,22 @@ private struct GameSidePanelContentModifier: ViewModifier {
 
     /// The top menu only overlaps the panel in the compact layout; in the regular one it
     /// ends at the panel's leading edge and the content only has to clear the safe area.
+    /// The tvOS menu spans the screen, so it always overlaps the panel.
     private var topInset: CGFloat {
         guard let systemTopInset else { return 0 }
+#if os(iOS)
         let contentTop = horizontalSizeClass == .compact
             ? gameScreenModel.sidePanelContentTop
             : gameScreenModel.chromeTopSafeAreaInset
+#else
+        let contentTop = gameScreenModel.sidePanelContentTop
+#endif
         return max(0, contentTop - systemTopInset)
     }
 }
+#endif
 
+#if os(iOS)
 private struct GameSidePanelTrailingSafeAreaModifier: ViewModifier {
     @Environment(GameScreenModel.self) private var gameScreenModel
 

@@ -68,6 +68,17 @@ extension SheetRootModel {
         self.selectedParentModel = nil
     }
 
+    /// Whether a viewer row offers the button that opens its quick controls. The Apple TV
+    /// game view only displays the sheet (it mirrors its host player's character), so it
+    /// has none.
+    var offersInlineEditing: Bool {
+#if os(tvOS)
+        !isGameEditor
+#else
+        true
+#endif
+    }
+
     /// Opens or closes the quick controls for an entry in a viewer sheet.
     /// Only one entry can be edited at a time.
     func toggleInlineEditing(_ entryModel: SheetModel, parent: SheetModel) {

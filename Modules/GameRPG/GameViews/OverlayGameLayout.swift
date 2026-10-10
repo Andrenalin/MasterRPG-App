@@ -49,6 +49,15 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #else
                 .padding(.horizontal, horizontalPadding)
 #endif
+#if os(tvOS)
+                // The panel runs to the top screen edge; its content needs the top
+                // safe-area inset to start below the top menu.
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.safeAreaInsets.top
+                } action: { topInset in
+                    gameScreenModel.updateChromeSafeAreaInsets(top: topInset, trailing: 0)
+                }
+#endif
                 .zIndex(10)
 
             moduleMenuOverlay()
@@ -80,7 +89,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .zIndex(40)
 
             menuOverlay()
-#if os(iOS)
+#if os(iOS) || os(tvOS)
                 .onGeometryChange(for: CGFloat.self) { proxy in
                     proxy.size.height
                 } action: { newHeight in

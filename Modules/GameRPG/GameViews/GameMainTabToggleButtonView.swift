@@ -22,6 +22,9 @@ struct GameMainTabToggleButtonView: View {
             Image(systemName: NetworkModules.game.icon)
 #if os(iOS)
                 .frame(height: iconSize)
+#elseif os(tvOS)
+                // tvOS has no selected button style; the filled symbol shows the state.
+                .symbolVariant(isShown ? .fill : .none)
 #endif
         }
         .selectedBorderedStype(isSelected: isShown)

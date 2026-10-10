@@ -160,7 +160,7 @@ struct SheetEntryMainRowView: View {
                 SheetEntryTakeOverButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
             }
 
-            if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
+            if !entryModel.isGeneratedAnswer && (isEditor || (entryModel.editType != .none && rootModel.offersInlineEditing)) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
             }
 

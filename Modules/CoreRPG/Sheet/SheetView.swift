@@ -93,25 +93,15 @@ private struct SheetNameRowView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
+#if os(tvOS)
+        // No selection button on Apple TV — see `SheetEntryView`.
+        SheetNameRowLabelView(rootModel: rootModel, sheetModel: sheetModel, isEditor: isEditor, shareResult: shareResult)
+#else
         Button {
             rootModel.setSelected(sheetModel, parent: sheetModel)
         } label: {
-            HStack {
-                if isEditor && sheetModel.canAdd {
-                    SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
-                }
-
-                LinkHighlightTextView(
-                    model: rootModel.linkTextModel(
-                        for: .item(sheetModel.source.itemId),
-                        text: sheetModel.name,
-                        shareResults: shareResult
-                    )
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.title)
-            }
-            .contentShape(.rect)
+            SheetNameRowLabelView(rootModel: rootModel, sheetModel: sheetModel, isEditor: isEditor, shareResult: shareResult)
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .focused(focusedEntryId, equals: sheetModel.id)
@@ -138,6 +128,33 @@ private struct SheetNameRowView: View {
             $0.contextMenuAll {
                 SheetContextMenuView(rootModel: rootModel, parentModel: sheetModel, entryModel: sheetModel, isEditor: isEditor)
             }
+        }
+#endif
+    }
+}
+
+/// The name row's content: the add button (editor) and the sheet's name.
+private struct SheetNameRowLabelView: View {
+    let rootModel: SheetRootModel
+    let sheetModel: SheetModel
+    let isEditor: Bool
+    let shareResult: ShareValueResult
+
+    var body: some View {
+        HStack {
+            if isEditor && sheetModel.canAdd {
+                SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
+            }
+
+            LinkHighlightTextView(
+                model: rootModel.linkTextModel(
+                    for: .item(sheetModel.source.itemId),
+                    text: sheetModel.name,
+                    shareResults: shareResult
+                )
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .font(.title)
         }
     }
 }
