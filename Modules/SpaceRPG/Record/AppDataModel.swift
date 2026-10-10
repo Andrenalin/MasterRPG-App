@@ -151,9 +151,15 @@ final class AppDataModel: Identifiable {
     /// opened for the hardware (the Fig camera-source asserts, "No depth/confidence map
     /// available", stuck `shouldShowARKitCoachingView`, and growing ARFrame-retention
     /// warnings all trace back to that orphaned session).
+    ///
+    /// The model is reset right here instead of waiting for the session to report
+    /// `.failed(.cancelled)`: Cancel is also available before detection has started, where
+    /// that report is not something to rely on, and a session left behind would keep the
+    /// camera and be shown again on the next open.
     func cancelAndDismiss() {
         skipNextAutoRestart = true
         objectCaptureSession?.cancel()
+        state = .restart
     }
 
     /// Starts a new capture session if one isn't already running.
@@ -247,7 +253,10 @@ final class AppDataModel: Identifiable {
         tasks.append(Task<Void, Never> { [weak self] in
             for await newState in model.stateUpdates {
                 Logger.scanner3D.debug("Task got async state change to: \(String(describing: newState))")
-                self?.onStateChanged(newState: newState)
+                // A session that was already replaced or reset must not drive the model:
+                // its late `.failed(.cancelled)` would restart a capture nobody sees.
+                guard let self, self.objectCaptureSession === model else { break }
+                self.onStateChanged(newState: newState)
                 }
             Logger.scanner3D.log("^^^ Got nil from stateUpdates iterator!  Ending observation task...")
         })

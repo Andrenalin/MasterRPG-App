@@ -25,6 +25,7 @@ struct CapturePrimaryView: View {
         ZStack {
             ObjectCaptureView(session: session,
                               cameraFeedOverlay: { GradientBackground() })
+            .ignoresSafeArea()
             .blur(radius: appModel.showPreviewModel ? 45 : 0)
             .transition(.opacity)
             if shouldShowOverlayView {

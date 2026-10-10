@@ -56,8 +56,11 @@ struct Scanner3DRootView: View {
         // first layout pass proposes RealityKit's internal `CAMetalLayer` a zero/ambiguous
         // size before it settles (matching the "CAMetalLayer ignoring invalid
         // setDrawableSize width=0.000000 height=0.000000" log lines).
+        //
+        // The safe area is not ignored here: only the camera feed runs edge to edge (see
+        // `CapturePrimaryView`), so the capture controls stay clear of the status bar and
+        // the home indicator.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
         .onAppear {
             // Reopening after a cancel leaves `appModel` idling at `.ready` with no
             // session — see `AppDataModel.cancelAndDismiss()` — so kick off a fresh one.

@@ -14,6 +14,8 @@ struct DetailFolderListView: View {
     let folderListController: any FolderListControllable
     var isSubFolder: Bool = false
 
+    private static let diagnosticNoBackgroundViewer = true
+
     var body: some View {
         DetailFolderList(
             root: root.rootController,
@@ -27,7 +29,9 @@ struct DetailFolderListView: View {
             // `Scanner3DRootView`'s ObjectCaptureSession would otherwise render
             // concurrently and starve each other of Metal drawables. See
             // `SpaceRootModel.isScanning3D`.
-            if root.isScanning3D {
+            // TEMP DIAGNOSTIC, remove again: never mount the background `RealityView`, to test
+            // whether a `RealityView` shown earlier in the launch blanks the scanner's camera feed.
+            if root.isScanning3D || Self.diagnosticNoBackgroundViewer {
                 Color.clear
             } else {
                 ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))

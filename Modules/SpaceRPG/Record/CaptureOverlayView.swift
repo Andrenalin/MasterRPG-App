@@ -151,8 +151,11 @@ struct CaptureOverlayView: View {
         capturingStarted && !shouldShowTutorial
     }
 
+    // Apple's sample also disables Cancel while the session is `.ready` or `.initializing`:
+    // its single screen has nothing to cancel yet. Here Cancel is the only way out of the
+    // full-screen cover, so it stays enabled in those states.
     private var shouldDisableCancelButton: Bool {
-        shouldShowTutorial || session.state == .ready || session.state == .initializing
+        shouldShowTutorial
     }
 
     private var rotationAngle: Angle {
