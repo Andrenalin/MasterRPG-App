@@ -75,14 +75,36 @@ extension GameTableModel {
               !shownDiceGroups.contains(group) else { return }
 
         // The dice may have come to rest somewhere else.
-        diceResultPopovers[group]?.show(at: diceResultTip(above: dice))
         shownDiceGroups.insert(group)
+        applyDiceResultVisibility(for: group, tip: diceResultTip(above: dice))
     }
 
     func hideDiceResult(for group: TableDiceGroup) {
         guard shownDiceGroups.contains(group) else { return }
         shownDiceGroups.remove(group)
-        diceResultPopovers[group]?.hide()
+        applyDiceResultVisibility(for: group, tip: nil)
+    }
+
+    /// Brings a group's attachment in step with `shownDiceGroups`, after the frame callback
+    /// this is called from has returned.
+    ///
+    /// TabletopKit calls `onUpdate` inside a Core Animation commit. Enabling the attachment there
+    /// activates its hosting entity at once, and SwiftUI then hands the keyboard back to a text
+    /// field the popover still has in focus — the quick editor of the own dice's compare value,
+    /// when the new value changed the number of dice and the popover came back for them. UIKit
+    /// cannot synchronize the keyboard's scene during a commit and aborts with "Failed to
+    /// register pre-fence handler: transactionPhase=3". Disabling it resigns that focus the same
+    /// way, so both wait for the next turn of the main actor.
+    private func applyDiceResultVisibility(for group: TableDiceGroup, tip: SIMD3<Float>?) {
+        Task { @MainActor [weak self] in
+            guard let self, let popover = diceResultPopovers[group] else { return }
+            // The group may have changed its mind since: only the latest state counts.
+            if let tip, shownDiceGroups.contains(group) {
+                popover.show(at: tip)
+            } else if !shownDiceGroups.contains(group) {
+                popover.hide()
+            }
+        }
     }
 
     /// The dice of a seat's pool that are on the table, with their synced values.

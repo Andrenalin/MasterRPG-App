@@ -38,35 +38,36 @@ extension GameTableModel {
         else { return }
         var sheetDieIds: [EquipmentIdentifier: UUID] = [:]
 
-        // Compare the *resolved* side count (`RawDie.max`), not the `Sides` enum case: a die
-        // authored through the sheet's UI can end up as `.number(20)` instead of `.twenty`, and
-        // those don't compare equal despite meaning the same die.
-        let d20Dice = diceModel.dice.filter { $0.die.max == 20 }
-        let d6Dice = diceModel.dice.filter { $0.die.max == 6 }
-        let usedD20Count = min(d20Dice.count, d20Ids.count)
-        let usedD6Count = min(d6Dice.count, d6Ids.count)
-        let layout = PlayerSeat.diceLayout(inFrontOf: seatPose, count: usedD20Count + usedD6Count)
-
-        for (index, dieId) in d20Ids.enumerated() {
-            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
-            let target = index < usedD20Count
-                ? (value: d20Dice[index].result.last ?? TableDieValue.unrolled, pose: layout[index])
-                : (value: TableDieValue.parked, pose: .parkedDicePose)
-            updateDieSlot(equipment, target: target)
-            if index < usedD20Count { sheetDieIds[dieId] = d20Dice[index].id }
+        // The dice lie in the order of the set, which is the order its result reads in — not
+        // every d20 first and the d6s after them.
+        let slots = TableSeatDice.slots(sides: diceModel.dice.map(\.die.max), poolSize: GameSetup.maxDicePerType)
+        let layout = PlayerSeat.diceLayout(inFrontOf: seatPose, count: slots.count)
+        var d20Targets: [Int: (value: Int, pose: TableVisualState.Pose2D)] = [:]
+        var d6Targets: [Int: (value: Int, pose: TableVisualState.Pose2D)] = [:]
+        for (slot, pose) in zip(slots, layout) {
+            let die = diceModel.dice[slot.index]
+            let target = (value: die.result.last ?? TableDieValue.unrolled, pose: pose)
+            if slot.isD20, d20Ids.indices.contains(slot.slot) {
+                d20Targets[slot.slot] = target
+                sheetDieIds[d20Ids[slot.slot]] = die.id
+            } else if !slot.isD20, d6Ids.indices.contains(slot.slot) {
+                d6Targets[slot.slot] = target
+                sheetDieIds[d6Ids[slot.slot]] = die.id
+            }
         }
 
-        for (index, dieId) in d6Ids.enumerated() {
+        let parked = (value: TableDieValue.parked, pose: TableVisualState.Pose2D.parkedDicePose)
+        for (slot, dieId) in d20Ids.enumerated() {
+            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
+            updateDieSlot(equipment, target: d20Targets[slot] ?? parked)
+        }
+        for (slot, dieId) in d6Ids.enumerated() {
             guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
-            let target = index < usedD6Count
-                ? (value: d6Dice[index].result.last ?? TableDieValue.unrolled, pose: layout[usedD20Count + index])
-                : (value: TableDieValue.parked, pose: .parkedDicePose)
-            updateDieSlot(equipment, target: target)
-            if index < usedD6Count { sheetDieIds[dieId] = d6Dice[index].id }
+            updateDieSlot(equipment, target: d6Targets[slot] ?? parked)
         }
         mirroredSheet = (diceModel.id, sheetDieIds)
 
-        let overflowCount = diceModel.dice.count - usedD20Count - usedD6Count
+        let overflowCount = diceModel.dice.count - slots.count
         diceOverflowCount = overflowCount > 0 ? overflowCount : nil
         if overflowCount > 0 {
             Logger.gameTable.warning(

@@ -469,8 +469,11 @@ public struct GameTableView: View {
             .map { dice in
                 TableGuestRoll(
                     name: dice.name,
-                    d20: dice.dice.filter { $0.die.max == 20 }.compactMap(\.result.last),
-                    d6: dice.dice.filter { $0.die.max == 6 }.compactMap(\.result.last)
+                    dice: dice.dice.compactMap { die in
+                        guard let isD20 = TableSeatDice.isD20(sides: die.die.max),
+                              let value = die.result.last else { return nil }
+                        return .init(isD20: isD20, value: value)
+                    }
                 )
             }
     }
