@@ -128,35 +128,37 @@ struct Die20: EntityEquipment {
         )
     }
 
-    /// The bundled D20 mesh is authored at ~4000× its physical size.
-    static let displayScale: Float = 0.00025
+    /// Height (metres) the D20 presents on the table, whatever size its asset is authored at:
+    /// `D20White.usdz` is an Object Capture scan at roughly real size (~35 mm).
+    static let displayHeight: Float = 0.075
 
-    /// Outward normals measured from the engraved faces in `D20Blue.usdz`.
-    /// They intentionally describe the asset rather than an idealized D20;
-    /// the source mesh includes a small built-in tilt.
+    /// Outward face normals of `D20White.usdz`, keyed by the number printed on that face.
+    /// Measured from the scanned mesh (the numbers exist only in its baked texture) rather
+    /// than taken from an idealized D20, so opposite faces are only ~179° apart. The asset
+    /// rests with 1 on top (+y) and 20 underneath.
     private static let faceNormals: [Int: SIMD3<Float>] = [
-        1:  .init(-0.00000010, -0.98224616, -0.18759662),
-        2:  .init( 0.57735944,  0.79464918, -0.18758698),
-        3:  .init(-0.93417156, -0.30353564, -0.18758911),
-        4:  .init( 0.57735360,  0.18759663,  0.79465115),
-        5:  .init( 0.93417138, -0.30353573, -0.18758917),
-        6:  .init(-0.35682914, -0.49112195,  0.79465228),
-        7:  .init( 0.00000001, -0.60706472, -0.79465228),
-        8:  .init(-0.57735920,  0.79464918, -0.18758711),
-        9:  .init(-0.57735366,  0.18759674,  0.79465103),
-        10: .init(-0.35682899,  0.49112207, -0.79465228),
-        11: .init( 0.35682896, -0.49112198,  0.79465222),
-        12: .init( 0.35682914,  0.49112195, -0.79465228),
-        13: .init( 0.57735920, -0.79464912,  0.18758705),
-        14: .init(-0.00000001,  0.60706478,  0.79465228),
-        15: .init( 0.57735366, -0.18759671, -0.79465091),
-        16: .init(-0.93417144,  0.30353579,  0.18758918),
-        17: .init(-0.57735354, -0.18759662, -0.79465109),
-        18: .init( 0.93417156,  0.30353567,  0.18758911),
-        19: .init(-0.57735932, -0.79464906,  0.18758710),
-        20: .init( 0.00000004,  0.98224616,  0.18759669)
+        1:  .init(-0.02937186,  0.99942795, -0.01676517),
+        2:  .init(-0.57530483, -0.76594368,  0.28697496),
+        3:  .init( 0.46030532,  0.33109698, -0.82370735),
+        4:  .init( 0.27046883, -0.31043183,  0.91130604),
+        5:  .init(-0.67357019,  0.30542637,  0.67306607),
+        6:  .init( 0.95596970, -0.29325682, -0.01106242),
+        7:  .init(-0.54030937,  0.73680726, -0.40642447),
+        8:  .init( 0.11184998, -0.75054924, -0.65127983),
+        9:  .init( 0.90389291,  0.35227540,  0.24265129),
+        10: .init(-0.47162709, -0.34664314, -0.81080603),
+        11: .init( 0.48109705,  0.35400128,  0.80201541),
+        12: .init(-0.90312790, -0.35696853, -0.23860733),
+        13: .init(-0.11144258,  0.75399434,  0.64735855),
+        14: .init( 0.55942843, -0.72638569,  0.39925389),
+        15: .init(-0.95853365,  0.28476978,  0.01092795),
+        16: .init( 0.69070339, -0.29553462, -0.65999100),
+        17: .init(-0.25462721,  0.31287159, -0.91502806),
+        18: .init(-0.45607540, -0.35027610,  0.81810872),
+        19: .init( 0.59019689,  0.76037354, -0.27110831),
+        20: .init( 0.04128365, -0.99912692,  0.00640834)
     ]
-    
+
     @MainActor
     init(id: ID, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
         self.id = id
@@ -165,20 +167,31 @@ struct Die20: EntityEquipment {
         // bundled asset (a packaging bug, not something reachable from user/runtime
         // conditions), fall back to a plain procedural mesh so the die still renders,
         // rolls, and reports a value — just without its custom artwork.
+        let model: Entity
         do {
-            self.entity = try DieAssets.entity(named: "D20Blue")
+            model = try DieAssets.entity(named: "D20White")
         } catch {
             Logger.gameTable.error(
-                "Failed to load the bundled D20Blue RealityKit asset: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); using a procedural fallback mesh"
+                "Failed to load the bundled D20White RealityKit asset: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); using a procedural fallback mesh"
             )
-            self.entity = Self.makeFallbackEntity()
+            model = Self.makeFallbackEntity()
         }
-        // Read the mesh's own unscaled bounds *before* applying the display
-        // scale below, then multiply by that same known factor explicitly —
-        // see `representation`'s own doc for why relying on `visualBounds`
-        // to already reflect the just-set `.scale` isn't safe enough here.
-        let unscaledHeight = self.entity.visualBounds(relativeTo: nil).extents.y
-        self.entity.scale = SIMD3<Float>(repeating: Self.displayScale)
+        // Object Capture puts the scan's origin under its base, but TabletopKit turns and
+        // rests a tossable about the equipment entity's own origin (Apple's `Die.usdz` is
+        // authored centred for the same reason). Re-centre the mesh inside a pivot entity,
+        // otherwise every face-up rotation would swing the die around its "20" face.
+        let unscaledBounds = model.visualBounds(relativeTo: nil)
+        model.position -= unscaledBounds.center
+        let pivot = Entity()
+        pivot.name = "D20"
+        pivot.addChild(model)
+        self.entity = pivot
+        // Scale from the mesh's own unscaled bounds, read *before* any scale is applied —
+        // see `representation` below for why its height isn't a post-scale `visualBounds` read.
+        let unscaledHeight = unscaledBounds.extents.y
+        if unscaledHeight > 0 {
+            self.entity.scale = SIMD3<Float>(repeating: Self.displayHeight / unscaledHeight)
+        }
         self.entity.spatialAudio = SpatialAudioComponent()
         do {
             // Keep the sound authored in Reality Composer Pro and prepare it
@@ -192,19 +205,15 @@ struct Die20: EntityEquipment {
             self.audioPlaybackController = nil
         }
         // `.icosahedron(height:)` wants the face-to-opposite-face measurement, i.e. the
-        // vertical (+y) extent the die presents once resting on the table — not `.extents.x`,
-        // which `Die` (a cube, symmetric on every axis) can get away with but a D20 can't.
-        // Computed from `unscaledHeight * 0.00025`, not a fresh post-scale
-        // `entity.visualBounds(relativeTo: nil).extents.y` read: `Die` (a cube) never sets
-        // its own `.scale` at all, so it has no equivalent risk — but for `Die20`, if
-        // `visualBounds` doesn't immediately reflect the `.scale` set just above (unverifiable
-        // without live device testing), `representation` would describe a die roughly 4000×
-        // larger than what's actually rendered. TabletopKit's own toss physics uses
-        // `representation` for collision/rest — a mismatch that size would make it treat a
-        // few-centimeter die as several meters across, which is consistent with the die flying
-        // wildly off the table after a toss instead of settling on it. Multiplying the known
-        // pre-scale bounds by the same literal scale factor sidesteps the question entirely.
-        representation = .icosahedron(height: unscaledHeight * Self.displayScale)
+        // vertical (+y) extent the die presents once resting on the table — which is what the
+        // scale above normalizes to `displayHeight` (the asset rests on its "20" face).
+        // Passed as that known constant, not a fresh post-scale
+        // `entity.visualBounds(relativeTo: nil).extents.y` read: if `visualBounds` doesn't
+        // immediately reflect the `.scale` just set (unverifiable without live device
+        // testing), `representation` would describe a die of a different size than the one
+        // rendered. TabletopKit's own toss physics uses `representation` for collision/rest,
+        // so a mismatch makes the die fly off the table or sink into it instead of settling.
+        representation = .icosahedron(height: Self.displayHeight)
         // `value: 0` — this table's own sentinel meaning "not part of the
         // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`);
         // `restingOrientation` above treats it specially rather than as a
@@ -246,14 +255,13 @@ struct Die20: EntityEquipment {
         audioPlaybackController.play()
     }
 
-    /// A plain procedural stand-in for the bundled D20 mesh, sized so it still
-    /// looks and behaves like a die after the same `displayScale` applied
-    /// to the loaded asset is applied to it.
+    /// A plain procedural stand-in for the bundled D20 mesh. Its own size is irrelevant:
+    /// `init` scales whatever it gets to `displayHeight`, the same as the loaded asset.
     @MainActor
     private static func makeFallbackEntity() -> Entity {
         let model = ModelEntity(
-            mesh: .generateSphere(radius: 80),
-            materials: [SimpleMaterial(color: .systemBlue, isMetallic: false)]
+            mesh: .generateSphere(radius: 0.5),
+            materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
         model.name = "D20Fallback"
         return model
