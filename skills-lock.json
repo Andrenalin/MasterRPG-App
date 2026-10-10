@@ -5,7 +5,13 @@
       "source": "n0an/App-Intents-Agent-Skill",
       "sourceType": "github",
       "skillPath": "app-intents/SKILL.md",
-      "computedHash": "fb727ef9d2ff854b607528e6671fb93547068495911e25f5005491492544216c"
+      "computedHash": "344eb99f9696a5d930dc8bfb52bc49df19300ddf1d97f24c0af1c9c286b4b259"
+    },
+    "app-store-screenshots": {
+      "source": "ParthJadhav/app-store-screenshots",
+      "sourceType": "github",
+      "skillPath": "skills/app-store-screenshots/SKILL.md",
+      "computedHash": "39324682726af037b002213d3432caea66ef9c052d9d57b25f0bb15d922296f8"
     },
     "apple-hig-designer": {
       "source": "jamesrochabrun/skills",
@@ -44,6 +50,12 @@
       "sourceType": "github",
       "skillPath": "SKILL.md",
       "computedHash": "d8191834ebb34c0e15e67a6d8f4e375afb598a11423164444921ac9375c4f0b1"
+    },
+    "ios-marketing-capture": {
+      "source": "ParthJadhav/ios-marketing-capture",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "d9df42e579d957a8ad4f6c181fe1eb7913fe9f77b46636be046e656f747203f5"
     },
     "ipados-design-guidelines": {
       "source": "ehmo/platform-design-skills",
@@ -84,7 +96,7 @@
       "source": "avdlee/swiftui-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/swiftui-expert-skill/SKILL.md",
-      "computedHash": "352119e45436aa70d5a0d29e275dc55769ab509c2098505b391c2e1347c1118a"
+      "computedHash": "5388cd2368b525d2906798ac313c70415e971da35670e571e98baf8a7140505f"
     },
     "tvos-design-guidelines": {
       "source": "ehmo/platform-design-skills",
