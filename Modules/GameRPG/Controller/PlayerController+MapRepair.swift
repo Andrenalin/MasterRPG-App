@@ -117,6 +117,12 @@ extension PlayerController {
             )
         }
         guard shouldRequest else { return nil }
+        armMapRepairWatchdog(
+            itemId: model.data.id,
+            version: model.data.version,
+            assetVersion: model.data.assetVersion,
+            contentVersion: model.data.contentVersion
+        )
 
         return root.gameModel.outgoingMessage(
             replyToMessageID: model.messageID,
@@ -148,6 +154,12 @@ extension PlayerController {
             presentsMap: presentsMap,
             counter: model.counter
         ) else { return nil }
+        armMapRepairWatchdog(
+            itemId: model.data.id,
+            version: model.data.version,
+            assetVersion: model.data.assetVersion,
+            contentVersion: model.data.contentVersion
+        )
 
         return root.gameModel.outgoingMessage(
             replyToMessageID: model.messageID,
@@ -191,6 +203,46 @@ extension PlayerController {
                 relayToProxyClients: false,
                 purpose: .assetRequest
             )
+            self.armMapRepairWatchdog(
+                itemId: itemId,
+                version: version,
+                assetVersion: retry.assetVersion,
+                contentVersion: retry.contentVersion
+            )
+        }
+        gameModel.setMapRepairRetryTask(task, itemId: itemId)
+    }
+
+    /// How long a repair request may stay unanswered before it is treated like a `.failed` answer.
+    static let mapRepairAnswerTimeout: Duration = .seconds(15)
+
+    /// A repair request can get no answer at all: the game master deliberately ignores a first
+    /// request while its own SharePlay publication is still arriving (`SharePlayMapRecoveryTracker`),
+    /// and a reply can be lost on the way. `beginMapRepair` coalesces an identical pending repair,
+    /// so without this nothing ever asked again, and a player whose Journal copy was late or
+    /// unusable never got the map. The silence is handled as a failure, which re-requests with
+    /// the bounded backoff of `scheduleMapRepairRetry`. Completing or superseding the repair
+    /// cancels this task.
+    func armMapRepairWatchdog(
+        itemId: UUID,
+        version: Int,
+        assetVersion: Int?,
+        contentVersion: Int?
+    ) {
+        let task = Task { [weak self] in
+            try? await Task.sleep(for: Self.mapRepairAnswerTimeout)
+            guard let self, !Task.isCancelled,
+                  self.gameModel.isMapRepairPending(
+                    PlayerControllerModel.MapRepairRetry(
+                        itemId: itemId,
+                        assetVersion: assetVersion,
+                        contentVersion: contentVersion,
+                        attempt: 0
+                    )
+                  )
+            else { return }
+            Logger.networking.debug("PlayerController: map repair for \(itemId, privacy: .public) unanswered, requesting again")
+            self.scheduleMapRepairRetry(itemId: itemId, version: version)
         }
         gameModel.setMapRepairRetryTask(task, itemId: itemId)
     }

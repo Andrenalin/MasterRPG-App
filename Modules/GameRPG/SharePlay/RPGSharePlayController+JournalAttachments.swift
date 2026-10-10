@@ -16,6 +16,41 @@ extension RPGSharePlayController {
 
     // MARK: - Journal attachment handling
 
+    /// Longest a single attachment load may stay suspended before the player falls back to the
+    /// Messenger recovery request. Large modules legitimately take longer to download.
+    static func journalAttachmentLoadDeadline(for module: NetworkModules) -> Duration {
+        switch module {
+        case .pdf, .space, .audio: .seconds(120)
+        default: .seconds(30)
+        }
+    }
+
+    /// Records the newest full Journal snapshot and makes sure one drain task processes it.
+    /// Older unprocessed snapshots are dropped: every snapshot lists all current attachments.
+    func receiveJournalSnapshot(
+        _ snapshot: GroupSessionJournal.Attachments.Element,
+        sessionId: UUID
+    ) {
+        currentJournalAttachmentIds = Set(snapshot.map(\.id))
+        pendingJournalSnapshot = snapshot
+        guard journalDrainTask == nil else { return }
+        let task = Task { @MainActor [weak self] in
+            while let self,
+                  !Task.isCancelled,
+                  self.sessionLifecycle.isCurrent(sessionId: sessionId),
+                  let next = self.pendingJournalSnapshot {
+                self.pendingJournalSnapshot = nil
+                await self.handle(next, sessionId: sessionId)
+            }
+            // No suspension between the loop's last check and this assignment.
+            if let self, self.sessionLifecycle.isCurrent(sessionId: sessionId) {
+                self.journalDrainTask = nil
+            }
+        }
+        journalDrainTask = task
+        tasks[UUID()] = task
+    }
+
     func handle(_ attachments: GroupSessionJournal.Attachments.Element, sessionId: UUID) async {
         guard !Task.isCancelled,
               sessionLifecycle.isCurrent(sessionId: sessionId)
@@ -122,9 +157,18 @@ extension RPGSharePlayController {
             }
             Logger.sharePlay.debug("Attachments \(metadata.counter, privacy: .public)")
             do {
-                let data = try await SharePlayAttachmentLoadRetry.load {
-                    try await attachment.load(Data.self)
-                }
+                let attachmentId = attachment.id
+                let data = try await SharePlayAttachmentLoadRetry.load(
+                    deadline: Self.journalAttachmentLoadDeadline(for: metadata.data.type),
+                    isStillWanted: { [weak self] in
+                        await self?.currentJournalAttachmentIds.contains(attachmentId) ?? false
+                    },
+                    operation: {
+                        try await SharePlayAttachmentLoadRetry.load {
+                            try await attachment.load(Data.self)
+                        }
+                    }
+                )
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
@@ -143,6 +187,14 @@ extension RPGSharePlayController {
                 }) else { return }
             } catch is CancellationError {
                 return
+            } catch SharePlayAttachmentLoadAbort.noLongerCurrent where Self.isJournalPresentation(metadata) {
+                // The master replaced this presentation while it was loading. The newer
+                // snapshot already carries its successor, which is processed next.
+                guard !Task.isCancelled,
+                      sessionLifecycle.isCurrent(sessionId: sessionId)
+                else { return }
+                Logger.sharePlay.debug("Journal: attachment \(attachment.id, privacy: .public) of message \(metadata.counter, privacy: .public) was replaced while loading; skipped")
+                continue
             } catch let error {
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)

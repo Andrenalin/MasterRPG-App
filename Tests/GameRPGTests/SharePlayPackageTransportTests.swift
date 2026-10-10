@@ -1573,6 +1573,45 @@ struct SharePlayPackageTransportTests {
         #expect(processedAfterRemoval)
     }
 
+    @Test("journal attachment load gives up when the load never returns")
+    func journalAttachmentLoadHonoursDeadline() async {
+        await #expect(throws: SharePlayAttachmentLoadAbort.deadlineExceeded) {
+            try await SharePlayAttachmentLoadRetry.load(
+                deadline: .milliseconds(50),
+                pollInterval: .milliseconds(10),
+                operation: {
+                    try await Task.sleep(for: .seconds(60))
+                    return Data("late".utf8)
+                }
+            )
+        }
+    }
+
+    @Test("journal attachment load stops once the attachment left the journal")
+    func journalAttachmentLoadStopsWhenAttachmentRemoved() async {
+        await #expect(throws: SharePlayAttachmentLoadAbort.noLongerCurrent) {
+            try await SharePlayAttachmentLoadRetry.load(
+                deadline: .seconds(30),
+                pollInterval: .milliseconds(10),
+                isStillWanted: { false },
+                operation: {
+                    try await Task.sleep(for: .seconds(60))
+                    return Data("late".utf8)
+                }
+            )
+        }
+    }
+
+    @Test("journal attachment load within its deadline returns the data")
+    func journalAttachmentLoadReturnsDataBeforeDeadline() async throws {
+        let data = try await SharePlayAttachmentLoadRetry.load(
+            deadline: .seconds(30),
+            pollInterval: .milliseconds(10),
+            operation: { Data("photo".utf8) }
+        )
+        #expect(data == Data("photo".utf8))
+    }
+
     @Test("journal attachment load retries while its CloudAsset upload finishes")
     func journalAttachmentLoadRetriesTransientUploadFailure() async throws {
         let probe = AttachmentLoadRetryProbe(failuresRemaining: 2)

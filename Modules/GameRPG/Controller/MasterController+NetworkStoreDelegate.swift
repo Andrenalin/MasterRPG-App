@@ -354,6 +354,21 @@ extension MasterController {
     /// Records every valid delivery acknowledgement, and returns whether the
     /// original master packet is a file-bearing reveal/store whose receipt may
     /// also update an asset-availability report.
+    /// Whether a receipt's message type belongs to the logged master message. SharePlay rewrites a
+    /// targeted audio publication into a broadcast `.store` before it reaches the Journal
+    /// (`RPGSharePlayController.journalMetadata`), so every player acknowledges `Store - Ok` for a
+    /// message the master logged as `Reveal - Show`. Comparing the types strictly dropped those
+    /// receipts as uncorrelated: the master never marked the audio as available on that player and
+    /// playing it was impossible.
+    nonisolated static func deliveryTypeMatches(
+        logged: RPGMessageType,
+        receipt: RPGMessageType,
+        module: NetworkModules
+    ) -> Bool {
+        if logged == receipt { return true }
+        return module == .audio && logged == .reveal && receipt == .store
+    }
+
     private func recordDeliveryReceipt(_ model: GameNetworkModel) async -> Bool {
         // A failed transfer and a request for missing bytes both prove the
         // opposite of delivery. Only an explicit successful acknowledgement
@@ -375,7 +390,7 @@ extension MasterController {
         let deliveryMatch: (matches: Bool, authorizesAvailability: Bool)
         if let log = root.gameModel.logData[deliveryID.counter] {
             let matches = log.messageID == deliveryID &&
-                log.type == model.type &&
+                Self.deliveryTypeMatches(logged: log.type, receipt: model.type, module: model.data.type) &&
                 log.module == model.data.type &&
                 log.itemId == model.data.id
             deliveryMatch = (

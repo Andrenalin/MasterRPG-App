@@ -948,6 +948,9 @@ extension RPGSharePlayController {
         packageSender?.cancelAll()
         packageSender = nil
         journal = nil
+        pendingJournalSnapshot = nil
+        currentJournalAttachmentIds = []
+        journalDrainTask = nil
         sessionLifecycle.reset()
         participantTracker.reset()
         journalTracker.reset()

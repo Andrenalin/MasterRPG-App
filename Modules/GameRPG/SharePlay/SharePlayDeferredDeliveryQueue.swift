@@ -398,3 +398,112 @@ enum SharePlayAttachmentLoadRetry {
         return try await operation()
     }
 }
+
+// MARK: - Attachment load deadline
+
+/// Why a bounded Journal attachment load stopped before it produced data.
+enum SharePlayAttachmentLoadAbort: Error, Equatable, Sendable {
+    /// The load neither returned nor threw within its deadline.
+    case deadlineExceeded
+    /// The attachment disappeared from the live Journal snapshot while loading.
+    case noLongerCurrent
+}
+
+extension SharePlayAttachmentLoadRetry {
+    /// `GroupSessionJournal.Attachment.load` can stay suspended forever when the master removes
+    /// a replaced attachment (or its CloudAsset never finishes uploading) while a player is still
+    /// loading it. The Journal consumer is sequential, so one such load froze every later
+    /// publication on that player: the photo then appeared only after the system gave up.
+    ///
+    /// Races `operation` against `deadline` and against `isStillWanted` (polled every
+    /// `pollInterval`). The first outcome wins and the losers are cancelled. The result does not
+    /// depend on `operation` honouring cancellation, so a load that never returns still ends.
+    static func load<Value: Sendable>(
+        deadline: Duration,
+        pollInterval: Duration = .milliseconds(500),
+        isStillWanted: @escaping @Sendable () async -> Bool = { true },
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        let race = SharePlayAttachmentLoadRace<Value>()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                race.install(continuation)
+                let work = Task {
+                    do {
+                        race.finish(.success(try await operation()))
+                    } catch {
+                        race.finish(.failure(error))
+                    }
+                }
+                let watchdog = Task {
+                    let clock = ContinuousClock()
+                    let end = clock.now.advanced(by: deadline)
+                    while !Task.isCancelled {
+                        // Checked before the first sleep: an attachment the master already
+                        // replaced is not worth even starting a multi-MB download for.
+                        if await !isStillWanted() {
+                            race.finish(.failure(SharePlayAttachmentLoadAbort.noLongerCurrent))
+                            return
+                        }
+                        let remaining = clock.now.duration(to: end)
+                        guard remaining > .zero else {
+                            race.finish(.failure(SharePlayAttachmentLoadAbort.deadlineExceeded))
+                            return
+                        }
+                        do {
+                            try await Task.sleep(for: min(pollInterval, remaining))
+                        } catch {
+                            return
+                        }
+                    }
+                }
+                race.adopt([work, watchdog])
+            }
+        } onCancel: {
+            race.finish(.failure(CancellationError()))
+        }
+    }
+}
+
+/// First-result-wins gate: resumes the caller exactly once and cancels the other racers.
+private final class SharePlayAttachmentLoadRace<Value: Sendable>: @unchecked Sendable {
+    private struct State {
+        var continuation: CheckedContinuation<Value, any Error>?
+        var pending: Result<Value, any Error>?
+        var finished = false
+        var tasks: [Task<Void, Never>] = []
+    }
+
+    private let state = OSAllocatedUnfairLock(initialState: State())
+
+    func install(_ continuation: CheckedContinuation<Value, any Error>) {
+        let pending = state.withLock { state -> Result<Value, any Error>? in
+            if let pending = state.pending { return pending }
+            state.continuation = continuation
+            return nil
+        }
+        if let pending { continuation.resume(with: pending) }
+    }
+
+    /// Registers the racers; they are cancelled at once when the race has already ended.
+    func adopt(_ tasks: [Task<Void, Never>]) {
+        let alreadyFinished = state.withLock { state -> Bool in
+            if state.finished { return true }
+            state.tasks = tasks
+            return false
+        }
+        if alreadyFinished { tasks.forEach { $0.cancel() } }
+    }
+
+    func finish(_ result: Result<Value, any Error>) {
+        let (continuation, tasks) = state.withLock { state -> (CheckedContinuation<Value, any Error>?, [Task<Void, Never>]) in
+            guard !state.finished else { return (nil, []) }
+            state.finished = true
+            defer { state.continuation = nil; state.tasks = [] }
+            if state.continuation == nil { state.pending = result }
+            return (state.continuation, state.tasks)
+        }
+        tasks.forEach { $0.cancel() }
+        continuation?.resume(with: result)
+    }
+}

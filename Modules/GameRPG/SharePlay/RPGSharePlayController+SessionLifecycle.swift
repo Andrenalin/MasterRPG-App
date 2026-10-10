@@ -382,7 +382,7 @@ extension RPGSharePlayController {
                 guard !Task.isCancelled,
                       self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                 else { return }
-                await self.handle(attachment, sessionId: groupSession.id)
+                self.receiveJournalSnapshot(attachment, sessionId: groupSession.id)
             }
         }
         tasks[UUID()] = journalTask

@@ -722,6 +722,12 @@ final class RPGSharePlayController {
     let sessionTeardownCoordinator = SharePlaySessionTeardownCoordinator()
     // Session-scoped state/participant/message/journal loops, cancelled by reset().
     var tasks: [UUID: Task<Void, Never>] = [:]
+    // Journal snapshots are full sets, so only the newest one matters. The stream consumer
+    // records it here and a single drain task processes it; a slow or hung attachment load can
+    // no longer keep later publications from even being looked at.
+    var pendingJournalSnapshot: GroupSessionJournal.Attachments.Element?
+    var currentJournalAttachmentIds: Set<UUID> = []
+    var journalDrainTask: Task<Void, Never>?
     // Normal Messenger sends are admitted before encoding, then processed in
     // invocation order. This prevents a burst from spawning unbounded parallel
     // Base64 encodes before the package sender can apply its own bounds.
