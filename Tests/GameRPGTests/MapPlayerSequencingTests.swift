@@ -93,70 +93,6 @@ final class MapPlayerSequencingTests {
         return (itemId, message)
     }
 
-    @Test("A background repair is bounded by the Map generation, not the message counter")
-    func mapBackgroundRepairCoalescesNewerCounters() throws {
-        // Given
-        let model = PlayerControllerModel()
-        let itemId = UUID()
-
-        // When
-        let firstRequest = model.beginMapBackgroundRepair(
-            itemId: itemId,
-            assetVersion: 17,
-            contentVersion: 23,
-            presentsMap: true,
-            counter: 40
-        )
-        let duplicateRequest = model.beginMapBackgroundRepair(
-            itemId: itemId,
-            assetVersion: 17,
-            contentVersion: 23,
-            presentsMap: false,
-            counter: 41
-        )
-
-        // Then
-        #expect(firstRequest)
-        #expect(!duplicateRequest)
-        let pending = try #require(model.pendingMapRepairRequirement(itemId: itemId))
-        #expect(pending.presentsMap)
-        #expect(pending.counter == 41)
-    }
-
-    /// CODE_AUDIT_19 §5.6: a `.failed` answer used to leave the repair pending forever, and
-    /// `beginMapRepair` coalesced every later request for the same generation.
-    @Test("A failed Map repair is retried a bounded number of times, then may be requested again")
-    func failedMapRepairIsRetriedThenReleased() throws {
-        let model = PlayerControllerModel()
-        let itemId = UUID()
-        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: true, counter: 10))
-
-        for attempt in 1...PlayerControllerModel.maximumMapRepairRetries {
-            let retry = try #require(model.failMapRepair(itemId: itemId))
-            #expect(retry.attempt == attempt)
-            #expect(retry.assetVersion == 3)
-            #expect(retry.contentVersion == 5)
-            #expect(model.isMapRepairPending(retry))
-        }
-
-        #expect(model.failMapRepair(itemId: itemId) == nil)
-        #expect(model.pendingMapRepairRequirement(itemId: itemId) == nil)
-        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: true, counter: 11))
-    }
-
-    @Test("A completed Map repair resets its failure count")
-    func completedMapRepairResetsFailures() throws {
-        let model = PlayerControllerModel()
-        let itemId = UUID()
-        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: false, counter: 10))
-        _ = try #require(model.failMapRepair(itemId: itemId))
-        _ = model.completeMapRepair(itemId: itemId)
-
-        #expect(model.failMapRepair(itemId: itemId) == nil)
-        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: false, counter: 12))
-        #expect(try #require(model.failMapRepair(itemId: itemId)).attempt == 1)
-    }
-
     @Test("An older Map state cannot roll live state backward")
     func staleMapStateIsIgnored() async throws {
         // Given
@@ -250,7 +186,6 @@ final class MapPlayerSequencingTests {
         currentPin.location = CGPoint(x: 5, y: 6)
         currentPin.timeInterval = 20
         let currentEvent = event(counter: 40, pin: currentPin)
-        #expect(currentEvent.effectiveAudience == .group)
         let response = try await playerController.handleMap(currentEvent)
 
         // Then: the receiver applies it directly and sends no response.
@@ -269,78 +204,6 @@ final class MapPlayerSequencingTests {
         let retainedPin = try #require(playerMap.mapPins.first { $0.id == peerId })
         #expect(retainedPin.location == currentPin.location)
         #expect(retainedPin.timeInterval == currentPin.timeInterval)
-    }
-
-    @Test("A peer Map-pin event waits for its Map generation and still keeps the newest timestamp")
-    func peerMapPinBeforeMapGenerationIsRetried() async throws {
-        // Given: a Map package and a peer-owned pin have not reached the player
-        // yet, but the peer's small group events overtake that package.
-        try await setUp()
-        let itemId = try #require(masterRoot.mapRoot.itemController.itemDataModel.items.first)
-        let peerId = UUID()
-        let masterMap = masterRoot.mapRoot.gameController.gameItem(for: itemId)
-        let initialPin = MapPinModel(
-            id: peerId,
-            name: "Peer pin",
-            location: CGPoint(x: 1, y: 2),
-            isPlayer: true,
-            players: [peerId],
-            timeInterval: 10
-        )
-        masterMap.mapPins.append(initialPin)
-        let fullMap = try await masterRoot.mapRoot.mapGameControllable.createMapGameData(for: itemId)
-        let reveal = masterRoot.gameModel.outgoingMessage(
-            counter: 30,
-            type: .reveal,
-            subType: .show,
-            asMaster: true,
-            data: fullMap
-        )
-
-        func event(counter: Int, pin: MapPinModel) -> GameNetworkModel {
-            GameNetworkModel(
-                counter: counter,
-                proxyCounter: 0,
-                type: .update,
-                subType: .mapPin,
-                masterId: reveal.masterId,
-                sender: GameSenderModel(
-                    id: peerId,
-                    role: .player,
-                    name: "Peer",
-                    characterId: nil
-                ),
-                data: NetworkCodableDataType(
-                    id: itemId,
-                    type: .map,
-                    version: fullMap.version,
-                    data: pin.encodeData(),
-                    assetVersion: fullMap.assetVersion,
-                    contentVersion: fullMap.contentVersion
-                )
-            )
-        }
-
-        var newestPin = initialPin
-        newestPin.location = CGPoint(x: 7, y: 8)
-        newestPin.timeInterval = 30
-        var delayedOlderPin = newestPin
-        delayedOlderPin.location = CGPoint(x: 4, y: 5)
-        delayedOlderPin.timeInterval = 20
-
-        // When: the newest event and then an older duplicate arrive before the
-        // Journal-backed full Map.
-        #expect(try await playerController.handleMap(event(counter: 40, pin: newestPin)) == nil)
-        #expect(try await playerController.handleMap(event(counter: 41, pin: delayedOlderPin)) == nil)
-
-        // And the package later establishes the advertised generation.
-        _ = try #require(try await playerController.handleMap(reveal))
-
-        // Then: deferred replay applies only the newest pin intent.
-        let playerMap = playerRoot.mapRoot.gameController.gameItem(for: itemId)
-        let retainedPin = try #require(playerMap.mapPins.first { $0.id == peerId })
-        #expect(retainedPin.location == newestPin.location)
-        #expect(retainedPin.timeInterval == newestPin.timeInterval)
     }
 
     @Test("Malformed high-counter state does not reserve the sequence")
@@ -383,62 +246,6 @@ final class MapPlayerSequencingTests {
         #expect(malformedResponse == nil)
         let playerMap = playerRoot.mapRoot.gameController.gameItem(for: initial.itemId)
         #expect(playerMap[entryId].isShown)
-    }
-
-    @Test("A state with stale structure requests only content and resumes after it arrives")
-    func mapStateRequestsStructuralRepairWithoutFullMap() async throws {
-        // Given
-        try await setUp()
-        let initial = try await initialMapMessage()
-        _ = try #require(try await playerController.handleMap(initial.message))
-        let masterMap = masterRoot.mapRoot.gameController.gameItem(for: initial.itemId)
-        let entryId = try #require(masterMap.entries.first?.id)
-        masterMap.name = "Changed structure"
-        masterMap[entryId].isShown = true
-        let state = masterRoot.gameModel.outgoingMessage(
-            counter: 30,
-            type: .update,
-            subType: .mapState,
-            asMaster: true,
-            data: masterRoot.mapRoot.mapGameControllable.networkMapUpdate(for: initial.itemId)
-        )
-        playerController.gameModel.gameUpdateType = .none
-
-        // When the state references a newer structural baseline.
-        let request = try #require(try await playerController.handleMap(state))
-
-        // Then only the photo-free content snapshot is requested, with the
-        // exact proxy-safe versions and no bytes uploaded by the player.
-        #expect(request.type == .update)
-        #expect(request.subType == .generic)
-        #expect(request.purpose == .assetRequest)
-        #expect(request.effectiveAudience == .master)
-        #expect(request.data.data == nil)
-        #expect(request.data.assetVersion == state.data.assetVersion)
-        #expect(request.data.contentVersion == state.data.contentVersion)
-        #expect(playerController.gameModel.pendingMapRequests.contains(initial.itemId))
-        #expect(playerController.gameModel.gameUpdateType == .none)
-
-        let duplicateRequest = try await playerController.handleMap(state)
-        #expect(duplicateRequest == nil)
-
-        let structuralData = await masterRoot.mapRoot.mapGameControllable.networkMapContentUpdate(
-            for: initial.itemId
-        )
-        let structuralResponse = masterRoot.gameModel.outgoingMessage(
-            counter: 31,
-            type: .update,
-            subType: .generic,
-            asMaster: true,
-            data: structuralData
-        )
-        _ = try await playerController.handleMap(structuralResponse)
-
-        let playerMap = playerRoot.mapRoot.gameController.gameItem(for: initial.itemId)
-        #expect(playerMap.name == masterMap.name)
-        #expect(playerMap[entryId].isShown)
-        #expect(playerController.gameModel.gameUpdateType == .map)
-        #expect(!playerController.gameModel.pendingMapRequests.contains(initial.itemId))
     }
 
     @Test("A delayed store cannot overwrite newer structural content")
@@ -551,7 +358,7 @@ final class MapPlayerSequencingTests {
         )
 
         // When
-        _ = try #require(try await playerController.handleMap(newer))
+        _ = try await playerController.handleMap(newer)
         _ = try await playerController.handleMap(older)
         _ = try await playerController.handleMap(delayedBase)
 
@@ -563,106 +370,5 @@ final class MapPlayerSequencingTests {
         )
     }
 
-    @Test("A permanently incomplete background is requested once and never ACKed")
-    func incompleteBackgroundDoesNotPresentOrAcknowledge() async throws {
-        // Given
-        try await setUp()
-        let initial = try await initialMapMessage()
-        _ = try #require(try await playerController.handleMap(initial.message))
-        let backgroundId = try #require(
-            playerRoot.mapRoot.gameController.gameItem(for: initial.itemId).photoId
-        )
-        let background = playerRoot.photoRoot.gameController.gameItem(for: backgroundId)
-        let originalFile = try #require(background.fileUrl)
-        let contentHash = try #require(originalFile.contentHash)
-        background.fileUrl = FileUrl(
-            fileId: originalFile.fileId,
-            url: URL(filePath: "/missing/map-background.png"),
-            location: originalFile.location,
-            module: originalFile.module,
-            relativeUrl: nil,
-            contentHash: contentHash
-        )
-        playerController.gameModel.gameUpdateType = .none
-        let reference = NetworkCodableDataType(
-            id: initial.itemId,
-            type: .map,
-            version: initial.message.data.version,
-            assetVersion: initial.message.data.assetVersion,
-            contentVersion: initial.message.data.contentVersion
-        )
-        #expect(
-            await playerRoot.mapRoot.mapGameControllable.mapAssetVersion(for: initial.itemId)
-                == reference.assetVersion
-        )
-        #expect(
-            playerController.gameModel.hasMapContentVersion(
-                itemId: initial.itemId,
-                contentVersion: reference.contentVersion
-            )
-        )
-        #expect(
-            await !playerRoot.mapRoot.mapGameControllable.hasBackgroundImage(itemId: initial.itemId)
-        )
-        let firstReveal = masterRoot.gameModel.outgoingMessage(
-            counter: 20,
-            type: .reveal,
-            subType: .show,
-            asMaster: true,
-            data: reference
-        )
-        var secondReveal = firstReveal
-        secondReveal.counter = 21
-
-        // When
-        let firstRequest = try #require(try await playerController.handleMap(firstReveal))
-        let secondResponse = try await playerController.handleMap(secondReveal)
-
-        // Then
-        #expect(firstRequest.subType == .show)
-        #expect(firstRequest.data.data == nil)
-        #expect(firstRequest.data.assetVersion == reference.assetVersion)
-        #expect(firstRequest.data.contentVersion == reference.contentVersion)
-        #expect(secondResponse == nil)
-        #expect(playerController.gameModel.gameUpdateType == .none)
-        #expect(!playerController.gameModel.requestedRepairIds.contains(backgroundId))
-    }
-
-    @Test("A newer same-Map asset intent rejects an older Journal payload")
-    func sameMapAssetIntentRejectsDelayedOldFile() async throws {
-        // Given
-        try await setUp()
-        let initial = try await initialMapMessage(counter: 40)
-        await networkController.handleFileUpdate(initial.message)
-        let playerMap = playerRoot.mapRoot.gameController.gameItem(for: initial.itemId)
-        playerMap.name = "Retain newer intent state"
-
-        let replacementAssetVersion = initial.message.data.effectiveAssetVersion ^ 1
-        let replacementReference = masterRoot.gameModel.outgoingMessage(
-            counter: 42,
-            type: .reveal,
-            subType: .show,
-            asMaster: true,
-            data: NetworkCodableDataType(
-                id: initial.itemId,
-                type: .map,
-                version: initial.message.data.version,
-                assetVersion: replacementAssetVersion,
-                contentVersion: initial.message.data.contentVersion
-            )
-        )
-        await networkController.handleUpdate(replacementReference, id: UUID())
-
-        var delayedOldFile = initial.message
-        delayedOldFile.counter = 41
-
-        // When
-        await networkController.handleFileUpdate(delayedOldFile)
-
-        // Then
-        #expect(playerMap.name == "Retain newer intent state")
-        let request = try #require(playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(request.data.assetVersion == replacementAssetVersion)
-    }
 }
 #endif

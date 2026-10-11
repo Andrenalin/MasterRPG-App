@@ -30,12 +30,7 @@ extension PlayerController {
         await receivedProcess(model, origin: origin)
     }
 
-    /// Also called by `relayProxyPresentation` (see `PlayerController+SendMessages.swift`) to
-    /// apply an optimistic local presentation, so this stays internal rather than `private`.
     func receivedProcess(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
-        // Admission-only metadata is consumed by GameNetworkController after
-        // physical SharePlay attribution. It is never a gameplay message.
-        guard !model.isJournalAdmissionOnly else { return }
         guard await acceptsSessionMessage(model, origin: origin) else {
             Logger.networking.debug("PlayerController: Message rejected because its sender does not belong to this game session")
             return
@@ -90,23 +85,18 @@ extension PlayerController {
               case let .sharePlay(participantId) = origin
         else { return true }
 
-        // Messenger exposes the physical source participant. Pin that source
-        // as well as the logical master UUID so another peer cannot copy the
-        // public master identity into a forged envelope. Journal callbacks do
-        // not expose a publisher and therefore remain logically authenticated.
-        switch gameModel.acceptSharePlayMasterParticipant(
-            id: participantId,
-            isCompleteMasterBroadcast: model.masterState != nil
-        ) {
-        case .alreadyBound:
-            return true
-        case .newlyBound:
+        // Messenger names the participant a message comes from. The one the game master
+        // speaks from has no player seat at the 3D table, and a master that rejoined under
+        // another participant has lost what this player announced.
+        switch gameModel.noteSharePlayMasterParticipant(id: participantId) {
+        case .unchanged:
+            break
+        case .learned:
             #if os(visionOS)
             // Seats rank players without the master once it is known. See CODE_AUDIT_18 §5.11.
             root.networkStore.sharePlayStore.masterParticipantDidChange()
             #endif
-            return true
-        case .rebound:
+        case .changed:
             // The GroupSession can survive while the master's participant ID
             // changes. Re-announce availability and Character exactly as on a
             // fresh session so the rejoined master rebuilds its reports.
@@ -114,16 +104,8 @@ extension PlayerController {
             root.networkStore.sharePlayStore.masterParticipantDidChange()
             #endif
             await ready()
-            return true
-        case .rejected:
-            return false
         }
-    }
-
-    private func isRemappedProxyPresentation(_ event: GameMessageEvent) -> Bool {
-        let model = event.model
-        guard event.origin == .local || event.fromProxy else { return false }
-        return model.isPlayerFilePresentationEvent
+        return true
     }
 
     /// Outcome of `prepareForProcessing`, keeping two independent questions
@@ -138,7 +120,9 @@ extension PlayerController {
     private enum ProcessingDecision {
         case rejectPermanently
         case rejectLocallyOnly
-        case apply
+        /// The message to hand to its module. A package of a presentation that is no longer
+        /// the newest is stored instead of shown.
+        case apply(GameNetworkModel)
     }
 
     private func prepareForProcessing(_ event: GameMessageEvent) async -> ProcessingDecision {
@@ -179,7 +163,6 @@ extension PlayerController {
 
             let localId = root.gameModel.gameConfig.id
             let type = root.gameModel.gameType
-            let photoSharing = root.gameModel.gameControl.features.photoSharing
             let spaceSharing = root.gameModel.gameControl.features.spaceSharing
             let dicePlayers = root.gameModel.gameControl.features.dicePlayers
             // This hub's own roster visibility gates whether the message is
@@ -195,42 +178,22 @@ extension PlayerController {
                 await forwardToProxyClients(event)
                 return .rejectLocallyOnly
             }
-            // SharePlay physically broadcasts player-to-master repair requests.
-            // Reject them before any module handler; only genuine player group
-            // events may use the peer-to-peer presentation path. This is a
-            // property of the message's own addressing, not of this device's
-            // local state, so it stays a permanent rejection.
-            if !model.sender.isMaster, model.effectiveAudience == .master {
+            // Other players send their requests, reports and contributions to the game
+            // master; SharePlay delivers them to everyone. Only a Dice roll, a moved pin and
+            // a Space transform are for the group. This is a property of the message
+            // itself, not of this device's state, so it stays a permanent rejection.
+            guard type == .proxy || model.sender.isMaster || model.isPlayerGroupEvent else {
                 Logger.networking.debug("PlayerController: Master-only player message ignored")
                 return .rejectPermanently
             }
-            let acceptsPlayerPhotoReveal = model.isPlayerFilePresentationEvent &&
-                model.data.type == .photo &&
-                photoSharing
-            let acceptsPlayerPdfReveal = model.isPlayerFilePresentationEvent &&
-                model.data.type == .pdf
-            let acceptsPlayerSpaceReveal = model.isPlayerFilePresentationEvent &&
-                model.data.type == .space &&
-                spaceSharing
-            let acceptsPlayerDice = model.isPlayerDiceGroupEvent &&
-                dicePlayers &&
-                model.effectiveAudience == .group
-            let acceptsPlayerMapPin = model.sender.role == .player &&
-                model.type == .update &&
-                model.subType == .mapPin &&
-                model.data.type == .map &&
-                model.effectiveAudience == .group
-            let acceptsPlayerSpaceTransform = model.sender.role == .player &&
-                model.type == .update &&
-                model.subType == .spaceTransform &&
-                model.data.type == .space &&
-                spaceSharing &&
-                model.effectiveAudience == .group
-            // Same rationale as the controls gate above: a per-feature flag
-            // local to this hub (dicePlayers/photoSharing/spaceSharing) must
-            // not block relaying to downstream proxy clients, who may have a
+            let isBlockedByFeature = !model.sender.isMaster && type != .proxy && (
+                (model.isDiceRollEvent && !dicePlayers) ||
+                (model.data.type == .space && !spaceSharing)
+            )
+            // Same rationale as the controls gate above: a feature flag local to this hub
+            // must not block relaying to downstream proxy clients, who may have a
             // different configuration. See CODE_AUDIT_Network §5.20.
-            guard root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal || acceptsPlayerMapPin || acceptsPlayerSpaceTransform else {
+            guard !isBlockedByFeature else {
                 // senderName is a participant's real display name — private. See CODE_AUDIT_Game §6.3.
                 Logger.networking.debug("PlayerController: Message will not be applied locally because it is send from Player \(model.senderName, privacy: .private)")
                 await forwardToProxyClients(event)
@@ -238,49 +201,25 @@ extension PlayerController {
             }
         }
 
-        // Value messages synchronize the joining player's Character and are
-        // not part of the presentation ordering state machine.
-        if model.data.type != .value,
-           (model.isPresentationIntent || model.isMapPresentationRepair) {
-            let presentationVersion: Int
-            let allowsUnversionedMapState: Bool
-            if model.data.type == .map,
-               model.type == .update,
-               model.subType == .mapState {
-                // Live state belongs to the currently intended Map asset. New
-                // peers include the asset fingerprint; legacy peers are allowed
-                // to repair the same item with an unversioned state only.
-                presentationVersion = model.data.assetVersion ?? 0
-                allowsUnversionedMapState = model.data.assetVersion == nil
-            } else if model.data.type == .map {
-                // The legacy MapModel.version covers scales only. The background
-                // asset fingerprint is the presentation generation that must
-                // reject a delayed Journal attachment for an older background.
-                presentationVersion = model.data.effectiveAssetVersion
-                allowsUnversionedMapState = false
+        // What the screen shows follows the order the game master showed it in, not the
+        // order it arrived in: a package can take much longer than the reference of the
+        // next show. One that arrives late is kept for later, and a late reference has
+        // nothing left to say.
+        var applied = model
+        if model.isPresentation {
+            if gameModel.isCurrentPresentation(counter: model.counter, module: model.data.type, itemId: model.data.id) {
+                gameModel.markPresentation(counter: model.counter, module: model.data.type, itemId: model.data.id)
+            } else if model.type == .reveal, model.data.data != nil {
+                applied.type = .store
+                applied.subType = .store
             } else {
-                presentationVersion = model.data.version
-                allowsUnversionedMapState = false
-            }
-            let shouldProcess = gameModel.shouldProcessPresentation(
-                from: model.masterId,
-                senderID: model.sender.id,
-                module: model.data.type,
-                itemId: model.data.id,
-                version: presentationVersion,
-                counter: model.counter,
-                timestamp: model.timestamp,
-                isRepair: model.targetId != nil || model.isMapPresentationRepair,
-                allowsUnversionedStateRepair: model.isTargetedMapStatePresentationRepair || allowsUnversionedMapState
-            )
-            guard shouldProcess else {
                 Logger.networking.debug("PlayerController: Stale presentation ignored \(model.counter, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
                 return .rejectPermanently
             }
         }
 
         await forwardToProxyClients(event)
-        return .apply
+        return .apply(applied)
     }
 
     /// Mirrors a valid group/master message to this device's own downstream
@@ -329,6 +268,7 @@ extension PlayerController {
                 }
                 return
             }
+            let model: GameNetworkModel
             switch await prepareForProcessing(event) {
             case .rejectPermanently:
                 await messagePipeline.processed(success: true)
@@ -336,16 +276,15 @@ extension PlayerController {
             case .rejectLocallyOnly:
                 await messagePipeline.processed(success: false)
                 continue
-            case .apply:
-                break
+            case .apply(let applied):
+                model = applied
             }
 
             do {
                 try Task.checkCancellation()
                 let response = try await handle(
-                    event.model,
-                    usesSharePlayPlaybackCoordination: event.origin.usesSharePlayFileTransport,
-                    locallyMirroredProxyPresentation: isRemappedProxyPresentation(event)
+                    model,
+                    usesSharePlayPlaybackCoordination: event.origin.usesSharePlayFileTransport
                 )
                 try Task.checkCancellation()
                 if let response, event.origin != .local {

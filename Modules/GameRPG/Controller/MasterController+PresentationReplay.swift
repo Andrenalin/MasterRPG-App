@@ -76,33 +76,17 @@ extension MasterController {
         }
 
         guard let reference else { return }
-        let replayReference = Self.presentationReplayReference(reference, origin: origin)
+        // Messenger has no history: the newly ready participant gets the reference of the
+        // current presentation and asks for the bytes if it lacks them.
         await send(
             type: .reveal,
             subtype: .show,
-            updated: replayReference,
+            updated: reference.reference,
             origin: origin,
             authoritativeMaster: true
         )
         if presentation == .map {
-            // A paused "Share Map" keeps the live map state private. See CODE_AUDIT_20 §5.2.
-            guard mayShareMapState(for: reference.id) else { return }
-            let mapUpdate = await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: reference.id)
-            await send(
-                type: .update,
-                subtype: .generic,
-                updated: mapUpdate,
-                origin: origin,
-                authoritativeMaster: true
-            )
-            let mapState = root.mapRoot.mapGameControllable.networkMapUpdate(for: reference.id)
-            await send(
-                type: .update,
-                subtype: .mapState,
-                updated: mapState,
-                origin: origin,
-                authoritativeMaster: true
-            )
+            await sendMapFollowUps(for: reference.id, origin: origin)
         } else if presentation == .space,
                   let transformReplay = root.spaceRoot.spaceGameControllable.latestSpaceTransformReplay(
                       for: reference.id,
@@ -121,30 +105,5 @@ extension MasterController {
                 authoritativeMaster: true
             )
         }
-    }
-}
-
-extension MasterController {
-    /// A late SharePlay participant already receives the current Journal
-    /// snapshot. Replay only Weather's canonical identity over Messenger so the
-    /// replay is physically targeted and cannot replace the session-wide
-    /// Journal attachment. If that participant missed the bytes, its normal
-    /// availability check requests the full package from the master.
-    static func presentationReplayReference(
-        _ reference: NetworkCodableDataType,
-        origin: GameMessageOrigin
-    ) -> NetworkCodableDataType {
-        guard case .sharePlay = origin,
-              reference.type == .weather,
-              reference.data != nil
-        else { return reference }
-
-        return NetworkCodableDataType(
-            id: reference.id,
-            type: reference.type,
-            version: reference.version,
-            assetVersion: reference.assetVersion,
-            contentVersion: reference.contentVersion
-        )
     }
 }

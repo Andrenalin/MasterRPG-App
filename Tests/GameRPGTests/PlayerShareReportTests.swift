@@ -14,7 +14,7 @@ import Testing
 
 /// What a player shares and who then delivers it:
 /// - a player never uploads a file the game master already has,
-/// - the game master broadcasts its own copy while another player misses it,
+/// - the game master delivers its own copy to the player that misses it,
 /// - every device reads the item as shared once the master and all players have it.
 ///
 /// A player's share button follows `isSharedWithEveryone(_:)` of its own game model
@@ -26,95 +26,52 @@ struct PlayerShareReportTests {
     @Test("An item the master lacks is uploaded once and reported as shared on every device", arguments: SharedModule.allCases)
     func contributionIsReportedEverywhere(module: SharedModule) async throws {
         // Given: three players joined, only the first owns the item.
-        let env = try await MultiConnectionTestEnvironment.create()
-        try await Self.importFixture(of: module, into: [env.player1Root])
-        let players = try await Self.join(env)
-        let itemId = try Self.sharedItemId(of: module, in: env)
-        try await Self.exchangeLists(of: module, in: env, players: players)
-        for player in players {
+        let env = try await Self.environment(of: module, masterOwns: false, owners: [true, false, false])
+        let sharer = env.players[0]
+        let itemId = try Self.sharedItemId(of: module, in: sharer.root)
+        for player in env.players {
             #expect(!module.controllable(player.root).isSharedWithEveryone(itemId))
         }
 
-        // When: the owner shares it, the master adopts and rebroadcasts it, everyone confirms.
-        let contribution = try await Self.share(itemId, of: module, in: env)
-        #expect(contribution.data.data != nil)
-        let rebroadcast = try #require(
-            try await Self.masterAnswers(to: contribution, in: env).first(where: \.isReveal)
-        )
-        #expect(rebroadcast.data.data != nil)
-        #expect(rebroadcast.targetId == nil)
-        for player in players {
-            try await Self.deliver(rebroadcast, to: player, of: module, in: env, players: players)
-        }
+        // When: the owner shares it.
+        try await Self.share(itemId, of: module, by: sharer)
 
-        // Then: the master lists every player and each player's share button reads "everyone has it".
+        // Then: its file went to the master once, and the master delivered its new copy to
+        // the two players that lacked it.
+        let uploads = env.playerSends.filter { $0.message.data.id == itemId && $0.message.data.data != nil }
+        #expect(uploads.count == 1)
+        #expect(uploads.first?.connectionId == sharer.connectionId)
+        let deliveries = env.masterSends.filter { $0.message.data.id == itemId && $0.message.data.data != nil }
+        #expect(Set(deliveries.compactMap(\.connectionId)) == Set(env.players.dropFirst().map(\.connectionId)))
+
+        // And: the master lists every player and each share button reads "everyone has it".
         let masterReport = Set(module.controllable(env.masterRoot).gameModel.playerReport(for: itemId))
-        #expect(masterReport.isSuperset(of: players.map(\.id)))
-        for player in players {
+        #expect(masterReport.isSuperset(of: env.players.map(\.id)))
+        for player in env.players {
             #expect(module.controllable(player.root).isSharedWithEveryone(itemId))
         }
-    }
-
-    @Test("A player that has not received the 3D model yet keeps its share button unconfirmed")
-    func pendingPlayerIsNotReportedAsShared() async throws {
-        // Given: three players joined, only the first owns the 3D model.
-        let module = SharedModule.space
-        let env = try await MultiConnectionTestEnvironment.create()
-        try await Self.importFixture(of: module, into: [env.player1Root])
-        let players = try await Self.join(env)
-        let spaceId = try Self.sharedItemId(of: module, in: env)
-        try await Self.exchangeLists(of: module, in: env, players: players)
-
-        // When: the master rebroadcasts the contribution and only the owner has processed it.
-        let contribution = try await Self.share(spaceId, of: module, in: env)
-        let rebroadcast = try #require(
-            try await Self.masterAnswers(to: contribution, in: env).first(where: \.isReveal)
-        )
-        await env.player1.receivedProcess(rebroadcast)
-
-        // Then: the players still waiting for it do not read it as shared.
-        #expect(env.player1Root.spaceRoot.gameControllable.isSharedWithEveryone(spaceId))
-        #expect(!env.player2Root.spaceRoot.gameControllable.isSharedWithEveryone(spaceId))
-        #expect(!env.player3Root.spaceRoot.gameControllable.isSharedWithEveryone(spaceId))
     }
 
     @Test("Nobody sends the file for an item the master and every player already have", arguments: SharedModule.allCases)
     func nobodySendsAFileEveryoneHas(module: SharedModule) async throws {
         // Given: the master and all three players own the item.
-        let env = try await MultiConnectionTestEnvironment.create()
-        try await Self.importFixture(
-            of: module,
-            into: [env.masterRoot, env.player1Root, env.player2Root, env.player3Root]
-        )
-        let players = try await Self.join(env)
-        let itemId = try Self.sharedItemId(of: module, in: env)
-        try await Self.exchangeLists(of: module, in: env, players: players)
-        for player in players {
+        let env = try await Self.environment(of: module, masterOwns: true, owners: [true, true, true])
+        let itemId = try Self.sharedItemId(of: module, in: env.players[0].root)
+        for player in env.players {
             #expect(module.controllable(player.root).isSharedWithEveryone(itemId))
         }
-        let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When: a player shares it.
-        let share = try await Self.share(itemId, of: module, in: env)
-        let answers = try await Self.masterAnswers(to: share, in: env)
+        try await Self.share(itemId, of: module, by: env.players[0])
 
-        // Then: the player names the item without its file, and the others show it from their copy.
-        #expect(share.data.data == nil)
-        let presentation = answers.first(where: \.isReveal) ?? share
-        for player in players.dropFirst() {
-            let receipt = try #require(
-                try await Self.deliver(presentation, to: player, of: module, in: env, players: players)
-            )
-            #expect(receipt.subType == .ok)
-        }
-
-        // And: the master sent no file either, and the item is still shared with everyone.
-        let masterFiles = env.masterNetworkSpy.sendResponseHistory
-            .dropFirst(baseline)
-            .compactMap { $0 as? GameNetworkModel }
-            .filter { ($0.type == .reveal || $0.type == .store) && $0.data.data != nil }
-        #expect(masterFiles.isEmpty)
-        for player in players {
+        // Then: no file crossed the network in either direction, and everyone confirmed the
+        // master's reference from its own copy.
+        #expect(env.playerSends.allSatisfy { $0.message.data.data == nil || $0.message.data.id != itemId })
+        #expect(env.masterSends.allSatisfy { $0.message.data.data == nil || $0.message.data.id != itemId })
+        for player in env.players {
+            #expect(env.playerSends.contains {
+                $0.connectionId == player.connectionId && $0.message.subType == .ok && $0.message.data.id == itemId
+            })
             #expect(module.controllable(player.root).isSharedWithEveryone(itemId))
         }
     }
@@ -122,54 +79,39 @@ struct PlayerShareReportTests {
     @Test("The master, not the sharing player, sends the file to a player that misses it", arguments: SharedModule.allCases)
     func masterDeliversToTheMissingPlayer(module: SharedModule) async throws {
         // Given: the master and two players own the item, the second player does not.
-        let env = try await MultiConnectionTestEnvironment.create()
-        try await Self.importFixture(of: module, into: [env.masterRoot, env.player1Root, env.player3Root])
-        let players = try await Self.join(env)
-        let itemId = try Self.sharedItemId(of: module, in: env)
-        try await Self.exchangeLists(of: module, in: env, players: players)
-        let missingPlayer = players[1]
+        let env = try await Self.environment(of: module, masterOwns: true, owners: [true, false, true])
+        let sharer = env.players[0]
+        let missingPlayer = env.players[1]
+        let itemId = try Self.sharedItemId(of: module, in: sharer.root)
         let missingPlayerItems = module.controllable(missingPlayer.root).itemControllable
         #expect(missingPlayerItems.itemSync(for: itemId, noGame: true) == nil)
-        for player in players {
+        let master = module.controllable(env.masterRoot)
+        #expect(!master.allPlayersReported(for: itemId))
+        for player in env.players {
             #expect(!module.controllable(player.root).isSharedWithEveryone(itemId))
         }
 
         // When: a player that has it shares it.
-        let share = try await Self.share(itemId, of: module, in: env)
+        try await Self.share(itemId, of: module, by: sharer)
 
-        // Then: the player names the item to the master alone, without its file.
-        #expect(share.data.data == nil)
-        #expect(share.effectiveAudience == .master)
+        // Then: the player named the item to the master, without its file.
+        let share = try #require(env.playerSends.first {
+            $0.connectionId == sharer.connectionId && $0.message.type == .update && $0.message.subType == .generic
+        })
+        #expect(share.message.data.id == itemId)
+        #expect(share.message.data.data == nil)
 
-        // And: the master broadcasts its own copy, file included, to the group.
-        let broadcasts = try await Self.masterAnswers(to: share, in: env).filter(\.isReveal)
-        #expect(broadcasts.count == 1)
-        let broadcast = try #require(broadcasts.first)
-        #expect(broadcast.sender.isMaster)
-        #expect(broadcast.data.data != nil)
-        #expect(broadcast.targetId == nil)
+        // And: the master sent its own copy, to the player that missed it only.
+        let deliveries = env.masterSends.filter { $0.message.data.id == itemId && $0.message.data.data != nil }
+        #expect(deliveries.count == 1)
+        #expect(deliveries.first?.connectionId == missingPlayer.connectionId)
+        #expect(deliveries.first?.message.sender.isMaster == true)
 
-        // While the missing player has not received it, neither it nor the master reads the
-        // item as shared.
-        for player in players where player.id != missingPlayer.id {
-            try await Self.deliver(broadcast, to: player, of: module, in: env, players: players)
-        }
-        let master = module.controllable(env.masterRoot)
-        #expect(!master.gameModel.playerReport(for: itemId).contains(missingPlayer.id))
-        #expect(!master.allPlayersReported(for: itemId))
-        #expect(!module.controllable(missingPlayer.root).isSharedWithEveryone(itemId))
-
-        // When: the missing player receives the master's broadcast.
-        let receipt = try #require(
-            try await Self.deliver(broadcast, to: missingPlayer, of: module, in: env, players: players)
-        )
-
-        // Then: it has the item, and every device reads it as shared.
-        #expect(receipt.subType == .ok)
+        // And: the missing player has the item, and every device reads it as shared.
         #expect(missingPlayerItems.itemSync(for: itemId, noGame: true) != nil)
-        #expect(Set(master.gameModel.playerReport(for: itemId)).isSuperset(of: players.map(\.id)))
+        #expect(Set(master.gameModel.playerReport(for: itemId)).isSuperset(of: env.players.map(\.id)))
         #expect(master.allPlayersReported(for: itemId))
-        for player in players {
+        for player in env.players {
             #expect(module.controllable(player.root).isSharedWithEveryone(itemId))
         }
     }
@@ -192,15 +134,6 @@ private extension SharedModule {
         }
     }
 
-    /// The availability list of the join handshake, also announced by the master.
-    var listSubType: RPGMessageActionType {
-        switch self {
-        case .audio: .audioList
-        case .photo: .photoList
-        case .space: .spaceList
-        }
-    }
-
     func controllable(_ root: GameRoot) -> any GameControllable {
         switch self {
         case .audio: root.audioRoot.gameControllable
@@ -208,139 +141,52 @@ private extension SharedModule {
         case .space: root.spaceRoot.gameControllable
         }
     }
-
-    func sendList(from player: PlayerController) async {
-        switch self {
-        case .audio: await player.sendAudioList()
-        case .photo: await player.sendPhotoList()
-        case .space: await player.sendSpaceList()
-        }
-    }
-}
-
-private extension GameNetworkModel {
-    var isReveal: Bool { type == .reveal && subType == .show }
 }
 
 private extension PlayerShareReportTests {
-    typealias Player = (controller: PlayerController, root: GameRoot, id: UUID)
-
-    /// The same fixture gives every library the same item ids and versions.
-    static func importFixture(of module: SharedModule, into roots: [GameRoot]) async throws {
-        for root in roots {
-            try await MockRoot.importTestData(into: root.adventureRoot, name: module.testData, itemCounter: 0)
+    /// A game master and three players over an in-memory network. The same fixture gives
+    /// every library that imports it the same item ids and versions. Every player did the
+    /// connect handshake, so the master and the players know who holds what.
+    static func environment(
+        of module: SharedModule,
+        masterOwns: Bool,
+        owners: [Bool]
+    ) async throws -> LinkedGameEnvironment {
+        let env = try await LinkedGameEnvironment.create()
+        if masterOwns {
+            try await env.importData(named: module.testData, into: env.masterRoot)
         }
+        env.masterRoot.adventureRoot.startGame()
+        for (index, owns) in owners.enumerated() {
+            let player = try await env.addPlayer(named: "Player - \(index + 1)")
+            if owns {
+                try await env.importData(named: module.testData, into: player.root)
+            }
+            player.root.adventureRoot.startGame()
+        }
+        for player in env.players {
+            await env.ready(player)
+        }
+        env.clearHistory()
+        return env
     }
 
-    /// A file-backed item of the first player where the fixture has one (the Space fixture's
-    /// object has no file).
-    static func sharedItemId(of module: SharedModule, in env: MultiConnectionTestEnvironment) throws -> UUID {
-        let items = module.controllable(env.player1Root).itemControllable
+    /// A file-backed item where the fixture has one (the Space fixture's object has no file).
+    static func sharedItemId(of module: SharedModule, in root: GameRoot) throws -> UUID {
+        let items = module.controllable(root).itemControllable
         let itemIds = items.itemDataModel.items
         return try #require(itemIds.first { items.itemSync(for: $0)?.fileUrl != nil } ?? itemIds.first)
     }
 
-    /// Starts the game on every device with all three players visible to each other.
-    static func join(_ env: MultiConnectionTestEnvironment) async throws -> [Player] {
-        let players: [Player] = [
-            (env.player1, env.player1Root, env.player1Config.id),
-            (env.player2, env.player2Root, env.player2Config.id),
-            (env.player3, env.player3Root, env.player3Config.id)
-        ]
-        let roster = GameRosterModel(players: [
-            env.player1Roster.players[0],
-            env.player2Roster.players[0],
-            env.player3Roster.players[0]
-        ])
-        let control = GameControlModel(controls: roster.players.map {
-            SharingControlModel(id: $0.id, name: $0.name, show: true)
-        })
-        env.masterRoot.adventureRoot.startGame()
-        env.masterRoot.gameModel.gameRoster = roster
-        env.masterRoot.gameModel.gameControl = control
-        await env.master.resetPlayers()
-        for player in players {
-            player.root.adventureRoot.startGame()
-            player.root.gameModel.reset(
-                gameConfig: GameConfigModel(id: player.id, state: .started, master: env.masterConfig.master),
-                gameRoster: roster
-            )
-            player.root.gameModel.gameControl = control
-            player.controller.resetPlayers()
-        }
-        return players
-    }
-
-    /// The join handshake: each player reports what it has, the master answers everyone with the
-    /// authoritative list.
-    static func exchangeLists(
-        of module: SharedModule,
-        in env: MultiConnectionTestEnvironment,
-        players: [Player]
-    ) async throws {
-        for player in players {
-            await module.sendList(from: player.controller)
-            let report = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-            let answers = try await masterAnswers(to: report, in: env)
-            let authoritative = try #require(answers.last { $0.subType == module.listSubType })
-            for receiver in players {
-                await receiver.controller.receivedProcess(authoritative)
-            }
-        }
-    }
-
-    /// The first player taps share on `itemId`. Returns what it sent; a reveal to the group also
-    /// reaches the other players, as the transport fans it out.
+    /// The player taps share on `itemId`.
     static func share(
         _ itemId: UUID,
         of module: SharedModule,
-        in env: MultiConnectionTestEnvironment
-    ) async throws -> GameNetworkModel {
-        let package = try await module.controllable(env.player1Root).createGameData(for: itemId)
+        by player: LinkedGameEnvironment.Player
+    ) async throws {
+        let package = try await module.controllable(player.root).createGameData(for: itemId)
         #expect(package.data != nil)
-        env.playerNetworkSpy.requestData = nil
-        await env.player1.game(message: package, actionType: .generic)
-        let sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sent.data.id == itemId)
-        if sent.effectiveAudience == .group, sent.data.data != nil {
-            await env.player2.receivedProcess(sent)
-            await env.player3.receivedProcess(sent)
-        }
-        return sent
-    }
-
-    /// Everything the master sends while it processes `message`.
-    static func masterAnswers(
-        to message: GameNetworkModel,
-        in env: MultiConnectionTestEnvironment
-    ) async throws -> [GameNetworkModel] {
-        let baseline = env.masterNetworkSpy.sendResponseHistory.count
-        await env.master.receivedProcess(message, connectionId: nil)
-        return env.masterNetworkSpy.sendResponseHistory
-            .dropFirst(baseline)
-            .compactMap { $0 as? GameNetworkModel }
-    }
-
-    /// `player` processes `message` and the master its answer. A report list the master
-    /// announces on that answer reaches every player. Returns the player's answer.
-    @discardableResult
-    static func deliver(
-        _ message: GameNetworkModel,
-        to player: Player,
-        of module: SharedModule,
-        in env: MultiConnectionTestEnvironment,
-        players: [Player]
-    ) async throws -> GameNetworkModel? {
-        env.playerNetworkSpy.requestData = nil
-        await player.controller.receivedProcess(message)
-        guard let answer = env.playerNetworkSpy.requestData as? GameNetworkModel else { return nil }
-        for announcement in try await masterAnswers(to: answer, in: env)
-            where announcement.type == .update && announcement.subType == module.listSubType {
-            for receiver in players {
-                await receiver.controller.receivedProcess(announcement)
-            }
-        }
-        return answer
+        await player.controller.game(message: package, actionType: .generic)
     }
 }
 #endif

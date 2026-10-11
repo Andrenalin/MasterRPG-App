@@ -20,8 +20,8 @@ actor MasterNetworkControllerDelegateBox {
         await delegate?.masterReady(for: connectionId)
     }
 
-    func masterReceived(data: Data?, for connectionId: ConnectionController.ID, fileJournal: Bool) async {
-        await delegate?.masterReceived(data: data, for: connectionId, fileJournal: fileJournal)
+    func masterReceived(data: Data?, for connectionId: ConnectionController.ID) async {
+        await delegate?.masterReceived(data: data, for: connectionId)
     }
 }
 
@@ -305,7 +305,7 @@ extension MasterNetworkController: ConnectionControllerDelegate {
     }
 
     func received(data: Data?, for id: ConnectionController.ID) async {
-        await delegate.masterReceived(data: data, for: id, fileJournal: false)
+        await delegate.masterReceived(data: data, for: id)
     }
 }
 

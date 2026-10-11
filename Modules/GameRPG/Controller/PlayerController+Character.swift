@@ -56,7 +56,6 @@ extension PlayerController {
                 type: .update,
                 subType: .store,
                 updated: reference,
-                useJournal: false,
                 relayToProxyClients: false
             )
             let lostMaster = gameModel.lostMaster

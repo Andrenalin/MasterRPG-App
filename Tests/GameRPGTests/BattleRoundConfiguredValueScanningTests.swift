@@ -839,7 +839,7 @@ struct BattleRoundConfiguredValueScanningTests {
         #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
 
         // Calling the sync entry point directly with `isGameMaster: false`
-        // (mirroring `applyPlayerMapPin`/`retryDeferredMapPins` running on a
+        // (mirroring `applyPlayerMapPin` running on a
         // player's own device) is likewise a guaranteed no-op.
         #expect(!sut.synchronizeBattleDefenders(itemId: mapId, isGameMaster: false).changed)
         #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)

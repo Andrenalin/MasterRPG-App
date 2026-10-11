@@ -19,7 +19,9 @@ import SpaceRPG
 extension MasterController: MasterNetworkProxyControllerDelegate {
     func lostProxy(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Lost Proxy for \(connectionId, privacy: .public)")
-        _ = gameModel.remove(connectionId: connectionId)
+        if let playerId = store.model.playerRoutes.remove(connectionId: connectionId) {
+            gameModel.forget(playerId: playerId)
+        }
     }
 
     func readyProxy(for connectionId: ConnectionController.ID) async {

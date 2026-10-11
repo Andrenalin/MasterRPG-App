@@ -23,7 +23,7 @@ extension MasterController {
             let wasMissingPlayers = !audio.missingPlayers(for: model.data.id).isEmpty
             let hasPendingPlay = gameModel.pendingAudioPlays[model.data.id] != nil
             root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
-            await continuePendingAudioPlays()
+            await startCompletePendingAudioPlays()
             // Only the master collects the receipts. The one that completes a share is
             // announced, so a player's share button turns to play as well; a pending play
             // announces it with its play command instead.
@@ -32,81 +32,37 @@ extension MasterController {
             }
             return nil
         }
-        if model.subType == .failed {
-            audioTransferFailed(itemId: model.data.id, playerId: model.sender.id)
-            return nil
-        }
-        switch model.type {
-        case .reveal, .store:
-            return try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
-        case .update:
-            switch model.subType {
-            case .generic:
-                guard root.gameModel.gameControl.features.audioSharing else { return nil }
-                // Defend the master's own canonical copy first — mirrors
-                // handlePhoto/handlePdf/handleSpace's `.itemMissing` import
-                // fallback (this is also the legitimate path for a player
-                // contributing a brand-new audio item the master has never
-                // seen, exercised by PlayerMasterControllerTests.handleAudio).
-                // The previous version of this fix unconditionally required
-                // local data first, which blocked that legitimate case; the
-                // actual vulnerability was importing an admitted player's
-                // bytes over an *existing* master-owned copy with no check
-                // at all — this restores that check. See CODE_AUDIT_Game §6.2.
-                do {
-                    let canonical = try await canonicalAudioReveal(for: model.data.id)
-                    await send(type: .reveal, subtype: .show, updated: canonical)
-                } catch ItemGameStorableError.itemMissing {
-                    guard model.data.data != nil else { return nil }
-                    // No import policy for the player's package: accepted, see `updateGame(data:hide:deep:)`
-                    // (CODE_AUDIT_Folder §6.1, won't fix).
-                    do {
-                        try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
-                    } catch {
-                        // A throw inside this `catch` body is not caught by the sibling `catch`
-                        // below, so a failed import left the contributing player without an
-                        // answer. See CODE_AUDIT_21 §5.10.
-                        await reportFailedAudioContribution(model, error: error)
-                        return nil
-                    }
-                    await send(type: .reveal, subtype: .show, updated: model.data)
-                } catch {
-                    // Previously this only logged, leaving the contributing
-                    // player waiting indefinitely whenever the master's
-                    // local copy isn't actually materialized yet (e.g. an
-                    // undownloaded iCloud placeholder) rather than genuinely
-                    // missing. Targeted at the sender only — unlike the
-                    // broadcast `.show` sends in the success paths above,
-                    // this failure is specific to this one contribution.
-                    // See CODE_AUDIT_Network §5.12.
-                    await reportFailedAudioContribution(model, error: error)
-                }
-            case .playAudio:
-                guard root.gameModel.gameControl.features.audioSharing else { return nil }
-                await requestAudioPlay(model.data)
-            case .audioList:
-                guard applyAudioList(model) else { return nil }
-                resetAudioTransfers(for: model.sender.id)
-                await broadcastAudioList()
-                await continuePendingAudioPlays()
-            default:
-                break
-            }
-            return nil
-        }
-    }
+        guard model.subType != .failed else { return nil }
 
-    /// The master's own copy of an audio a player shared: the file for as long as a player
-    /// misses it, the reference alone once everyone has it.
-    private func canonicalAudioReveal(for itemId: UUID) async throws -> NetworkCodableDataType {
-        let controllable = root.audioRoot.gameControllable
-        guard await controllable.itemControllable.item(for: itemId) != nil else {
-            throw ItemGameStorableError.itemMissing
+        if model.isAssetRequest {
+            // An iCloud file that has not downloaded cannot be exported.
+            guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else { return nil }
+            return try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
         }
-        guard root.audioRoot.audioGameControllable.missingPlayers(for: itemId).isEmpty else {
-            return try await controllable.createGameData(for: itemId)
+        guard model.type == .update else { return nil }
+
+        switch model.subType {
+        case .generic:
+            guard model.sender.role == .player,
+                  root.gameModel.gameControl.features.audioSharing
+            else { return nil }
+            await showPlayerContribution(model, controllable: root.audioRoot.gameControllable)
+        case .playAudio:
+            guard root.gameModel.gameControl.features.audioSharing else { return nil }
+            await requestAudioPlay(model.data)
+        case .audioList:
+            guard applyAudioList(model) else { return nil }
+            await broadcastAudioList()
+            // The list may show that this player lacks an audio a play is waiting for.
+            for (id, _) in gameModel.pendingAudioPlays
+            where root.audioRoot.audioGameControllable.missingPlayers(for: id).contains(model.sender.id) {
+                await deliverPendingAudio(id: id, to: [model.sender.id])
+            }
+            await startCompletePendingAudioPlays()
+        default:
+            break
         }
-        return await controllable.share(id: itemId)
+        return nil
     }
 
     /// Sends every player the authoritative report list: who has which audio.
@@ -129,64 +85,53 @@ extension MasterController {
         return true
     }
 
+    /// Plays an audio for everyone. A play command starts only once every player reported the
+    /// file: the players that lack it get it first, and their acknowledgements start it.
     func requestAudioPlay(_ data: NetworkCodableDataType) async {
         if !root.audioRoot.audioGameControllable.shouldPlay(with: data) {
             gameModel.pendingAudioPlays[data.id] = nil
-            gameModel.audioTransferPlayers[data.id] = nil
             await broadcastAudioPlay(data)
             return
         }
 
         gameModel.pendingAudioPlays[data.id] = data
-        await fulfillPendingAudioPlay(id: data.id, data: data)
+        let missingPlayers = Set(root.audioRoot.audioGameControllable.missingPlayers(for: data.id))
+        if missingPlayers.isEmpty {
+            await startCompletePendingAudioPlays()
+        } else {
+            await deliverPendingAudio(id: data.id, to: missingPlayers)
+        }
     }
 
+    /// Starts every pending play whose audio all players have by now.
+    ///
     /// Not `private` because `MasterController+Control.swift`'s
     /// `performResetPlayers()` also calls this directly, from a different file.
-    func continuePendingAudioPlays() async {
-        let pending = gameModel.pendingAudioPlays
-        for (id, data) in pending {
-            await fulfillPendingAudioPlay(id: id, data: data)
+    func startCompletePendingAudioPlays() async {
+        for (id, data) in gameModel.pendingAudioPlays
+        where root.audioRoot.audioGameControllable.missingPlayers(for: id).isEmpty {
+            gameModel.pendingAudioPlays[id] = nil
+            gameModel.audioPlayRetryAttempts[id] = nil
+            await broadcastAudioPlay(data)
         }
     }
 
-    private func fulfillPendingAudioPlay(id: UUID, data: NetworkCodableDataType) async {
-        let missingPlayers = Set(root.audioRoot.audioGameControllable.missingPlayers(for: id))
-        if missingPlayers.isEmpty {
-            gameModel.pendingAudioPlays[id] = nil
-            gameModel.audioTransferPlayers[id] = nil
-            gameModel.audioPlayRetryAttempts[id] = nil
-            await broadcastAudioPlay(data)
-            return
-        }
-
-        let inFlight = gameModel.audioTransferPlayers[id] ?? []
-        let newPlayers = missingPlayers.subtracting(inFlight)
-        guard !newPlayers.isEmpty else { return }
-
+    /// Stores the audio on the players that lack it, without showing it: its reference goes to
+    /// everyone, its file to `players` (see `GameNetworkController.sendPresentation`).
+    private func deliverPendingAudio(id: UUID, to players: Set<UUID>) async {
+        let reference = await root.audioRoot.gameControllable.share(id: id)
+        let package: NetworkCodableDataType
         do {
-            gameModel.audioTransferPlayers[id] = inFlight.union(newPlayers)
-            let audioData = try await root.audioRoot.gameControllable.createGameData(for: id)
-            guard gameModel.pendingAudioPlays[id] != nil else {
-                gameModel.audioTransferPlayers[id] = nil
-                return
-            }
-            let stillMissing = Set(root.audioRoot.audioGameControllable.missingPlayers(for: id))
-                .intersection(newPlayers)
-            if !stillMissing.isEmpty {
-                // Audio repairs use GroupSessionJournal, whose attachment is
-                // visible to the whole SharePlay session. Publishing the same
-                // package once per missing logical player serializes duplicate
-                // uploads and makes playback appear to hang. An untargeted
-                // store is idempotent and also keeps Bonjour/local peers in
-                // sync with a single transfer.
-                await send(type: .store, subtype: .show, updated: audioData)
-            }
+            package = try await root.audioRoot.gameControllable.createGameData(for: id)
         } catch {
-            gameModel.audioTransferPlayers[id]?.subtract(newPlayers)
             Logger.networking.error("MasterController: Cannot prepare pending audio \(id, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             scheduleAudioPlayRetry(id: id)
+            return
         }
+        guard gameModel.pendingAudioPlays[id] != nil else { return }
+        let message = outgoingMessage(type: .store, subtype: .show, updated: reference)
+        await root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
+        await store.sendPresentation(message, missingPlayers: players) { package }
     }
 
     private static let audioPlayRetryDelay: Duration = .seconds(5)
@@ -196,9 +141,8 @@ extension MasterController {
     /// See CODE_AUDIT_17 §3.6.
     private static let maxAudioPlayRetryAttempts = 5
 
-    /// Schedules one bounded retry of `fulfillPendingAudioPlay(id:data:)`
-    /// after `audioPlayRetryDelay`, replacing any retry already scheduled
-    /// for this item — so a persistently failing export doesn't pile up
+    /// Schedules one bounded retry of a pending play whose export failed, replacing any retry
+    /// already scheduled for this item — so a persistently failing export doesn't pile up
     /// concurrent attempts. See CODE_AUDIT_Network §5.13.
     private func scheduleAudioPlayRetry(id: UUID) {
         let attempts = (gameModel.audioPlayRetryAttempts[id] ?? 0) + 1
@@ -208,7 +152,6 @@ extension MasterController {
             audioPlayRetryTasks[id]?.cancel()
             audioPlayRetryTasks[id] = nil
             gameModel.pendingAudioPlays[id] = nil
-            gameModel.audioTransferPlayers[id] = nil
             gameModel.audioPlayRetryAttempts[id] = nil
             return
         }
@@ -219,31 +162,7 @@ extension MasterController {
             guard !Task.isCancelled, let self else { return }
             self.audioPlayRetryTasks[id] = nil
             guard let data = self.gameModel.pendingAudioPlays[id] else { return }
-            await self.fulfillPendingAudioPlay(id: id, data: data)
-        }
-    }
-
-    /// Tells the contributing player that its audio item was not accepted. Targeted at the
-    /// sender only — unlike the broadcast `.show` sends of the success paths — because the
-    /// failure is specific to this one contribution. See CODE_AUDIT_Network §5.12.
-    private func reportFailedAudioContribution(_ model: GameNetworkModel, error: any Error) async {
-        Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        await send(
-            type: .reveal,
-            subtype: .failed,
-            updated: NetworkCodableDataType(id: model.data.id, type: .audio, version: model.data.version, data: nil),
-            replyToMessageID: model.messageID,
-            playerId: model.sender.id
-        )
-    }
-
-    private func audioTransferFailed(itemId: UUID, playerId: UUID) {
-        gameModel.audioTransferPlayers[itemId]?.remove(playerId)
-    }
-
-    private func resetAudioTransfers(for playerId: UUID) {
-        for itemId in gameModel.audioTransferPlayers.keys {
-            gameModel.audioTransferPlayers[itemId]?.remove(playerId)
+            await self.requestAudioPlay(data)
         }
     }
 

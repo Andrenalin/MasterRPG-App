@@ -20,8 +20,6 @@ extension MasterController {
     func handleValue(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.type == .update, model.subType == .valueUpdate {
             guard model.sender.role == .player,
-                  model.purpose == .event,
-                  model.effectiveAudience == .master,
                   let characterId = model.sender.characterId,
                   characterId == model.data.id
             else { return nil }

@@ -19,6 +19,10 @@ import SpaceRPG
 // same-file `Sendable` conformance for a class); this extension supplies the requirements.
 
 extension MasterController {
+    /// The checks every inbound message passes before it is relayed or processed. They need
+    /// nothing from the sender but the envelope: a remote peer can never be the master, its
+    /// role has to fit the transport it uses, it has to name this game's master, and a
+    /// connection speaks for one player only.
     func accepts(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool {
         let expectedMasterId = root.gameModel.gameConfig.master.id
 
@@ -38,55 +42,14 @@ extension MasterController {
             return false
         }
 
-        // Players do not know the master's UUID before the first authoritative
-        // response. Preserve only the exact master-only bootstrap packets sent
-        // at join; every gameplay/peer-visible event must already name this
-        // session's master.
+        // Players do not know the master's UUID before the first master
+        // message. Only the packets a player sends at join may come without it.
         guard model.masterId == expectedMasterId || Self.isPlayerBootstrapEnvelope(model) else {
             Logger.networking.debug("MasterController: Rejected message for another master \(model.masterId, privacy: .public)")
             return false
         }
 
-        guard !model.isPlayerFilePresentationEvent ||
-                GameNetworkModel.acceptsEventTimestamp(model.timestamp)
-        else {
-            Logger.networking.debug("MasterController: Rejected player presentation with invalid timestamp")
-            return false
-        }
-
-        if model.isJournalAdmissionOnly {
-            guard case .sharePlay = origin else {
-                Logger.networking.debug("MasterController: Rejected Journal admission on a non-SharePlay transport")
-                return false
-            }
-        }
-
-        if let connectionId = origin.participantConnectionId {
-            guard gameModel.accepts(
-                connectionId: connectionId,
-                sender: model.sender
-            ) else { return false }
-
-            // A player Journal attachment has no physical source identity.
-            // Admit its exact fingerprint only after the same message arrives
-            // through participant-attributed SharePlay Messenger.
-            if case .sharePlay = origin,
-               model.isPlayerJournalAdmissionMetadata {
-                guard gameModel.admitPlayerJournalMetadata(model) else {
-                    Logger.networking.debug("MasterController: Rejected conflicting player Journal admission")
-                    return false
-                }
-            }
-            return true
-        }
-
-        if origin == .file {
-            guard gameModel.acceptsPlayerJournal(model) else {
-                Logger.networking.debug("MasterController: Rejected uncorrelated Journal sender \(model.sender.id, privacy: .public)")
-                return false
-            }
-        }
-        return true
+        return store.model.playerRoutes.bind(origin, to: model.sender)
     }
 
     /// Transport topology is part of sender authority, not merely a routing
@@ -115,7 +78,7 @@ extension MasterController {
         guard model.sender.role == .player ||
                 model.sender.role == .observer ||
                 model.sender.role == .proxy,
-              model.effectiveAudience == .master
+              model.targetId == nil
         else { return false }
 
         switch (model.type, model.subType, model.data.type) {
@@ -139,14 +102,15 @@ extension MasterController {
             // OS-confirmed join to clear an earlier retirement so the
             // reconnected player's messages bind again instead of being
             // rejected forever.
-            gameModel.reinstateConnection(participantId)
+            store.model.playerRoutes.reinstate(connectionId: participantId)
         }
         await replayCurrentPresentation(to: origin)
     }
 
     func lostPlayer(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Lost Player for \(connectionId, privacy: .public)")
-        guard let playerId = gameModel.remove(connectionId: connectionId) else { return }
+        guard let playerId = store.model.playerRoutes.remove(connectionId: connectionId) else { return }
+        gameModel.forget(playerId: playerId)
         root.audioRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
         root.photoRoot.photoGameControllable.removePhotoReports(for: playerId)
         root.pdfRoot.pdfGameControllable.removePdfReports(for: playerId)
@@ -178,14 +142,6 @@ extension MasterController {
         Logger.networking.debug("MasterController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
 
         guard await accepts(model, origin: origin) else { return }
-
-        if model.isPlayerJournalAdmissionMetadata,
-           let pendingFile = gameModel.takeDeferredPlayerJournalFile(senderId: model.sender.id, messageId: model.messageID) {
-            // This admission metadata is exactly what an earlier file event
-            // was waiting to be correlated against — replay it now instead
-            // of leaving it lost. See CODE_AUDIT_Network §5.16.
-            await receivedFile(pendingFile)
-        }
 
         let event = GameMessageEvent(model: model, origin: origin)
         switch await messagePipeline.enqueue(event) {
@@ -262,49 +218,31 @@ extension MasterController {
             return true
         }
 
-        if await shouldTrackPeerAvailabilitySource(model) {
-            let recipients = root.logGameController.recipientIDs()
-            gameModel.trackPeerAvailabilitySource(
-                model,
-                recipients: recipients
-            )
-        }
-
-        let masterDeliveryAuthorizesAvailability = await recordDeliveryReceipt(model)
-        if model.subType == .ok {
-            let peerPresentationAuthorizesAvailability = if masterDeliveryAuthorizesAvailability {
-                false
-            } else {
-                gameModel.acceptsPeerAvailabilityReceipt(model)
-            }
-            guard masterDeliveryAuthorizesAvailability || peerPresentationAuthorizesAvailability else {
-                Logger.networking.debug("MasterController: Ignored uncorrelated availability acknowledgement from \(model.sender.id, privacy: .public)")
-                await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
-                return true
-            }
+        // An acknowledgement that answers no message this game sent says nothing.
+        if model.subType == .ok, !recordDeliveryReceipt(model) {
+            Logger.networking.debug("MasterController: Ignored uncorrelated acknowledgement from \(model.sender.id, privacy: .public)")
+            await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+            return true
         }
 
         do {
             try Task.checkCancellation()
             if let requestedData = try await handle(model, origin: event.origin) {
                 try Task.checkCancellation()
-                if requestedData.data != nil, requestedData.type != .map {
-                    // The full payload went out — a later reshow can rely on
-                    // the reference no matter which path delivered first.
-                    // Map is deliberately excluded: all Map request responses
-                    // are requester-only repairs (including photo-free generic
-                    // updates). Only show(for:) publishes the full Map package
-                    // to the group and may establish the shared sent baseline.
-                    gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.effectiveAssetVersion)
-                }
-                // Target the answer at the requester: an untargeted full payload
-                // re-triggered "show" on every peer and flipped everyone's screen.
+                // The answer to a request: it keeps the counter of the message the player
+                // could not use, and goes back the way the request came. A request that
+                // echoes no master message (a pin photo of a map) has counter 0 and is
+                // answered under a new one, so the answer is logged and never processed
+                // twice. A package is not addressed to the requester alone: over the
+                // SharePlay Journal it reaches everyone, and whoever lacks it as well
+                // takes it.
                 await send(
                     type: model.type,
                     subtype: model.subType,
                     updated: requestedData,
+                    counter: model.isAssetRequest && model.counter > 0 ? model.counter : nil,
                     origin: event.origin,
-                    playerId: model.sender.id
+                    playerId: requestedData.carriesAsset ? nil : model.sender.id
                 )
             }
             await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
@@ -318,96 +256,18 @@ extension MasterController {
         }
     }
 
-    private func shouldTrackPeerAvailabilitySource(
-        _ model: GameNetworkModel
-    ) async -> Bool {
-        guard model.isPlayerFilePresentationEvent,
-              GameNetworkModel.acceptsEventTimestamp(model.timestamp)
+    /// Marks the acknowledging player in the log row of the message it answers, found by the
+    /// echoed counter. Returns whether the acknowledgement belongs to a reveal or store of
+    /// this game, which is what lets it update an availability report.
+    private func recordDeliveryReceipt(_ model: GameNetworkModel) -> Bool {
+        guard let log = root.gameModel.logData[model.counter],
+              log.messageID.sessionID == gameModel.deliverySessionID,
+              log.module == model.data.type,
+              log.itemId == model.data.id
         else { return false }
 
-        let baseline: Int
-        switch model.data.type {
-        case .photo:
-            guard root.gameModel.gameControl.features.photoSharing else {
-                return false
-            }
-            baseline = await root.photoRoot.gameControllable.networkVersion(
-                for: model.data.id
-            )
-        case .pdf:
-            baseline = await root.pdfRoot.gameControllable.networkVersion(
-                for: model.data.id
-            )
-        case .space:
-            guard root.gameModel.gameControl.features.spaceSharing else {
-                return false
-            }
-            baseline = await root.spaceRoot.gameControllable.networkVersion(
-                for: model.data.id
-            )
-        default:
-            return false
-        }
-        return model.data.effectiveAssetVersion == baseline
-    }
-
-    /// Records every valid delivery acknowledgement, and returns whether the
-    /// original master packet is a file-bearing reveal/store whose receipt may
-    /// also update an asset-availability report.
-    /// Whether a receipt's message type belongs to the logged master message. SharePlay rewrites a
-    /// targeted audio publication into a broadcast `.store` before it reaches the Journal
-    /// (`RPGSharePlayController.journalMetadata`), so every player acknowledges `Store - Ok` for a
-    /// message the master logged as `Reveal - Show`. Comparing the types strictly dropped those
-    /// receipts as uncorrelated: the master never marked the audio as available on that player and
-    /// playing it was impossible.
-    nonisolated static func deliveryTypeMatches(
-        logged: RPGMessageType,
-        receipt: RPGMessageType,
-        module: NetworkModules
-    ) -> Bool {
-        if logged == receipt { return true }
-        return module == .audio && logged == .reveal && receipt == .store
-    }
-
-    private func recordDeliveryReceipt(_ model: GameNetworkModel) async -> Bool {
-        // A failed transfer and a request for missing bytes both prove the
-        // opposite of delivery. Only an explicit successful acknowledgement
-        // may complete the master's delivery row.
-        guard model.subType == .ok else { return false }
-
-        let deliveryID: GameDeliveryMessageID?
-        if let replyToMessageID = model.replyToMessageID {
-            deliveryID = gameModel.deliveryMessageID(replyingTo: replyToMessageID)
-        } else if model.messageID == nil {
-            // V1 has no stable wire identity. Retain its counter compatibility,
-            // but only for an exact module/item receipt shape.
-            deliveryID = root.gameModel.logData[model.counter]?.messageID
-        } else {
-            deliveryID = nil
-        }
-
-        guard let deliveryID else { return false }
-        let deliveryMatch: (matches: Bool, authorizesAvailability: Bool)
-        if let log = root.gameModel.logData[deliveryID.counter] {
-            let matches = log.messageID == deliveryID &&
-                Self.deliveryTypeMatches(logged: log.type, receipt: model.type, module: model.data.type) &&
-                log.module == model.data.type &&
-                log.itemId == model.data.id
-            deliveryMatch = (
-                matches: matches,
-                authorizesAvailability: matches &&
-                    (log.type == .reveal || log.type == .store)
-            )
-        } else {
-            deliveryMatch = (matches: false, authorizesAvailability: false)
-        }
-        guard deliveryMatch.matches else { return false }
-
-        let recorded = root.logGameController.updateMessage(
-            messageID: deliveryID,
-            player: model.sender.id
-        )
-        return recorded && deliveryMatch.authorizesAvailability
+        root.logGameController.updateMessage(messageID: log.messageID, player: model.sender.id)
+        return log.type == .reveal || log.type == .store
     }
 
     /// Observers participate in availability/repair handshakes but cannot issue
@@ -433,59 +293,15 @@ extension MasterController {
             break
         }
 
-        // An observer is a passive local-network display. It may name a missing
-        // asset, but it can never upload bytes or disguise a gameplay action as
-        // an asset request. Legacy data-less repair envelopes are normalized so
-        // module handlers take their requester-only paths instead of presenting
-        // the item to the group.
-        guard model.data.data == nil,
-              model.purpose == .assetRequest || model.purpose == .legacy
-        else { return nil }
-
-        let isPassiveAsset = switch model.data.type {
-        case .audio, .dice, .map, .pdf, .photo, .space, .table, .weather:
-            true
-        default:
-            false
-        }
-        guard isPassiveAsset else { return nil }
-
-        let isRepairShape = switch (model.type, model.subType) {
-        case (.reveal, .show), (.store, .store):
-            true
-        case (.reveal, .mapState):
-            model.data.type == .map
-        case (.update, .generic):
-            model.data.type == .map
-        default:
-            false
-        }
-        guard isRepairShape else { return nil }
-
-        var request = model
-        request.purpose = .assetRequest
-        request.audience = .master
-        return request
+        // An observer is a passive local-network display. It may ask for an item it lacks,
+        // but it can never upload bytes or issue a gameplay action.
+        return model.isAssetRequest ? model : nil
     }
 
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
         guard root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
-        guard await accepts(model, origin: .file) else {
-            // GroupSessionJournal attachments and GroupSessionMessenger
-            // messages are independent channels with no cross-channel
-            // ordering guarantee: this file's matching admission metadata
-            // may simply not have been processed yet. Hold it and replay it
-            // once that admission lands (see `receivedProcess`'s replay
-            // hook) instead of losing this Photo/Pdf/Space permanently.
-            // See CODE_AUDIT_Network §5.16.
-            if model.isPlayerFilePresentationEvent,
-               model.messageID != nil,
-               !gameModel.acceptsPlayerJournal(model) {
-                gameModel.deferUnmatchedPlayerJournalFile(model)
-            }
-            return
-        }
+        guard await accepts(model, origin: .file) else { return }
         switch await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) {
         case .enqueued:
             await processMessages()

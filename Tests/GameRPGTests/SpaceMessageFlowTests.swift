@@ -24,7 +24,6 @@ struct SpaceMessageFlowTests {
             type: .reveal,
             subType: .show,
             asMaster: false,
-            purpose: .assetRequest,
             data: reference
         )
         let broadcastCount = env.masterNetworkSpy.sendResponseHistory.count
@@ -35,40 +34,6 @@ struct SpaceMessageFlowTests {
         #expect(repair.effectiveAssetVersion == reference.effectiveAssetVersion)
         #expect(repair.data != nil)
         #expect(env.masterNetworkSpy.sendResponseHistory.count == broadcastCount)
-    }
-
-    @Test("Completing a requested Space repair presents the imported object")
-    func spaceRepairCompletionPresentsImportedObject() async throws {
-        // Given
-        let env = try await Self.preparedEnvironment()
-        let spaceId = try #require(env.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
-        let reference = await env.masterRoot.spaceRoot.gameControllable.share(id: spaceId)
-        let fullData = try await env.masterRoot.spaceRoot.gameControllable.createGameData(for: spaceId)
-        let reveal = env.masterRoot.gameModel.outgoingMessage(
-            counter: 1,
-            type: .reveal,
-            subType: .show,
-            asMaster: true,
-            data: reference
-        )
-
-        // When - a reference reveal records presentation intent and requests
-        // the missing package, followed by a targeted full store response.
-        _ = try #require(try await env.player1.handleSpace(reveal))
-        #expect(await env.player1Root.spaceRoot.gameControllable.currentId != spaceId)
-        let repair = env.masterRoot.gameModel.outgoingMessage(
-            counter: 2,
-            type: .store,
-            subType: .store,
-            asMaster: true,
-            targetId: env.player1Config.id,
-            data: fullData
-        )
-        _ = try #require(try await env.player1.handleSpace(repair))
-
-        // Then
-        #expect(await env.player1Root.spaceRoot.gameControllable.currentId == spaceId)
-        #expect(env.player1.gameModel.gameUpdateType == .space)
     }
 
     @Test("Master ignores stale, duplicate, negative, and malformed Space lists")
@@ -242,7 +207,7 @@ struct SpaceMessageFlowTests {
         #expect(model.sender.isMaster)
         #expect(model.type == .update)
         #expect(model.subType == .spaceList)
-        #expect(!model.isPresentationIntent)
+        #expect(!model.isPresentation)
     }
 
     @Test("Player optimistically acknowledges its exact outgoing Space transform envelope")
@@ -286,7 +251,6 @@ struct SpaceMessageFlowTests {
         )
         #expect(outgoing.type == .update)
         #expect(outgoing.subType == .spaceTransform)
-        #expect(outgoing.effectiveAudience == .group)
         #expect(outgoing.data == data)
         #expect(outgoing.timestamp > retainedTimestamp)
         #expect(retained.transform == transform)
@@ -380,7 +344,6 @@ struct SpaceMessageFlowTests {
             for: spaceId,
             version: version
         )
-        #expect(playerEvent.effectiveAudience == .group)
         #expect(playerEvent.sender.role == .player)
         #expect(SpaceTransformModel.decodeData(of: retained?.data) == transform)
         #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline)
@@ -509,13 +472,11 @@ struct SpaceMessageFlowTests {
             for: spaceId,
             version: version
         )
-        #expect(peerEvent.effectiveAudience == .group)
         #expect(peerEvent.sender.role == .player)
         #expect(SpaceTransformModel.decodeData(of: retainedAfterPeer?.data) == peerTransform)
 
-        // When - A higher-counter master packet is older, the wrong asset
-        // version is not current, and a peer without an availability report is
-        // not eligible to move this Space.
+        // When - A higher-counter master packet is older, and the wrong asset
+        // version is not current.
         _ = try await env.player1.handleSpace(
             Self.transformMessage(
                 from: env.masterRoot,
@@ -538,18 +499,6 @@ struct SpaceMessageFlowTests {
                 transform: ignoredTransform
             )
         )
-        var unavailablePeerEvent = Self.transformMessage(
-            from: env.player3Root,
-            asMaster: false,
-            itemId: spaceId,
-            version: version,
-            counter: 2_000,
-            timestamp: masterTimestamp + 20,
-            transform: ignoredTransform
-        )
-        unavailablePeerEvent.masterId = env.masterConfig.id
-        _ = try await env.player1.handleSpace(unavailablePeerEvent)
-
         // Then
         let retained = env.player1Root.spaceRoot.spaceGameControllable.latestSpaceTransform(
             for: spaceId,
@@ -562,76 +511,6 @@ struct SpaceMessageFlowTests {
         ) == nil)
     }
 
-    @Test("A peer Space transform waits for the authoritative list and retains the newest intent")
-    func playerRetriesPeerTransformAfterAuthoritativeList() async throws {
-        // Given: a peer's small group events overtake the master's authoritative
-        // availability list on another player.
-        let env = try await MultiConnectionTestEnvironment.create()
-        let spaceId = UUID()
-        let version = 57
-        let olderTransform = SpaceTransformModel(
-            position: SIMD3<Float>(1, 2, 3),
-            scale: SIMD3<Float>(repeating: 1),
-            orientation: simd_quatf(angle: 0.25, axis: [0, 1, 0])
-        )
-        let newestTransform = SpaceTransformModel(
-            position: SIMD3<Float>(7, 8, 9),
-            scale: SIMD3<Float>(repeating: 2),
-            orientation: simd_quatf(angle: 1, axis: [0, 1, 0])
-        )
-        let baseTimestamp = Date.now.timeIntervalSince1970 - 10
-        var newestEvent = Self.transformMessage(
-            from: env.player2Root,
-            asMaster: false,
-            itemId: spaceId,
-            version: version,
-            counter: 10,
-            timestamp: baseTimestamp + 1,
-            transform: newestTransform
-        )
-        newestEvent.masterId = env.masterConfig.id
-        var delayedOlderEvent = Self.transformMessage(
-            from: env.player2Root,
-            asMaster: false,
-            itemId: spaceId,
-            version: version,
-            counter: 11,
-            timestamp: baseTimestamp,
-            transform: olderTransform
-        )
-        delayedOlderEvent.masterId = env.masterConfig.id
-
-        // When: newest then older arrive before the availability prerequisite.
-        #expect(try await env.player1.handleSpace(newestEvent) == nil)
-        #expect(try await env.player1.handleSpace(delayedOlderEvent) == nil)
-        #expect(env.player1Root.spaceRoot.spaceGameControllable.latestSpaceTransform(
-            for: spaceId,
-            version: version
-        ) == nil)
-
-        // And the master list confirms that the peer has this exact asset.
-        _ = try await env.player1.handleSpace(
-            Self.authoritativeSpaceList(
-                from: env.masterRoot,
-                counter: 2,
-                list: [spaceId: version],
-                players: [
-                    spaceId: [
-                        env.masterConfig.id: version,
-                        env.player1Config.id: version,
-                        env.player2Config.id: version
-                    ]
-                ]
-            )
-        )
-
-        // Then: deferred replay keeps timestamp ordering despite delivery order.
-        let retained = env.player1Root.spaceRoot.spaceGameControllable.latestSpaceTransform(
-            for: spaceId,
-            version: version
-        )
-        #expect(SpaceTransformModel.decodeData(of: retained?.data) == newestTransform)
-    }
 }
 
 private extension SpaceMessageFlowTests {

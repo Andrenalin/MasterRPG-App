@@ -19,8 +19,6 @@ import SpaceRPG
 extension MasterController {
     func start() async {
         Logger.networking.debug("MasterController: Start")
-        gameModel.resetPlayerJournalAdmissions()
-        gameModel.resetPeerAvailabilitySources()
         root.logGameController.beginDeliverySession(gameModel.deliverySessionID)
         // A code that could not be read at launch (locked keychain) is resolved, and a code changed
         // moments ago is made durable, before it is put to use. See CODE_AUDIT_Join §5.5.
@@ -42,22 +40,15 @@ extension MasterController {
             task.cancel()
         }
         audioPlayRetryTasks.removeAll()
-        gameModel.lastMapRecoveryServed.removeAll()
-        gameModel.mapRecoveryHistory.removeAll()
-        gameModel.cancelDeferredMapRecoveries()
         gameModel.audioPlayRetryAttempts.removeAll()
         gameModel.pendingAudioPlays.removeAll()
-        gameModel.audioTransferPlayers.removeAll()
-        gameModel.sentGameItems.removeAll()
+        gameModel.sentMapContentVersions.removeAll()
         gameModel.resetCharacterOwnership()
         gameModel.resetAudioListSequence()
         gameModel.resetPhotoListSequence()
         gameModel.resetPdfListSequence()
         gameModel.resetSpaceListSequence()
         gameModel.resetSpaceTransformSequence()
-        gameModel.resetDeliveryMessages()
-        gameModel.resetPlayerJournalAdmissions()
-        gameModel.resetPeerAvailabilitySources()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -133,10 +124,10 @@ extension MasterController {
             }
         }
         // A newly joined player reports its database-backed audio list from
-        // ready(). Wait for that report before deciding whether to transfer.
-        // Removals can immediately unblock a pending play.
+        // ready(), which delivers what it lacks. Removals can immediately
+        // unblock a pending play.
         if Set(players).isSubset(of: previousAudioPlayers) {
-            await continuePendingAudioPlays()
+            await startCompletePendingAudioPlays()
         }
     }
 }

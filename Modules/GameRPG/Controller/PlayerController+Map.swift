@@ -5,40 +5,17 @@ import Foundation
 import os.log
 import MapRPG
 
-// Split into +Map.swift (dispatch + .update), +MapRepair.swift (repair
-// requests + pending-payload application), +MapPresentation.swift
-// (presentation + deferred-pin/battle-round replay) — was one 698-line
-// file. See CODE_AUDIT_Game §9.9.
-
-enum PlayerMapPinApplication: Sendable {
-    case applied
-    case awaitingMapGeneration
-    case rejected
-}
+// A map travels like every file-backed item: the game master names it, a player that lacks it
+// answers with the same counter and gets the package. What changes while the map is shown
+// (content, state, battle round, pins) follows as small updates.
 
 extension PlayerController {
     func handleMap(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        if model.subType == .failed,
-           model.sender.isMaster,
-           model.data.type == .map,
-           !root.gameModel.gameConfig.isMaster {
-            scheduleMapRepairRetry(itemId: model.data.id, version: model.data.version)
-            return nil
-        }
-        guard model.subType != .ok, model.subType != .failed else { return nil }
+        guard !model.isAcknowledgement else { return nil }
 
-        let isPlayerMapPin = model.sender.role == .player &&
-            model.type == .update &&
-            model.subType == .mapPin &&
-            model.data.type == .map &&
-            model.effectiveAudience == .group
-        if isPlayerMapPin {
-            switch applyPlayerMapPin(model) {
-            case .applied, .rejected:
-                break
-            case .awaitingMapGeneration:
-                gameModel.deferMapPin(model)
-            }
+        if model.isPlayerGroupEvent {
+            // Another player moved its pin.
+            applyPlayerMapPin(model)
             return nil
         }
 
@@ -49,279 +26,23 @@ extension PlayerController {
             // display reading the same state) is always seeing its own
             // broadcast here: master and player share one `GameRoot`, so
             // `model.data` merely echoes state this device's `root.mapRoot`
-            // already holds as the single source of truth. None of the
-            // asset/content-generation matching, import, or repair
-            // machinery below is meaningful when sender and receiver are
-            // literally the same object — just present it.
+            // already holds as the single source of truth.
             return await handleLocalMasterMap(model)
         }
 
         switch model.type {
         case .reveal:
-            let isRepairPayload = model.targetId != nil || model.subType == .store
-            if !isRepairPayload,
-               model.data.data != nil,
-               let pending = gameModel.pendingMapRepairRequirement(itemId: model.data.id),
-               !gameModel.pendingMapRepairMatches(model.data),
-               model.counter > pending.counter {
-                // A newer ordinary show is a fresh authoritative intent, not an
-                // answer to the older request. Replace the queued repair so its
-                // stale state/content cannot be applied to the new generation.
-                gameModel.supersedeMapRepair(itemId: model.data.id)
-            }
-            if isRepairPayload {
-                guard gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil,
-                      gameModel.pendingMapRepairMatches(model.data)
-                else { return nil }
-            }
-
-            let hasBaseMap = await root.mapRoot.gameControllable.hasItem(
-                id: model.data.id,
-                version: 0
-            )
-            let hasMatchingAsset: Bool
-            if hasBaseMap, model.data.assetVersion != nil {
-                hasMatchingAsset = await hasMatchingMapAsset(model.data)
-            } else {
-                hasMatchingAsset = false
-            }
-            let shouldImportFullPayload: Bool
-            if model.data.data == nil {
-                shouldImportFullPayload = true
-            } else {
-                shouldImportFullPayload = gameModel.shouldImportFullMapContent(
-                    itemId: model.data.id,
-                    counter: model.counter
-                )
-            }
-            let revealed: Bool
-            if model.data.data != nil, model.data.assetVersion != nil {
-                if hasBaseMap, !shouldImportFullPayload {
-                    // A newer full/photo-free update already won. Keep its
-                    // metadata while honoring this reveal only when the local
-                    // background is the exact advertised asset generation.
-                    revealed = hasMatchingAsset
-                } else {
-                    // Current-protocol full payloads carry independent asset and
-                    // content fingerprints. Always import a newly sequenced one:
-                    // the background may have changed without the legacy scale
-                    // version changing, or its structural snapshot may be newer
-                    // even though the background still matches.
-                    // The master is unconditionally authoritative for map
-                    // state — `.overwrite` skips the default CRDT
-                    // last-writer-wins merge, which is keyed on each
-                    // device's own local wall clock and can otherwise let
-                    // this player's own stale, previously-persisted copy
-                    // of the map silently win over what the master just
-                    // broadcast (discarding e.g. a just-updated pin
-                    // healthPercent with no error). See
-                    // player-character-sync-gaps memory note.
-                    //
-                    // Let a throw here propagate to `processMessages()`'s own
-                    // catch instead of swallowing it locally: that's the one
-                    // path that sends a `.failed` ack upstream and keeps the
-                    // message retry-eligible, exactly like every other module
-                    // (Photo/Pdf/Space/Audio/Weather/Table) already does. A
-                    // local catch-and-return-nil here left no ack, no repair
-                    // request, and permanently marked the enclosing message
-                    // handled even though the import never completed. See
-                    // CODE_AUDIT_Network §5.19.
-                    try await root.mapRoot.gameControllable.updateGame(
-                        data: model.data,
-                        hide: true,
-                        deep: false,
-                        importMode: .overwrite
-                    )
-                    // Importing the map package establishes the advertised
-                    // generation even when its background bytes are not locally
-                    // readable. Background readiness is checked independently
-                    // before presentation and acknowledgement below.
-                    await recordImportedFullMapGeneration(model)
-                    revealed = await hasMatchingMapAsset(model.data)
-                }
-            } else if model.data.data == nil, model.data.assetVersion != nil {
-                // Mutable map metadata may have changed while the background
-                // asset stayed the same. Current peers can reuse that asset and
-                // wait for the companion mapUpdate; legacy peers still follow
-                // the original scale-version comparison in reveal().
-                // A reference for a different background asset must request the
-                // full Journal/messenger package even when the legacy scale-only
-                // `version` still matches the local MapModel.
-                revealed = hasMatchingAsset
-            } else {
-                // Propagate rather than swallow — see CODE_AUDIT_Network §5.19.
-                revealed = try await root.mapRoot.gameControllable.reveal(
-                    itemId: model.data.id,
-                    data: model.data,
-                    save: false
-                )
-                if revealed, model.data.data != nil {
-                    await recordImportedFullMapGeneration(model)
-                }
-            }
-
-            guard revealed else {
-                gameModel.clearGameUpdateTypeIfPhoto()
-                guard !isRepairPayload else { return nil }
-                return await requestFullMap(
-                    for: model,
-                    requestType: .reveal,
-                    action: model.subType,
-                    presentsMap: true
-                )
-            }
-
-            _ = await applyPendingMapContentUpdate(itemId: model.data.id)
-
-            // A metadata-only reveal is complete only when both independent
-            // generations are locally available. Missing a structural update is
-            // repaired exactly once for that advertised content fingerprint.
-            if model.data.data == nil,
-               !gameModel.hasMapContentVersion(
-                    itemId: model.data.id,
-                    contentVersion: model.data.contentVersion
-               ) {
-                return await requestMapContent(
-                    for: model,
-                    presentsMap: true
-                )
-            }
-
-            guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) else {
-                // Never ACK or present an unusable Map. One retry per exact
-                // asset/content generation bounds a permanently broken export.
-                return await requestFullMap(
-                    for: model,
-                    requestType: .reveal,
-                    action: model.subType == .store ? .mapState : model.subType,
-                    presentsMap: true,
-                    backgroundRetry: true
-                )
-            }
-
-            _ = await applyPendingMapState(itemId: model.data.id)
-            let hadPendingRepair = gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil
-            let completedRepair = await completeMapRepairIfSatisfied(itemId: model.data.id)
-            guard !hadPendingRepair || completedRepair != nil else { return nil }
-            await presentMap(itemId: model.data.id)
-            return await response(for: model, isSuccess: true, requestData: false)
-
+            return try await receiveMap(model, presents: true)
         case .store:
-            guard model.data.data != nil else { return nil }
-            if gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil,
-               !gameModel.pendingMapRepairMatches(model.data) {
-                return nil
-            }
-
-            let hasBaseMap = await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: 0)
-            let shouldImport = gameModel.shouldImportFullMapContent(
-                itemId: model.data.id,
-                counter: model.counter
-            )
-            var importedFullPayload = false
-            if !hasBaseMap || shouldImport {
-                // See the matching comment on the `.reveal` branch above —
-                // the master is unconditionally authoritative for map
-                // state, so this skips the default CRDT merge too. Propagate
-                // rather than swallow — see CODE_AUDIT_Network §5.19.
-                try await root.mapRoot.gameControllable.updateGame(
-                    data: model.data,
-                    hide: true,
-                    deep: true,
-                    importMode: .overwrite
-                )
-                importedFullPayload = true
-                root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
-                    model.data
-                )
-                gameModel.recordFullMapContentVersion(
-                    itemId: model.data.id,
-                    contentVersion: model.data.contentVersion,
-                    counter: model.counter
-                )
-            } else if await !hasMatchingMapAsset(model.data) {
-                return nil
-            }
-
-            _ = await applyPendingMapContentUpdate(itemId: model.data.id)
-            _ = await applyPendingMapState(itemId: model.data.id)
-            retryDeferredMapPins(itemId: model.data.id)
-            guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) else {
-                return await requestFullMap(
-                    for: model,
-                    requestType: .store,
-                    action: .store,
-                    presentsMap: false,
-                    backgroundRetry: true
-                )
-            }
-
-            let hadPendingRepair = gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil
-            let completesPresentation = await completeMapRepairIfSatisfied(itemId: model.data.id)
-            guard !hadPendingRepair || completesPresentation != nil else { return nil }
-            if completesPresentation == true {
-                await presentMap(itemId: model.data.id)
-            } else if importedFullPayload {
-                await requestMissingMapImages(itemId: model.data.id)
-            }
-            return await response(for: model, isSuccess: true, requestData: false)
-
+            return try await receiveMap(model, presents: false)
         case .update:
             switch model.subType {
             case .generic:
                 return await handleMapContentUpdate(model)
             case .mapState:
-                guard gameModel.shouldApplyMapState(
-                        itemId: model.data.id,
-                        counter: model.counter
-                      )
-                else { return nil }
-
-                let hasBaseMap = await root.mapRoot.gameControllable.hasItem(
-                    id: model.data.id,
-                    version: 0
-                )
-                let hasMatchingAsset = await hasMatchingMapAsset(model.data)
-                let hasMatchingContent = gameModel.hasMapContentVersion(
-                    itemId: model.data.id,
-                    contentVersion: model.data.contentVersion
-                )
-                guard hasBaseMap, hasMatchingAsset else {
-                    gameModel.queueMapState(model.data, counter: model.counter)
-                    return await requestFullMap(
-                        for: model,
-                        requestType: .reveal,
-                        action: .mapState,
-                        presentsMap: true
-                    )
-                }
-                guard hasMatchingContent else {
-                    gameModel.queueMapState(model.data, counter: model.counter)
-                    return await requestMapContent(for: model, presentsMap: true)
-                }
-
-                guard root.mapRoot.mapGameControllable.updateMap(
-                    for: model.data.id,
-                    with: model.data
-                ) else { return nil }
-                gameModel.markMapStateApplied(itemId: model.data.id, counter: model.counter)
-                _ = await completeMapRepairIfSatisfied(itemId: model.data.id)
-                retryDeferredMapPins(itemId: model.data.id)
-                retryDeferredBattleRoundUpdate(itemId: model.data.id)
-                gameModel.setGameUpdateType(.map)
-                await refreshMapVisuals(itemId: model.data.id)
-
-            case .mapPin:
-                // Player pin events are handled before the master-only switch.
-                return nil
+                return await handleMapState(model)
             case .battleRound:
-                // A generation mismatch here used to just drop the update with
-                // no way back — unlike `.mapPin`'s `awaitingMapGeneration`/
-                // `deferMapPin` path just above, nothing ever replayed a
-                // `.battleRound` payload once the map generation caught up, so
-                // a player's turn-order UI could stay stuck on a stale round/
-                // active-attacker until an unrelated future broadcast happened
-                // to resync it. See CODE_AUDIT §5.2.
+                // An update for a map that is not there yet waits for it.
                 guard root.mapRoot.mapGameControllable.applyBattleRoundUpdate(
                     for: model.data.id,
                     with: model.data
@@ -332,9 +53,115 @@ extension PlayerController {
                 gameModel.discardPendingBattleRoundUpdate(itemId: model.data.id)
                 setMapUpdateTypeAndSyncPawns()
             default:
-                return nil
+                break
+            }
+            return nil
+        }
+    }
+
+    /// A reveal shows the map, a store only keeps it. Either names the map or carries its
+    /// package.
+    private func receiveMap(_ model: GameNetworkModel, presents: Bool) async throws -> GameNetworkModel? {
+        let itemId = model.data.id
+        let holdsMap = await holdsMap(model.data)
+
+        if model.data.data != nil {
+            // A package that arrives after a newer content update would roll the map back.
+            if !holdsMap || gameModel.shouldApplyMapContentUpdate(itemId: itemId, counter: model.counter) {
+                // The master is unconditionally authoritative for map state — `.overwrite`
+                // skips the default last-writer-wins merge, which is keyed on each device's
+                // own wall clock and can let this player's stale copy of the map win over
+                // what the master just sent. See player-character-sync-gaps memory note.
+                try await root.mapRoot.gameControllable.updateGame(
+                    data: model.data,
+                    hide: true,
+                    deep: !presents,
+                    importMode: .overwrite
+                )
+                root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(model.data)
+                gameModel.markMapContentApplied(itemId: itemId, counter: model.counter)
+            }
+            guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: itemId) else {
+                // Never acknowledge or show a map without its background.
+                return await response(for: model, isSuccess: false, requestData: false)
+            }
+        } else {
+            let isUsable: Bool
+            if holdsMap {
+                isUsable = await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: itemId)
+            } else {
+                isUsable = false
+            }
+            guard isUsable else {
+                gameModel.clearGameUpdateTypeIfPhoto()
+                gameModel.noteMapRequest(itemId: itemId)
+                return await response(for: model, isSuccess: true, requestData: true)
             }
         }
+
+        await applyPendingMapUpdates(itemId: itemId)
+        if presents {
+            await presentMap(itemId: itemId)
+        } else {
+            await requestMissingMapImages(itemId: itemId)
+        }
+        return await response(for: model, isSuccess: true, requestData: false)
+    }
+
+    /// Whether this player holds the map with the background the message names.
+    private func holdsMap(_ data: NetworkCodableDataType) async -> Bool {
+        guard await root.mapRoot.gameControllable.hasItem(id: data.id, version: 0) else { return false }
+        guard let assetVersion = data.assetVersion else { return true }
+        return await root.mapRoot.mapGameControllable.mapAssetVersion(for: data.id) == assetVersion
+    }
+
+    /// Applies the content, state and battle round that arrived before their map.
+    private func applyPendingMapUpdates(itemId: UUID) async {
+        if let pending = gameModel.pendingMapContentUpdate(for: itemId) {
+            if gameModel.shouldApplyMapContentUpdate(itemId: itemId, counter: pending.counter),
+               root.mapRoot.mapGameControllable.applyMapContentUpdate(for: itemId, with: pending.data) {
+                gameModel.markMapContentApplied(itemId: itemId, counter: pending.counter)
+            } else {
+                gameModel.discardPendingMapContentUpdate(itemId: itemId)
+            }
+        }
+        if let pending = gameModel.pendingMapState(for: itemId) {
+            if gameModel.shouldApplyMapState(itemId: itemId, counter: pending.counter),
+               root.mapRoot.mapGameControllable.updateMap(for: itemId, with: pending.data) {
+                gameModel.markMapStateApplied(itemId: itemId, counter: pending.counter)
+            } else {
+                gameModel.discardPendingMapState(itemId: itemId)
+            }
+        }
+        retryDeferredBattleRoundUpdate(itemId: itemId)
+    }
+
+    private func handleMapState(_ model: GameNetworkModel) async -> GameNetworkModel? {
+        let itemId = model.data.id
+        guard model.data.data != nil,
+              gameModel.shouldApplyMapState(itemId: itemId, counter: model.counter)
+        else { return nil }
+
+        guard await holdsMap(model.data) else {
+            // The state of a map this player lacks: it waits for the map, which is asked for
+            // with the state's counter. A burst of states asks once.
+            gameModel.queueMapState(model.data, counter: model.counter)
+            guard gameModel.mayRequestMap(itemId: itemId) else { return nil }
+            return root.gameModel.outgoingMessage(
+                counter: model.counter,
+                proxyCounter: model.proxyCounter,
+                type: .reveal,
+                subType: .show,
+                asMaster: false,
+                data: model.data.reference
+            )
+        }
+
+        guard root.mapRoot.mapGameControllable.updateMap(for: itemId, with: model.data) else { return nil }
+        gameModel.markMapStateApplied(itemId: itemId, counter: model.counter)
+        retryDeferredBattleRoundUpdate(itemId: itemId)
+        gameModel.setGameUpdateType(.map)
+        await refreshMapVisuals(itemId: itemId)
         return nil
     }
 
@@ -355,7 +182,6 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .mapState:
-                retryDeferredMapPins(itemId: model.data.id)
                 retryDeferredBattleRoundUpdate(itemId: model.data.id)
                 gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
@@ -376,54 +202,26 @@ extension PlayerController {
     }
 
     func handleMapContentUpdate(_ model: GameNetworkModel) async -> GameNetworkModel? {
+        let itemId = model.data.id
         guard model.sender.isMaster,
               model.data.type == .map,
-              model.data.data != nil
+              model.data.data != nil,
+              gameModel.shouldApplyMapContentUpdate(itemId: itemId, counter: model.counter)
         else { return nil }
-        guard gameModel.shouldApplyMapContentUpdate(
-            itemId: model.data.id,
-            counter: model.counter
-        ) else { return nil }
 
-        let hasBaseMap = await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: 0)
-        let hasMatchingAsset = await hasMatchingMapAsset(model.data)
-        guard hasBaseMap, hasMatchingAsset else {
+        guard await holdsMap(model.data) else {
+            // Content alone shows nothing. It waits for the map, which the reveal or the
+            // state that follows asks for.
             gameModel.queueMapContentUpdate(model.data, counter: model.counter)
-            return await requestFullMap(
-                for: model,
-                requestType: .reveal,
-                action: .mapState,
-                presentsMap: false
-            )
+            return nil
         }
 
-        guard root.mapRoot.mapGameControllable.applyMapContentUpdate(
-            for: model.data.id,
-            with: model.data
-        ) else { return nil }
-        gameModel.markMapContentUpdateApplied(
-            itemId: model.data.id,
-            counter: model.counter,
-            contentVersion: model.data.contentVersion
-        )
-        _ = await applyPendingMapState(itemId: model.data.id)
-        retryDeferredMapPins(itemId: model.data.id)
-        retryDeferredBattleRoundUpdate(itemId: model.data.id)
-        let completesPresentation = await completeMapRepairIfSatisfied(itemId: model.data.id)
-        if completesPresentation == true {
-            await presentMap(itemId: model.data.id)
-        } else if let pending = gameModel.pendingMapRepairRequirement(itemId: model.data.id),
-                  await !root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) {
-            return await requestFullMap(
-                for: model,
-                requestType: .reveal,
-                action: .mapState,
-                presentsMap: pending.presentsMap,
-                backgroundRetry: true
-            )
-        } else {
-            await refreshMapVisuals(itemId: model.data.id)
+        guard root.mapRoot.mapGameControllable.applyMapContentUpdate(for: itemId, with: model.data) else {
+            return nil
         }
+        gameModel.markMapContentApplied(itemId: itemId, counter: model.counter)
+        await applyPendingMapUpdates(itemId: itemId)
+        await refreshMapVisuals(itemId: itemId)
         return nil
     }
 }

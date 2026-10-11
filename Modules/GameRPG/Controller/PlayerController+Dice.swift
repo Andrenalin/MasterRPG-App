@@ -17,10 +17,9 @@ extension PlayerController {
         }
 
         // Peers may contribute only a complete roll. Dice focus/visibility and
-        // package commands remain master-authoritative even if a player stamps
-        // the envelope with a group audience.
-        guard model.sender.isMaster || model.isPlayerDiceGroupEvent else {
-            Logger.networking.debug("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), purpose: \(String(describing: model.purpose), privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
+        // package commands remain master-authoritative.
+        guard model.sender.isMaster || (model.isPlayerGroupEvent && model.isDiceRollEvent) else {
+            Logger.networking.debug("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
             return nil
         }
 

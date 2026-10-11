@@ -1,5 +1,10 @@
 # Game Message Communication Flow Review
 
+> Superseded 2026-10-11. The audience and purpose routing, the Journal admission, the peer
+> file presentations, the first-show package and the V1 compatibility envelope described here
+> were removed. The current protocol is described in
+> [Game Connection And Communication Documentation](GAME_CONNECTIONS.md), sections 5 to 12.
+
 Review date: 2026-07-19.
 
 This is the focused architecture and code review for game-state communication.

@@ -196,8 +196,6 @@ final class GameRootModel: Sendable {
     /// Master messages carry the authoritative `masterState`; player messages
     /// carry only the sender identity.
     func outgoingMessage(
-        messageID: UUID? = UUID(),
-        replyToMessageID: UUID? = nil,
         timestamp: TimeInterval = Date.now.timeIntervalSince1970,
         counter: Int,
         proxyCounter: Int = 0,
@@ -205,8 +203,6 @@ final class GameRootModel: Sendable {
         subType: RPGMessageActionType,
         asMaster: Bool,
         targetId: UUID? = nil,
-        audience: GameMessageAudience? = nil,
-        purpose: GameMessagePurpose = .event,
         data: NetworkCodableDataType
     ) -> GameNetworkModel {
         let sender: GameSenderModel
@@ -241,17 +237,7 @@ final class GameRootModel: Sendable {
                 sender = GameSenderModel(id: gameConfig.id, role: .notSet, name: gameName, characterId: nil)
             }
         }
-        let resolvedAudience = audience ?? GameNetworkModel.inferredAudience(
-            sender: sender,
-            type: type,
-            subType: subType,
-            purpose: purpose,
-            data: data,
-            targetId: targetId
-        )
         return GameNetworkModel(
-            messageID: messageID,
-            replyToMessageID: replyToMessageID,
             timestamp: timestamp,
             counter: counter,
             proxyCounter: proxyCounter,
@@ -261,8 +247,6 @@ final class GameRootModel: Sendable {
             sender: sender,
             masterState: masterState,
             targetId: targetId,
-            audience: resolvedAudience,
-            purpose: purpose,
             senderPlatform: .current,
             data: data
         )

@@ -57,19 +57,7 @@ extension PlayerController {
         await root.networkStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
-        gameModel.pendingMapRequests = []
-        gameModel.pendingAudioRequests = []
-        gameModel.requestedRepairIds = []
-        gameModel.requestedPdfRepairIds = []
-        gameModel.requestedSpaceRepairIds = []
-        gameModel.resetMasterStateSequence()
-        gameModel.resetAudioListSequence()
-        gameModel.resetPhotoListSequence()
-        gameModel.resetPdfListSequence()
-        gameModel.resetSpaceListSequence()
-        gameModel.resetPresentationSequence()
-        gameModel.resetMapContentSequence()
-        gameModel.resetSharePlayMasterParticipant()
+        gameModel.resetForLostConnection(preservingSharePlayRebind: false)
     }
 
     /// Combines `GameRootModel.applyMasterBroadcast` with `resetPlayers()` in one
@@ -97,22 +85,6 @@ extension PlayerController {
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
-    }
-
-    /// Clears the space repair-pending flag and marks the space update.
-    /// Spans two @MainActor models (`gameModel` and `root.gameModel`), so it
-    /// lives on the controller — one @MainActor call keeps both updates
-    /// atomic. See CODE_AUDIT §3.1.
-    ///
-    /// Used to also force the presentation mode to `.immersive` on visionOS;
-    /// removed so revealing a Space item never disturbs the current
-    /// SharePlay seating (`.window`'s sideBySide or `.tabletop`'s surround
-    /// stays as is) — `GameRootViewer`'s reveal handler opens the space
-    /// viewer directly, and `SpaceViewer` places the object above the table
-    /// itself when it's open, instead of the mode switch doing it.
-    func completeSpaceReveal(itemId: UUID) {
-        gameModel.requestedSpaceRepairIds.remove(itemId)
-        gameModel.setGameUpdateType(.space)
     }
 
     func resetPlayers() {

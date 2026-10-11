@@ -17,122 +17,6 @@ import AdventureRPG
 @Suite("Game message correctness regressions")
 @MainActor
 struct GameMessageCorrectnessRegressionTests {
-    @Test(
-        "Peer file reveals require event purpose before presentation",
-        arguments: [NetworkModules.photo, .pdf, .space]
-    )
-    func peerFileRevealRequiresEventPurpose(module: NetworkModules) async throws {
-        // Given
-        let environment = try await MultiConnectionTestEnvironment.create()
-        let resource: String
-        switch module {
-        case .photo:
-            resource = ResourcesDebug.photoTestData
-        case .pdf:
-            resource = ResourcesDebug.pdfTestData
-        case .space:
-            resource = ResourcesDebug.spaceTestData
-        default:
-            Issue.record("Unsupported peer-file module \(module)")
-            return
-        }
-        try await MockRoot.importTestData(
-            into: environment.masterRoot.adventureRoot,
-            name: resource,
-            itemCounter: 0
-        )
-        environment.masterRoot.adventureRoot.startGame()
-
-        let itemId: UUID
-        let package: NetworkCodableDataType
-        switch module {
-        case .photo:
-            itemId = try #require(environment.masterRoot.photoRoot.itemController.itemDataModel.items.first)
-            package = try await environment.masterRoot.photoRoot.gameControllable.createGameData(for: itemId)
-        case .pdf:
-            itemId = try #require(environment.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
-            package = try await environment.masterRoot.pdfRoot.gameControllable.createGameData(for: itemId)
-        case .space:
-            itemId = try #require(environment.masterRoot.spaceRoot.itemController.itemDataModel.items.first)
-            package = try await environment.masterRoot.spaceRoot.gameControllable.createGameData(for: itemId)
-        default:
-            return
-        }
-        let version = package.effectiveAssetVersion
-        let playerVersions = [
-            itemId: [
-                environment.masterConfig.id: version,
-                environment.player2Config.id: version
-            ]
-        ]
-        let listData: Data
-        let listAction: RPGMessageActionType
-        switch module {
-        case .photo:
-            listData = try #require(
-                PhotoListRequest(list: [itemId: version], players: playerVersions).encodeData()
-            )
-            listAction = .photoList
-        case .pdf:
-            listData = try #require(
-                PdfListRequest(list: [itemId: version], players: playerVersions).encodeData()
-            )
-            listAction = .pdfList
-        case .space:
-            listData = try #require(
-                SpaceListRequest(list: [itemId: version], players: playerVersions).encodeData()
-            )
-            listAction = .spaceList
-        default:
-            return
-        }
-        let authoritativeList = environment.masterRoot.gameModel.outgoingMessage(
-            counter: 1,
-            type: .update,
-            subType: listAction,
-            asMaster: true,
-            data: NetworkCodableDataType(
-                id: UUID(),
-                type: module,
-                version: 0,
-                data: listData
-            )
-        )
-        _ = try await environment.player1.handle(authoritativeList)
-
-        let request = GameNetworkModel(
-            counter: 2,
-            proxyCounter: 0,
-            type: .reveal,
-            subType: .show,
-            masterId: environment.masterConfig.id,
-            sender: GameSenderModel(
-                id: environment.player2Config.id,
-                role: .player,
-                name: "Peer",
-                characterId: nil
-            ),
-            audience: .group,
-            purpose: .assetRequest,
-            data: package
-        )
-
-        // When
-        let response = try await environment.player1.handle(request)
-
-        // Then
-        #expect(response == nil)
-        switch module {
-        case .photo:
-            #expect(await environment.player1Root.photoRoot.gameControllable.currentId != itemId)
-        case .pdf:
-            #expect(await environment.player1Root.pdfRoot.gameControllable.currentId != itemId)
-        case .space:
-            #expect(await environment.player1Root.spaceRoot.gameControllable.currentId != itemId)
-        default:
-            break
-        }
-    }
 
     @Test("Player acknowledgement travels upstream but not back to proxy clients")
     func acknowledgementIsNotForwardedToProxyClients() async throws {
@@ -190,12 +74,10 @@ struct GameMessageCorrectnessRegressionTests {
         let fileMessage = GameNetworkModel(
             counter: 2,
             proxyCounter: 0,
-            type: .reveal,
-            subType: .show,
+            type: .update,
+            subType: .generic,
             masterId: playerMessage.masterId,
             sender: playerMessage.sender,
-            audience: .group,
-            purpose: .event,
             data: NetworkCodableDataType(
                 id: UUID(),
                 type: .photo,
@@ -203,14 +85,10 @@ struct GameMessageCorrectnessRegressionTests {
                 data: Data("Player photo".utf8)
             )
         )
-        let fileAdmission = try #require(
-            RPGSharePlayController.playerJournalAdmissionMetadata(for: fileMessage)
-        )
         let participantId = UUID()
 
         // When
         await network.routeSharePlayUpdate(playerMessage, id: participantId)
-        await network.routeSharePlayUpdate(fileAdmission, id: participantId)
         await network.routeSharePlayFileUpdate(fileMessage)
 
         // Then
@@ -350,8 +228,6 @@ struct GameMessageCorrectnessRegressionTests {
                 name: "Peer",
                 characterId: nil
             ),
-            audience: .group,
-            purpose: .event,
             data: NetworkCodableDataType(
                 id: UUID(),
                 type: .dice,
@@ -626,7 +502,7 @@ struct GameMessageCorrectnessRegressionTests {
 
     @Test("A response echoes the answered message's counter and never re-uploads its bytes")
     func responseEchoesCounterAndStripsPayloadBytes() async throws {
-        // Given — a full map/photo package the player is currently handling.
+        // Given — the reference of a map the player lacks, and the package that delivers it.
         let root = try await MockRoot.createGameRoot()
         let playerId = UUID()
         root.gameModel.reset(
@@ -637,13 +513,13 @@ struct GameMessageCorrectnessRegressionTests {
         let itemId = UUID()
         let payload = NetworkCodableDataType(id: itemId, type: .map, version: 7, data: Data(repeating: 0x41, count: 4096))
         let incoming = root.gameModel.outgoingMessage(counter: 42, type: .reveal, subType: .show, asMaster: true, data: payload)
+        let reference = root.gameModel.outgoingMessage(counter: 42, type: .reveal, subType: .show, asMaster: true, data: payload.reference)
 
-        // When — asking the master for more (e.g. a still-missing background
-        // photo) must never re-upload the payload bytes we already received:
-        // the master only reads `data.id` to rebuild the answer from scratch.
-        let request = await player.response(for: incoming, isSuccess: true, requestData: true)
+        // When — the player asks for the item the reference named.
+        let request = await player.response(for: reference, isSuccess: true, requestData: true)
 
         // Then
+        #expect(request.isAssetRequest)
         #expect(request.data.data == nil)
         #expect(request.data.id == itemId)
         #expect(request.data.version == 7)
@@ -651,6 +527,16 @@ struct GameMessageCorrectnessRegressionTests {
         // player-local counter — the master's message log keys its delivery
         // row on the original send's counter and can only find it this way.
         #expect(request.counter == incoming.counter)
+
+        // When — the package arrived and the item is still unusable. Asking again would
+        // bring the same bytes: the master and the player would never stop.
+        let unusable = await player.response(for: incoming, isSuccess: true, requestData: true)
+
+        // Then
+        #expect(!unusable.isAssetRequest)
+        #expect(unusable.subType == .failed)
+        #expect(unusable.data.data == nil)
+        #expect(unusable.counter == incoming.counter)
 
         // When — a plain acknowledgement carries the same identity rule.
         let ack = await player.response(for: incoming, isSuccess: true, requestData: false)

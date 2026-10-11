@@ -15,359 +15,153 @@ import TabletopKit
 // MARK: - Send / chunked transport
 
 extension RPGSharePlayController {
-    /// Sends to the whole SharePlay session by default. Supplying a participant
-    /// ID physically addresses Messenger packages to that active participant;
-    /// Journal-backed Audio and Weather repairs remain session-visible by design.
     /// `sendData` for callers that have nothing to do with its result: a message the session
     /// neither sent nor kept for a retry is at least logged as lost. Without a session there
     /// is nothing to report. See CODE_AUDIT_21 §5.6.
     func sendDataReportingLoss(
         _ gameNetworkModel: GameNetworkModel,
-        fileJournal: Bool,
         participantId: UUID? = nil
     ) {
-        let accepted = sendData(gameNetworkModel, fileJournal: fileJournal, participantId: participantId)
+        let accepted = sendData(gameNetworkModel, participantId: participantId)
         guard !accepted, messenger != nil, groupSession != nil else { return }
         Logger.sharePlay.error("SharePlay did not accept message \(gameNetworkModel.counter, privacy: .public) (\(gameNetworkModel.type.debugDescription, privacy: .public) - \(gameNetworkModel.subType.debugDescription, privacy: .public), \(gameNetworkModel.data.type.token, privacy: .public)): it is lost for SharePlay participants")
     }
 
-    /// Returns whether a transport or bounded deferred queue accepted the intent.
+    /// Sends a message through Messenger: to the whole session, or physically addressed to one
+    /// active participant. Returns whether the transport or its bounded deferred queue accepted
+    /// it.
     @discardableResult
     func sendData(
         _ gameNetworkModel: GameNetworkModel,
-        fileJournal: Bool,
         participantId: UUID? = nil
     ) -> Bool {
         Logger.sharePlay.debug("sendData state: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .private)")
         guard messenger != nil, let sessionId = groupSession?.id else { return false }
+        return enqueueChunkedSend(gameNetworkModel, sessionId: sessionId, participantId: participantId)
+    }
 
-        guard let prepared = Self.prepareForTransport(
-            gameNetworkModel,
-            fileJournal: fileJournal,
-            journalAvailable: journal != nil
-        ) else { return false }
-
-        // GroupSessionJournal does not expose the participant that authored an
-        // attachment. The publisher therefore sends the same logical message's
-        // lightweight metadata through Messenger first. Receivers bind that
-        // physically attributed announcement to the later Journal callback.
-        // Enqueueing is deliberately before Journal publication; delivery may
-        // still race, and the receiver retains that race in a bounded queue.
-        //
-        // One SHA-256 pass over the attachment for this send. The announcement, the Journal
-        // metadata and the late announcement each hashed the whole payload (up to 100 MB) again,
-        // on the main actor, at the moment content is revealed. See CODE_AUDIT_21 §7.3.
-        let payloadDigest: Data? = prepared.usesJournalTransport
-            ? prepared.model.data.data.map { GameNetworkModel.journalDigest(for: $0) }
-            : nil
-        let journalAnnouncement: GameNetworkModel? = if prepared.usesJournalTransport,
-                                                        journalTracker.shouldPublish(model: prepared.model) {
-            Self.journalAdmissionMetadata(for: prepared.model, payloadDigest: payloadDigest)
-        } else {
-            nil
-        }
-        let journalAdmissionAlreadyEnqueued: Bool
-        if let journalAnnouncement {
-            let journalAnnouncementEnqueued = enqueueChunkedSend(
-                journalAnnouncement,
-                sessionId: sessionId,
-                participantId: participantId
-            )
-            guard journalAnnouncementEnqueued else {
-                // Never publish an attachment that receivers cannot attribute.
-                // The full Messenger payload preserves the presentation when
-                // the lightweight admission cannot enter the bounded queue.
-                return enqueueChunkedSend(
-                    prepared.model,
-                    sessionId: sessionId,
-                    participantId: participantId
-                )
-            }
-            journalAdmissionAlreadyEnqueued = true
-        } else {
-            journalAdmissionAlreadyEnqueued = false
+    /// Uploads the package of a file-backed module to the Journal, where every participant
+    /// loads it. `SharePlayJournalLedger` decides whether the upload is needed; a package the
+    /// Journal cannot take goes through Messenger instead.
+    @discardableResult
+    func publishAsset(
+        _ model: GameNetworkModel,
+        now: ContinuousClock.Instant = .now
+    ) -> SharePlayAssetPublication {
+        guard messenger != nil, let sessionId = groupSession?.id else { return .unavailable }
+        guard model.carriesAsset, let attachmentData = model.data.data, let journal else {
+            return enqueueChunkedSend(model, sessionId: sessionId, participantId: nil) ? .sentByMessenger : .unavailable
         }
 
-        if prepared.usesJournalTransport,
-           let attachmentData = prepared.model.data.data, let journal {
-            let moduleKey = prepared.model.data.type
-            // This send's model never changes underneath these closures, so the metadata is
-            // built once, from the digest computed above, and reused on every branch below.
-            let journalMetadataForModel = Self.journalMetadata(for: prepared.model, payloadDigest: payloadDigest)
-            let publication = journalPublicationQueue.enqueue(
+        let moduleKey = model.data.type
+        let itemId = model.data.id
+        let version = model.data.effectiveAssetVersion
+        let counter = model.counter
+        let attachmentSize = Self.formattedByteCount(attachmentData.count)
+        guard journalLedger.shouldUpload(module: moduleKey, itemId: itemId, version: version, counter: counter, now: now) else {
+            Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) \(moduleKey.token, privacy: .public) \(itemId, privacy: .public) is already published")
+            return .alreadyPublished
+        }
+        journalLedger.willUpload(module: moduleKey, itemId: itemId, version: version, counter: counter, now: now)
+
+        let metadata = Self.journalMetadata(for: model)
+        let publication = journalPublicationQueue.enqueue(
+            for: moduleKey,
+            byteCount: attachmentData.count,
+            policy: Self.journalPublicationPolicy(for: model),
+            priority: .userInitiated
+        ) { [weak self] in
+            guard let self else { return nil }
+            guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
+            self.recordJournalTransport(state: .pending, byteCount: attachmentData.count, for: model)
+            Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(model.debugDescription, privacy: .private)")
+            let outcome = await self.journalAddLimiter.run(
                 for: moduleKey,
-                byteCount: attachmentData.count,
-                policy: Self.journalPublicationPolicy(for: prepared.model),
-                priority: .userInitiated
-            ) { [weak self] in
-                guard let self else { return nil }
-                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-                let attachmentSize = Self.formattedByteCount(attachmentData.count)
-                self.recordJournalTransport(
-                    state: .pending,
-                    byteCount: attachmentData.count,
-                    for: prepared.model
-                )
-                Logger.sharePlay.debug("Journal: message \(prepared.model.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(prepared.model.debugDescription, privacy: .private)")
-                if !self.journalTracker.shouldPublish(model: prepared.model) {
-                    // Reusing bytes is a storage optimization, not a screen
-                    // intent optimization. Every reveal/show still needs a new
-                    // lightweight Messenger event so players present it again.
-                    // The fresh-publication announcement is control-plane only
-                    // and receivers deliberately do not present it. Once this
-                    // queued add turns into byte reuse, enqueue a real metadata
-                    // presentation even if that earlier announcement succeeded.
-                    let metadataAdmissionSucceeded = self.enqueueChunkedSend(
-                        journalMetadataForModel,
-                        sessionId: sessionId,
-                        participantId: participantId
-                    )
-                    switch SharePlayJournalReuseDisposition(
-                        metadataAdmissionSucceeded: metadataAdmissionSucceeded
-                    ) {
-                    case .reuseExistingAttachment:
-                        self.recordJournalTransport(
-                            state: .succeeded,
-                            byteCount: attachmentData.count,
-                            for: prepared.model
-                        )
-                        Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) reused \(attachmentSize, privacy: .public) \(moduleKey.token, privacy: .public) attachment for \(prepared.model.data.id, privacy: .public)")
-                        return nil
-                    case .publishFreshAttachment:
-                        // A reuse reveal that could not enter Messenger must
-                        // fall back to a newly admitted full attachment.
-                        Logger.sharePlay.warning("Journal reuse metadata was not admitted for message \(prepared.model.counter, privacy: .public); publishing a fresh \(moduleKey.token, privacy: .public) attachment")
-                    }
-                }
-                let freshJournalAdmissionSucceeded: Bool
-                if journalAdmissionAlreadyEnqueued {
-                    freshJournalAdmissionSucceeded = true
-                } else if let lateAdmission = Self.journalAdmissionMetadata(
-                    for: prepared.model,
-                    payloadDigest: payloadDigest
-                ) {
-                    // The tracker can change while this publication waits in
-                    // the per-module queue. If planned reuse becomes a fresh
-                    // add, authenticate that anonymous attachment now.
-                    freshJournalAdmissionSucceeded = self.enqueueChunkedSend(
-                        lateAdmission,
-                        sessionId: sessionId,
-                        participantId: participantId
-                    )
-                } else {
-                    freshJournalAdmissionSucceeded = false
-                }
-                guard freshJournalAdmissionSucceeded else {
-                    self.recordJournalTransport(
-                        state: .failed,
-                        byteCount: attachmentData.count,
-                        for: prepared.model
-                    )
-                    _ = self.enqueueChunkedSend(
-                        prepared.model,
-                        sessionId: sessionId,
-                        participantId: participantId
-                    )
-                    return nil
-                }
-                let model = journalMetadataForModel
-                let outcome = await self.journalAddLimiter.run(
-                    for: moduleKey,
-                    scope: sessionId,
-                    timeout: Self.journalAddTimeout
-                ) {
-                    try await journal.add(attachmentData, metadata: model)
-                } discardLateValue: { [weak self] lateAttachment in
-                    guard let self else { return true }
-                    return await self.removeJournalAttachment(
-                        lateAttachment,
-                        from: journal,
-                        module: moduleKey,
-                        sessionId: sessionId,
-                        reason: "late timed-out"
-                    )
-                }
-
-                switch outcome {
-                case .succeeded(let result):
-                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else {
-                        _ = await self.removeJournalAttachment(
-                            result,
-                            from: journal,
-                            module: moduleKey,
-                            sessionId: sessionId,
-                            reason: "obsolete session"
-                        )
-                        return nil
-                    }
-                    return result
-                case .failed(let errorDescription):
-                    Logger.sharePlay.error("Journal ✕: message \(prepared.model.counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(prepared.model.data.type.token, privacy: .public) and id: \(prepared.model.data.id, privacy: .public) error: \(errorDescription, privacy: .private)")
-                case .timedOut:
-                    Logger.sharePlay.error("Journal ⌛: message \(prepared.model.counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment; module is degraded to Messenger until the add returns")
-                case .unavailable:
-                    Logger.sharePlay.warning("Journal bypass: \(moduleKey.token, privacy: .public) still has a quarantined add; using Messenger for message \(prepared.model.counter, privacy: .public)")
-                case .cancelled:
-                    guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-                    Logger.sharePlay.warning("Journal add cancelled while session remains active; using Messenger for message \(prepared.model.counter, privacy: .public)")
-                }
-
-                self.recordJournalTransport(
-                    state: .failed,
-                    byteCount: attachmentData.count,
-                    for: prepared.model
-                )
-                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-                let fallbackEnqueued = self.enqueueChunkedSend(
-                    prepared.model,
-                    sessionId: sessionId,
-                    participantId: participantId
-                )
-                guard fallbackEnqueued else { return nil }
-                var retired = false
-                if Self.shouldRetireJournalPresentationAfterFallback(prepared.model) {
-                    self.journalPublicationQueue.supersedePresentation(for: moduleKey)
-                    retired = self.journalPublicationQueue.retireCurrentAttachment(
-                        for: moduleKey,
-                        priority: .utility
-                    ) { [weak self] oldAttachment in
-                        guard let self else { return false }
-                        return await self.removeJournalAttachment(
-                            oldAttachment,
-                            from: journal,
-                            module: moduleKey,
-                            sessionId: sessionId,
-                            reason: "Messenger fallback"
-                        )
-                    }
-                }
-                if retired {
-                    self.gameModel?.attachments[moduleKey] = nil
-                }
-                return nil
-            } commit: { [weak self] result in
-                guard let self,
-                      self.sessionLifecycle.isCurrent(sessionId: sessionId)
-                else { return }
-                self.gameModel?.attachments[moduleKey] = result
-                self.journalTracker.didPublish(
-                    module: moduleKey,
-                    itemId: prepared.model.data.id,
-                    version: prepared.model.data.effectiveAssetVersion,
-                    attachmentId: result.id,
-                    metadata: journalMetadataForModel
-                )
-                self.mapRecoveryTracker.recordFullMapPresentation(
-                    prepared.model,
-                    transportSucceeded: true
-                )
-                self.recordJournalTransport(
-                    state: .succeeded,
-                    byteCount: attachmentData.count,
-                    for: prepared.model
-                )
-                let attachmentSize = Self.formattedByteCount(attachmentData.count)
-                Logger.sharePlay.debug("Journal ✓: message \(prepared.model.counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
-            } remove: { [weak self] oldAttachment in
-                guard let self else { return false }
+                scope: sessionId,
+                timeout: Self.journalAddTimeout
+            ) {
+                try await journal.add(attachmentData, metadata: metadata)
+            } discardLateValue: { [weak self] lateAttachment in
+                guard let self else { return true }
                 return await self.removeJournalAttachment(
-                    oldAttachment,
+                    lateAttachment,
                     from: journal,
                     module: moduleKey,
                     sessionId: sessionId,
-                    reason: "replaced"
+                    reason: "late timed-out"
                 )
             }
-            if publication.admission == .rejected {
-                recordJournalTransport(
-                    state: .failed,
-                    byteCount: attachmentData.count,
-                    for: prepared.model
-                )
-                Logger.sharePlay.warning("Journal queue full: falling back to chunked transport for message \(prepared.model.counter, privacy: .public)")
-                let fallbackEnqueued = enqueueChunkedSend(
-                    prepared.model,
-                    sessionId: sessionId,
-                    participantId: participantId
-                )
-                guard fallbackEnqueued else { return false }
-                var retired = false
-                if Self.shouldRetireJournalPresentationAfterFallback(prepared.model) {
-                    journalPublicationQueue.supersedePresentation(for: moduleKey)
-                    retired = journalPublicationQueue.retireCurrentAttachment(
-                        for: moduleKey,
-                        priority: .utility
-                    ) { [weak self] oldAttachment in
-                        guard let self else { return false }
-                        return await self.removeJournalAttachment(
-                            oldAttachment,
-                            from: journal,
-                            module: moduleKey,
-                            sessionId: sessionId,
-                            reason: "queue-overload fallback"
-                        )
-                    }
+
+            switch outcome {
+            case .succeeded(let result):
+                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else {
+                    _ = await self.removeJournalAttachment(
+                        result,
+                        from: journal,
+                        module: moduleKey,
+                        sessionId: sessionId,
+                        reason: "obsolete session"
+                    )
+                    return nil
                 }
-                if retired {
-                    gameModel?.attachments[moduleKey] = nil
-                }
-                return true
+                return result
+            case .failed(let errorDescription):
+                Logger.sharePlay.error("Journal ✕: message \(counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(moduleKey.token, privacy: .public) and id: \(itemId, privacy: .public) error: \(errorDescription, privacy: .private)")
+            case .timedOut:
+                Logger.sharePlay.error("Journal ⌛: message \(counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment; module is degraded to Messenger until the add returns")
+            case .unavailable:
+                Logger.sharePlay.warning("Journal bypass: \(moduleKey.token, privacy: .public) still has a quarantined add; using Messenger for message \(counter, privacy: .public)")
+            case .cancelled:
+                guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
+                Logger.sharePlay.warning("Journal add cancelled while session remains active; using Messenger for message \(counter, privacy: .public)")
             }
-            return true
-        }
 
-        return enqueueChunkedSend(
-            prepared.model,
-            sessionId: sessionId,
-            participantId: participantId
-        )
-    }
-
-    /// Authenticates the Journal snapshot already visible to a newly joined
-    /// participant. The authoritative master's metadata is enqueued first so it
-    /// pins the physical master participant before any player-authored
-    /// attachment is announced through that trusted relay.
-    @discardableResult
-    func reannounceCurrentJournalAdmissions(to participantId: UUID) -> Bool {
-        guard let sessionId = groupSession?.id, messenger != nil else { return false }
-
-        let admissions = Self.journalAdmissionsForReplay(
-            from: journalTracker.currentJournalMetadata()
-        )
-
-        for admission in admissions {
-            guard enqueueChunkedSend(
-                admission,
+            guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
+            self.journalUploadFailed(model, sessionId: sessionId)
+            return nil
+        } commit: { [weak self] result in
+            guard let self,
+                  self.sessionLifecycle.isCurrent(sessionId: sessionId)
+            else { return }
+            self.gameModel?.attachments[moduleKey] = result
+            self.journalLedger.didUpload(
+                module: moduleKey,
+                itemId: itemId,
+                version: version,
+                counter: counter,
+                attachmentId: result.id
+            )
+            self.recordJournalTransport(state: .succeeded, byteCount: attachmentData.count, for: model)
+            Logger.sharePlay.debug("Journal ✓: message \(counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
+        } remove: { [weak self] oldAttachment in
+            guard let self else { return false }
+            return await self.removeJournalAttachment(
+                oldAttachment,
+                from: journal,
+                module: moduleKey,
                 sessionId: sessionId,
-                participantId: participantId
-            ) else { return false }
+                reason: "replaced"
+            )
         }
-        return true
+        if publication.admission == .rejected {
+            Logger.sharePlay.warning("Journal queue full: falling back to chunked transport for message \(counter, privacy: .public)")
+            journalUploadFailed(model, sessionId: sessionId)
+            return .sentByMessenger
+        }
+        return .uploading
     }
 
-    static func journalAdmissionsForReplay(
-        from entries: [(attachmentId: UUID, metadata: GameNetworkModel)]
-    ) -> [GameNetworkModel] {
-        entries.compactMap { entry in
-            journalAdmissionMetadata(fromJournalMetadata: entry.metadata).map {
-                (attachmentId: entry.attachmentId, metadata: $0)
-            }
-        }.sorted { lhs, rhs in
-            if lhs.metadata.sender.isMaster != rhs.metadata.sender.isMaster {
-                return lhs.metadata.sender.isMaster
-            }
-            if lhs.metadata.timestamp != rhs.metadata.timestamp {
-                return lhs.metadata.timestamp < rhs.metadata.timestamp
-            }
-            if lhs.metadata.sender.id != rhs.metadata.sender.id {
-                return lhs.metadata.sender.id.uuidString < rhs.metadata.sender.id.uuidString
-            }
-            return lhs.attachmentId.uuidString < rhs.attachmentId.uuidString
-        }.map(\.metadata)
-    }
-
-    func markJournalAttachmentAuthenticated(_ model: GameNetworkModel) {
-        journalTracker.didAuthenticate(model)
+    /// The Journal did not take the package: frees its ledger slot and sends the same message
+    /// through Messenger, which carries smaller packages.
+    private func journalUploadFailed(_ model: GameNetworkModel, sessionId: UUID) {
+        recordJournalTransport(state: .failed, byteCount: model.data.data?.count ?? 0, for: model)
+        journalLedger.uploadFailed(
+            module: model.data.type,
+            itemId: model.data.id,
+            version: model.data.effectiveAssetVersion,
+            counter: model.counter
+        )
+        _ = enqueueChunkedSend(model, sessionId: sessionId, participantId: nil)
     }
 
     @discardableResult
@@ -383,7 +177,7 @@ extension RPGSharePlayController {
                 try await journal.remove(attachment: attachment)
             }
             if sessionLifecycle.isCurrent(sessionId: sessionId) {
-                journalTracker.didRemove(attachmentId: attachment.id)
+                journalLedger.didRemove(attachmentId: attachment.id)
             }
             Logger.sharePlay.debug("Journal ✓: removed \(reason, privacy: .public) \(module.token, privacy: .public) attachment \(attachment.id, privacy: .public)")
             return true
@@ -414,10 +208,6 @@ extension RPGSharePlayController {
                 byteCount: rawPayloadByteCount,
                 state: .failed,
                 for: model
-            )
-            mapRecoveryTracker.recordFullMapPresentation(
-                model,
-                transportSucceeded: false
             )
             Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public) raw payload exceeds the safe \(SharePlayMessengerPayloadBudget.maximumRawPayloadByteCount, privacy: .public)-byte Messenger admission limit")
             return false
@@ -479,10 +269,6 @@ extension RPGSharePlayController {
                 currentGeneration: self.sendOperationGeneration,
                 taskIsCancelled: Task.isCancelled
             ) else { return }
-            self.mapRecoveryTracker.recordFullMapPresentation(
-                model,
-                transportSucceeded: outcome == .succeeded
-            )
             guard outcome == .retryableFailure,
                   deliveryAttempt + 1 < Self.maxChunkedDeliveryAttempts
             else { return }
@@ -512,158 +298,25 @@ extension RPGSharePlayController {
                 Logger.sharePlay.warning("Chunked queue full: deferred critical message \(model.counter, privacy: .public)")
                 return true
             }
-            mapRecoveryTracker.recordFullMapPresentation(
-                model,
-                transportSucceeded: false
-            )
             Logger.sharePlay.warning("Chunked queue full: ignored message \(model.counter, privacy: .public)")
         }
         return enqueued
     }
 
-    static func prepareForTransport(
-        _ model: GameNetworkModel,
-        fileJournal: Bool,
-        journalAvailable: Bool
-    ) -> (model: GameNetworkModel, usesJournalTransport: Bool)? {
-        (
-            model,
-            usesJournalTransport(
-                for: model,
-                fileJournal: fileJournal,
-                journalAvailable: journalAvailable
-            )
-        )
-    }
-
-    /// The journal slot per module carries broadcast content — the master's
-    /// current presentation — plus audio and Weather repairs. Audio repairs are
-    /// morphed into untargeted stores, while Weather retains its recipient so a
-    /// repair cannot re-present the content on unrelated players. Targeted
-    /// answers of the other modules ride a physically participant-targeted
-    /// Messenger stream.
-    static func usesJournalTransport(for model: GameNetworkModel, fileJournal: Bool, journalAvailable: Bool) -> Bool {
-        model.data.type != .value &&
-            fileJournal &&
-            journalAvailable &&
-            model.data.data != nil &&
-            (model.targetId == nil || model.data.type == .audio || model.data.type == .weather)
-    }
-
-    /// Full reveal/show publications represent screen intent. Once one is
-    /// waiting behind an active publication, a newer reveal for the same module
-    /// makes that pending intent stale. Repairs and stores remain FIFO because
-    /// each may satisfy a different participant or asset request.
+    /// Reveals represent screen intent: once one waits behind an active publication, a newer
+    /// reveal of the same module makes it stale. Stores remain FIFO because each may satisfy a
+    /// different request.
     static func journalPublicationPolicy(
         for model: GameNetworkModel
     ) -> SharePlayJournalPublicationPolicy {
-        guard model.targetId == nil,
-              model.type == .reveal,
-              model.subType == .show
-        else { return .fifo }
-
-        return switch model.data.type {
-        case .map, .photo, .pdf, .space, .weather:
-            .latestWins
-        default:
-            .fifo
-        }
+        model.type == .reveal ? .latestWins : .fifo
     }
 
-    /// - Parameter payloadDigest: The digest of the model's payload when the caller has it
-    ///   already; it is computed here otherwise. See CODE_AUDIT_21 §7.3.
-    static func journalMetadata(for model: GameNetworkModel, payloadDigest: Data? = nil) -> GameNetworkModel {
+    /// The developer metadata of a Journal attachment: the message without its bytes.
+    static func journalMetadata(for model: GameNetworkModel) -> GameNetworkModel {
         var metadata = model
-        if let payload = model.data.data {
-            metadata.journalPayloadDigest = payloadDigest ?? GameNetworkModel.journalDigest(for: payload)
-        }
-        // Journal developer metadata and Messenger reuse events are real
-        // presentations. Only the separate fresh-publication announcement is
-        // marked as admission-only.
-        metadata.journalAdmissionOnly = nil
-        if metadata.data.type == .audio, metadata.targetId != nil {
-            // GroupSessionJournal attachments are visible to the whole session.
-            // Store the audio on every participant without treating a repair as
-            // a new reveal; proxy hosts then forward the same store downstream.
-            metadata.type = .store
-            metadata.subType = .show
-            metadata.targetId = nil
-        }
-        metadata.data = NetworkCodableDataType(
-            id: model.data.id,
-            type: model.data.type,
-            version: model.data.version,
-            data: nil,
-            assetVersion: model.data.assetVersion,
-            contentVersion: model.data.contentVersion
-        )
+        metadata.data = model.data.reference
         return metadata
-    }
-
-    /// Returns the physically attributable Messenger half required before a
-    /// fresh player Photo/PDF/Space Journal attachment. The stable sender and
-    /// message ID are intentionally preserved verbatim for correlation.
-    static func playerJournalAdmissionMetadata(
-        for model: GameNetworkModel,
-        payloadDigest: Data? = nil
-    ) -> GameNetworkModel? {
-        guard model.isPlayerFilePresentationEvent,
-              model.data.data != nil,
-              model.messageID != nil
-        else { return nil }
-
-        var metadata = journalMetadata(for: model, payloadDigest: payloadDigest)
-        metadata.journalAdmissionOnly = true
-        return metadata.isPlayerJournalAdmissionMetadata ? metadata : nil
-    }
-
-    static func masterJournalAdmissionMetadata(
-        for model: GameNetworkModel,
-        payloadDigest: Data? = nil
-    ) -> GameNetworkModel? {
-        guard model.isMasterJournalEnvelope,
-              model.data.data != nil
-        else { return nil }
-
-        // Audio targeting is intentionally normalized by journalMetadata. The
-        // exact normalized envelope is both Messenger's admission fingerprint
-        // and GroupSessionJournal's developer metadata.
-        var metadata = journalMetadata(for: model, payloadDigest: payloadDigest)
-        metadata.journalAdmissionOnly = true
-        return metadata.isMasterJournalAdmissionMetadata ? metadata : nil
-    }
-
-    static func journalAdmissionMetadata(
-        for model: GameNetworkModel,
-        payloadDigest: Data? = nil
-    ) -> GameNetworkModel? {
-        if model.sender.isMaster {
-            return masterJournalAdmissionMetadata(for: model, payloadDigest: payloadDigest)
-        }
-        return playerJournalAdmissionMetadata(for: model, payloadDigest: payloadDigest)
-    }
-
-    /// Rebuilds the participant-attributed Messenger half for an attachment
-    /// already present in the Journal. Its original sender, message identity,
-    /// timestamp, and payload digest remain unchanged.
-    static func journalAdmissionMetadata(
-        fromJournalMetadata metadata: GameNetworkModel
-    ) -> GameNetworkModel? {
-        guard metadata.data.data == nil,
-              metadata.messageID != nil,
-              metadata.journalPayloadDigest != nil
-        else { return nil }
-
-        var admission = metadata
-        admission.journalAdmissionOnly = true
-        if admission.sender.isMaster {
-            return admission.isMasterJournalAdmissionMetadata ? admission : nil
-        }
-        return admission.isPlayerJournalAdmissionMetadata ? admission : nil
-    }
-
-    static func shouldRetireJournalPresentationAfterFallback(_ model: GameNetworkModel) -> Bool {
-        model.isFileBackedPresentation || model.isPlayerFilePresentationEvent
     }
 
     /// Bounds work before encoding and preserves the same FIFO order that the
@@ -953,8 +606,7 @@ extension RPGSharePlayController {
         journalDrainTask = nil
         sessionLifecycle.reset()
         participantTracker.reset()
-        journalTracker.reset()
-        mapRecoveryTracker.reset()
+        journalLedger.reset()
         journalPublicationQueue.cancelAll()
         journalAddLimiter.cancelAll()
         tasks.values.forEach { $0.cancel() }

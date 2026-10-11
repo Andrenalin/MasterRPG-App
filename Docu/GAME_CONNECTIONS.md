@@ -23,6 +23,9 @@ Primary source files:
 - `Modules/GameRPG/Controller/MasterController.swift`
 - `Modules/GameRPG/Controller/PlayerController.swift`
 - `Modules/GameRPG/Network/GameNetworkController.swift`
+- `Modules/GameRPG/Network/GameNetworkController+Delivery.swift`
+- `Modules/GameRPG/Model/GameNetworkModel+Shape.swift`
+- `Modules/GameRPG/SharePlay/SharePlayJournalLedger.swift`
 - `Modules/GameRPG/Network/ConnectionController.swift`
 - `Modules/GameRPG/Model/GameNetworkModel.swift`
 - `Modules/GameRPG/SharePlay/RPGSharePlayController.swift`
@@ -34,6 +37,10 @@ Primary source files:
 
 Behavioral coverage is concentrated in:
 
+- `Tests/GameRPGTests/SimpleFileFlowTests.swift`
+- `Tests/GameRPGTests/PlayerShareReportTests.swift`
+- `Tests/GameRPGTests/SharePlayJournalLedgerTests.swift`
+- `Tests/GameRPGTests/GameMessageShapeTests.swift`
 - `Tests/GameRPGTests/GameNetworkModelVersionTests.swift`
 - `Tests/GameRPGTests/GameMessageCorrectnessRegressionTests.swift`
 - `Tests/GameRPGTests/SharePlayPackageTransportTests.swift`
@@ -361,231 +368,84 @@ Session lifecycle rules:
 
 ## 5. Message Envelope
 
-### Wire-Format Versions
+Rewritten 2026-10-11 for the simple message flow. Sections 5, 6, 9, 10 and 12 describe the
+current protocol; where a later section still mentions a repair state, a targeted Journal
+repair or a first-show package, this description wins.
 
-| Version | Layout | Sender |
-| --- | --- | --- |
-| 1 | `players`, `controls`, `features` inside `gameConfig`. No top-level roster/control. | Shipped 2.6 app (`GameNetworkModelV1`). |
-| 1/2 (unreleased dev layouts) | Slim `gameConfig`; state in `gameRoster` [+ `gameControl`]. | Dev builds before the sender/masterState redesign. |
-| 2 (current) | Explicit `sender` + master-only `masterState` + optional `targetId`. | Current builds. |
+### Wire Format
 
-Compatibility rules:
-
-- **Decode**: `GameNetworkModel.init(from:)` accepts all layouts. A message with
-  a `sender` key is current; a pure V1 envelope (no `gameRoster`/`gameControl`
-  keys) is decoded as `GameNetworkModelV1` and up-mapped via `v2Model`, keeping
-  `version == 1` so the receiver can tell the peer is old; the unreleased dev
-  layouts are derived via `legacyIdentity` (sender/masterState from
-  config + roster).
-- **Encode**: `encode(to:)` writes a compatibility superset. Besides
-  `sender`/`masterState`, `gameConfig` is encoded through the down-mapper
-  (`v1Model.gameConfig`) with players/controls/features embedded for V1 peers,
-  plus `gameRoster`/`gameControl` for the dev layouts. Player messages embed the
-  sender as the only roster entry so V1 peers can resolve the sender name. The
-  encoded `version` is deliberately `1`; therefore decoding a message produced
-  by the current encoder yields `version == 1` even though its current fields are
-  present.
-- Mappers exist in both directions: `GameNetworkModelV1.v2Model` and
-  `GameNetworkModel.v1Model`.
-
-Compatibility limit: shipped V1 clients do not have `targetId`. They ignore the
-unknown JSON key and cannot apply logical recipient filtering. A repair sent to
-one direct local-network connection remains physically targeted for every
-version. A SharePlay or fallback broadcast carrying `targetId` is only targeted
-for current peers; a V1 peer may still process it. Current targeted photo and
-other non-audio/weather repairs use a physically targeted Messenger stream when
-the originating SharePlay participant is known. Targeted weather Journal
-repairs retain `targetId`; targeted audio Journal repairs intentionally become
-untargeted cache stores.
-
-The compatibility superset preserves the envelope layout, not unknown enum raw
-values. `.photoList` uses the new action raw value `11`; a build that does not
-define that case cannot decode that list message. There is currently no feature
-negotiation for this subtype.
+There is one wire format, stamped `version` 3. `GameNetworkModel.init(from:)` throws for any
+other version, and an envelope of the released 2.6 app (no `sender`, roster inside
+`gameConfig`) does not decode at all. A 2.6 device in the same FaceTime call still joins the
+GroupSession, but no message decodes in either direction.
 
 ### `GameNetworkModel`
 
 | Field | Meaning |
-| --- | --- |
-| `version` | In-memory default/current schema is `2`; compatibility encoding writes wire version `1`. Up-mapped and round-tripped envelopes therefore commonly carry `1`. |
-| `messageID` | Stable sender-scoped identity for one logical send across retries and transport bridges. |
-| `replyToMessageID` | Identifies the master command answered by an ACK or asset request. |
-| `timestamp` | Intent time for allowed last-wins peer events; current values must be finite, positive, and not implausibly in the future. |
-| `counter` | Sender-local monotonic message id, or the original master counter copied by a request/ACK. Used by ordering, logs, and deduplication. |
-| `proxyCounter` | Reserved proxy-hop counter. Currently preserved, not incremented in traced code. |
-| `type` | High-level message kind: reveal, store, update. |
-| `subType` | Action/ack subtype: show, store, ok, failed, mapState, playAudio, etc. |
-| `masterId` | The authoritative master's id, used to rebuild local master identity, sequence master-state snapshots, map legacy layouts, and include the master in audio availability. Sender role checks use `sender.isMaster`. |
-| `sender` | `GameSenderModel`: id, role (`GameType`), name, characterId. The only identity a player ever sends. |
-| `masterState` | `GameMasterStateModel`: state, adventureId/title, players, controls, features. **Only master messages carry it** — players structurally cannot change roster/controls. |
-| `targetId` | When set, only the addressed participant processes the message (data-request responses, map-state recovery). |
-| `audience` | Logical recipient class: automatic/legacy inference, master, group, or target. Protocol-defined master-only tuples cannot be widened by player input. |
-| `purpose` | Distinguishes legacy input, user events, and requests for missing asset bytes. |
-| `journalAdmissionOnly` | Marks the physically attributed Messenger control packet that authenticates a later anonymous Journal callback. |
-| `journalPayloadDigest` | SHA-256 binding between the Messenger admission and the raw Journal attachment bytes. |
-| `data` | Module item id, module type, version, optional payload bytes. |
+|---|---|
+| `version` | 3 |
+| `timestamp` | Wall-clock intent time, used by last-wins peer events (map pins, Space transforms) |
+| `counter` | The master's message number. A player echoes it in an acknowledgement or an asset request, and the master echoes it again in the delivery |
+| `proxyCounter` | Counter of a private mirror behind a player |
+| `type` | `reveal`, `store`, `update` |
+| `subType` | Action, see section 7 |
+| `masterId` | The game master of the session |
+| `sender` | `GameSenderModel`: id, role, name, characterId, supporterTier |
+| `masterState` | Roster, controls, features. Present only in master messages |
+| `targetId` | When set, only that participant processes the message |
+| `senderPlatform` | Device kind of the sender, for the 3D table seats |
+| `data` | `NetworkCodableDataType`: id, module, version, optional bytes, optional `assetVersion`/`contentVersion` |
 
-### Local `GameConfigModel`, `GameRosterModel`, And `GameControlModel`
+### Message Shapes
 
-These remain the `@MainActor` game-root state from which current messages are
-built. They are not three current authoritative wire blocks.
+What a message is follows from its shape (`GameNetworkModel+Shape.swift`). There is no
+audience or purpose field.
 
-`GameConfigModel` contains:
+| Shape | Definition |
+|---|---|
+| Acknowledgement | `subType` is `.ok` or `.failed`; the counter of the answered message is echoed |
+| Asset request | Sender is not the master, `type` is `reveal` or `store`, `subType` is `show` or `store`, no bytes, module is audio, dice, map, pdf, photo, space, table or weather |
+| Player group event | Sender role is `player`, no target, has bytes, plausible timestamp, and it is a Dice roll (`update/generic` dice), a moved pin (`update/mapPin`) or a Space transform (`update/spaceTransform`) |
+| Presentation | A master `reveal` of map, photo, pdf, space, table or weather, or a master `update/mapState` |
+| Carries an asset | Has bytes of pdf, audio, space, photo, map or weather, in a `reveal`, a `store`, or a player's `update/generic` contribution |
 
-- `id`: local participant/master id for this game root
-- `state`: `.stopped`, `.prepare`, `.started`
-- `master`: `MasterGameModel`
-
-`isMaster` is true when `gameConfig.id == gameConfig.master.id`.
-
-`GameRosterModel` contains the current players:
-
-```swift
-[PlayerGameModel(id: UUID, type: GameType, name: String, characterId: UUID?)]
-```
-
-Player types:
-
-- `.master`
-- `.player`
-- `.observer`
-- `.proxy`
-- `.demo`
-- `.notSet`
-
-`GameControlModel` contains:
-
-- `controls: [SharingControlModel]`
-- `features: GameFeatureModel`
-
-`SharingControlModel`:
-
-- `id`: player id
-- `name`: player display name
-- `show`: whether this player is allowed to see shared content
-
-`GameFeatureModel`:
-
-- `diceMaster`
-- `dicePlayers`
-- `audioSharing`
-- `photoSharing`
-- `spaceSharing`
-
-Only dice feature gates are enforced directly in `PlayerController.handleDice()`
-in the traced code. The other booleans are available to UI/feature logic.
-
-### `NetworkCodableDataType`
-
-Contains:
-
-- `id`: item id or event id
-- `type`: `NetworkModules`
-- `version`: item version or `0` for event data
-- `assetVersion`: optional file-asset identity used by map transport
-- `contentVersion`: optional structural-content identity used by map updates
-- `data`: optional binary payload
-
-Important meanings:
-
-- `data == nil`: "I am talking about this item/version."
-- `data != nil`: "Here is importable data or event data."
-- `version == 0`: usually live event/ack, or "any version" checks.
-- `version == -1`: can happen when `createGameData` cannot find a local version.
-
-For maps, the two optional versions intentionally separate expensive file
-publication from metadata synchronization:
-
-- `assetVersion` is a stable fingerprint of the background photo UUID and that
-  photo's content version. It changes when the actual background asset changes.
-- `contentVersion` is a stable fingerprint of the complete file-byte-free map
-  metadata snapshot. Scale, geometry, room, and pin-reference edits change it
-  without changing `assetVersion`.
+Everything a player sends that is not a group event is for the game master only.
 
 ## 6. Ordering, Counters, Deduplication, And Logs
 
-### Master Counters
+### Counters
 
-The master owns the canonical outgoing message counter.
+The master numbers its messages from 1 (`MasterControllerModel.nextMessageCounter()`). A
+message that delivers what an earlier message named keeps that message's counter: the package
+that answers a request has the counter of the show the player could not use. A player numbers
+its own messages independently and echoes the master's counter when it answers one.
 
-`MasterControllerModel.nextMessageCounter()` returns the current value and then
-increments it. The counter starts at `1`.
+### Presentation Order
 
-Every master `send(...)`:
+A package can take much longer than the reference of the next show. The player keeps the
+newest presentation it has seen: counter, module and item (`PlayerControllerModel.lastPresentation`).
 
-1. reserves a counter
-2. snapshots sender and authoritative master state in one `MainActor` hop
-3. creates a `GameNetworkModel`
-4. adds a log entry keyed by the counter
-5. sends to direct peers or proxy peers
+- a presentation with the same or a newer counter is shown,
+- a presentation of the item the newest one is for is shown as well: the package of a map
+  arrives after the state of that map, and the state has a newer counter,
+- a package of an older show of another item is stored (handled as a `store`) and not shown,
+- a reference of an older show of another item is ignored.
 
-The first master message has counter `1` and is deduplicated normally.
-
-### Player Counters
-
-New player-origin messages reserve their own increasing, nonzero counter,
-starting at `1`:
-
-- `send(updated:)` -> `.store/.store`
-- `game(message:actionType:)` -> `.update/<action>`
-- character send -> `.update/.store`
-- audio list -> `.update/.audioList`
-- photo list -> `.update/.photoList`
-
-Player replies copy the counter and proxyCounter from the message they are
-answering. This lets the master's delivery log attach an ACK to the original row.
-Replies strip payload bytes because a data request only needs the item identity;
-the master rebuilds the full payload locally.
-
-Player `messageCounter` remains a separate processed-message statistic. It is not
-the outgoing counter.
-
-Screen sends can pass an explicit `responseCounter`, used as the counter for the
-`.store/.screen` message.
+The counter is reset with the connection, because a restarted master counts from 1 again.
 
 ### Deduplication
 
-`GameMessagePipeline` dedups by:
-
-- sender id
-- counter
-- proxyCounter
-- type
-- subtype
-- data id
-- data type
-- data version
-- whether payload bytes are present
-
-Deduplication is skipped when:
-
-- `counter <= 0`
-- subtype is `.ok`
-- subtype is `.failed`
-
-The recent dedup window keeps 256 keys.
-
-The actor also tracks queued and currently processing keys. A key is remembered
-only after successful processing; cancellation or failure releases it so a retry
-can be accepted. Metadata-only journal delivery and a later full-payload delivery
-have different keys and both can be processed.
-
-Player ordering has an additional rule for authoritative master state. The last
-applied master-state counter is tracked per `masterId`; an older master snapshot
-cannot roll roster, controls, or features backward. Counter `0` remains accepted
-for legacy/unsequenced input.
+`GameMessagePipeline` drops a message whose `GameMessageKey` it has already processed: sender,
+counter, proxy counter, type, subtype, item, module, version, target and whether it has bytes.
+The reference and the package of one show therefore are two messages. Acknowledgements and
+messages with counter 0 are never deduplicated.
 
 ### Logs
 
-`LogGameController` stores:
-
-- outbound master message rows by counter
-- ACK/reporting players for reveal messages
-- player screen JPEG data
-- SharePlay attachment metadata
-
-Only `.reveal` messages are delivery-tracked as missing/partial/all players in
-the log UI. Other message types are `notTracked`.
+The master logs every message it sends with a new counter as one row
+(`LogGameController.addMessage`). An `.ok` is matched to its row by the echoed counter, the
+module and the item; an `.ok` that matches no row is ignored. A matched `.ok` for a `reveal`
+or `store` also updates the availability report of the acknowledging player.
 
 ## 7. Message Types And Subtypes
 
@@ -704,265 +564,131 @@ so its private mirrors process the same repair.
 
 ## 9. General Request And Reply Patterns
 
-### Pattern A: Master Reveals An Item, Everyone Already Has It
+### Connect
 
-For photo, PDF, and space, the first show of each item version exports and
-broadcasts the full package immediately. Later shows of that exact item version
-are ID-only. A map uses its background `assetVersion` for this decision: the first
-show of that asset exports the full map/background package, and only a changed
-background UUID or content version creates a new journal publication. Structural
-map edits are delivered separately as a map update and do not make the full asset
-new. Other modules normally start with an ID-only reference.
+`PlayerController.ready()` sends, to the master only: `update/audioList`, `update/photoList`,
+`update/pdfList`, `update/spaceList`, then the Character reference (`update/store` value; the
+master asks for the package when its own version differs). The master answers each list with
+the authoritative list of all players, so every device knows who holds which version. A
+proxy mirror sends no lists; its host answers for it.
 
-```text
-Master -> all:
-  .reveal/.show
-  data: full first-show-of-asset/version payload, or an ID/version reference on
-        a matching reshow
+### Master Shows An Item
 
-For a map, after the reveal/reference:
-  .update/.generic
-  data: MapUpdatePayload with complete metadata and photo IDs, no photo bytes
+One flow for Photo, Pdf, Space, Audio, Map and Weather (`MasterController.show(for:)`):
 
-Each player:
-  imports the payload or resolves the matching local item/file
-  sets current/display state if needed
+1. The master builds the reference: `reveal/show`, a new counter, no bytes.
+2. It asks the module's reports which players lack its version
+   (`MasterController.playersMissing`). Map, Weather and Table have no reports and name nobody.
+3. `GameNetworkController.sendPresentation` delivers: the package to the players that lack
+   the item (section 10), then the reference to everyone.
+4. A player that holds the item shows it and answers `.ok` with the counter of the reference.
+5. A player that lacks it, and that the reports did not show as lacking it, answers with an
+   asset request: the same `type`, `subType` and counter, no bytes.
+6. The master answers a request with the package under the counter of the request
+   (`MasterController.process`), back the way the request came.
+7. `.ok` marks the version as available for that player. The `.ok` after which every player
+   holds the item makes the master broadcast the authoritative list again.
 
-Each player -> master:
-  same counter
-  type .reveal
-  subtype .ok
-  data: same id/type, data nil; photo ACKs preserve the received asset version,
-        while other module ACKs normally use version 0
+Two rules keep this from repeating without end:
 
-Master:
-  records player report for that item
-```
+- Only a reference is answered with a request. A package that arrived and still left the item
+  unusable is answered with `.failed` (`PlayerController.response(for:isSuccess:requestData:)`).
+- The master sends no package for a file it cannot read, for example an iCloud file that has
+  not downloaded. It does not answer such a request; the player stays without the item.
 
-For audio, a reveal ACK also updates audio reporting. For photo, availability is
-recorded only when the ACK version exactly matches the master's current asset
-version. Map/PDF/table/weather/space/value ACKs use their module report rules.
+A request that echoes no master message (a pin photo of a map) has counter 0. The master
+answers it under a new counter.
 
-### Pattern B: Master Reveals An Item, One Player Does Not Have It
+### Store
 
-```text
-Master -> all on a reshow or reference-based module:
-  .reveal/.show, data nil
+A `store` keeps an item without showing it: pin photos of a map, and an audio that a play is
+waiting for. It follows the same steps: reference to everyone, package to the players that
+lack it, `.ok` or an asset request back.
 
-Player with item:
-  -> .reveal/.ok
+### A Player Shares An Item
 
-Player missing item:
-  -> .reveal/.show, data nil
+A player shows a file-backed item through the master (`PlayerController.shareFile`): it sends
+`update/generic` naming the item, with the bytes only when the master's list does not contain
+the item. The master imports a contribution it lacks and then shows the item like one of its
+own (`MasterController.showPlayerContribution`). Players never present to each other.
 
-Master receives missing-data request:
-  createGameData(for: itemId)
-  -> requester only: .reveal/.show, targetId requester, exported payload
+### Map
 
-Player imports payload:
-  -> .reveal/.ok
-```
+A map is shown like every other item. The player holds it when it has the map, its
+background image, and the background version of the reference (`assetVersion`). After every
+map reveal, and after the package that answers a map request, the master sends the photo-free
+content (`update/generic`) and the state (`update/mapState`), unless Share Map is paused.
+A map state names the content version it belongs to; when the players last got another one,
+the master sends the content before that state (`MasterControllerModel.sentMapContentVersions`),
+because revealing a room adds text the players did not get while it was hidden.
+Content, state and battle round that arrive before their map wait in one slot per map and are
+applied when the map is there. A state for a map the player lacks asks for the map with the
+state's counter, at most once in ten seconds. While Share Map is paused a map request is not
+answered.
 
-The request retains its `GameMessageOrigin`, so a direct LAN repair returns to
-that connection and a Messenger repair returns to that physical SharePlay
-participant. A Journal callback does not reveal its publisher; that fallback
-must broadcast with `targetId`, which current unrelated player pipelines ignore.
-A shipped V1 pipeline cannot enforce that field. Targeted repairs outside
-audio/weather use physically targeted Messenger packages rather than replacing
-the journal publication. Audio becomes a shared cache store; weather retains its
-logical target in Journal metadata.
+### Live Updates
 
-### Pattern C: Master Reveals An Item, Local File Is Missing
-
-`GameControllable.reveal(...)` checks both:
-
-- item/version exists
-- backing file data exists, if the module has file-backed data
-
-If metadata exists but the binary file is missing, a full payload is imported
-when it arrives. This repairs cases where CloudKit/local metadata arrived but
-the actual photo/audio/PDF/space file did not.
-
-### Pattern D: Store/Repair Transfer
-
-`.store/.store` is used when the sender wants the receiver to import an item
-without necessarily showing it. Players use this for missing map-pin photos:
-
-```text
-Player detects a map pin photo ID that exists in neither the local
-photo game controller nor the persistent photo item controller
-Player -> master:
-  .store/.store, data: photo id/type/version, data nil
-
-Master:
-  createGameData(for: photoId)
-  -> direct connection: requester-only .store/.store photo payload
-  -> SharePlay: requester-only .store/.store Messenger stream
-
-The SharePlay or direct requester:
-  import hidden pin-photo data
-  -> .store/.ok
-```
-
-`requestedRepairIds` permits one photo repair request per item per connection
-lifetime and releases the ID only after a delivered repair verifies local bytes.
-The initial scan is based on photo-model ownership; a separately unavailable
-iCloud/local binary does not cause another map-pin SharePlay request. Each
-participant keeps its own bounded request guard and can request the version it
-is missing.
-
-The map background is never added to this repair list. It is embedded in the
-full map package; the first SharePlay map show publishes that package through
-the journal. If the background is unavailable after delivery, the player checks
-it separately and may request the full map once.
-
-### Pattern E: Live Update
-
-Live updates use `.update/<specific subtype>`.
-
-Examples:
-
-- `.update/.playAudio`
-- `.update/.audioList`
-- `.update/.photoList`
-- `.update/.generic` for a dice result
-- `.update/.generic` for a semantic map update
-- `.update/.mapState`
-- `.update/.mapPin`
-- `.update/.valueResult`
-- `.update/.spaceTransform`
-
-Most live updates do not ACK. Reveal/store transfers generally ACK. An ACK or
-request copies the original counter and never echoes the incoming payload bytes.
-
-A semantic map update is distinguished by its schema-versioned
-`MapUpdatePayload`, not by a new `RPGMessageActionType` raw value. This keeps the
-outer envelope decodable by shipped V1 peers: they already understand
-`.update/.generic` and can ignore a payload shape they do not implement. The
-payload is a complete map metadata snapshot containing photo references but no
-photo/file bytes, so SharePlay always sends it through messenger packages.
+Dice rolls, map pins, Space transforms, battle rounds, value updates and the availability
+lists are `update` messages. They carry their whole payload and need no request.
 
 ## 10. Transport Fan-Out Details
 
-### Master Receives Direct Local-Network Data
+`GameNetworkController` (and `RPGSharePlayController` behind it) decides how a message reaches
+its recipients. The game controllers never choose a transport.
 
-In direct mode, `GameNetworkController.masterReceived(...)` does this before the
-master controller handles the message:
+### Routes
 
-1. decode `GameNetworkModel`
-2. authenticate the physical connection and logical sender through
-   `MasterController.accepts(...)`
-3. infer and validate the effective audience and event shape
-4. for an admitted group event only, send it once to other LAN peers and
-   SharePlay
-5. call `MasterController.received(...)` for canonical handling
+`GamePlayerRoutes` binds each local-network connection and each SharePlay participant to the
+first sender it speaks for. A connection cannot change its player or role, and a second
+connection cannot take over a bound player. The same table gives the route to one player.
 
-This means only allowlisted player group events can be seen by other peers
-immediately. ACK/failure, availability, screen, asset-request, and malformed
-messages stop at the master. Dice, map-pin, and space-transform events are
-explicit group exceptions. Photo
-`.reveal/.show` is another tightly validated exception: the authoritative photo
-matrix must say that the sender has the master's exact asset version, and the
-message must name that same version. Pre-fan-out mismatched photo messages are
-therefore ignored by recipients while the master publishes its canonical copy.
+### Master Sends
 
-### Master Sends Data
+| Call | Local network | SharePlay | Co-located player |
+|---|---|---|---|
+| `sendPlayer(data:)` | all connections | Messenger, whole session | delivered directly |
+| `sendPresentation(_:missingPlayers:package:)` | package to the connections of the missing players, then the reference to all | Journal upload if a SharePlay player is missing, reference by Messenger | reference |
+| `sendAsset(_:to:)` | the requesting connection only | a package through the Journal, a small message by Messenger to that participant | delivered directly |
+| `sendPlayer(_:toPlayer:)` | the player's connection | Messenger to that participant | n/a |
 
-`MasterController.send(...)` sends:
+### SharePlay Journal
 
-- via `networkStore.sendPlayer(data:fileJournal:)` for real master
-- via `networkProxyStore.sendPlayer(...)` for proxy master
+The Journal holds one attachment per module. `SharePlayJournalLedger` decides whether a
+package is uploaded:
 
-Real-master broadcast sends derive `fileJournal` from the envelope: only
-file-backed `.reveal`/`.store` payloads with bytes opt in automatically. A
-targeted local-network response first tries `sendResponse(..., id:)`; on failure
-it falls back to normal transport fan-out while `targetId` preserves logical
-addressing. At the SharePlay boundary, targeted repairs outside audio/weather
-use a physically targeted Messenger stream. Targeted audio repairs become
-untargeted Journal cache stores; targeted weather repairs retain their target.
+| Slot | Request or show | Upload |
+|---|---|---|
+| empty, or another item or version | any | yes |
+| same item and version | counter not newer than the upload's | no |
+| same item and version | newer counter, upload older than 60 s | yes |
+| same item and version | newer counter, upload younger than 60 s | no |
 
-The real master also has a local `PlayerController(asGameMaster: true)`.
-That controller calls `networkStore.setupLocal()`, which marks the direct
-network controller as having a local player. When the master sends a broadcast,
-`GameNetworkController.sendPlayer(...)` also delivers the model to the local
-player delegate, so the master's own UI processes the same reveal/update path as
-remote players. A successfully delivered targeted response also reaches the
-local player pipeline, which applies the same `targetId` filter. Direct
-`sendMaster(...)` returns early when a local player is registered, avoiding a
-local upstream loop.
+A request for a show that was already uploaded never uploads again. A participant whose
+download failed gets the file when the game master shows the item again after a minute.
+Every participant receives a Journal attachment; one that already holds that version does not
+import it. A package the Journal cannot take is sent through Messenger instead.
 
-A valid player-origin photo reveal is already fanned out by the receiving
-transport (and a full SharePlay payload is already journaled). The master does
-not broadcast it a second time. It only calls the local-player delivery path so
-the co-located `PlayerController` on the game-master device sees the same event.
-If validation fails, the master instead broadcasts its own full canonical photo.
+Attachments of one snapshot are processed in counter order, the master's last, so a late
+joiner ends on the presentation the master showed last. The master also replays its current
+presentation to a newly ready participant (`replayCurrentPresentation`).
 
-### Player Sends Data
+### Player Sends
 
-`PlayerController.sendOriginating(...)`:
+`sendMaster(data:)` sends to the master's connection and, on SharePlay, a contributed file
+through the Journal and everything else through Messenger.
 
-- if local game type is `.proxy`, sends upstream through `networkProxyStore`
-- otherwise sends upstream through `networkStore`
-- also forwards to local proxy clients through `networkProxyStore.sendPlayer`
+### Relaying
 
-Player messages request SharePlay journal automatically for file-backed
-`.reveal`/`.store` payloads (PDF, audio, space, photo, map) and full
-`.update/.generic` audio uploads. Character/value messages never use the
-Journal; selected-character sync sends an ID/version reference and lets the
-master request the full package only on mismatch. The SharePlay controller still
-applies its own journal-availability and targeting rules. Map
-`.update/.generic` payloads contain metadata only and stay on the chunked
-messenger path.
+Only player group events cross between transports. The master forwards a group event it
+receives from a connection to the other connections and to SharePlay, and one it receives
+from SharePlay to its connections. A player ignores every other message of another player.
 
-Consequently, a player photo reveal with bytes uses the photo journal slot over
-SharePlay, while an ID/version-only reveal uses the messenger. The sender shows
-a validated local photo before sending because transports do not echo the
-originating message back to that player.
+### Checks At The Master
 
-### Player Receives Master Data
-
-When a player receives a direct, non-proxy message:
-
-- it may apply master broadcast state
-- it forwards the same message to its local proxy clients
-- it schedules selected-character sync
-- it handles the module message
-- it sends a response when the handler returns one
-
-When a player receives from proxy, it does not forward the message again to
-proxy clients.
-
-### Concurrency And Task Ownership
-
-The project builds in Swift 6 mode with complete strict-concurrency checking and
-no configured default actor isolation. The communication layer therefore uses
-explicit boundaries:
-
-- `GameRoot`, `GameRootModel`, controller models, browser/listener UI models,
-  and `RPGSharePlayController` are `@MainActor`
-- `ConnectionController` is an actor around one `NWConnection` and its receive
-  loop
-- `GameMessagePipeline` is an actor that serializes module processing and owns
-  deduplication state
-- master/player delegate boxes are actors holding weak delegate references
-- browser and listener worker actors bridge Network callbacks through
-  `AsyncStream`
-- local-network fan-out uses a discarding task group so independent peer sends
-  run concurrently
-
-Long-lived unstructured tasks are generally stored by their controller/model and
-cancelled on stop, reset, replacement, or disconnection. Short callback-hop tasks
-are not retained. The SharePlay join sequence is intentionally long-lived across
-session resets and is cancelled only when the game stops. Group-session `join()`
-is the narrow detached operation because the framework call can block the main
-thread while audio is active; it captures only the selected session for the
-one-shot `join()` call, while controller state remains on the main actor.
-
-`GroupActivities` is currently imported with `@preconcurrency`. The safety
-invariant is that messenger, journal, lifecycle, task registries, and all other
-mutable SharePlay controller state stay on `@MainActor`; the detached join call
-does not access that controller state. Re-evaluate this escape hatch when the SDK
-annotations used by the deployment toolchain no longer require it.
+`MasterController.accepts` rejects a remote sender that claims to be the master, a role that
+does not fit the transport (local network: player, observer; SharePlay and Journal: player;
+proxy link: proxy), and a message for another master, except the lists and the Character a
+player sends before it knows the master.
 
 ## 11. Proxy Topology
 
@@ -1035,124 +761,17 @@ target: proxy connection id
 
 ## 12. Common Photo Transfer Scenarios
 
-### Availability Handshake
+Covered by `Tests/GameRPGTests/SimpleFileFlowTests.swift` and `PlayerShareReportTests.swift`.
 
-`PhotoListRequest` is versioned per asset rather than being a set of IDs:
-
-```swift
-PhotoListRequest(
-    list: [UUID: Int],
-    players: [UUID: [UUID: Int]]
-)
-```
-
-`list` maps each locally available photo ID to its effective asset version.
-`players` is the authoritative matrix keyed first by photo ID and then by
-participant ID; each leaf value is that participant's reported version. Only
-persistent photos whose backing data is local are included in a device's `list`.
-
-When a non-proxy participant becomes ready, it sends `.update/.photoList`
-immediately after its audio list. A proxy is only a private mirror of its host
-and sends no availability list. The master accepts a successfully decoded player
-report only when its per-player counter is newer, records the counter after
-applying the report, then sends `.update/.photoList` containing the authoritative
-all-player matrix. Counter zero remains the unsequenced legacy form. Malformed,
-negative, duplicate, and stale reports are ignored, and no authoritative reply
-is sent for them. Players apply the same newer-counter rule to master lists.
-
-The master's locally available version is always the baseline, even when a
-player initiated the reveal. A participant counts as available only when its
-reported version exactly equals that baseline; merely owning the same photo ID
-is insufficient. The master sends the authoritative list in response to player
-reports at connection/reconnection time. Reveal ACKs update its matrix directly,
-so a second full-list broadcast is not required after every show.
-
-### Master Reveals A Photo
-
-The first master photo show of an asset version is the efficient baseline:
-
-```text
-Master -> all:
-  .reveal/.show with the full photo package
-
-Direct participants:
-  import/show and return .ok
-
-Proxy hosts:
-  process the reveal and mirror it to their private proxy clients
-```
-
-Over SharePlay this broadcast package uses the photo journal slot. Over local
-network the payload remains inside the JSON envelope. Once the export succeeds,
-the master records that the photo has been sent for the current game.
-
-Later shows of that photo use an ID/version reference. Participants with the
-item and local file show it from memory and ACK. A participant missing metadata
-or bytes returns the same `.reveal/.show` as a request. The master exports the
-requested photo and responds with `targetId == requesterId`; only that player
-imports and acknowledges the full response. This remains true when several
-players or observers request the same photo: each request gets its own targeted
-answer and never changes another participant's current screen.
-
-Photo ACKs preserve the effective asset version. The master marks a participant
-available only when that version matches its own current baseline; `.failed` is
-ignored.
-
-### Player Reveals A Photo
-
-The normal photo UI still calls the generic game action, but
-`PlayerController` converts that action into `.reveal/.show`:
-
-1. If the sender's reported version equals the master baseline and every
-   controlled player has that same version, it sends only the photo reference.
-2. If the sender matches the baseline but at least one player is missing or has
-   another version, it sends the full package. A full untargeted reveal lets all
-   participants import the same baseline in one fan-out; over SharePlay it uses
-   the photo journal.
-3. If the sender is absent from the matrix or its version differs, it sends no
-   player bytes. It sends a reference to the master's baseline, which requests
-   the master to publish its own canonical full package.
-
-Recipients accept a player-origin reveal only when the authoritative matrix
-already proves that sender has the exact master baseline and the incoming asset
-version matches it. This prevents a player from replacing the master's photo
-with a competing version. A valid message has already reached LAN peers or the
-SharePlay journal before master module handling; the master only relays that
-same event to its co-located local player. It performs no duplicate network
-broadcast. An unavailable or mismatched sender instead causes a new authoritative
-master `.reveal/.show` with the master's full bytes.
-
-If a non-master receiver sees a peer reveal before the authoritative matrix can
-prove it, it retains the latest reveal per master/sender in a bounded,
-arrival-ordered buffer. Later photo lists retry exact matches, keep entries whose
-sender report is still absent, and discard concrete version mismatches. An
-untargeted canonical master show, stop, or lost connection clears the buffer.
-
-The originating player sets its own current photo for a validated share because
-it does not receive an echo. Receivers reveal/import normally and ACK with the
-photo version, allowing the master to update exact-version availability.
-
-### Presentation And Map-Pin Repair
-
-That rule is for photo presentation repair (`.reveal/.show`). A map-pin cache
-repair uses `.store/.store`; over SharePlay its full response stays physically
-targeted to the participant that requested it.
-
-For a proxy client, the host first tries to serve the request from its own
-photo/file state. If it cannot, it remaps the request as the host. The master's
-host-targeted answer is then mirrored downstream with the target cleared. Proxy
-receipts do not appear in the master's player reports because the proxy is not a
-roster participant.
-
-When a roster participant disconnects, the master removes it from every photo
-version/report entry and forgets that player's last accepted photo-list counter,
-matching the audio-list lifecycle. Stop/lost-connection resets list sequencing;
-the next ready notification sends a fresh local report.
-
-The multiplayer photo test matrix deliberately marks a photo as already sent to
-exercise this reference-and-targeted-repair path across players, observers, and
-proxies. Separate regression tests cover alternating photos so a repair for an
-older photo cannot replace the newer presentation for everyone else.
+| Scenario | What crosses the network |
+|---|---|
+| Everyone holds the photo | The reference to all; `.ok` from each player |
+| One local-network player reported no copy | The package on that player's connection, the reference to all |
+| A player the master had no report from lacks it | The reference to all, an asset request from that player, the package on its connection under the same counter |
+| A SharePlay player lacks it | One Journal upload, the reference by Messenger; a second request for the same show uploads nothing |
+| A player shares a photo the master holds | `update/generic` without bytes to the master, then the master's show |
+| A player shares a photo the master lacks | `update/generic` with bytes to the master, which imports it and shows it |
+| The package of an earlier show arrives late | It is stored; the screen keeps the later show |
 
 ## 13. Module Behavior
 

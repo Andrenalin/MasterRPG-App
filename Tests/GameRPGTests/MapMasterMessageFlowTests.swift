@@ -42,7 +42,7 @@ struct MapMasterMessageFlowTests {
         )?.photoId == photoId)
     }
 
-    @Test("Direct mapState recovery stays on its connection and does not establish the group cache")
+    @Test("A map request is answered on its connection: the package, then content and state")
     func directRecoveryIsRequesterOnly() async throws {
         // Given
         let fixture = try await MapMasterRoutingFixture.makeMaster()
@@ -52,7 +52,7 @@ struct MapMasterMessageFlowTests {
         let request = fixture.playerMessage(
             counter: 41,
             type: .reveal,
-            subType: .mapState,
+            subType: .show,
             data: reference
         )
 
@@ -63,15 +63,13 @@ struct MapMasterMessageFlowTests {
         let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
         #expect(fixture.directMasterSpy.calledSendResponseId == 3)
         #expect(fixture.directMasterSpy.calledSendResponseAll == 0)
-        #expect(responses.map(\.subType) == [.store, .generic, .mapState])
-        #expect(responses.allSatisfy { $0.targetId == fixture.playerId })
+        #expect(responses.map(\.type) == [.reveal, .update, .update])
+        #expect(responses.map(\.subType) == [.show, .generic, .mapState])
         #expect(responses.allSatisfy { $0.data.id == mapId })
+        // The package keeps the counter of the request; the live updates are new messages.
+        #expect(responses.first?.counter == 41)
         #expect(responses.first?.data.data != nil)
-        #expect(!fixture.master.gameModel.hasSentGameItem(
-            type: .map,
-            id: mapId,
-            version: reference.effectiveAssetVersion
-        ))
+        #expect(responses.dropFirst().allSatisfy { $0.targetId == fixture.playerId })
 
         // Map acknowledgements are presentation receipts, not availability.
         let acknowledgement = fixture.playerMessage(
@@ -82,94 +80,6 @@ struct MapMasterMessageFlowTests {
         )
         _ = try await fixture.master.handleMap(acknowledgement)
         #expect(fixture.root.mapRoot.gameControllable.gameModel.playerReport(for: mapId).isEmpty)
-    }
-
-    // CODE_AUDIT_21 §5.4: only the trailing content and state sends were gated, so a joining or
-    // reconnecting player still got the package and the snapshot of the live map.
-    @Test(
-        "A map request gets no map data while Share Map is paused",
-        arguments: [(RPGMessageType.reveal, RPGMessageActionType.mapState), (.update, .generic)]
-    )
-    func pausedSharingAnswersMapRequestsWithFailed(type: RPGMessageType, subType: RPGMessageActionType) async throws {
-        let fixture = try await MapMasterRoutingFixture.makeMaster()
-        let mapId = fixture.currentMapId
-        let reference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
-        fixture.root.mapRoot.rootModel.isMapStreaming = false
-        let request = fixture.playerMessage(counter: 46, type: type, subType: subType, data: reference)
-
-        await fixture.master.receivedProcess(request, connectionId: ConnectionController.ID())
-
-        let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
-        #expect(responses.map(\.subType) == [.failed])
-        #expect(responses.allSatisfy { $0.data.data == nil && $0.data.id == mapId })
-        #expect(fixture.root.mapRoot.rootModel.mapsWithUnsharedStructure.contains(mapId))
-    }
-
-    @Test("An obsolete mapState repair is superseded by one coherent current Map generation")
-    func obsoleteMapStateRepairPublishesCurrentGeneration() async throws {
-        // Given
-        let fixture = try await MapMasterRoutingFixture.makeMaster()
-        let mapId = fixture.currentMapId
-        let obsoleteReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
-        fixture.root.mapRoot.gameController.gameItem(for: mapId).name = "Structurally updated Map"
-        let currentReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
-        #expect(currentReference.assetVersion == obsoleteReference.assetVersion)
-        #expect(currentReference.contentVersion != obsoleteReference.contentVersion)
-        let connectionId = ConnectionController.ID()
-        let request = fixture.playerMessage(
-            counter: 44,
-            type: .reveal,
-            subType: .mapState,
-            data: obsoleteReference
-        )
-
-        // When
-        await fixture.master.receivedProcess(request, connectionId: connectionId)
-
-        // Then: this is a fresh presentation intent, not a targeted answer to
-        // the impossible old repair. All three messages describe one capture.
-        let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
-        #expect(fixture.directMasterSpy.calledSendResponseId == 3)
-        #expect(fixture.directMasterSpy.calledSendResponseAll == 0)
-        #expect(responses.map(\.subType) == [.show, .generic, .mapState])
-        #expect(responses.allSatisfy { $0.targetId == nil && $0.data.id == mapId })
-        #expect(responses.first?.data.data != nil)
-        #expect(responses.allSatisfy {
-            $0.data.assetVersion == currentReference.assetVersion
-                && $0.data.contentVersion == currentReference.contentVersion
-        })
-    }
-
-    @Test("An obsolete structural repair is superseded instead of applying unrelated Map content")
-    func obsoleteMapContentRepairPublishesCurrentGeneration() async throws {
-        // Given
-        let fixture = try await MapMasterRoutingFixture.makeMaster()
-        let mapId = fixture.currentMapId
-        let obsoleteReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
-        fixture.root.mapRoot.gameController.gameItem(for: mapId).name = "New structural generation"
-        let currentReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
-        #expect(currentReference.contentVersion != obsoleteReference.contentVersion)
-        let connectionId = ConnectionController.ID()
-        let request = fixture.playerMessage(
-            counter: 45,
-            type: .update,
-            subType: .generic,
-            data: obsoleteReference
-        )
-
-        // When
-        await fixture.master.receivedProcess(request, connectionId: connectionId)
-
-        // Then
-        let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
-        #expect(fixture.directMasterSpy.calledSendResponseId == 3)
-        #expect(fixture.directMasterSpy.calledSendResponseAll == 0)
-        #expect(responses.map(\.subType) == [.show, .generic, .mapState])
-        #expect(responses.allSatisfy { $0.targetId == nil && $0.data.id == mapId })
-        #expect(responses.allSatisfy {
-            $0.data.assetVersion == currentReference.assetVersion
-                && $0.data.contentVersion == currentReference.contentVersion
-        })
     }
 
     @Test("A failed Map response is ignored by the master")
@@ -192,13 +102,6 @@ struct MapMasterMessageFlowTests {
         #expect(response == nil)
         #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
         #expect(fixture.root.mapRoot.gameControllable.gameModel.playerReport(for: mapId).isEmpty)
-        #expect(
-            !fixture.master.gameModel.hasSentGameItem(
-                type: .map,
-                id: mapId,
-                version: reference.effectiveAssetVersion
-            )
-        )
     }
 
     @Test("Map pin group events require the current generation and the newest pin timestamp")
@@ -286,7 +189,6 @@ struct MapMasterMessageFlowTests {
             contentVersion: contentVersion,
             assetVersion: assetVersion
         )
-        #expect(acceptedCommand.effectiveAudience == .group)
         _ = try await fixture.master.handleMap(acceptedCommand)
 
         // Then: the master applies the group event locally. It does not emit a
@@ -736,11 +638,13 @@ struct MapMasterMessageFlowTests {
 
         // Then
         #expect(fixture.directPlayerSpy.calledRequest == 2)
-        #expect(fixture.proxyMasterSpy.calledSendResponseId == 1)
         #expect(fixture.proxyMasterSpy.calledSendResponseAll == 0)
-        let localResponse = try #require(fixture.proxyMasterSpy.sendResponseData as? GameNetworkModel)
+        // The package, followed by the content and the state of the host's map.
+        let localResponses = fixture.proxyMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
+        #expect(localResponses.map(\.subType) == [.show, .generic, .mapState])
+        let localResponse = try #require(localResponses.first)
         #expect(localResponse.sender.isMaster)
-        #expect(localResponse.targetId == fixture.proxyPlayerId)
+        #expect(localResponse.counter == 63)
         #expect(localResponse.data.id == mapId)
         #expect(localResponse.data.assetVersion == assetVersion)
         #expect(localResponse.data.contentVersion == contentVersion)
@@ -999,7 +903,6 @@ struct MapMasterMessageFlowTests {
         // without falling back to an unnecessary repair round trip.
         #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
         #expect(fixture.root.mapRoot.gameControllable.gameModel.currentItemId == mapId)
-        #expect(localMasterPlayer.gameModel.pendingMapRepairRequirement(itemId: mapId) == nil)
     }
 
     private static func insertCharacter(id: UUID, photoId: UUID, into root: GameRoot) {
@@ -1152,7 +1055,6 @@ private struct MapMasterRoutingFixture {
                 name: "Proxy mirror",
                 characterId: nil
             ),
-            purpose: .assetRequest,
             data: data
         )
     }

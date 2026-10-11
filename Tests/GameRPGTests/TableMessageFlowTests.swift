@@ -235,7 +235,7 @@ struct TableMessageFlowTests {
             for: player2.id
         )
         let connectionId = ConnectionController.ID()
-        fixture.environment.master.gameModel.add(connectionId: connectionId, playerId: player1.id)
+        fixture.environment.master.bind(connectionId: connectionId, playerId: player1.id)
 
         #expect(
             Set(fixture.environment.masterRoot.tableRoot.gameControllable.gameModel.currentPlayers)

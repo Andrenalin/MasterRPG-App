@@ -1046,10 +1046,8 @@ struct MultiConnectionPhotoTests {
         env.removePhoto(photoId, from: testCase.missingRoles)
 
         let photoShareData = await env.masterRoot.photoRoot.gameController.share(id: photoId)
-        // Exercise the same-version reshow path: the first show of a version
-        // ships the full payload; later shows of that version announce by
-        // reference and missing participants request it.
-        env.master.gameModel.markSentGameItem(type: .photo, id: photoId, version: version)
+        // Nobody reported a list, so the master names the photo and the participants that
+        // lack it ask for it.
         await env.master.show(for: photoShareData)
 
         let showCommand = try #require(env.masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel)
@@ -1098,27 +1096,16 @@ struct MultiConnectionPhotoTests {
             #expect(fullData.data.version == version)
             #expect(fullData.data.data != nil)
             let requester = try env.participant(for: role)
-            #expect(fullData.targetId == requester.config.id)
+            // The package keeps the counter of the show it delivers.
+            #expect(fullData.counter == showCommand.counter)
             fullDataResponseCount += 1
 
-            // A missing participant receives the master's canonical baseline
-            // as an exact repair. SharePlay may physically expose the envelope
-            // to every peer, but target filtering prevents it from replaying
-            // the reveal or producing duplicate acknowledgements elsewhere.
-            if role.type == .proxy {
-                let response = try await requester.receive(fullData)
-                #expect(response.subType == .ok)
-                continue
-            }
-
-            for participant in env.participants {
-                if participant.role == role {
-                    let response = try await participant.receive(fullData)
-                    #expect(response.subType == .ok)
-                    await env.master.receivedProcess(response, connectionId: nil)
-                } else {
-                    #expect(await participant.receiveIgnored(fullData))
-                }
+            // A missing participant receives the master's copy on its own connection;
+            // nobody else gets the bytes.
+            let response = try await requester.receive(fullData)
+            #expect(response.subType == .ok)
+            if role.type != .proxy {
+                await env.master.receivedProcess(response, connectionId: nil)
             }
         }
 

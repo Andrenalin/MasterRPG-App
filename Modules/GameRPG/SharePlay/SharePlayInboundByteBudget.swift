@@ -8,13 +8,12 @@ import Foundation
 ///
 /// A completed package is turned into one `Data` and JSON-decoded before any check of who sent
 /// it and in which role, and nothing limited how often a participant could make every device
-/// do that with a 64 MB package. The same budget as a relayed LAN sender gets
-/// (`GameRelayAdmission.admitBytes`); a package over it is dropped undecoded.
+/// do that with a 64 MB package. A package over the budget is dropped undecoded.
 /// See CODE_AUDIT_21 §6.5.
 @MainActor
 struct SharePlayInboundByteBudget {
     static let window: Duration = .seconds(60)
-    static let bytesPerSender = GameRelayAdmission.byteBudgetPerSender
+    static let bytesPerSender = 512 * ByteUnit.mebibyte
 
     private var received: [UUID: [(at: ContinuousClock.Instant, count: Int)]] = [:]
 

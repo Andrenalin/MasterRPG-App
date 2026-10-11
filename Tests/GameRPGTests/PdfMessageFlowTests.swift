@@ -28,7 +28,6 @@ struct PdfMessageFlowTests {
             type: .reveal,
             subType: .show,
             asMaster: false,
-            purpose: .assetRequest,
             data: reference
         )
         let broadcastCount = env.masterNetworkSpy.sendResponseHistory.count
@@ -214,54 +213,7 @@ struct PdfMessageFlowTests {
         #expect(model.sender.isMaster)
         #expect(model.type == .update)
         #expect(model.subType == .pdfList)
-        #expect(!model.isPresentationIntent)
-    }
-
-    @Test(
-        "Authenticated player PDF file presentations update a sibling player's UI",
-        arguments: PlayerFileIngress.allCases
-    )
-    func playerPdfFilePresentationUpdatesSiblingUi(ingress: PlayerFileIngress) async throws {
-        // Given - the network layer has authenticated a player-authored full
-        // presentation, and the master's availability matrix confirms that the
-        // sender owns this exact PDF generation.
-        let env = try await Self.preparedEnvironment()
-        let pdfId = try #require(env.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
-        let fullData = try await env.masterRoot.pdfRoot.gameControllable.createGameData(for: pdfId)
-        let version = fullData.effectiveAssetVersion
-        env.player1Root.gameModel.reset(master: env.masterConfig.master)
-        _ = try await env.player1.handlePdf(
-            Self.authoritativePdfList(
-                from: env.masterRoot,
-                counter: 1,
-                list: [pdfId: version],
-                players: [
-                    pdfId: [
-                        env.masterConfig.id: version,
-                        env.player2Config.id: version
-                    ]
-                ]
-            )
-        )
-        let reveal = Self.playerPdfReveal(
-            from: env.player2Config,
-            masterId: env.masterConfig.id,
-            counter: 2,
-            data: fullData
-        )
-        #expect(reveal.isPlayerFilePresentationEvent)
-
-        // When
-        switch ingress {
-        case .localNetwork:
-            await env.player1.receivedFile(reveal)
-        case .sharePlay:
-            await env.player1.receivedSharePlayFile(reveal)
-        }
-
-        // Then
-        #expect(await env.player1Root.pdfRoot.gameControllable.currentId == pdfId)
-        #expect(env.player1.gameModel.gameUpdateType == .pdf)
+        #expect(!model.isPresentation)
     }
 
     @Test("Master and player ignore failed PDF messages")
@@ -304,112 +256,6 @@ struct PdfMessageFlowTests {
         #expect(await env.player1Root.pdfRoot.gameControllable.currentId != pdfId)
     }
 
-    @Test("Player retries a peer reveal after a matching authoritative PDF list arrives")
-    func playerRetriesRevealAfterAuthoritativeList() async throws {
-        // Given
-        let env = try await Self.preparedEnvironment()
-        let pdfId = try #require(env.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
-        let pdfData = try await env.masterRoot.pdfRoot.gameControllable.createGameData(for: pdfId)
-        let version = pdfData.effectiveAssetVersion
-        let reveal = Self.playerPdfReveal(
-            from: env.player2Config,
-            masterId: env.masterConfig.id,
-            counter: 3,
-            data: pdfData
-        )
-        let requestCount = env.playerNetworkSpy.calledRequest
-
-        // When - The peer reveal arrives before the master's availability
-        // matrix and must remain deferred.
-        #expect(try await env.player1.handlePdf(reveal) == nil)
-        #expect(await env.player1Root.pdfRoot.gameControllable.currentId != pdfId)
-
-        _ = try await env.player1.handlePdf(
-            Self.authoritativePdfList(
-                from: env.masterRoot,
-                counter: 8,
-                list: [pdfId: version],
-                players: [pdfId: [env.masterConfig.id: version]]
-            )
-        )
-        #expect(await env.player1Root.pdfRoot.gameControllable.currentId != pdfId)
-        #expect(env.playerNetworkSpy.calledRequest == requestCount)
-
-        _ = try await env.player1.handlePdf(
-            Self.authoritativePdfList(
-                from: env.masterRoot,
-                counter: 9,
-                list: [pdfId: version],
-                players: [
-                    pdfId: [
-                        env.masterConfig.id: version,
-                        env.player2Config.id: version
-                    ]
-                ]
-            )
-        )
-
-        // Then
-        #expect(await env.player1Root.pdfRoot.gameControllable.currentId == pdfId)
-        #expect(env.playerNetworkSpy.calledRequest == requestCount + 1)
-        let acknowledgement = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(acknowledgement.counter == reveal.counter)
-        #expect(acknowledgement.type == .reveal)
-        #expect(acknowledgement.subType == .ok)
-        #expect(acknowledgement.data.effectiveAssetVersion == version)
-    }
-
-    @Test("Player discards a deferred peer reveal after a concrete PDF version mismatch")
-    func playerDiscardsMismatchedDeferredReveal() async throws {
-        // Given
-        let env = try await Self.preparedEnvironment()
-        let pdfId = try #require(env.masterRoot.pdfRoot.itemController.itemDataModel.items.first)
-        let pdfData = try await env.masterRoot.pdfRoot.gameControllable.createGameData(for: pdfId)
-        let version = pdfData.effectiveAssetVersion
-        let reveal = Self.playerPdfReveal(
-            from: env.player2Config,
-            masterId: env.masterConfig.id,
-            counter: 4,
-            data: pdfData
-        )
-        let requestCount = env.playerNetworkSpy.calledRequest
-
-        // When
-        #expect(try await env.player1.handlePdf(reveal) == nil)
-        _ = try await env.player1.handlePdf(
-            Self.authoritativePdfList(
-                from: env.masterRoot,
-                counter: 10,
-                list: [pdfId: version],
-                players: [
-                    pdfId: [
-                        env.masterConfig.id: version,
-                        env.player2Config.id: version + 1
-                    ]
-                ]
-            )
-        )
-
-        // A later matching snapshot cannot resurrect a reveal that the
-        // previous authoritative matrix proved had the wrong envelope.
-        _ = try await env.player1.handlePdf(
-            Self.authoritativePdfList(
-                from: env.masterRoot,
-                counter: 11,
-                list: [pdfId: version],
-                players: [
-                    pdfId: [
-                        env.masterConfig.id: version,
-                        env.player2Config.id: version
-                    ]
-                ]
-            )
-        )
-
-        // Then
-        #expect(await env.player1Root.pdfRoot.gameControllable.currentId != pdfId)
-        #expect(env.playerNetworkSpy.calledRequest == requestCount)
-    }
 }
 
 private extension PdfMessageFlowTests {

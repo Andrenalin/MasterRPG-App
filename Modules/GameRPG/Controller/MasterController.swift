@@ -22,113 +22,28 @@ final class MasterControllerModel {
         let version: Int
     }
 
-    private struct PlayerJournalAdmissionKey: Hashable, Sendable {
-        let senderId: UUID
-        let messageId: UUID
-    }
-
-    private struct PeerAvailabilitySource: Equatable, Sendable {
-        let wireId: UUID?
-        let presenterId: UUID
-        let masterId: UUID
-        let counter: Int
-        let proxyCounter: Int
-        let type: RPGMessageType
-        let itemId: UUID
-        let module: NetworkModules
-        let version: Int
-        let assetVersion: Int?
-        let contentVersion: Int?
-        var pendingRecipients: Set<UUID>
-
-        init(_ model: GameNetworkModel, recipients: Set<UUID>) {
-            wireId = model.messageID
-            presenterId = model.sender.id
-            masterId = model.masterId
-            counter = model.counter
-            proxyCounter = model.proxyCounter
-            type = model.type
-            itemId = model.data.id
-            module = model.data.type
-            version = model.data.version
-            assetVersion = model.data.assetVersion
-            contentVersion = model.data.contentVersion
-            pendingRecipients = recipients
-        }
-
-        func matches(_ receipt: GameNetworkModel) -> Bool {
-            let hasMatchingIdentity = if let wireId {
-                receipt.replyToMessageID == wireId
-            } else {
-                // Shipped V1 envelopes have no message identity. Their echoed
-                // counter plus the complete asset fingerprint is the strongest
-                // correlation available to a mixed-version session.
-                receipt.replyToMessageID == nil && receipt.counter == counter
-            }
-            return hasMatchingIdentity &&
-                receipt.masterId == masterId &&
-                receipt.counter == counter &&
-                receipt.proxyCounter == proxyCounter &&
-                receipt.type == type &&
-                receipt.data.id == itemId &&
-                receipt.data.type == module &&
-                receipt.data.version == version &&
-                receipt.data.assetVersion == assetVersion &&
-                receipt.data.contentVersion == contentVersion
-        }
-
-        func identifiesSamePresentation(as other: Self) -> Bool {
-            wireId == other.wireId &&
-                presenterId == other.presenterId &&
-                masterId == other.masterId &&
-                counter == other.counter &&
-                proxyCounter == other.proxyCounter &&
-                type == other.type &&
-                itemId == other.itemId &&
-                module == other.module &&
-                version == other.version &&
-                assetVersion == other.assetVersion &&
-                contentVersion == other.contentVersion
-        }
-    }
-
     var messageCounter: Int = 1
-    var connectIDPlayers: [ConnectionController.ID: UUID] = [:]
-    private var connectionRoles: [ConnectionController.ID: GameType] = [:]
-    // Bounded like every sibling per-connection cache below (256, matching
-    // `maximumPlayerJournalAdmissions`/`maximumPeerAvailabilitySources`) —
-    // previously an unbounded `Set` that only ever grew for the life of the
-    // game, since a LAN/proxy id is never reinstated (only a SharePlay
-    // participant UUID is, per `reinstateConnection`'s own doc). See
-    // CODE_AUDIT_Reconnect §7.1, §9.2.
-    private var retiredConnectionIDs = PhysicalIdentityDenylist<ConnectionController.ID>(capacity: 256)
+    /// The delivery namespace of this game's message log. A restarted game counts from one
+    /// again and must not complete a row of the game before it.
     let deliverySessionID = UUID()
-    private var deliveryMessagesByWireID: [UUID: GameDeliveryMessageID] = [:]
-    private var deliveryMessagesByWireIDOrder: [UUID] = []
-    private static let maximumDeliveryMessagesByWireID = 256
     var asProxy = false
+    /// Audio a play was asked for while a player still lacks its file. Playback starts once
+    /// every player reported it.
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
-    var audioTransferPlayers: [UUID: Set<UUID>] = [:]
     /// Number of retries already attempted per pending audio play, so a
     /// permanently failing export stops retrying instead of resurrecting
     /// itself every `audioPlayRetryDelay` for the rest of the session.
     /// See CODE_AUDIT_17 §3.6.
     var audioPlayRetryAttempts: [UUID: Int] = [:]
+    /// The content version of each map as the players last got it. A map state for another
+    /// content version is preceded by the content: revealing a room changes what the players
+    /// may read of it, and only the content update carries that text.
+    var sentMapContentVersions: [UUID: Int] = [:]
     private var lastAudioListCounters: [UUID: Int] = [:]
     private var lastPhotoListCounters: [UUID: Int] = [:]
     private var lastPdfListCounters: [UUID: Int] = [:]
     private var lastSpaceListCounters: [UUID: Int] = [:]
     private var lastSpaceTransformCounters: [SpaceTransformSequenceKey: Int] = [:]
-    private var playerJournalAdmissions: [PlayerJournalAdmissionKey: GameNetworkModel.JournalFingerprint] = [:]
-    private var playerJournalAdmissionOrder: [PlayerJournalAdmissionKey] = []
-    private static let maximumPlayerJournalAdmissions = 256
-    private var peerAvailabilitySources: [PeerAvailabilitySource] = []
-    private static let maximumPeerAvailabilitySources = 256
-    /// Latest file-backed item versions whose full package already went out in
-    /// the current game. A changed version must be broadcast in full again;
-    /// otherwise a new map is reduced to a reference and unnecessarily falls
-    /// back to a requester-only SharePlay chunk transfer.
-    var sentGameItems: [NetworkModules: [UUID: Int]] = [:]
 
     /// Which Character id each sender is authorized to act on — established
     /// once at that sender's join handshake and enforced on every later
@@ -156,29 +71,6 @@ final class MasterControllerModel {
 
     /// Updates held per sender before the handshake. A Character sheet has a few dozen values.
     static let maximumPendingValueUpdatesPerSender = 32
-
-    /// Last time a full map-recovery bundle (up to three detached full
-    /// `createMapGameData` exports) was served to a given (player, map) pair. A map
-    /// `.reveal`/data-less `.update .generic` request has no per-player rate limit
-    /// otherwise, and distinct message ids defeat the pipeline's own de-duplication,
-    /// so one player could keep the GM re-exporting multi-hundred-MB map packages.
-    /// Not `private` — read/written from `MasterController+MapMessages.swift`, a
-    /// different file. See CODE_AUDIT_17 §6.7.
-    var lastMapRecoveryServed: [MapRecoveryThrottleKey: ContinuousClock.Instant] = [:]
-    /// Full map-recovery bundles served per player across *all* maps, newest last, so a
-    /// player can't bypass the (player, map) cool-down by cycling map ids.
-    /// See CODE_AUDIT_18 §6.1.
-    var mapRecoveryHistory: [UUID: [ContinuousClock.Instant]] = [:]
-    /// Throttled repairs that are served once their throttle window opens, coalesced per
-    /// (player, map), instead of being dropped without an answer. See CODE_AUDIT_18 §6.1.
-    var deferredMapRecoveries: [MapRecoveryThrottleKey: Task<Void, Never>] = [:]
-
-    func cancelDeferredMapRecoveries(for playerId: UUID? = nil) {
-        for (key, task) in deferredMapRecoveries where playerId == nil || key.playerId == playerId {
-            task.cancel()
-            deferredMapRecoveries[key] = nil
-        }
-    }
 
     func deferValueUpdateAwaitingOwnership(_ model: GameNetworkModel) {
         let entryId = GameValueEntryUpdate.decodeData(of: model.data.data)?.entryId
@@ -234,23 +126,6 @@ final class MasterControllerModel {
         pendingValueUpdatesAwaitingOwnership.removeAll()
     }
 
-    func hasSentGameItem(type: NetworkModules, id: UUID, version: Int) -> Bool {
-        sentGameItems[type]?[id] == version
-    }
-
-    func markSentGameItem(type: NetworkModules, id: UUID, version: Int) {
-        sentGameItems[type, default: [:]][id] = version
-    }
-
-    /// Rolls back a reservation `markSentGameItem` made before an export that
-    /// then failed, but only if nothing else has since marked a *newer*
-    /// version sent for the same item — an out-of-order rollback must not
-    /// erase a valid, more recent mark. See CODE_AUDIT_Game §3.9.
-    func unmarkSentGameItem(type: NetworkModules, id: UUID, version: Int) {
-        guard sentGameItems[type]?[id] == version else { return }
-        sentGameItems[type]?[id] = nil
-    }
-
     /// Reserves the next counter atomically. Reading and incrementing in separate
     /// calls lets concurrent sends stamp the same counter, which the receivers'
     /// deduplication then treats as one message.
@@ -259,242 +134,18 @@ final class MasterControllerModel {
         return messageCounter
     }
 
-    @discardableResult
-    func add(
-        connectionId: ConnectionController.ID,
-        playerId: UUID,
-        role: GameType = .player
-    ) -> Bool {
-        guard !retiredConnectionIDs.contains(connectionId) else { return false }
-        if let existingPlayerID = connectIDPlayers[connectionId] {
-            return existingPlayerID == playerId && connectionRoles[connectionId] == role
-        }
-        // A live physical source owns its public UUID until that source is
-        // explicitly retired. A second connection cannot seize the identity.
-        guard !connectIDPlayers.contains(where: { $0.key != connectionId && $0.value == playerId }) else {
-            return false
-        }
-        connectIDPlayers[connectionId] = playerId
-        connectionRoles[connectionId] = role
-        return true
-    }
-
-    /// Binds one physical LAN/SharePlay/proxy connection to one logical sender.
-    /// A connection may reconnect under a new physical ID, but an established
-    /// physical origin cannot change identities mid-stream.
-    func accepts(connectionId: ConnectionController.ID, sender: GameSenderModel) -> Bool {
-        guard !retiredConnectionIDs.contains(connectionId) else { return false }
-        if let existingPlayerId = connectIDPlayers[connectionId] {
-            return existingPlayerId == sender.id && connectionRoles[connectionId] == sender.role
-        }
-        return add(
-            connectionId: connectionId,
-            playerId: sender.id,
-            role: sender.role
-        )
-    }
-
-    /// Compatibility helper for focused model tests and older direct callers.
-    func accepts(connectionId: ConnectionController.ID, playerId: UUID) -> Bool {
-        accepts(
-            connectionId: connectionId,
-            sender: GameSenderModel(id: playerId, role: .player, name: "", characterId: nil)
-        )
-    }
-
-    /// Lifts a prior retirement for exactly the physical ID GroupSession just
-    /// reported as newly active. SharePlay can reissue a departed
-    /// participant's UUID to the same device on rejoin (unlike Bonjour/proxy
-    /// connection IDs, which are always freshly minted); without this, a
-    /// crash-and-relaunch permanently locks that player out because
-    /// `retiredConnectionIDs` never otherwise forgets an ID. Only an
-    /// OS-confirmed `activeParticipants` addition may call this — never a
-    /// claim carried inside message content.
-    func reinstateConnection(_ connectionId: ConnectionController.ID) {
-        retiredConnectionIDs.remove(connectionId)
-    }
-
-    func remove(connectionId: ConnectionController.ID) -> UUID? {
-        retiredConnectionIDs.insert(connectionId)
-        connectionRoles[connectionId] = nil
-        guard let playerId = connectIDPlayers.removeValue(forKey: connectionId) else { return nil }
+    /// Forgets what was kept for a player that left.
+    func forget(playerId: UUID) {
         lastAudioListCounters[playerId] = nil
         lastPhotoListCounters[playerId] = nil
         lastPdfListCounters[playerId] = nil
         lastSpaceListCounters[playerId] = nil
         lastSpaceTransformCounters = lastSpaceTransformCounters.filter { $0.key.playerId != playerId }
-        removePlayerJournalAdmissions(for: playerId)
         // Otherwise a `.valueUpdate` deferred while waiting for this sender's ownership
         // binding stays queued forever once the sender disconnects before that binding
         // ever lands, and would incorrectly replay against a future, unrelated sender
         // that reuses the same id. See CODE_AUDIT_17 §5.25.
         pendingValueUpdatesAwaitingOwnership.removeValue(forKey: playerId)
-        lastMapRecoveryServed = lastMapRecoveryServed.filter { $0.key.playerId != playerId }
-        mapRecoveryHistory[playerId] = nil
-        cancelDeferredMapRecoveries(for: playerId)
-        for index in peerAvailabilitySources.indices {
-            peerAvailabilitySources[index].pendingRecipients.remove(playerId)
-        }
-        peerAvailabilitySources.removeAll { $0.pendingRecipients.isEmpty }
-        return playerId
-    }
-
-    @discardableResult
-    func admitPlayerJournalMetadata(_ model: GameNetworkModel) -> Bool {
-        guard model.isPlayerJournalAdmissionMetadata,
-              let messageId = model.messageID
-        else { return false }
-
-        let key = PlayerJournalAdmissionKey(
-            senderId: model.sender.id,
-            messageId: messageId
-        )
-        let admission = GameNetworkModel.JournalFingerprint(model)
-        if let existing = playerJournalAdmissions[key] {
-            // Never let a copied sender/message ID replace the first
-            // physically attributed Journal fingerprint.
-            return existing == admission
-        }
-        playerJournalAdmissionOrder.append(key)
-        playerJournalAdmissions[key] = admission
-        while playerJournalAdmissionOrder.count > Self.maximumPlayerJournalAdmissions {
-            playerJournalAdmissions[playerJournalAdmissionOrder.removeFirst()] = nil
-        }
-        return true
-    }
-
-    func acceptsPlayerJournal(_ model: GameNetworkModel) -> Bool {
-        guard model.isPlayerFilePresentationEvent,
-              let messageId = model.messageID
-        else { return false }
-
-        let key = PlayerJournalAdmissionKey(
-            senderId: model.sender.id,
-            messageId: messageId
-        )
-        return playerJournalAdmissions[key] == GameNetworkModel.JournalFingerprint(model)
-    }
-
-    func resetPlayerJournalAdmissions() {
-        playerJournalAdmissions.removeAll()
-        playerJournalAdmissionOrder.removeAll()
-        deferredPlayerJournalFiles.removeAll()
-        deferredPlayerJournalFileOrder.removeAll()
-    }
-
-    private func removePlayerJournalAdmissions(for playerId: UUID) {
-        playerJournalAdmissions = playerJournalAdmissions.filter {
-            $0.key.senderId != playerId
-        }
-        playerJournalAdmissionOrder.removeAll { $0.senderId == playerId }
-        deferredPlayerJournalFiles = deferredPlayerJournalFiles.filter {
-            $0.key.senderId != playerId
-        }
-        deferredPlayerJournalFileOrder.removeAll { $0.senderId == playerId }
-    }
-
-    /// A player Journal file event whose admission couldn't yet be confirmed
-    /// — the matching Messenger admission metadata (see
-    /// `admitPlayerJournalMetadata`) hadn't arrived yet. GroupSessionJournal
-    /// attachments and GroupSessionMessenger messages are independent
-    /// channels with no cross-channel ordering guarantee, so this is held
-    /// and replayed once the matching admission lands, instead of the file
-    /// being lost permanently. See CODE_AUDIT_Network §5.16.
-    private var deferredPlayerJournalFiles: [PlayerJournalAdmissionKey: GameNetworkModel] = [:]
-    private var deferredPlayerJournalFileOrder: [PlayerJournalAdmissionKey] = []
-    private static let maximumDeferredPlayerJournalFiles = 64
-
-    func deferUnmatchedPlayerJournalFile(_ model: GameNetworkModel) {
-        guard let messageId = model.messageID else { return }
-        let key = PlayerJournalAdmissionKey(senderId: model.sender.id, messageId: messageId)
-        if deferredPlayerJournalFiles[key] == nil {
-            deferredPlayerJournalFileOrder.append(key)
-            while deferredPlayerJournalFileOrder.count > Self.maximumDeferredPlayerJournalFiles {
-                deferredPlayerJournalFiles[deferredPlayerJournalFileOrder.removeFirst()] = nil
-            }
-        }
-        deferredPlayerJournalFiles[key] = model
-    }
-
-    /// Removes and returns a deferred player Journal file event matching
-    /// `senderId`/`messageId`, if any. Call once `admitPlayerJournalMetadata`
-    /// newly records a matching admission.
-    func takeDeferredPlayerJournalFile(senderId: UUID, messageId: UUID?) -> GameNetworkModel? {
-        guard let messageId else { return nil }
-        let key = PlayerJournalAdmissionKey(senderId: senderId, messageId: messageId)
-        guard let model = deferredPlayerJournalFiles.removeValue(forKey: key) else { return nil }
-        deferredPlayerJournalFileOrder.removeAll { $0 == key }
-        return model
-    }
-
-    func trackDelivery(wireID: UUID, counter: Int) -> GameDeliveryMessageID {
-        let messageID = GameDeliveryMessageID(
-            sessionID: deliverySessionID,
-            counter: counter
-        )
-        deliveryMessagesByWireID[wireID] = messageID
-        // Bounded FIFO, mirroring `playerJournalAdmissions`/`peerAvailabilitySources`: this
-        // gets a new entry for nearly every outgoing master message, so over a long-running
-        // session it would otherwise grow indefinitely. See CODE_AUDIT §5.20.
-        deliveryMessagesByWireIDOrder.append(wireID)
-        while deliveryMessagesByWireIDOrder.count > Self.maximumDeliveryMessagesByWireID {
-            deliveryMessagesByWireID[deliveryMessagesByWireIDOrder.removeFirst()] = nil
-        }
-        return messageID
-    }
-
-    func deliveryMessageID(replyingTo wireID: UUID) -> GameDeliveryMessageID? {
-        deliveryMessagesByWireID[wireID]
-    }
-
-    func resetDeliveryMessages() {
-        deliveryMessagesByWireID.removeAll()
-        deliveryMessagesByWireIDOrder.removeAll()
-    }
-
-    func trackPeerAvailabilitySource(
-        _ model: GameNetworkModel,
-        recipients: Set<UUID>
-    ) {
-        // The presenting player was already required to report the canonical
-        // asset before its event was accepted. Only the other recipients need
-        // to prove that this peer-origin transfer reached them.
-        let pendingRecipients = recipients.subtracting([model.sender.id])
-        guard model.isPlayerFilePresentationEvent, !pendingRecipients.isEmpty else {
-            return
-        }
-        let source = PeerAvailabilitySource(model, recipients: pendingRecipients)
-        guard !peerAvailabilitySources.contains(where: {
-            $0.identifiesSamePresentation(as: source)
-        }) else { return }
-        peerAvailabilitySources.append(source)
-        while peerAvailabilitySources.count > Self.maximumPeerAvailabilitySources {
-            peerAvailabilitySources.removeFirst()
-        }
-    }
-
-    func acceptsPeerAvailabilityReceipt(_ model: GameNetworkModel) -> Bool {
-        guard model.subType == .ok,
-              let index = peerAvailabilitySources.firstIndex(where: {
-                  $0.pendingRecipients.contains(model.sender.id) &&
-                      $0.matches(model)
-              })
-        else { return false }
-
-        peerAvailabilitySources[index].pendingRecipients.remove(model.sender.id)
-        if peerAvailabilitySources[index].pendingRecipients.isEmpty {
-            peerAvailabilitySources.remove(at: index)
-        }
-        return true
-    }
-
-    /// Test affordance. See CODE_AUDIT_Game §9.22.
-    var trackedPeerAvailabilitySourceCount: Int {
-        peerAvailabilitySources.count
-    }
-
-    func resetPeerAvailabilitySources() {
-        peerAvailabilitySources.removeAll()
     }
 
     func canApplyAudioList(from playerId: UUID, counter: Int) -> Bool {

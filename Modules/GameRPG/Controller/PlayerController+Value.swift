@@ -60,7 +60,6 @@ extension PlayerController {
             type: .update,
             subType: .store,
             updated: package,
-            useJournal: false,
             relayToProxyClients: false
         )
         return nil

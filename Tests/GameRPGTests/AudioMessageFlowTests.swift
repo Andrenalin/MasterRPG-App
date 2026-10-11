@@ -73,7 +73,6 @@ extension MultiConnectionAudioTests {
         _ = try await env.master.handleAudio(
             Self.audioReport(from: env.player1Root, availableIds: [audioId], counter: 2)
         )
-        env.master.gameModel.audioTransferPlayers[audioId] = [env.player1Config.id]
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When
@@ -87,7 +86,6 @@ extension MultiConnectionAudioTests {
         // Then
         #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline)
         #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
-        #expect(env.master.gameModel.audioTransferPlayers[audioId] == Set([env.player1Config.id]))
     }
 
     @Test("Malformed audio report is ignored and does not advance its counter")
@@ -107,7 +105,6 @@ extension MultiConnectionAudioTests {
                 data: Data([0xFF])
             )
         )
-        env.master.gameModel.audioTransferPlayers[audioId] = [env.player1Config.id]
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When
@@ -116,7 +113,6 @@ extension MultiConnectionAudioTests {
         // Then
         #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline)
         #expect(!env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
-        #expect(env.master.gameModel.audioTransferPlayers[audioId] == Set([env.player1Config.id]))
 
         // When - A valid lower counter follows the malformed packet.
         _ = try await env.master.handleAudio(
@@ -152,7 +148,7 @@ extension MultiConnectionAudioTests {
         #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId) == [env.player1Config.id])
     }
 
-    @Test("Play waits and publishes one journaled audio repair")
+    @Test("Play waits and names the audio once for the players that lack it")
     func playWaitsForMissingPlayers() async throws {
         // Given
         let env = try await Self.preparedEnvironment()
@@ -178,8 +174,9 @@ extension MultiConnectionAudioTests {
         #expect(transfer.subType == .show)
         #expect(transfer.targetId == nil)
         #expect(transfer.data.id == audioId)
-        #expect(transfer.data.data != nil)
-        #expect(MasterController.usesFileJournal(for: transfer))
+        // The file itself goes to the connection of the player that lacks it; see
+        // `SimpleFileFlowTests.audioIsDeliveredBeforeItPlays()`.
+        #expect(transfer.data.data == nil)
         #expect(env.masterRoot.audioRoot.audioController.model.currentId == nil)
     }
 
@@ -208,10 +205,6 @@ extension MultiConnectionAudioTests {
             .filter { $0.type == .store && $0.subType == .show && $0.data.id == audioId }
         #expect(repairs.count == 1)
         #expect(repairs.first?.targetId == nil)
-        #expect(env.master.gameModel.audioTransferPlayers[audioId] == Set([
-            env.player2Config.id,
-            env.player3Config.id
-        ]))
     }
 
     @Test("Last successful receipt starts pending play without publishing another list")
@@ -230,7 +223,12 @@ extension MultiConnectionAudioTests {
             actionType: .playAudio
         )
         let transfer = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
-        let receipt = try #require(try await env.player2.handleAudio(transfer))
+        // The player lacks the audio: it asks, gets the file and acknowledges it.
+        let request = try #require(try await env.player2.handleAudio(transfer))
+        #expect(request.isAssetRequest)
+        var delivery = transfer
+        delivery.data = try #require(try await env.master.handleAudio(request))
+        let receipt = try #require(try await env.player2.handleAudio(delivery))
         #expect(receipt.subType == .ok)
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
@@ -370,28 +368,6 @@ extension MultiConnectionAudioTests {
             .compactMap { $0 as? GameNetworkModel }
         #expect(sent.map(\.subType) == [.audioList])
         #expect(env.masterRoot.audioRoot.audioController.model.currentId == nil)
-    }
-
-    @Test("Player full audio upload uses journal but play request does not")
-    func playerUploadJournalPolicy() async throws {
-        // Given
-        let audioId = UUID()
-        let fullAudio = NetworkCodableDataType(
-            id: audioId,
-            type: .audio,
-            version: 1,
-            data: Data([0x01])
-        )
-        let play = NetworkCodableDataType(
-            id: audioId,
-            type: .audio,
-            version: 1,
-            data: AudioPlayRequest(id: audioId, shouldPlay: true).encodeData()
-        )
-
-        // Then
-        #expect(PlayerController.usesFileJournal(type: .update, subType: .generic, data: fullAudio))
-        #expect(!PlayerController.usesFileJournal(type: .update, subType: .playAudio, data: play))
     }
 
     @Test("Player ignores peer play request and accepts master play command")

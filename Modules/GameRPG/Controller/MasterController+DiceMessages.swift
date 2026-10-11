@@ -20,10 +20,7 @@ extension MasterController {
     func handleDice(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         guard model.subType != .ok && model.subType != .failed else { return nil }
         if model.senderType == .observer {
-            guard model.purpose == .assetRequest,
-                  model.data.data == nil,
-                  model.type == .reveal || model.type == .store
-            else { return nil }
+            guard model.isAssetRequest else { return nil }
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         }
 
@@ -35,8 +32,8 @@ extension MasterController {
                 Logger.networking.debug("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — dicePlayers feature is off")
                 return nil
             }
-            guard model.sender.isMaster || model.isPlayerDiceGroupEvent else {
-                Logger.networking.debug("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), purpose: \(String(describing: model.purpose), privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
+            guard model.sender.isMaster || (model.isPlayerGroupEvent && model.isDiceRollEvent) else {
+                Logger.networking.debug("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
                 return nil
             }
             // A player's report is not authoritative: refuse values no dice can produce.

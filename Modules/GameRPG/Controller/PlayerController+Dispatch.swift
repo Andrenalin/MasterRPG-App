@@ -19,8 +19,7 @@ import SpaceRPG
 extension PlayerController {
     func handle(
         _ model: GameNetworkModel,
-        usesSharePlayPlaybackCoordination: Bool = false,
-        locallyMirroredProxyPresentation: Bool = false
+        usesSharePlayPlaybackCoordination: Bool = false
     ) async throws -> GameNetworkModel? {
         switch model.data.type {
         case .none, .game, .rule, .setting, .editor, .generator, .search:
@@ -35,15 +34,9 @@ extension PlayerController {
         case .dice:
             return try await handleDice(model)
         case .pdf:
-            return try await handlePdf(
-                model,
-                locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
-            )
+            return try await handlePdf(model)
         case .photo:
-            return try await handlePhoto(
-                model,
-                locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
-            )
+            return try await handlePhoto(model)
         case .map:
             return try await handleMap(model)
         case .table:
@@ -53,10 +46,7 @@ extension PlayerController {
         case .value:
             return try await handleValue(model)
         case .space:
-            return try await handleSpace(
-                model,
-                locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
-            )
+            return try await handleSpace(model)
         @unknown default:
             Logger.networking.error("PlayerController: Received unsupported module \(model.data.type.token, privacy: .public); ignoring.")
             return nil
@@ -66,75 +56,55 @@ extension PlayerController {
     func handleAdventure(_ model: GameNetworkModel) -> GameNetworkModel? {
         nil
     }
-
-    /// Shared by every module's `retryDeferredXReveals`: whether a deferred reveal still
-    /// matches the master's latest presentation intent before applying it late.
-    func deferredPresentationIsCurrent(_ model: GameNetworkModel) async -> Bool {
-        gameModel.shouldProcessPresentation(
-            from: model.masterId,
-            senderID: model.sender.id,
-            module: model.data.type,
-            itemId: model.data.id,
-            version: model.data.version,
-            counter: model.counter,
-            timestamp: model.timestamp,
-            isRepair: false
-        )
-    }
 }
 
 // MARK: - Response building
 
 extension PlayerController {
+    /// Answers a master message with its own counter: `.ok` or `.failed`, or, with
+    /// `requestData`, the message echoed back without bytes, which asks the master for the
+    /// item it named.
+    ///
+    /// Only a reference is answered with a request. A package that arrived and still left the
+    /// item unusable (the master could not read its own file, for example) is answered with
+    /// `.failed`: asking again would bring the same bytes, without end.
     nonisolated func response(
         for model: GameNetworkModel,
         isSuccess: Bool,
-        requestData: Bool,
-        requestedVersion: Int? = nil
+        requestData: Bool
     ) async -> GameNetworkModel {
-        let subType: RPGMessageActionType = requestData ? model.subType : (isSuccess ? .ok : .failed)
-        // A "please send more" request only needs to name the item: the master
-        // rebuilds the payload from `data.id` via createGameData and never reads
-        // these bytes. Echoing `model.data` verbatim used to re-upload whatever
-        // we just received — e.g. a map that's merely short its background photo
-        // sent its whole multi-MB self straight back upstream over the slow,
-        // small-message-oriented player→master path, for nothing.
-        let preservesAssetVersion = model.data.type == .photo ||
+        let asksForData = requestData && model.data.data == nil
+        let subType: RPGMessageActionType = if asksForData {
+            model.subType
+        } else {
+            isSuccess && !requestData ? .ok : .failed
+        }
+        let requestData = asksForData
+        // Only the item is named: the master builds the package itself. Echoing the
+        // received data would send a map that merely lacks its background straight back.
+        // The file-backed modules keep the versions they answer for, which the master
+        // compares with its own before it records the item as available.
+        let keepsVersion = requestData ||
+            model.data.type == .photo ||
             model.data.type == .pdf ||
             model.data.type == .space ||
             model.data.type == .map ||
             model.data.type == .table ||
             model.data.type == .weather
-        let version = if requestData {
-            requestedVersion ?? model.data.version
-        } else if preservesAssetVersion {
-            model.data.version
-        } else {
-            0
-        }
         let payload = NetworkCodableDataType(
             id: model.data.id,
             type: model.data.type,
-            version: version,
+            version: keepsVersion ? model.data.version : 0,
             data: nil,
-            assetVersion: preservesAssetVersion && requestedVersion == nil ? model.data.assetVersion : nil,
-            contentVersion: preservesAssetVersion ? model.data.contentVersion : nil
+            assetVersion: keepsVersion ? model.data.assetVersion : nil,
+            contentVersion: keepsVersion ? model.data.contentVersion : nil
         )
-        // Echo the counter of the message being answered (same precedent as the
-        // mapState re-request below) instead of minting a fresh one. The pipeline
-        // already deduplicates the incoming trigger, so this stays exactly-once;
-        // it also lets the master's message log match the ack back to the row it
-        // created for the original send — with a fresh counter here that link
-        // was counter-space garbage and the log's delivery indicator could never
-        // leave "missing players", on every transport, not just file sharing.
         return await root.gameModel.outgoingMessage(
-            replyToMessageID: model.messageID,
             counter: model.counter,
             proxyCounter: model.proxyCounter,
             type: model.type,
             subType: subType,
             asMaster: false,
-            purpose: requestData ? .assetRequest : .event,
             data: payload
         )
     }

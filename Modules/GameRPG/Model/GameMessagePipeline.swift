@@ -58,7 +58,6 @@ enum GameMessageOrigin: Hashable, Sendable {
 }
 
 struct GameMessageKey: Hashable, Sendable {
-    let messageID: UUID?
     let senderId: UUID
     let counter: Int
     let proxyCounter: Int
@@ -67,14 +66,12 @@ struct GameMessageKey: Hashable, Sendable {
     let dataId: UUID
     let dataType: NetworkModules
     let dataVersion: Int
-    let purpose: GameMessagePurpose
-    /// A metadata-only delivery (failed journal transfer) and the later full
-    /// payload share every other field — payload presence keeps the real bytes
-    /// from being dropped as a duplicate.
+    let targetId: UUID?
+    /// The reference and the package of one show share every other field: payload presence
+    /// keeps the bytes from being dropped as a duplicate of the reference.
     let hasData: Bool
 
     init(model: GameNetworkModel) {
-        messageID = model.messageID
         senderId = model.sender.id
         counter = model.counter
         proxyCounter = model.proxyCounter
@@ -83,7 +80,7 @@ struct GameMessageKey: Hashable, Sendable {
         dataId = model.data.id
         dataType = model.data.type
         dataVersion = model.data.version
-        purpose = model.purpose
+        targetId = model.targetId
         hasData = model.data.data != nil
     }
 }
@@ -106,10 +103,7 @@ struct GameMessageEvent: Sendable {
     }
 
     var deduplicationKey: GameMessageKey? {
-        guard model.subType != .ok,
-              model.subType != .failed
-        else { return nil }
-        guard model.messageID != nil || model.counter > 0 else { return nil }
+        guard !model.isAcknowledgement, model.counter > 0 else { return nil }
         return GameMessageKey(model: model)
     }
 }

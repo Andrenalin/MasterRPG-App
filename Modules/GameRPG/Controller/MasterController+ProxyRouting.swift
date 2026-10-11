@@ -58,8 +58,7 @@ extension MasterController {
 
         if model.data.type == .map,
            model.type == .update,
-           model.subType == .mapPin,
-           model.purpose == .event {
+           model.subType == .mapPin {
             // Update the host's own map first, then tell the master.
             let hostId = root.gameModel.gameConfig.id
             guard root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
@@ -78,8 +77,7 @@ extension MasterController {
 
         if model.data.type == .space,
            model.type == .update,
-           model.subType == .spaceTransform,
-           model.purpose == .event {
+           model.subType == .spaceTransform {
             guard root.gameModel.gameControl.features.spaceSharing,
                   root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
                   await root.spaceRoot.gameControllable.networkVersion(for: model.data.id) == model.data.effectiveAssetVersion,
@@ -96,25 +94,7 @@ extension MasterController {
             return true
         }
 
-        if model.purpose == .event,
-           model.type == .reveal,
-           model.subType == .show,
-           (model.data.type == .photo || model.data.type == .pdf || model.data.type == .space) {
-            guard let playerController = root.gameModel.playerController else {
-                await remapUpstream(model)
-                return true
-            }
-            // One host envelope drives all three destinations: upstream, the
-            // co-located player, and sibling mirrors. Excluding the source
-            // connection prevents an echo receipt from the initiating mirror.
-            await playerController.relayProxyPresentation(
-                model,
-                excludingProxyConnection: connectionId
-            )
-            return true
-        }
-
-        if model.purpose == .assetRequest {
+        if model.isAssetRequest {
             if await canServeProxyRequest(for: model.data) {
                 do {
                     // Serve from the host's own game memory — local network is
@@ -129,8 +109,8 @@ extension MasterController {
                             type: model.type,
                             subtype: model.subType,
                             updated: requestedData,
+                            counter: model.counter > 0 ? model.counter : nil,
                             connectionId: connectionId,
-                            playerId: model.sender.id,
                             authoritativeMaster: true
                         )
                     }
@@ -184,11 +164,11 @@ extension MasterController {
         // broadcast the request back to that same proxy (or its siblings),
         // otherwise every mirror can request the same missing payload again.
         await playerController.send(
+            counter: model.isAssetRequest ? model.counter : nil,
             type: model.type,
             subType: model.subType,
             updated: model.data,
-            relayToProxyClients: false,
-            purpose: model.purpose
+            relayToProxyClients: false
         )
     }
 

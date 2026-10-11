@@ -138,7 +138,6 @@ struct PlayerControllerTests {
 
         // Act & Assert - Handle photo with full data
         var gameNetworkModel = GameNetworkModel(
-            version: 1,
             counter: 1,
             proxyCounter: 0,
             type: .reveal,
@@ -159,7 +158,6 @@ struct PlayerControllerTests {
         env.root.photoRoot.itemControllable.itemDataModel.resetModel(id: itemId)
 
         gameNetworkModel = GameNetworkModel(
-            version: 1,
             counter: 1,
             proxyCounter: 0,
             type: .reveal,
@@ -173,7 +171,6 @@ struct PlayerControllerTests {
 
         // Act & Assert - Handle with data again
         gameNetworkModel = GameNetworkModel(
-            version: 1,
             counter: 1,
             proxyCounter: 0,
             type: .reveal,
@@ -203,7 +200,6 @@ struct PlayerControllerTests {
         // A map's pin photo arrives as a store. It is the first cached photo of the game, so
         // it becomes the module's current item — but nobody asked to show it.
         _ = try await env.playerController.handle(GameNetworkModel(
-            version: 1,
             counter: 1,
             proxyCounter: 0,
             type: .store,
@@ -216,7 +212,6 @@ struct PlayerControllerTests {
         #expect(env.playerController.gameModel.gameUpdateType != .photo)
 
         let result = try await env.playerController.handle(GameNetworkModel(
-            version: 1,
             counter: 2,
             proxyCounter: 0,
             type: .reveal,
@@ -230,170 +225,6 @@ struct PlayerControllerTests {
 
         await env.root.photoRoot.gameControllable.reset()
         #expect(env.root.photoRoot.photoGameControllable.presentedPhotoId == nil)
-    }
-
-    @Test("Player photo share chooses baseline request, master delivery, then reference from availability")
-    func playerPhotoShareUsesAvailability() async throws {
-        let env = try await PlayerControllerTestEnvironment.create()
-        try await MockRoot.importTestData(
-            into: env.root.adventureRoot,
-            name: ResourcesDebug.photoTestData,
-            itemCounter: 0
-        )
-        env.root.adventureRoot.startGame()
-
-        let photoId = try #require(env.root.photoRoot.itemController.itemDataModel.items.first {
-            env.root.photoRoot.itemController.itemSync(for: $0)?.fileUrl != nil
-        })
-        let photoData = try await env.root.photoRoot.gameControllable.createGameData(for: photoId)
-        let playerId = env.gameConfig.id
-        let masterId = UUID()
-        let missingPlayerId = UUID()
-        let baseline = photoData.effectiveAssetVersion
-
-        env.root.gameModel.reset(
-            gameConfig: GameConfigModel(
-                id: playerId,
-                state: .started,
-                master: MasterGameModel(id: masterId, type: .master, name: "Game Master")
-            ),
-            gameRoster: GameRosterModel(players: [
-                PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")
-            ])
-        )
-
-        // An absent/mismatched player report is only a request for the
-        // master's canonical baseline; player bytes must not be uploaded.
-        let newerMasterBaseline = baseline + 1
-        env.root.photoRoot.photoGameControllable.setMasterVersion(
-            itemId: photoId,
-            version: newerMasterBaseline,
-            masterId: masterId
-        )
-        await env.playerController.game(message: photoData, actionType: .generic)
-
-        var sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sent.type == .reveal)
-        #expect(sent.subType == .show)
-        #expect(sent.data.id == photoId)
-        #expect(sent.data.effectiveAssetVersion == newerMasterBaseline)
-        #expect(sent.data.data == nil)
-        #expect(sent.usesFileJournal == false)
-
-        // Once the sender has the exact master version, it never uploads the
-        // bytes: while a participant is still missing the photo, it asks the
-        // master alone, which broadcasts its canonical copy.
-        env.root.photoRoot.photoGameControllable.setMasterVersion(
-            itemId: photoId,
-            version: baseline,
-            masterId: masterId
-        )
-        env.root.photoRoot.photoGameControllable.markPhotoAvailable(
-            itemId: photoId,
-            version: baseline,
-            for: [masterId, playerId],
-            masterId: masterId
-        )
-        env.root.photoRoot.gameControllable.gameModel.currentPlayers = [masterId, playerId, missingPlayerId]
-        await env.playerController.game(message: photoData, actionType: .generic)
-
-        sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sent.type == .update)
-        #expect(sent.subType == .generic)
-        #expect(sent.effectiveAudience == .master)
-        #expect(sent.data.effectiveAssetVersion == baseline)
-        #expect(sent.data.data == nil)
-        #expect(sent.usesFileJournal == false)
-        #expect(!env.root.photoRoot.photoGameControllable.isPhotoAvailable(
-            itemId: photoId,
-            for: missingPlayerId,
-            masterId: masterId
-        ))
-
-        // The master's broadcast marks the current roster available, so the
-        // next share presents the canonical reference to the group.
-        env.root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
-            itemId: photoId,
-            version: baseline,
-            masterId: masterId
-        )
-        await env.playerController.game(message: photoData, actionType: .generic)
-
-        sent = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
-        #expect(sent.type == .reveal)
-        #expect(sent.subType == .show)
-        #expect(sent.data.effectiveAssetVersion == baseline)
-        #expect(sent.data.data == nil)
-        #expect(sent.usesFileJournal == false)
-    }
-
-    @Test("Player defers photo reveal without authoritative availability")
-    func playerDefersPhotoRevealWithoutAuthoritativeAvailability() async throws {
-        // Arrange
-        let env = try await PlayerControllerTestEnvironment.create()
-        try await MockRoot.importTestData(into: env.root.adventureRoot)
-        env.root.adventureRoot.startGame()
-
-        let photoId = try #require(env.root.photoRoot.itemControllable.itemDataModel.items.first)
-        let photoData = try await env.root.photoRoot.gameControllable.createGameData(for: photoId)
-        let masterId = UUID()
-        env.playerController.gameModel.gameUpdateType = .map
-        #expect(env.root.photoRoot.gameControllable.gameModel.currentItemId == nil)
-
-        let playerMessage = Self.networkModel(
-            type: .reveal,
-            data: photoData,
-            gameConfig: Self.playerConfig(masterId: masterId)
-        )
-
-        // Act
-        let response = try await env.playerController.handle(playerMessage)
-
-        // Assert
-        #expect(response == nil)
-        #expect(env.playerController.gameModel.deferredPhotoReveals(from: masterId).count == 1)
-        #expect(env.playerController.gameModel.gameUpdateType == .map)
-        #expect(env.root.photoRoot.gameControllable.gameModel.currentItemId == nil)
-    }
-
-    @Test("SharePlay audio store completes a pending reveal and can play")
-    func sharePlayAudioStoreCompletesPendingRevealAndCanPlay() async throws {
-        // Arrange
-        let env = try await PlayerControllerTestEnvironment.create()
-        try await MockRoot.importTestData(into: env.root.adventureRoot)
-        try await MockRoot.importTestData(
-            into: env.root.adventureRoot,
-            name: ResourcesDebug.audioTestData,
-            itemCounter: 3
-        )
-        env.root.adventureRoot.startGame()
-
-        let audioId = try #require(env.root.audioRoot.itemController.itemDataModel.items.last)
-        let audioData = try await env.root.audioRoot.gameControllable.createGameData(for: audioId)
-        let audioReference = await env.root.audioRoot.gameControllable.share(id: audioId)
-        await env.root.audioRoot.gameControllable.reset()
-        env.root.audioRoot.itemController.itemDataModel.resetModel(id: audioId)
-        let masterConfig = Self.masterConfig()
-
-        let reveal = Self.networkModel(type: .reveal, data: audioReference, gameConfig: masterConfig)
-        let store = Self.networkModel(type: .store, subType: .show, data: audioData, gameConfig: masterConfig)
-
-        // Act
-        let request = try await env.playerController.handle(reveal)
-        let acknowledgment = try await env.playerController.handle(store)
-
-        let playData = env.root.audioRoot.gameController.requestPlay(id: audioId)
-        let play = Self.networkModel(type: .update, subType: .playAudio, data: playData, gameConfig: masterConfig)
-        _ = try await env.playerController.handle(play)
-
-        // Assert
-        #expect(request?.subType == .show)
-        #expect(acknowledgment?.subType == .ok)
-        #expect(env.playerController.gameModel.pendingAudioRequests.isEmpty)
-        #expect(await env.root.audioRoot.gameControllable.currentId == audioId)
-        #expect(await env.root.audioRoot.gameControllable.hasLocalFileData(for: audioId))
-        #expect(env.root.audioRoot.audioController.model.playList.map(\.id) == [audioId])
-        #expect(env.root.audioRoot.audioController.model.currentId == audioId)
     }
 
     @Test("Character join advertises metadata and sends the full package only when requested")
@@ -423,7 +254,6 @@ struct PlayerControllerTests {
         #expect(reference.data.id == characterId)
         #expect(reference.data.version == expectedVersion)
         #expect(reference.data.data == nil)
-        #expect(!PlayerController.usesFileJournal(for: reference))
         #expect(sut.gameModel.hasSendPlayer)
 
         // When: the master requests the mismatched package.
@@ -445,7 +275,6 @@ struct PlayerControllerTests {
         #expect(package.data.id == characterId)
         #expect(package.data.version == reference.data.version)
         #expect(package.data.data != nil)
-        #expect(!PlayerController.usesFileJournal(for: package))
 
         // Legacy master presentation and generic-update flows are ignored.
         let legacyReveal = Self.networkModel(
@@ -580,11 +409,11 @@ struct PlayerControllerTests {
         #expect(sut.gameModel.gameUpdateType == .none)
     }
 
-    @Test("Event timestamp admission accepts legacy and bounded wall clocks")
+    @Test("Event timestamp admission accepts bounded wall clocks only")
     func eventTimestampAdmissionBoundsFutureClockSkew() {
         let now: TimeInterval = 10_000
 
-        #expect(GameNetworkModel.acceptsEventTimestamp(0, now: now))
+        #expect(!GameNetworkModel.acceptsEventTimestamp(0, now: now))
         #expect(GameNetworkModel.acceptsEventTimestamp(now, now: now))
         #expect(GameNetworkModel.acceptsEventTimestamp(
             now + GameNetworkModel.maximumFutureEventTimestampSkew,
@@ -597,292 +426,6 @@ struct PlayerControllerTests {
         #expect(!GameNetworkModel.acceptsEventTimestamp(-1, now: now))
         #expect(!GameNetworkModel.acceptsEventTimestamp(.nan, now: now))
         #expect(!GameNetworkModel.acceptsEventTimestamp(.infinity, now: now))
-    }
-
-    @Test("Rejected future presentation cannot poison last-wins ordering")
-    func futurePresentationTimestampDoesNotPoisonOrdering() {
-        let model = PlayerControllerModel()
-        let masterId = UUID()
-        let futureItemId = UUID()
-        let validItemId = UUID()
-        let now = Date.now.timeIntervalSince1970
-
-        let acceptedFuture = model.shouldProcessPresentation(
-            from: masterId,
-            module: .photo,
-            itemId: futureItemId,
-            version: 1,
-            counter: 100,
-            timestamp: now + GameNetworkModel.maximumFutureEventTimestampSkew + 1,
-            isRepair: false
-        )
-        let acceptedValid = model.shouldProcessPresentation(
-            from: masterId,
-            module: .photo,
-            itemId: validItemId,
-            version: 1,
-            counter: 1,
-            timestamp: now,
-            isRepair: false
-        )
-        let acceptedOlderItem = model.shouldProcessPresentation(
-            from: masterId,
-            module: .photo,
-            itemId: futureItemId,
-            version: 1,
-            counter: 101,
-            timestamp: now - 1,
-            isRepair: false
-        )
-
-        #expect(!acceptedFuture)
-        #expect(acceptedValid)
-        #expect(!acceptedOlderItem)
-    }
-
-    @Test("Master canonical presentation wins equal-time player conflicts without comparing counters")
-    func masterCanonicalPresentationWinsEqualTimePlayerConflict() {
-        // Given
-        let model = PlayerControllerModel()
-        let masterId = UUID()
-        let playerId = UUID()
-        let playerItemId = UUID()
-        let masterItemId = UUID()
-        let laterPlayerItemId = UUID()
-        let timestamp = Date.now.timeIntervalSince1970
-
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .photo,
-            itemId: playerItemId,
-            version: 1,
-            counter: 10_000,
-            timestamp: timestamp,
-            isRepair: false
-        ))
-
-        // When / Then - the master's counter belongs to a different sequence;
-        // its equal timestamp and canonical authority decide the conflict.
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: masterId,
-            module: .photo,
-            itemId: masterItemId,
-            version: 2,
-            counter: 1,
-            timestamp: timestamp,
-            isRepair: false
-        ))
-        #expect(!model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .photo,
-            itemId: playerItemId,
-            version: 1,
-            counter: 20_000,
-            timestamp: timestamp,
-            isRepair: false
-        ))
-
-        // A genuinely later player presentation still follows last-wins. A
-        // canonical master relay then wins even with a slightly smaller clock:
-        // arrival supplies the causal edge across independently skewed devices.
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .photo,
-            itemId: laterPlayerItemId,
-            version: 3,
-            counter: 2,
-            timestamp: timestamp + 1,
-            isRepair: false
-        ))
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: masterId,
-            module: .photo,
-            itemId: masterItemId,
-            version: 2,
-            counter: 30_000,
-            timestamp: timestamp + 0.5,
-            isRepair: false
-        ))
-
-        // Once master intent is established, an equal/older player envelope
-        // cannot roll it back, but a truly later one remains last-wins.
-        #expect(!model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .photo,
-            itemId: laterPlayerItemId,
-            version: 3,
-            counter: 40_000,
-            timestamp: timestamp + 0.5,
-            isRepair: false
-        ))
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .photo,
-            itemId: laterPlayerItemId,
-            version: 3,
-            counter: 3,
-            timestamp: timestamp + 2,
-            isRepair: false
-        ))
-    }
-
-    @Test("Modern cross-sender intent supersedes legacy state and legacy player data cannot replace master intent")
-    func modernIntentSupersedesLegacyCrossSenderState() {
-        // Given
-        let model = PlayerControllerModel()
-        let masterId = UUID()
-        let playerId = UUID()
-        let legacyPlayerItemId = UUID()
-        let masterItemId = UUID()
-        let timestamp = Date.now.timeIntervalSince1970
-
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .pdf,
-            itemId: legacyPlayerItemId,
-            version: 4,
-            counter: 50_000,
-            timestamp: 0,
-            isRepair: false
-        ))
-
-        // When / Then - a modern master intent is not blocked by the unrelated
-        // high player counter because cross-sender counters are incomparable.
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: masterId,
-            module: .pdf,
-            itemId: masterItemId,
-            version: 5,
-            counter: 1,
-            timestamp: timestamp,
-            isRepair: false
-        ))
-        #expect(!model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .pdf,
-            itemId: legacyPlayerItemId,
-            version: 4,
-            counter: 100_000,
-            timestamp: 0,
-            isRepair: false
-        ))
-
-        // Matching legacy bytes remain useful as a delayed payload, but do not
-        // replace the retained modern master intent.
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .pdf,
-            itemId: masterItemId,
-            version: 5,
-            counter: 100_001,
-            timestamp: 0,
-            isRepair: false
-        ))
-        #expect(!model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .pdf,
-            itemId: legacyPlayerItemId,
-            version: 4,
-            counter: 100_002,
-            timestamp: 0,
-            isRepair: false
-        ))
-
-        // The rule is causal rather than role-only: a modern player event also
-        // supersedes legacy cross-sender master state.
-        let reverseModel = PlayerControllerModel()
-        #expect(reverseModel.shouldProcessPresentation(
-            from: masterId,
-            senderID: masterId,
-            module: .space,
-            itemId: masterItemId,
-            version: 6,
-            counter: 90_000,
-            timestamp: 0,
-            isRepair: false
-        ))
-        #expect(reverseModel.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .space,
-            itemId: legacyPlayerItemId,
-            version: 7,
-            counter: 1,
-            timestamp: timestamp,
-            isRepair: false
-        ))
-    }
-
-    @Test("Legacy counters remain ordered within one sender only")
-    func legacyCountersRemainSenderLocal() {
-        // Given
-        let model = PlayerControllerModel()
-        let masterId = UUID()
-        let playerId = UUID()
-        let firstItemId = UUID()
-        let secondItemId = UUID()
-
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .space,
-            itemId: firstItemId,
-            version: 8,
-            counter: 20,
-            isRepair: false
-        ))
-
-        // When / Then
-        #expect(!model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .space,
-            itemId: secondItemId,
-            version: 9,
-            counter: 19,
-            isRepair: false
-        ))
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .space,
-            itemId: firstItemId,
-            version: 8,
-            counter: 19,
-            isRepair: false
-        ))
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: playerId,
-            module: .space,
-            itemId: secondItemId,
-            version: 9,
-            counter: 21,
-            isRepair: false
-        ))
-
-        // The master's low counter is not compared with the player's sequence.
-        #expect(model.shouldProcessPresentation(
-            from: masterId,
-            senderID: masterId,
-            module: .space,
-            itemId: firstItemId,
-            version: 8,
-            counter: 1,
-            isRepair: false
-        ))
     }
 
     @Test("Player connection delegates update state and process master messages")
@@ -966,7 +509,6 @@ private extension PlayerControllerTests {
         gameConfig: GameConfigModel
     ) -> GameNetworkModel {
         GameNetworkModel(
-            version: 1,
             counter: counter,
             proxyCounter: 0,
             type: type,

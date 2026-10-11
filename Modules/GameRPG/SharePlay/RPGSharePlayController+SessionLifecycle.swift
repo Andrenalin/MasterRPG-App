@@ -207,15 +207,14 @@ extension RPGSharePlayController {
             await sessionTeardownCoordinator.waitForCompletion(of: teardown)
             guard !Task.isCancelled else { return }
         } else {
-            // `reset()` above already resets both trackers for the
+            // `reset()` above already resets the tracker for the
             // replace-an-existing-session path (and `drainSessionTeardownEvents()`
             // resets `participantTracker` a second time before that even
             // runs) — redundant but harmless there. This `else` is reached
             // only on the first-ever configure, where neither of those ran,
-            // so it's the sole place these two actually need resetting. See
+            // so it's the sole place it actually needs resetting. See
             // CODE_AUDIT_Reconnect §9.1.
             participantTracker.reset()
-            mapRecoveryTracker.reset()
         }
 
         sessionLifecycle.prepare(sessionId: groupSession.id)
@@ -362,10 +361,6 @@ extension RPGSharePlayController {
                           self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                     else { return }
                     let gameModel = decodedMessage.model
-                    if self.mapRecoveryTracker.shouldSuppressRecoveryRequest(gameModel, from: context.source.id) {
-                        Logger.sharePlay.debug("Ignored recent map recovery request for \(gameModel.data.id, privacy: .public) from \(context.source.id, privacy: .public)")
-                        continue
-                    }
                     guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
                         await self.delegate?.handleUpdate(
                             gameModel,

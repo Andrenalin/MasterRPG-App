@@ -96,7 +96,7 @@ final class MasterNetworkControllerDelegateMock: MasterNetworkControllerDelegate
         calledReady += 1
     }
 
-    func masterReceived(data _: Data?, for _: ConnectionController.ID, fileJournal: Bool) async {
+    func masterReceived(data _: Data?, for _: ConnectionController.ID) async {
         calledReceived += 1
     }
 }

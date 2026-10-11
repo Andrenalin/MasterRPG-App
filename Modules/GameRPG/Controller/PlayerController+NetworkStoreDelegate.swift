@@ -81,14 +81,10 @@ extension PlayerController {
 
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("PlayerController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        let receivesOppositeRole = root.gameModel.gameConfig.isMaster != model.sender.isMaster
-        // A player-authored file presentation has already been authenticated by
-        // GameNetworkController before it reaches this callback. LAN and
-        // SharePlay both fan that group event out to sibling players, so equal
-        // player roles are expected here; all other same-role file traffic is
-        // still rejected.
-        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else {
-            Logger.networking.debug("PlayerController: FILE rejected \(model.counter, privacy: .public), same-role non-player-presentation traffic")
+        // A file is for the other role: the game master's for the players, a player's for
+        // the game master.
+        guard root.gameModel.gameConfig.isMaster != model.sender.isMaster else {
+            Logger.networking.debug("PlayerController: FILE rejected \(model.counter, privacy: .public), same-role traffic")
             return
         }
         await receivedProcess(model, origin: .file)
@@ -102,117 +98,23 @@ extension PlayerController {
         await receivedProcess(model, origin: .sharePlay(participantId))
     }
 
-    func acceptsSharePlayPeerMessage(
-        _ model: GameNetworkModel,
-        participantId: UUID
-    ) async -> Bool {
-        guard model.sender.role == .player,
-              model.effectiveAudience == .group,
-              GameNetworkModel.acceptsEventTimestamp(model.timestamp),
-              await acceptsSessionMessage(
-                  model,
-                  origin: .sharePlay(participantId)
-              )
-        else { return false }
-
-        // The master-authored roster is the logical identity authority on a
-        // player-only device. Validate it before GameNetworkController commits
-        // the physical participant binding, preventing an unknown or wrong-role
-        // first packet from poisoning that immutable transport identity.
-        return root.gameModel.gameRoster.players.contains {
-            $0.id == model.sender.id && $0.type == .player
-        }
-    }
-
-    func shouldDeferSharePlayPeerGroupEvent(
-        _ model: GameNetworkModel,
-        participantId: UUID
-    ) async -> Bool {
-        guard model.isDeferrablePlayerGroupEvent,
-              await acceptsSessionMessage(
-                  model,
-                  origin: .sharePlay(participantId)
-              )
-        else { return false }
-
-        // An existing non-player roster entry is an authoritative rejection,
-        // not an ordering race. Only an entirely absent identity gets one
-        // opportunity to wait for the next master roster update.
-        return !root.gameModel.gameRoster.players.contains {
-            $0.id == model.sender.id
-        }
-    }
-
-    func didAcceptSharePlayMasterState(
-        _ model: GameNetworkModel,
-        participantId: UUID
-    ) async -> Bool {
-        guard model.sender.isMaster,
-              model.sender.id == model.masterId,
-              model.masterState != nil,
-              gameModel.isSharePlayMasterParticipant(id: participantId),
-              root.gameModel.gameConfig.master.id == model.masterId
-        else { return false }
-
-        return gameModel.hasAppliedMasterState(
-            from: model.masterId,
-            counter: model.counter
-        )
-    }
-
-    func acceptsSharePlayMasterJournalAdmission(
-        _ model: GameNetworkModel,
-        participantId: UUID
-    ) async -> Bool {
-        guard model.isMasterJournalAdmissionMetadata else { return false }
-        return await acceptsSessionMessage(
-            model,
-            origin: .sharePlay(participantId)
-        )
-    }
-
-    func isLocalSharePlayTarget(_ targetId: UUID?) async -> Bool {
-        guard let targetId else { return true }
-        return root.gameModel.gameConfig.id == targetId
-    }
-
     func receivedSharePlayFile(_ model: GameNetworkModel) async {
-        let receivesOppositeRole = root.gameModel.gameConfig.isMaster != model.sender.isMaster
-        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else {
-            Logger.networking.debug("PlayerController: SharePlay FILE rejected \(model.counter, privacy: .public), same-role non-player-presentation traffic")
-            return
-        }
-        await receivedProcess(model, origin: .file)
+        await receivedFile(model)
     }
 
-    func isPinnedSharePlayMasterParticipant(id: UUID) async -> Bool {
+    func isSharePlayMasterParticipant(id: UUID) async -> Bool {
         gameModel.isSharePlayMasterParticipant(id: id)
     }
 
+    /// The Journal named a file of the game master but its bytes did not load. The message is
+    /// handled like its reference: an item this device already holds is shown, anything else
+    /// is asked for with the same counter. The game master does not upload a file again for
+    /// the show it already uploaded it for; it does once the item is shown again later.
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
-        guard model.sender.isMaster,
-              !root.gameModel.gameConfig.isMaster,
-              await acceptsSessionMessage(model, origin: .file)
-        else {
-            Logger.networking.debug("PlayerController: SharePlay file-load-failure ignored \(model.counter, privacy: .public), sender/role/session check failed")
+        guard model.sender.isMaster, !root.gameModel.gameConfig.isMaster else {
+            Logger.networking.debug("PlayerController: SharePlay file-load-failure ignored \(model.counter, privacy: .public), sender/role check failed")
             return
         }
-
-        if model.type == .reveal {
-            // A reveal reference may be fully satisfied by an exact-version
-            // local item. The regular handler ACKs that case and requests bytes
-            // only when the item or its backing file is unavailable.
-            await receivedProcess(model, origin: .file)
-            return
-        }
-
-        // Metadata-only stores and journaled updates do not consistently ask
-        // for missing bytes. Convert the recovery into a store request; the
-        // master rebuilds the full module payload and targets its reply here.
-        var requestTrigger = model
-        requestTrigger.type = .store
-        requestTrigger.subType = .store
-        let request = await response(for: requestTrigger, isSuccess: true, requestData: true)
-        await sendUpstream(model: request)
+        await receivedProcess(model, origin: .file)
     }
 }

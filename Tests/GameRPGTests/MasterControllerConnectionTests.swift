@@ -35,151 +35,6 @@ struct PlayerFallbackServiceTests {
 @MainActor
 struct MasterControllerModelConnectionTests {
 
-    @Test("add registers a new connectionId for a player")
-    func addRegistersNewPlayer() async {
-        let model = MasterControllerModel()
-        let connId = UUID()
-        let playerId = UUID()
-
-        _ = await MainActor.run { model.add(connectionId: connId, playerId: playerId) }
-
-        let registered = await MainActor.run { model.connectIDPlayers[connId] }
-        #expect(registered == playerId)
-    }
-
-    @Test("a live player identity cannot be seized by a second connection")
-    func addRejectsCompetingConnectionForSamePlayer() async {
-        let model = MasterControllerModel()
-        let oldConnId = UUID()
-        let newConnId = UUID()
-        let playerId = UUID()
-
-        let firstAccepted = await MainActor.run {
-            model.add(connectionId: oldConnId, playerId: playerId)
-        }
-        let competingAccepted = await MainActor.run {
-            model.add(connectionId: newConnId, playerId: playerId)
-        }
-
-        let oldEntry = await MainActor.run { model.connectIDPlayers[oldConnId] }
-        let newEntry = await MainActor.run { model.connectIDPlayers[newConnId] }
-        #expect(firstAccepted)
-        #expect(!competingAccepted)
-        #expect(oldEntry == playerId)
-        #expect(newEntry == nil)
-    }
-
-    @Test("a retired physical connection cannot resurrect its player")
-    func retiredConnectionRejectsInFlightMessages() async {
-        let model = MasterControllerModel()
-        let connectionID = UUID()
-        let playerID = UUID()
-
-        #expect(model.accepts(connectionId: connectionID, playerId: playerID))
-        #expect(model.remove(connectionId: connectionID) == playerID)
-        #expect(!model.accepts(connectionId: connectionID, playerId: playerID))
-    }
-
-    @Test("retiring the old connection permits a player to reconnect")
-    func removeThenAddPreservesOtherPlayersOnReconnect() async {
-        let model = MasterControllerModel()
-        let connA = UUID(); let playerA = UUID()
-        let connBOld = UUID(); let connBNew = UUID(); let playerB = UUID()
-
-        await MainActor.run {
-            model.add(connectionId: connA, playerId: playerA)
-            model.add(connectionId: connBOld, playerId: playerB)
-            _ = model.remove(connectionId: connBOld)
-            model.add(connectionId: connBNew, playerId: playerB)
-        }
-
-        let aEntry = await MainActor.run { model.connectIDPlayers[connA] }
-        let bOldEntry = await MainActor.run { model.connectIDPlayers[connBOld] }
-        let bNewEntry = await MainActor.run { model.connectIDPlayers[connBNew] }
-        #expect(aEntry == playerA, "unrelated player's mapping must be untouched")
-        #expect(bOldEntry == nil)
-        #expect(bNewEntry == playerB)
-    }
-
-    @Test("Peer file acknowledgements require an admitted presentation fingerprint")
-    func peerAvailabilityReceiptRequiresExactPresentation() {
-        let model = MasterControllerModel()
-        let masterID = UUID()
-        let presenterID = UUID()
-        let recipientID = UUID()
-        let messageID = UUID()
-        let itemId = UUID()
-        let presentation = GameNetworkModel(
-            messageID: messageID,
-            counter: 17,
-            proxyCounter: 0,
-            type: .reveal,
-            subType: .show,
-            masterId: masterID,
-            sender: GameSenderModel(
-                id: presenterID,
-                role: .player,
-                name: "Presenter",
-                characterId: nil
-            ),
-            audience: .group,
-            purpose: .event,
-            data: NetworkCodableDataType(
-                id: itemId,
-                type: .photo,
-                version: 3,
-                data: Data("photo".utf8),
-                assetVersion: 5,
-                contentVersion: 8
-            )
-        )
-        model.trackPeerAvailabilitySource(
-            presentation,
-            recipients: [presenterID, recipientID]
-        )
-        #expect(model.trackedPeerAvailabilitySourceCount == 1)
-
-        var receipt = presentation
-        receipt.messageID = UUID()
-        receipt.replyToMessageID = messageID
-        receipt.sender = GameSenderModel(
-            id: recipientID,
-            role: .player,
-            name: "Recipient",
-            characterId: nil
-        )
-        receipt.subType = .ok
-        receipt.data = NetworkCodableDataType(
-            id: receipt.data.id,
-            type: receipt.data.type,
-            version: receipt.data.version,
-            assetVersion: receipt.data.assetVersion,
-            contentVersion: receipt.data.contentVersion
-        )
-
-        var wrongVersion = receipt
-        wrongVersion.data = NetworkCodableDataType(
-            id: wrongVersion.data.id,
-            type: wrongVersion.data.type,
-            version: wrongVersion.data.version,
-            assetVersion: 6,
-            contentVersion: wrongVersion.data.contentVersion
-        )
-        #expect(!model.acceptsPeerAvailabilityReceipt(wrongVersion))
-
-        var unexpectedPlayer = receipt
-        unexpectedPlayer.sender.id = UUID()
-        #expect(!model.acceptsPeerAvailabilityReceipt(unexpectedPlayer))
-
-        var presenterReceipt = receipt
-        presenterReceipt.sender.id = presenterID
-        #expect(!model.acceptsPeerAvailabilityReceipt(presenterReceipt))
-
-        #expect(model.acceptsPeerAvailabilityReceipt(receipt))
-        #expect(model.trackedPeerAvailabilitySourceCount == 0)
-        #expect(!model.acceptsPeerAvailabilityReceipt(receipt))
-    }
-
 }
 
 // MARK: - GameMessagePipeline unit tests
@@ -217,29 +72,12 @@ struct GameMessagePipelineTests {
     func counterZeroMessagesAreNotDeduplicated() async {
         let pipeline = GameMessagePipeline()
         var message = Self.message(counter: 0, senderId: UUID())
-        message.messageID = nil
 
         let first = await pipeline.enqueue(GameMessageEvent(model: message, origin: .direct(UUID())))
         let second = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
 
         #expect(first == .enqueued)
         #expect(second == .enqueued)
-    }
-
-    @Test("message identity deduplicates current counter-zero retries")
-    func currentCounterZeroMessagesAreDeduplicated() async {
-        let pipeline = GameMessagePipeline()
-        let message = Self.message(counter: 0, senderId: UUID())
-
-        let first = await pipeline.enqueue(
-            GameMessageEvent(model: message, origin: .direct(UUID()))
-        )
-        let duplicate = await pipeline.enqueue(
-            GameMessageEvent(model: message, origin: .sharePlay(UUID()))
-        )
-
-        #expect(first == .enqueued)
-        #expect(duplicate == .duplicate)
     }
 
     @Test("cancelled pipeline rejects new messages")
@@ -430,7 +268,6 @@ struct MasterControllerLostPlayerTests {
 
         // Player reconnects on a new connectionId.
         var reconnectMessage = env.playerMessage
-        reconnectMessage.messageID = UUID()
         reconnectMessage.counter += 1
         await env.master.receivedProcess(reconnectMessage, connectionId: newConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
@@ -454,7 +291,6 @@ struct MasterControllerLostPlayerTests {
         await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
         await env.master.lostPlayer(for: oldConnId)
         var reconnectMessage = env.playerMessage
-        reconnectMessage.messageID = UUID()
         reconnectMessage.counter += 1
         await env.master.receivedProcess(reconnectMessage, connectionId: newConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
@@ -579,7 +415,6 @@ struct MasterControllerDirectProxyTests {
                 controls: [],
                 features: GameFeatureModel()
             ),
-            audience: .group,
             data: NetworkCodableDataType(
                 id: UUID(),
                 type: .dice,
@@ -591,13 +426,12 @@ struct MasterControllerDirectProxyTests {
         // When
         await env.root.networkStore.masterReceived(
             data: malicious.encodeData(),
-            for: connectionId,
-            fileJournal: false
+            for: connectionId
         )
 
         // Then
         #expect(env.directMasterSpy.calledSendResponseExcept == 0)
-        #expect(env.master.gameModel.connectIDPlayers[connectionId] == nil)
+        #expect(env.master.store.model.playerRoutes.playerId(for: connectionId) == nil)
         #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == attackerId })
     }
 
@@ -619,7 +453,6 @@ struct MasterControllerDirectProxyTests {
                 name: "Wrong session player",
                 characterId: nil
             ),
-            audience: .group,
             data: NetworkCodableDataType(
                 id: UUID(),
                 type: .dice,
@@ -631,13 +464,12 @@ struct MasterControllerDirectProxyTests {
         // When
         await env.root.networkStore.masterReceived(
             data: malicious.encodeData(),
-            for: connectionId,
-            fileJournal: false
+            for: connectionId
         )
 
         // Then
         #expect(env.directMasterSpy.calledSendResponseExcept == 0)
-        #expect(env.master.gameModel.connectIDPlayers[connectionId] == nil)
+        #expect(env.master.store.model.playerRoutes.playerId(for: connectionId) == nil)
         #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == playerId })
     }
 
@@ -677,7 +509,7 @@ struct MasterControllerDirectProxyTests {
         await env.master.received(identitySwitch, origin: .direct(connectionId))
 
         // Then
-        #expect(env.master.gameModel.connectIDPlayers[connectionId] == firstPlayerId)
+        #expect(env.master.store.model.playerRoutes.playerId(for: connectionId) == firstPlayerId)
         #expect(env.root.gameModel.gameRoster.players.contains { $0.id == firstPlayerId })
         #expect(!env.root.gameModel.gameRoster.players.contains { $0.id == secondPlayerId })
     }
@@ -704,7 +536,6 @@ struct MasterControllerDirectProxyTests {
         )
         var promoted = bootstrap
         promoted.counter = 2
-        promoted.messageID = UUID()
         promoted.sender.role = .player
 
         await env.master.received(bootstrap, origin: .direct(connectionID))
@@ -755,12 +586,11 @@ struct MasterControllerDirectProxyTests {
             Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
             origin: .sharePlay(UUID())
         )))
-        // Journal has no physical publisher. Even a player role is rejected
-        // until an exact Messenger admission has been observed.
-        #expect(!(await env.master.accepts(
+        // The Journal carries the file a player contributes.
+        #expect(await env.master.accepts(
             Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
             origin: .file
-        )))
+        ))
         #expect(!(await env.master.accepts(
             Self.transportMessage(role: .observer, senderID: fileObserverID, masterID: masterID),
             origin: .file
@@ -775,97 +605,6 @@ struct MasterControllerDirectProxyTests {
             Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
             origin: .proxy(UUID())
         )))
-    }
-
-    @Test("Player Journal payload requires its exact physical Messenger admission")
-    func playerJournalPayloadRequiresMessengerAdmission() async throws {
-        // Given
-        let env = try await MasterControllerHarness.make(asProxy: false)
-        let masterID = env.root.gameModel.gameConfig.master.id
-        let playerID = UUID()
-        let participantID = UUID()
-        let messageID = UUID()
-        let timestamp = Date.now.timeIntervalSince1970
-        let sender = GameSenderModel(
-            id: playerID,
-            role: .player,
-            name: "Journal player",
-            characterId: nil
-        )
-        let full = GameNetworkModel(
-            messageID: messageID,
-            timestamp: timestamp,
-            counter: 21,
-            proxyCounter: 0,
-            type: .reveal,
-            subType: .show,
-            masterId: masterID,
-            sender: sender,
-            audience: .group,
-            purpose: .event,
-            data: NetworkCodableDataType(
-                id: UUID(),
-                type: .photo,
-                version: 4,
-                data: Data("photo".utf8),
-                assetVersion: 7,
-                contentVersion: 9
-            )
-        )
-        let metadata = try #require(
-            RPGSharePlayController.playerJournalAdmissionMetadata(for: full)
-        )
-
-        // When / Then - a roster entry or copied logical identity is not proof
-        // that this Journal attachment came from that participant.
-        #expect(!(await env.master.accepts(full, origin: .file)))
-        #expect(!(await env.master.accepts(
-            metadata,
-            origin: .direct(UUID())
-        )))
-
-        #expect(await env.master.accepts(
-            metadata,
-            origin: .sharePlay(participantID)
-        ))
-        var forgedPayload = full
-        forgedPayload.journalPayloadDigest = metadata.journalPayloadDigest
-        forgedPayload.data = NetworkCodableDataType(
-            id: full.data.id,
-            type: full.data.type,
-            version: full.data.version,
-            data: Data("forged photo".utf8),
-            assetVersion: full.data.assetVersion,
-            contentVersion: full.data.contentVersion
-        )
-        #expect(!(await env.master.accepts(forgedPayload, origin: .file)))
-        #expect(await env.master.accepts(full, origin: .file))
-
-        // A conflicting second control packet cannot replace the immutable
-        // first fingerprint, and rejecting it does not poison the valid one.
-        var conflictingMetadata = metadata
-        conflictingMetadata.timestamp += 1
-        #expect(!(await env.master.accepts(
-            conflictingMetadata,
-            origin: .sharePlay(participantID)
-        )))
-        #expect(await env.master.accepts(full, origin: .file))
-
-        // The admission is an exact fingerprint, not a reusable sender token.
-        var changedVersion = full
-        changedVersion.data = NetworkCodableDataType(
-            id: full.data.id,
-            type: full.data.type,
-            version: full.data.version + 1,
-            data: full.data.data,
-            assetVersion: full.data.assetVersion,
-            contentVersion: full.data.contentVersion
-        )
-        #expect(!(await env.master.accepts(changedVersion, origin: .file)))
-
-        var copiedMessageID = full
-        copiedMessageID.sender.id = UUID()
-        #expect(!(await env.master.accepts(copiedMessageID, origin: .file)))
     }
 
     @Test("Proxy host accepts only proxy-role messages from its proxy transport")
@@ -928,16 +667,15 @@ struct MasterControllerDirectProxyTests {
         // When: the first physical mirror connects, then disappears.
         await env.root.networkProxyStore.masterReceived(
             data: firstMessage.encodeData(),
-            for: oldConnectionID,
-            fileJournal: false
+            for: oldConnectionID
         )
-        #expect(env.master.gameModel.connectIDPlayers[oldConnectionID] == proxyID)
+        #expect(env.master.store.model.playerRoutes.playerId(for: oldConnectionID) == proxyID)
         await env.root.networkProxyStore.masterLostPlayer(with: oldConnectionID)
 
         // Then: only the private connection binding is retired. The proxy is
         // invisible to public roster/report lifecycle and may reconnect under
         // a fresh physical connection ID.
-        #expect(env.master.gameModel.connectIDPlayers[oldConnectionID] == nil)
+        #expect(env.master.store.model.playerRoutes.playerId(for: oldConnectionID) == nil)
         #expect(env.root.gameModel.gameRoster.players.map(\.id) == [proxyID])
         #expect(
             env.root.audioRoot.gameControllable.gameModel
@@ -945,14 +683,12 @@ struct MasterControllerDirectProxyTests {
         )
 
         firstMessage.counter += 1
-        firstMessage.messageID = UUID()
         await env.root.networkProxyStore.masterReceived(
             data: firstMessage.encodeData(),
-            for: newConnectionID,
-            fileJournal: false
+            for: newConnectionID
         )
 
-        #expect(env.master.gameModel.connectIDPlayers[newConnectionID] == proxyID)
+        #expect(env.master.store.model.playerRoutes.playerId(for: newConnectionID) == proxyID)
         #expect(env.root.gameModel.gameRoster.players.map(\.id) == [proxyID])
     }
 
@@ -975,16 +711,13 @@ struct MasterControllerDirectProxyTests {
             subType: .show,
             masterId: env.root.gameModel.gameConfig.id,
             sender: sender,
-            purpose: .legacy,
             data: NetworkCodableDataType(id: photoId, type: .photo, version: 3)
         )
         let normalized = try #require(env.master.normalizedObserverMessage(legacyPhotoRepair))
-        #expect(normalized.purpose == .assetRequest)
-        #expect(normalized.audience == .master)
+        #expect(normalized.isAssetRequest)
         #expect(normalized.data.data == nil)
 
         var uploadedPhoto = legacyPhotoRepair
-        uploadedPhoto.purpose = .assetRequest
         uploadedPhoto.data = NetworkCodableDataType(
             id: photoId,
             type: .photo,
@@ -1000,7 +733,6 @@ struct MasterControllerDirectProxyTests {
             subType: .playAudio,
             masterId: env.root.gameModel.gameConfig.id,
             sender: sender,
-            purpose: .assetRequest,
             data: NetworkCodableDataType(id: UUID(), type: .audio, version: 1)
         )
         #expect(env.master.normalizedObserverMessage(disguisedAudioPlay) == nil)
@@ -1009,7 +741,7 @@ struct MasterControllerDirectProxyTests {
         mapContentRepair.type = .update
         mapContentRepair.subType = .generic
         mapContentRepair.data = NetworkCodableDataType(id: UUID(), type: .map, version: 1)
-        #expect(env.master.normalizedObserverMessage(mapContentRepair)?.purpose == .assetRequest)
+        #expect(env.master.normalizedObserverMessage(mapContentRepair) == nil)
 
         var disguisedMapPin = mapContentRepair
         disguisedMapPin.subType = .mapPin
@@ -1232,7 +964,6 @@ struct MasterControllerDirectProxyTests {
                 name: "Observer",
                 characterId: nil
             ),
-            purpose: .assetRequest,
             data: NetworkCodableDataType(id: audioId, type: .audio, version: 1)
         )
         let sendCount = env.directMasterSpy.sendResponseHistory.count
@@ -1322,7 +1053,7 @@ struct MasterControllerDirectProxyTests {
         ))
 
         #expect(env.root.gameModel.gameRoster.players.map(\.id) == [playerId])
-        #expect(env.master.gameModel.connectIDPlayers[connectionId] == playerId)
+        #expect(env.master.store.model.playerRoutes.playerId(for: connectionId) == playerId)
     }
 
     @Test("proxy ready sends the selected character to a connection")

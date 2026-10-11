@@ -307,7 +307,7 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
             )
         }
 
-        if model.isFileBackedPresentation || model.isPlayerFilePresentationEvent {
+        if model.isPresentation {
             return .presentation(
                 sessionId: sessionId,
                 participantId: participantId,

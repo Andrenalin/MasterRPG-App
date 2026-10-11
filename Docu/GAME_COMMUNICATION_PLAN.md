@@ -1,5 +1,10 @@
 # Game Communication Redesign — Implementation Record
 
+> Superseded 2026-10-11. The audience and purpose routing, the Journal admission, the peer
+> file presentations, the first-show package and the V1 compatibility envelope described here
+> were removed. The current protocol is described in
+> [Game Connection And Communication Documentation](GAME_CONNECTIONS.md), sections 5 to 12.
+
 Status: implemented and audited against the source on 2026-07-15.
 
 This file records the redesign that repaired SharePlay delivery, photo/map

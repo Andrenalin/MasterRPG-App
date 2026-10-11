@@ -14,28 +14,27 @@ extension PlayerController {
             root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
-        guard model.subType != .failed else { return nil }
+        // Audio comes from the game master only; a player shares one through the master.
+        guard model.subType != .failed, model.sender.isMaster else { return nil }
 
         switch model.type {
         case .reveal:
             let revealed = try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true)
-            if revealed, await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) {
-                gameModel.removePendingAudioRequest(model.data.id)
-                root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
-                return await response(for: model, isSuccess: true, requestData: false)
-            } else {
-                gameModel.insertPendingAudioRequest(model.data.id)
+            guard revealed, await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
+            root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+            return await response(for: model, isSuccess: true, requestData: false)
         case .store:
-            try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-            guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else {
-                gameModel.insertPendingAudioRequest(model.data.id)
-                return await response(for: model, isSuccess: true, requestData: true)
+            // A store keeps the audio without showing it: the game master sends one to every
+            // player before it starts an audio that somebody lacks.
+            if model.data.data != nil {
+                try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             }
-            let completesReveal = gameModel.removePendingAudioRequest(model.data.id)
-            if completesReveal {
-                _ = await root.audioRoot.gameControllable.setCurrent(itemId: model.data.id)
+            guard await root.audioRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version),
+                  await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id)
+            else {
+                return await response(for: model, isSuccess: true, requestData: true)
             }
             root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
             return await response(for: model, isSuccess: true, requestData: false)
@@ -102,6 +101,6 @@ extension PlayerController {
         // availability, and the host consumes any list that still arrives.
         guard root.gameModel.gameType != .proxy else { return }
         let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id)
-        await send(type: .update, subType: .audioList, updated: audioList, useJournal: false)
+        await send(type: .update, subType: .audioList, updated: audioList)
     }
 }

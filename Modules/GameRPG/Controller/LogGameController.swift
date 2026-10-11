@@ -181,15 +181,6 @@ struct LogGameController: Sendable {
         return log.acknowledge(playerID: player)
     }
 
-    /// Exact logical recipients captured with the same policy as a delivery
-    /// row. Peer-origin file presentations use this snapshot for correlating
-    /// their later acknowledgements even though they do not create a master
-    /// message-log row of their own.
-    @MainActor
-    func recipientIDs(targetID: UUID? = nil) -> Set<UUID> {
-        Set(recipientSnapshot(targetID: targetID).map(\.id))
-    }
-
     /// Test affordance. See CODE_AUDIT_Game §9.22.
     @MainActor
     func playerNames(for players: [UUID]) -> String {

@@ -8,7 +8,7 @@ import os.log
 protocol MasterNetworkControllerDelegate: Sendable & AnyObject {
     func masterLostPlayer(with connectionId: ConnectionController.ID) async
     func masterReady(for connectionId: ConnectionController.ID) async
-    func masterReceived(data: Data?, for connectionId: ConnectionController.ID, fileJournal: Bool) async
+    func masterReceived(data: Data?, for connectionId: ConnectionController.ID) async
 }
 
 protocol MasterNetworkControllable: Sendable & AnyObject {
