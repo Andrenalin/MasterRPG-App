@@ -96,10 +96,6 @@ final class GameScreenModel {
         showMainTab != .none || showSettingTab != .none || showsBattleRoundSidebar
     }
 
-    func toggleBattleRoundSidebar() {
-        showsBattleRoundSidebar.toggle()
-    }
-
     func hideInlineSidebar() {
         showMainTab = .none
         showSettingTab = .none

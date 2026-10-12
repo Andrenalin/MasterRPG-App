@@ -331,12 +331,16 @@ extension GameController {
         }
     }
 
-    /// Toggles the persistent death marker as an authoritative game-master action.
+    /// Toggles the persistent death marker as an authoritative game-master
+    /// action. Goes through `setPinDead`, so a combatant of a running battle
+    /// gets the same bookkeeping as the battle card's own toggle.
     @MainActor
     func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool {
-        updatePinState(itemId: itemId, pinId: pinId) { pin in
-            pin.isDead.toggle()
+        guard let map = gameModel.itemData[itemId] as? MapModel,
+              let pin = map.mapPins.first(where: { $0.id == pinId }) else {
+            return false
         }
+        return setPinDead(itemId: itemId, pinId: pinId, isDead: !pin.isDead)
     }
 
     /// Cycles through the same pin sizes offered by the full map editor.

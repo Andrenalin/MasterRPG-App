@@ -12,12 +12,6 @@ struct BattleRoundView: View {
     /// content takes its top margin from `gameSidePanelContent`.
     var isSidePanel = false
 
-    @Environment(ScenesManager.self) private var scenesManager
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @State private var scrollPosition = ScrollPosition()
-
-    private var root: MapRootModel { controller.root.mapRoot }
-
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var screenModel = screenModel
@@ -27,61 +21,20 @@ struct BattleRoundView: View {
                     isRunning: controller.model.isRunning,
                     round: controller.model.roundCounter,
                     activeAttackerName: screenModel.activeAttackerName,
-                    initiativeOrder: controller.model.initiativeOrder,
                     controller: controller,
-                    isConfigurationExpanded: $screenModel.isConfigurationExpanded
+                    isConfigurationExpanded: $screenModel.isConfigurationExpanded,
+                    requestEnd: screenModel.requestEnd
                 )
 #if os(tvOS)
                 .focusSection()
 #endif
 
-                ScrollView {
-                    LazyVStack {
-                        if screenModel.isConfigurationExpanded {
-                            BattleRoundSettingsView(
-                                settings: root.mapGameControllable.battleRoundSettings,
-                                controller: controller,
-                                screenModel: screenModel
-                            )
-                            // Capped rather than left to grow: this panel sits above the battle
-                            // card ScrollView in the same VStack, so an unbounded height would
-                            // starve the card list below it.
-                            .frame(maxHeight: 280)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-        #if os(tvOS)
-                            .focusSection()
-        #endif
-                        }
-
-                        if controller.model.isRunning, !controller.model.entries.isEmpty {
-                            BattleRoundList(
-                                cards: controller.model.cardPresentations,
-                                controller: controller,
-                                screenModel: screenModel,
-                                showCharacter: showCharacter,
-                                selectHitPoints: selectHitPoints,
-                                selectInitiative: selectInitiative
-                            )
-                        } else {
-                            BattleRoundEmptyState(
-                                isRunning: controller.model.isRunning,
-                                start: { controller.start() }
-                            )
-                        }
-                    }
-                    .scrollTargetLayout()
-                }
-                .scrollPosition($scrollPosition)
-                // The turn moved on: bring the new attacker's card to the
-                // top. The previous card collapses its character sheet in the
-                // same update, which would otherwise leave the list wherever
-                // that sheet had pushed it.
-                .onChange(of: screenModel.activeCardId) { _, cardId in
-                    guard let cardId else { return }
-                    withAnimation(accessibilityReduceMotion ? nil : .default) {
-                        scrollPosition.scrollTo(id: cardId, anchor: .top)
-                    }
-                }
+                // The scrolling list owns its scroll position, so a position
+                // update re-evaluates only that view, not this header.
+                BattleRoundScrollContent(
+                    controller: controller,
+                    screenModel: screenModel
+                )
 #if os(tvOS)
                 .focusSection()
 #endif
@@ -93,19 +46,31 @@ struct BattleRoundView: View {
             }
         }
         .themedSurface()
-        .sheet(item: $screenModel.presentation) { presentation in
-            switch presentation {
-            case .sheet(let sheet):
-                BattleCharacterSheetPresentationView(presentation: sheet)
-            case .selection:
-                ManagedPresentationView {
-                    controller.root.characterRoot.viewController.linkListView(
-                        type: .selection,
-                        itemSelectionModel: screenModel.pendingValueSelection == nil
-                            ? screenModel.selectedCharacter
-                            : screenModel.selectedValue
-                    )
-                }
+        .confirmationDialog(
+            Text("End Battle?", bundle: .module),
+            isPresented: $screenModel.isEndConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                controller.end()
+            } label: {
+                Text("End Battle", bundle: .module)
+            }
+            Button(role: .cancel) {
+            } label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: {
+            Text("The turn order and all rolls of this battle are discarded.", bundle: .module)
+        }
+        // The modal Character/value list. macOS never presents it: there the
+        // same list is the window's inspector.
+        .sheet(item: $screenModel.selectionPresentation) { _ in
+            ManagedPresentationView {
+                controller.root.characterRoot.viewController.linkListView(
+                    type: .selection,
+                    itemSelectionModel: screenModel.activeSelectionModel
+                )
             }
         }
         .onChange(of: screenModel.selectedCharacter.selection) { old, new in
@@ -114,28 +79,6 @@ struct BattleRoundView: View {
         .onChange(of: screenModel.selectedValue.selection) { old, new in
             screenModel.valueSelectionDidChange(old, new, controller: controller)
         }
-    }
-}
-
-private extension BattleRoundView {
-    // Stable method references instead of closures recreated fresh every
-    // `body` evaluation — `BattleRoundCard`'s `.equatable()` already excludes
-    // these from equality since closures are never `Equatable`, but reusing
-    // the same underlying method avoids needlessly reallocating three
-    // closures on every live Battle Round tick.
-    @MainActor
-    func showCharacter(_ combatant: BattleCombatant) {
-        screenModel.showCharacterSheet(combatant, controller: controller, scenesManager: scenesManager)
-    }
-
-    @MainActor
-    func selectHitPoints(_ combatant: BattleCombatant) {
-        screenModel.selectHitPoints(combatant, controller: controller, scenesManager: scenesManager)
-    }
-
-    @MainActor
-    func selectInitiative(_ combatant: BattleCombatant) {
-        screenModel.selectInitiative(combatant, controller: controller, scenesManager: scenesManager)
     }
 }
 

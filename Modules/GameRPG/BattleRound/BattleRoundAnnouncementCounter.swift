@@ -6,6 +6,8 @@ struct BattleRoundAnnouncementCounter: View {
     let round: Int
     let attackerName: String?
 
+    @ScaledMetric(relativeTo: .largeTitle) private var minWidth: CGFloat = 220
+
     var body: some View {
         VStack(spacing: BattleRoundSpacing.standard) {
             Image(systemName: "shield.lefthalf.filled")
@@ -23,10 +25,10 @@ struct BattleRoundAnnouncementCounter: View {
                     .lineLimit(1)
             }
         }
-        .padding(24)
-        .frame(minWidth: 220)
+        .padding(BattleRoundSpacing.extraWide)
+        .frame(minWidth: minWidth)
 #if !os(visionOS)
-        .glassEffect(in: .rect(cornerRadius: 24))
+        .glassEffect(in: .rect(cornerRadius: BattleRoundSpacing.extraWide))
 #endif
         .shadow(color: .black.opacity(0.18), radius: 16, y: 6)
         .accessibilityAddTraits(.isHeader)

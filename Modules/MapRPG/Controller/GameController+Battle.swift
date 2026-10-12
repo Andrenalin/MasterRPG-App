@@ -9,8 +9,8 @@ import CharacterRPG
 import PhotoRPG
 import os.log
 
-// See CODE_AUDIT §9.10 for the section boundaries below. The defender/health sync and the
-// network sections live in GameController+BattleSync.swift (CODE_AUDIT_19 §9.23).
+// The defender/health sync and the network sections live in
+// GameController+BattleSync.swift (CODE_AUDIT_19 §9.23).
 
 extension GameController {
     // MARK: - Combatant lifecycle
@@ -36,32 +36,31 @@ extension GameController {
         return (playerPins, roomPins)
     }
 
+    /// The domain mutation of a battle start once the combatants are built:
+    /// `BattleRoundModel.begin`, auto-resolving the configured initiative/HP
+    /// entries, pin sync. The initiative order always comes from the saved
+    /// setting, which is its only owner.
     @MainActor
     @discardableResult
     func beginBattle(
         itemId: UUID,
         playerCombatants: [BattleCombatant],
-        roomCombatants: [BattleCombatant],
-        initiativeOrder: BattleInitiativeOrder
+        roomCombatants: [BattleCombatant]
     ) -> Bool {
         guard let map = gameModel.itemData[itemId] as? MapModel else { return false }
         battleRoundModel.begin(
             mapId: itemId,
             players: playerCombatants,
             roomCombatants: roomCombatants,
-            initiativeOrder: initiativeOrder
+            initiativeOrder: battleRoundSettings.initiativeOrder
         )
-        battleRoundSettings.initiativeOrder = initiativeOrder
         resolveBattleConfiguredValues()
         _ = battleRoundModel.synchronize(pins: map.mapPins)
         return true
     }
 
     @MainActor
-    func startBattle(
-        itemId: UUID,
-        initiativeOrder: BattleInitiativeOrder
-    ) -> Bool {
+    func startBattle(itemId: UUID) -> Bool {
         guard let pins = battleStartPins(itemId: itemId) else { return false }
 
         let playerCombatants = pins.playerPins.map { pin in
@@ -82,8 +81,7 @@ extension GameController {
         return beginBattle(
             itemId: itemId,
             playerCombatants: playerCombatants,
-            roomCombatants: roomCombatants,
-            initiativeOrder: initiativeOrder
+            roomCombatants: roomCombatants
         )
     }
 
@@ -108,7 +106,7 @@ extension GameController {
                     .createBattleCharacterCopy(for: sourceCharacterId) {
             mapGameModel.registerBattleCharacterCopy(copyId)
             // Routed through the shared mutate-bump-write-sync helper instead
-            // of hand-rolling the timestamp bump — see CODE_AUDIT §9.4.
+            // of hand-rolling the timestamp bump.
             guard let updatedPin = mutatedPinState(
                 itemId: itemId,
                 pinId: pinId,
@@ -135,7 +133,7 @@ extension GameController {
         // Ids are captured before mutating so the loop below never indexes
         // into `map.mapPins` while `updatePinState` is rewriting it in place.
         // Routed through the shared helper instead of hand-rolling the
-        // timestamp bump — see CODE_AUDIT §9.4.
+        // timestamp bump.
         let highlightedPinIds = map.mapPins.filter(\.isHighlighted).map(\.id)
         for pinId in highlightedPinIds {
             updatePinState(itemId: itemId, pinId: pinId) { $0.isHighlighted = false }
@@ -146,12 +144,11 @@ extension GameController {
     func endBattle(itemId: UUID) -> Bool {
         guard battleRoundModel.isRunning,
               battleRoundModel.mapId == itemId,
-              let map = gameModel.itemData[itemId] as? MapModel else {
+              gameModel.itemData[itemId] is MapModel else {
             return false
         }
         clearBattleHighlights(itemId: itemId)
         battleRoundModel.end()
-        _ = battleRoundModel.synchronize(pins: map.mapPins)
         return true
     }
 
@@ -177,14 +174,18 @@ extension GameController {
         return battleRoundModel.adjustInitiative(by: amount, for: combatantId)
     }
 
+    /// The one place the initiative order changes. The setting is saved even
+    /// when no battle has run yet in this session, so the next battle starts
+    /// with it; the model's copy follows so the current turn list re-sorts.
     @MainActor
-    func setBattleInitiativeOrder(
-        itemId: UUID,
-        order: BattleInitiativeOrder
-    ) -> Bool {
-        guard battleRoundModel.mapId == itemId else { return false }
-        battleRoundSettings.initiativeOrder = order
-        return battleRoundModel.setInitiativeOrder(order)
+    @discardableResult
+    func setBattleInitiativeOrder(_ order: BattleInitiativeOrder) -> Bool {
+        let settingChanged = battleRoundSettings.initiativeOrder != order
+        if settingChanged {
+            battleRoundSettings.initiativeOrder = order
+        }
+        let modelChanged = battleRoundModel.setInitiativeOrder(order)
+        return settingChanged || modelChanged
     }
 
     @MainActor
@@ -223,13 +224,15 @@ extension GameController {
     }
 
     /// Adds a pin that was outside the initially focused room while the
-    /// surprise round is still being prepared.
+    /// surprise round is still being prepared. A pin that was highlighted
+    /// first is already on the roster as a target; it keeps that combatant
+    /// (and its Character copy) and gains its own turn.
     @MainActor
     func addBattleCombatant(itemId: UUID, pinId: UUID) -> Bool {
         guard battleRoundModel.mapId == itemId,
-              battleRoundModel.isPreparingSurprise,
-              battleRoundModel.combatant(pinId: pinId) == nil,
-              let combatant = makeBattleCombatant(itemId: itemId, pinId: pinId),
+              battleRoundModel.canAddCombatant(pinId: pinId),
+              let combatant = battleRoundModel.combatant(pinId: pinId)
+                ?? makeBattleCombatant(itemId: itemId, pinId: pinId),
               battleRoundModel.addCombatant(combatant) else {
             return false
         }
@@ -283,11 +286,31 @@ extension GameController {
     ) -> Bool {
         guard battleRoundModel.mapId == itemId,
               let combatant = battleRoundModel.combatant(id: combatantId),
-              combatant.isDead != isDead,
-              updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { pin in
-                  pin.isDead = isDead
-              }) else {
+              combatant.isDead != isDead else {
             return false
+        }
+        return setPinDead(itemId: itemId, pinId: combatant.pinId, isDead: isDead)
+    }
+
+    /// The one "mark dead / alive" operation, shared by the battle card
+    /// (`setBattleCombatantDead`) and the map and 3D-table pin menus
+    /// (`toggleDeadPin`). Outside a battle it only writes the pin's flag. For
+    /// a combatant of a running battle it also does the battle bookkeeping,
+    /// so the card, the turn skipping and the other attackers' target lists
+    /// do not keep the stale state.
+    ///
+    /// A game-master action: every caller is gated on the master role.
+    @MainActor
+    func setPinDead(itemId: UUID, pinId: UUID, isDead: Bool) -> Bool {
+        guard updatePinState(itemId: itemId, pinId: pinId, mutation: { pin in
+            pin.isDead = isDead
+        }) else {
+            return false
+        }
+        guard battleRoundModel.isRunning,
+              battleRoundModel.mapId == itemId,
+              let combatant = battleRoundModel.combatant(pinId: pinId) else {
+            return true
         }
         // A dead combatant must drop out of every attacker's target list
         // immediately, not linger highlighted until the next manual toggle.
@@ -296,15 +319,13 @@ extension GameController {
         // the flag here is sufficient to remove it network-wide and to reset
         // any attacker whose `rollRecipientCombatantId` pointed at it.
         if isDead {
-            _ = updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { pin in
+            _ = updatePinState(itemId: itemId, pinId: pinId, mutation: { pin in
                 pin.isHighlighted = false
             })
             // `synchronize(pins:)` below only updates the active entry; the other
             // attackers' target lists must drop it too. See CODE_AUDIT_19 §5.8.
-            battleRoundModel.removeDefender(combatantId)
+            battleRoundModel.removeDefender(combatant.id)
         }
-        // Only ever reached via `BattleRoundController.setDead`, which is
-        // itself gated on `root.gameModel.gameConfig.isMaster`.
         _ = synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
         return true
     }
@@ -331,11 +352,13 @@ extension GameController {
         let sourceCharacterId: UUID
         let gameCharacterId: UUID
 
-        if combatant.isPlayer, let currentCharacterId {
+        if combatant.isPlayer {
             // Player Characters are shared game identities and must not fork
-            // into an isolated monster-style runtime copy.
-            sourceCharacterId = currentCharacterId
-            gameCharacterId = currentCharacterId
+            // into an isolated monster-style runtime copy: the pin's own
+            // Character is kept, and a player pin without one takes the
+            // chosen Character as it is.
+            sourceCharacterId = currentCharacterId ?? characterId
+            gameCharacterId = sourceCharacterId
         } else if let currentCharacterId,
                   root.characterRoot.valueGameControllable.battleCharacterCopy(
                       for: currentCharacterId
@@ -345,18 +368,22 @@ extension GameController {
             // association while the battle is running.
             return false
         } else {
-            let source = currentCharacterId ?? characterId
+            // Reached only when the token has no live runtime Character: it
+            // has none at all, or the one on its pin could not be copied
+            // (deleted, or the copy failed at battle start). Either way the
+            // Character the game master just chose is the one to use — going
+            // back to the pin's stale id made every assignment fail silently.
             guard let copyId = root.characterRoot.valueGameControllable
-                .createBattleCharacterCopy(for: source) else {
+                .createBattleCharacterCopy(for: characterId) else {
                 return false
             }
             mapGameModel.registerBattleCharacterCopy(copyId)
-            sourceCharacterId = source
+            sourceCharacterId = characterId
             gameCharacterId = copyId
         }
 
         // Routed through the shared mutate-bump-write-sync helper instead of
-        // hand-rolling the timestamp bump — see CODE_AUDIT §9.4.
+        // hand-rolling the timestamp bump.
         guard let updatedPin = mutatedPinState(
             itemId: itemId,
             pinId: combatant.pinId,

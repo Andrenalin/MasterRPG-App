@@ -6,7 +6,7 @@ import SwiftUI
 
 // Plain Codable/Equatable value types for the Battle Round domain, split out
 // of BattleRoundModel.swift — they're unrelated to the `@Observable` class
-// mechanics that live there. See CODE_AUDIT §9.10.
+// mechanics that live there.
 
 public enum BattleInitiativeOrder: Int, Codable, CaseIterable, Identifiable, Sendable {
     case ascending

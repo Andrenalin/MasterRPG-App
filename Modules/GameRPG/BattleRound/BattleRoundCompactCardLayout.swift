@@ -7,6 +7,10 @@ import SwiftUI
 struct BattleRoundCompactCardLayout: View {
     let context: BattleRoundCardLayoutContext
 
+    /// Lines the "targets" arrow up with the defenders' avatars, below their
+    /// name row. Scales with the text of that row.
+    @ScaledMetric(relativeTo: .caption2) private var targetArrowTopInset: CGFloat = 18
+
     var body: some View {
         VStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
             HStack(alignment: .top, spacing: BattleRoundSpacing.relaxed) {
@@ -18,26 +22,33 @@ struct BattleRoundCompactCardLayout: View {
                         isActive: context.presentation.isActive,
                         controller: context.controller
                     )
-                    // See CODE_AUDIT §7.2.
+                    // `.equatable()` skips this leaf when an unrelated part
+                    // of the same card changes.
                     .equatable()
                     .labelStyle(.iconOnly)
                     BattleRankBadge(
                         rank: context.presentation.rank,
                         isActive: context.presentation.isActive
                     )
-                    // See CODE_AUDIT §7.2.
                     .equatable()
+#if !os(tvOS)
+                    BattleRoundDragHandle(
+                        cardId: context.presentation.id,
+                        name: context.presentation.attacker.combatant.name
+                    )
+                    .equatable()
+                    .padding(.top, BattleRoundSpacing.tight)
+#endif
                 }
                 BattleParticipantColumn(
                     state: context.state,
                     presentation: context.presentation.attacker,
                     role: .attacker,
                     isActive: context.presentation.isActive,
-                    tint: context.presentation.isActive ? .blue : .gray,
+                    tint: context.presentation.isActive ? BattleRoundPalette.attacker : BattleRoundPalette.inactive,
                     controller: context.controller,
-                    showCharacter: context.showCharacter
+                    screenModel: context.screenModel
                 )
-                // See CODE_AUDIT §8.3.
                 .equatable()
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -46,8 +57,7 @@ struct BattleRoundCompactCardLayout: View {
                 combatant: context.presentation.attacker.combatant,
                 state: context.state,
                 controller: context.controller,
-                selectHitPoints: context.selectHitPoints,
-                selectInitiative: context.selectInitiative
+                screenModel: context.screenModel
             )
 
             Divider()
@@ -55,14 +65,14 @@ struct BattleRoundCompactCardLayout: View {
             HStack(alignment: .top, spacing: BattleRoundSpacing.standard) {
                 Image(systemName: "arrow.turn.down.right")
                     .foregroundStyle(.tertiary)
-                    .padding(.top, 18)
+                    .padding(.top, targetArrowTopInset)
                     .accessibilityHidden(true)
                 BattleDefenderStrip(
                     state: context.state,
                     defenders: context.presentation.defenders,
                     isActiveEntry: context.presentation.isActive,
                     controller: context.controller,
-                    showCharacter: context.showCharacter
+                    screenModel: context.screenModel
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -86,9 +96,7 @@ struct BattleRoundCompactCardLayout: View {
                 state: state,
                 presentation: card,
                 controller: controller,
-                showCharacter: { _ in },
-                selectHitPoints: { _ in },
-                selectInitiative: { _ in }
+                screenModel: BattleRoundScreenModel(model: model)
             )
         )
         .frame(width: 340)
@@ -106,9 +114,7 @@ struct BattleRoundCompactCardLayout: View {
                 state: BattleRoundCardState(),
                 presentation: card,
                 controller: controller,
-                showCharacter: { _ in },
-                selectHitPoints: { _ in },
-                selectInitiative: { _ in }
+                screenModel: BattleRoundScreenModel(model: model)
             )
         )
         .frame(width: 340)

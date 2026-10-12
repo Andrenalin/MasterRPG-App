@@ -371,7 +371,7 @@ struct BattleRoundConfiguredValueScanningTests {
         root.mapRoot.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
 
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         let combatant = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
         #expect(combatant.gameCharacterId == nil)
         return (sut, combatant.id)
@@ -443,7 +443,7 @@ struct BattleRoundConfiguredValueScanningTests {
         root.mapRoot.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
 
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         let combatant = try #require(sut.battleRoundModel.combatant(pinId: playerId))
         #expect(combatant.gameCharacterId == characterId)
@@ -524,7 +524,7 @@ struct BattleRoundConfiguredValueScanningTests {
         root.mapRoot.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
 
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         let combatant = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
         #expect(combatant.gameCharacterId != nil)
@@ -652,7 +652,7 @@ struct BattleRoundConfiguredValueScanningTests {
         root.mapRoot.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
 
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         let combatant = try #require(sut.battleRoundModel.combatant(pinId: playerId))
         #expect(combatant.gameCharacterId == characterId)
@@ -737,7 +737,7 @@ struct BattleRoundConfiguredValueScanningTests {
         root.mapRoot.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
 
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
 
         // `toggleHighlightPin` is what both the 2D and 3D player tap paths
@@ -824,7 +824,7 @@ struct BattleRoundConfiguredValueScanningTests {
         root.mapRoot.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
 
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
 
         // The highlight itself still applies locally...

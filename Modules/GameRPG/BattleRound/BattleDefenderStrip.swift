@@ -8,7 +8,11 @@ struct BattleDefenderStrip: View {
     let defenders: [BattleRoundParticipantPresentation]
     let isActiveEntry: Bool
     let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let screenModel: BattleRoundScreenModel
+
+    @ScaledMetric(relativeTo: .caption2) private var placeholderWidth: CGFloat = 100
+    @ScaledMetric(relativeTo: .caption2) private var placeholderHeight: CGFloat = 74
+    @ScaledMetric(relativeTo: .caption2) private var maxStripWidth: CGFloat = 280
 
     var body: some View {
         if defenders.isEmpty {
@@ -20,27 +24,30 @@ struct BattleDefenderStrip: View {
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
             }
-            .frame(minWidth: 100, minHeight: 74)
+            .frame(minWidth: placeholderWidth, minHeight: placeholderHeight)
         } else {
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: BattleRoundSpacing.relaxed) {
+                // A plain stack: a card has a handful of defenders, and a
+                // lazy stack's height depends on which of them are realized,
+                // which would let the card — a row of the lazy turn list —
+                // change height while scrolling.
+                HStack(alignment: .top, spacing: BattleRoundSpacing.relaxed) {
                     ForEach(defenders) { defender in
                         BattleParticipantColumn(
                             state: state,
                             presentation: defender,
                             role: .defender,
                             isActive: isActiveEntry,
-                            tint: isActiveEntry ? .red : .gray,
+                            tint: isActiveEntry ? BattleRoundPalette.defender : BattleRoundPalette.inactive,
                             controller: controller,
-                            showCharacter: showCharacter
+                            screenModel: screenModel
                         )
-                        // See CODE_AUDIT §8.3.
                         .equatable()
                     }
                 }
             }
             .scrollIndicators(.hidden)
-            .frame(maxWidth: 280, alignment: .trailing)
+            .frame(maxWidth: maxStripWidth, alignment: .trailing)
         }
     }
 }
@@ -55,19 +62,21 @@ struct BattleDefenderStrip: View {
             defenders: card.defenders,
             isActiveEntry: card.isActive,
             controller: controller,
-            showCharacter: { _ in }
+            screenModel: BattleRoundScreenModel(model: model)
         )
         .padding()
     }
 }
 
 #Preview("No defenders") {
+    let controller = BattleRoundController.preview()
+
     BattleDefenderStrip(
         state: BattleRoundCardState(),
         defenders: [],
         isActiveEntry: false,
-        controller: .preview(),
-        showCharacter: { _ in }
+        controller: controller,
+        screenModel: BattleRoundScreenModel(model: controller.model)
     )
     .padding()
 }

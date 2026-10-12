@@ -77,8 +77,8 @@ final class MapGameModel {
 public protocol MapGameStorable: Sendable {
     @MainActor var battleRoundModel: BattleRoundModel { get }
     @MainActor var battleRoundSettings: BattleRoundSettingsModel { get }
-    /// Parses a Character entry's display value into a valid battle initiative
-    /// (minimum 1). Guards against a finite-but-out-of-`Int`-range value
+    /// Parses a Character entry's display value into a battle initiative; any
+    /// integer is valid. Guards against a finite-but-out-of-`Int`-range value
     /// trapping `Int(_:)` — the single correct implementation, exposed here so
     /// `BattleRoundController` doesn't need its own copy. See CODE_AUDIT_Game §5.1/§9.1.
     func battleInitiative(from value: String) -> Int?
@@ -136,20 +136,11 @@ public protocol MapGameStorable: Sendable {
     /// Clears any highlighted pins on the map — battle start/end always
     /// begins from a clean highlight state.
     @MainActor func clearBattleHighlights(itemId: UUID)
-    /// The actual domain mutation (`BattleRoundModel.begin`, settings,
-    /// auto-resolving configured initiative/HP entries, pin sync) once the
-    /// combatants are already built. Kept in MapRPG because it needs
-    /// internal access to `BattleRoundModel`'s mutators.
-    @MainActor @discardableResult func beginBattle(
-        itemId: UUID,
-        playerCombatants: [BattleCombatant],
-        roomCombatants: [BattleCombatant],
-        initiativeOrder: BattleInitiativeOrder
-    ) -> Bool
-    @MainActor func startBattle(
-        itemId: UUID,
-        initiativeOrder: BattleInitiativeOrder
-    ) -> Bool
+    /// Starts a battle on `itemId` with its player pins and the pins of the
+    /// active room, in the initiative order saved in `battleRoundSettings`.
+    /// The one battle start: `BattleRoundController.start()` calls it and
+    /// then broadcasts.
+    @MainActor func startBattle(itemId: UUID) -> Bool
     @MainActor func endBattle(itemId: UUID) -> Bool
     @MainActor func setBattleInitiative(
         itemId: UUID,
@@ -161,10 +152,10 @@ public protocol MapGameStorable: Sendable {
         combatantId: UUID,
         amount: Int
     ) -> Bool
-    @MainActor func setBattleInitiativeOrder(
-        itemId: UUID,
-        order: BattleInitiativeOrder
-    ) -> Bool
+    /// Saves the initiative order and re-sorts the turn list by it. Works
+    /// with or without a running battle: the saved order is what the next
+    /// battle starts with.
+    @MainActor @discardableResult func setBattleInitiativeOrder(_ order: BattleInitiativeOrder) -> Bool
     @MainActor func moveBattleEntries(from source: IndexSet, to destination: Int)
     @MainActor func activateBattleAttacker(itemId: UUID, combatantId: UUID) -> Bool
     @MainActor func nextBattleAttacker(itemId: UUID) -> Bool
@@ -224,6 +215,10 @@ public protocol MapGameStorable: Sendable {
     @MainActor @discardableResult func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
     @MainActor func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType
+    /// The live state `networkMapUpdate` carries, as comparable values —
+    /// to tell whether a map state message would say anything new without
+    /// serialising it (the encoded message has no stable byte form).
+    @MainActor func mapLiveState(for itemId: UUID) -> MapLiveState
     /// Envelope carrying only the map's version fingerprint (no payload) — use for comparisons
     /// instead of `networkMapUpdate`, which serialises every entry and pin. See CODE_AUDIT_17 §7.3.
     @MainActor func networkMapGeneration(for itemId: UUID) -> NetworkCodableDataType
@@ -262,7 +257,7 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable { exportController as ExportControllable }
 
     @MainActor func resetGameState() {
-        releaseBattleCharacters(includingPlayers: true)
+        releaseBattleCharacters()
         mapGameModel.reset()
     }
 }

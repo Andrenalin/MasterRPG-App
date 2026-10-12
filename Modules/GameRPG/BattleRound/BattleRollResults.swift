@@ -21,7 +21,9 @@ struct BattleRollResults: View {
     var body: some View {
         if !results.isEmpty {
             ScrollView(.horizontal) {
-                LazyHStack(spacing: 3) {
+                // A plain stack: the model keeps at most
+                // `BattleRoundModel.maximumRollsPerCombatant` rolls here.
+                HStack(spacing: 3) {
                     ForEach(results) { result in
                         BattleRollResultBadge(result: result, tint: tint)
                     }

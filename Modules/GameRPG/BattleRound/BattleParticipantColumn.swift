@@ -18,14 +18,15 @@ struct BattleParticipantColumn: View {
     let isActive: Bool
     let tint: Color
     let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let screenModel: BattleRoundScreenModel
 
-    private var root: MapRootModel { controller.root.mapRoot }
-
-    /// `48pt` square avatar — written once here and reused below instead of
-    /// repeating the literal at both the requested image size and the
-    /// displayed frame. See CODE_AUDIT §9.5.
-    private static let avatarSize: CGFloat = 48
+    /// The square avatar's side — one value for both the requested image size
+    /// and the displayed frame. Scales with Dynamic Type like the text next
+    /// to it.
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 48
+    /// The least width of the "Ini:" / "HP:" labels, so an empty one is still
+    /// a target a value can be dropped on.
+    @ScaledMetric(relativeTo: .caption2) private var valueLabelMinWidth: CGFloat = 52
 
     var body: some View {
         VStack(alignment: .leading, spacing: BattleRoundSpacing.tight) {
@@ -40,15 +41,15 @@ struct BattleParticipantColumn: View {
                     controller.root.photoRoot.viewController.mapImage(
                         root: controller.root.photoRoot,
                         for: combatant.photoId,
-                        size: CGSize(width: Self.avatarSize, height: Self.avatarSize),
+                        size: CGSize(width: avatarSize, height: avatarSize),
                         color: combatant.color
                     )
-                    .frame(width: Self.avatarSize, height: Self.avatarSize)
+                    .frame(width: avatarSize, height: avatarSize)
                     .clipShape(.circle)
                     .overlay {
                         if combatant.isDead {
-                            Circle()
-                                .fill(.black.opacity(0.54))
+                            Color.black.opacity(0.54)
+                                .clipShape(.circle)
                             Image(systemName: "xmark")
                                 .font(.title2.bold())
                                 .foregroundStyle(.white)
@@ -61,6 +62,8 @@ struct BattleParticipantColumn: View {
                         }
                     }
                     .overlay {
+                        // A stroked shape is a view of its own, so there is no
+                        // static-member (`.circle`) spelling for it.
                         Circle()
                             .strokeBorder(haloColor, lineWidth: haloWidth)
                     }
@@ -84,9 +87,13 @@ struct BattleParticipantColumn: View {
                 )
                 .accessibilityValue(avatarAccessibilityValue)
 #if os(iOS) || os(macOS) || os(visionOS)
-                .battleLinkCharacterDropDestination { characters, _ in
+                .battleLinkCharacterDropDestination(outline: .circle) { characters, _ in
                     guard let character = characters.first else { return false }
-                    return controller.assignCharacter(combatant.id, character.itemId)
+                    return screenModel.assignDroppedCharacter(
+                        character,
+                        to: combatant.id,
+                        controller: controller
+                    )
                 }
 #endif
                 
@@ -100,7 +107,7 @@ struct BattleParticipantColumn: View {
                                 .monospacedDigit()
                         }
                         .font(.caption2)
-                        .contentShape(.rect)
+                        .battleValueDropLabel(minWidth: valueLabelMinWidth)
                         .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
 #if os(iOS) || os(macOS) || os(visionOS)
                         .battleLinkCharacterDropDestination(action: valueDropAction(kind: .initiative))
@@ -113,7 +120,7 @@ struct BattleParticipantColumn: View {
                     // Computed once and reused below: `hitPointsValue` walks a
                     // linked entry's formula chain, so reading it a second time
                     // purely for the color check would redo that work for no
-                    // benefit. See CODE_AUDIT §7.1.
+                    // benefit.
                     let hp = hitPointsValue
                     HStack(spacing: BattleRoundSpacing.tight) {
                         HStack(spacing: BattleRoundSpacing.extraTight) {
@@ -122,11 +129,14 @@ struct BattleParticipantColumn: View {
                                 .monospacedDigit()
                         }
                         .font(.caption2)
-                        .contentShape(.rect)
+                        .battleValueDropLabel(minWidth: valueLabelMinWidth)
                         .foregroundStyle(hp == nil ? .tertiary : .primary)
 #if os(iOS) || os(macOS) || os(visionOS)
                         .battleLinkCharacterDropDestination(action: valueDropAction(kind: .hitPoints))
 #endif
+                        if hitPointsCannotBeCalculated {
+                            BattleHitPointsWarning()
+                        }
                         if canRevealValueRow(.hitPoints) {
                             BattleValueRowRevealButton(kind: .hitPoints, state: state)
                         }
@@ -174,7 +184,7 @@ struct BattleParticipantColumn: View {
 
     private var haloColor: Color {
         if presentation.isRollRecipient || isActive { return tint }
-        return .gray.opacity(0.45)
+        return BattleRoundPalette.inactive.opacity(0.45)
     }
 
     private var haloWidth: CGFloat {
@@ -221,8 +231,15 @@ struct BattleParticipantColumn: View {
         combatant.initiative.map(String.init)
     }
 
+    /// A hit-points entry is chosen, but no health comes out of it: its base
+    /// is free text or a formula that does not evaluate. Without a mark the
+    /// only sign is a gray health ring on the map.
+    private var hitPointsCannotBeCalculated: Bool {
+        combatant.hitPointsEntryId != nil && combatant.pin.healthPercent == nil
+    }
+
     private func openCharacter() {
-        state.openCharacter(combatant, controller: controller, showCharacter: showCharacter)
+        state.openCharacter(combatant, controller: controller, screenModel: screenModel)
     }
 
     private func selectRollRecipient() {
@@ -233,23 +250,41 @@ struct BattleParticipantColumn: View {
         controller.setDead(combatant.id, !combatant.isDead)
     }
 
-    /// Shared by the Initiative and Hit Points drop targets below — the two
-    /// were byte-identical apart from `kind`. See CODE_AUDIT §9.3.
+    /// Shared by the Initiative and Hit Points drop targets — the two differ
+    /// only in `kind`. Goes through the screen model, so a pending "choose
+    /// this value" flow for the combatant ends with the drop.
     private func valueDropAction(kind: BattleValueKind) -> @MainActor ([LinkCharacterData], CGPoint) -> Bool {
         { values, _ in
-            guard let value = values.first, let entryId = value.entryId else {
-                return false
-            }
-            // `assignValueEntry` resolves `value.itemId` up through any
-            // value-group ownership chain and rejects it unless that
-            // resolves to this combatant's own source Character.
-            return controller.assignValueEntry(
-                combatantId: combatant.id,
-                sourceCharacterId: value.itemId,
-                sourceEntryId: entryId,
-                kind: kind
+            guard let value = values.first else { return false }
+            return screenModel.assignDroppedValue(
+                value,
+                to: combatant.id,
+                kind: kind,
+                controller: controller
             )
         }
+    }
+}
+
+/// Marks a hit-points entry that yields no health, next to "HP:".
+private struct BattleHitPointsWarning: View {
+    var body: some View {
+        Image(systemName: "exclamationmark.triangle.fill")
+            .imageScale(.small)
+            .foregroundStyle(.orange)
+            .help(Text("Hit points cannot be calculated from the chosen value.", bundle: .module))
+            .accessibilityLabel(Text("Hit points cannot be calculated from the chosen value.", bundle: .module))
+    }
+}
+
+private extension View {
+    /// Gives the caption-sized "Ini:" / "HP:" label a drop target of usable
+    /// size: some padding, a least width, and the whole area hit-testable.
+    func battleValueDropLabel(minWidth: CGFloat) -> some View {
+        frame(minWidth: minWidth, alignment: .leading)
+            .padding(.vertical, BattleRoundSpacing.extraTight)
+            .padding(.horizontal, BattleRoundSpacing.tight)
+            .contentShape(.rect)
     }
 }
 
@@ -258,11 +293,7 @@ extension BattleParticipantColumn: Equatable {
     /// equatable-skip is at whole-card granularity, so any single
     /// defender's HP/roll changing used to force re-diffing every sibling
     /// defender and the attacker column too, even though only one
-    /// participant's own data actually changed. See CODE_AUDIT §8.3. The
-    /// `showCharacter` closure is excluded for the same reason
-    /// `BattleRoundCard` excludes its own: never `Equatable`, and stable
-    /// once hoisted to a method reference at the call site (see
-    /// `BattleRoundView`).
+    /// participant's own data actually changed.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.state === rhs.state
             && lhs.presentation == rhs.presentation
@@ -270,6 +301,7 @@ extension BattleParticipantColumn: Equatable {
             && lhs.isActive == rhs.isActive
             && lhs.tint == rhs.tint
             && lhs.controller.root === rhs.controller.root
+            && lhs.screenModel === rhs.screenModel
     }
 }
 
@@ -284,9 +316,9 @@ extension BattleParticipantColumn: Equatable {
                 presentation: participant,
                 role: .defender,
                 isActive: true,
-                tint: .red,
+                tint: BattleRoundPalette.defender,
                 controller: controller,
-                showCharacter: { _ in }
+                screenModel: BattleRoundScreenModel(model: model)
             )
             .padding()
         }

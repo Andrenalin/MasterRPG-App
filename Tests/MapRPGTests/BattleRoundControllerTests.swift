@@ -76,7 +76,7 @@ struct BattleRoundControllerTests {
         #expect(sut.toggleRoomFocus(itemId: mapId, roomId: room.id))
 
         // When
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         // Then
         let model = sut.battleRoundModel
@@ -158,7 +158,7 @@ struct BattleRoundControllerTests {
         )
         root.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         let player = try #require(sut.battleRoundModel.combatant(pinId: playerPin.id))
         let monster = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
 
@@ -280,7 +280,7 @@ struct BattleRoundControllerTests {
         sut.setGame(item: map.copy(), itemId: mapId)
 
         // When: two pins reuse one monster template in the first battle.
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         let firstPlayer = try #require(sut.battleRoundModel.combatant(pinId: playerPin.id))
         let firstPlayerGameId = try #require(firstPlayer.gameCharacterId)
         #expect(firstPlayerGameId == playerCharacterId)
@@ -314,7 +314,7 @@ struct BattleRoundControllerTests {
         })
 
         // When
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         // Then
         let retainedPlayer = try #require(
@@ -433,7 +433,7 @@ struct BattleRoundControllerTests {
         sut.setGame(item: map.copy(), itemId: mapId)
 
         // When
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         // Then: initiative is preset from the table-linked entry nested in the group.
         let playerCombatant = try #require(sut.battleRoundModel.combatant(pinId: playerPin.id))
@@ -513,7 +513,7 @@ struct BattleRoundControllerTests {
         #expect(playerPin.healthBorderColor == .gray)
 
         // When
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         // Then: the broadcast pin — not just the combatant's in-memory copy —
         // carries the computed percent, since players can't read the linked
@@ -550,7 +550,7 @@ struct BattleRoundControllerTests {
         let map = MapModel(id: mapId, name: "Dungeon", entries: [room], mapPins: [monsterPin])
         root.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         let combatant = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
         #expect(sut.healthPercent(for: combatant) == 25)
@@ -619,7 +619,7 @@ struct BattleRoundControllerTests {
         )
         root.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         let combatant = try #require(sut.battleRoundModel.combatant(pinId: pin.id))
         #expect(combatant.gameCharacterId == nil)
 
@@ -674,7 +674,7 @@ struct BattleRoundControllerTests {
         let map = MapModel(id: mapId, name: "Dungeon", entries: [room], mapPins: [pinA, pinB, pinM])
         root.itemController.replace(model: map, isInsert: true)
         sut.setGame(item: map.copy(), itemId: mapId)
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         let attackerA = try #require(sut.battleRoundModel.combatant(pinId: pinA.id))
         let attackerB = try #require(sut.battleRoundModel.combatant(pinId: pinB.id))
         let defenderM = try #require(sut.battleRoundModel.combatant(pinId: pinM.id))

@@ -2,9 +2,12 @@
 
 import Foundation
 
-// Split out of BattleRoundModel.swift — see CODE_AUDIT §9.13.
-
 extension BattleRoundModel {
+    /// How many rolls one combatant keeps per turn entry. The card shows the
+    /// newest ones; without a limit the history of a long battle is compared
+    /// and laid out again on every update.
+    static let maximumRollsPerCombatant = 20
+
     @discardableResult
     func addRoll(
         combatantId: UUID,
@@ -40,6 +43,12 @@ extension BattleRoundModel {
                 timestamp: timestamp
             )
         )
+        let overflow = entries[entryIndex].rolls.count(where: { $0.combatantId == combatantId })
+            - Self.maximumRollsPerCombatant
+        if overflow > 0,
+           let oldestIndex = entries[entryIndex].rolls.firstIndex(where: { $0.combatantId == combatantId }) {
+            entries[entryIndex].rolls.remove(at: oldestIndex)
+        }
         return true
     }
 

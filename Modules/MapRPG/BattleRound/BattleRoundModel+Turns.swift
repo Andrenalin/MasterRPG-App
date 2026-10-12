@@ -3,8 +3,6 @@
 import Foundation
 import SwiftUI
 
-// Split out of BattleRoundModel.swift — see CODE_AUDIT §9.13.
-
 // MARK: - Battle lifecycle
 
 extension BattleRoundModel {
@@ -73,20 +71,27 @@ extension BattleRoundModel {
         guard let index = combatants.firstIndex(where: { $0.id == combatantId }) else {
             return false
         }
-        let normalized = value.map { max(1, $0) }
-        guard combatants[index].initiative != normalized else { return false }
-        combatants[index].initiative = normalized
+        // Any integer is a valid initiative: some rule systems use 0 or
+        // negative values.
+        guard combatants[index].initiative != value else { return false }
+        combatants[index].initiative = value
         if combatants[index].isPlayer {
-            retainedPlayerInitiatives[retentionKey(for: combatants[index])] = normalized
+            retainedPlayerInitiatives[retentionKey(for: combatants[index])] = value
         }
-        sortEntries()
+        // Only this combatant's card moves; a manually dragged order of the
+        // others is kept.
+        repositionEntry(for: combatantId)
         return true
     }
 
+    /// Steps the initiative. An empty value counts from 0, so the first
+    /// "+" gives 1 and the first "−" gives −1.
     @discardableResult
     func adjustInitiative(by amount: Int, for combatantId: UUID) -> Bool {
         guard let combatant = combatant(id: combatantId) else { return false }
-        return setInitiative(max(1, (combatant.initiative ?? 1) + amount), for: combatantId)
+        let (value, overflow) = (combatant.initiative ?? 0).addingReportingOverflow(amount)
+        guard !overflow else { return false }
+        return setInitiative(value, for: combatantId)
     }
 
     @discardableResult
@@ -147,30 +152,48 @@ extension BattleRoundModel {
         guard isRunning, !entries.isEmpty else { return false }
         guard let activeAttackerId,
               let index = entries.firstIndex(where: { $0.attackerId == activeAttackerId }) else {
-            return activateAttacker(firstLivingAttackerId(from: 0) ?? entries[0].attackerId)
+            // With nobody alive there is no turn to hand out.
+            guard let firstId = firstLivingAttackerId(from: 0) else { return false }
+            return activateAttacker(firstId)
         }
-        if let nextId = firstLivingAttackerId(from: index + 1) {
-            return activateAttacker(nextId)
+        return advanceTurn(after: index)
+    }
+
+    /// Hands the turn to the first living attacker after `index`. When nobody
+    /// alive remains later in this round's order, the round advances and the
+    /// search starts again from the top, so a fallen combatant is skipped
+    /// there too instead of ending up active again. `excluding` is a
+    /// combatant about to leave the battle, which must not get the turn.
+    /// Returns `false` — changing nothing — when no living attacker is left.
+    @discardableResult
+    func advanceTurn(after index: Int, excluding excludedId: UUID? = nil) -> Bool {
+        if let nextId = firstLivingAttackerId(from: index + 1, excluding: excludedId) {
+            setActiveAttacker(nextId)
+            return true
         }
-        // Nobody alive remains later in this round's order: advance the round
-        // and search again from the top, so a fallen combatant is skipped
-        // there too instead of ending up active again.
+        guard let firstId = firstLivingAttackerId(from: 0, excluding: excludedId) else {
+            return false
+        }
         roundCounter += 1
-        let firstId = firstLivingAttackerId(from: 0) ?? entries[0].attackerId
-        self.activeAttackerId = firstId
-        rollRecipientCombatantId = firstId
-        presentedActivePinId = combatant(id: firstId)?.pinId
-        bumpNetworkSequence()
+        setActiveAttacker(firstId)
         return true
+    }
+
+    private func setActiveAttacker(_ combatantId: UUID) {
+        activeAttackerId = combatantId
+        rollRecipientCombatantId = combatantId
+        presentedActivePinId = combatant(id: combatantId)?.pinId
+        bumpNetworkSequence()
     }
 
     /// The id of the first entry's attacker at or after `startIndex` who
     /// isn't dead. `nil` when nobody in that range is alive (e.g. everyone
     /// remaining in the round has fallen).
-    private func firstLivingAttackerId(from startIndex: Int) -> UUID? {
+    private func firstLivingAttackerId(from startIndex: Int, excluding excludedId: UUID? = nil) -> UUID? {
         guard startIndex < entries.count else { return nil }
         for index in startIndex..<entries.count {
-            guard let attacker = attacker(for: entries[index]), !attacker.isDead else { continue }
+            guard entries[index].attackerId != excludedId,
+                  let attacker = attacker(for: entries[index]), !attacker.isDead else { continue }
             return entries[index].attackerId
         }
         return nil
@@ -199,9 +222,13 @@ extension BattleRoundModel {
     @discardableResult
     func nextRound() -> Bool {
         guard isRunning else { return false }
-        roundCounter += 1
         // Skip fallen combatants, as `nextAttacker()` does. See CODE_AUDIT_19 §5.8.
-        activeAttackerId = firstLivingAttackerId(from: 0) ?? entries.first?.attackerId
+        let firstId = firstLivingAttackerId(from: 0)
+        // With every combatant fallen there is no round to start. A battle
+        // without any combatant still counts rounds.
+        guard firstId != nil || entries.isEmpty else { return false }
+        roundCounter += 1
+        activeAttackerId = firstId
         rollRecipientCombatantId = activeAttackerId
         presentedActivePinId = activeAttackerId.flatMap { combatant(id: $0)?.pinId }
         bumpNetworkSequence()
@@ -219,17 +246,30 @@ extension BattleRoundModel {
         // ultimately comes from a decoded network payload. See CODE_AUDIT_Game §5.5.
         let pinsById = Dictionary(pins.map { ($0.id, $0) }, uniquingKeysWith: { _, new in new })
 
-        for index in combatants.indices {
-            guard let pin = pinsById[combatants[index].pinId], combatants[index].pin != pin else {
+        // Collected on a copy and assigned once: every write to `combatants`
+        // rebuilds both lookup indexes and notifies observers, and this runs
+        // on every map sync.
+        var updatedCombatants = combatants
+        var knownPinIds = Set<UUID>()
+        for index in updatedCombatants.indices {
+            knownPinIds.insert(updatedCombatants[index].pinId)
+            guard let pin = pinsById[updatedCombatants[index].pinId],
+                  updatedCombatants[index].pin != pin else {
                 continue
             }
-            combatants[index].pin = pin
+            updatedCombatants[index].pin = pin
             changed = true
         }
 
-        for defender in additionalDefenders where combatant(pinId: defender.pinId) == nil {
-            combatants.append(defender)
+        // A highlighted pin from outside the battle joins the roster as a
+        // target. It gets no turn of its own here; `addCombatant` gives it one
+        // while the surprise round is still being prepared.
+        for defender in additionalDefenders where knownPinIds.insert(defender.pinId).inserted {
+            updatedCombatants.append(defender)
             changed = true
+        }
+        if changed {
+            combatants = updatedCombatants
         }
 
         guard let activeAttackerId,

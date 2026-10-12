@@ -58,10 +58,7 @@ struct BattleRoundDiceAttributionTests {
             mapPins: [playerPin, monsterPin]
         )
         root.mapRoot.gameController.setGame(item: map, itemId: map.id)
-        #expect(root.mapRoot.gameController.startBattle(
-            itemId: map.id,
-            initiativeOrder: .descending
-        ))
+        #expect(root.mapRoot.gameController.startBattle(itemId: map.id))
 
         let battle = root.battleRoundController.model
         let player = try #require(battle.combatant(pinId: playerPin.id))
@@ -76,8 +73,8 @@ struct BattleRoundDiceAttributionTests {
         // Then: Surprise stores each result on that combatant's own row.
         let playerEntry = try #require(battle.entries.first { $0.attackerId == player.id })
         let monsterEntry = try #require(battle.entries.first { $0.attackerId == monster.id })
-        #expect(battle.rolls(for: player.id, in: playerEntry).map(\.total) == [17])
-        #expect(battle.rolls(for: monster.id, in: monsterEntry).map(\.total) == [11])
+        #expect(playerEntry.rolls.filter { $0.combatantId == player.id }.map(\.total) == [17])
+        #expect(monsterEntry.rolls.filter { $0.combatantId == monster.id }.map(\.total) == [11])
 
         // An unlinked master die uses a manually selected non-player target.
         #expect(root.battleRoundController.selectRollRecipient(monster.id))
@@ -89,7 +86,7 @@ struct BattleRoundDiceAttributionTests {
         let updatedMonsterEntry = try #require(
             battle.entries.first { $0.attackerId == monster.id }
         )
-        #expect(battle.rolls(for: monster.id, in: updatedMonsterEntry).map(\.total) == [11, 8])
+        #expect(updatedMonsterEntry.rolls.filter { $0.combatantId == monster.id }.map(\.total) == [11, 8])
     }
 
     @Test("A coup is stored as a critical roll and a fumble as a fumble")

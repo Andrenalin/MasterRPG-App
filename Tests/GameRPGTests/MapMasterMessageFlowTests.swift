@@ -400,10 +400,7 @@ struct MapMasterMessageFlowTests {
         masterMap.mapPins.removeAll { $0.id == fixture.playerId }
         masterMap.mapPins.append(playerPin)
         fixture.root.mapRoot.gameController.mapGameModel.playerPins = [playerPin]
-        #expect(fixture.root.mapRoot.gameController.startBattle(
-            itemId: mapId,
-            initiativeOrder: .descending
-        ))
+        #expect(fixture.root.mapRoot.gameController.startBattle(itemId: mapId))
         #expect(fixture.root.mapRoot.gameController.nextBattleRound(itemId: mapId))
         let fullMap = try await fixture.root.mapRoot.mapGameControllable.createMapGameData(
             for: mapId
@@ -506,10 +503,7 @@ struct MapMasterMessageFlowTests {
         map.mapPins.removeAll { $0.id == fixture.playerId }
         map.mapPins.append(contentsOf: [playerPin, defenderPin])
         fixture.root.mapRoot.gameController.mapGameModel.playerPins = [playerPin]
-        #expect(fixture.root.mapRoot.gameController.startBattle(
-            itemId: mapId,
-            initiativeOrder: .descending
-        ))
+        #expect(fixture.root.mapRoot.gameController.startBattle(itemId: mapId))
         let attacker = try #require(
             fixture.root.mapRoot.mapGameControllable.battleRoundModel.combatant(
                 pinId: fixture.playerId

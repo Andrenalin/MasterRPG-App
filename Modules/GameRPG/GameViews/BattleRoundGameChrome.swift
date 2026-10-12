@@ -11,17 +11,28 @@ struct BattleRoundGameChrome: View {
 
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    /// The attacker named in the announcement, taken when a round is
+    /// announced. The chrome sits on every game screen; reading the name live
+    /// made it depend on the whole battle roster, so every hit-point or
+    /// highlight change re-evaluated it. It needs the running flag and the
+    /// round only.
+    @State private var announcedAttackerName: String?
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         let model = root.mapRoot.mapGameControllable.battleRoundModel
+        let round = model.roundCounter
 
         ZStack {
             if model.isRunning {
                 if gameScreenModel.showsBattleRoundAnnouncement {
-                    BattleRoundCounterView(model: model, style: .announcement)
-                        .transition(.scale(scale: 0.82).combined(with: .opacity))
-                        .allowsHitTesting(false)
+                    BattleRoundAnnouncementCounter(
+                        round: round,
+                        attackerName: announcedAttackerName
+                    )
+                    .accessibilityElement(children: .combine)
+                    .transition(.scale(scale: 0.82).combined(with: .opacity))
+                    .allowsHitTesting(false)
                 }
             }
         }
@@ -31,11 +42,15 @@ struct BattleRoundGameChrome: View {
             accessibilityReduceMotion ? nil : .spring(duration: 0.4, bounce: 0.18),
             value: gameScreenModel.showsBattleRoundAnnouncement
         )
-        .task(id: BattleRoundAnnouncementID(isRunning: model.isRunning, round: model.roundCounter)) {
+        .task(id: BattleRoundAnnouncementID(isRunning: model.isRunning, round: round)) {
             guard model.isRunning else {
                 gameScreenModel.showsBattleRoundAnnouncement = false
                 return
             }
+
+            // Read here, outside `body`, so the roster is not a dependency
+            // of this view.
+            announcedAttackerName = model.activeEntry.flatMap { model.attacker(for: $0) }?.name
 
             withAnimation(accessibilityReduceMotion ? nil : .spring(duration: 0.32)) {
                 gameScreenModel.showsBattleRoundAnnouncement = true

@@ -46,7 +46,7 @@ struct BattleRoundPausedSharingTests {
             ]
         )
         root.mapRoot.gameController.setGame(item: map, itemId: map.id)
-        #expect(root.mapRoot.gameController.startBattle(itemId: map.id, initiativeOrder: .descending))
+        #expect(root.mapRoot.gameController.startBattle(itemId: map.id))
 
         root.mapRoot.rootModel.isMapStreaming = false
         #expect(root.battleRoundController.nextRound())

@@ -171,6 +171,10 @@ public final class GameRoot {
     /// initiative carry over as already implemented in `BattleRoundModel`.
     lazy var battleRoundController = BattleRoundController(root: self)
 
+    /// The battle round messages last sent, so `battleRoundController` skips
+    /// a broadcast that would repeat them.
+    let battleRoundBroadcastLog = BattleRoundBroadcastLog()
+
     /// The modules whose `resetPlayers()` shape is a uniform "tell this
     /// module's game model who the current players are" — Map and Dice are
     /// deliberately excluded, since their reset has genuinely different
@@ -512,6 +516,7 @@ extension GameRoot {
     private func performStopGame() async {
         cancelOwnedTasks()
         mapRoot.mapGameControllable.resetBattleRound()
+        battleRoundBroadcastLog.reset()
         await statisticsModel.checkpoint(participants: currentStatisticParticipants())
         await statisticsModel.finishSession()
         gameModel.playerGameStarted = false

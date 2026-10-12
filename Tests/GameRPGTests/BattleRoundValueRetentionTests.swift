@@ -105,7 +105,7 @@ struct BattleRoundValueRetentionTests {
         sut.setGame(item: map.copy(), itemId: mapId)
 
         // When: battle one starts with both monster tokens still empty.
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
         let battleModel = sut.battleRoundModel
 
         let player1Combatant = try #require(battleModel.combatant(pinId: player1Pin.id))
@@ -219,7 +219,7 @@ struct BattleRoundValueRetentionTests {
         liveMap.mapPins.append(contentsOf: [player3Pin, monster3Pin])
 
         // When: battle two starts with the reused pins plus the new roster.
-        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.startBattle(itemId: mapId))
 
         // Then: the reused player kept its explicitly-assigned ini/HP.
         let retainedPlayer = try #require(battleModel.combatant(pinId: player1Pin.id))

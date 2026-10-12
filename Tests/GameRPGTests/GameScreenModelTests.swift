@@ -71,7 +71,7 @@ struct GameScreenModelTests {
         #expect(model.showMainTab == .none)
         #expect(model.showSettingTab == .setting)
 
-        model.toggleBattleRoundSidebar()
+        model.showsBattleRoundSidebar.toggle()
         #expect(model.showsBattleRoundSidebar)
         #expect(model.showMainTab == .none)
         #expect(model.showSettingTab == .none)
@@ -93,10 +93,10 @@ struct GameScreenModelTests {
     func battleSidebarToggleAndHide() {
         let model = GameScreenModel()
 
-        model.toggleBattleRoundSidebar()
+        model.showsBattleRoundSidebar.toggle()
         #expect(model.showsBattleRoundSidebar)
 
-        model.toggleBattleRoundSidebar()
+        model.showsBattleRoundSidebar.toggle()
         #expect(!model.showsBattleRoundSidebar)
         #expect(!model.isInlineSidebarVisible)
 

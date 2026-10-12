@@ -87,6 +87,13 @@ public protocol ValueGameStorable: Sendable {
     /// The entry's current value as a whole number, with links and the
     /// "base|modifier" convention resolved, or `nil` when it isn't numeric.
     @MainActor func gameEntryCurrentNumber(characterId: UUID, entryId: UUID) -> Int?
+    /// An entry value as its maximum ("base", the text before the modifier
+    /// separator) and its current amount (base plus modifier), with value
+    /// links resolved on both sides. `nil` when the base is not a number —
+    /// e.g. free text, or a formula that does not evaluate. The Character
+    /// module owns the "base|modifier" convention; callers such as the battle
+    /// health ring use this instead of parsing the raw text themselves.
+    @MainActor func gameValueBaseAndCurrent(_ value: String) -> (base: Double, current: Double)?
     /// Makes `number` the entry's current value in game memory. The base
     /// (and any link in it) is kept; the difference is written as the
     /// "|modifier". Returns `false` when nothing changed or the stored text

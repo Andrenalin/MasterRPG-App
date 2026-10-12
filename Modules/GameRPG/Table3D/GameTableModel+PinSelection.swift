@@ -229,9 +229,9 @@ extension GameTableModel {
               let selectedPinId else {
             return false
         }
-        let battleRound = mapRoot.mapGameControllable.battleRoundModel
-        return battleRound.isPreparingSurprise
-            && battleRound.combatant(pinId: selectedPinId) == nil
+        // A pin that was highlighted first is on the roster as a target
+        // without a turn; it can still be added.
+        return mapRoot.mapGameControllable.battleRoundModel.canAddCombatant(pinId: selectedPinId)
     }
 
     func addSelectedPinToBattleRound() {
