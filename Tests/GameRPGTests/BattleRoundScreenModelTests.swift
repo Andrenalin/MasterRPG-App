@@ -197,7 +197,7 @@ struct BattleRoundScreenModelTests {
     @Test("The battle round's objects do not keep the game root alive")
     func battleObjectsDoNotRetainTheRoot() async throws {
         var root: GameRoot? = try await MockRoot.createGameRoot()
-        weak var weakRoot = root
+        let weakRoot = root
         let controller = try #require(root).battleRoundController
         let screenModel = BattleRoundScreenModel(model: controller.model)
         let log = try #require(root).battleRoundBroadcastLog

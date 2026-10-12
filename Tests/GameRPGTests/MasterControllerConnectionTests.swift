@@ -71,7 +71,7 @@ struct GameMessagePipelineTests {
     @Test("counter zero messages are not deduplicated")
     func counterZeroMessagesAreNotDeduplicated() async {
         let pipeline = GameMessagePipeline()
-        var message = Self.message(counter: 0, senderId: UUID())
+        let message = Self.message(counter: 0, senderId: UUID())
 
         let first = await pipeline.enqueue(GameMessageEvent(model: message, origin: .direct(UUID())))
         let second = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
