@@ -7737,6 +7737,56 @@
           }
         }
       }
+    },
+    "Browse Free Game Bundles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kostenlose Spielpakete durchsuchen"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück"
+          }
+        }
+      }
+    },
+    "Forward" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorwärts"
+          }
+        }
+      }
+    },
+    "Downloading %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird heruntergeladen"
+          }
+        }
+      }
+    },
+    "Only the MasterRPG game bundle repository can be opened here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier kann nur das MasterRPG-Spielpaket-Repository geöffnet werden."
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

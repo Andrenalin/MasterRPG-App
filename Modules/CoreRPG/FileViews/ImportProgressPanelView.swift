@@ -128,8 +128,12 @@ public struct ImportProgressPanelView: View {
                             urlProvider: urlProvider,
                             isSaveGame: isSaveGame
                         )
-                        if outcome == .notStarted {
-                            ImportInformationSection()
+                        // The free bundles are `.gmz` packages, which a saved game cannot import.
+                        if outcome == .notStarted, !isSaveGame {
+                            ImportInformationSection { fileUrl in
+                                // The person chose the file in the browser: start its import.
+                                startImport(of: fileUrl)
+                            }
                         }
                     }
                     .padding()
