@@ -5,7 +5,6 @@ import SwiftUI
 
 struct BattleInitiativeOrderMenu: View {
     @Binding var selection: BattleInitiativeOrder
-    let isDisabled: Bool
 
     var body: some View {
         Picker(
@@ -28,13 +27,12 @@ struct BattleInitiativeOrderMenu: View {
         }
         .pickerStyle(.menu)
         .labelsHidden()
-        .disabled(isDisabled)
     }
 }
 
 #Preview("Initiative order") {
     @Previewable @State var selection = BattleInitiativeOrder.descending
 
-    BattleInitiativeOrderMenu(selection: $selection, isDisabled: false)
+    BattleInitiativeOrderMenu(selection: $selection)
         .padding()
 }

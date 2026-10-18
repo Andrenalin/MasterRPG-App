@@ -2,23 +2,28 @@
 
 import Foundation
 
-// Split out of BattleRoundModel.swift — see CODE_AUDIT §9.13.
-
 // MARK: - Roster mutation
 
 extension BattleRoundModel {
+    /// Gives a pin its own turn while the surprise round is being prepared.
+    /// A pin that is already on the roster as a mere target (it was
+    /// highlighted before it was added) keeps its combatant and only gains
+    /// the turn entry; `combatant` is ignored for it.
     @discardableResult
     func addCombatant(_ combatant: BattleCombatant) -> Bool {
-        guard isPreparingSurprise,
-              self.combatant(pinId: combatant.pinId) == nil else {
-            return false
+        guard canAddCombatant(pinId: combatant.pinId) else { return false }
+        let combatantId: UUID
+        if let existing = self.combatant(pinId: combatant.pinId) {
+            combatantId = existing.id
+        } else {
+            combatants.append(combatant)
+            combatantId = combatant.id
+            if combatant.isPlayer {
+                retainedPlayerCombatants[combatant.pinId] = combatant
+            }
         }
-        combatants.append(combatant)
-        entries.append(BattleRoundEntry(attackerId: combatant.id))
-        if combatant.isPlayer {
-            retainedPlayerCombatants[combatant.pinId] = combatant
-        }
-        sortEntries()
+        entries.append(BattleRoundEntry(attackerId: combatantId))
+        repositionEntry(for: combatantId)
         return true
     }
 
@@ -29,17 +34,24 @@ extension BattleRoundModel {
     @discardableResult
     func removeCombatant(_ combatantId: UUID) -> Bool {
         guard let combatant = combatant(id: combatantId) else { return false }
+        // The active attacker leaves: its turn passes on to the next living
+        // attacker, as "Next Turn" would. Clearing the turn instead sent the
+        // battle back to the top of the order (and, in round 0, back into
+        // preparing the surprise round).
+        if activeAttackerId == combatantId {
+            let index = entries.firstIndex { $0.attackerId == combatantId }
+            if index.map({ advanceTurn(after: $0, excluding: combatantId) }) != true {
+                activeAttackerId = nil
+                presentedActivePinId = nil
+            }
+        }
         combatants.removeAll { $0.id == combatantId }
         entries.removeAll { $0.attackerId == combatantId }
         for index in entries.indices {
             entries[index].defenderIds.removeAll { $0 == combatantId }
         }
-        if activeAttackerId == combatantId {
-            activeAttackerId = nil
-            presentedActivePinId = nil
-        }
         if rollRecipientCombatantId == combatantId {
-            rollRecipientCombatantId = nil
+            rollRecipientCombatantId = activeAttackerId
         }
         if combatant.isPlayer {
             retainedPlayerCombatants.removeValue(forKey: combatant.pinId)

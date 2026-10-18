@@ -110,8 +110,11 @@ struct WindowUtilityList: Scene {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     GameFactory.battleRoundView(root: appModel.gameRoot)
 #if os(macOS)
+                        // Ideal size and least height only. The least width is
+                        // the battle view's own (its list plus, when open, its
+                        // inspector), so there is one minimum per axis here
+                        // instead of this frame and the shared window one below.
                         .frame(
-                            minWidth: 620,
                             idealWidth: 760,
                             minHeight: 520,
                             idealHeight: 760

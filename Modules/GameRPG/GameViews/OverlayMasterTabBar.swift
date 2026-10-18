@@ -17,7 +17,12 @@ struct OverlayMasterTabBar: View {
             TabGameView(root: root, adventureId: adventureId)
             TabSecondGameView(root: root)
 #endif
+#if os(iOS)
+            // The side panel is how iOS presents the battle round. macOS has
+            // its own window for it, and no other platform opens the panel,
+            // so none of them carries the view.
             BattleRoundSideOverlay(root: root)
+#endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
 #if !os(macOS)

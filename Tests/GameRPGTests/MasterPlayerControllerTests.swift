@@ -626,7 +626,6 @@ final class MasterPlayerControllerTests {
         // Exercise the same awaited delegate route used by journal attachment
         // delivery, not PlayerController.handle directly.
         networkMock.model.setPlayerDelegate(sutPlayer)
-        let masterParticipantId = UUID()
         await deliverMasterJournal(showA)
         #expect(await rootPlayer.mapRoot.gameController.currentId == mapA)
 
@@ -639,7 +638,6 @@ final class MasterPlayerControllerTests {
         try await setUp()
         networkMock.model.setPlayerDelegate(sutPlayer)
         let modules: [NetworkModules] = [.map, .photo, .pdf, .space, .audio]
-        let masterParticipantId = UUID()
 
         for (index, module) in modules.enumerated() {
             let itemId = UUID()
@@ -737,7 +735,7 @@ final class MasterPlayerControllerTests {
         // package may normalize file metadata, so manually seeding the pre-export
         // fingerprint makes this test depend on whichever test imported the same
         // shared fixture immediately before it.
-        let firstMapReveal = try await showDelivering(firstMapShareData)
+        let _ = try await showDelivering(firstMapShareData)
 
         masterStoreAbstractionMock.sendResponseData = nil
         let reshowMapShareData = await rootSut.mapRoot.gameController.shareMap(id: mapId)

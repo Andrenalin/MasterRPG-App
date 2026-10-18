@@ -139,14 +139,34 @@ import OSLog
     }
     
     /// Currently tracked scene states, automatically updated by scene trackers.
-    private var sceneStates: [SceneId: SceneState] = [:]
+    /// The dictionary only maps a scene to its box and is filled on first
+    /// use, also from a getter that a view body calls, so it is not observed
+    /// itself; the boxes are.
+    @ObservationIgnored private var sceneStateBoxes: [SceneId: SceneStateBox] = [:]
+
+    private func sceneStateBox(for scene: SceneId) -> SceneStateBox {
+        if let box = sceneStateBoxes[scene] {
+            return box
+        }
+        let box = SceneStateBox()
+        sceneStateBoxes[scene] = box
+        return box
+    }
+
+    /// Writes a scene's state without the side effects of `setSceneState`,
+    /// and without notifying observers when nothing changes.
+    private func storeSceneState(_ state: SceneState, for scene: SceneId) {
+        let box = sceneStateBox(for: scene)
+        guard box.state != state else { return }
+        box.state = state
+    }
     
     /// Gets the current state of a window.
     ///
     /// - Parameter scene: The scene identifier to check
     /// - Returns: The current `SceneState` of the scene, or `.closed` if not tracked
     public func getSceneState(for scene: SceneId) -> SceneState {
-        sceneStates[scene] ?? .closed
+        sceneStateBox(for: scene).state
     }
     
     /// Sets the state of a window.
@@ -155,7 +175,7 @@ import OSLog
     ///   - state: The new window state to set
     ///   - scene: The scene identifier to update
     public func setSceneState(_ state: SceneState, for scene: SceneId) {
-        sceneStates[scene] = state
+        storeSceneState(state, for: scene)
 #if os(visionOS)
         guard scene == .spaceViewer else { return }
         switch state {
@@ -179,19 +199,13 @@ import OSLog
         guard let openWindow = openWindow else { return }
         
         // Check if we can open this window
-        if let state = sceneStates[scene] {
-            switch state {
-            case .closed, .closing:
-                Logger.scenesManager.info("Opening window for scene \(scene.rawValue) with state opening")
-                sceneStates[scene] = .opening
-                openWindow(id: scene.rawValue)
-            case .opening, .opened:
-                Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
-            }
-        } else {
-            Logger.scenesManager.info("First time tracking window for scene \(scene.rawValue) with state opening")
-            sceneStates[scene] = .opening
+        switch getSceneState(for: scene) {
+        case .closed, .closing:
+            Logger.scenesManager.info("Opening window for scene \(scene.rawValue) with state opening")
+            storeSceneState(.opening, for: scene)
             openWindow(id: scene.rawValue)
+        case .opening, .opened:
+            Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
         }
 #endif
     }
@@ -206,20 +220,14 @@ import OSLog
         guard let openWindow = openWindow else { return }
         
         // Check if we can open this window
-        if let state = sceneStates[scene] {
-            switch state {
-            case .closed, .closing:
-                Logger.scenesManager.info("Opening window for scene \(scene.rawValue) with state opening")
-                sceneStates[scene] = .opening
-                openWindow(id: scene.rawValue, value: selection)
-            case .opening, .opened:
-                Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
-                // open new one:
-                openWindow(id: scene.rawValue, value: selection)
-            }
-        } else {
-            Logger.scenesManager.info("First time tracking window for scene \(scene.rawValue) with state opening")
-            sceneStates[scene] = .opening
+        switch getSceneState(for: scene) {
+        case .closed, .closing:
+            Logger.scenesManager.info("Opening window for scene \(scene.rawValue) with state opening")
+            storeSceneState(.opening, for: scene)
+            openWindow(id: scene.rawValue, value: selection)
+        case .opening, .opened:
+            Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
+            // open new one:
             openWindow(id: scene.rawValue, value: selection)
         }
 #endif
@@ -235,7 +243,7 @@ import OSLog
 #if !os(tvOS)
         guard let dismissWindow = dismissWindow else { return }
         Logger.scenesManager.info("Dismissing window for scene \(scene.rawValue) with state closing")
-        sceneStates[scene] = .closing
+        storeSceneState(.closing, for: scene)
         if closed {
             setSceneState(.closed, for: scene)
         } else {
@@ -277,11 +285,11 @@ import OSLog
         case .open:
             pendingSpaceViewerSelection = nil
             currentSpaceViewerItemId = nil
-            sceneStates[SceneId.spaceViewer] = .closing
+            storeSceneState(.closing, for: .spaceViewer)
             immersiveSpaceState = .inTransition
             await dismissImmersiveSpace()
         case .closed:
-            sceneStates[SceneId.spaceViewer] = .opening
+            storeSceneState(.opening, for: .spaceViewer)
             immersiveSpaceState = .inTransition
             switch await openImmersiveSpace(id: SceneId.spaceViewer.rawValue, value: selection ?? ItemSelection(itemId: UUID(), entryId: nil)) {
             case .opened:
@@ -289,11 +297,11 @@ import OSLog
             case .userCancelled, .error:
                 Logger.scenesManager.error("Failed to open the Space viewer immersive space (SceneId.spaceViewer).")
                 immersiveSpaceState = .closed
-                sceneStates[SceneId.spaceViewer] = .closed
+                storeSceneState(.closed, for: .spaceViewer)
                 currentSpaceViewerItemId = nil
             @unknown default:
                 immersiveSpaceState = .closed
-                sceneStates[SceneId.spaceViewer] = .closed
+                storeSceneState(.closed, for: .spaceViewer)
                 currentSpaceViewerItemId = nil
             }
         case .inTransition:
@@ -362,7 +370,8 @@ import OSLog
     @MainActor
     public func dismissSpaceViewer() async {
         pendingSpaceViewerSelection = nil
-        guard let state = sceneStates[SceneId.spaceViewer], state == .opened || state == .opening else { return }
+        let state = getSceneState(for: .spaceViewer)
+        guard state == .opened || state == .opening else { return }
         await toggleSpaceViewer(selection: nil)
     }
 
@@ -404,6 +413,16 @@ import OSLog
         }
     }
 #endif
+}
+
+/// The state of one scene, observable on its own.
+///
+/// All states used to live in one observed dictionary, so a change to any
+/// scene invalidated every view that had read the state of any other —
+/// opening one window re-rendered every window button of the app.
+@MainActor @Observable
+private final class SceneStateBox {
+    var state: ScenesManager.SceneState = .closed
 }
 
 public extension ScenesManager.SceneState {

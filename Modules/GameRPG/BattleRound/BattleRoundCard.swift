@@ -23,28 +23,29 @@ final class BattleRoundCardState {
         valueRowOverrides[kind] = isShown
     }
 
+    /// Opens (or closes again) the combatant's character sheet inside its
+    /// card. A token without a Character that can be shown gets the Character
+    /// list to pick one instead.
     func openCharacter(
         _ combatant: BattleCombatant,
         controller: BattleRoundController,
-        showCharacter: @MainActor (BattleCombatant) -> Void
+        screenModel: BattleRoundScreenModel
     ) {
         if let sheet = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
             characterSheet = characterSheet?.id == sheet.id ? nil : sheet
         } else {
-            showCharacter(combatant)
+            screenModel.chooseCharacter(for: combatant)
         }
     }
 }
 
 /// Everything `BattleRoundCompactCardLayout` needs from its card, bundled
-/// into one struct. See CODE_AUDIT §9.9.
+/// into one struct.
 struct BattleRoundCardLayoutContext {
     let state: BattleRoundCardState
     let presentation: BattleRoundCardPresentation
     let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
+    let screenModel: BattleRoundScreenModel
 }
 
 extension BattleCombatant {
@@ -54,9 +55,7 @@ extension BattleCombatant {
 struct BattleRoundCard: View {
     let presentation: BattleRoundCardPresentation
     let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
+    let screenModel: BattleRoundScreenModel
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     // The sidebar is narrower than this anyway; in the battle window it keeps
@@ -68,7 +67,7 @@ struct BattleRoundCard: View {
         // A single wrapping container keeps this a unary view: the card
         // content and the optional inline character sheet must always
         // reconcile as one row, or `BattleRoundList`'s `.frame(maxWidth:
-        // .infinity)` / `.transition` / `.draggable` fan out across whichever
+        // .infinity)` / `.transition` / drop target fan out across whichever
         // children happen to exist at that moment instead of bounding one
         // stable row — visible as rows resizing/losing full width whenever
         // `cardState.characterSheet` is cleared (e.g. switching attacker).
@@ -76,14 +75,12 @@ struct BattleRoundCard: View {
             state: cardState,
             presentation: presentation,
             controller: controller,
-            showCharacter: showCharacter,
-            selectHitPoints: selectHitPoints,
-            selectInitiative: selectInitiative
+            screenModel: screenModel
         )
         VStack(spacing: 0) {
             BattleRoundCompactCardLayout(context: layoutContext)
                 .frame(maxWidth: maxCardWidth)
-                .padding(10)
+                .padding(BattleRoundSpacing.relaxed)
             #if !os(visionOS)
             // The active card is a darker shade of the same glass, not a
             // saturated color: buttons and text keep their contrast. The blue
@@ -92,25 +89,26 @@ struct BattleRoundCard: View {
                 presentation.isActive
                     ? .regular.tint(.black.opacity(0.18))
                     : .regular,
-                in: .rect(cornerRadius: 12)
+                in: .rect(cornerRadius: BattleRoundSpacing.cardCornerRadius)
             )
             #endif
             .overlay(alignment: .leading) {
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 12,
-                    bottomLeadingRadius: 12
-                )
-                .fill(presentation.isActive ? Color.blue : .clear)
-                .frame(width: 4)
-                .accessibilityHidden(true)
+                (presentation.isActive ? BattleRoundPalette.attacker : Color.clear)
+                    .frame(width: BattleRoundSpacing.tight)
+                    .clipShape(
+                        .rect(
+                            topLeadingRadius: BattleRoundSpacing.cardCornerRadius,
+                            bottomLeadingRadius: BattleRoundSpacing.cardCornerRadius
+                        )
+                    )
+                    .accessibilityHidden(true)
             }
             // "Dead" dimming is owned solely by `BattleParticipantColumn`
             // (both the attacker and every defender dim themselves the same
             // way) — deliberately not repeated here. It used to also be
             // applied at this card level for the attacker only, which
             // compounded with the column's own dimming and made a dead
-            // attacker's row read far darker than a dead defender's. See
-            // CODE_AUDIT §8.1.
+            // attacker's row read far darker than a dead defender's.
             .animation(
                 accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2),
                 value: presentation.isActive
@@ -127,8 +125,7 @@ struct BattleRoundCard: View {
                     presentation: presentation.attacker,
                     cardState: cardState,
                     controller: controller,
-                    showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints
+                    screenModel: screenModel
                 )
             }
 
@@ -143,10 +140,7 @@ extension BattleRoundCard: Equatable {
     /// Re-rendered on every live Battle Round tick (HP, initiative, active turn,
     /// rolls) for every card in the turn order — comparing only what actually
     /// changes the rendered output lets `.equatable()` skip re-diffing cards
-    /// whose own data is unchanged. The three action closures are intentionally
-    /// excluded: they're never `Equatable`, and — once hoisted to stable method
-    /// references at the call site (see `BattleRoundView`) — always behave the
-    /// same regardless of which render's instance gets kept.
+    /// whose own data is unchanged.
     ///
     /// Nothing `@Environment`-sourced may be compared here: `.equatable()`
     /// invokes this `==` on struct copies that were never installed into the
@@ -159,10 +153,11 @@ extension BattleRoundCard: Equatable {
     /// default against itself, not the real setting. The accepted tradeoff: toggling Reduce Motion while a card's
     /// other compared state is unchanged may leave its `.animation` modifier
     /// at whatever it captured on the last real re-render, until an
-    /// unrelated field change forces one. See CODE_AUDIT §8.2.
+    /// unrelated field change forces one.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.presentation == rhs.presentation
             && lhs.controller.root === rhs.controller.root
+            && lhs.screenModel === rhs.screenModel
     }
 }
 
@@ -174,9 +169,7 @@ extension BattleRoundCard: Equatable {
         BattleRoundCard(
             presentation: card,
             controller: controller,
-            showCharacter: { _ in },
-            selectHitPoints: { _ in },
-            selectInitiative: { _ in }
+            screenModel: BattleRoundScreenModel(model: model)
         )
         .padding()
         .environment(AppFocusModel())

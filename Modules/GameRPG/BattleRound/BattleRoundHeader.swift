@@ -7,11 +7,27 @@ struct BattleRoundHeader: View {
     let isRunning: Bool
     let round: Int
     let activeAttackerName: String?
-    let initiativeOrder: BattleInitiativeOrder
     let controller: BattleRoundController
     @Binding var isConfigurationExpanded: Bool
+    /// "End" asks before it ends the battle; the screen presents the dialog.
+    let requestEnd: @MainActor () -> Void
 
     var body: some View {
+#if os(macOS)
+        // On macOS the turn actions are window toolbar items
+        // (`BattleRoundWindowToolbar`), where window-level actions belong.
+        // The header keeps the settings button and the round.
+        HStack(spacing: BattleRoundSpacing.loose) {
+            BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
+            BattleRoundHeading(
+                isRunning: isRunning,
+                round: round,
+                activeAttackerName: activeAttackerName
+            )
+            Spacer(minLength: BattleRoundSpacing.standard)
+        }
+        .battleRoundHeaderChrome()
+#else
         ViewThatFits(in: .horizontal) {
             HStack(spacing: BattleRoundSpacing.loose) {
                 BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
@@ -22,7 +38,7 @@ struct BattleRoundHeader: View {
                 )
                 Spacer(minLength: BattleRoundSpacing.standard)
                 if isRunning {
-                    BattleRoundHeaderActions(controller: controller)
+                    BattleRoundHeaderActions(controller: controller, requestEnd: requestEnd)
                 }
             }
 
@@ -34,15 +50,22 @@ struct BattleRoundHeader: View {
                         round: round,
                         activeAttackerName: activeAttackerName
                     )
-                    Spacer(minLength: 4)
+                    Spacer(minLength: BattleRoundSpacing.tight)
                 }
                 if isRunning {
-                    BattleRoundHeaderActions(controller: controller)
+                    BattleRoundHeaderActions(controller: controller, requestEnd: requestEnd)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .battleRoundHeaderChrome()
+#endif
+    }
+}
+
+private extension View {
+    func battleRoundHeaderChrome() -> some View {
+        padding(.horizontal, BattleRoundSpacing.wide)
         .padding(.vertical, BattleRoundSpacing.loose)
         .overlay(alignment: .bottom) {
             Divider()
@@ -51,7 +74,6 @@ struct BattleRoundHeader: View {
         .background(.black.opacity(0.35))
 #endif
     }
-
 }
 
 private struct BattleRoundConfigurationButton: View {
@@ -83,8 +105,8 @@ private struct BattleRoundConfigurationButton: View {
         isRunning: model.isRunning,
         round: model.roundCounter,
         activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
-        initiativeOrder: model.initiativeOrder,
         controller: controller,
-        isConfigurationExpanded: $isConfigurationExpanded
+        isConfigurationExpanded: $isConfigurationExpanded,
+        requestEnd: {}
     )
 }

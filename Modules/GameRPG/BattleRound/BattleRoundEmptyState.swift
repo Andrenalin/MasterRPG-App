@@ -33,16 +33,18 @@ struct BattleRoundEmptyState: View {
                     .buttonStyle(.borderedProminent)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The scrolling battle list centres this with
+        // `containerRelativeFrame`; a lazy stack row has no height to fill.
+        .frame(maxWidth: .infinity)
     }
 }
 
 #Preview("No battle") {
     BattleRoundEmptyState(isRunning: false, start: {})
-        .frame(width: 420, height: 320)
+        .frame(width: 420, height: 320, alignment: .center)
 }
 
 #Preview("No combatants") {
     BattleRoundEmptyState(isRunning: true, start: {})
-        .frame(width: 420, height: 320)
+        .frame(width: 420, height: 320, alignment: .center)
 }

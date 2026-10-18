@@ -215,6 +215,33 @@ extension GameController {
         return true
     }
 
+    @MainActor
+    public func gameValueBaseAndCurrent(_ value: String) -> (base: Double, current: Double)? {
+        guard let base = resolvedNumber(Self.baseText(of: value)) else { return nil }
+        // A modifier that does not evaluate leaves the value at its base.
+        return (base, resolvedNumber(value.replacing("|", with: "+")) ?? base)
+    }
+
+    /// The part of a "base|modifier" value before the separator. A "|" inside
+    /// a markdown link (`[name](url)`) or inside parentheses belongs to the
+    /// base, so a link whose visible name contains one is not cut in half.
+    static func baseText(of value: String) -> String {
+        var depth = 0
+        for index in value.indices {
+            switch value[index] {
+            case "[", "(":
+                depth += 1
+            case "]", ")":
+                depth = max(0, depth - 1)
+            case "|" where depth == 0:
+                return String(value[..<index])
+            default:
+                break
+            }
+        }
+        return value
+    }
+
     /// The text as a number, with value links and "base|modifier" resolved.
     @MainActor
     private func resolvedNumber(_ text: String) -> Double? {

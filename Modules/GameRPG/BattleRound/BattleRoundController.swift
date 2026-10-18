@@ -32,7 +32,7 @@ struct BattleRoundController: Sendable {
     /// The running battle's map id, but only while this device is the game
     /// master — every mutating method below collapses its own
     /// `isMaster`/`mapId` guard to this single computed property so a future
-    /// method can't skip the authorization check by omission. See CODE_AUDIT §9.5.
+    /// method can't skip the authorization check by omission.
     private var authorizedMapId: UUID? {
         root.gameModel.gameConfig.isMaster ? model.mapId : nil
     }
@@ -41,34 +41,12 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func start() -> Bool {
+        // The map controller builds the combatants and begins the battle in
+        // the saved initiative order; this is the only start path.
         guard root.gameModel.gameConfig.isMaster,
               root.gameModel.masterController != nil,
               let mapId = root.mapRoot.gameControllable.gameModel.currentItemId,
-              let pins = root.mapRoot.mapGameControllable.battleStartPins(itemId: mapId) else {
-            return false
-        }
-
-        let playerCombatants = pins.playerPins.map { pin in
-            BattleCombatant(
-                pin: pin,
-                sourceCharacterId: pin.characterId,
-                // A player's Character is already the authoritative game
-                // identity. Never clone it merely because a battle starts.
-                gameCharacterId: pin.characterId,
-                isPlayer: true
-            )
-        }
-        let roomCombatants = pins.roomPins.compactMap { pin in
-            root.mapRoot.mapGameControllable.makeBattleCombatant(itemId: mapId, pinId: pin.id)
-        }
-
-        root.mapRoot.mapGameControllable.clearBattleHighlights(itemId: mapId)
-        guard root.mapRoot.mapGameControllable.beginBattle(
-            itemId: mapId,
-            playerCombatants: playerCombatants,
-            roomCombatants: roomCombatants,
-            initiativeOrder: model.initiativeOrder
-        ) else {
+              root.mapRoot.mapGameControllable.startBattle(itemId: mapId) else {
             return false
         }
         broadcast(mapId: mapId)
@@ -155,16 +133,19 @@ struct BattleRoundController: Sendable {
         return setHitPoints(combatantId, current + amount)
     }
 
+    /// Saves the initiative order and re-sorts the turn list. Needs no
+    /// running battle: the game master sets it up in Battle Settings before
+    /// the first battle. The order never leaves the device, so nothing is
+    /// broadcast.
     @discardableResult
     func setInitiativeOrder(_ order: BattleInitiativeOrder) -> Bool {
-        guard let mapId = authorizedMapId else {
+        guard root.gameModel.gameConfig.isMaster else {
             return false
         }
-        return root.mapRoot.mapGameControllable.setBattleInitiativeOrder(
-            itemId: mapId,
-            order: order
-        )
+        return root.mapRoot.mapGameControllable.setBattleInitiativeOrder(order)
     }
+
+    // MARK: - Turn order
 
     func moveEntries(_ source: IndexSet, _ destination: Int) {
         guard authorizedMapId != nil else { return }
@@ -206,7 +187,7 @@ struct BattleRoundController: Sendable {
         return true
     }
 
-    // MARK: - Combatant mutation
+    // MARK: - Roster
 
     @discardableResult
     func addCombatant(pinId: UUID) -> Bool {
@@ -268,7 +249,7 @@ struct BattleRoundController: Sendable {
         )
     }
 
-    // MARK: - Combatant mutation
+    // MARK: - Combatant state
 
     @discardableResult
     func setDead(_ combatantId: UUID, _ isDead: Bool) -> Bool {
@@ -330,7 +311,6 @@ struct BattleRoundController: Sendable {
         // a combatant they don't own. The master's own local rolls are
         // already an authenticated identity by the time `isMaster` is true
         // here, so only a non-master sender needs the ownership check.
-        // See CODE_AUDIT §6.1.
         let authorizedCharacterCombatant = characterCombatant.flatMap { combatant -> BattleCombatant? in
             guard isMaster
                     || (combatant.isPlayer
@@ -415,11 +395,10 @@ struct BattleRoundController: Sendable {
             initiativeChanged = setInitiative(combatantId, initiative)
         }
         let changed = mappingChanged || initiativeChanged
-        // Unlike its doc comment's "never leaves the device" claim (true only
-        // for the map-level mutation itself), the health-affecting case
-        // (.hitPoints) needs the same broadcast every other battle mutator
-        // does — otherwise players and the 2D map keep a stale health ring
-        // until unrelated traffic happens to broadcast. See CODE_AUDIT_Game §5.4.
+        // The mapping itself never leaves the device, but a new hit-points
+        // entry changes the health players see: without the broadcast they
+        // and the 2D map keep a stale health ring until unrelated traffic
+        // happens to send one. See CODE_AUDIT_Game §5.4.
         if changed {
             broadcast(mapId: mapId)
         }
@@ -443,6 +422,13 @@ struct BattleRoundController: Sendable {
     /// own 3D screen, which reads a live combatant lookup independent of
     /// this persisted field, but wrong for players and for the 2D map,
     /// which both only ever see `pin.healthPercent` as last broadcast.
+    ///
+    /// Each of the two messages goes out only when it differs from the one
+    /// this controller sent last (`BattleRoundBroadcastLog`). A hit-points
+    /// step changes pins but not the round state, a re-scan of the configured
+    /// values often changes nothing at all — sending both messages for every
+    /// action doubled the traffic, and each one is a relay round trip over
+    /// SharePlay.
     private func broadcast(mapId: UUID) {
         // Every public entry point above already guards on
         // `root.gameModel.gameConfig.isMaster` before reaching here.
@@ -450,16 +436,20 @@ struct BattleRoundController: Sendable {
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
+        let log = root.battleRoundBroadcastLog
         // While the GM paused "Share Map", the map state (room visibility, focus, pins) stays
         // private; only the battle round goes out. Resuming sends the state. See CODE_AUDIT_19 §5.7.
-        if root.mapRoot.rootModel.isMapStreaming {
+        if root.mapRoot.rootModel.isMapStreaming,
+           log.shouldSend(mapState: root.mapRoot.mapGameControllable.mapLiveState(for: mapId)) {
             root.networkActions.game(
                 root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId),
                 .mapState,
                 nil
             )
         }
-        if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(for: mapId) {
+        if let battleState = model.networkState(),
+           log.shouldSend(battleRound: battleState),
+           let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(for: mapId) {
             root.networkActions.game(battleUpdate, .battleRound, nil)
         }
     }

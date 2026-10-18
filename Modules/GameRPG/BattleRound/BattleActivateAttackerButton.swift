@@ -31,7 +31,7 @@ struct BattleActivateAttackerButton: View {
 
 extension BattleActivateAttackerButton: Equatable {
     /// Lets `.equatable()` at its call sites skip re-diffing this leaf when
-    /// an unrelated part of the same card changes. See CODE_AUDIT §7.2.
+    /// an unrelated part of the same card changes.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.combatant == rhs.combatant
             && lhs.isActive == rhs.isActive

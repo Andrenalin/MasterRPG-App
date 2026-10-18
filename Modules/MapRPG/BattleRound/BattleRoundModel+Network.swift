@@ -2,8 +2,6 @@
 
 import Foundation
 
-// Split out of BattleRoundModel.swift — see CODE_AUDIT §9.13.
-
 extension BattleRoundModel {
     @discardableResult
     func applyRemoteState(_ state: BattleRoundNetworkState) -> Bool {
@@ -28,7 +26,7 @@ extension BattleRoundModel {
         networkSequence = 0
     }
 
-    func networkState() -> BattleRoundNetworkState? {
+    public func networkState() -> BattleRoundNetworkState? {
         guard let mapId else { return nil }
         return BattleRoundNetworkState(
             mapId: mapId,

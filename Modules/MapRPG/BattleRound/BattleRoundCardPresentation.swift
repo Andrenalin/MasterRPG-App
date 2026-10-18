@@ -21,7 +21,6 @@ public struct BattleRoundCardPresentation: Identifiable, Equatable {
 
 /// Every input `cardPresentations` derives from, snapshotted so it can be
 /// compared against the previous access instead of unconditionally rebuilt.
-/// See CODE_AUDIT §7.2.
 struct CardPresentationsCacheKey: Equatable {
     let combatants: [BattleCombatant]
     let entries: [BattleRoundEntry]
@@ -39,7 +38,9 @@ public extension BattleRoundModel {
     /// anything battle-related actually changed, so rebuilding unconditionally
     /// would undermine the very `.equatable()` guard `BattleRoundCard` relies
     /// on to skip re-render work downstream — the guard only helps once
-    /// producing the array it compares is itself cheap. See CODE_AUDIT §7.2.
+    /// producing the array it compares is itself cheap. The cache itself is
+    /// not observed (see `cardPresentationsCache`), so filling it here does
+    /// not invalidate the view that is reading it.
     var cardPresentations: [BattleRoundCardPresentation] {
         let activeAttackerId = activeAttackerId
         let isPreparingSurprise = isPreparingSurprise

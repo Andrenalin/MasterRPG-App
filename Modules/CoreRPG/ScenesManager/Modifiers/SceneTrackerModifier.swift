@@ -53,6 +53,18 @@ private struct SceneTrackerModifier: ViewModifier {
                     scenesManager.setSceneState(.opened, for: trackedScene)
                     self.trackSceneActivation()
                 case .background:
+#if os(macOS)
+                    // macOS also reports `.background` for a window that
+                    // exists but is not on screen yet: a window being opened
+                    // passes through it before it turns `.active`. Marking it
+                    // closed there made an opening window read as closed (the
+                    // menu toggle showed it unchecked) and flipped its state
+                    // one more time for every observer.
+                    guard scenesManager.getSceneState(for: trackedScene) != .opening else {
+                        Logger.scenesManager.info("SceneTrackerModifier: scenePhase \(trackedScene.rawValue) is background while opening - keeping state")
+                        return
+                    }
+#endif
                     Logger.scenesManager.info("SceneTrackerModifier: scenePhase \(trackedScene.rawValue) is background - setting state to closed")
                     scenesManager.setSceneState(.closed, for: trackedScene)
                     self.trackSceneDeactivation()

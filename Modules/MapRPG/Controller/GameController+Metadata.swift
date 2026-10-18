@@ -270,34 +270,32 @@ extension GameController {
     @MainActor
     private func applyHealthPercent(for combatant: BattleCombatant) {
         guard let mapId = battleRoundModel.mapId else { return }
-        let percent = healthPercent(for: combatant)
-        guard combatant.pin.healthPercent != percent else {
-            // Matches synchronizeBattleDefenders' .private policy for the same
-            // kind of data (GameController+Battle.swift). See CODE_AUDIT_Game §6.3.
-            Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .private) unchanged at \(percent.map { "\($0)" } ?? "nil", privacy: .private), not persisting")
-            return
-        }
+        let health = battleHealth(for: combatant)
+        let percent = health.percent
+        // Logged only when the value changes, with the reason when there is
+        // none. Matches synchronizeBattleDefenders' .private policy for the
+        // same kind of data. See CODE_AUDIT_Game §6.3.
+        guard combatant.pin.healthPercent != percent else { return }
         let persisted = updatePinState(itemId: mapId, pinId: combatant.pinId) { pin in
             pin.healthPercent = percent
         }
-        Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .private) → \(percent.map { "\($0)" } ?? "nil", privacy: .private), updatePinState persisted=\(persisted, privacy: .public)")
+        Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .private) health \(health.logDescription, privacy: .private), updatePinState persisted=\(persisted, privacy: .public)")
     }
 
     func battleInitiative(from value: String) -> Int? {
         if let value = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            return max(1, value)
+            return value
         }
         guard let value = Double(
             value.trimmingCharacters(in: .whitespacesAndNewlines)
-        ), value.isFinite, value >= Double(Int.min), value <= Double(Int.max) else {
+        ), value.isFinite, value > Double(Int.min), value < Double(Int.max) else {
             return nil
         }
-        return max(1, Int(value))
+        return Int(value)
     }
 
     @MainActor
-    func releaseBattleCharacters(includingPlayers: Bool) {
-        guard includingPlayers else { return }
+    func releaseBattleCharacters() {
         let ids = mapGameModel.battleCharacterCopyIds
         root.characterRoot.valueGameControllable.removeBattleCharacterCopies(ids)
     }

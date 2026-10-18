@@ -15,10 +15,6 @@ extension BattleCombatant {
         hasCharacter && hitPointsEntryId == nil
     }
 
-    var needsValueConfiguration: Bool {
-        needsInitiativeConfiguration || needsHitPointsConfiguration
-    }
-
     func needsConfiguration(_ kind: BattleValueKind) -> Bool {
         switch kind {
         case .initiative: needsInitiativeConfiguration
@@ -34,8 +30,7 @@ struct BattleAttackerConfigRows: View {
     let combatant: BattleCombatant
     let state: BattleRoundCardState
     let controller: BattleRoundController
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
+    let screenModel: BattleRoundScreenModel
 
     var body: some View {
         let showsInitiative = state.showsValueRow(.initiative, for: combatant)
@@ -55,7 +50,7 @@ struct BattleAttackerConfigRows: View {
                         combatant: combatant,
                         state: state,
                         controller: controller,
-                        select: selectInitiative
+                        select: screenModel.selectInitiative
                     )
                 }
                 if showsHitPoints {
@@ -64,7 +59,7 @@ struct BattleAttackerConfigRows: View {
                         combatant: combatant,
                         state: state,
                         controller: controller,
-                        select: selectHitPoints
+                        select: screenModel.selectHitPoints
                     )
                 }
             }
@@ -80,7 +75,11 @@ private struct BattleValueConfigRow: View {
     let controller: BattleRoundController
     let select: @MainActor (BattleCombatant) -> Void
 
+    @Environment(\.locale) private var locale
     @State private var text = ""
+    /// What was typed is not a whole number. The text stays in the field,
+    /// marked, instead of silently turning back into the previous value.
+    @State private var isInvalid = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -99,9 +98,14 @@ private struct BattleValueConfigRow: View {
                 TextField(kind.fieldTitle, text: $text)
                     .monospacedDigit()
                     .multilineTextAlignment(.center)
+                    .foregroundStyle(isInvalid ? Color.red : Color.primary)
                     .focused($isFocused)
                     .onSubmit(commit)
                     .submitLabel(.done)
+                    .help(isInvalid ? Text("Not a whole number", bundle: .module) : Text(kind.fieldTitle))
+                    .accessibilityValue(
+                        isInvalid ? Text("Not a whole number", bundle: .module) : Text(verbatim: text)
+                    )
 #if !os(macOS)
                     .keyboardType(.numbersAndPunctuation)
 #endif
@@ -115,7 +119,12 @@ private struct BattleValueConfigRow: View {
             }
             .disabled(!isEditable)
             .onChange(of: value, initial: true) { _, value in
-                text = value.map(String.init) ?? ""
+                text = BattleNumberInput.text(for: value, locale: locale)
+                isInvalid = false
+            }
+            .onChange(of: text) {
+                // Typing again clears the mark; the next commit decides anew.
+                isInvalid = false
             }
             .onChange(of: isFocused) { _, isFocused in
                 guard !isFocused else { return }
@@ -167,8 +176,15 @@ private struct BattleValueConfigRow: View {
     }
 
     private func commit() {
-        guard let value = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            text = currentValue.map(String.init) ?? ""
+        // An emptied field goes back to the current value. Anything else that
+        // is not a whole number stays visible and is marked: the locale's own
+        // digits, grouping separators and minus sign all parse.
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            text = BattleNumberInput.text(for: currentValue, locale: locale)
+            return
+        }
+        guard let value = BattleNumberInput.parse(text, locale: locale) else {
+            isInvalid = true
             return
         }
         switch kind {
@@ -275,8 +291,7 @@ struct BattleValueRowRevealButton: View {
                 combatant: card.attacker.combatant,
                 state: BattleRoundCardState(),
                 controller: controller,
-                selectHitPoints: { _ in },
-                selectInitiative: { _ in }
+                screenModel: BattleRoundScreenModel(model: model)
             )
         }
         .frame(width: 340)

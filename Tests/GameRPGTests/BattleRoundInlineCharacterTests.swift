@@ -81,7 +81,7 @@ struct BattleRoundInlineCharacterTests {
         #expect(factory.presentation(for: stale) == nil)
     }
 
-    @Test("Sheet and character-selection presentations retain combatant identity")
+    @Test("The inline sheet and the Character selection keep the combatant's identity")
     func presentationIdentity() async throws {
         let root = try await emptyRoot()
         let characterId = UUID()
@@ -97,10 +97,9 @@ struct BattleRoundInlineCharacterTests {
         let sheet = try #require(
             BattleCharacterSheetFactory(characterRoot: root.characterRoot).presentation(for: combatant)
         )
-        let sheetPresentation = BattleRoundPresentation.sheet(sheet)
-        let selectionPresentation = BattleRoundPresentation.selection(combatant.id)
+        let selectionPresentation = BattleRoundSelectionPresentation(id: combatant.id)
 
-        #expect(sheetPresentation.id == combatant.id)
+        #expect(sheet.id == combatant.id)
         #expect(selectionPresentation.id == combatant.id)
     }
 
@@ -110,7 +109,7 @@ struct BattleRoundInlineCharacterTests {
         let characterId = UUID()
 
         let noCharacter = BattleCombatant(pin: pin, sourceCharacterId: nil, gameCharacterId: nil)
-        #expect(!noCharacter.needsValueConfiguration)
+        #expect(!(noCharacter.needsInitiativeConfiguration || noCharacter.needsHitPointsConfiguration))
 
         let nothingFound = BattleCombatant(pin: pin, sourceCharacterId: characterId, gameCharacterId: characterId)
         #expect(nothingFound.needsInitiativeConfiguration)
@@ -145,7 +144,7 @@ struct BattleRoundInlineCharacterTests {
             initiativeEntryId: UUID(),
             hitPointsEntryId: UUID()
         )
-        #expect(!resolved.needsValueConfiguration)
+        #expect(!(resolved.needsInitiativeConfiguration || resolved.needsHitPointsConfiguration))
     }
 
     @Test("A config row follows the missing value until the game master hides or reopens it")

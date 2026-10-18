@@ -62,8 +62,8 @@ struct BattleRoundModelTests {
         // When
         #expect(sut.adjustInitiative(by: -20, for: first.id))
 
-        // Then
-        #expect(sut.combatant(id: first.id)?.initiative == 1)
+        // Then: initiative is not clamped; 0 and negative values are valid.
+        #expect(sut.combatant(id: first.id)?.initiative == -12)
         #expect(sut.entries.first?.attackerId == first.id)
     }
 
@@ -143,11 +143,11 @@ struct BattleRoundModelTests {
         #expect(sut.rollRecipientCombatantId == first.id)
     }
 
-    @Test("Next attacker falls back to the first entry when everyone has fallen")
-    func nextAttackerFallsBackWhenAllDead() throws {
-        // Given
+    @Test("When the last living combatant falls, the turn and the round stay where they are")
+    func nextAttackerStopsWhenAllDead() throws {
+        // Given: first has the turn in round 1; second is already dead.
         let sut = BattleRoundModel()
-        let first = combatant(name: "First", initiative: 18, isDead: true)
+        let first = combatant(name: "First", initiative: 18)
         let second = combatant(name: "Second", initiative: 12, isDead: true)
         sut.begin(
             mapId: UUID(),
@@ -158,12 +158,16 @@ struct BattleRoundModelTests {
         #expect(sut.nextRound())
         #expect(sut.activeAttackerId == first.id)
 
-        // When: nobody is alive, so there is no living entry to advance to.
-        #expect(sut.nextAttacker())
+        // When: first falls too, so nobody is alive to take a turn.
+        var fallen = first.pin
+        fallen.isDead = true
+        #expect(sut.synchronize(pins: [fallen]))
 
-        // Then: the round still advances, falling back to the first entry
-        // rather than leaving nobody active.
-        #expect(sut.roundCounter == 2)
+        // Then: "Next Turn" and "Next Round" do nothing. They used to hand
+        // the turn to a dead combatant and count a new round on every press.
+        #expect(!sut.nextAttacker())
+        #expect(!sut.nextRound())
+        #expect(sut.roundCounter == 1)
         #expect(sut.activeAttackerId == first.id)
     }
 
@@ -239,10 +243,12 @@ struct BattleRoundModelTests {
         // When: the active attacker itself is removed.
         #expect(sut.removeCombatant(third.id))
 
-        // Then: its own entry is gone too, and nobody is left active.
+        // Then: its own entry is gone too, and its turn passed on. Third was
+        // last in the order, so first opens the next round.
         #expect(sut.combatant(id: third.id) == nil)
         #expect(sut.entries.map(\.attackerId) == [first.id])
-        #expect(sut.activeAttackerId == nil)
+        #expect(sut.activeAttackerId == first.id)
+        #expect(sut.roundCounter == 1)
 
         // When: removing an id that no longer exists.
         // Then: it reports failure rather than silently succeeding.
@@ -339,8 +345,8 @@ struct BattleRoundModelTests {
 
         // Then
         let entry = try #require(sut.activeEntry)
-        #expect(sut.rolls(for: attacker.id, in: entry).map(\.total) == [14, 7])
-        #expect(sut.rolls(for: defender.id, in: entry).map(\.total) == [11])
+        #expect(entry.rolls.filter { $0.combatantId == attacker.id }.map(\.total) == [14, 7])
+        #expect(entry.rolls.filter { $0.combatantId == defender.id }.map(\.total) == [11])
         #expect(Set(entry.rolls.map(\.id)).count == 3)
     }
 
@@ -402,8 +408,8 @@ struct BattleRoundModelTests {
 
         let playerEntry = try #require(sut.entries.first { $0.attackerId == player.id })
         let monsterEntry = try #require(sut.entries.first { $0.attackerId == monster.id })
-        #expect(sut.rolls(for: player.id, in: playerEntry).map(\.total) == [14])
-        #expect(sut.rolls(for: monster.id, in: monsterEntry).map(\.total) == [9])
+        #expect(playerEntry.rolls.filter { $0.combatantId == player.id }.map(\.total) == [14])
+        #expect(monsterEntry.rolls.filter { $0.combatantId == monster.id }.map(\.total) == [9])
 
         // Once a real round starts, the surprise roster is closed.
         #expect(sut.nextRound())

@@ -2,14 +2,9 @@
 
 import Foundation
 
-enum BattleRoundPresentation: Identifiable {
-    case sheet(BattleCharacterSheetPresentation)
-    case selection(UUID)
-
-    var id: UUID {
-        switch self {
-        case .sheet(let sheet): sheet.id
-        case .selection(let combatantId): combatantId
-        }
-    }
+/// The modal Character/value list of the battle round screen, identified by
+/// what it was opened for (a combatant, or a settings pattern). macOS shows
+/// the same list in the window's inspector instead.
+struct BattleRoundSelectionPresentation: Identifiable {
+    let id: UUID
 }

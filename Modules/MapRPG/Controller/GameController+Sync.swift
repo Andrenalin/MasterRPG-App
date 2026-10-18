@@ -33,6 +33,24 @@ extension GameController {
         return first + (JSONString.encode(value: [model.pointer] + model.mapPins) ?? "")
     }
 
+    /// The same live state as comparable values, for a sender that wants to
+    /// know whether a map state message would say anything new. The message
+    /// itself cannot be compared: its JSON has no fixed key order, so two
+    /// encodings of one state differ byte for byte. Must cover exactly what
+    /// `mapUpdateResult(for:)` and the envelope of `networkMapUpdate(for:)`
+    /// carry.
+    @MainActor
+    func mapLiveState(for itemId: UUID) -> MapLiveState {
+        let model = gameItem(for: itemId)
+        return MapLiveState(
+            mapId: itemId,
+            generation: networkGeneration(for: itemId),
+            rooms: model.entries.map { MapLiveState.Room(id: $0.id, isShown: $0.isShown, focused: $0.focused) },
+            pointer: model.pointer,
+            pins: model.mapPins
+        )
+    }
+
     @MainActor
     func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType {
         // See CODE_AUDIT §9.2 — shared envelope factory.
@@ -56,4 +74,21 @@ extension GameController {
             data: position.encodeData()
         )
     }
+}
+
+/// What a `.mapState` message carries, as values that can be compared: the
+/// map's generation, each room's visibility and focus, the pointer and every
+/// pin. See `GameController.mapLiveState(for:)`.
+public struct MapLiveState: Equatable, Sendable {
+    struct Room: Equatable, Sendable {
+        let id: UUID
+        let isShown: Bool
+        let focused: Bool
+    }
+
+    let mapId: UUID
+    let generation: MapGameModel.AuthoritativeGeneration
+    let rooms: [Room]
+    let pointer: MapPinModel
+    let pins: [MapPinModel]
 }

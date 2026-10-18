@@ -9,12 +9,13 @@ struct BattleRoundAttackerActions: View {
     let presentation: BattleRoundParticipantPresentation
     let cardState: BattleRoundCardState
     let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let screenModel: BattleRoundScreenModel
 
     var body: some View {
+        let deadToggle = BattleDeadToggle(isDead: combatant.isDead)
+
         Button {
-            cardState.openCharacter(combatant, controller: controller, showCharacter: showCharacter)
+            cardState.openCharacter(combatant, controller: controller, screenModel: screenModel)
         } label: {
             Label {
                 Text(
@@ -27,7 +28,7 @@ struct BattleRoundAttackerActions: View {
         }
 
         Button {
-            selectHitPoints(combatant)
+            screenModel.selectHitPoints(combatant)
         } label: {
             Label {
                 Text("Choose the Hit Points value", bundle: .module)
@@ -68,14 +69,8 @@ struct BattleRoundAttackerActions: View {
             }
         }
 
-        Button(role: combatant.isDead ? nil : .destructive) {
+        Button(deadToggle.title, systemImage: deadToggle.systemImage, role: deadToggle.role) {
             controller.setDead(combatant.id, !combatant.isDead)
-        } label: {
-            Label {
-                Text(combatant.isDead ? "Mark Alive" : "Mark Dead", bundle: .module)
-            } icon: {
-                Image(systemName: combatant.isDead ? "heart.fill" : "skull.fill")
-            }
         }
 
         // Room combatants only: a player's token comes back automatically

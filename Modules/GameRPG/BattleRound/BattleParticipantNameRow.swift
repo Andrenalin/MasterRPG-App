@@ -19,7 +19,7 @@ struct BattleParticipantNameRow: View {
                     .padding(.leading, BattleRoundSpacing.tight)
             }
             Spacer(minLength: BattleRoundSpacing.tight)
-            BattleDeadToggleButton(isDead: combatant.isDead, action: toggleDead)
+            BattleDeadToggleButton(toggle: BattleDeadToggle(isDead: combatant.isDead), action: toggleDead)
         }
     }
 }
@@ -36,25 +36,19 @@ private struct BattleParticipantName: View {
 }
 
 private struct BattleDeadToggleButton: View {
-    let isDead: Bool
+    let toggle: BattleDeadToggle
     let action: @MainActor () -> Void
 
     var body: some View {
         Button(
-            title,
-            systemImage: isDead ? "heart.fill" : "figure.fall",
+            toggle.title,
+            systemImage: toggle.systemImage,
             action: action
         )
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
-        .foregroundStyle(isDead ? .green : .red)
-        .help(Text(title))
-    }
-
-    private var title: String {
-        isDead
-            ? String(localized: "Mark Alive", bundle: .module)
-            : String(localized: "Mark Dead", bundle: .module)
+        .foregroundStyle(toggle.tint)
+        .help(Text(toggle.title))
     }
 }
 

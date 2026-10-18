@@ -35,7 +35,10 @@ public final class BattleRoundSettingsModel: Sendable {
         }
     }
 
-    public var initiativeOrder: BattleInitiativeOrder {
+    /// The game master's initiative order, kept across launches. This is the
+    /// one stored choice: `GameController.setBattleInitiativeOrder` writes it
+    /// and re-sorts the turn list, and every new battle starts from it.
+    public internal(set) var initiativeOrder: BattleInitiativeOrder {
         didSet {
             defaults.set(initiativeOrder.rawValue, forKey: Keys.initiativeOrder)
         }

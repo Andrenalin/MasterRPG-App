@@ -215,6 +215,57 @@ private extension ListRootView {
     }
 }
 
+// MARK: - Added row reveal
+
+private extension View {
+    func revealAddedRow(in listModel: FolderListModel, scrollPosition: Binding<ScrollPosition>) -> some View {
+        modifier(RevealAddedRowModifier(listModel: listModel, scrollPosition: scrollPosition))
+    }
+}
+
+/// A newly added entry/group becomes selected — reveal it once its row exists. `addedModelId` is
+/// set before the list is rebuilt, so the reveal waits for the rebuilt list.
+private struct RevealAddedRowModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let listModel: FolderListModel
+    @Binding var scrollPosition: ScrollPosition
+
+    /// The item added last, until its row exists in the list and has been revealed.
+    @State private var pendingRevealItemId: UUID?
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: listModel.addedModelId) {
+                guard let addedId = listModel.addedModelId else { return }
+                pendingRevealItemId = addedId
+                revealPendingRow()
+            }
+            .onChange(of: listModel.list.map(\.id)) {
+                revealPendingRow()
+            }
+    }
+
+    /// Scrolls just far enough to show the added row, then releases the tracked position. A
+    /// `ScrollPosition(id:anchor:)` is not one-shot: it keeps re-applying itself whenever the
+    /// list is resized (the header editor and its keyboard do that right after an add), which
+    /// could leave the new row, the first one as it has no name yet, under the navigation bar.
+    private func revealPendingRow() {
+        guard let itemId = pendingRevealItemId else { return }
+        guard let row = listModel.row(itemId: itemId) else {
+            // The add is over and the row is not in this list (filtered out): nothing to reveal.
+            if listModel.addedModelId == nil { pendingRevealItemId = nil }
+            return
+        }
+        pendingRevealItemId = nil
+        withAnimation(accessibilityReduceMotion ? nil : .default, completionCriteria: .logicallyComplete) {
+            scrollPosition.scrollTo(id: row.id)
+        } completion: {
+            scrollPosition = ScrollPosition(idType: UUID.self)
+        }
+    }
+}
+
 // MARK: - List content
 
 private struct ListView: View {
@@ -257,21 +308,15 @@ private struct ListView: View {
         }
         // Generic follow for scrollId writes from elsewhere (keyboard column-focus switch,
         // post-search restoration) — minimal-disruption `.top` anchor. Backs off while a new
-        // item is being added so the dedicated `addedModelId` handler below (which wants
-        // `.center`) owns that scroll instead.
+        // item is being added so the dedicated `addedModelId` handler below (`revealPendingRow`)
+        // owns that scroll instead.
         .onChange(of: listModel.scrollId) {
             guard listModel.addedModelId == nil,
                   let id = listModel.scrollId,
                   scrollPosition.viewID(type: UUID.self) != id else { return }
             scrollPosition = ScrollPosition(id: id, anchor: .top)
         }
-        // A newly added entry/group becomes selected — reveal it centered rather than at the edge.
-        .onChange(of: listModel.addedModelId) {
-            guard let addedId = listModel.addedModelId else { return }
-            withAnimation(accessibilityReduceMotion ? nil : .default) {
-                scrollPosition = ScrollPosition(id: addedId, anchor: .center)
-            }
-        }
+        .revealAddedRow(in: listModel, scrollPosition: $scrollPosition)
         // Starting a search shows the current selection at the top; clearing it returns to
         // wherever the list was scrolled to before the search began.
         .onChange(of: listController.searchModel.searchText) { oldValue, newValue in
