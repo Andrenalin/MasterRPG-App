@@ -43,8 +43,6 @@
 		596787F5300F04630094885F /* RPGResourcesDebug.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5967978F300F74800094885F /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		59679790300F74C60094885F /* RPGResourcesDebug.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
-		5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		599DCAD92E8E30C00056E46C /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; };
 		59A110002F88000000000001 /* MasterRPGShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A110042F88000000000001 /* MasterRPGShortcuts.swift */; };
 		59A110012F88000000000001 /* MasterRPGSpotlightIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A110052F88000000000001 /* MasterRPGSpotlightIndexer.swift */; };
@@ -120,7 +118,6 @@
 		8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48228DDAAF300D0279F /* macOSAppDelegate.swift */; };
 		8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E926E8A2B453D450025B659 /* WindowMacList.swift */; };
 		8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */; };
-		8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */; };
 		8E190DA82B9008630084B0F4 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */; };
 		8E39ABFB2ED1BD8700076078 /* PhotoRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; };
 		8E39ABFC2ED1BD8700076078 /* PhotoRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -1779,7 +1776,6 @@
 		21C7327FE6A243BA5700B702 /* PdfRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PdfRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D28DA7BBED65D587DC2BE5D /* CharacterRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CharacterRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		593D0D2C2E31F2D000410232 /* AudioRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPlayerWindow.swift; sourceTree = "<group>"; };
 		599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GeneratorRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeneratorRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		59A110042F88000000000001 /* MasterRPGShortcuts.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MasterRPGShortcuts.swift; sourceTree = "<group>"; };
@@ -2720,7 +2716,6 @@
 		8EC4E48628DDAAF300D0279F /* iOS */ = {
 			isa = PBXGroup;
 			children = (
-				5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */,
 				8EC4E48728DDAAF300D0279F /* iOSAppDelegate.swift */,
 				8EC4E48828DDAAF300D0279F /* iOSSceneDelegate.swift */,
 			);
@@ -4978,7 +4973,6 @@
 				8E83E4E02E841B7A00A1095C /* AboutMenuCommand.swift in Sources */,
 				8E190D992B8F6C150084B0F4 /* macOSAppDelegate.swift in Sources */,
 				8E190D9C2B8F6C150084B0F4 /* WindowMacList.swift in Sources */,
-				8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */,
 				59A110002F88000000000001 /* MasterRPGShortcuts.swift in Sources */,
 				59A110012F88000000000001 /* MasterRPGSpotlightIndexer.swift in Sources */,
 				8E83E4CB2E841B4400A1095C /* MyAppPackage.swift in Sources */,
@@ -5014,7 +5008,6 @@
 				8E4B6E072FC678330066FA9F /* WindowUtilityList.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
-				5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
 				8E6BC9E22AFB0BCF00E5E098 /* iOSSceneDelegate.swift in Sources */,
 				8E83E4CC2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8E83E4D32E841B5500A1095C /* WindowViewerList.swift in Sources */,
@@ -5154,7 +5147,6 @@
 			files = (
 				8E83E4CD2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8EC4E49628DDAAF400D0279F /* iOSAppDelegate.swift in Sources */,
-				5997CAF72B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
 				8E926E8B2B453D450025B659 /* WindowMacList.swift in Sources */,
 				59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E4B6E082FC678330066FA9F /* WindowUtilityList.swift in Sources */,

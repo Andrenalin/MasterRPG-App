@@ -41,6 +41,23 @@ struct WindowMacList: Scene {
             }
         }
         .defaultSize(CGSize(width: 600, height: 800))
+               
+        BaseWindow("Player Game Screen", id: SceneId.gamePlayer.rawValue) {
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                AppModeRouteType.gamePlayer
+                    .frame(minWidth: 1000, minHeight: 600)
+            }
+            .sceneTracker(for: SceneId.gamePlayer)
+            .environmentSetUp(appModel)
+            .appSettingsSetUp(appModel)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+        .defaultWindowPlacementAll(.leading(SceneId.game.rawValue))
+        .restorationBehaviorAll(.disabled)
+#if os(macOS)
+        .keyboardShortcut("P", modifiers: [.command, .shift, .option])
+#endif
     }
 }
 

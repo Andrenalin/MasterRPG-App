@@ -20,6 +20,8 @@ struct AppGameTypeDestinationView: View {
                 AppNavigationRouteType.visionSplit
             case .gameSetup:
                 GameSetupDestinationView()
+            case .gamePlayer:
+                ExternalPlayerWindow(appModel: appModel)
             case .editor:
                 TabRootView(appModel: appModel)
             }

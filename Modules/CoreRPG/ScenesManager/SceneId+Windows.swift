@@ -12,6 +12,7 @@ extension SceneId {
     
     public static var gameStatistics: Self { .init(rawValue: "gameStatistics") }
     public static var gameTable: Self { .init(rawValue: "gameTable") }
+    public static var gamePlayer: Self { .init(rawValue: "gamePlayer") }
     public static var imageSpaceViewer: Self { .init(rawValue: "imageSpaceViewer") }
     public static var logs: Self { .init(rawValue: "logs") }
     public static var mapEditor: Self { .init(rawValue: "mapEditor") }

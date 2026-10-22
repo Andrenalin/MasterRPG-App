@@ -7,4 +7,5 @@ public enum AppModeRouteType: Codable, Equatable, Hashable {
     case game
     case gameSetup
     case gameVisionSetup
+    case gamePlayer
 }

@@ -1,21 +1,26 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RolePlayGameKit
 import GameRPG
 import SwiftUI
 
-struct ExternalPlayerWindow: View {
+public struct ExternalPlayerWindow: View {
+    public init(appModel: AppModel) {
+        self.appModel = appModel
+    }
+    
     let appModel: AppModel
+    
+    @Environment(\.appTheme) private var theme
 
-    var body: some View {
+    public var body: some View {
         VStack {
             if appModel.appNavigationModel.initialRouteType == .ready {
                 ExternalGameRootView(root: appModel.gameRoot)
                     .environmentSetUp(appModel)
                     .environmentActionSetUp(appModel)
             } else {
-                Color.blue
+                theme.backgroundGradient
                     .overlay {
                         Text("Game is not running", bundle: .main)
                             .foregroundStyle(.white)
@@ -24,6 +29,7 @@ struct ExternalPlayerWindow: View {
                     }
             }
         }
+        .themedSurface()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
