@@ -82,9 +82,9 @@ public enum CharacterShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: CharacterRootModel) async {
+    public static func reindexChanged(root: CharacterRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .value,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { CharacterEntity(root: root, model: $0) }

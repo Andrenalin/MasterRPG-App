@@ -155,6 +155,8 @@ public extension ItemControllable {
         updatedItems += itemDataModel.items.filter { unsavedInsertIds.contains($0) && !sortedModelIds.contains($0) }
         itemDataModel.resetItems(updatedItems)
         itemDataModel.publishContentWidgetSnapshot()
+        // The initial load and a reconciliation change items without a save. See CODE_AUDIT_AppIntents §7.1.
+        AppIntentContentInvalidator.invalidate()
     }
     
     @MainActor func resetModel(with model: ModelType?) {

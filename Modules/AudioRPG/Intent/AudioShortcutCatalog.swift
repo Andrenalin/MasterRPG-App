@@ -107,9 +107,9 @@ public enum AudioShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: AudioRootModel) async {
+    public static func reindexChanged(root: AudioRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .audio,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { AudioEntity(root: root, model: $0) }

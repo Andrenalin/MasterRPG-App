@@ -134,9 +134,9 @@ public enum DiceShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: DiceRootModel) async {
+    public static func reindexChanged(root: DiceRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .dice,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { DiceEntity(root: root, model: $0) }

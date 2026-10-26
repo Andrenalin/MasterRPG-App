@@ -82,9 +82,9 @@ public enum PhotoShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: PhotoRootModel) async {
+    public static func reindexChanged(root: PhotoRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .photo,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { PhotoEntity(root: root, model: $0) }

@@ -82,9 +82,9 @@ public enum PdfShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: PdfRootModel) async {
+    public static func reindexChanged(root: PdfRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .pdf,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { PdfEntity(root: root, model: $0) }

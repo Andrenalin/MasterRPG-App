@@ -228,6 +228,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** Cost grows with library size × save frequency; every edit, game update, dice roll that saves, or CloudKit merge repeats a full library re-index, plus Spotlight IPC. Not profiled, but the work is O(all items) per save.
 - **Action:** Index the changed ids only (the save path knows them), keep one full reindex for first launch/the system's `reindexAllEntities`, and cancel/coalesce per module. Pairs with §5.3.
 - **Severity:** High
+- **Status:** Fixed 2026-10-26. Each module's `ItemDataModel` records the ids that changed (`markIndexDirty`: `setItem`, `resetModel`, and the in-place edit sites in `ItemControllable` and `applyMergedUpdate`), and `reindexIntentEntities` takes them: it indexes the changed items, deletes the entries of items that are gone, trashed or not indexable (this also covers remote deletions), and does nothing for a module without changes. The first run per module still covers every item and does the one-time prune (§5.3); a failed index run marks its ids again. `AppIntentContentInvalidator` no longer cancels a running reindex (the ids it took would be lost): a newer `invalidate()` restarts only the debounce, and a change that arrives meanwhile runs one more pass afterwards. The initial load (`updates`) and applied CloudKit batches now invalidate too; before, only `save()` did, so a pure sync merge was never indexed. The per-module entry point is `reindexChanged(root:)` (was `reindexAll`). The system's `reindexAllEntities` on the queries is unchanged. Tests: `IndexDirtyTrackingTests` (marking, taking, burst coalescing, no overlapping reindex). Builds: iOS, macOS, visionOS, tvOS. Cost per save is not measured with Instruments.
 
 ### 7.2 `updateAppShortcutParameters()` is called for a provider without parameterized phrases
 - **Location:** `Sources/MasterRPG/MasterRPGApp.swift:78,84`; `Modules/CoreRPG/App/AppIntentContentInvalidator.swift:28`.
@@ -235,6 +236,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** Wasted work on each debounced invalidation; becomes correct only after §5.6 adds parameterized phrases.
 - **Action:** Remove until parameterized phrases exist, or add them.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26, by the other branch of the action. §5.6 added the parameterized "Open/Start \<adventure\>" phrases, so the call is no longer a no-op and the finding's premise is gone. It is now meaningful and cheap: `MasterRPGSpotlightIndexer.reindexChanged` calls `updateAppShortcutParameters()` only when the adventures changed (`AdventureShortcutCatalog.hasChanges`), and once per launch. The call at the end of `MasterRPGApp.init` and the `refreshShortcutParameters` closure of the invalidator are gone, so dice rolls, audio edits and the other modules no longer trigger it. Builds only; the system's parameter cache itself is not observable.
 
 ---
 

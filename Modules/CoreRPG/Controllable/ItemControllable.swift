@@ -236,6 +236,7 @@ public extension ItemControllable {
         if let original = self.itemSync(for: model.id, noGame: true) {
             let resort = original.name != model.name
             if original.replace(with: model) {
+                itemDataModel.markIndexDirty(original.id)
                 do {
                     try dataControllable?.replaceSync(id: original.id, with: original.copy())
                 } catch {
@@ -495,6 +496,7 @@ public extension ItemControllable {
             var updated = library.copy()
             updated.fileUrl = fileUrl
             if library.replace(with: updated) {
+                itemDataModel.markIndexDirty(library.id)
                 do {
                     try dataControllable?.replaceSync(id: library.id, with: library.copy())
                 } catch {
@@ -521,6 +523,7 @@ public extension ItemControllable {
         let snapshot = model.copy()
         let existing = itemSync(for: snapshot.id, noGame: true)
         if existing != nil || isInsert {
+            itemDataModel.markIndexDirty(snapshot.id)
             try dataControllable?.replaceSync(id: snapshot.id, with: snapshot)
             if existing == nil {
                 dataControllable?.markUnsavedInsert(id: snapshot.id)
@@ -638,6 +641,7 @@ public extension ItemControllable {
         // user happened to re-save the item locally. See CODE_AUDIT_17 §5.9.
         let previous = original.copy()
         if original.replace(with: model) {
+            itemDataModel.markIndexDirty(original.id)
             let changes = original.changedLinkRegisterModels(oldValue: previous)
             linkRegisterController.deregister(links: changes.removed)
             linkRegisterController.register(links: changes.added)

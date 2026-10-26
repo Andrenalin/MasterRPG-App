@@ -159,6 +159,8 @@ public extension SyncDataControllable {
         if needsReconciliation {
             await fetchUpdates(from: dataControllable)
         }
+        // A merged batch changes items without a save. See CODE_AUDIT_AppIntents §7.1.
+        AppIntentContentInvalidator.invalidate()
     }
 
     private func fetchUpdates() async {

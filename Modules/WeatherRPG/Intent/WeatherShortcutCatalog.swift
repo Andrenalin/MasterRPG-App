@@ -82,9 +82,9 @@ public enum WeatherShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: WeatherRootModel) async {
+    public static func reindexChanged(root: WeatherRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .weather,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { WeatherEntity(root: root, model: $0) }

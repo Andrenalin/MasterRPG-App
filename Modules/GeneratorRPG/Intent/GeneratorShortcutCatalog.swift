@@ -82,9 +82,9 @@ public enum GeneratorShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: GeneratorRootModel) async {
+    public static func reindexChanged(root: GeneratorRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .generator,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { GeneratorEntity(root: root, model: $0) }

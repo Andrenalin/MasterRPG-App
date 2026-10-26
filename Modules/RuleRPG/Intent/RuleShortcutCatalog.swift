@@ -68,9 +68,9 @@ public enum RuleShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: RuleRootModel) async {
+    public static func reindexChanged(root: RuleRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .rule,
             model: { root.itemController.itemSync(for: $0) },
             isIndexable: { !$0.specialCategory },

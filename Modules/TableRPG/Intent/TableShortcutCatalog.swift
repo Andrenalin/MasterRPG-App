@@ -82,9 +82,9 @@ public enum TableShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: TableRootModel) async {
+    public static func reindexChanged(root: TableRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .table,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { TableEntity(root: root, model: $0) }

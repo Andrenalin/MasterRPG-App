@@ -3,6 +3,7 @@
 #if !os(tvOS)
 
 import AdventureRPG
+import AppIntents
 import AudioRPG
 import CharacterRPG
 import DiceRPG
@@ -35,19 +36,31 @@ enum MasterRPGSpotlightIndexer {
         WeatherShortcutCatalog.registerDonations()
     }
 
-    static func reindexAll(appModel: AppModel) async {
-        await AdventureShortcutCatalog.reindexAll(root: appModel.adventureRoot)
-        await AudioShortcutCatalog.reindexAll(root: appModel.audioRoot)
-        await CharacterShortcutCatalog.reindexAll(root: appModel.characterRoot)
-        await DiceShortcutCatalog.reindexAll(root: appModel.diceRoot)
-        await GeneratorShortcutCatalog.reindexAll(root: appModel.generatorRoot)
-        await MapShortcutCatalog.reindexAll(root: appModel.mapRoot)
-        await PdfShortcutCatalog.reindexAll(root: appModel.pdfRoot)
-        await PhotoShortcutCatalog.reindexAll(root: appModel.photoRoot)
-        await RuleShortcutCatalog.reindexAll(root: appModel.ruleRoot)
-        await SpaceShortcutCatalog.reindexAll(root: appModel.spaceRoot)
-        await TableShortcutCatalog.reindexAll(root: appModel.tableRoot)
-        await WeatherShortcutCatalog.reindexAll(root: appModel.weatherRoot)
+    /// Whether the shortcut parameters were refreshed once since launch.
+    private static var didRefreshShortcutParameters = false
+
+    /// Indexes what changed since the last pass; a module without changes costs nothing. The
+    /// parameterized phrases ("Open <adventure>", "Start <adventure>") only depend on the
+    /// adventures, so the system's parameter cache is refreshed when those changed, and once per
+    /// launch. See CODE_AUDIT_AppIntents §7.1, §7.2.
+    static func reindexChanged(appModel: AppModel) async {
+        let adventuresChanged = AdventureShortcutCatalog.hasChanges(root: appModel.adventureRoot)
+        await AdventureShortcutCatalog.reindexChanged(root: appModel.adventureRoot)
+        if adventuresChanged || !didRefreshShortcutParameters {
+            didRefreshShortcutParameters = true
+            MasterRPGShortcuts.updateAppShortcutParameters()
+        }
+        await AudioShortcutCatalog.reindexChanged(root: appModel.audioRoot)
+        await CharacterShortcutCatalog.reindexChanged(root: appModel.characterRoot)
+        await DiceShortcutCatalog.reindexChanged(root: appModel.diceRoot)
+        await GeneratorShortcutCatalog.reindexChanged(root: appModel.generatorRoot)
+        await MapShortcutCatalog.reindexChanged(root: appModel.mapRoot)
+        await PdfShortcutCatalog.reindexChanged(root: appModel.pdfRoot)
+        await PhotoShortcutCatalog.reindexChanged(root: appModel.photoRoot)
+        await RuleShortcutCatalog.reindexChanged(root: appModel.ruleRoot)
+        await SpaceShortcutCatalog.reindexChanged(root: appModel.spaceRoot)
+        await TableShortcutCatalog.reindexChanged(root: appModel.tableRoot)
+        await WeatherShortcutCatalog.reindexChanged(root: appModel.weatherRoot)
     }
 }
 

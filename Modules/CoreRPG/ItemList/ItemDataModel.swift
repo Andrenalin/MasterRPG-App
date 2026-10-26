@@ -104,6 +104,7 @@ public final class ItemDataModel: Sendable {
     
     func setItem(id: UUID, item: ModelType) {
         itemData[id] = item
+        markIndexDirty(id)
     }
     
     func removeItem(itemId: UUID) -> Bool {
@@ -117,6 +118,7 @@ public final class ItemDataModel: Sendable {
     }
     
     func resetModel(id: UUID) {
+        markIndexDirty(id)
         itemData[id] = nil
         if let index = items.firstIndex(of: id) {
             items.remove(at: index)
@@ -129,6 +131,23 @@ public final class ItemDataModel: Sendable {
         if let index = gameItems.firstIndex(of: id) {
             gameItems.remove(at: index)
         }
+    }
+
+    /// The ids added, edited, trashed or removed since the App Entity index last took them, so the
+    /// Spotlight reindex touches only those instead of every item of every module. Marked by the
+    /// item controller wherever it changes a library item; taken by `reindexIntentEntities`.
+    /// See CODE_AUDIT_AppIntents §7.1.
+    @ObservationIgnored private var indexDirtyIds: Set<UUID> = []
+
+    public var hasIndexChanges: Bool { !indexDirtyIds.isEmpty }
+
+    public func markIndexDirty(_ id: UUID) {
+        indexDirtyIds.insert(id)
+    }
+
+    public func takeIndexDirtyIds() -> Set<UUID> {
+        defer { indexDirtyIds = [] }
+        return indexDirtyIds
     }
 
     /// Coalesces bursts of item changes (an import, a CloudKit sync) into one snapshot rebuild:

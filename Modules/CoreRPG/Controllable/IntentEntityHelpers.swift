@@ -76,15 +76,17 @@ public func deleteIntentEntities<Entity: IndexedEntity>(
     }
 }
 
-/// Indexes the items of one module as App Entities. Trashed items are not indexed (the queries
-/// hide them, so Siri would find an item it cannot open); `isIndexable` narrows further, e.g.
-/// for the rule compendium's own categories. The first run per module also clears what earlier
-/// versions left in the index: everything of the type on iOS 27, the trashed items below. After
-/// that, trashing and purging remove entries one by one (`IntentEntityIdentifiers.removeFromIndex`).
-/// See CODE_AUDIT_AppIntents §5.3.
+/// Brings the module's App Entity index up to date with what changed since the last run: the ids
+/// `itemDataModel` marked (added, edited, trashed, removed) are indexed again, and the ones whose
+/// item is gone, trashed or not `isIndexable` (e.g. the rule compendium's own categories) leave
+/// the index, because the queries hide them and Siri would find an item it cannot open. A run
+/// without changes does nothing. The first run per module covers every item and also clears what
+/// earlier versions left in the index (everything of the type on iOS 27). Trashing and purging in
+/// the UI additionally remove entries at once (`IntentEntityIdentifiers.removeFromIndex`).
+/// See CODE_AUDIT_AppIntents §5.3, §7.1.
 @MainActor
 public func reindexIntentEntities<Entity: IndexedEntity, Model: ItemDataAccessible>(
-    ids: [UUID],
+    itemDataModel: ItemDataModel,
     module: NetworkModules,
     model: (UUID) -> Model?,
     isIndexable: (Model) -> Bool = { _ in true },
@@ -92,36 +94,45 @@ public func reindexIntentEntities<Entity: IndexedEntity, Model: ItemDataAccessib
 ) async where Entity.ID == UUID {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
 
+    let prunedKey = "AppEntityIndexPruned.\(module.token)"
+    let needsPrune = !UserDefaults.standard.bool(forKey: prunedKey)
+    guard itemDataModel.hasIndexChanges || needsPrune else { return }
+
+    let changedIds = itemDataModel.takeIndexDirtyIds()
+    let ids = needsPrune ? Array(Set(itemDataModel.items).union(changedIds)) : Array(changedIds)
+
     var entities: [Entity] = []
     var notIndexed: [UUID] = []
     for id in ids {
-        guard let model = model(id) else { continue }
-        if model.displayState != DisplayStateMask.totalHidden.rawValue, isIndexable(model) {
+        if let model = model(id), model.displayState != DisplayStateMask.totalHidden.rawValue, isIndexable(model) {
             entities.append(makeEntity(model))
         } else {
             notIndexed.append(id)
         }
     }
 
-    let prunedKey = "AppEntityIndexPruned.\(module.token)"
-    if !UserDefaults.standard.bool(forKey: prunedKey) {
+    if needsPrune {
         if #available(iOS 27, macOS 27, visionOS 27, *) {
             do {
                 try await CSSearchableIndex.default().deleteAppEntities(ofType: Entity.self)
-                UserDefaults.standard.set(true, forKey: prunedKey)
             } catch {
                 Logger.appIntents.error("Clearing the \(module.token, privacy: .public) App Entity index failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+                // Not marked as pruned, so the next run tries again; the changes are kept for it.
+                changedIds.forEach(itemDataModel.markIndexDirty)
+                return
             }
-        } else {
-            await deleteIntentEntities(ids: notIndexed, ofType: Entity.self)
-            UserDefaults.standard.set(true, forKey: prunedKey)
         }
+        UserDefaults.standard.set(true, forKey: prunedKey)
     }
+
+    await deleteIntentEntities(ids: notIndexed, ofType: Entity.self)
 
     do {
         try await CSSearchableIndex.default().indexAppEntities(entities)
     } catch {
-        Logger.appIntents.error("\(module.token, privacy: .public) reindexAll failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        Logger.appIntents.error("\(module.token, privacy: .public) reindex failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        // Left marked, so the next run indexes them again.
+        entities.forEach { itemDataModel.markIndexDirty($0.id) }
     }
 }
 

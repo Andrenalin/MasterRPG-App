@@ -82,9 +82,9 @@ public enum SpaceShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: SpaceRootModel) async {
+    public static func reindexChanged(root: SpaceRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .space,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { SpaceEntity(root: root, model: $0) }

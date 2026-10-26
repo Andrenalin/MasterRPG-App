@@ -94,10 +94,17 @@ public enum AdventureShortcutCatalog {
         IntentEntityIdentifiers.register(AdventureEntity.self, for: .adventure)
     }
 
+    /// Whether adventures were added, renamed or removed since the last reindex, which is what
+    /// the parameterized Siri phrases ("Open <adventure>") depend on.
     @MainActor
-    public static func reindexAll(root: AdventureRootModel) async {
+    public static func hasChanges(root: AdventureRootModel) -> Bool {
+        root.itemController.itemDataModel.hasIndexChanges
+    }
+
+    @MainActor
+    public static func reindexChanged(root: AdventureRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .adventure,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { AdventureEntity(root: root, model: $0) }

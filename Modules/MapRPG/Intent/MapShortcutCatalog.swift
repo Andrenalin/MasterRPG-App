@@ -83,9 +83,9 @@ public enum MapShortcutCatalog {
     }
 
     @MainActor
-    public static func reindexAll(root: MapRootModel) async {
+    public static func reindexChanged(root: MapRootModel) async {
         await reindexIntentEntities(
-            ids: root.itemController.itemDataModel.items,
+            itemDataModel: root.itemController.itemDataModel,
             module: .map,
             model: { root.itemController.itemSync(for: $0) },
             makeEntity: { MapEntity(root: root, model: $0) }
