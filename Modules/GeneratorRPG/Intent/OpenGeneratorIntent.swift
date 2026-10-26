@@ -29,15 +29,16 @@ extension OpenGeneratorIntent: TargetContentProvidingIntent {}
 
 extension GeneratorRootModel {
     @MainActor
+    /// `appEntityIdentifier` is available since iOS 18.2 / macOS 15.2 / visionOS 2.2, so it needs no
+    /// iOS 27 gate. See CODE_AUDIT_AppIntents §5.1.
     func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-        guard #available(iOS 27, macOS 27, visionOS 27, *) else { return }
         activity.appEntityIdentifier = EntityIdentifier(for: GeneratorEntity.self, identifier: itemId)
     }
 
     @MainActor
+    /// `IntentDonationManager` is available since iOS 16 / macOS 13. See CODE_AUDIT_AppIntents §5.1.
     func donateSiriViewingIntent(for itemId: UUID) async {
-        guard #available(iOS 27, macOS 27, visionOS 27, *),
-              let model = itemController.itemSync(for: itemId)
+        guard let model = itemController.itemSync(for: itemId)
         else { return }
 
         let intent = OpenGeneratorIntent()
