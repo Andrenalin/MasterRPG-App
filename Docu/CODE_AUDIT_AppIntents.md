@@ -248,6 +248,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** Snippets are rendered over the system card, which is light in Light Mode; white-on-light would be unreadable. **Rendering on a device/simulator was not verified.**
 - **Action:** Use `.primary`/`.secondary` styles (as for the subtitle) or give the view its own container background; keep it within the 340 pt height ceiling (it is).
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. `RollResultSnippetView` no longer sets a foreground style, so its text uses the primary style of the system snippet card in Light and Dark Mode (the subtitle and dice icon keep `.secondary`). The `.background(.black)` is gone from the `#Preview` and from the snapshot test `rollResultSnippetView`, since it only existed to make the white text visible. Layout and height are unchanged. Builds only: the snippet was not rendered in Siri or Shortcuts, and no snapshot reference exists to re-record.
 
 ---
 
@@ -259,6 +260,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** Two drifting copies of the phrase set (the catalogs hold parameterized phrases and extra intents the provider lacks), and a test that pins dead code. The catalogs' phrases are not in `AppShortcuts.xcstrings`.
 - **Action:** Delete the dead declarations (move `reindexAll` and the package types into proper files), or turn the catalogs into the single source that the provider composes (respecting the cap).
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26 ("delete them"). The 65 `AppShortcut` declarations and the `all` lists are gone from the 12 catalogs, as is `AdventureAppIntentTests` (`shortcutCatalogKeepsPublishedBudget`, which only pinned the dead copy; the file held nothing else). The catalogs keep `registerDonations`, `reindexChanged`, the Adventure `hasChanges` and the `…FrameworkPackage` types; the files and enums keep their `…ShortcutCatalog` names. The phrase drafts they held are lost; they were never localized in `AppShortcuts.xcstrings`.
 
 ### 9.2 Nine private copies of the Spotlight/text helpers
 - **Location:** `Modules/PdfRPG/Intent/PdfManagementIntents.swift:149-171`, `DiceManagementIntents.swift:164-186`, `WeatherManagementIntents.swift:150-182`, `CharacterManagementIntents.swift:170-192`, `PhotoManagementIntents.swift:151-183`, `MapManagementIntents.swift:149-171`, `SpaceManagementIntents.swift:156-188`, `GeneratorManagementIntents.swift:148-180`, `AudioManagementIntents.swift:151-183`; Rule has its own variants (`RuleManagementIntents.swift:144-160`). The shared versions are `Modules/CoreRPG/Controllable/IntentEntityHelpers.swift:20-43`, used by Adventure and Table.
@@ -266,6 +268,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** Any fix (e.g. §5.8) has to be made 10 times; the comment misleads.
 - **Action:** Delete the private copies; make Rule's variants generic over the shared helper.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. By now only `intentPlainText` and `indexIntentEntities` were still private (the delete copy went with §5.8): both are gone from the nine files, and Rule's `indexRuleEntities` now calls the shared `indexIntentEntities`. `appendingIntentText`, which five modules (Audio, Generator, Photo, Space, Weather) had copied identically, moved to CoreRPG `IntentEntityHelpers.swift` as well.
 
 ### 9.3 Per-module Entity / Query / Create / Add / Search / Delete / Open copies
 - **Location:** `Modules/*/Intent/` (~6,200 lines).
@@ -273,6 +276,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** That reason no longer holds as strongly: the out-of-process `AppIntentsTesting` suite added in `Tests/MasterRPGUITests` (34 tests, passing) exercises create / query / Spotlight / open / delete for all 12 modules, so a shared generic base now has a regression net.
 - **Action:** After §5.2 and §5.3, consider a generic create/add/delete implementation parameterized by module; keep per-module `Entity` conformances.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26 in part ("shared pieces only"). The one body that is identical in all 12 modules, the Delete intents' trash, save and index removal, is now `trashIntentItems(ids:ofType:in:)` in CoreRPG (Rule still filters its special categories first, and every module keeps its own dialog because the text is localized from the module bundle). Create, Add, Search and Open stay per module on purpose: their parameters, routes and models differ, and the App Intents metadata processor needs concrete types per module; a generic base for them was not attempted. Tests: the 49 `AppIntentsTesting` tests (see the status of §9.4).
 
 ### 9.4 Annotation and donation boilerplate repeated 12 times
 - **Location:** `addSiriContext`/`donateSiriViewingIntent` in each `Open*Intent.swift` and the two modifiers in each `DetailListView.swift`.
@@ -280,6 +284,7 @@ _No findings._ Checked: Delete intents are soft deletes (trash, recoverable) and
 - **Why:** Fixing §5.1 and §4.4 means 12 edits.
 - **Action:** One generic helper in CoreRPG taking the entity factory and intent factory.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26 for the helpers in the `Open*Intent.swift` files; the view modifiers stay. The new CoreRPG protocol `SiriItemContext` (`Controllable/SiriItemContext.swift`) holds the annotation (`addSiriContext`) and the donation flow (`donateSiriViewingIntent`) once; each of the 12 root models conforms by supplying only `siriEntityIdentifier(for:)` and `siriOpenIntent(for:)` (the OS-matching open intent). The requirements use public types only, because some entity types are internal. The behavior is unchanged, with one difference: Rule's special categories now get no annotation by setting `appEntityIdentifier` to `nil` instead of skipping the assignment. The `.userActivity` and `.task(id:)` blocks in the 12 `DetailListView`s are unchanged: they need `#if !os(tvOS)` and a per-module title, so a shared modifier would not shrink them much.
 
 ---
 

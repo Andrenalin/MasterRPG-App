@@ -22,6 +22,18 @@ public func intentPlainText(from text: AttributedString?) -> String {
     text.map { String($0.characters) } ?? ""
 }
 
+/// `original` with `addition` added as a new paragraph. A blank addition changes nothing, and a
+/// blank original is replaced instead of keeping leading blank lines.
+public func appendingIntentText(_ addition: String, to original: String) -> String {
+    let trimmedAddition = addition.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedAddition.isEmpty else { return original }
+
+    let trimmedOriginal = original.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedOriginal.isEmpty else { return trimmedAddition }
+
+    return "\(trimmedOriginal)\n\n\(trimmedAddition)"
+}
+
 /// A name or title from Siri or Shortcuts, trimmed. Both can pass an empty or all-whitespace
 /// string, so a blank one asks for the value again instead of creating a nameless item or entry.
 /// See CODE_AUDIT_AppIntents §5.2.
@@ -74,6 +86,22 @@ public func deleteIntentEntities<Entity: IndexedEntity>(
     } catch {
         Logger.appIntents.error("Removing \(ids.count, privacy: .public) \(String(describing: entityType), privacy: .public) from the Spotlight index failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
     }
+}
+
+/// What every Delete intent does: moves the items to the trash, saves, and takes them out of the
+/// Spotlight index. The trash is recoverable, and the dialog stays with the intent because each
+/// module localizes it from its own bundle. See CODE_AUDIT_AppIntents §9.3.
+@MainActor
+public func trashIntentItems<Entity: IndexedEntity>(
+    ids: [UUID],
+    ofType entityType: Entity.Type,
+    in root: some ItemRootControllable
+) async where Entity.ID == UUID {
+    for id in ids {
+        root.editControllable.markForDeletion(itemId: id)
+    }
+    await root.itemControllable.save()
+    await deleteIntentEntities(ids: ids, ofType: entityType)
 }
 
 /// Brings the module's App Entity index up to date with what changed since the last run: the ids

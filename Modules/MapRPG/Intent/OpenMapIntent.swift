@@ -52,30 +52,22 @@ struct OpenMapSchemaIntent: OpenIntent {
 extension OpenMapSchemaIntent: TargetContentProvidingIntent {}
 #endif
 
-extension MapRootModel {
-    @MainActor
-    /// `appEntityIdentifier` is available since iOS 18.2 / macOS 15.2 / visionOS 2.2, so it needs no
-    /// iOS 27 gate. See CODE_AUDIT_AppIntents §5.1.
-    func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-        activity.appEntityIdentifier = EntityIdentifier(for: MapEntity.self, identifier: itemId)
+extension MapRootModel: SiriItemContext {
+    public func siriEntityIdentifier(for itemId: UUID) -> EntityIdentifier? {
+        EntityIdentifier(for: MapEntity.self, identifier: itemId)
     }
 
-    @MainActor
-    /// Donates the open intent that matches the running OS, once the item stays selected.
-    /// See CODE_AUDIT_AppIntents §4.4.
-    func donateSiriViewingIntent(for itemId: UUID) async {
-        await IntentDonations.donateOpen(of: itemId) { [self] () -> (any AppIntent)? in
-            guard let model = itemController.itemSync(for: itemId) else { return nil }
-            let entity = MapEntity(root: self, model: model)
-            if #available(iOS 27, macOS 27, visionOS 27, *) {
-                let intent = OpenMapSchemaIntent()
-                intent.target = entity
-                return intent
-            }
-            let intent = OpenMapIntent()
+    public func siriOpenIntent(for itemId: UUID) -> (any AppIntent)? {
+        guard let model = itemController.itemSync(for: itemId) else { return nil }
+        let entity = MapEntity(root: self, model: model)
+        if #available(iOS 27, macOS 27, visionOS 27, *) {
+            let intent = OpenMapSchemaIntent()
             intent.target = entity
             return intent
         }
+        let intent = OpenMapIntent()
+        intent.target = entity
+        return intent
     }
 }
 

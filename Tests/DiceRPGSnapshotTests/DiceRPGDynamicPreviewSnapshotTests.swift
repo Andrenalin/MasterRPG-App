@@ -96,7 +96,6 @@ struct DiceRPGDynamicPreviewSnapshotTests {
 
         try await assertPreviewSnapshot("RollResultSnippetView") { _ in
             RollResultSnippetView(result: result)
-                .background(.black)
         }
     }
 #endif

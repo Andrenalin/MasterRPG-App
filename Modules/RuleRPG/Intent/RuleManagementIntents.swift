@@ -43,7 +43,7 @@ struct CreateRuleIntent: AppIntent {
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
         let entity = RuleEntity(root: root, model: model)
-        try await indexRuleEntities([entity])
+        try await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.rules(model.id, nil))
@@ -90,7 +90,7 @@ struct AddRuleSectionIntent: AppIntent {
         root.editController.add(entry: entry, itemId: target.id)
         await root.itemController.save()
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexRuleEntities([RuleEntity(root: root, model: model)])
+            try await indexIntentEntities([RuleEntity(root: root, model: model)])
         }
         return .result(dialog: "Added \"\(trimmedSectionName)\" to \"\(target.name)\".")
     }
@@ -134,11 +134,7 @@ struct DeleteRuleIntent: DeleteIntent {
                   !model.specialCategory else { return nil }
             return entity.id
         }
-        for id in ids {
-            root.editController.markForDeletion(itemId: id)
-        }
-        await root.itemController.save()
-        await deleteIntentEntities(ids: ids, ofType: RuleEntity.self)
+        await trashIntentItems(ids: ids, ofType: RuleEntity.self, in: root)
         return .result(dialog: "Deleted ^[\(ids.count) rule](inflect: true).")
     }
 }
@@ -146,10 +142,5 @@ struct DeleteRuleIntent: DeleteIntent {
 #if os(iOS)
 extension SearchRulesIntent: TargetContentProvidingIntent {}
 #endif
-
-private func indexRuleEntities(_ entities: [RuleEntity]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    try await CSSearchableIndex.default().indexAppEntities(entities)
-}
 
 #endif

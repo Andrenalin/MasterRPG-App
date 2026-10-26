@@ -52,30 +52,22 @@ struct OpenTableSchemaIntent: OpenIntent {
 extension OpenTableSchemaIntent: TargetContentProvidingIntent {}
 #endif
 
-extension TableRootModel {
-    @MainActor
-    /// `appEntityIdentifier` is available since iOS 18.2 / macOS 15.2 / visionOS 2.2, so it needs no
-    /// iOS 27 gate. See CODE_AUDIT_AppIntents §5.1.
-    func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-        activity.appEntityIdentifier = EntityIdentifier(for: TableEntity.self, identifier: itemId)
+extension TableRootModel: SiriItemContext {
+    public func siriEntityIdentifier(for itemId: UUID) -> EntityIdentifier? {
+        EntityIdentifier(for: TableEntity.self, identifier: itemId)
     }
 
-    @MainActor
-    /// Donates the open intent that matches the running OS, once the item stays selected.
-    /// See CODE_AUDIT_AppIntents §4.4.
-    func donateSiriViewingIntent(for itemId: UUID) async {
-        await IntentDonations.donateOpen(of: itemId) { [self] () -> (any AppIntent)? in
-            guard let model = itemController.itemSync(for: itemId) else { return nil }
-            let entity = TableEntity(root: self, model: model)
-            if #available(iOS 27, macOS 27, visionOS 27, *) {
-                let intent = OpenTableSchemaIntent()
-                intent.target = entity
-                return intent
-            }
-            let intent = OpenTableIntent()
+    public func siriOpenIntent(for itemId: UUID) -> (any AppIntent)? {
+        guard let model = itemController.itemSync(for: itemId) else { return nil }
+        let entity = TableEntity(root: self, model: model)
+        if #available(iOS 27, macOS 27, visionOS 27, *) {
+            let intent = OpenTableSchemaIntent()
             intent.target = entity
             return intent
         }
+        let intent = OpenTableIntent()
+        intent.target = entity
+        return intent
     }
 }
 

@@ -51,30 +51,22 @@ struct OpenPdfSchemaIntent: OpenIntent {
 extension OpenPdfSchemaIntent: TargetContentProvidingIntent {}
 #endif
 
-extension PdfRootModel {
-    @MainActor
-    /// `appEntityIdentifier` is available since iOS 18.2 / macOS 15.2 / visionOS 2.2, so it needs no
-    /// iOS 27 gate. See CODE_AUDIT_AppIntents §5.1.
-    func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-        activity.appEntityIdentifier = EntityIdentifier(for: PdfEntity.self, identifier: itemId)
+extension PdfRootModel: SiriItemContext {
+    public func siriEntityIdentifier(for itemId: UUID) -> EntityIdentifier? {
+        EntityIdentifier(for: PdfEntity.self, identifier: itemId)
     }
 
-    @MainActor
-    /// Donates the open intent that matches the running OS, once the item stays selected.
-    /// See CODE_AUDIT_AppIntents §4.4.
-    func donateSiriViewingIntent(for itemId: UUID) async {
-        await IntentDonations.donateOpen(of: itemId) { [self] () -> (any AppIntent)? in
-            guard let model = itemController.itemSync(for: itemId) else { return nil }
-            let entity = PdfEntity(root: self, model: model)
-            if #available(iOS 27, macOS 27, visionOS 27, *) {
-                let intent = OpenPdfSchemaIntent()
-                intent.target = entity
-                return intent
-            }
-            let intent = OpenPdfIntent()
+    public func siriOpenIntent(for itemId: UUID) -> (any AppIntent)? {
+        guard let model = itemController.itemSync(for: itemId) else { return nil }
+        let entity = PdfEntity(root: self, model: model)
+        if #available(iOS 27, macOS 27, visionOS 27, *) {
+            let intent = OpenPdfSchemaIntent()
             intent.target = entity
             return intent
         }
+        let intent = OpenPdfIntent()
+        intent.target = entity
+        return intent
     }
 }
 

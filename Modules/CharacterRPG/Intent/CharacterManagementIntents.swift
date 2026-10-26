@@ -139,12 +139,7 @@ struct DeleteCharacterIntent: DeleteIntent {
         await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
-        for id in ids {
-            root.editController.markForDeletion(itemId: id)
-        }
-        await root.itemController.save()
-
-        await deleteIntentEntities(ids: ids, ofType: CharacterEntity.self)
+        await trashIntentItems(ids: ids, ofType: CharacterEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(
@@ -158,14 +153,5 @@ struct DeleteCharacterIntent: DeleteIntent {
 #if os(iOS)
 extension SearchCharactersIntent: TargetContentProvidingIntent {}
 #endif
-
-private func intentPlainText(from text: AttributedString?) -> String {
-    text.map { String($0.characters) } ?? ""
-}
-
-private func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    try await CSSearchableIndex.default().indexAppEntities(entities)
-}
 
 #endif

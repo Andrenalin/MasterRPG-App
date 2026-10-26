@@ -20,15 +20,7 @@ public struct DeleteAdventureIntent: DeleteIntent {
         await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
-        for id in ids {
-            root.editController.markForDeletion(itemId: id)
-        }
-        await root.itemController.save()
-
-        // Shared Spotlight glue (see CODE_AUDIT §9.8) — `deleteIntentEntities` already
-        // guards `isIndexingAvailable()` and the iOS 27 `deleteAppEntities` availability
-        // split internally.
-        await deleteIntentEntities(ids: ids, ofType: AdventureEntity.self)
+        await trashIntentItems(ids: ids, ofType: AdventureEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(

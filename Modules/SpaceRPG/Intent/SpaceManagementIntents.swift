@@ -137,13 +137,7 @@ struct DeleteSpaceIntent: DeleteIntent {
         await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
-        for id in ids {
-            root.editController.markForDeletion(itemId: id)
-        }
-        await root.itemController.save()
-
-        // See CODE_AUDIT_Space §5.5.
-        await deleteIntentEntities(ids: ids, ofType: SpaceEntity.self)
+        await trashIntentItems(ids: ids, ofType: SpaceEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(
@@ -157,24 +151,5 @@ struct DeleteSpaceIntent: DeleteIntent {
 #if os(iOS)
 extension SearchSpacesIntent: TargetContentProvidingIntent {}
 #endif
-
-private func intentPlainText(from text: AttributedString?) -> String {
-    text.map { String($0.characters) } ?? ""
-}
-
-private func appendingIntentText(_ addition: String, to original: String) -> String {
-    let trimmedAddition = addition.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedAddition.isEmpty else { return original }
-
-    let trimmedOriginal = original.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedOriginal.isEmpty else { return trimmedAddition }
-
-    return "\(trimmedOriginal)\n\n\(trimmedAddition)"
-}
-
-private func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    try await CSSearchableIndex.default().indexAppEntities(entities)
-}
 
 #endif

@@ -135,12 +135,7 @@ struct DeleteTableIntent: DeleteIntent {
         await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
-        for id in ids {
-            root.editController.markForDeletion(itemId: id)
-        }
-        await root.itemController.save()
-
-        await deleteIntentEntities(ids: ids, ofType: TableEntity.self)
+        await trashIntentItems(ids: ids, ofType: TableEntity.self, in: root)
 
         let count = entities.count
         return .result(dialog: "Deleted ^[\(count) table](inflect: true).")

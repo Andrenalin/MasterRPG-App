@@ -50,35 +50,25 @@ struct OpenRuleSchemaIntent: OpenIntent {
 extension OpenRuleSchemaIntent: TargetContentProvidingIntent {}
 #endif
 
-extension RuleRootModel {
-    /// `appEntityIdentifier` is available since iOS 18.2 / macOS 15.2 / visionOS 2.2, so it needs no
-    /// iOS 27 gate. See CODE_AUDIT_AppIntents §5.1.
-    func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
+extension RuleRootModel: SiriItemContext {
+    public func siriEntityIdentifier(for itemId: UUID) -> EntityIdentifier? {
         guard let model = itemController.itemSync(for: itemId),
-              !model.specialCategory else { return }
-        activity.appEntityIdentifier = EntityIdentifier(
-            for: RuleEntity.self,
-            identifier: itemId
-        )
+              !model.specialCategory else { return nil }
+        return EntityIdentifier(for: RuleEntity.self, identifier: itemId)
     }
 
-    @MainActor
-    /// Donates the open intent that matches the running OS, once the item stays selected.
-    /// See CODE_AUDIT_AppIntents §4.4.
-    func donateSiriViewingIntent(for itemId: UUID) async {
-        await IntentDonations.donateOpen(of: itemId) { [self] () -> (any AppIntent)? in
-            guard let model = itemController.itemSync(for: itemId),
-                  !model.specialCategory else { return nil }
-            let entity = RuleEntity(root: self, model: model)
-            if #available(iOS 27, macOS 27, visionOS 27, *) {
-                let intent = OpenRuleSchemaIntent()
-                intent.target = entity
-                return intent
-            }
-            let intent = OpenRuleIntent()
+    public func siriOpenIntent(for itemId: UUID) -> (any AppIntent)? {
+        guard let model = itemController.itemSync(for: itemId),
+              !model.specialCategory else { return nil }
+        let entity = RuleEntity(root: self, model: model)
+        if #available(iOS 27, macOS 27, visionOS 27, *) {
+            let intent = OpenRuleSchemaIntent()
             intent.target = entity
             return intent
         }
+        let intent = OpenRuleIntent()
+        intent.target = entity
+        return intent
     }
 }
 

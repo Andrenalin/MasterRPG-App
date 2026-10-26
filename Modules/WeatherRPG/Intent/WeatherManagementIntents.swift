@@ -132,12 +132,7 @@ struct DeleteWeatherIntent: DeleteIntent {
         await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
-        for id in ids {
-            root.editController.markForDeletion(itemId: id)
-        }
-        await root.itemController.save()
-
-        await deleteIntentEntities(ids: ids, ofType: WeatherEntity.self)
+        await trashIntentItems(ids: ids, ofType: WeatherEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(
@@ -151,24 +146,5 @@ struct DeleteWeatherIntent: DeleteIntent {
 #if os(iOS)
 extension SearchWeatherIntent: TargetContentProvidingIntent {}
 #endif
-
-private func intentPlainText(from text: AttributedString?) -> String {
-    text.map { String($0.characters) } ?? ""
-}
-
-private func appendingIntentText(_ addition: String, to original: String) -> String {
-    let trimmedAddition = addition.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedAddition.isEmpty else { return original }
-
-    let trimmedOriginal = original.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedOriginal.isEmpty else { return trimmedAddition }
-
-    return "\(trimmedOriginal)\n\n\(trimmedAddition)"
-}
-
-private func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    try await CSSearchableIndex.default().indexAppEntities(entities)
-}
 
 #endif

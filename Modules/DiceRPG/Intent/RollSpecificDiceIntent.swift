@@ -10,7 +10,6 @@ import SwiftUI
 #Preview(traits: .mockData) {
     @Previewable @Environment(DiceRootModel.self) var root
     RollResultSnippetView(result: DiceResultModel(diceModel: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0])))
-        .background(.black)
 }
 
 public struct RollSpecificDiceIntent: AppIntent {
@@ -101,7 +100,6 @@ struct RollResultSnippetView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .foregroundStyle(.white)
         .padding()
     }
 }
