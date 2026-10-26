@@ -1901,7 +1901,7 @@
 		8BCAD022C3EB2C3F45CD3921 /* GeneratorRPGSnapshotTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPGSnapshotTests; sourceTree = "<group>"; };
 		8E08AC3E2FF79017003B247F /* Docu */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Docu; sourceTree = "<group>"; };
 		8E0DCFB42F8722C80045FE8D /* DiceRollerWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = DiceRollerWidget; sourceTree = "<group>"; };
-		8E19D4D32FC5418100B23172 /* .agents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = .agents; sourceTree = "<group>"; };
+		8E19D4D32FC5418100B23172 /* .agents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = ("skills/app-store-screenshots/scripts", ); path = .agents; sourceTree = "<group>"; };
 		8E3620AE2E1A80FF00E5C99A /* CoreRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPG; sourceTree = "<group>"; };
 		8E3620DC2E1A9EAF00E5C99A /* PhotoRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PhotoRPG; sourceTree = "<group>"; };
 		8E4B274E2CD79E7D009AB4D1 /* RPGResources */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RPGResources; sourceTree = "<group>"; };
