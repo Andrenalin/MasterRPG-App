@@ -38,14 +38,14 @@ struct SpaceEntity: IndexedEntity {
     private let storedDescription: String
 
     var root: SpaceRootModel
-    var model: SpaceModel
 
     // Display fields are captured eagerly: entity properties are nonisolated, the
     // @MainActor model must not be read from them. All queries are @MainActor.
+    // The live model is deliberately not stored: re-resolve it through the root when needed.
+    // See CODE_AUDIT_AppIntents §3.1.
     @MainActor
     init(root: SpaceRootModel, model: SpaceModel) {
         self.root = root
-        self.model = model
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description

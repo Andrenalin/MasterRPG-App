@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
+import AppIntents
 import AppIntentsTesting
+import UniformTypeIdentifiers
 import XCTest
 
 /// The create / query / index / open / search / add / delete intents every item-backed content
@@ -128,6 +130,26 @@ final class ItemIntentTests: AppIntentsUITestCase {
                 .entities(identifiers: [entity.identifier.instanceIdentifier])
             XCTAssertEqual(resolved.count, 1, module.name)
         }
+    }
+
+    // MARK: Export
+
+    func testExportedPlainTextCarriesNameDescriptionAndSections() async throws {
+        let details = "Exported by the intent tests."
+        let (rule, name) = try await createItem(.rule, details: details)
+        try await definitions.intents["AddRuleSectionIntent"]
+            .makeIntent(target: rule, sectionName: "AIT section", content: "Section body")
+            .run()
+
+        // The entity holds no live model; the export looks the rule up again, so the section added
+        // after the entity was created must be part of the text.
+        let file = try await rule.exported(as: .plainText)
+        let text = String(decoding: try await file.data(contentType: .plainText), as: UTF8.self)
+
+        XCTAssertTrue(text.contains(name), text)
+        XCTAssertTrue(text.contains(details), text)
+        XCTAssertTrue(text.contains("AIT section"), text)
+        XCTAssertTrue(text.contains("Section body"), text)
     }
 
     // MARK: Open and search

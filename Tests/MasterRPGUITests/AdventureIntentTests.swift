@@ -70,10 +70,11 @@ final class AdventureIntentTests: AppIntentsUITestCase {
         try await definitions.intents["StartAdventureGameIntent"].makeIntent(target: adventure).run()
 
         await eventually("Starting the game did not select the Game tab.") {
-            app.descendants(matching: .any)
+            let tab = app.descendants(matching: .any)
                 .matching(identifier: "module.tab.GAME")
                 .firstMatch
-                .isSelected
+            // Reading `isSelected` of a missing element fails the test instead of retrying.
+            return tab.exists && tab.isSelected
         }
     }
 

@@ -41,15 +41,12 @@ struct DiceEntity: IndexedEntity {
     private let storedTags: [String]
     private let storedFirstDieMax: Int?
 
-    var root: DiceRootModel
-    var model: DiceModel
-
     // Display fields are captured eagerly: entity properties are nonisolated, the
     // @MainActor model must not be read from them. All queries are @MainActor.
+    // The live model is deliberately not stored: re-resolve it through the root when needed.
+    // See CODE_AUDIT_AppIntents §3.1.
     @MainActor
     init(root: DiceRootModel, model: DiceModel) {
-        self.root = root
-        self.model = model
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description

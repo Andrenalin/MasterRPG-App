@@ -55,10 +55,11 @@ final class NavigateIntentTests: AppIntentsUITestCase {
                 XCTAssertTrue(list.waitForExistence(timeout: 15), "Navigating to \(rawValue) did not show \(token).")
             } else {
                 await eventually("Navigating to \(rawValue) did not select the \(token) tab.") {
-                    app.descendants(matching: .any)
+                    let tab = app.descendants(matching: .any)
                         .matching(identifier: "module.tab.\(token)")
                         .firstMatch
-                        .isSelected
+                    // Reading `isSelected` of a missing element fails the test instead of retrying.
+                    return tab.exists && tab.isSelected
                 }
             }
         }

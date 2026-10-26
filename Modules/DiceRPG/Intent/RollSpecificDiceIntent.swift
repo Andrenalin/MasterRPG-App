@@ -38,8 +38,8 @@ public struct RollSpecificDiceIntent: AppIntent {
         // Intent used to write again itself via an untracked `Task.detached`. That second,
         // uncoordinated write could race the tracked one and leave the widget showing
         // whichever roll's write happened to finish last. See CODE_AUDIT.md §3.5.
-        root.gameController.rollDice(itemId: dice.model.id, rollSynced: true)
-        let rollResult = root.gameController.result(itemId: dice.model.id)
+        root.gameController.rollDice(itemId: dice.id, rollSynced: true)
+        let rollResult = root.gameController.result(itemId: dice.id)
 
         let finalSum = rollResult.sum
         // Create result dialog based on result type

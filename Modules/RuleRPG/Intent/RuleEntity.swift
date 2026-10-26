@@ -35,12 +35,10 @@ struct RuleEntity: IndexedEntity {
     private let storedName: String
     private let storedDescription: String
     var root: RuleRootModel
-    var model: RuleModel
 
     @MainActor
     init(root: RuleRootModel, model: RuleModel) {
         self.root = root
-        self.model = model
         id = model.id
         storedName = model.name
         storedDescription = model.description
@@ -51,15 +49,24 @@ struct RuleEntity: IndexedEntity {
 extension RuleEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .plainText) { item in
-            let isSpecialCategory = await item.model.specialCategory
-            guard !isSpecialCategory else { return Data() }
-            var result = "\(item.name)\n\n\(item.description)"
-            let sections = await item.model.entries.map { entry in
-                "\n\n\(entry.name)\n\(entry.content)"
-            }.joined()
-            result += sections
-            return result.data(using: .utf8) ?? Data()
+            await item.exportedPlainText()
         }
+    }
+}
+
+extension RuleEntity {
+    /// Name, description and sections as plain text. The live model is looked up here instead of
+    /// being stored on the entity; a rule that no longer exists still exports its name and
+    /// description, a special category exports nothing. See CODE_AUDIT_AppIntents §3.1.
+    @MainActor
+    fileprivate func exportedPlainText() -> Data {
+        let model = root.itemController.itemSync(for: id)
+        guard model?.specialCategory != true else { return Data() }
+        var result = "\(name)\n\n\(description)"
+        for entry in model?.entries ?? [] {
+            result += "\n\n\(entry.name)\n\(entry.content)"
+        }
+        return result.data(using: .utf8) ?? Data()
     }
 }
 
