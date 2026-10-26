@@ -87,6 +87,13 @@ public enum AdventureShortcutCatalog {
         )
     }
 
+    /// Names the entity type this module's donations use, so they can be deleted when an item is
+    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    public static func registerDonations() {
+        IntentEntityIdentifiers.register(AdventureEntity.self, for: .adventure)
+    }
+
     @MainActor
     public static func reindexAll(root: AdventureRootModel) async {
         let entities = root.itemController.itemDataModel.items.compactMap { id -> AdventureEntity? in

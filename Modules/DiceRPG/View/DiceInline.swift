@@ -111,6 +111,9 @@ struct DiceInline: View {
     private func rollAndShareDiceResult() {
         withAnimation(Animation.default.reduced(if: reduceMotion)) {
             root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategory: resultCategory)
+#if !os(tvOS)
+            root.donateRoll(of: itemId)
+#endif
             showResult <=> true
         }
     }

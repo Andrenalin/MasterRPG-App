@@ -2,6 +2,9 @@
 
 import CoreRPG
 import SwiftUI
+#if !os(tvOS)
+import AppIntents
+#endif
 import AdventureRPG
 import AudioRPG
 import GameRPG
@@ -24,6 +27,9 @@ public struct SettingsView: View {
 
     @Environment(\.navigator) private var navigator
     @State private var didReplayTips = false
+#if os(iOS) || os(visionOS)
+    @AppStorage("suggest.rollDiceShortcut") private var showRollDiceTip = true
+#endif
     
     @State private var showResetAlert = false
     @State private var isThemePickerPresented = false
@@ -95,6 +101,19 @@ public struct SettingsView: View {
                 Text("Data Checks", bundle: .module)
             }
             
+#if os(iOS) || os(visionOS)
+            // Points users at the actions Siri and Shortcuts offer. `SiriTipView` and
+            // `ShortcutsLink` are not available on macOS. See CODE_AUDIT_AppIntents §4.10.
+            SectionGroupEditorView {
+                SiriTipView(intent: RollDiceIntent(diceType: .d20), isVisible: $showRollDiceTip)
+#if os(iOS)
+                ShortcutsLink()
+#endif
+            } header: {
+                Text("Siri & Shortcuts", bundle: .module)
+            }
+#endif
+
             SectionGroupEditorView {
                 Button {
                     Task {

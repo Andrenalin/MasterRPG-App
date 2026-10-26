@@ -53,6 +53,8 @@
 	</array>
 	<key>CKSharingSupported</key>
 	<false/>
+	<key>NSAppIconActionTintColorName</key>
+	<string>AccentColor</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

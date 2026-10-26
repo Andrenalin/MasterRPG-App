@@ -37,4 +37,16 @@ public struct StartAdventureGameIntent: AppIntent {
 extension StartAdventureGameIntent: TargetContentProvidingIntent {}
 #endif
 
+extension AdventureRootModel {
+    /// Donates the start of a game the user began from the UI, so Siri learns it next to the
+    /// voice and Shortcuts path. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    public func donateStartGame(of itemId: UUID) async {
+        guard let model = itemController.itemSync(for: itemId) else { return }
+        let intent = StartAdventureGameIntent()
+        intent.target = AdventureEntity(root: self, model: model)
+        await IntentDonations.donate(intent)
+    }
+}
+
 #endif

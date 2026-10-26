@@ -62,6 +62,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** The old name is on a removal path (no warning until the deployment target reaches 27). A system-level "search in app" schema is a single entry point; with 12 claimants it is undefined which one Siri picks. This is a design question that was **not** verified on a device.
 - **Action:** Add an iOS 27-gated sibling using `.system.searchInApp` and keep the legacy intents for iOS 26 (the macro and schema are 27-only, so they must be separate types funnelling into the same action). Decide whether one app-level search intent that routes to the Search module (and optionally a module scope) replaces the 12 per-module ones.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. One app-level `SearchInAppIntent` (`@AppIntent(schema: .system.searchInApp)`, iOS/macOS/visionOS 27, `Modules/RolePlayGameKit/Intent/SearchInAppIntent.swift`) fills the cross-module search via `GameRoot.showSearchResults(for:)` and shows the Search tab. The 12 per-module `Search…Intent`s keep the deprecated `.system.search` name for iOS 26 (a type cannot be both); on iOS 27 they still compete for that schema, which only goes away when the deployment target reaches 27. Tests: `testAppLevelSearchShowsTheSearchTab`. Which search intent Siri prefers on iOS 27 is not verified on a device.
 
 ### 4.2 `.system.open` is not adopted
 - **Location:** all 12 `Modules/*/Intent/Open*Intent.swift` (`OpenAdventureIntent.swift:12`, `OpenAudioIntent.swift:12`, `OpenCharacterIntent.swift:12`, `OpenDiceIntent.swift:11`, `OpenGeneratorIntent.swift:12`, `OpenMapIntent.swift:12`, `OpenPdfIntent.swift:11`, `OpenPhotoIntent.swift:11`, `OpenRuleIntent.swift:10`, `OpenSpaceIntent.swift:12`, `OpenTableIntent.swift:12`, `OpenWeatherIntent.swift:12`).
@@ -69,6 +70,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Voice "open <name>" on iOS 27 depends on it; the existing `OpenIntent`s still serve Spotlight taps and Shortcuts. Whether one schema intent per entity type is allowed (and the exact parameter shape) is **not verified**.
 - **Action:** Spike one module (Adventure) with an iOS 27-gated `@AppIntent(schema: .system.open)` sibling funnelling into the existing navigation route, check the Xcode fix-it and the metadata processor accept 12 of them, then roll out. Keep the legacy `OpenIntent` for iOS 26, and donate the one matching the running OS (§4.4).
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26, with a design decision. The build rejects two `OpenIntent`s for one entity type ("OpenIntent targets should be unique"), so each `Open<X>Intent` is now a plain foreground `AppIntent` (same Shortcuts action, App Shortcuts and tests) and a new iOS/macOS/visionOS 27 `Open<X>SchemaIntent` carries `.system.open` and the same route. Consequence: on iOS 26 the entity no longer has an `OpenIntent`. Tests: `testSchemaOpenIntentOpensTheItem`, `testSchemaOpenIntentShowsTheModule`. Siri resolving "open <name>" is not verified on a device.
 
 ### 4.3 Now Playing does not carry the playing `AudioEntity` (iOS 27)
 - **Location:** `Modules/AudioRPG/Audio/MediaPlayerManager.swift:28-52` (`handleItemChange`); `Modules/AudioRPG/Audio/PlayerTime.swift:34-42` (`PlaylistItem.id`).
@@ -76,6 +78,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Siri cannot act on "the track that is playing" (and the new Audio `RelevantEntities` context `.audio(.nowPlaying)`, the only context in this SDK, has nothing to anchor on). Annotations need a real `AppEntity`; `AudioEntity` qualifies.
 - **Action:** Add the `EntityIdentifier(for: AudioEntity.self, identifier:)` array under an iOS 27 `#available` in `handleItemChange`; consider `RelevantEntities.updateEntities(_:for: .audio(.nowPlaying))` for the active game playlist.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. `MediaPlayerCoordinator.handleItemChange` sets `MPNowPlayingInfoPropertyAppEntityIdentifiers` to the playing `AudioEntity` (iOS/macOS 27; `MPAppEntityIdentifier` comes from the `_MediaPlayer_AppIntents` overlay). `RelevantEntities` for `.audio(.nowPlaying)` was not added: the identifier already anchors that context. Builds only; not verified with real playback.
 
 ### 4.4 Donations cover only `Open…Intent` and never delete or vary by OS
 - **Location:** `Modules/AdventureRPG/Intent/OpenAdventureIntent.swift:40-55` (and the 11 sibling `Open*Intent.swift`); call sites `Modules/AdventureRPG/View/DetailListView.swift:38-40` (and the other 11 `DetailListView.swift` — `GeneratorRPG/Root/DetailListView.swift:65`).
@@ -83,6 +86,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Donations teach Siri/Apple Intelligence the user's patterns; selection-driven donations on iPad/Mac (arrow-keying a list) flood the system, which may then ignore the app's donations; dice rolls are the clearest repeated UI action and are not learned.
 - **Action:** Donate once per real open (debounce by item id), add donations for UI dice rolls / game start / create, and delete donations by `entityIdentifiers` when an item is trashed or purged. Combine with §5.1 so iOS 26 gets them too.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. (a) Donations now go through `IntentDonations.donateOpen` (CoreRPG): the item must stay selected for 2 s (the `.task(id:)` is cancelled by a new selection) and the same item is not donated again within 10 minutes. (b) UI dice rolls (`DiceRollButton`, space-bar roll, `DiceInline`) donate `RollSpecificDiceIntent`, and `GameRoot.startMaster` donates `StartAdventureGameIntent`. Creating an item is not donated: the UI creates it with a default name and renames it afterwards, so there is no `CreateXIntent` with a name to donate. (c) `markForDeletion` and the purge in `EditControllable` call `IntentDonations.forget`, which deletes the donations by `EntityIdentifier` (entity types are registered per module by `registerDonations()` in the catalogs, called from `MasterRPGApp.init`). (d) The OS-matching open intent is donated (schema on 27, legacy below). Not testable with `AppIntentsTesting`; builds only.
 
 ### 4.5 Entities expose only name and description
 - **Location:** every `Modules/*/Intent/*Entity.swift`, e.g. `AdventureEntity.swift:31-35`; `ItemEntityQuery.swift:39` (conforms to `EnumerableEntityQuery`, not `EntityPropertyQuery`).
@@ -90,6 +94,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** The iOS 27 pitch is Siri answering questions over indexed entities and the Use Model action serializing `@Property` fields; with name+summary only, "which adventure mentions the dragon" cannot be answered from the entity index. (Only the Core Data delegate index, §5.4, carries entry text.) The `EnumerableEntityQuery` conformance already gives a basic name-only Find action.
 - **Action:** Expose tags, folder/category and modification date as `@Property`/`@ComputedProperty`; map a bounded excerpt of entry text to `contentDescription`/`textContent` via the attribute set; add `EntityPropertyQuery` for the modules where filtering matters (Adventure, Character, Dice).
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26, except dates. Every entity now has `tags`, `isFolder` and `content` (a 2000-character excerpt of entry names and contents via `IntentEntityText.excerpt`, indexed as `textContent`, so Spotlight matches words from the body). `AdventureEntityQuery`, `CharacterEntityQuery` and `DiceEntityQuery` conform to `EntityPropertyQuery` (Find by name, description, tag, folder; sort by name) on top of the shared `ItemEntityQuery.findEntities`. No modification date: the item models carry none. Tests: `testEntitiesExposeTagsAndFolderState`, `testSectionTextIsSearchableInSpotlight`. The generated Find action itself is not exercised by a test.
 
 ### 4.6 No Siri/Shortcuts way to play or control audio
 - **Location:** `Modules/AudioRPG/Intent/` (only Create / Add Note / Search / Delete / Open).
@@ -97,6 +102,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** This is the most natural hands-free Game-Master action in the app. It also gives §4.3 an intent to pair with.
 - **Action:** Add a Play (and Pause/Stop) intent on `AudioPlaybackIntent` taking `AudioEntity`, reusing the `AudioController`; no new iOS 27 API required.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. `PlayAudioIntent` and `PauseAudioIntent` (`AudioPlaybackIntent`, `Modules/AudioRPG/Intent/AudioPlaybackIntents.swift`) play an audio item or playlist through `GameController.play(id:shouldPlay:)` and pause the player. They are in the Audio catalog but not in `MasterRPGShortcuts`, which is at the 10-shortcut cap. Tests: `AudioIntentTests`.
 
 ### 4.7 Lists are not annotated for on-screen awareness
 - **Location:** the item list screen of each module; only the detail screens carry `.userActivity` + `appEntityIdentifier` (§5.1).
@@ -104,6 +110,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** "Open the third one" / "delete this" on a list screen cannot resolve to an entity; the list is the app's main screen.
 - **Action:** Annotate the module list container with the selection-type form (lazy, survives scrolling).
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26, with a different mechanism than proposed. The module lists are a `ScrollView` + `LazyVStack`, not a `List(selection:)`, so `.appEntityIdentifier(forSelectionType:)` does not apply; each `ListRowItemView` carries `.appEntityIdentifier(_:)` instead (not for entry rows or the app's own collections), built from the registry in `IntentEntityIdentifiers`. Per-row annotations only cover the rows that exist in the lazy stack. Builds only; not verified with Siri.
 
 ### 4.8 `allowedExecutionTargets` is not set on app-only intents
 - **Location:** every intent with `@Dependency var root:` (e.g. `Modules/AdventureRPG/Intent/CreateAdventureIntent.swift:25-26`).
@@ -111,6 +118,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Pure hardening: if an extension is later added to the package graph, intents whose `@Dependency` is only registered in `MasterRPGApp.init()` could be scheduled in a process where it does not exist.
 - **Action:** Add `[.main]` to the mutating/navigating intents when an App Intents extension is introduced; leave the dice roll intents unconstrained.
 - **Severity:** Low
+- **Status:** Not changed, on purpose. No App Intents extension shares these intents (the widget declares its own `RollDiceIntent`), so `allowedExecutionTargets = [.main]` would have no effect today and would mean about 100 `@available(iOS 27)` overrides. Add it together with an extension.
 
 ### 4.9 iOS 27 APIs evaluated and intentionally not needed (decision record)
 - **Location:** n/a (see the adoption matrix in §10.1).
@@ -118,6 +126,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Recording the decision stops these being re-raised as gaps.
 - **Action:** Revisit `LongRunningIntent` only if an import/export or "Generate with AI" intent is added.
 - **Severity:** Low
+- **Status:** No change: decision record.
 
 ### 4.10 No in-app discoverability
 - **Location:** repo-wide (0 hits for `ShortcutsLink`, `SiriTipView`); no `NSAppIconActionTintColorName` / `NSAppIconComplementingColorNames` in the plists.
@@ -125,6 +134,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Ten registered shortcuts that nobody knows about.
 - **Action:** Add `ShortcutsLink` to Settings and a `SiriTipView` for Roll Dice; add the two Info.plist tint keys.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26, partly. Settings has a "Siri & Shortcuts" section with a `SiriTipView` for Roll Dice (iOS, visionOS) and a `ShortcutsLink` (iOS); both are unavailable on macOS. `Info.plist` has `NSAppIconActionTintColorName` = `AccentColor`. `NSAppIconComplementingColorNames` is not set: the asset catalog has no complementary colors and choosing them is a design decision. Not checked visually.
 
 ---
 

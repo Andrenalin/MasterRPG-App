@@ -8,8 +8,9 @@ import Foundation
 import os.log
 import SwiftUI
 
-struct OpenDiceIntent: OpenIntent {
+struct OpenDiceIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Dice"
+    static let supportedModes: IntentModes = .foreground
 
     @Parameter(title: "Dice", requestValueDialog: "Which die?")
     var target: DiceEntity
@@ -26,6 +27,30 @@ struct OpenDiceIntent: OpenIntent {
 extension OpenDiceIntent: TargetContentProvidingIntent {}
 #endif
 
+/// The iOS 27 open intent. `.system.open` lets Siri resolve "open <name> in MasterRPG" against
+/// the indexed items; the schema supplies the title and the `target` parameter. It is a sibling
+/// of `OpenDiceIntent` (the macro and schema are 27-only, and only one `OpenIntent` may name
+/// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
+@available(iOS 27, macOS 27, visionOS 27, *)
+@AppIntent(schema: .system.open)
+struct OpenDiceSchemaIntent: OpenIntent {
+    var target: DiceEntity
+
+    @Dependency var navigator: Navigator
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        await navigator.perform(route: KnownRoutes.dice(target.id, nil))
+        return .result()
+    }
+}
+
+#if os(iOS)
+@available(iOS 27, *)
+extension OpenDiceSchemaIntent: TargetContentProvidingIntent {}
+#endif
+
 extension DiceRootModel {
     @MainActor
     /// `appEntityIdentifier` is available since iOS 18.2 / macOS 15.2 / visionOS 2.2, so it needs no
@@ -35,17 +60,20 @@ extension DiceRootModel {
     }
 
     @MainActor
-    /// `IntentDonationManager` is available since iOS 16 / macOS 13. See CODE_AUDIT_AppIntents §5.1.
+    /// Donates the open intent that matches the running OS, once the item stays selected.
+    /// See CODE_AUDIT_AppIntents §4.4.
     func donateSiriViewingIntent(for itemId: UUID) async {
-        guard let model = itemController.itemSync(for: itemId)
-        else { return }
-
-        let intent = OpenDiceIntent()
-        intent.target = DiceEntity(root: self, model: model)
-        do {
-            try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {
-            Logger.appIntents.debug("Failed to donate OpenDiceIntent for Siri/Shortcuts: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        await IntentDonations.donateOpen(of: itemId) { [self] () -> (any AppIntent)? in
+            guard let model = itemController.itemSync(for: itemId) else { return nil }
+            let entity = DiceEntity(root: self, model: model)
+            if #available(iOS 27, macOS 27, visionOS 27, *) {
+                let intent = OpenDiceSchemaIntent()
+                intent.target = entity
+                return intent
+            }
+            let intent = OpenDiceIntent()
+            intent.target = entity
+            return intent
         }
     }
 }

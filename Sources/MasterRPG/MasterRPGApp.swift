@@ -75,6 +75,7 @@ struct MasterRPGApp: App {
 
 #if !os(tvOS)
         let appIntentAppModel = data
+        MasterRPGSpotlightIndexer.registerDonations()
         MasterRPGShortcuts.updateAppShortcutParameters()
         // Configured synchronously (`init` runs on the main actor): an `invalidate()` that
         // fired before an unstructured configure Task ran found no closures and did nothing.

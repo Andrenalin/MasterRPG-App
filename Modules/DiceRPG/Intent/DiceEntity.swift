@@ -35,9 +35,22 @@ struct DiceEntity: IndexedEntity {
     @ComputedProperty(indexingKey: \.contentDescription)
     var description: String { storedDescription }
 
+    /// The tags of the item, for Shortcuts and the Find action. See CODE_AUDIT_AppIntents §4.5.
+    @ComputedProperty
+    var tags: [String] { storedTags }
+
+    @ComputedProperty
+    var isFolder: Bool { storedIsFolder }
+
+    /// A bounded excerpt of the entries' text, indexed so Spotlight matches words from the body.
+    @ComputedProperty(indexingKey: \.textContent)
+    var content: String { storedTextContent }
+
     let icon: String
     private let storedName: String
     private let storedDescription: String
+    private let storedIsFolder: Bool
+    private let storedTextContent: String
     private let storedTags: [String]
     private let storedFirstDieMax: Int?
 
@@ -50,6 +63,8 @@ struct DiceEntity: IndexedEntity {
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description
+        self.storedIsFolder = model.category == .folder
+        self.storedTextContent = IntentEntityText.excerpt(of: model)
         self.storedTags = model.tags
         self.storedFirstDieMax = model.dice.first.map { Int($0.die.max) }
         let isSpecial = model.category == .folder || model.category.isCollection
@@ -147,4 +162,67 @@ extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
+
+// MARK: - Find action
+
+/// The properties of the Find action in Shortcuts (name, description, tag, folder), with sorting
+/// by name. See CODE_AUDIT_AppIntents §4.5.
+extension DiceEntityQuery: @preconcurrency EntityPropertyQuery {
+    typealias ComparatorMappingType = Predicate<DiceEntity>
+
+    nonisolated(unsafe) static let properties = QueryProperties {
+        Property(\DiceEntity.$name) {
+            ContainsComparator { searchValue in
+                #Predicate<DiceEntity> { $0.name.localizedStandardContains(searchValue) }
+            }
+            EqualToComparator { searchValue in
+                #Predicate<DiceEntity> { $0.name == searchValue }
+            }
+        }
+        Property(\DiceEntity.$description) {
+            ContainsComparator { searchValue in
+                #Predicate<DiceEntity> { $0.description.localizedStandardContains(searchValue) }
+            }
+        }
+        Property(\DiceEntity.$tags) {
+            ContainsComparator { searchValue in
+                #Predicate<DiceEntity> { entity in entity.tags.contains { tag in tag.localizedStandardContains(searchValue) } }
+            }
+        }
+        Property(\DiceEntity.$isFolder) {
+            EqualToComparator { searchValue in
+                #Predicate<DiceEntity> { $0.isFolder == searchValue }
+            }
+        }
+    }
+
+    nonisolated(unsafe) static let sortingOptions = SortingOptions {
+        SortableBy(\DiceEntity.$name)
+    }
+
+    nonisolated static var findIntentDescription: IntentDescription? {
+        IntentDescription(
+            "Find dice sets by name, description or tag.",
+            searchKeywords: ["dice", "roll"],
+            resultValueName: "Dice"
+        )
+    }
+
+    nonisolated func entities(
+        matching comparators: [Predicate<DiceEntity>],
+        mode: ComparatorMode,
+        sortedBy: [EntityQuerySort<DiceEntity>],
+        limit: Int?
+    ) async throws -> [DiceEntity] {
+        let nameAscending = sortedBy.first { $0.by == \DiceEntity.$name }.map { $0.order == .ascending }
+        return try await findEntities(
+            matching: comparators,
+            mode: mode,
+            nameAscending: nameAscending,
+            name: { $0.name },
+            limit: limit
+        )
+    }
+}
+
 #endif

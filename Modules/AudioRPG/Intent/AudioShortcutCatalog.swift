@@ -13,6 +13,8 @@ public enum AudioShortcutCatalog {
             open,
             create,
             addNote,
+            play,
+            pause,
             search,
             delete
         ]
@@ -27,6 +29,29 @@ public enum AudioShortcutCatalog {
             ],
             shortTitle: "Open Audio",
             systemImageName: "music.note.list"
+        )
+    }
+
+    public static var play: AppShortcut {
+        AppShortcut(
+            intent: PlayAudioIntent(),
+            phrases: [
+                "Play audio in \(.applicationName)",
+                "Play \(\.$target) in \(.applicationName)"
+            ],
+            shortTitle: "Play Audio",
+            systemImageName: "play.circle"
+        )
+    }
+
+    public static var pause: AppShortcut {
+        AppShortcut(
+            intent: PauseAudioIntent(),
+            phrases: [
+                "Pause audio in \(.applicationName)"
+            ],
+            shortTitle: "Pause Audio",
+            systemImageName: "pause.circle"
         )
     }
 
@@ -72,6 +97,13 @@ public enum AudioShortcutCatalog {
             shortTitle: "Delete Audio",
             systemImageName: "trash"
         )
+    }
+
+    /// Names the entity type this module's donations use, so they can be deleted when an item is
+    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    public static func registerDonations() {
+        IntentEntityIdentifiers.register(AudioEntity.self, for: .audio)
     }
 
     @MainActor

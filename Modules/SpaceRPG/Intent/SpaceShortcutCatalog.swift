@@ -74,6 +74,13 @@ public enum SpaceShortcutCatalog {
         )
     }
 
+    /// Names the entity type this module's donations use, so they can be deleted when an item is
+    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    public static func registerDonations() {
+        IntentEntityIdentifiers.register(SpaceEntity.self, for: .space)
+    }
+
     @MainActor
     public static func reindexAll(root: SpaceRootModel) async {
         guard CSSearchableIndex.isIndexingAvailable() else { return }

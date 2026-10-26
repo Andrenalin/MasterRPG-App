@@ -149,6 +149,9 @@
         }
       }
     },
+    "adventure" : {
+
+    },
     "Adventure" : {
       "localizations" : {
         "de" : {
@@ -441,6 +444,9 @@
         }
       }
     },
+    "Find adventures by name, description or tag." : {
+
+    },
     "Link" : {
       "localizations" : {
         "de" : {
@@ -688,6 +694,9 @@
           }
         }
       }
+    },
+    "story" : {
+
     },
     "Story" : {
       "comment" : "Label for the story parameter in the Create Adventure intent.",

@@ -138,4 +138,15 @@ private struct RollResultSnippetResultIconView: View {
 extension RollSpecificDiceIntent: TargetContentProvidingIntent {}
 #endif
 
+extension DiceRootModel {
+    /// Donates a roll the user made from the UI, so Siri learns it next to the voice and
+    /// Shortcuts path. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    func donateRoll(of itemId: UUID) {
+        guard let model = itemController.itemSync(for: itemId) else { return }
+        let intent = RollSpecificDiceIntent(dice: DiceEntity(root: self, model: model))
+        Task { await IntentDonations.donate(intent) }
+    }
+}
+
 #endif

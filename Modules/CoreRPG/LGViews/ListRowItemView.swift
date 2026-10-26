@@ -1,6 +1,9 @@
 // @copyright André Trettin
 
 import SwiftUI
+#if !os(tvOS)
+import AppIntents
+#endif
 
 struct ListRowItemView: View, Equatable {
     let root: any ItemRootControllable
@@ -82,6 +85,11 @@ struct ListRowItemView: View, Equatable {
             $0.dropDestination(for: root.configurable.module, isEnabled: true, handler: addLink)
         }
         .padding(EdgeInsets(top: verticalInset, leading: leadingPadding, bottom: verticalInset, trailing: 0))
+#if !os(tvOS)
+        // Lets "open the third one" or "delete this" on the list resolve to the item. Folders are
+        // entities too; only the app's own collections are not. See CODE_AUDIT_AppIntents §4.7.
+        .appEntityIdentifier(entityIdentifier)
+#endif
     }
 }
 
@@ -91,6 +99,13 @@ private extension ListRowItemView {
     var model: any ItemDataAccessible {
         item.model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
     }
+
+#if !os(tvOS)
+    var entityIdentifier: EntityIdentifier? {
+        guard item.source.entryId == nil, !model.specialCategory else { return nil }
+        return IntentEntityIdentifiers.identifier(for: item.source.itemId, module: root.configurable.module)
+    }
+#endif
 
     var isSelected: Bool {
         listController.listDisplayModel.isSelectionMode

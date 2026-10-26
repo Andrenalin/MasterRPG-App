@@ -34,9 +34,23 @@ public struct AdventureEntity: IndexedEntity {
     @ComputedProperty(indexingKey: \.contentDescription)
     public var description: String { storedDescription }
 
+    /// The tags of the item, for Shortcuts and the Find action. See CODE_AUDIT_AppIntents §4.5.
+    @ComputedProperty
+    public var tags: [String] { storedTags }
+
+    @ComputedProperty
+    public var isFolder: Bool { storedIsFolder }
+
+    /// A bounded excerpt of the entries' text, indexed so Spotlight matches words from the body.
+    @ComputedProperty(indexingKey: \.textContent)
+    public var content: String { storedTextContent }
+
     public let icon: String
     private let storedName: String
     private let storedDescription: String
+    private let storedTags: [String]
+    private let storedIsFolder: Bool
+    private let storedTextContent: String
 
     // Display fields are captured eagerly: entity properties are nonisolated, the
     // @MainActor model must not be read from them. All queries are @MainActor.
@@ -47,6 +61,9 @@ public struct AdventureEntity: IndexedEntity {
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description
+        self.storedTags = model.tags
+        self.storedIsFolder = model.category == .folder
+        self.storedTextContent = IntentEntityText.excerpt(of: model)
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
@@ -98,6 +115,68 @@ extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
     public func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
         let all = try await allEntities()
         try await CSSearchableIndex.default().indexAppEntities(all)
+    }
+}
+
+// MARK: - Find action
+
+/// The properties of the Find action in Shortcuts (name, description, tag, folder), with sorting
+/// by name. See CODE_AUDIT_AppIntents §4.5.
+extension AdventureEntityQuery: @preconcurrency EntityPropertyQuery {
+    public typealias ComparatorMappingType = Predicate<AdventureEntity>
+
+    public nonisolated(unsafe) static let properties = QueryProperties {
+        Property(\AdventureEntity.$name) {
+            ContainsComparator { searchValue in
+                #Predicate<AdventureEntity> { $0.name.localizedStandardContains(searchValue) }
+            }
+            EqualToComparator { searchValue in
+                #Predicate<AdventureEntity> { $0.name == searchValue }
+            }
+        }
+        Property(\AdventureEntity.$description) {
+            ContainsComparator { searchValue in
+                #Predicate<AdventureEntity> { $0.description.localizedStandardContains(searchValue) }
+            }
+        }
+        Property(\AdventureEntity.$tags) {
+            ContainsComparator { searchValue in
+                #Predicate<AdventureEntity> { entity in entity.tags.contains { tag in tag.localizedStandardContains(searchValue) } }
+            }
+        }
+        Property(\AdventureEntity.$isFolder) {
+            EqualToComparator { searchValue in
+                #Predicate<AdventureEntity> { $0.isFolder == searchValue }
+            }
+        }
+    }
+
+    public nonisolated(unsafe) static let sortingOptions = SortingOptions {
+        SortableBy(\AdventureEntity.$name)
+    }
+
+    public nonisolated static var findIntentDescription: IntentDescription? {
+        IntentDescription(
+            "Find adventures by name, description or tag.",
+            searchKeywords: ["adventure", "story"],
+            resultValueName: "Adventures"
+        )
+    }
+
+    public nonisolated func entities(
+        matching comparators: [Predicate<AdventureEntity>],
+        mode: ComparatorMode,
+        sortedBy: [EntityQuerySort<AdventureEntity>],
+        limit: Int?
+    ) async throws -> [AdventureEntity] {
+        let nameAscending = sortedBy.first { $0.by == \AdventureEntity.$name }.map { $0.order == .ascending }
+        return try await findEntities(
+            matching: comparators,
+            mode: mode,
+            nameAscending: nameAscending,
+            name: { $0.name },
+            limit: limit
+        )
     }
 }
 

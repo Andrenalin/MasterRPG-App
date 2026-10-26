@@ -15,6 +15,9 @@ struct DetailRootView: View {
                 guard root.navigationModel.triggerSpaceAction else { return }
                 root.navigationModel.triggerSpaceAction = false
                 root.gameController.rollDice(itemId: model.id)
+#if !os(tvOS)
+                root.donateRoll(of: model.id)
+#endif
             }
     }
 }

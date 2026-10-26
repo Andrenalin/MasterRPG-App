@@ -31,9 +31,23 @@ struct RuleEntity: IndexedEntity {
     @ComputedProperty(indexingKey: \.contentDescription)
     var description: String { storedDescription }
 
+    /// The tags of the item, for Shortcuts and the Find action. See CODE_AUDIT_AppIntents §4.5.
+    @ComputedProperty
+    var tags: [String] { storedTags }
+
+    @ComputedProperty
+    var isFolder: Bool { storedIsFolder }
+
+    /// A bounded excerpt of the entries' text, indexed so Spotlight matches words from the body.
+    @ComputedProperty(indexingKey: \.textContent)
+    var content: String { storedTextContent }
+
     let icon: String
     private let storedName: String
     private let storedDescription: String
+    private let storedTags: [String]
+    private let storedIsFolder: Bool
+    private let storedTextContent: String
     var root: RuleRootModel
 
     @MainActor
@@ -42,6 +56,9 @@ struct RuleEntity: IndexedEntity {
         id = model.id
         storedName = model.name
         storedDescription = model.description
+        storedTags = model.tags
+        storedIsFolder = model.category == .folder
+        storedTextContent = IntentEntityText.excerpt(of: model)
         icon = model.specialCategory ? model.category.icon : NetworkModules.rule.icon
     }
 }

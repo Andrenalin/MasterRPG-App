@@ -4,6 +4,10 @@ import AVFoundation
 import Foundation
 import MediaPlayer
 
+#if os(iOS) || os(macOS)
+import AppIntents
+#endif
+
 /// Types of remote commands.
 ///
 /// `skipForward`/`skipBackward` were removed: `handleRemoteCommands` disables both
@@ -42,6 +46,16 @@ struct MediaPlayerCoordinator {
 
             newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index
             newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = count
+
+#if os(iOS) || os(macOS)
+            // Lets Siri act on "the track that is playing". See CODE_AUDIT_AppIntents §4.3.
+            if #available(iOS 27, macOS 27, *),
+               let identifier = MPAppEntityIdentifier(
+                entityIdentifier: EntityIdentifier(for: AudioEntity.self, identifier: currentItem.id)
+               ) {
+                newNowPlayingInfo[MPNowPlayingInfoPropertyAppEntityIdentifiers] = [identifier]
+            }
+#endif
 
             // Reinitialize information about the playback position.
             newNowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = nil

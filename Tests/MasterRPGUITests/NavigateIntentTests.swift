@@ -69,4 +69,19 @@ final class NavigateIntentTests: AppIntentsUITestCase {
         let value = definitions.enums["NavigationOption"].makeCase("map")
         try await definitions.intents["NavigateIntent"].makeIntent(navigationOption: value).run()
     }
+
+    // MARK: Search
+
+    /// The app-level iOS 27 search intent fills the cross-module search and shows its tab.
+    /// See CODE_AUDIT_AppIntents §4.1.
+    func testAppLevelSearchShowsTheSearchTab() async throws {
+        try await definitions.intents["SearchInAppIntent"].makeIntent(criteria: "dragon").run()
+
+        await eventually("The app-level search did not select the search tab.") {
+            let tab = app.descendants(matching: .any)
+                .matching(identifier: "module.tab.SEARCH")
+                .firstMatch
+            return tab.exists && tab.isSelected
+        }
+    }
 }

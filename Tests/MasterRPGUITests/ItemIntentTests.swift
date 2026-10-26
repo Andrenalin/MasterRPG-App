@@ -168,6 +168,29 @@ final class ItemIntentTests: AppIntentsUITestCase {
         }
     }
 
+    // MARK: Entity properties
+
+    func testEntitiesExposeTagsAndFolderState() async {
+        await forEachModule { module in
+            let (entity, _) = try await createItem(module)
+            XCTAssertEqual(try entity.tags as [String], [], module.name)
+            XCTAssertEqual(try entity.isFolder as Bool, false, module.name)
+        }
+    }
+
+    func testSectionTextIsSearchableInSpotlight() async throws {
+        let (rule, _) = try await createItem(.rule)
+        let word = "zyxw\(UUID().uuidString.prefix(8).lowercased().filter(\.isLetter))"
+        try await definitions.intents["AddRuleSectionIntent"]
+            .makeIntent(target: rule, sectionName: "AIT body", content: "The \(word) lives here.")
+            .run()
+
+        let query = definitions.entities["RuleEntity"]
+        try await eventually("The text of a rule section was not indexed in Spotlight.") {
+            identifiers(of: try await query.spotlightQuery(word)).contains(rule.identifier.instanceIdentifier)
+        }
+    }
+
     // MARK: Spotlight
 
     func testCreatedItemIsIndexedInSpotlight() async {
@@ -246,6 +269,25 @@ final class ItemIntentTests: AppIntentsUITestCase {
             let reference = definitions.entities[module.entityType]
                 .makeReference(identifier: entity.identifier.instanceIdentifier)
             try await definitions.intents[module.openIntent].makeIntent(target: reference).run()
+        }
+    }
+
+    func testSchemaOpenIntentOpensTheItem() async {
+        await forEachModule { module in
+            let (entity, _) = try await createItem(module)
+            try await definitions.intents[module.openSchemaIntent].makeIntent(target: entity).run()
+        }
+    }
+
+    func testSchemaOpenIntentShowsTheModule() async {
+        await forEachModule(IntentModule.all.filter { $0.name != "Generator" && $0.name != "Rule" }) { module in
+            let (entity, _) = try await createItem(module)
+            try await definitions.intents[module.openSchemaIntent].makeIntent(target: entity).run()
+
+            let list = app.descendants(matching: .any)
+                .matching(identifier: "module.list.\(module.listToken)")
+                .firstMatch
+            XCTAssertTrue(list.waitForExistence(timeout: 15), "Opening a \(module.name) did not show its list.")
         }
     }
 

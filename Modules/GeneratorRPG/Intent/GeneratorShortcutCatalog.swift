@@ -74,6 +74,13 @@ public enum GeneratorShortcutCatalog {
         )
     }
 
+    /// Names the entity type this module's donations use, so they can be deleted when an item is
+    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    public static func registerDonations() {
+        IntentEntityIdentifiers.register(GeneratorEntity.self, for: .generator)
+    }
+
     @MainActor
     public static func reindexAll(root: GeneratorRootModel) async {
         guard CSSearchableIndex.isIndexingAvailable() else { return }

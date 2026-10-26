@@ -615,6 +615,7 @@ public extension EditControllable {
         linkRegisterController.repairLinks(for: [ItemRowModel(itemId: itemId, typeId: itemControllable.config.module)])
         linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: itemControllable.config.module))
         
+        IntentDonations.forget(itemId: itemId, module: itemControllable.config.module)
         await itemControllable.delete(itemId: itemId)
     }
     
@@ -734,6 +735,7 @@ public extension EditControllable {
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
         item.displayState = DisplayStateMask.totalHidden.rawValue
         save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString)
+        IntentDonations.forget(itemId: itemId, module: itemControllable.config.module)
     }
 
     @MainActor func restore(itemId: UUID) {

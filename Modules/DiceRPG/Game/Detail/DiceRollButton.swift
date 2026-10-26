@@ -24,6 +24,9 @@ struct DiceRollButton: View {
             withAnimation(Animation.default.reduced(if: reduceMotion)) {
                 root.gameController.rollDice(itemId: itemId, networkActions: networkActions)
             }
+#if !os(tvOS)
+            root.donateRoll(of: itemId)
+#endif
         } label: {
             Label {
                 Text("Roll dice", bundle: .module)

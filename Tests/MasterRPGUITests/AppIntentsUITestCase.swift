@@ -26,6 +26,9 @@ struct IntentModule: Sendable {
     /// The accessibility token of the module's list, see `MasterRPGUITestCase.openModule`.
     let listToken: String
 
+    /// The iOS 27 `.system.open` sibling of `openIntent`, see CODE_AUDIT_AppIntents §4.2.
+    var openSchemaIntent: String { String(openIntent.dropLast("Intent".count)) + "SchemaIntent" }
+
     static let adventure = IntentModule(
         name: "Adventure", entityType: "AdventureEntity",
         createIntent: "CreateAdventureIntent", openIntent: "OpenAdventureIntent",

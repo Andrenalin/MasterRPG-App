@@ -164,6 +164,12 @@ public final class GameRoot {
         SearchGlobalController(root: self)
     }()
 
+    /// Fills the cross-module search with `term`; the search list runs it as soon as it is on
+    /// screen. Used by the app-level search intent (CODE_AUDIT_AppIntents §4.1).
+    public func showSearchResults(for term: String) {
+        searchController.model.searchText = term
+    }
+
     /// The single battle-round controller for this game session. Owning it
     /// here (rather than rebuilding its action closures on every render of
     /// the window/sidebar host views) means restarting a battle keeps using
@@ -364,6 +370,9 @@ extension GameRoot {
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
 
         await adventureRoot.adventureGameControllable.startGame(with: id)
+#if !os(tvOS)
+        await adventureRoot.donateStartGame(of: id)
+#endif
         gameModel.playerController = PlayerController(root: self, asGameMaster: true)
         gameModel.masterController = MasterController(root: self, asProxy: false)
 

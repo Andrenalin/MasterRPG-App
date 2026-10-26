@@ -74,6 +74,13 @@ public enum CharacterShortcutCatalog {
         )
     }
 
+    /// Names the entity type this module's donations use, so they can be deleted when an item is
+    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    @MainActor
+    public static func registerDonations() {
+        IntentEntityIdentifiers.register(CharacterEntity.self, for: .value)
+    }
+
     @MainActor
     public static func reindexAll(root: CharacterRootModel) async {
         guard CSSearchableIndex.isIndexingAvailable() else { return }

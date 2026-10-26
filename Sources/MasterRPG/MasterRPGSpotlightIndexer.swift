@@ -18,6 +18,23 @@ import WeatherRPG
 
 @MainActor
 enum MasterRPGSpotlightIndexer {
+    /// Tells every module which entity type its donations name, so trashing or purging an item
+    /// deletes them. See CODE_AUDIT_AppIntents §4.4.
+    static func registerDonations() {
+        AdventureShortcutCatalog.registerDonations()
+        AudioShortcutCatalog.registerDonations()
+        CharacterShortcutCatalog.registerDonations()
+        DiceShortcutCatalog.registerDonations()
+        GeneratorShortcutCatalog.registerDonations()
+        MapShortcutCatalog.registerDonations()
+        PdfShortcutCatalog.registerDonations()
+        PhotoShortcutCatalog.registerDonations()
+        RuleShortcutCatalog.registerDonations()
+        SpaceShortcutCatalog.registerDonations()
+        TableShortcutCatalog.registerDonations()
+        WeatherShortcutCatalog.registerDonations()
+    }
+
     static func reindexAll(appModel: AppModel) async {
         await AdventureShortcutCatalog.reindexAll(root: appModel.adventureRoot)
         await AudioShortcutCatalog.reindexAll(root: appModel.audioRoot)
