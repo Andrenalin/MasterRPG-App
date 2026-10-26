@@ -2128,6 +2128,23 @@
         }
       }
     },
+    "Restart the app to use the 3D scanner. A 3D view was already opened in this session and blocks the camera." : {
+      "comment" : "Alert message when the 3D scanner is opened after a live 3D view was shown.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte die App neu, um den 3D-Scanner zu verwenden. In dieser Sitzung wurde bereits eine 3D-Ansicht geöffnet, die die Kamera blockiert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มแอปใหม่เพื่อใช้เครื่องสแกน 3D มีการเปิดมุมมอง 3D ไว้ก่อนหน้านี้ในเซสชันนี้ ซึ่งทำให้ใช้กล้องไม่ได้"
+          }
+        }
+      }
+    },
     "Scan pass %lld" : {
       "localizations" : {
         "de" : {

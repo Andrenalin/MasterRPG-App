@@ -73,6 +73,7 @@ private struct InlineImporterContentView: View {
     @State private var showImporter = false
     @State private var showRemoteUrlImporter = false
     @State private var showScanner = false
+    @State private var showRelaunchAlert = false
     @State private var importErrorMessage: String?
     @State private var replacementConfirmation = FileReplacementConfirmation()
     /// What happens to the item's file once a scan replaces it, asked before the scanner opens.
@@ -134,8 +135,12 @@ private struct InlineImporterContentView: View {
                 await root.editController.resetFile(url: url, itemId: itemId, replaced: replaced)
             }
         }
-        .onChange(of: showScanner) { _, isShowing in
-            root.isScanning3D = isShowing
+        .alert(Text("3D Scanner", bundle: .module), isPresented: $showRelaunchAlert) {
+            Button(role: .cancel) {} label: {
+                Text("OK", bundle: .module)
+            }
+        } message: {
+            Text("Restart the app to use the 3D scanner. A 3D view was already opened in this session and blocks the camera.", bundle: .module)
         }
 #endif
         .importFailureAlert(message: $importErrorMessage)
@@ -149,7 +154,9 @@ private struct InlineImporterContentView: View {
 #if !os(tvOS)
         types += [.file, .url]
 #endif
-        if canScan {
+        // The viewer of an item with a file blocks the scanner's camera, so only an item without
+        // a file can be scanned. See `SpaceRootModel.liveViewerWasShown`.
+        if canScan && root.itemController.itemOrEmpty(for: itemId).url == nil {
             types.append(.scanner)
         }
         return types.map { type in
@@ -172,6 +179,12 @@ private struct InlineImporterContentView: View {
     /// be shown, so the question comes first; a cancelled scan replaces and deletes nothing.
     private func openScanner() {
         Task {
+            // A live viewer created earlier in this session leaves the scanner without a camera
+            // feed, and nothing in the app can undo that. See `SpaceRootModel.liveViewerWasShown`.
+            guard !root.liveViewerWasShown else {
+                showRelaunchAlert = true
+                return
+            }
             guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: itemId, editControllable: root.editController) else { return }
             scannerReplacedFile = replaced
             showScanner = true

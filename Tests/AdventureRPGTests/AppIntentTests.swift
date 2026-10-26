@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-#if canImport(Testing) && !os(tvOS)
+#if !os(tvOS)
 
 import AppIntents
 import CoreRPG

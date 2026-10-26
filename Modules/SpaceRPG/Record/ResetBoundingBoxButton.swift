@@ -16,7 +16,7 @@ extension CaptureOverlayView {
                 session.resetDetection()
             } label: {
                 VStack(spacing: 6) {
-                    Image("ResetBbox")
+                    Image("ResetBbox", bundle: .module)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 30)
