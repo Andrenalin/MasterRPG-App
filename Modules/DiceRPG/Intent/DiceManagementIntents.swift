@@ -35,9 +35,12 @@ struct CreateDiceIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<DiceEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the dice be called?")
         let model = DiceModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: details),
             dice: [DieModel(id: UUID(), die: diceType.rawDie)]
         )
@@ -52,7 +55,7 @@ struct CreateDiceIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -76,6 +79,8 @@ struct AddDieToDiceIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which dice?")
         let die = DieModel(id: UUID(), die: diceType.rawDie)
         root.editController.add(die: die, itemId: target.id)
         await root.itemController.save()

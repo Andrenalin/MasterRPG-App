@@ -32,9 +32,12 @@ struct CreateMapIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<MapEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the map be called?")
         let model = MapModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: details)
         )
         root.itemController.replace(model: model, isInsert: true)
@@ -48,7 +51,7 @@ struct CreateMapIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -75,8 +78,13 @@ struct AddMapRoomIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name, and `target` can be deleted since it was cached:
+        // ask again instead of adding a blank entry or reporting a success that changed nothing.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedRoomName = try requiredIntentName(roomName, parameter: $roomName, prompt: "What should the room be called?")
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which map?")
         let entry = root.editController.create(
-            name: roomName,
+            name: trimmedRoomName,
             content: intentPlainText(from: content)
         )
         root.editController.add(entry: entry, itemId: target.id)
@@ -86,7 +94,7 @@ struct AddMapRoomIntent: AppIntent {
             try await indexIntentEntities([MapEntity(root: root, model: model)])
         }
 
-        return .result(dialog: "Added \"\(roomName)\" to \"\(target.name)\".")
+        return .result(dialog: "Added \"\(trimmedRoomName)\" to \"\(target.name)\".")
     }
 }
 

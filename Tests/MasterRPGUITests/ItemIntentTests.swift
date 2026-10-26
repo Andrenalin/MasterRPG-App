@@ -30,6 +30,85 @@ final class ItemIntentTests: AppIntentsUITestCase {
         }
     }
 
+    // MARK: Input validation
+
+    func testCreateWithBlankNameRequestsAName() async {
+        await forEachModule { module in
+            let query = definitions.entities[module.entityType]
+            let before = Set(identifiers(of: try await query.allEntities()))
+
+            for blank in ["", "   ", "\n"] {
+                await assertRequestsValue(forParameter: "name") {
+                    try await definitions.intents[module.createIntent]
+                        .makeIntent(name: blank, openWhenCreated: false)
+                        .run()
+                }
+            }
+
+            let after = Set(identifiers(of: try await query.allEntities()))
+            XCTAssertEqual(after, before, "\(module.name) created an item for a blank name.")
+        }
+    }
+
+    func testCreateTrimsSurroundingWhitespace() async {
+        await forEachModule { module in
+            let name = uniqueName(module.name)
+            let (entity, _) = try await createItem(module, name: "  \(name)\n")
+            XCTAssertEqual(try entity.name as String, name, module.name)
+        }
+    }
+
+    func testNamedAddIntentsRequestAnameForBlankInput() async {
+        await forEachModule(IntentModule.all.filter { $0.addIntent != nil && !$0.addValueIsNote }) { module in
+            let (entity, _) = try await createItem(module)
+            let addIntent = try XCTUnwrap(module.addIntent)
+
+            for blank in ["", "  "] {
+                let arguments: KeyValuePairs<String, (any IntentValueExpressing)?> = [
+                    "target": entity,
+                    module.addParameter: blank
+                ]
+                await assertRequestsValue(forParameter: module.addParameter) {
+                    try await definitions.intents[addIntent].makeIntent
+                        .dynamicallyCall(withKeywordArguments: arguments)
+                        .run()
+                }
+            }
+        }
+    }
+
+    func testNoteIntentsIgnoreBlankNotes() async {
+        await forEachModule(IntentModule.all.filter { $0.addIntent != nil && $0.addValueIsNote }) { module in
+            let (entity, _) = try await createItem(module)
+            let addIntent = try XCTUnwrap(module.addIntent)
+
+            // A blank note changes nothing and is answered, not an error.
+            try await definitions.intents[addIntent].makeIntent(target: entity, note: "   ").run()
+        }
+    }
+
+    func testAddIntentsFailForADeletedTarget() async {
+        await forEachModule(IntentModule.all.filter { $0.addIntent != nil }) { module in
+            let (entity, _) = try await createItem(module)
+            try await delete(module, [entity])
+            let addIntent = try XCTUnwrap(module.addIntent)
+            let value = module.addValueIsNote ? "A note." : "AIT entry"
+
+            let arguments: KeyValuePairs<String, (any IntentValueExpressing)?> = [
+                "target": entity,
+                module.addParameter: value
+            ]
+            do {
+                try await definitions.intents[addIntent].makeIntent
+                    .dynamicallyCall(withKeywordArguments: arguments)
+                    .run()
+                XCTFail("\(module.name) reported success for a deleted target.")
+            } catch {
+                // Either the entity no longer resolves or the intent asks for a new target.
+            }
+        }
+    }
+
     // MARK: Entity queries
 
     func testStringQueryFindsTheItem() async {

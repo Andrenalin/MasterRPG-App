@@ -32,8 +32,11 @@ struct CreateWeatherIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<WeatherEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the weather be called?")
         let model = WeatherModel.empty(UUID())
-        model.name = name
+        model.name = trimmedName
         model.description = intentPlainText(from: details)
 
         root.itemController.replace(model: model, isInsert: true)
@@ -47,7 +50,7 @@ struct CreateWeatherIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -71,7 +74,9 @@ struct AddWeatherNoteIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
-        let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
+        // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
+        let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which weather?")
+        let currentDescription = targetModel.description
         let updatedDescription = appendingIntentText(
             String(note.characters),
             to: currentDescription

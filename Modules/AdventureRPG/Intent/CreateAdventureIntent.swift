@@ -34,10 +34,7 @@ public struct CreateAdventureIntent: AppIntent {
         // guards `CSSearchableIndex.isIndexingAvailable()` internally.
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank
         // adventure. See CODE_AUDIT_21 §5.28.
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else {
-            throw $name.needsValueError("What should the adventure be called?")
-        }
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the adventure be called?")
         let storyText = intentPlainText(from: story)
         let model = AdventureModel(id: UUID(), name: trimmedName, description: storyText)
         root.itemController.replace(model: model, isInsert: true)

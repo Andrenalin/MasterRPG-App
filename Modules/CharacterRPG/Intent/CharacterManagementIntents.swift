@@ -35,10 +35,7 @@ struct CreateCharacterIntent: AppIntent {
         // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
         // rather than silently creating a blank, unusable character.
         // See CODE_AUDIT_Character §5.6.
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else {
-            throw $name.needsValueError("What should the character be called?")
-        }
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the character be called?")
 
         let model = ValueModel(
             id: UUID(),
@@ -86,17 +83,12 @@ struct AddCharacterEntryIntent: AppIntent {
         // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
         // rather than silently adding a blank, unusable entry.
         // See CODE_AUDIT_Character §5.6.
-        let trimmedEntryName = entryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedEntryName.isEmpty else {
-            throw $entryName.needsValueError("What should the entry be called?")
-        }
+        let trimmedEntryName = try requiredIntentName(entryName, parameter: $entryName, prompt: "What should the entry be called?")
 
         // `target` may be stale — deleted since Siri/Shortcuts last cached it.
         // Confirm it still resolves before reporting success, rather than
         // silently no-opping while still returning a success dialog.
-        guard let model = root.itemController.itemSync(for: target.id) else {
-            throw $target.needsValueError("Which character?")
-        }
+        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which character?")
 
         let entry = root.editController.create(
             name: trimmedEntryName,

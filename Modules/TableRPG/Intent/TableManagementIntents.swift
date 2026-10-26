@@ -32,9 +32,12 @@ struct CreateTableIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<TableEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the table be called?")
         let model = TableModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: details),
             entries: []
         )
@@ -49,7 +52,7 @@ struct CreateTableIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -76,8 +79,13 @@ struct AddTableRowIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name, and `target` can be deleted since it was cached:
+        // ask again instead of adding a blank entry or reporting a success that changed nothing.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedRowName = try requiredIntentName(rowName, parameter: $rowName, prompt: "What should the row be called?")
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which table?")
         let entry = root.editController.create(
-            name: rowName,
+            name: trimmedRowName,
             content: intentPlainText(from: content)
         )
         root.editController.add(entry: entry, itemId: target.id)
@@ -87,7 +95,7 @@ struct AddTableRowIntent: AppIntent {
             try await indexIntentEntities([TableEntity(root: root, model: model)])
         }
 
-        return .result(dialog: "Added \"\(rowName)\" to \"\(target.name)\".")
+        return .result(dialog: "Added \"\(trimmedRowName)\" to \"\(target.name)\".")
     }
 }
 

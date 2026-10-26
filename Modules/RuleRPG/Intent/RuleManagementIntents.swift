@@ -32,9 +32,12 @@ struct CreateRuleIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<RuleEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the rule be called?")
         let model = RuleModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: details.map { String($0.characters) } ?? ""
         )
         root.itemController.replace(model: model, isInsert: true)
@@ -46,7 +49,7 @@ struct CreateRuleIntent: AppIntent {
             await navigator.perform(route: KnownRoutes.rules(model.id, nil))
             try await continueInForeground(alwaysConfirm: false)
         }
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -73,12 +76,15 @@ struct AddRuleSectionIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of adding a blank section.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedSectionName = try requiredIntentName(sectionName, parameter: $sectionName, prompt: "What should the section be called?")
         guard let targetModel = root.itemController.itemSync(for: target.id),
               !targetModel.specialCategory else {
             return .result(dialog: "The selected rule is no longer available.")
         }
         let entry = root.editController.create(
-            name: sectionName,
+            name: trimmedSectionName,
             content: content.map { String($0.characters) } ?? ""
         )
         root.editController.add(entry: entry, itemId: target.id)
@@ -86,7 +92,7 @@ struct AddRuleSectionIntent: AppIntent {
         if let model = root.itemController.itemSync(for: target.id) {
             try await indexRuleEntities([RuleEntity(root: root, model: model)])
         }
-        return .result(dialog: "Added \"\(sectionName)\" to \"\(target.name)\".")
+        return .result(dialog: "Added \"\(trimmedSectionName)\" to \"\(target.name)\".")
     }
 }
 

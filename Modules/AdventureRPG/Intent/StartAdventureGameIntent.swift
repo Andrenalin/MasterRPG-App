@@ -25,9 +25,7 @@ public struct StartAdventureGameIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
         // `target` may have been deleted since it was cached. See CODE_AUDIT_21 §5.28.
-        guard root.itemController.itemSync(for: target.id) != nil else {
-            throw $target.needsValueError("Which adventure to run?")
-        }
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which adventure to run?")
         await root.adventureGameControllable.startGame(with: target.id)
         root.startGame()
         navigator.perform(route: KnownRoutes.game)

@@ -33,13 +33,8 @@ public struct AppendAdventureSectionIntent: AppIntent {
         // Siri and Shortcuts can pass an empty name, and `target` can be an adventure that was
         // deleted since it was cached: ask again instead of adding a blank section or
         // reporting success for nothing. See CODE_AUDIT_21 §5.28.
-        let trimmedName = sectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else {
-            throw $sectionName.needsValueError("What should the section be called?")
-        }
-        guard root.itemController.itemSync(for: target.id) != nil else {
-            throw $target.needsValueError("Which adventure?")
-        }
+        let trimmedName = try requiredIntentName(sectionName, parameter: $sectionName, prompt: "What should the section be called?")
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which adventure?")
         let contentText = intentPlainText(from: content)
         let entry = root.editController.create(name: trimmedName, content: contentText)
         root.editController.add(entry: entry, itemId: target.id)

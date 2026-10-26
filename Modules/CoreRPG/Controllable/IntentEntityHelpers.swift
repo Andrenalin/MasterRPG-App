@@ -21,6 +21,32 @@ public func intentPlainText(from text: AttributedString?) -> String {
     text.map { String($0.characters) } ?? ""
 }
 
+/// A name or title from Siri or Shortcuts, trimmed. Both can pass an empty or all-whitespace
+/// string, so a blank one asks for the value again instead of creating a nameless item or entry.
+/// See CODE_AUDIT_AppIntents §5.2.
+public func requiredIntentName(
+    _ text: String,
+    parameter: IntentParameter<String>,
+    prompt: IntentDialog
+) throws -> String {
+    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { throw parameter.needsValueError(prompt) }
+    return trimmed
+}
+
+/// The model behind an entity parameter. The entity can be stale — deleted since Siri or
+/// Shortcuts cached it — so a missing model asks for the target again instead of reporting a
+/// success that changed nothing. See CODE_AUDIT_AppIntents §5.2.
+@discardableResult
+public func requiredIntentTarget<Entity: AppEntity, Model>(
+    _ model: Model?,
+    parameter: IntentParameter<Entity>,
+    prompt: IntentDialog
+) throws -> Model {
+    guard let model else { throw parameter.needsValueError(prompt) }
+    return model
+}
+
 public func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
     try await CSSearchableIndex.default().indexAppEntities(entities)

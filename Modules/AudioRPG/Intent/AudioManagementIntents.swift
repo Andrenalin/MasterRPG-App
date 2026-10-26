@@ -32,9 +32,12 @@ struct CreateAudioIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<AudioEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the audio be called?")
         let model = AudioModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: details)
         )
         root.itemController.replace(model: model, isInsert: true)
@@ -48,7 +51,7 @@ struct CreateAudioIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -72,7 +75,9 @@ struct AddAudioNoteIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
-        let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
+        // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
+        let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which audio?")
+        let currentDescription = targetModel.description
         let updatedDescription = appendingIntentText(
             String(note.characters),
             to: currentDescription

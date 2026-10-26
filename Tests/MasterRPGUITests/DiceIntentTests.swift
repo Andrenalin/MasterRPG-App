@@ -86,4 +86,16 @@ final class DiceIntentTests: AppIntentsUITestCase {
             .entities(identifiers: [dice.identifier.instanceIdentifier])
         XCTAssertEqual(resolved.count, 1)
     }
+
+    func testAddDieToDiceFailsForADeletedSet() async throws {
+        let (dice, _) = try await createItem(.dice)
+        try await delete(.dice, [dice])
+
+        do {
+            try await definitions.intents["AddDieToDiceIntent"].makeIntent(target: dice, diceType: "D8").run()
+            XCTFail("A die must not be added to a deleted dice set.")
+        } catch {
+            // Expected.
+        }
+    }
 }

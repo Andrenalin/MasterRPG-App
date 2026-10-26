@@ -32,9 +32,12 @@ struct CreatePdfIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PdfEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the PDF be called?")
         let model = PdfModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: details)
         )
         root.itemController.replace(model: model, isInsert: true)
@@ -48,7 +51,7 @@ struct CreatePdfIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -75,8 +78,13 @@ struct AddPdfBookmarkIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name, and `target` can be deleted since it was cached:
+        // ask again instead of adding a blank entry or reporting a success that changed nothing.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedBookmarkName = try requiredIntentName(bookmarkName, parameter: $bookmarkName, prompt: "What should the bookmark be called?")
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which PDF?")
         let entry = root.editController.create(
-            name: bookmarkName,
+            name: trimmedBookmarkName,
             content: intentPlainText(from: content)
         )
         root.editController.add(entry: entry, itemId: target.id)
@@ -86,7 +94,7 @@ struct AddPdfBookmarkIntent: AppIntent {
             try await indexIntentEntities([PdfEntity(root: root, model: model)])
         }
 
-        return .result(dialog: "Added \"\(bookmarkName)\" to \"\(target.name)\".")
+        return .result(dialog: "Added \"\(trimmedBookmarkName)\" to \"\(target.name)\".")
     }
 }
 

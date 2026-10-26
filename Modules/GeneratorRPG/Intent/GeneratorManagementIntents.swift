@@ -32,9 +32,12 @@ struct CreateGeneratorIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<GeneratorEntity> & ProvidesDialog {
         await DatabaseReadiness.wait()
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
+        // See CODE_AUDIT_AppIntents §5.2.
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the generator be called?")
         let model = GeneratorModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: instructions),
             displayState: 0
         )
@@ -49,7 +52,7 @@ struct CreateGeneratorIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -73,7 +76,9 @@ struct AddGeneratorNoteIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
-        let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
+        // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
+        let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which generator?")
+        let currentDescription = targetModel.description
         let updatedDescription = appendingIntentText(
             String(note.characters),
             to: currentDescription
