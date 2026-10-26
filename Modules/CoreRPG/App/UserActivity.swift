@@ -1,9 +1,7 @@
 // @copyright André Trettin
 
 import CoreServices
-import CoreSpotlight
 import Foundation
-import UniformTypeIdentifiers
 
 public enum UserActivity {
     // used in SIRI, Search
@@ -46,8 +44,12 @@ public enum UserActivity {
         return UUID(uuidString: childString)
     }
 
+    /// The activity is for Handoff and on-screen context. It is not eligible for search: the same
+    /// item is already in Spotlight through the Core Data index and the App Entity index, and an
+    /// activity with the generic description "An item from MasterRPG" showed up as a third,
+    /// poorer result. See CODE_AUDIT_AppIntents §5.4.
     public static func addPayLoad(for userActivity: NSUserActivity, title: String, module: NetworkModules, itemId: UUID, childId: UUID? = nil) {
-        userActivity.isEligibleForSearch = true
+        userActivity.isEligibleForSearch = false
         userActivity.isEligibleForHandoff = true
         userActivity.title = title
         var userInfo: [String: String] = [itemKey: itemId.uuidString]
@@ -56,12 +58,5 @@ public enum UserActivity {
             userInfo[childKey] = childId.uuidString
         }
         userActivity.userInfo = userInfo
-
-        #if !os(tvOS)
-            let attributes = CSSearchableItemAttributeSet(contentType: UTType.plainText)
-
-            attributes.contentDescription = "An item from MasterRPG"
-            userActivity.contentAttributeSet = attributes
-        #endif
     }
 }

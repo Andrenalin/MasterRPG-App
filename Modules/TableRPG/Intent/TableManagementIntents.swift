@@ -21,7 +21,7 @@ struct CreateTableIntent: AppIntent {
     @Parameter(title: "Description")
     var details: AttributedString?
 
-    @Parameter(title: "Open When Created", default: true)
+    @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
     @Dependency var root: TableRootModel
@@ -140,7 +140,7 @@ struct DeleteTableIntent: DeleteIntent {
         }
         await root.itemController.save()
 
-        try await deleteIntentEntities(ids: ids, ofType: TableEntity.self)
+        await deleteIntentEntities(ids: ids, ofType: TableEntity.self)
 
         let count = entities.count
         return .result(dialog: "Deleted ^[\(count) table](inflect: true).")

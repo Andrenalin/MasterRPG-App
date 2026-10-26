@@ -14,7 +14,7 @@ public struct StartAdventureGameIntent: AppIntent {
     }
 
     @Parameter(title: "Adventure", requestValueDialog: "Which adventure to run?")
-    var target: AdventureEntity
+    public var target: AdventureEntity
 
     @Dependency var root: AdventureRootModel
     @Dependency var navigator: Navigator

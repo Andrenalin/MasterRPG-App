@@ -112,9 +112,7 @@ struct PdfEntityQuery: ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension PdfEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
-}
+extension PdfEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension PdfEntityQuery: @preconcurrency IndexedEntityQuery {

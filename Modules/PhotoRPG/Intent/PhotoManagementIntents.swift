@@ -21,7 +21,7 @@ struct CreatePhotoIntent: AppIntent {
     @Parameter(title: "Description")
     var details: AttributedString?
 
-    @Parameter(title: "Open When Created", default: true)
+    @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
     @Dependency var root: PhotoRootModel
@@ -138,7 +138,7 @@ struct DeletePhotoIntent: DeleteIntent {
         }
         await root.itemController.save()
 
-        try await deleteIntentEntities(ids: ids, ofType: PhotoEntity.self)
+        await deleteIntentEntities(ids: ids, ofType: PhotoEntity.self)
 
         let count = entities.count
         let message = AttributedString(
@@ -170,22 +170,6 @@ private func appendingIntentText(_ addition: String, to original: String) -> Str
 private func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
     try await CSSearchableIndex.default().indexAppEntities(entities)
-}
-
-private func deleteIntentEntities<Entity: IndexedEntity>(
-    ids: [UUID],
-    ofType entityType: Entity.Type
-) async throws where Entity.ID == UUID {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-
-    if #available(iOS 27, macOS 27, visionOS 27, *) {
-        try await CSSearchableIndex.default().deleteAppEntities(
-            identifiedBy: ids,
-            ofType: entityType
-        )
-    } else {
-        try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-    }
 }
 
 #endif

@@ -95,9 +95,7 @@ struct WeatherEntityQuery: ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension WeatherEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
-}
+extension WeatherEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension WeatherEntityQuery: @preconcurrency IndexedEntityQuery {

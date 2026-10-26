@@ -28,7 +28,7 @@ public struct DeleteAdventureIntent: DeleteIntent {
         // Shared Spotlight glue (see CODE_AUDIT §9.8) — `deleteIntentEntities` already
         // guards `isIndexingAvailable()` and the iOS 27 `deleteAppEntities` availability
         // split internally.
-        try await deleteIntentEntities(ids: ids, ofType: AdventureEntity.self)
+        await deleteIntentEntities(ids: ids, ofType: AdventureEntity.self)
 
         let count = entities.count
         let message = AttributedString(

@@ -73,14 +73,14 @@ struct DiceEntity: IndexedEntity {
     
     // MARK: - Spotlight Integration (iOS 18+)
     
+    /// Starts from the system's default set, which carries the `@ComputedProperty(indexingKey:)`
+    /// fields, and only adds what is specific to dice. The earlier set was built from scratch and
+    /// gave `contentType` and `contentTypeTree` values that are not UTIs, which Spotlight ignores.
+    /// See CODE_AUDIT_AppIntents §5.5.
     var attributeSet: CSSearchableItemAttributeSet {
-        let attributes = CSSearchableItemAttributeSet(contentType: .item)
-        attributes.title = name
-        attributes.contentDescription = description
+        let attributes = defaultAttributeSet
         attributes.keywords = ["dice", "roll", name] + storedTags
-        attributes.contentType = "Dice"
-        attributes.contentTypeTree = ["Dice", "Game", "RPG"]
-        
+
         // Add dice-specific metadata
         if let firstDieMax = storedFirstDieMax {
             attributes.comment = "D\(firstDieMax)"
@@ -89,7 +89,7 @@ struct DiceEntity: IndexedEntity {
         if #available(iOS 27, macOS 27, visionOS 27, *) {
             attributes.relatedAppEntityIdentifier = EntityIdentifier(for: self)
         }
-        
+
         return attributes
     }
 }
@@ -143,9 +143,7 @@ struct DiceEntityQuery: ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension DiceEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
-}
+extension DiceEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {
@@ -167,7 +165,7 @@ extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {
 
 /// The properties of the Find action in Shortcuts (name, description, tag, folder), with sorting
 /// by name. See CODE_AUDIT_AppIntents §4.5.
-extension DiceEntityQuery: @preconcurrency EntityPropertyQuery {
+extension DiceEntityQuery: EntityPropertyQuery {
     typealias ComparatorMappingType = Predicate<DiceEntity>
 
     nonisolated(unsafe) static let properties = QueryProperties {

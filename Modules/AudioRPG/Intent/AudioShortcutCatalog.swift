@@ -108,12 +108,12 @@ public enum AudioShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: AudioRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> AudioEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return AudioEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .audio,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { AudioEntity(root: root, model: $0) }
+        )
     }
 }
 

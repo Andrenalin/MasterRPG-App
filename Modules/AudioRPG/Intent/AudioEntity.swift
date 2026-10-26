@@ -109,9 +109,7 @@ struct AudioEntityQuery: ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension AudioEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
-}
+extension AudioEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension AudioEntityQuery: @preconcurrency IndexedEntityQuery {

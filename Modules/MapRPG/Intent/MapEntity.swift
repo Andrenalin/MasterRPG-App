@@ -94,9 +94,7 @@ struct MapEntityQuery: ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension MapEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
-}
+extension MapEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension MapEntityQuery: @preconcurrency IndexedEntityQuery {

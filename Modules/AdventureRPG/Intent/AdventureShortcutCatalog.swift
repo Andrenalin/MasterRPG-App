@@ -96,19 +96,12 @@ public enum AdventureShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: AdventureRootModel) async {
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> AdventureEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return AdventureEntity(root: root, model: model)
-        }
-        do {
-            // `indexIntentEntities` already guards `CSSearchableIndex.isIndexingAvailable()`
-            // internally — see CODE_AUDIT §9.8.
-            try await indexIntentEntities(entities)
-        } catch {
-            // Previously `try?`-discarded with no logging, unlike every other Spotlight
-            // call in this module. See CODE_AUDIT §5.8.
-            Logger.appIntents.error("Adventure reindexAll failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        }
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .adventure,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { AdventureEntity(root: root, model: $0) }
+        )
     }
 }
 

@@ -90,9 +90,7 @@ struct GeneratorEntityQuery: ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension GeneratorEntity: SyncableEntity, OwnershipProvidingEntity {
-    var ownership: EntityOwnership { .unknown }
-}
+extension GeneratorEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension GeneratorEntityQuery: @preconcurrency IndexedEntityQuery {

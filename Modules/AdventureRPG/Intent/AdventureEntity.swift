@@ -98,9 +98,7 @@ public struct AdventureEntityQuery: @preconcurrency ItemEntityQuery {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension AdventureEntity: SyncableEntity, OwnershipProvidingEntity {
-    public var ownership: EntityOwnership { .unknown }
-}
+extension AdventureEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
@@ -122,7 +120,7 @@ extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
 
 /// The properties of the Find action in Shortcuts (name, description, tag, folder), with sorting
 /// by name. See CODE_AUDIT_AppIntents §4.5.
-extension AdventureEntityQuery: @preconcurrency EntityPropertyQuery {
+extension AdventureEntityQuery: EntityPropertyQuery {
     public typealias ComparatorMappingType = Predicate<AdventureEntity>
 
     public nonisolated(unsafe) static let properties = QueryProperties {

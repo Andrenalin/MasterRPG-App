@@ -24,7 +24,7 @@ struct CreateDiceIntent: AppIntent {
     @Parameter(title: "First Die", default: .d20)
     var diceType: IntentDiceType
 
-    @Parameter(title: "Open When Created", default: true)
+    @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
     @Dependency var root: DiceRootModel
@@ -134,7 +134,7 @@ struct DeleteDiceIntent: DeleteIntent {
         }
         await root.itemController.save()
 
-        try await deleteIntentEntities(ids: ids, ofType: DiceEntity.self)
+        await deleteIntentEntities(ids: ids, ofType: DiceEntity.self)
 
         let count = entities.count
         let message = AttributedString(
@@ -173,22 +173,6 @@ private func intentPlainText(from text: AttributedString?) -> String {
 private func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
     try await CSSearchableIndex.default().indexAppEntities(entities)
-}
-
-private func deleteIntentEntities<Entity: IndexedEntity>(
-    ids: [UUID],
-    ofType entityType: Entity.Type
-) async throws where Entity.ID == UUID {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-
-    if #available(iOS 27, macOS 27, visionOS 27, *) {
-        try await CSSearchableIndex.default().deleteAppEntities(
-            identifiedBy: ids,
-            ofType: entityType
-        )
-    } else {
-        try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-    }
 }
 
 #endif

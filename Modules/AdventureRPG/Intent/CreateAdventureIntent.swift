@@ -19,7 +19,7 @@ public struct CreateAdventureIntent: AppIntent {
     @Parameter(title: "Story")
     var story: AttributedString?
 
-    @Parameter(title: "Open When Created", default: true)
+    @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
     @Dependency var root: AdventureRootModel

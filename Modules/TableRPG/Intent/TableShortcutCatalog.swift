@@ -83,12 +83,12 @@ public enum TableShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: TableRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> TableEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return TableEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .table,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { TableEntity(root: root, model: $0) }
+        )
     }
 }
 

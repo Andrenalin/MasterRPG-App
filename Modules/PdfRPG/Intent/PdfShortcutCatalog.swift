@@ -83,12 +83,12 @@ public enum PdfShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: PdfRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> PdfEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return PdfEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .pdf,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { PdfEntity(root: root, model: $0) }
+        )
     }
 }
 

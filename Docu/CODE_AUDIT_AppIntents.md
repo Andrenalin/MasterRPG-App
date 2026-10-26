@@ -162,6 +162,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Stale and trashed entries stay searchable; Siri/Spotlight finds "Dragon Lair", the `OpenIntent` target then fails to resolve. **Runtime result:** a probe deleting an Adventure through the intent and re-querying Spotlight for 8 s saw 0 hits — but `AppEntityDefinition.spotlightQuery` appears to resolve hits back through the entity query (which already hides trashed items), so the probe cannot show whether the raw index still holds the item. This finding is code-confirmed, **not** runtime-confirmed.
 - **Action:** Make `reindexAll` use each query's `include` filter, and on any trash/purge/import-replace call the shared delete helper (or diff-and-prune against the previous id set). Prefer incremental indexing of the changed ids (§7.1).
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. The shared `reindexIntentEntities` (CoreRPG `IntentEntityHelpers.swift`) replaces the per-module bodies of `reindexAll`: it skips trashed items (and Rule's special categories via `isIndexable`) and prunes the App Entity index once per module (flag `AppEntityIndexPruned.<module>`; `deleteAppEntities(ofType:)` on iOS 27, otherwise it deletes the ids that are no longer indexable) before indexing again. `IntentDonations.forget` (called by trash and purge) now also removes the entity from the App Entity index through the registry in `IntentEntityIdentifiers`. Raw index contents are not observable with `AppIntentsTesting`; the one-time prune is not verified at runtime. Builds: iOS, macOS, visionOS, tvOS; 49/49 `AppIntentsTesting` tests pass (Item, Dice, Adventure, Navigate, Audio).
 
 ### 5.4 Three Spotlight pipelines index the same item
 - **Location:** (1) `Modules/CoreRPG/Persistence/RpgSpotlightIndexerDelegate.swift:27-55` (`NSCoreDataCoreSpotlightDelegate`, `domainIdentifier`/`indexName` "masterRPG-index"), started at `CoreDataPersistenceController.swift:184,224` and `CloudKitCoreDataPersistenceController.swift:85,152`, with per-entity attribute sets such as `Modules/AdventureRPG/Model/DataModel+Extensions.swift:17-49`; (2) the App Entity index (`indexIntentEntities`, `reindexAll`); (3) `Modules/CoreRPG/App/UserActivity.swift:49-65` — `isEligibleForSearch = true`, `isEligibleForHandoff = true`, `contentDescription = "An item from MasterRPG"`.
@@ -169,6 +170,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Duplicate Spotlight results and conflicting cards; the skill says to pick one approach per entity. The Core Data delegate handles deletions automatically and indexes entry text, the App Entity index feeds Siri's semantic search — they are complementary today, but nothing relates them. Duplicate rows were **not** observed on a device.
 - **Action:** Decide the split explicitly: keep the Core Data index for full text and associate it with the entity (`CSSearchableItem.associateAppEntity`), or fold entry text into the App Entity; drop `isEligibleForSearch` and the generic description from `UserActivity.addPayLoad` (keep the activity for Handoff/on-screen context only).
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26 ("trim the activity only"). `addPayLoad` in `Modules/CoreRPG/App/UserActivity.swift` no longer sets `isEligibleForSearch` or a content attribute set; the activity stays for Handoff and on-screen context. The Core Data delegate index (full text) and the App Entity index (Siri) stay as complementary pipelines; no `associateAppEntity` link between them. Duplicate rows were never observed, so the result is not verified on a device.
 
 ### 5.5 `DiceEntity.attributeSet` is built from scratch with invalid values
 - **Location:** `Modules/DiceRPG/Intent/DiceEntity.swift:64-81`.
@@ -176,6 +178,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** The skill's anti-pattern: building from scratch loses the system defaults and the `@ComputedProperty(indexingKey:)` mapping; non-UTI content types are ignored or mis-classified by Spotlight. Effect on ranking not measured.
 - **Action:** Start from `defaultAttributeSet`, drop the two content-type lines, keep keywords/`relatedAppEntityIdentifier`.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26. `DiceEntity.attributeSet` starts from `defaultAttributeSet`, drops the two content-type lines and keeps keywords (`dice`, `roll`, name, tags), the "D<max>" comment and `relatedAppEntityIdentifier`.
 
 ### 5.6 The 10-shortcut budget is spent on one phrase each and on a destructive action
 - **Location:** `Sources/MasterRPG/MasterRPGShortcuts.swift:13-96`; `Resources/AppShortcuts.xcstrings` (10 keys).
@@ -183,6 +186,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Flexible matching works best with several wordings; the budget is spent on six Adventure actions and a delete. Parameterized phrases ("Open \<name\>") that the catalogs draft (`AdventureShortcutCatalog.swift:27`, `:61`) never reach the system.
 - **Action:** Re-pick the 10 (e.g. open/start by name, roll, history, navigate, create), add 2-3 wordings each (negative phrases where they collide), and add the parameterized open/start/roll phrases — then `updateAppShortcutParameters()` becomes meaningful (§7.2). Localize new phrases in `AppShortcuts.xcstrings`.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-26 ("mixed set"). `Sources/MasterRPG/MasterRPGShortcuts.swift` now has 10 shortcuts: Navigate, Open Adventure (by name), Start Adventure Game (by name), Create Adventure, Roll Dice (`RollSpecificDiceIntent`), Roll D20, Roll D6, Dice History, Play Audio, Pause Audio, each with several English and German wordings in `Resources/AppShortcuts.xcstrings` (short titles in `Localizable.xcstrings`). Append, Search and Delete Adventure left the provider (they stay as Shortcuts actions); `PlayAudioIntent`/`PauseAudioIntent` became `public`. Phrase recognition by Siri is not verified on a device. The NLU training step warns "unresolved variable(s) found: AdventureEntity" for the Open/Start phrases that contain the target: the Adventure names only exist at runtime.
 
 ### 5.7 Create intents open the app by default
 - **Location:** `Modules/AdventureRPG/Intent/CreateAdventureIntent.swift:23-24,49-52` (same in the 11 other Create intents).
@@ -190,6 +194,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** A Shortcuts automation that creates items brings the app to the foreground every time; the skill's guidance is to stay in the background by default (`supportedModes` already allows both).
 - **Action:** Default to `false`, keep the parameter for "create and open".
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26. `openWhenCreated` defaults to `false` in all 12 Create intents.
 
 ### 5.8 Spotlight delete errors are handled inconsistently
 - **Location:** `Modules/SpaceRPG/Intent/SpaceManagementIntents.swift:141` (`try?`) versus `try await` in the other Delete intents (e.g. `PdfManagementIntents.swift:134`, `Modules/AdventureRPG/Intent/DeleteAdventureIntent.swift:31`).
@@ -197,6 +202,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** Inconsistent outcome for the same event; the index failure should not fail the delete.
 - **Action:** Log-and-continue everywhere (as Space does) via the shared helper.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26. `deleteIntentEntities` in CoreRPG is non-throwing (logs and continues); the 11 private copies and Space's `try?` are gone, all Delete intents call the shared helper.
 
 ### 5.9 `OwnershipProvidingEntity` always reports `.unknown`
 - **Location:** `AdventureEntity.swift:88`, `AudioEntity.swift:96`, `CharacterEntity.swift:84`, `DiceEntity.swift:135`, `GeneratorEntity.swift:80`, `MapEntity.swift:84`, `PdfEntity.swift:99`, `PhotoEntity.swift:103`, `RuleEntity.swift:99`, `SpaceEntity.swift:98`, `TableEntity.swift:84`, `WeatherEntity.swift:82`.
@@ -204,6 +210,7 @@ The build is clean for strict concurrency in the intent files (0 intent-related 
 - **Why:** The conformance gives Siri no signal, so the protocol is adopted but inert. Items shared via SharePlay/game mode are session-scoped, not "shared content", so `.unknown` may well be right — but then the conformance adds nothing.
 - **Action:** Either remove the conformance or return `.shared` for items currently pushed to players / exported publicly.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-26 ("remove the conformance"). `OwnershipProvidingEntity` is removed from all 12 entities; `SyncableEntity` stays.
 
 ---
 

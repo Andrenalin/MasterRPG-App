@@ -135,12 +135,12 @@ public enum DiceShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: DiceRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> DiceEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return DiceEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .dice,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { DiceEntity(root: root, model: $0) }
+        )
     }
 }
 

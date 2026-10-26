@@ -83,12 +83,12 @@ public enum GeneratorShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: GeneratorRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> GeneratorEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return GeneratorEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .generator,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { GeneratorEntity(root: root, model: $0) }
+        )
     }
 }
 

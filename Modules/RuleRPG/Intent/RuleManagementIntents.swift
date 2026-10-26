@@ -21,7 +21,7 @@ struct CreateRuleIntent: AppIntent {
     @Parameter(title: "Description")
     var details: AttributedString?
 
-    @Parameter(title: "Open When Created", default: true)
+    @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
     @Dependency var root: RuleRootModel
@@ -138,7 +138,7 @@ struct DeleteRuleIntent: DeleteIntent {
             root.editController.markForDeletion(itemId: id)
         }
         await root.itemController.save()
-        try await deleteRuleEntities(ids: ids)
+        await deleteIntentEntities(ids: ids, ofType: RuleEntity.self)
         return .result(dialog: "Deleted ^[\(ids.count) rule](inflect: true).")
     }
 }
@@ -150,20 +150,6 @@ extension SearchRulesIntent: TargetContentProvidingIntent {}
 private func indexRuleEntities(_ entities: [RuleEntity]) async throws {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
     try await CSSearchableIndex.default().indexAppEntities(entities)
-}
-
-private func deleteRuleEntities(ids: [UUID]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    if #available(iOS 27, macOS 27, visionOS 27, *) {
-        try await CSSearchableIndex.default().deleteAppEntities(
-            identifiedBy: ids,
-            ofType: RuleEntity.self
-        )
-    } else {
-        try await CSSearchableIndex.default().deleteSearchableItems(
-            withIdentifiers: ids.map(\.uuidString)
-        )
-    }
 }
 
 #endif

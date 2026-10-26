@@ -69,14 +69,13 @@ public enum RuleShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: RuleRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities: [RuleEntity] = root.itemController.itemDataModel.items.compactMap { id -> RuleEntity? in
-            guard let model = root.itemController.itemSync(for: id), !model.specialCategory else {
-                return nil
-            }
-            return RuleEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .rule,
+            model: { root.itemController.itemSync(for: $0) },
+            isIndexable: { !$0.specialCategory },
+            makeEntity: { RuleEntity(root: root, model: $0) }
+        )
     }
 }
 

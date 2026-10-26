@@ -8,11 +8,11 @@ import AppIntents
 /// Plays an audio track, or the playlist of an audio folder, through the app's own player, so a
 /// game master can start the music hands-free (Siri, AirPods, Action button). It takes the same
 /// path as the play button: `GameController.play(id:shouldPlay:)`. See CODE_AUDIT_AppIntents §4.6.
-struct PlayAudioIntent: AudioPlaybackIntent {
-    static let title: LocalizedStringResource = "Play Audio"
-    static let description = IntentDescription("Play a track or playlist from your audio collection")
+public struct PlayAudioIntent: AudioPlaybackIntent {
+    public static let title: LocalizedStringResource = "Play Audio"
+    public static let description = IntentDescription("Play a track or playlist from your audio collection")
 
-    static var parameterSummary: some ParameterSummary {
+    public static var parameterSummary: some ParameterSummary {
         Summary("Play \(\.$target)")
     }
 
@@ -21,10 +21,10 @@ struct PlayAudioIntent: AudioPlaybackIntent {
 
     @Dependency var root: AudioRootModel
 
-    init() {}
+    public init() {}
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
         // `target` may have been deleted since it was cached.
         let model = try requiredIntentTarget(
@@ -38,16 +38,16 @@ struct PlayAudioIntent: AudioPlaybackIntent {
 }
 
 /// Pauses the audio that is playing.
-struct PauseAudioIntent: AudioPlaybackIntent {
-    static let title: LocalizedStringResource = "Pause Audio"
-    static let description = IntentDescription("Pause the audio that is playing")
+public struct PauseAudioIntent: AudioPlaybackIntent {
+    public static let title: LocalizedStringResource = "Pause Audio"
+    public static let description = IntentDescription("Pause the audio that is playing")
 
     @Dependency var root: AudioRootModel
 
-    init() {}
+    public init() {}
 
     @MainActor
-    func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         await DatabaseReadiness.wait()
         root.audioController.pause()
         return .result(dialog: "Paused the audio.")

@@ -4,17 +4,22 @@
 
 import AdventureRPG
 import AppIntents
+import AudioRPG
 import DiceRPG
 import RolePlayGameKit
 
 struct MasterRPGShortcuts: AppShortcutsProvider {
     static let shortcutTileColor: ShortcutTileColor = .blue
 
+    /// The 10 shortcuts the system allows, each with several wordings. Open and Start take an
+    /// adventure by name. The rest of the intents are still in Shortcuts and found by Siri through
+    /// the App Entity index, only without a fixed phrase. See CODE_AUDIT_AppIntents §5.6.
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: NavigateIntent(),
             phrases: [
-                "Navigate around \(.applicationName)"
+                "Navigate around \(.applicationName)",
+                "Go to a section of \(.applicationName)"
             ],
             shortTitle: "Navigate",
             systemImageName: "arrowshape.forward"
@@ -22,55 +27,37 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: OpenAdventureIntent(),
             phrases: [
-                "Open an adventure in \(.applicationName)"
+                "Open an adventure in \(.applicationName)",
+                "Open \(\.$target) in \(.applicationName)",
+                "Show \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Open Adventure",
             systemImageName: "wand.and.stars"
         )
         AppShortcut(
-            intent: CreateAdventureIntent(),
-            phrases: [
-                "Create a new adventure in \(.applicationName)"
-            ],
-            shortTitle: "Create Adventure",
-            systemImageName: "plus.circle"
-        )
-        AppShortcut(
-            intent: AppendAdventureSectionIntent(),
-            phrases: [
-                "Add a section to an adventure in \(.applicationName)"
-            ],
-            shortTitle: "Add Adventure Section",
-            systemImageName: "doc.badge.plus"
-        )
-        AppShortcut(
             intent: StartAdventureGameIntent(),
             phrases: [
-                "Start an adventure in \(.applicationName)"
+                "Start an adventure in \(.applicationName)",
+                "Start \(\.$target) in \(.applicationName)",
+                "Play \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Start Adventure Game",
             systemImageName: "gamecontroller"
         )
         AppShortcut(
-            intent: SearchAdventuresIntent(),
+            intent: CreateAdventureIntent(),
             phrases: [
-                "Search adventures in \(.applicationName)"
+                "Create a new adventure in \(.applicationName)",
+                "Make a new adventure in \(.applicationName)"
             ],
-            shortTitle: "Search Adventures",
-            systemImageName: "magnifyingglass"
-        )
-        AppShortcut(
-            intent: DeleteAdventureIntent(),
-            phrases: [
-                "Delete an adventure in \(.applicationName)"
-            ],
-            shortTitle: "Delete Adventure",
-            systemImageName: "trash"
+            shortTitle: "Create Adventure",
+            systemImageName: "plus.circle"
         )
         AppShortcut(
             intent: RollSpecificDiceIntent(),
             phrases: [
-                "Roll my dice in \(.applicationName)"
+                "Roll my dice in \(.applicationName)",
+                "Roll my dice set in \(.applicationName)"
             ],
             shortTitle: "Roll Dice",
             systemImageName: "dice"
@@ -78,7 +65,8 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: RollDiceIntent(diceType: .d20),
             phrases: [
-                "Roll a D20 in \(.applicationName)"
+                "Roll a D20 in \(.applicationName)",
+                "Roll a twenty sided die in \(.applicationName)"
             ],
             shortTitle: "Roll D20",
             systemImageName: "dice.fill"
@@ -86,10 +74,38 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: RollDiceIntent(diceType: .d6),
             phrases: [
-                "Roll a D6 in \(.applicationName)"
+                "Roll a D6 in \(.applicationName)",
+                "Roll a six sided die in \(.applicationName)"
             ],
             shortTitle: "Roll D6",
             systemImageName: "die.face.6.fill"
+        )
+        AppShortcut(
+            intent: ShowDiceHistoryIntent(),
+            phrases: [
+                "Show my dice history in \(.applicationName)",
+                "What did I roll in \(.applicationName)"
+            ],
+            shortTitle: "Dice History",
+            systemImageName: "clock.arrow.circlepath"
+        )
+        AppShortcut(
+            intent: PlayAudioIntent(),
+            phrases: [
+                "Play audio in \(.applicationName)",
+                "Play music in \(.applicationName)"
+            ],
+            shortTitle: "Play Audio",
+            systemImageName: "play.circle"
+        )
+        AppShortcut(
+            intent: PauseAudioIntent(),
+            phrases: [
+                "Pause audio in \(.applicationName)",
+                "Pause the music in \(.applicationName)"
+            ],
+            shortTitle: "Pause Audio",
+            systemImageName: "pause.circle"
         )
     }
 }

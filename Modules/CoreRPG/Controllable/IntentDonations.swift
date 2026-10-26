@@ -51,12 +51,14 @@ public enum IntentDonations {
         }
     }
 
-    /// Deletes every donation that names `itemId`, so a trashed or purged item does not stay in
-    /// the system's history of what the user did.
+    /// Takes an item that was trashed or purged out of what Siri knows: its donations and its entry
+    /// in the App Entity index. Without this a trashed item stays in the system's history and
+    /// remains findable. See CODE_AUDIT_AppIntents §4.4, §5.3.
     public static func forget(itemId: UUID, module: NetworkModules) {
         guard let identifier = IntentEntityIdentifiers.identifier(for: itemId, module: module) else { return }
         if lastOpened?.itemId == itemId { lastOpened = nil }
         Task {
+            await IntentEntityIdentifiers.removeFromIndex(itemIds: [itemId], module: module)
             do {
                 try await IntentDonationManager.shared.deleteDonations(matching: .entityIdentifier(identifier))
             } catch {

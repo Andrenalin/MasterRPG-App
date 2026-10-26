@@ -83,12 +83,12 @@ public enum PhotoShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: PhotoRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> PhotoEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return PhotoEntity(root: root, model: model)
-        }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .photo,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { PhotoEntity(root: root, model: $0) }
+        )
     }
 }
 

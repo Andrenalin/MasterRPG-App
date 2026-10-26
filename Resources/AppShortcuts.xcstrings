@@ -1,48 +1,24 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Add a section to an adventure in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einem Abenteuer in ${applicationName} einen Abschnitt hinzufügen"
-          }
-        },
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
-              "Add a section to an adventure in ${applicationName}"
-            ]
-          }
-        },
-        "th" : {
-          "stringSet" : {
-            "state" : "machine_translated",
-            "values" : [
-              "เพิ่มส่วนในการผจญภัยใน ${applicationName}",
-              "เพิ่มตอนเข้าในการผจญภัยใน ${applicationName}"
-            ]
-          }
-        }
-      }
-    },
     "Create a new adventure in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Ein neues Abenteuer in ${applicationName} erstellen"
+            "values" : [
+              "Ein neues Abenteuer in ${applicationName} erstellen",
+              "Ein neues Abenteuer in ${applicationName} anlegen"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Create a new adventure in ${applicationName}"
+              "Create a new adventure in ${applicationName}",
+              "Make a new adventure in ${applicationName}"
             ]
           }
         },
@@ -57,48 +33,24 @@
         }
       }
     },
-    "Delete an adventure in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Abenteuer in ${applicationName} löschen"
-          }
-        },
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
-              "Delete an adventure in ${applicationName}"
-            ]
-          }
-        },
-        "th" : {
-          "stringSet" : {
-            "state" : "machine_translated",
-            "values" : [
-              "ลบการผจญภัยใน ${applicationName}",
-              "ลบการผจญภัยออกจาก ${applicationName}"
-            ]
-          }
-        }
-      }
-    },
     "Navigate around ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Durch ${applicationName} navigieren"
+            "values" : [
+              "Durch ${applicationName} navigieren",
+              "Zu einem Bereich von ${applicationName} gehen"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Navigate around ${applicationName}"
+              "Navigate around ${applicationName}",
+              "Go to a section of ${applicationName}"
             ]
           }
         },
@@ -117,16 +69,22 @@
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Ein Abenteuer in ${applicationName} öffnen"
+            "values" : [
+              "Ein Abenteuer in ${applicationName} öffnen",
+              "${target} in ${applicationName} öffnen",
+              "${target} in ${applicationName} zeigen"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Open an adventure in ${applicationName}"
+              "Open an adventure in ${applicationName}",
+              "Open ${target} in ${applicationName}",
+              "Show ${target} in ${applicationName}"
             ]
           }
         },
@@ -141,20 +99,70 @@
         }
       }
     },
+    "Pause audio in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Pause audio in ${applicationName}",
+              "Pause the music in ${applicationName}"
+            ]
+          }
+        },
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Audio in ${applicationName} pausieren",
+              "Die Musik in ${applicationName} pausieren"
+            ]
+          }
+        }
+      }
+    },
+    "Play audio in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play audio in ${applicationName}",
+              "Play music in ${applicationName}"
+            ]
+          }
+        },
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Audio in ${applicationName} abspielen",
+              "Musik in ${applicationName} abspielen"
+            ]
+          }
+        }
+      }
+    },
     "Roll a D6 in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Einen D6 in ${applicationName} würfeln"
+            "values" : [
+              "Einen D6 in ${applicationName} würfeln",
+              "Einen sechsseitigen Würfel in ${applicationName} würfeln"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Roll a D6 in ${applicationName}"
+              "Roll a D6 in ${applicationName}",
+              "Roll a six sided die in ${applicationName}"
             ]
           }
         },
@@ -173,16 +181,20 @@
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Einen D20 in ${applicationName} würfeln"
+            "values" : [
+              "Einen D20 in ${applicationName} würfeln",
+              "Einen zwanzigseitigen Würfel in ${applicationName} würfeln"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Roll a D20 in ${applicationName}"
+              "Roll a D20 in ${applicationName}",
+              "Roll a twenty sided die in ${applicationName}"
             ]
           }
         },
@@ -201,16 +213,20 @@
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Meine Würfel in ${applicationName} würfeln"
+            "values" : [
+              "Meine Würfel in ${applicationName} würfeln",
+              "Mein Würfelset in ${applicationName} würfeln"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Roll my dice in ${applicationName}"
+              "Roll my dice in ${applicationName}",
+              "Roll my dice set in ${applicationName}"
             ]
           }
         },
@@ -225,29 +241,24 @@
         }
       }
     },
-    "Search adventures in ${applicationName}" : {
+    "Show my dice history in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In ${applicationName} nach Abenteuern suchen"
-          }
-        },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Search adventures in ${applicationName}"
+              "Show my dice history in ${applicationName}",
+              "What did I roll in ${applicationName}"
             ]
           }
         },
-        "th" : {
+        "de" : {
           "stringSet" : {
-            "state" : "machine_translated",
+            "state" : "translated",
             "values" : [
-              "ค้นหาการผจญภัยใน ${applicationName}",
-              "หาการผจญภัยใน ${applicationName}"
+              "Meinen Würfelverlauf in ${applicationName} zeigen",
+              "Was habe ich in ${applicationName} gewürfelt"
             ]
           }
         }
@@ -257,16 +268,22 @@
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
+          "stringSet" : {
             "state" : "translated",
-            "value" : "Ein Abenteuer in ${applicationName} starten"
+            "values" : [
+              "Ein Abenteuer in ${applicationName} starten",
+              "${target} in ${applicationName} starten",
+              "${target} in ${applicationName} spielen"
+            ]
           }
         },
         "en" : {
           "stringSet" : {
             "state" : "new",
             "values" : [
-              "Start an adventure in ${applicationName}"
+              "Start an adventure in ${applicationName}",
+              "Start ${target} in ${applicationName}",
+              "Play ${target} in ${applicationName}"
             ]
           }
         },

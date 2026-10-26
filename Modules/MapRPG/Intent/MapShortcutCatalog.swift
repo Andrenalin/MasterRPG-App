@@ -84,16 +84,12 @@ public enum MapShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: MapRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
-        let entities = root.itemController.itemDataModel.items.compactMap { id -> MapEntity? in
-            guard let model = root.itemController.itemSync(for: id) else { return nil }
-            return MapEntity(root: root, model: model)
-        }
-        do {
-            try await CSSearchableIndex.default().indexAppEntities(entities)
-        } catch {
-            Logger.appIntents.debug("Failed to reindex Map entities for Spotlight: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        }
+        await reindexIntentEntities(
+            ids: root.itemController.itemDataModel.items,
+            module: .map,
+            model: { root.itemController.itemSync(for: $0) },
+            makeEntity: { MapEntity(root: root, model: $0) }
+        )
     }
 }
 
