@@ -79,7 +79,6 @@ struct CharacterEntityQuery: ItemEntityQuery {
     func model(root: CharacterRootModel, id: UUID) -> ValueModel? { root.itemController.itemSync(for: id) }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension CharacterEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
@@ -100,6 +99,4 @@ extension CharacterEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
-
 #endif

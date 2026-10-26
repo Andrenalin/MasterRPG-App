@@ -98,7 +98,6 @@ struct PhotoEntityQuery: ItemEntityQuery {
     func model(root: PhotoRootModel, id: UUID) -> PhotoModel? { root.itemController.itemSync(for: id) }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension PhotoEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
@@ -119,6 +118,4 @@ extension PhotoEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
-
 #endif

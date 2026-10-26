@@ -23,11 +23,7 @@ enum AppConfiguration {
         static func contextSize(
             for model: SystemLanguageModel = .default
         ) async -> Int {
-            #if compiler(>=6.3)
             return model.contextSize
-            #else
-            return defaultMaxTokens
-            #endif
         }
 
         static func contextSize(

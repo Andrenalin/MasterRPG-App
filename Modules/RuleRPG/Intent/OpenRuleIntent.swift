@@ -27,7 +27,6 @@ extension OpenRuleIntent: TargetContentProvidingIntent {}
 
 extension RuleRootModel {
     func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-#if compiler(>=6.4)
         guard #available(iOS 27, macOS 27, visionOS 27, *),
               let model = itemController.itemSync(for: itemId),
               !model.specialCategory else { return }
@@ -35,11 +34,9 @@ extension RuleRootModel {
             for: RuleEntity.self,
             identifier: itemId
         )
-#endif
     }
 
     func donateSiriViewingIntent(for itemId: UUID) async {
-#if compiler(>=6.4)
         guard #available(iOS 27, macOS 27, visionOS 27, *),
               let model = itemController.itemSync(for: itemId),
               !model.specialCategory else { return }
@@ -50,7 +47,6 @@ extension RuleRootModel {
         } catch {
             Logger.appIntents.debug("Failed to donate OpenRuleIntent for Siri/Shortcuts: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
-#endif
     }
 }
 

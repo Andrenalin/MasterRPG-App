@@ -94,7 +94,6 @@ struct RuleEntityQuery: ItemEntityQuery {
     }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension RuleEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
@@ -115,6 +114,4 @@ extension RuleEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(try await allEntities())
     }
 }
-#endif
-
 #endif

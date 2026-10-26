@@ -77,7 +77,6 @@ struct WeatherEntityQuery: ItemEntityQuery {
     func model(root: WeatherRootModel, id: UUID) -> WeatherModel? { root.itemController.itemSync(for: id) }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension WeatherEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
@@ -98,6 +97,5 @@ extension WeatherEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
 
 #endif

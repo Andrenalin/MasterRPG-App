@@ -91,7 +91,6 @@ struct AudioEntityQuery: ItemEntityQuery {
     func model(root: AudioRootModel, id: UUID) -> AudioModel? { root.itemController.itemSync(for: id) }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension AudioEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
@@ -112,6 +111,4 @@ extension AudioEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
-
 #endif

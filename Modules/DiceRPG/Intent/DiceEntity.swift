@@ -74,11 +74,9 @@ struct DiceEntity: IndexedEntity {
             attributes.comment = "D\(firstDieMax)"
         }
 
-#if compiler(>=6.4)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
             attributes.relatedAppEntityIdentifier = EntityIdentifier(for: self)
         }
-#endif
         
         return attributes
     }
@@ -132,7 +130,6 @@ struct DiceEntityQuery: ItemEntityQuery {
     }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension DiceEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
@@ -153,6 +150,4 @@ extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
-
 #endif

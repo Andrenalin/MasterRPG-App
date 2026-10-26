@@ -29,15 +29,12 @@ extension OpenPdfIntent: TargetContentProvidingIntent {}
 extension PdfRootModel {
     @MainActor
     func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-#if compiler(>=6.4)
         guard #available(iOS 27, macOS 27, visionOS 27, *) else { return }
         activity.appEntityIdentifier = EntityIdentifier(for: PdfEntity.self, identifier: itemId)
-#endif
     }
 
     @MainActor
     func donateSiriViewingIntent(for itemId: UUID) async {
-#if compiler(>=6.4)
         guard #available(iOS 27, macOS 27, visionOS 27, *),
               let model = itemController.itemSync(for: itemId)
         else { return }
@@ -49,7 +46,6 @@ extension PdfRootModel {
         } catch {
             Logger.appIntents.debug("Failed to donate OpenPdfIntent for Siri/Shortcuts: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
-#endif
     }
 }
 

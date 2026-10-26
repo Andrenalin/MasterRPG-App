@@ -173,7 +173,6 @@ private func deleteIntentEntities<Entity: IndexedEntity>(
 ) async throws where Entity.ID == UUID {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
 
-#if compiler(>=6.4)
     if #available(iOS 27, macOS 27, visionOS 27, *) {
         try await CSSearchableIndex.default().deleteAppEntities(
             identifiedBy: ids,
@@ -182,9 +181,6 @@ private func deleteIntentEntities<Entity: IndexedEntity>(
     } else {
         try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
     }
-#else
-    try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-#endif
 }
 
 #endif

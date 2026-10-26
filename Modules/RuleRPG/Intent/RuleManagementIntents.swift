@@ -148,7 +148,6 @@ private func indexRuleEntities(_ entities: [RuleEntity]) async throws {
 
 private func deleteRuleEntities(ids: [UUID]) async throws {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
-#if compiler(>=6.4)
     if #available(iOS 27, macOS 27, visionOS 27, *) {
         try await CSSearchableIndex.default().deleteAppEntities(
             identifiedBy: ids,
@@ -159,11 +158,6 @@ private func deleteRuleEntities(ids: [UUID]) async throws {
             withIdentifiers: ids.map(\.uuidString)
         )
     }
-#else
-    try await CSSearchableIndex.default().deleteSearchableItems(
-        withIdentifiers: ids.map(\.uuidString)
-    )
-#endif
 }
 
 #endif

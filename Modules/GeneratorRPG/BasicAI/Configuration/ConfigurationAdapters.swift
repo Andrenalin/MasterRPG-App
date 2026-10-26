@@ -36,18 +36,10 @@ extension GenerationOptionsConfiguration.SamplingMode {
 
 extension GenerationOptionsConfiguration {
     var foundationModelsValue: GenerationOptions {
-        #if compiler(>=6.4)
         GenerationOptions(
             samplingMode: sampling?.foundationModelsValue,
             temperature: temperature,
             maximumResponseTokens: maximumResponseTokens
         )
-        #else
-        GenerationOptions(
-            sampling: sampling?.foundationModelsValue,
-            temperature: temperature,
-            maximumResponseTokens: maximumResponseTokens
-        )
-        #endif
     }
 }

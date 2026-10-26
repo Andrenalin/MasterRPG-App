@@ -61,12 +61,10 @@ public extension Transcript {
     func foundationLabTokenCount(
         using model: SystemLanguageModel = .default
     ) async -> Int {
-        #if compiler(>=6.3)
         if #available(iOS 26.4, macOS 26.4, visionOS 26.4, *),
            let realTokenCount = try? await model.tokenCount(for: Array(self)) {
             return realTokenCount
         }
-        #endif
 
         return foundationLabEstimatedTokenCount
     }
@@ -74,13 +72,11 @@ public extension Transcript {
     func foundationLabSafeTokenCount(
         using model: SystemLanguageModel = .default
     ) async -> Int {
-        #if compiler(>=6.3)
         if #available(iOS 26.4, macOS 26.4, visionOS 26.4, *),
            let realTokens = try? await model.tokenCount(for: Array(self)) {
             let buffer = Int(Double(realTokens) * 0.05)
             return realTokens + buffer
         }
-        #endif
 
         let baseTokens = foundationLabEstimatedTokenCount
         let buffer = Int(Double(baseTokens) * 0.25)
@@ -110,7 +106,6 @@ public extension Transcript {
             return true
         }
 
-        #if compiler(>=6.3)
         if #available(iOS 26.4, macOS 26.4, visionOS 26.4, *) {
             return await foundationLabRealTokenBudgetWindow(
                 instructions: instructionsEntry,
@@ -123,7 +118,6 @@ public extension Transcript {
                 budget: budget
             )
         }
-        #endif
 
         return foundationLabEstimatedTokenBudgetWindow(
             instructions: instructionsEntry,
@@ -166,7 +160,6 @@ private extension Transcript {
         return base + Array(selectedConversation.reversed())
     }
 
-    #if compiler(>=6.3)
     @available(iOS 26.4, macOS 26.4, visionOS 26.4, *)
     func foundationLabRealTokenBudgetWindow(
         instructions: Transcript.Entry?,
@@ -208,5 +201,4 @@ private extension Transcript {
 
         return base + Array(conversation.suffix(low))
     }
-    #endif
 }
