@@ -224,11 +224,7 @@ extension ValueEntryModel: EntryDataAccessible {
 
 extension ValueEntryModel: nonisolated ItemDuplicatable {}
 
-extension ValueEntryModel: ItemLinkEditable {
-    public var textLinkContent: String {
-        entryText(otherValue: "")
-    }
-
+extension ValueEntryModel {
     public func entryText(otherValue: String) -> String {
         let bold = name.starts(with: "**") ? "" : "**"
         return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(value)\(otherValue)"

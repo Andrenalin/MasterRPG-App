@@ -128,12 +128,6 @@ extension RuleEntryModel: ItemDiffComparable {
     }
 }
 
-extension RuleEntryModel: ItemLinkEditable {
-    public var textLinkContent: String {
-        name.isEmpty ? content : "**\(name.trimmingCharacters(in: .whitespacesAndNewlines))**: \(content)"
-    }
-}
-
 
 #if DEBUG
 public extension RuleEntryModel {

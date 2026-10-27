@@ -79,19 +79,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     // never regenerated after its removal. Pre-existing staleness, unrelated to this
     // session's fixes.
 
-    // snapshot-root: CoreRPG::QuickLinkTextRow
-    @Test("QuickLinkTextRow")
-    func snapshotQuickLinkTextRow() async throws {
-        try await assertPreviewSnapshot("QuickLinkTextRow") {
-            CoreRPG.QuickLinkTextRow(
-                linkControllable: FakeLinkController.fake,
-                model: QuickLinkPreviewEntry(textLinkContent: "The [forgotten shrine](RPG://ADVENTURE/preview) awaits."),
-                original: true
-            )
-            .padding()
-        }
-    }
-
     // snapshot-root: CoreRPG::TextDoubleEditor
     @Test("TextDoubleEditor")
     func snapshotTextDoubleEditor() async throws {

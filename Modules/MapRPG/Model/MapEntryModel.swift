@@ -134,12 +134,6 @@ extension MapEntryModel: EntryDataAccessible {
     public func linkContent() -> String { content }
 }
 
-extension MapEntryModel: ItemLinkEditable {
-    public var textLinkContent: String {
-        content
-    }
-}
-
 extension MapEntryModel: ItemDiffComparable {
     public func merge(_ other: MapEntryModel) -> MapEntryModel {
         MapEntryModel(

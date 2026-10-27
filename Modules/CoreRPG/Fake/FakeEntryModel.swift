@@ -43,9 +43,3 @@ extension FakeEntryModel: ItemDiffComparable {
     }
 }
 
-extension FakeEntryModel: ItemLinkEditable {
-    public var textLinkContent: String {
-        content
-    }
-}
-

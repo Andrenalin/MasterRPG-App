@@ -78,7 +78,6 @@ public protocol LinkControllable: Sendable {
 
     // Link
     @MainActor func link(for name: String, entryName: String?) -> String?
-    @MainActor func link(for module: NetworkModules) -> [LinkEntryModel]
     @MainActor func name(for id: UUID, entryId: UUID?) -> String
         
     // Collect Links
@@ -335,7 +334,6 @@ public extension LinkControllable {
 
 public extension LinkControllable {
     @MainActor func link(for name: String, entryName: String?) -> String? { nil }
-    @MainActor func link(for module: NetworkModules) -> [LinkEntryModel] { [] }
     
     @MainActor
     func name(for id: UUID, entryId: UUID? = nil) -> String {

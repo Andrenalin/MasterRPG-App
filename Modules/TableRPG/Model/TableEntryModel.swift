@@ -72,14 +72,6 @@ extension TableEntryModel: ItemDiffComparable {
     }
 }
 
-// MARK: - Links
-
-extension TableEntryModel: ItemLinkEditable {
-    public var textLinkContent: String {
-        entryLinkText(otherValue: "")
-    }
-}
-
 
 #if DEBUG
 extension TableEntryModel {

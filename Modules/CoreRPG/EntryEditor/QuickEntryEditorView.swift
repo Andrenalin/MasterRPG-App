@@ -46,6 +46,10 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @State private var showInspector = false
     @State private var showResult = false
     
+    @State private var showQuickLinkPicker = false
+    @State private var quickLinkSelection = ItemSelectionModel(isSingleSelection: true, allowCollections: false)
+    @State private var quickLinkCount: Int?
+
     @State private var showAffectedLinksAlert: Bool = false
     @State private var editorModel = RemoveEntryListModel()
     
@@ -76,6 +80,24 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                         _ = editController.merge(itemId: model.id, entries: model.entries, recoverEntries: editorModel.removeItems, forceSave: true)
                         root.editControllable.editorModel.sheetRootModel?.updateParent()
                         navigator.dismiss()
+                    }
+                }
+                .sizedSheet(isPresented: $showQuickLinkPicker, idealSize: CGSize(width: 500, height: 700)) {
+                    if let tableRoot = tableRootController {
+                        QuickEntryEditorTablePickerView(tableRoot: tableRoot, selection: quickLinkSelection)
+                    }
+                }
+                .onChange(of: quickLinkSelection.itemId) {
+                    guard let tableId = quickLinkSelection.itemId else { return }
+                    applyQuickLink(tableId: tableId)
+                }
+                .alert(Text("Quick Link", bundle: .module), isPresented: Binding(get: { quickLinkCount != nil }, set: { if !$0 { quickLinkCount = nil } })) {
+                    Button { quickLinkCount = nil } label: { Text("OK", bundle: .module) }
+                } message: {
+                    if let quickLinkCount, quickLinkCount > 0 {
+                        Text("\(quickLinkCount) links added", bundle: .module)
+                    } else {
+                        Text("No matching entries found", bundle: .module)
                     }
                 }
                 .navigationTitle(model.name)
@@ -139,6 +161,24 @@ private extension QuickEntryEditorView {
     func removeLineBreak(_ text: String) -> String {
         parser.removeLineBreaks(from: text)
     }
+
+    /// The Table module's root, reached type-erased because CoreRPG can't see TableRPG.
+    var tableRootController: ItemRootController? {
+        root.rootManager?.itemRootController(for: .table)
+    }
+
+    /// Links every entry name of the chosen table found in the editor text. The text is reset
+    /// in the editor as well, because the editor only reads `referenceText` on appear.
+    func applyQuickLink(tableId: UUID) {
+        showQuickLinkPicker = false
+        quickLinkSelection.resetSelection(itemId: nil, entryId: nil)
+        guard let table = tableRootController?.itemControllable.itemDataModel.item(for: tableId) as? any ItemDataAccessible else { return }
+        let result = QuickLinkScanner.apply(QuickLinkScanner.candidates(for: table), to: textEditModel.text)
+        quickLinkCount = result.count
+        guard result.count > 0 else { return }
+        textEditModel.reset(text: result.text, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
+        referenceText.input = result.text
+    }
 }
 
 private extension QuickEntryEditorView {
@@ -160,13 +200,16 @@ private extension QuickEntryEditorView {
             QuickEntryEditorShowResultButtonView(showResult: $showResult)
             Divider()
             QuickEntryEditorPdfButtonView(pdfEditorRoute: pdfEditorRoute, showResult: $showResult)
+            if tableRootController != nil {
+                QuickEntryEditorQuickLinkButtonView(showPicker: $showQuickLinkPicker)
+            }
             if canShowInspector {
                 QuickEntryEditorShowInspectorButtonView(showInspector: $showInspector)
             }
         }
 #else
         ToolbarItem(placement: .secondaryActionAll) {
-            QuickEntryEditorSecondaryActionMenuView(pdfEditorRoute: pdfEditorRoute, canShowInspector: canShowInspector, referenceText: referenceText, removeLineBreak: removeLineBreak, showHelp: $showHelp, showResult: $showResult, showInspector: $showInspector)
+            QuickEntryEditorSecondaryActionMenuView(pdfEditorRoute: pdfEditorRoute, canShowInspector: canShowInspector, canQuickLink: tableRootController != nil, referenceText: referenceText, removeLineBreak: removeLineBreak, showHelp: $showHelp, showQuickLink: $showQuickLinkPicker, showResult: $showResult, showInspector: $showInspector)
         }
 #endif
 
@@ -303,9 +346,11 @@ private struct QuickEntryEditorEditorView: View {
 private struct QuickEntryEditorSecondaryActionMenuView: View {
     let pdfEditorRoute: any NavigationDestination
     let canShowInspector: Bool
+    let canQuickLink: Bool
     let referenceText: DebouncerModel<String>
     let removeLineBreak: (String) -> String
     @Binding var showHelp: Bool
+    @Binding var showQuickLink: Bool
     @Binding var showResult: Bool
     @Binding var showInspector: Bool
 
@@ -321,9 +366,49 @@ private struct QuickEntryEditorSecondaryActionMenuView: View {
 
         ControlGroup {
             QuickEntryEditorPdfButtonView(pdfEditorRoute: pdfEditorRoute, showResult: $showResult)
+            if canQuickLink {
+                QuickEntryEditorQuickLinkButtonView(showPicker: $showQuickLink)
+            }
             if canShowInspector {
                 QuickEntryEditorShowInspectorButtonView(showInspector: $showInspector)
             }
+        }
+    }
+}
+
+private struct QuickEntryEditorQuickLinkButtonView: View {
+    @Binding var showPicker: Bool
+
+    var body: some View {
+        Button {
+            showPicker = true
+        } label: {
+            Label { Text("Quick Link", bundle: .module) } icon: { Image(systemName: "link.badge.plus") }
+        }
+    }
+}
+
+private struct QuickEntryEditorTablePickerView: View {
+    let tableRoot: ItemRootController
+    let selection: ItemSelectionModel
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ManagedNavigationStack(name: "QuickEntryEditorTablePicker") {
+            tableRoot.viewControllable.linkListView(rootController: tableRoot, type: .selection, itemSelectionModel: selection)
+                .navigationTitle(Text("Quick Link", bundle: .module))
+                .navigationBarTitleDisplayModeAll(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(role: .cancel) {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark.circle")
+                        }
+                        .accessibilityLabel(Text("Cancel", bundle: .module))
+                    }
+                }
         }
     }
 }

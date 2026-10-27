@@ -9,8 +9,8 @@ import Foundation
 /// in this module can no longer silently diverge — `GameController` used to
 /// hand-roll a version that only checked the upper bound and only split on
 /// an ASCII hyphen. See CODE_AUDIT_Table §5.1/§5.2.
-enum TableRollRange {
-    static func selectorRange(for name: String) -> ClosedRange<Int>? {
+public enum TableRollRange {
+    public static func selectorRange(for name: String) -> ClosedRange<Int>? {
         let trimmed = name
             .trimmingCharacters(in: CharacterSet(charactersIn: "*`[]() "))
         let prefix = trimmed.prefix {

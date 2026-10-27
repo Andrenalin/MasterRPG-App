@@ -64,10 +64,10 @@ struct TableEntryModelTests {
         #expect(m1.isSame(m2) == true)
     }
 
-    @Test func textLinkContent() async throws {
+    @Test func entryLinkText() async throws {
         let sut = try await setUp()
         let result1 = "**Hello name**: Hello Content "
-        #expect(sut.textLinkContent == result1)
+        #expect(sut.entryLinkText(otherValue: "") == result1)
 
         let result2 = "**Hello name**: Hello Content More"
         #expect(sut.entryLinkText(otherValue: "More") == result2)

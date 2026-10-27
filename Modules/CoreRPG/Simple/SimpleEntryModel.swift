@@ -50,7 +50,3 @@ extension SimpleEntryModel: ItemDiffComparable {
     }
 }
 
-extension SimpleEntryModel: ItemLinkEditable {
-    public var textLinkContent: String { content }
-}
-

@@ -88,32 +88,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::QuickLinkEditor
-    @Test("QuickLinkEditor")
-    func quickLinkEditor() {
-        let entries = [
-            QuickLinkPreviewEntry(textLinkContent: "The forgotten shrine awaits.")
-        ]
-
-        assertCoreSnapshot("QuickLinkEditor") {
-            QuickLinkEditor(
-                editController: FakeEditController.fake,
-                linkController: FakeLinkController.fake,
-                model: .constant(entries),
-                title: "Quick Links"
-            ) { afterEntries in
-                Button("Scan Links") {
-                    afterEntries.wrappedValue = [
-                        QuickLinkPreviewEntry(
-                            textLinkContent: "The [forgotten shrine](RPG://ADVENTURE/preview) awaits."
-                        )
-                    ]
-                }
-                .padding()
-            }
-        }
-    }
-
     // snapshot-root: CoreRPG::RemoveTagsEditor
     @Test("RemoveTagsEditor")
     func removeTagsEditor() {
