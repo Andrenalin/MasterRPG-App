@@ -21,68 +21,90 @@ public final class LinkReplaceController: Sendable {
     /// The one numbering loop behind `links(for:)` and `linksRepair(for:)`: a link without a
     /// command is numbered by how often its table (or table entry) appeared before it. With
     /// `repairs`, a stored number that differs is also corrected in `text`.
-    /// See CODE_AUDIT_20 §9.6.
+    ///
+    /// Identical links in one text (the same stored number twice, as in the quick editor) are
+    /// told apart by their position: the n-th link with a given markdown is the n-th occurrence
+    /// of that markdown. Locating them with a plain `range(of:)` found the first occurrence for
+    /// all of them. See CODE_AUDIT_20 §9.6.
     private static func numberedLinks(in text: inout String, repairs: Bool) -> [LinkReplaceModel] {
-        let allLinks = ReferenceScanner.allUuidUrls(for: scheme, in: text)
+        let source = text
+        let allLinks = ReferenceScanner.allUuidUrls(for: scheme, in: source)
 
+        var numbered: [NumberedLink] = []
         var seenTableId: [UUID: Int] = [:]
-        var list = allLinks.tables.map {
-            let module = UserActivity.extractModule(from: $0.module)
-            var linkNumber = Int($0.linkNumber) ?? 0
-            var updatedLink = $0
-            if $0.command == nil {
-                linkNumber = seenTableId[$0.table, default: 0]
-                seenTableId[$0.table] = linkNumber + 1
-                let previousMarkDown = updatedLink.markDown(for: scheme)
-                let needsRepair = "\(linkNumber)" != updatedLink.linkNumber
+        for link in allLinks.tables {
+            var updatedLink = link
+            var linkNumber = Int(link.linkNumber) ?? 0
+            if link.command == nil {
+                linkNumber = seenTableId[link.table, default: 0]
+                seenTableId[link.table] = linkNumber + 1
                 updatedLink.linkNumber = "\(linkNumber)"
-                if repairs, needsRepair {
-                    replace(occurrence: linkNumber, of: previousMarkDown, with: updatedLink.markDown(for: scheme), in: &text)
-                }
             }
-            let markDown = updatedLink.markDown(for: scheme)
-            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: nil, markDown: markDown, command: $0.command, range: range)
+            numbered.append(NumberedLink(
+                name: link.name, module: UserActivity.extractModule(from: link.module), linkNumber: linkNumber,
+                itemId: link.table, entryId: nil, command: link.command,
+                original: link.markDown(for: scheme), markDown: updatedLink.markDown(for: scheme)
+            ))
         }
         var seenEntryId: [UUID: [UUID: Int]] = [:]
-        let entryLinks = allLinks.tableEntries.map {
-            let module = UserActivity.extractModule(from: $0.module)
-            var tableIds = seenEntryId[$0.table, default: [:]]
-            var linkNumber = Int($0.linkNumber) ?? 0
-            var updatedLink = $0
-            if $0.command == nil {
-                linkNumber = tableIds[$0.entry, default: 0]
-                tableIds[$0.entry] = linkNumber + 1
-                seenEntryId[$0.table] = tableIds
-                let previousMarkDown = updatedLink.markDown(for: scheme)
-                let needsRepair = "\(linkNumber)" != updatedLink.linkNumber
+        for link in allLinks.tableEntries {
+            var updatedLink = link
+            var linkNumber = Int(link.linkNumber) ?? 0
+            if link.command == nil {
+                var tableIds = seenEntryId[link.table, default: [:]]
+                linkNumber = tableIds[link.entry, default: 0]
+                tableIds[link.entry] = linkNumber + 1
+                seenEntryId[link.table] = tableIds
                 updatedLink.linkNumber = "\(linkNumber)"
-                if repairs, needsRepair {
-                    replace(occurrence: linkNumber, of: previousMarkDown, with: updatedLink.markDown(for: scheme), in: &text)
-                }
             }
-            let markDown = updatedLink.markDown(for: scheme)
-            let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-            return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: $0.entry, markDown: markDown, command: $0.command, range: range)
+            numbered.append(NumberedLink(
+                name: link.name, module: UserActivity.extractModule(from: link.module), linkNumber: linkNumber,
+                itemId: link.table, entryId: link.entry, command: link.command,
+                original: link.markDown(for: scheme), markDown: updatedLink.markDown(for: scheme)
+            ))
         }
-        list.append(contentsOf: entryLinks)
-        return list
+
+        var sourceOccurrences = MarkDownOccurrences(text: source)
+        var ranges = numbered.map { sourceOccurrences.next($0.original) }
+        if repairs {
+            text = rewritten(source, numbered: numbered, ranges: ranges)
+            var repairedOccurrences = MarkDownOccurrences(text: text)
+            ranges = numbered.map { repairedOccurrences.next($0.markDown) }
+        }
+
+        return zip(numbered, ranges).map { link, range in
+            LinkReplaceModel(name: link.name, module: link.module, linkNumber: link.linkNumber, itemId: link.itemId, entryId: link.entryId, markDown: link.markDown, command: link.command, range: range ?? text.startIndex..<text.endIndex)
+        }
     }
 
-    /// Replaces the `occurrence`-th appearance of `previous` in `text` with `new`, or every
-    /// appearance when there are fewer.
-    private static func replace(occurrence: Int, of previous: String, with new: String, in text: inout String) {
-        let ranges = text.ranges(of: previous)
-        if occurrence < ranges.count {
-            // `.replacing(_:with:subrange:)` was tried here first but discovered
-            // (via a failing test) to replace every occurrence in the whole
-            // string, silently ignoring `subrange`, in this Swift toolchain —
-            // not a scoped search at all. `replaceSubrange(_:with:)`
-            // unambiguously replaces only this one occurrence.
-            text.replaceSubrange(ranges[occurrence], with: new)
-        } else {
-            text = text.replacing(previous, with: new)
+    /// `source` with every link whose stored number disagrees rewritten in place.
+    private static func rewritten(_ source: String, numbered: [NumberedLink], ranges: [Range<String.Index>?]) -> String {
+        let fixes = zip(numbered, ranges)
+            .compactMap { link, range in
+                range.flatMap { link.original == link.markDown ? nil : (range: $0, markDown: link.markDown) }
+            }
+            .sorted { $0.range.lowerBound < $1.range.lowerBound }
+        var result = ""
+        var position = source.startIndex
+        for fix in fixes where fix.range.lowerBound >= position {
+            result += source[position..<fix.range.lowerBound]
+            result += fix.markDown
+            position = fix.range.upperBound
         }
+        result += source[position...]
+        return result
+    }
+
+    private struct NumberedLink {
+        let name: String
+        let module: NetworkModules
+        let linkNumber: Int
+        let itemId: UUID
+        let entryId: UUID?
+        let command: String?
+        /// The link as written in the text, and as it reads with its computed number.
+        let original: String
+        let markDown: String
     }
 
     public static func removeLinks(for text: String) -> String {
@@ -107,5 +129,31 @@ public final class LinkReplaceController: Sendable {
             result = result.replacing(oldLink, with: $0.markDown, maxReplacements: 1)
         }
         return result
+    }
+}
+
+/// Hands out the occurrences of a markdown string in a text one after the other, so that
+/// identical links are told apart by their position: the n-th request for a markdown returns
+/// the n-th occurrence of it.
+struct MarkDownOccurrences {
+    init(text: String) {
+        self.text = text
+    }
+
+    let text: String
+    private var ranges: [String: [Range<String.Index>]] = [:]
+    private var handedOut: [String: Int] = [:]
+
+    mutating func next(_ markDown: String) -> Range<String.Index>? {
+        let occurrences: [Range<String.Index>]
+        if let cached = ranges[markDown] {
+            occurrences = cached
+        } else {
+            occurrences = text.ranges(of: markDown)
+            ranges[markDown] = occurrences
+        }
+        let index = handedOut[markDown, default: 0]
+        handedOut[markDown] = index + 1
+        return index < occurrences.count ? occurrences[index] : nil
     }
 }

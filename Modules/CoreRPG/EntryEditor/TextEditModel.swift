@@ -109,14 +109,24 @@ import SwiftUI
     }
 
     private func attributedText(from value: String) -> (text: AttributedString, links: [LinkRegisterModel]) {
-        var attributedValue = AttributedString(value)
-        guard let parsedLinks = linkRegisterController?.linkRegisterModel(in: value, for: source) else {
-            return (attributedValue, [])
+        guard let linkRegisterController else {
+            return (AttributedString(value), [])
         }
 
+        // Identical links (typically written with the same number, as in the quick editor) are
+        // numbered by position first, so each one is found at its own place below.
+        var numberedValue = value
+        _ = LinkReplaceController.linksRepair(for: &numberedValue)
+
+        var attributedValue = AttributedString(numberedValue)
+        let parsedLinks = linkRegisterController.linkRegisterModel(in: numberedValue, for: source)
+
+        var occurrences = MarkDownOccurrences(text: numberedValue)
         let sortedLinks = parsedLinks.compactMap {
             link -> (range: Range<AttributedString.Index>, link: LinkRegisterModel)? in
-            guard let markDown = link.markDown, let range = attributedValue.range(of: markDown) else {
+            guard let markDown = link.markDown,
+                  let stringRange = occurrences.next(markDown),
+                  let range = Range(stringRange, in: attributedValue) else {
                 return nil
             }
             return (range, link)
