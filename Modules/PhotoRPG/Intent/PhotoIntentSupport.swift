@@ -7,25 +7,25 @@ import AppIntents
 import CoreSpotlight
 import Foundation
 
-public enum AudioShortcutCatalog {
+public enum PhotoIntentSupport {
     /// Names the entity type this module's donations use, so they can be deleted when an item is
     /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
     @MainActor
     public static func registerDonations() {
-        IntentEntityIdentifiers.register(AudioEntity.self, for: .audio)
+        IntentEntityIdentifiers.register(PhotoEntity.self, for: .photo)
     }
 
     @MainActor
-    public static func reindexChanged(root: AudioRootModel) async {
+    public static func reindexChanged(root: PhotoRootModel) async {
         await reindexIntentEntities(
             itemDataModel: root.itemController.itemDataModel,
-            module: .audio,
+            module: .photo,
             model: { root.itemController.itemSync(for: $0) },
-            makeEntity: { AudioEntity(root: root, model: $0) }
+            makeEntity: { PhotoEntity(root: root, model: $0) }
         )
     }
 }
 
-public struct AudioFrameworkPackage: AppIntentsPackage { }
+public struct PhotoFrameworkPackage: AppIntentsPackage { }
 
 #endif

@@ -9,12 +9,14 @@ import SwiftUI
 public enum EntitySummaryExport {
     public struct RenderError: Error {}
 
-    /// Renders `name` and `description` into a PDF in the caches directory. The file name is
-    /// derived from `id`, not the user-editable name, so equal names or concurrent exports
+    /// Renders `name` and `description` into a PDF in the temporary directory, which the system
+    /// empties: the text is private campaign content and must not outlive the export. The file
+    /// name is derived from `id`, not the user-editable name, so equal names or concurrent exports
     /// can't collide (CODE_AUDIT_Character §6.1). Throws when the PDF context can't be created.
+    /// See CODE_AUDIT_AppIntents2 §6.2.
     @MainActor
     public static func pdf(id: UUID, name: String, description: String) throws -> URL {
-        let url = URL.cachesDirectory.appending(component: "\(id.uuidString).pdf")
+        let url = URL.temporaryDirectory.appending(component: "\(id.uuidString).pdf")
         let renderer = ImageRenderer(content: VStack {
             Text(verbatim: name)
             Text(verbatim: description)

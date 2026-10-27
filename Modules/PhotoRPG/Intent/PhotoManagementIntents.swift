@@ -21,6 +21,9 @@ struct CreatePhotoIntent: AppIntent {
     @Parameter(title: "Description")
     var details: AttributedString?
 
+    @Parameter(title: "File")
+    var file: IntentFile?
+
     @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
@@ -31,10 +34,11 @@ struct CreatePhotoIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PhotoEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the photo be called?")
+        let fileData = try intentFileData(file, allowedTypes: root.config.fileTypes)
         let model = PhotoModel(
             id: UUID(),
             name: trimmedName,
@@ -43,8 +47,14 @@ struct CreatePhotoIntent: AppIntent {
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
 
+        if let fileData {
+            try await attachIntentFile(to: model.id, editControllable: root.editController) {
+                try await root.editController.resetPhoto(data: fileData, itemId: model.id)
+            }
+        }
+
         let entity = PhotoEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.photos(model.id, nil))
@@ -74,7 +84,7 @@ struct AddPhotoNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
         let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which photo?")
         let currentDescription = targetModel.description
@@ -90,7 +100,7 @@ struct AddPhotoNoteIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([PhotoEntity(root: root, model: model)])
+            await indexIntentEntities([PhotoEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added note to \"\(target.name)\".")
@@ -120,6 +130,10 @@ struct SearchPhotosIntent: ShowInAppSearchResultsIntent {
 
 struct DeletePhotoIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Photo"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Photos")
     var entities: [PhotoEntity]
@@ -130,7 +144,7 @@ struct DeletePhotoIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: PhotoEntity.self, in: root)

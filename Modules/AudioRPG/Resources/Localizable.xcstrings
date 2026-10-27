@@ -1024,6 +1024,74 @@
           }
         }
       }
+    },
+    "File" : {
+      "comment" : "The file that becomes the content of the audio item; optional.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datei"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์"
+          }
+        }
+      }
+    },
+    "Music" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพลง"
+          }
+        }
+      }
+    },
+    "Sound" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geräusch"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสียง"
+          }
+        }
+      }
+    },
+    "Track" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แทร็ก"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

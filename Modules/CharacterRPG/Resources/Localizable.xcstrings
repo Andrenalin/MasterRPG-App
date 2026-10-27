@@ -1160,6 +1160,57 @@
           }
         }
       }
+    },
+    "Player" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้เล่น"
+          }
+        }
+      }
+    },
+    "NPC" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NSC"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "NPC"
+          }
+        }
+      }
+    },
+    "Monster" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monster"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มอนสเตอร์"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

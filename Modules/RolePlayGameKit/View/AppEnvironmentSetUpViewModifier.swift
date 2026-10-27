@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CoreSpotlight
 import SwiftUI
 import MapRPG
 import GameRPG
@@ -128,19 +129,12 @@ struct AppSettingSetUpViewModifier: ViewModifier {
                 }
 #endif
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
-                    handleUserActivity(userActivity)
+                    appModel.continueActivity(userActivity)
                 }
-    }
-    
-    /// Handles incoming NSUserActivity from Spotlight, Siri, Handoff, etc.
-    /// This handler works across all windows and platforms (iOS, iPadOS, macOS, visionOS)
-    private func handleUserActivity(_ userActivity: NSUserActivity) {
-        let module = UserActivity.module(from: userActivity)
-        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
-        let childId = UserActivity.childId(from: userActivity)
-
-        Logger.bootStrap.info("Handling user activity for module: \(module.rawValue), itemId: \(itemId)")
-
-        appModel.routeToModuleWhenReady(module, itemId: itemId, entryId: childId)
+#if !os(tvOS)
+                .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
+                    appModel.continueActivity(userActivity)
+                }
+#endif
     }
 }

@@ -12,7 +12,8 @@ struct SpaceEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Space"),
-            numericFormat: "\(placeholder: .int) 3D objects"
+            numericFormat: "\(placeholder: .int) 3D objects",
+            synonyms: ["3D model", "Miniature"]
         )
     }
 
@@ -76,6 +77,16 @@ struct SpaceEntity: IndexedEntity {
 /// file hasn't finished downloading from iCloud yet).
 struct SpaceEntityAssetUnavailableError: Error {}
 
+/// The link the app already opens (`RPG://SPACES/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.space.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension SpaceEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://SPACES/0/\(.id)"
+    }
+}
+
 extension SpaceEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         // Exports the actual stored USDZ file — not a rendered Name/
@@ -108,6 +119,9 @@ struct SpaceEntityQuery: ItemEntityQuery {
     func makeEntity(root: SpaceRootModel, model: SpaceModel) -> SpaceEntity { SpaceEntity(root: root, model: model) }
     func allIds(root: SpaceRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: SpaceRootModel, id: UUID) -> SpaceModel? { root.itemController.itemSync(for: id) }
+    func thumbnailData(root: SpaceRootModel, id: UUID) -> Data? {
+        root.cacheController?.cachedThumbnail(for: id).flatMap { try? $0.pngRepresentationData() }
+    }
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)

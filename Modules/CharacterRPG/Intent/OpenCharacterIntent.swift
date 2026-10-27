@@ -36,6 +36,10 @@ extension OpenCharacterIntent: TargetContentProvidingIntent {}
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
 struct OpenCharacterSchemaIntent: OpenIntent {
+    /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
+    /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
+    static let isDiscoverable = false
+
     var target: CharacterEntity
 
     @Dependency var navigator: Navigator

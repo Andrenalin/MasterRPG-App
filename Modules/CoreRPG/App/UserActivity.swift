@@ -17,6 +17,7 @@ public enum UserActivity {
         case NetworkModules.audio.token: return .audio
         case NetworkModules.dice.token: return .dice
         case NetworkModules.game.token: return .game
+        case NetworkModules.generator.token: return .generator
         case NetworkModules.map.token: return .map
         case NetworkModules.pdf.token: return .pdf
         case NetworkModules.photo.token: return .photo

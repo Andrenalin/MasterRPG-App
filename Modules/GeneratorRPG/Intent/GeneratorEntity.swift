@@ -69,6 +69,16 @@ struct GeneratorEntity: IndexedEntity {
     }
 }
 
+/// The link the app already opens (`RPG://GENERATOR/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.generator.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension GeneratorEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://GENERATOR/0/\(.id)"
+    }
+}
+
 extension GeneratorEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .plainText) {

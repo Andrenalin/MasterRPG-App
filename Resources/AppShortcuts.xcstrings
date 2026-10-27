@@ -93,7 +93,8 @@
             "state" : "machine_translated",
             "values" : [
               "เปิดการผจญภัยใน ${applicationName}",
-              "เข้าไปยังการผจญภัยใน ${applicationName}"
+              "เปิด ${target} ใน ${applicationName}",
+              "แสดง ${target} ใน ${applicationName}"
             ]
           }
         }
@@ -102,6 +103,15 @@
     "Pause audio in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Audio in ${applicationName} pausieren",
+              "Die Musik in ${applicationName} pausieren"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -111,12 +121,27 @@
             ]
           }
         },
-        "de" : {
+        "th" : {
           "stringSet" : {
-            "state" : "translated",
+            "state" : "machine_translated",
             "values" : [
-              "Audio in ${applicationName} pausieren",
-              "Die Musik in ${applicationName} pausieren"
+              "หยุดเสียงชั่วคราวใน ${applicationName}",
+              "หยุดเพลงชั่วคราวใน ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Play a movie in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Play a movie in ${applicationName}",
+              "Play a video in ${applicationName}",
+              "Play a podcast in ${applicationName}"
             ]
           }
         }
@@ -125,6 +150,15 @@
     "Play audio in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Audio in ${applicationName} abspielen",
+              "Musik in ${applicationName} abspielen"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -134,12 +168,12 @@
             ]
           }
         },
-        "de" : {
+        "th" : {
           "stringSet" : {
-            "state" : "translated",
+            "state" : "machine_translated",
             "values" : [
-              "Audio in ${applicationName} abspielen",
-              "Musik in ${applicationName} abspielen"
+              "เล่นเสียงใน ${applicationName}",
+              "เล่นเพลงใน ${applicationName}"
             ]
           }
         }
@@ -244,6 +278,15 @@
     "Show my dice history in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Meinen Würfelverlauf in ${applicationName} zeigen",
+              "Was habe ich in ${applicationName} gewürfelt"
+            ]
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -253,12 +296,12 @@
             ]
           }
         },
-        "de" : {
+        "th" : {
           "stringSet" : {
-            "state" : "translated",
+            "state" : "machine_translated",
             "values" : [
-              "Meinen Würfelverlauf in ${applicationName} zeigen",
-              "Was habe ich in ${applicationName} gewürfelt"
+              "แสดงประวัติการทอยลูกเต๋าของฉันใน ${applicationName}",
+              "ฉันทอยได้อะไรใน ${applicationName}"
             ]
           }
         }
@@ -292,7 +335,8 @@
             "state" : "machine_translated",
             "values" : [
               "เริ่มการผจญภัยใน ${applicationName}",
-              "เริ่มเกมการผจญภัยใน ${applicationName}"
+              "เริ่ม ${target} ใน ${applicationName}",
+              "เล่น ${target} ใน ${applicationName}"
             ]
           }
         }

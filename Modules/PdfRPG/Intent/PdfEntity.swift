@@ -13,7 +13,8 @@ struct PdfEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("PDF"),
-            numericFormat: "\(placeholder: .int) PDFs"
+            numericFormat: "\(placeholder: .int) PDFs",
+            synonyms: ["Document", "Rulebook"]
         )
     }
 
@@ -77,6 +78,16 @@ struct PdfEntity: IndexedEntity {
 /// finished downloading from iCloud yet).
 struct PdfEntityAssetUnavailableError: Error {}
 
+/// The link the app already opens (`RPG://PDFS/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.pdf.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension PdfEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://PDFS/0/\(.id)"
+    }
+}
+
 extension PdfEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         // Exports the actual stored PDF file — not a rendered Name/
@@ -109,6 +120,9 @@ struct PdfEntityQuery: ItemEntityQuery {
     func makeEntity(root: PdfRootModel, model: PdfModel) -> PdfEntity { PdfEntity(root: root, model: model) }
     func allIds(root: PdfRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: PdfRootModel, id: UUID) -> PdfModel? { root.itemController.itemSync(for: id) }
+    func thumbnailData(root: PdfRootModel, id: UUID) -> Data? {
+        root.cacheController?.cachedThumbnail(for: id).flatMap { try? $0.pngRepresentationData() }
+    }
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)

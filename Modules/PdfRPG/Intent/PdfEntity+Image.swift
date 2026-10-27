@@ -6,12 +6,12 @@ import Foundation
 extension PdfEntity {
     var imageRepresentationData: Data {
         get async throws {
-            try await loadAssetData(isThumbnail: false)
+            try await loadAssetData()
         }
     }
 
-    private func loadAssetData(isThumbnail: Bool) async throws -> Data {
-        guard let image = isThumbnail ? await root.cacheController?.thumbnail(for: self.id) : await root.cacheController?.photo(for: self.id) else {
+    private func loadAssetData() async throws -> Data {
+        guard let image = await root.cacheController?.photo(for: self.id) else {
             throw AKImageEncodingError()
         }
         return try image.pngRepresentationData()

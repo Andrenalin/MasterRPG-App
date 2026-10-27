@@ -21,6 +21,9 @@ struct CreatePdfIntent: AppIntent {
     @Parameter(title: "Description")
     var details: AttributedString?
 
+    @Parameter(title: "File")
+    var file: IntentFile?
+
     @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
@@ -31,10 +34,11 @@ struct CreatePdfIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PdfEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the PDF be called?")
+        let fileData = try intentFileData(file, allowedTypes: root.config.fileTypes)
         let model = PdfModel(
             id: UUID(),
             name: trimmedName,
@@ -43,8 +47,15 @@ struct CreatePdfIntent: AppIntent {
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
 
+        if let fileData {
+            try await attachIntentFile(to: model.id, editControllable: root.editController) {
+                try await root.editController.resetFile(data: fileData, itemId: model.id, path: "")
+                return true
+            }
+        }
+
         let entity = PdfEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.pdfs(model.id, nil))
@@ -77,7 +88,7 @@ struct AddPdfBookmarkIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name, and `target` can be deleted since it was cached:
         // ask again instead of adding a blank entry or reporting a success that changed nothing.
         // See CODE_AUDIT_AppIntents §5.2.
@@ -91,7 +102,7 @@ struct AddPdfBookmarkIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([PdfEntity(root: root, model: model)])
+            await indexIntentEntities([PdfEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added \"\(trimmedBookmarkName)\" to \"\(target.name)\".")
@@ -121,6 +132,10 @@ struct SearchPdfsIntent: ShowInAppSearchResultsIntent {
 
 struct DeletePdfIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete PDF"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "PDFs")
     var entities: [PdfEntity]
@@ -131,7 +146,7 @@ struct DeletePdfIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: PdfEntity.self, in: root)

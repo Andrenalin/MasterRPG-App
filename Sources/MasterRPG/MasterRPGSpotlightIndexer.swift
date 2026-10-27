@@ -22,45 +22,46 @@ enum MasterRPGSpotlightIndexer {
     /// Tells every module which entity type its donations name, so trashing or purging an item
     /// deletes them. See CODE_AUDIT_AppIntents §4.4.
     static func registerDonations() {
-        AdventureShortcutCatalog.registerDonations()
-        AudioShortcutCatalog.registerDonations()
-        CharacterShortcutCatalog.registerDonations()
-        DiceShortcutCatalog.registerDonations()
-        GeneratorShortcutCatalog.registerDonations()
-        MapShortcutCatalog.registerDonations()
-        PdfShortcutCatalog.registerDonations()
-        PhotoShortcutCatalog.registerDonations()
-        RuleShortcutCatalog.registerDonations()
-        SpaceShortcutCatalog.registerDonations()
-        TableShortcutCatalog.registerDonations()
-        WeatherShortcutCatalog.registerDonations()
+        AdventureIntentSupport.registerDonations()
+        AudioIntentSupport.registerDonations()
+        CharacterIntentSupport.registerDonations()
+        DiceIntentSupport.registerDonations()
+        GeneratorIntentSupport.registerDonations()
+        MapIntentSupport.registerDonations()
+        PdfIntentSupport.registerDonations()
+        PhotoIntentSupport.registerDonations()
+        RuleIntentSupport.registerDonations()
+        SpaceIntentSupport.registerDonations()
+        TableIntentSupport.registerDonations()
+        WeatherIntentSupport.registerDonations()
     }
 
-    /// Whether the shortcut parameters were refreshed once since launch.
-    private static var didRefreshShortcutParameters = false
+    /// The adventure names the shortcut parameters were last refreshed with.
+    private static var lastShortcutNames: [String]?
 
     /// Indexes what changed since the last pass; a module without changes costs nothing. The
     /// parameterized phrases ("Open <adventure>", "Start <adventure>") only depend on the
-    /// adventures, so the system's parameter cache is refreshed when those changed, and once per
-    /// launch. See CODE_AUDIT_AppIntents §7.1, §7.2.
+    /// adventure names, so the system's parameter cache is refreshed when the names differ from the
+    /// last refresh (and once per launch), not after every edit. See CODE_AUDIT_AppIntents §7.1, §7.2
+    /// and CODE_AUDIT §5.4.
     static func reindexChanged(appModel: AppModel) async {
-        let adventuresChanged = AdventureShortcutCatalog.hasChanges(root: appModel.adventureRoot)
-        await AdventureShortcutCatalog.reindexChanged(root: appModel.adventureRoot)
-        if adventuresChanged || !didRefreshShortcutParameters {
-            didRefreshShortcutParameters = true
+        await AdventureIntentSupport.reindexChanged(root: appModel.adventureRoot)
+        let names = AdventureIntentSupport.shortcutNames(root: appModel.adventureRoot)
+        if names != lastShortcutNames {
+            lastShortcutNames = names
             MasterRPGShortcuts.updateAppShortcutParameters()
         }
-        await AudioShortcutCatalog.reindexChanged(root: appModel.audioRoot)
-        await CharacterShortcutCatalog.reindexChanged(root: appModel.characterRoot)
-        await DiceShortcutCatalog.reindexChanged(root: appModel.diceRoot)
-        await GeneratorShortcutCatalog.reindexChanged(root: appModel.generatorRoot)
-        await MapShortcutCatalog.reindexChanged(root: appModel.mapRoot)
-        await PdfShortcutCatalog.reindexChanged(root: appModel.pdfRoot)
-        await PhotoShortcutCatalog.reindexChanged(root: appModel.photoRoot)
-        await RuleShortcutCatalog.reindexChanged(root: appModel.ruleRoot)
-        await SpaceShortcutCatalog.reindexChanged(root: appModel.spaceRoot)
-        await TableShortcutCatalog.reindexChanged(root: appModel.tableRoot)
-        await WeatherShortcutCatalog.reindexChanged(root: appModel.weatherRoot)
+        await AudioIntentSupport.reindexChanged(root: appModel.audioRoot)
+        await CharacterIntentSupport.reindexChanged(root: appModel.characterRoot)
+        await DiceIntentSupport.reindexChanged(root: appModel.diceRoot)
+        await GeneratorIntentSupport.reindexChanged(root: appModel.generatorRoot)
+        await MapIntentSupport.reindexChanged(root: appModel.mapRoot)
+        await PdfIntentSupport.reindexChanged(root: appModel.pdfRoot)
+        await PhotoIntentSupport.reindexChanged(root: appModel.photoRoot)
+        await RuleIntentSupport.reindexChanged(root: appModel.ruleRoot)
+        await SpaceIntentSupport.reindexChanged(root: appModel.spaceRoot)
+        await TableIntentSupport.reindexChanged(root: appModel.tableRoot)
+        await WeatherIntentSupport.reindexChanged(root: appModel.weatherRoot)
     }
 }
 

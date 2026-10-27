@@ -31,7 +31,7 @@ struct CreateCharacterIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<CharacterEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
         // rather than silently creating a blank, unusable character.
         // See CODE_AUDIT_Character §5.6.
@@ -46,7 +46,7 @@ struct CreateCharacterIntent: AppIntent {
         await root.itemController.save()
 
         let entity = CharacterEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.values(model.id, nil))
@@ -79,7 +79,7 @@ struct AddCharacterEntryIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
         // rather than silently adding a blank, unusable entry.
         // See CODE_AUDIT_Character §5.6.
@@ -97,7 +97,7 @@ struct AddCharacterEntryIntent: AppIntent {
         root.editController.add(entry: entry, itemId: target.id)
         await root.itemController.save()
 
-        try await indexIntentEntities([CharacterEntity(root: root, model: model)])
+        await indexIntentEntities([CharacterEntity(root: root, model: model)])
 
         return .result(dialog: "Added \"\(trimmedEntryName)\" to \"\(target.name)\".")
     }
@@ -126,6 +126,10 @@ struct SearchCharactersIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteCharacterIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Character"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Characters")
     var entities: [CharacterEntity]
@@ -136,7 +140,7 @@ struct DeleteCharacterIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: CharacterEntity.self, in: root)

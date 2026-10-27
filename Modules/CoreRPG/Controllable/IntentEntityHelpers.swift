@@ -6,18 +6,15 @@ import AppIntents
 import CoreSpotlight
 import Foundation
 import os.log
+import UniformTypeIdentifiers
 
-/// Shared Spotlight indexing/deletion glue for `*ManagementIntents.swift`
-/// across every module — every module previously hand-copied the same
-/// `intentPlainText`/`indexIntentEntities`/`deleteIntentEntities` bodies
-/// verbatim. Unlike the per-`Entity`-type `EntityQuery`/`IndexedEntity`/
-/// `Transferable`/`attributeSet` conformances (deliberately left
-/// per-module — see `ItemEntityQuery`'s doc comment and
-/// `Docu/CODE_AUDIT_10.md` §9.3 for why those carry Siri/Shortcuts/Spotlight
-/// regression risk that needs device-level verification), these three
-/// functions are plain `CSSearchableIndex` CRUD wrappers with zero
-/// per-module behavioral difference, so extracting them carries none of
-/// that risk. See CODE_AUDIT_Table §9.3.
+// Helpers every module's `*ManagementIntents.swift` shares: parameter text, the database gate,
+// optional file intake, required name and target, and the App Entity index calls (index, delete,
+// trash, incremental reindex). They carry no per-module behavior. What does differ per module
+// (the `Entity` struct, its `EntityQuery`, `Transferable` and `attributeSet`) stays in each
+// module's `*Entity.swift`; `ItemEntityQuery` holds only the query skeleton they share.
+
+/// The plain text of a rich-text intent parameter, or an empty string when none was passed.
 public func intentPlainText(from text: AttributedString?) -> String {
     text.map { String($0.characters) } ?? ""
 }
@@ -32,6 +29,81 @@ public func appendingIntentText(_ addition: String, to original: String) -> Stri
     guard !trimmedOriginal.isEmpty else { return trimmedAddition }
 
     return "\(trimmedOriginal)\n\n\(trimmedAddition)"
+}
+
+/// Thrown by an intent that writes when the database did not start in time, so the user hears
+/// that nothing was saved instead of "Created". See CODE_AUDIT §5.1.
+public struct DatabaseNotReadyError: Error, CustomLocalizedStringResourceConvertible {
+    public var localizedStringResource: LocalizedStringResource {
+        LocalizedStringResource(
+            "MasterRPG is not ready yet. Open the app and try again.",
+            bundle: .module,
+            comment: "Error shown by Siri or Shortcuts when the database did not start in time."
+        )
+    }
+}
+
+/// Waits for the database like `DatabaseReadiness.wait()` and throws `DatabaseNotReadyError` when
+/// it still cannot take writes after the timeout. Every intent that creates, changes or deletes
+/// items starts with this; read-only intents may keep using `DatabaseReadiness.wait()`.
+/// See CODE_AUDIT §5.1.
+@MainActor
+public func requireReadyDatabase() async throws {
+    guard await DatabaseReadiness.wait() else { throw DatabaseNotReadyError() }
+}
+
+/// The file passed to a Create intent has a type the item cannot hold.
+public struct IntentFileTypeError: Error, CustomLocalizedStringResourceConvertible {
+    public init() {}
+
+    public var localizedStringResource: LocalizedStringResource {
+        LocalizedStringResource(
+            "The file is not a type this item can hold.",
+            bundle: .module,
+            comment: "Error shown by Siri or Shortcuts when the file passed to a Create intent has the wrong type."
+        )
+    }
+}
+
+/// The file passed to a Create intent could not be stored with the new item.
+public struct IntentFileStoreError: Error, CustomLocalizedStringResourceConvertible {
+    public init() {}
+
+    public var localizedStringResource: LocalizedStringResource {
+        LocalizedStringResource(
+            "The file could not be added.",
+            bundle: .module,
+            comment: "Error shown by Siri or Shortcuts when the file passed to a Create intent could not be stored."
+        )
+    }
+}
+
+/// The bytes of the optional file parameter of a Create intent, or `nil` when none was passed.
+/// Throws `IntentFileTypeError` before anything is created when the file is not one of the types
+/// the module holds, so a wrong file leaves no empty item behind. See CODE_AUDIT_AppIntents2 §4.4.
+public func intentFileData(_ file: IntentFile?, allowedTypes: [UTType]) throws -> Data? {
+    guard let file else { return nil }
+    let type = file.type ?? UTType(filenameExtension: URL(filePath: file.filename).pathExtension)
+    guard let type, allowedTypes.contains(where: { type.conforms(to: $0) }) else {
+        throw IntentFileTypeError()
+    }
+    return file.data
+}
+
+/// Stores the file of a just-created item through `store`, which reports whether it worked. When it
+/// did not, the item is removed again and `IntentFileStoreError` is thrown: a media item without
+/// its media is not what the user asked for.
+@MainActor
+public func attachIntentFile<Controller: EditControllable>(
+    to itemId: UUID,
+    editControllable: Controller,
+    store: () async throws -> Bool
+) async throws {
+    let stored = (try? await store()) ?? false
+    guard stored, editControllable.editModel(for: itemId)?.fileUrl != nil else {
+        await editControllable.delete(itemId: itemId)
+        throw IntentFileStoreError()
+    }
 }
 
 /// A name or title from Siri or Shortcuts, trimmed. Both can pass an empty or all-whitespace
@@ -60,9 +132,17 @@ public func requiredIntentTarget<Entity: AppEntity, Model>(
     return model
 }
 
-public func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    try await CSSearchableIndex.default().indexAppEntities(entities)
+/// Indexes entities right after an intent saved them, so a follow-up Siri request finds them. The
+/// item is already saved and the invalidator indexes it anyway, so a failing index is logged and
+/// does not fail the intent (a retry of a "failed" create would make a duplicate).
+/// See CODE_AUDIT §5.3.
+public func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async {
+    guard CSSearchableIndex.isIndexingAvailable(), !entities.isEmpty else { return }
+    do {
+        try await CSSearchableIndex.default().indexAppEntities(entities)
+    } catch {
+        Logger.appIntents.error("Indexing \(entities.count, privacy: .public) \(String(describing: Entity.self), privacy: .public) failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+    }
 }
 
 /// Removes entities from the Spotlight index. A failing index must not fail what the user asked

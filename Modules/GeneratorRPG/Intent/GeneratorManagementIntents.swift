@@ -31,7 +31,7 @@ struct CreateGeneratorIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<GeneratorEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the generator be called?")
@@ -45,7 +45,7 @@ struct CreateGeneratorIntent: AppIntent {
         await root.itemController.save()
 
         let entity = GeneratorEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.generators(model.id, nil))
@@ -75,7 +75,7 @@ struct AddGeneratorNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
         let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which generator?")
         let currentDescription = targetModel.description
@@ -91,7 +91,7 @@ struct AddGeneratorNoteIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([GeneratorEntity(root: root, model: model)])
+            await indexIntentEntities([GeneratorEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added note to \"\(target.name)\".")
@@ -121,6 +121,10 @@ struct SearchGeneratorsIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteGeneratorIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Generator"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Generators")
     var entities: [GeneratorEntity]
@@ -131,7 +135,7 @@ struct DeleteGeneratorIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: GeneratorEntity.self, in: root)

@@ -34,7 +34,7 @@ struct CreateDiceIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<DiceEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the dice be called?")
@@ -48,7 +48,7 @@ struct CreateDiceIntent: AppIntent {
         await root.itemController.save()
 
         let entity = DiceEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.dice(model.id, nil))
@@ -78,7 +78,7 @@ struct AddDieToDiceIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which dice?")
         let die = DieModel(id: UUID(), die: diceType.rawDie)
@@ -86,7 +86,7 @@ struct AddDieToDiceIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([DiceEntity(root: root, model: model)])
+            await indexIntentEntities([DiceEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added \(diceType.rawValue) to \"\(target.name)\".")
@@ -116,6 +116,10 @@ struct SearchDiceIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteDiceIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Dice"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Dice")
     var entities: [DiceEntity]
@@ -126,7 +130,7 @@ struct DeleteDiceIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: DiceEntity.self, in: root)

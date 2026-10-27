@@ -21,6 +21,9 @@ struct CreateSpaceIntent: AppIntent {
     @Parameter(title: "Description")
     var details: AttributedString?
 
+    @Parameter(title: "File")
+    var file: IntentFile?
+
     @Parameter(title: "Open When Created", default: false)
     var openWhenCreated: Bool
 
@@ -31,10 +34,11 @@ struct CreateSpaceIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<SpaceEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the 3D object be called?")
+        let fileData = try intentFileData(file, allowedTypes: root.config.fileTypes)
         let model = SpaceModel(
             id: UUID(),
             name: trimmedName,
@@ -44,10 +48,17 @@ struct CreateSpaceIntent: AppIntent {
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
 
+        if let fileData {
+            try await attachIntentFile(to: model.id, editControllable: root.editController) {
+                try await root.editController.resetFile(data: fileData, itemId: model.id, path: "")
+                return true
+            }
+        }
+
         let entity = SpaceEntity(root: root, model: model)
         // A Spotlight-indexing hiccup shouldn't override an already-committed data mutation
         // as a failed intent — see CODE_AUDIT_Space §5.5.
-        try? await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.spaces(model.id, nil))
@@ -77,7 +88,7 @@ struct AddSpaceNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
         let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which 3D object?")
         let currentDescription = targetModel.description
@@ -94,7 +105,7 @@ struct AddSpaceNoteIntent: AppIntent {
 
         if let model = root.itemController.itemSync(for: target.id) {
             // See CODE_AUDIT_Space §5.5.
-            try? await indexIntentEntities([SpaceEntity(root: root, model: model)])
+            await indexIntentEntities([SpaceEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added note to \"\(target.name)\".")
@@ -124,6 +135,10 @@ struct SearchSpacesIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteSpaceIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete 3D Object"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "3D Objects")
     var entities: [SpaceEntity]
@@ -134,7 +149,7 @@ struct DeleteSpaceIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: SpaceEntity.self, in: root)

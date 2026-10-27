@@ -31,7 +31,7 @@ struct CreateTableIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<TableEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the table be called?")
@@ -45,7 +45,7 @@ struct CreateTableIntent: AppIntent {
         await root.itemController.save()
 
         let entity = TableEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.tables(model.id, nil))
@@ -78,7 +78,7 @@ struct AddTableRowIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name, and `target` can be deleted since it was cached:
         // ask again instead of adding a blank entry or reporting a success that changed nothing.
         // See CODE_AUDIT_AppIntents §5.2.
@@ -92,7 +92,7 @@ struct AddTableRowIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([TableEntity(root: root, model: model)])
+            await indexIntentEntities([TableEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added \"\(trimmedRowName)\" to \"\(target.name)\".")
@@ -122,6 +122,10 @@ struct SearchTablesIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteTableIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Table"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Tables")
     var entities: [TableEntity]
@@ -132,7 +136,7 @@ struct DeleteTableIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: TableEntity.self, in: root)

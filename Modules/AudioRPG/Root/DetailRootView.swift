@@ -10,6 +10,9 @@ struct DetailRootView: View {
     var body: some View {
         DetailListView(root: root, model: model, folderListController: root.folderListController)
             .detailInspectorModifier(root: root.rootController)
+#if os(iOS) || os(visionOS)
+            .siriTip(for: PlayAudioIntent(), storageKey: "suggest.playAudioShortcut")
+#endif
             .onChange(of: root.navigationModel.triggerSpaceAction) {
                 guard root.navigationModel.triggerSpaceAction else { return }
                 root.navigationModel.triggerSpaceAction = false

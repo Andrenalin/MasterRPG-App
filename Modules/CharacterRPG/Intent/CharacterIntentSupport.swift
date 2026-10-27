@@ -2,31 +2,30 @@
 
 #if !os(tvOS)
 
-import AppIntents
 import CoreRPG
+import AppIntents
 import CoreSpotlight
 import Foundation
 
-public enum RuleShortcutCatalog {
+public enum CharacterIntentSupport {
     /// Names the entity type this module's donations use, so they can be deleted when an item is
     /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
     @MainActor
     public static func registerDonations() {
-        IntentEntityIdentifiers.register(RuleEntity.self, for: .rule)
+        IntentEntityIdentifiers.register(CharacterEntity.self, for: .value)
     }
 
     @MainActor
-    public static func reindexChanged(root: RuleRootModel) async {
+    public static func reindexChanged(root: CharacterRootModel) async {
         await reindexIntentEntities(
             itemDataModel: root.itemController.itemDataModel,
-            module: .rule,
+            module: .value,
             model: { root.itemController.itemSync(for: $0) },
-            isIndexable: { !$0.specialCategory },
-            makeEntity: { RuleEntity(root: root, model: $0) }
+            makeEntity: { CharacterEntity(root: root, model: $0) }
         )
     }
 }
 
-public struct RuleFrameworkPackage: AppIntentsPackage {}
+public struct CharacterFrameworkPackage: AppIntentsPackage { }
 
 #endif

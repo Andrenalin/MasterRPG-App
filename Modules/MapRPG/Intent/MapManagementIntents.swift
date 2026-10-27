@@ -31,7 +31,7 @@ struct CreateMapIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<MapEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the map be called?")
@@ -44,7 +44,7 @@ struct CreateMapIntent: AppIntent {
         await root.itemController.save()
 
         let entity = MapEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.maps(model.id, nil))
@@ -77,7 +77,7 @@ struct AddMapRoomIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name, and `target` can be deleted since it was cached:
         // ask again instead of adding a blank entry or reporting a success that changed nothing.
         // See CODE_AUDIT_AppIntents §5.2.
@@ -91,7 +91,7 @@ struct AddMapRoomIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([MapEntity(root: root, model: model)])
+            await indexIntentEntities([MapEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added \"\(trimmedRoomName)\" to \"\(target.name)\".")
@@ -121,6 +121,10 @@ struct SearchMapsIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteMapIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Map"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Maps")
     var entities: [MapEntity]
@@ -131,7 +135,7 @@ struct DeleteMapIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
         await trashIntentItems(ids: ids, ofType: MapEntity.self, in: root)

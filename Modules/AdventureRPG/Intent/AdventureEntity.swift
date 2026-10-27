@@ -13,7 +13,8 @@ public struct AdventureEntity: IndexedEntity {
     public static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Adventure"),
-            numericFormat: "\(placeholder: .int) Adventure"
+            numericFormat: "\(placeholder: .int) Adventure",
+            synonyms: ["Campaign", "Quest"]
         )
     }
 
@@ -69,6 +70,16 @@ public struct AdventureEntity: IndexedEntity {
     }
 }
 
+
+/// The link the app already opens (`RPG://ADVENTURES/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.adventure.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension AdventureEntity: URLRepresentableEntity {
+    public static var urlRepresentation: URLRepresentation {
+        "RPG://ADVENTURES/0/\(.id)"
+    }
+}
 
 extension AdventureEntity: Transferable {
     public static var transferRepresentation: some TransferRepresentation {

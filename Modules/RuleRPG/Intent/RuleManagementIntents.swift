@@ -31,7 +31,7 @@ struct CreateRuleIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<RuleEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the rule be called?")
@@ -43,7 +43,7 @@ struct CreateRuleIntent: AppIntent {
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
         let entity = RuleEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.rules(model.id, nil))
@@ -75,7 +75,7 @@ struct AddRuleSectionIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of adding a blank section.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedSectionName = try requiredIntentName(sectionName, parameter: $sectionName, prompt: "What should the section be called?")
@@ -90,7 +90,7 @@ struct AddRuleSectionIntent: AppIntent {
         root.editController.add(entry: entry, itemId: target.id)
         await root.itemController.save()
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([RuleEntity(root: root, model: model)])
+            await indexIntentEntities([RuleEntity(root: root, model: model)])
         }
         return .result(dialog: "Added \"\(trimmedSectionName)\" to \"\(target.name)\".")
     }
@@ -118,6 +118,10 @@ struct SearchRulesIntent: ShowInAppSearchResultsIntent {
 
 struct DeleteRuleIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Rule"
+    /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
+    /// Create, Add and the dice and audio intents stay open for use at the table.
+    /// See CODE_AUDIT_AppIntents2 §6.1.
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @Parameter(title: "Rules")
     var entities: [RuleEntity]
@@ -128,7 +132,7 @@ struct DeleteRuleIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        try await requireReadyDatabase()
         let ids = entities.compactMap { entity -> UUID? in
             guard let model = root.itemController.itemSync(for: entity.id),
                   !model.specialCategory else { return nil }

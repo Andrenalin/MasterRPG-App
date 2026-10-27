@@ -2601,6 +2601,40 @@
           }
         }
       }
+    },
+    "3D model" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3D-Modell"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมเดล 3 มิติ"
+          }
+        }
+      }
+    },
+    "Miniature" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miniatur"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฟิกเกอร์"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

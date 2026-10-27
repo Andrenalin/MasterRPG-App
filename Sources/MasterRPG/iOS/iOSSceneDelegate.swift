@@ -57,14 +57,7 @@ final class IosSceneDelegate: NSObject, UIWindowSceneDelegate {
     }
 
     private func handleUserActivity(_ userActivity: NSUserActivity) {
-        guard userActivity.activityType == UserActivity.bundleIdentifierType else { return }
-        let module = UserActivity.module(from: userActivity)
-        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return }
-        AppModel.shared.routeToModuleWhenReady(
-            module,
-            itemId: itemId,
-            entryId: UserActivity.childId(from: userActivity)
-        )
+        AppModel.shared.continueActivity(userActivity)
     }
 }
 

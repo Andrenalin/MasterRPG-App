@@ -1106,6 +1106,23 @@
           }
         }
       }
+    },
+    "Compendium" : {
+      "comment" : "Another name users say for this kind of item, so Siri finds it.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kompendium"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คัมภีร์"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

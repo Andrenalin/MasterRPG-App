@@ -7787,6 +7787,57 @@
           }
         }
       }
+    },
+    "MasterRPG is not ready yet. Open the app and try again." : {
+      "comment" : "Error shown by Siri or Shortcuts when the database did not start in time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG ist noch nicht bereit. Öffne die App und versuche es erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ยังไม่พร้อม เปิดแอปแล้วลองอีกครั้ง"
+          }
+        }
+      }
+    },
+    "The file is not a type this item can hold." : {
+      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent has the wrong type.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datei hat einen Typ, den dieses Objekt nicht aufnehmen kann."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์นี้เป็นประเภทที่รายการนี้ไม่รองรับ"
+          }
+        }
+      }
+    },
+    "The file could not be added." : {
+      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent could not be stored.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datei konnte nicht hinzugefügt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถเพิ่มไฟล์ได้"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

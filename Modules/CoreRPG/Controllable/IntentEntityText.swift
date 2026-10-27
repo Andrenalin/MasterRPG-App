@@ -12,18 +12,26 @@ public enum IntentEntityText {
     /// builds all of them, so this stays small.
     public static let excerptLimit = 2000
 
+    /// Reads at most `excerptLimit` characters from the front of the entries: each part is cut to
+    /// what is still free before it is appended, and the length is tracked, never recounted. A
+    /// library of long texts costs O(limit) per entity, not O(text). See CODE_AUDIT_AppIntents2 §7.1.
     @MainActor
     public static func excerpt<Model: ItemDataAccessible>(of model: Model) -> String {
         guard !model.specialCategory else { return "" }
         var text = ""
+        var length = 0
         for entry in model.entries where entry.displayState != DisplayStateMask.totalHidden.rawValue {
-            guard text.count < excerptLimit else { break }
             for part in [entry.name, entry.content] where !part.isEmpty {
-                if !text.isEmpty { text += "\n" }
-                text += part
+                let separator = text.isEmpty ? 0 : 1
+                let remaining = excerptLimit - length - separator
+                guard remaining > 0 else { return text }
+                let piece = part.prefix(remaining)
+                if separator == 1 { text += "\n" }
+                text += piece
+                length += separator + piece.count
             }
         }
-        return String(text.prefix(excerptLimit))
+        return text
     }
 }
 

@@ -22,6 +22,9 @@ public enum DatabaseReadiness {
         rootModelsReady && InitialLoadTracker.shared.isIdle
     }
 
+    /// Whether the root models (and with them the data controllers) exist, so a save reaches the store.
+    public static var canSave: Bool { rootModelsReady }
+
     private static var rootModelsReady = false
     private static var starter: (@MainActor () -> Void)?
     private static var waiters: [UUID: CheckedContinuation<Void, Never>] = [:]
@@ -44,11 +47,16 @@ public enum DatabaseReadiness {
 
     /// Returns once the database and root models are ready, after `timeout`, or when the
     /// calling task is cancelled (a cancelled intent must not stay parked for the full
-    /// timeout, CODE_AUDIT_18 §3.12).
-    public static func wait() async {
-        guard !isReady else { return }
+    /// timeout, CODE_AUDIT_18 §3.12). The result says whether the database can take writes now (the root
+    /// models exist; a module's initial load may still be running, which only means item lists are
+    /// incomplete). Read-only callers may continue either way, but a caller that writes must stop
+    /// when it is `false`, because a save without a database reports success and stores nothing.
+    /// See CODE_AUDIT §5.1.
+    @discardableResult
+    public static func wait() async -> Bool {
+        guard !isReady else { return true }
         starter?()
-        guard !isReady else { return }
+        guard !isReady else { return true }
         // No registered starter (tests, previews, or a starter that has not been
         // configured yet) still waits for `markReady`/the timeout rather than
         // returning immediately, so a starter racing this call cannot be skipped.
@@ -72,6 +80,7 @@ public enum DatabaseReadiness {
             }
         }
         timeoutTask.cancel()
+        return canSave
     }
 
     private static func resumeAll() {

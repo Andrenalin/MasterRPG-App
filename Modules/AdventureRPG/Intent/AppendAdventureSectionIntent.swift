@@ -27,9 +27,7 @@ public struct AppendAdventureSectionIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
-        // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
-        // guards `CSSearchableIndex.isIndexingAvailable()` internally.
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name, and `target` can be an adventure that was
         // deleted since it was cached: ask again instead of adding a blank section or
         // reporting success for nothing. See CODE_AUDIT_21 §5.28.
@@ -42,7 +40,7 @@ public struct AppendAdventureSectionIntent: AppIntent {
 
         if let model = root.itemController.itemSync(for: target.id) {
             let updated = AdventureEntity(root: root, model: model)
-            try await indexIntentEntities([updated])
+            await indexIntentEntities([updated])
         }
 
         return .result(dialog: "Added \"\(trimmedName)\" to \"\(target.name)\".")

@@ -497,6 +497,36 @@ extension AppModel {
         pendingImportURL = nil
     }
 
+    /// Opens what a continued activity names: the app's own Handoff activity, or (not on tvOS) a tap
+    /// on a Core Spotlight result. Returns whether the activity was one of these, so a delegate can
+    /// report it as handled. The Spotlight route is resolved once the database is ready.
+    /// See CODE_AUDIT_AppIntents2 §4.1.
+    @MainActor @discardableResult
+    public func continueActivity(_ userActivity: NSUserActivity) -> Bool {
+        if userActivity.activityType == UserActivity.bundleIdentifierType {
+            let module = UserActivity.module(from: userActivity)
+            guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return false }
+            routeToModuleWhenReady(module, itemId: itemId, entryId: UserActivity.childId(from: userActivity))
+            return true
+        }
+#if !os(tvOS)
+        guard SpotlightActivityRoute.isSpotlightActivity(userActivity) else { return false }
+        Task { @MainActor in
+            await DatabaseReadiness.wait()
+            guard let context = databaseModel.context,
+                  let route = await SpotlightActivityRoute.resolve(userActivity, in: context)
+            else {
+                Logger.bootStrap.info("A Spotlight result did not resolve to an item")
+                return
+            }
+            routeToModuleWhenReady(route.module, itemId: route.itemId, entryId: route.entryId)
+        }
+        return true
+#else
+        return false
+#endif
+    }
+
     @MainActor public func routeToModuleWhenReady(
         _ module: NetworkModules,
         itemId: UUID? = nil,

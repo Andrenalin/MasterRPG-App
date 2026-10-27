@@ -11,6 +11,16 @@ import RolePlayGameKit
 struct MasterRPGShortcuts: AppShortcutsProvider {
     static let shortcutTileColor: ShortcutTileColor = .blue
 
+    /// Media the app does not have. Without these, "Play a movie in MasterRPG" is close enough to
+    /// "Play <adventure>" and "Play audio" to start one of them. See CODE_AUDIT_AppIntents2 §4.7.
+    static var negativePhrases: NegativeAppShortcutPhrases {
+        NegativeAppShortcutPhrases(phrases: [
+            "Play a movie in \(.applicationName)",
+            "Play a video in \(.applicationName)",
+            "Play a podcast in \(.applicationName)"
+        ])
+    }
+
     /// The 10 shortcuts the system allows, each with several wordings. Open and Start take an
     /// adventure by name. The rest of the intents are still in Shortcuts and found by Siri through
     /// the App Entity index, only without a fixed phrase. See CODE_AUDIT_AppIntents §5.6.

@@ -7,7 +7,7 @@ import AppIntents
 import CoreSpotlight
 import Foundation
 
-public enum PdfShortcutCatalog {
+public enum PdfIntentSupport {
     /// Names the entity type this module's donations use, so they can be deleted when an item is
     /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
     @MainActor

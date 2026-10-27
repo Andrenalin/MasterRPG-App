@@ -13,7 +13,8 @@ struct RuleEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         TypeDisplayRepresentation(
             name: "Rule",
-            numericFormat: "\(placeholder: .int) rules"
+            numericFormat: "\(placeholder: .int) rules",
+            synonyms: ["Compendium"]
         )
     }
 
@@ -60,6 +61,16 @@ struct RuleEntity: IndexedEntity {
         storedIsFolder = model.category == .folder
         storedTextContent = IntentEntityText.excerpt(of: model)
         icon = model.specialCategory ? model.category.icon : NetworkModules.rule.icon
+    }
+}
+
+/// The link the app already opens (`RPG://RULES/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.rule.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension RuleEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://RULES/0/\(.id)"
     }
 }
 

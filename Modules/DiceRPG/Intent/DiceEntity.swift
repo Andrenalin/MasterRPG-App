@@ -13,7 +13,8 @@ struct DiceEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Dice"),
-            numericFormat: "\(placeholder: .int) Dice"
+            numericFormat: "\(placeholder: .int) Dice",
+            synonyms: ["Dice set", "Die"]
         )
     }
 

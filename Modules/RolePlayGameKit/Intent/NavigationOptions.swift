@@ -4,7 +4,7 @@ import CoreRPG
 import AppIntents
 import SwiftUI
 
-enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
+enum NavigationOption: String, CaseIterable, AppEnum {
     case adventure
     case audio
     case character
@@ -86,46 +86,6 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         ),
     ]
     
-    var id: String { rawValue }
-    
-    var name: LocalizedStringResource {
-        switch self {
-        case .adventure: "Adventure"
-        case .audio: "Audio"
-        case .dice: "Dice"
-        case .character: "Character"
-        case .game: "Game"
-        case .generator: "Generator"
-        case .map: "Map"
-        case .pdf: "Pdf"
-        case .photo: "Photo"
-        case .rule: "Rules"
-        case .search: "Search"
-        case .space: "Space"
-        case .table: "Table"
-        case .weather: "Weather"
-        }
-    }
-    
-    var symbolName: String {
-        switch self {
-        case .adventure: "wand.and.stars"
-        case .audio: "music.note.list"
-        case .character: "list.bullet.rectangle"
-        case .dice: "dice"
-        case .game: "person.2"
-        case .generator: "apple.intelligence"
-        case .map: "map"
-        case .pdf: "books.vertical"
-        case .photo: "photo.on.rectangle.angled"
-        case .rule: "book.closed"
-        case .search: "magnifyingglass"
-        case .space: "view.3d"
-        case .table: "tablecells.fill"
-        case .weather: "cloud.bolt.rain"
-        }
-    }
-
     var module: NetworkModules {
         switch self {
         case .adventure: .adventure

@@ -12,7 +12,8 @@ struct AudioEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Audio"),
-            numericFormat: "\(placeholder: .int) audios"
+            numericFormat: "\(placeholder: .int) audios",
+            synonyms: ["Music", "Sound", "Track"]
         )
     }
 
@@ -76,6 +77,16 @@ struct AudioEntity: IndexedEntity {
 /// resolved to a local file (e.g. the item has no attached file, or the
 /// file hasn't finished downloading from iCloud yet).
 struct AudioEntityAssetUnavailableError: Error {}
+
+/// The link the app already opens (`RPG://AUDIOS/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.audio.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension AudioEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://AUDIOS/0/\(.id)"
+    }
+}
 
 extension AudioEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {

@@ -5,36 +5,19 @@
 import AppIntents
 import Foundation
 
-/// Shared `EntityQuery` CRUD skeleton for the item-backed `AppIntents`
-/// `Entity` types (Pdf/Photo/Space/Audio/Character/Rule/Dice/Generator/Map/
-/// Table/Weather/Adventure) — every module previously hand-duplicated the
-/// same `suggestedEntities`/`entities(for:)`/`entities(matching:)`/
-/// `allEntities` bodies verbatim, differing only in the concrete
-/// `Entity`/`Root`/`Model` types. See CODE_AUDIT_10 §9.3.
+/// Shared `EntityQuery` skeleton for the item-backed `AppIntents` entity types (all twelve
+/// modules): `suggestedEntities`, `entities(for:)`, `entities(matching:)`, `allEntities` and, on
+/// the 27 releases, the `displayRepresentations(for:)` fast path. Only the query is shared; each
+/// entity struct keeps its own `displayRepresentation`, `Transferable`, `attributeSet` and URL
+/// representation, which is where the per-module content lives.
 ///
-/// Deliberately scoped to just this query CRUD — the `Entity` struct's own
-/// `AppIntents` conformances (`displayRepresentation`, `Transferable`,
-/// `attributeSet`, `sharePreview`) stay hand-written per module. That's
-/// where real per-module content lives (different export formats, icons,
-/// Spotlight keywords) and where a shared generic base would carry the
-/// Siri/Shortcuts/Spotlight regression risk 9 prior audit rounds
-/// deliberately declined to take on without device-level verification —
-/// see the audit's own §9.3 reasoning.
-///
-/// A conformer supplies `root`, `makeEntity(root:model:)`, `allIds(root:)`,
-/// and `model(root:id:)`. `matches(model:text:)` and `include(model:)` have
-/// defaults and are overridden only where a module's behavior genuinely
-/// differs — e.g. `RuleEntityQuery` excludes `specialCategory` items via
-/// `include(model:)`, `DiceEntityQuery` widens `matches(model:text:)` to
-/// also search tags. `suggestedEntities()`/`entities(matching:)`/etc. are
-/// protocol *requirements* (not just extension-only defaults), so a
-/// conformer with genuinely different control flow — `RuleEntityQuery`
-/// prefixes its result list only *after* filtering, `DiceEntityQuery` adds
-/// a result cache — can still override the whole method and have every
-/// call site (including from within this shared code, e.g.
-/// `entities(matching:)`'s empty-string fallback to `suggestedEntities()`)
-/// dispatch to that override correctly, the same reasoning as
-/// `FileVersionGameControllable.rebuildFileReports`.
+/// A conformer supplies `root`, `makeEntity(root:model:)`, `allIds(root:)` and `model(root:id:)`.
+/// `matches(model:text:)`, `include(model:)` and `thumbnailData(root:id:)` have defaults and are
+/// overridden only where a module differs: `RuleEntityQuery` excludes `specialCategory` items,
+/// `DiceEntityQuery` also searches tags, the four image modules supply cached thumbnails. The
+/// `suggestedEntities`/`entities(matching:)`/... methods are protocol requirements, so a
+/// conformer with different control flow can override the whole method and every call site in
+/// this shared code dispatches to it.
 @MainActor
 public protocol ItemEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery where Entity.ID == UUID {
     associatedtype Root
@@ -49,6 +32,11 @@ public protocol ItemEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntit
     func allIds(root: Root) -> [UUID]
     func model(root: Root, id: UUID) -> Model?
 
+    /// The cached list thumbnail of an item, encoded for a `DisplayRepresentation`, or `nil` for the
+    /// modules without images and for items whose thumbnail is not cached (it is never generated
+    /// here: resolving a disambiguation list must not decode files). Default: `nil`.
+    func thumbnailData(root: Root, id: UUID) -> Data?
+
     /// Text-match predicate for `entities(matching:)`. Default: name or
     /// description contains `text`.
     func matches(model: Model, text: String) -> Bool
@@ -61,6 +49,8 @@ public protocol ItemEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntit
 public extension ItemEntityQuery {
     static var suggestedLimit: Int { 20 }
     static var matchingLimit: Int { 25 }
+
+    func thumbnailData(root: Root, id: UUID) -> Data? { nil }
 
     func matches(model: Model, text: String) -> Bool {
         model.name.localizedStandardContains(text) || model.description.localizedStandardContains(text)
@@ -102,6 +92,25 @@ public extension ItemEntityQuery {
             guard let model = model(root: root, id: id), include(model: model), matches(model: model, text: text) else { continue }
             results.append(makeEntity(root: root, model: model))
             guard results.count < Self.matchingLimit else { break }
+        }
+        return results
+    }
+
+    /// Titles and icons for the items a view shows on screen, read from the model alone: Siri
+    /// resolves "open the third one" with this and does not need the entity's tags, folder state or
+    /// text excerpt. `entities(for:)` stays the path for running an intent. The image is the
+    /// item's cached thumbnail when there is one, else the symbol the entities use: the category's
+    /// for folders and collections, the module's otherwise. See CODE_AUDIT_AppIntents2 §4.6.
+    /// See CODE_AUDIT_AppIntents2 §4.3.
+    @available(iOS 27, macOS 27, visionOS 27, *)
+    func displayRepresentations(for identifiers: [Entity.ID]) async throws -> [Entity.ID: DisplayRepresentation] {
+        await DatabaseReadiness.wait()
+        var results: [Entity.ID: DisplayRepresentation] = [:]
+        for id in identifiers {
+            guard let model = model(root: root, id: id), include(model: model) else { continue }
+            let icon = model.specialCategory ? model.category.icon : Model.typeId.icon
+            let image: DisplayRepresentation.Image = thumbnailData(root: root, id: id).map { .init(data: $0) } ?? .init(systemName: icon)
+            results[id] = DisplayRepresentation(title: "\(model.name)", image: image)
         }
         return results
     }

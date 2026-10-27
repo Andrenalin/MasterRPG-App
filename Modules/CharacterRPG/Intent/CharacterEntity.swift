@@ -13,7 +13,8 @@ struct CharacterEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Character"),
-            numericFormat: "\(placeholder: .int) Character"
+            numericFormat: "\(placeholder: .int) Character",
+            synonyms: ["Player", "NPC", "Monster"]
         )
     }
 
@@ -66,6 +67,16 @@ struct CharacterEntity: IndexedEntity {
         self.storedTextContent = IntentEntityText.excerpt(of: model)
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
+    }
+}
+
+/// The link the app already opens (`RPG://VALUES/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.value.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension CharacterEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://VALUES/0/\(.id)"
     }
 }
 

@@ -7,25 +7,25 @@ import AppIntents
 import CoreSpotlight
 import Foundation
 
-public enum GeneratorShortcutCatalog {
+public enum AudioIntentSupport {
     /// Names the entity type this module's donations use, so they can be deleted when an item is
     /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
     @MainActor
     public static func registerDonations() {
-        IntentEntityIdentifiers.register(GeneratorEntity.self, for: .generator)
+        IntentEntityIdentifiers.register(AudioEntity.self, for: .audio)
     }
 
     @MainActor
-    public static func reindexChanged(root: GeneratorRootModel) async {
+    public static func reindexChanged(root: AudioRootModel) async {
         await reindexIntentEntities(
             itemDataModel: root.itemController.itemDataModel,
-            module: .generator,
+            module: .audio,
             model: { root.itemController.itemSync(for: $0) },
-            makeEntity: { GeneratorEntity(root: root, model: $0) }
+            makeEntity: { AudioEntity(root: root, model: $0) }
         )
     }
 }
 
-public struct GeneratorFrameworkPackage: AppIntentsPackage { }
+public struct AudioFrameworkPackage: AppIntentsPackage { }
 
 #endif

@@ -13,7 +13,8 @@ struct MapEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Map"),
-            numericFormat: "\(placeholder: .int) Map"
+            numericFormat: "\(placeholder: .int) maps",
+            synonyms: ["Battle map"]
         )
     }
 
@@ -69,6 +70,16 @@ struct MapEntity: IndexedEntity {
     }
 }
 
+/// The link the app already opens (`RPG://MAPS/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.map.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension MapEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://MAPS/0/\(.id)"
+    }
+}
+
 extension MapEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
@@ -91,6 +102,9 @@ struct MapEntityQuery: ItemEntityQuery {
     func makeEntity(root: MapRootModel, model: MapModel) -> MapEntity { MapEntity(root: root, model: model) }
     func allIds(root: MapRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: MapRootModel, id: UUID) -> MapModel? { root.itemController.itemSync(for: id) }
+    func thumbnailData(root: MapRootModel, id: UUID) -> Data? {
+        root.cacheController?.cachedThumbnail(for: id).flatMap { try? $0.pngRepresentationData() }
+    }
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)

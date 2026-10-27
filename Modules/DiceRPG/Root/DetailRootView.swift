@@ -11,6 +11,9 @@ struct DetailRootView: View {
         let _ = Self.printViewChangesOnlyInDebug()
         DetailListView(root: root, model: model, folderListController: root.folderListController)
             .detailInspectorModifier(root: root.rootController)
+#if os(iOS) || os(visionOS)
+            .siriTip(for: RollSpecificDiceIntent(), storageKey: "suggest.rollSpecificDiceShortcut")
+#endif
             .onChange(of: root.navigationModel.triggerSpaceAction) {
                 guard root.navigationModel.triggerSpaceAction else { return }
                 root.navigationModel.triggerSpaceAction = false

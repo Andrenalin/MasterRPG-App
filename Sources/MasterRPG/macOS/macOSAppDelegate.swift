@@ -45,16 +45,7 @@ import RolePlayGameKit
         continue userActivity: NSUserActivity,
         restorationHandler: @escaping ([any NSUserActivityRestoring]) -> Void
     ) -> Bool {
-        guard userActivity.activityType == UserActivity.bundleIdentifierType else { return false }
-        let module = UserActivity.module(from: userActivity)
-        guard module != .none, let itemId = UserActivity.itemId(from: userActivity) else { return false }
-
-        AppModel.shared.routeToModuleWhenReady(
-            module,
-            itemId: itemId,
-            entryId: UserActivity.childId(from: userActivity)
-        )
-        return true
+        return AppModel.shared.continueActivity(userActivity)
     }
 }
 

@@ -41,6 +41,23 @@ public enum IntentDonations {
         await donate(intent)
     }
 
+    /// The same repeatable action (a dice roll) is not donated again within this time.
+    private static let repeatedActionInterval: TimeInterval = 300
+
+    private static var lastDonated: [UUID: Date] = [:]
+
+    /// Donates an action the user repeats often, such as a dice roll, at most once per
+    /// `repeatedActionInterval` for the same item, so a combat round does not flood the system.
+    /// `makeIntent` runs only when the donation goes out. See CODE_AUDIT_AppIntents2 §5.5.
+    public static func donateThrottled(for itemId: UUID, makeIntent: @MainActor () -> (any AppIntent)?) async {
+        if let last = lastDonated[itemId], Date.now.timeIntervalSince(last) < repeatedActionInterval {
+            return
+        }
+        guard let intent = makeIntent() else { return }
+        lastDonated[itemId] = .now
+        await donate(intent)
+    }
+
     /// Donates an action the user just completed in the UI. The system already donates intents
     /// that Siri or Shortcuts ran, so this is only for the UI's own path to the same action.
     public static func donate(_ intent: some AppIntent) async {
@@ -57,6 +74,7 @@ public enum IntentDonations {
     public static func forget(itemId: UUID, module: NetworkModules) {
         guard let identifier = IntentEntityIdentifiers.identifier(for: itemId, module: module) else { return }
         if lastOpened?.itemId == itemId { lastOpened = nil }
+        lastDonated[itemId] = nil
         Task {
             await IntentEntityIdentifiers.removeFromIndex(itemIds: [itemId], module: module)
             do {

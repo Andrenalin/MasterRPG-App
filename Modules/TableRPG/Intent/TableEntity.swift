@@ -13,7 +13,8 @@ struct TableEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Table"),
-            numericFormat: "\(placeholder: .int) tables"
+            numericFormat: "\(placeholder: .int) tables",
+            synonyms: ["Random table"]
         )
     }
 
@@ -66,6 +67,16 @@ struct TableEntity: IndexedEntity {
         self.storedTextContent = IntentEntityText.excerpt(of: model)
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
+    }
+}
+
+/// The link the app already opens (`RPG://TABLES/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.table.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension TableEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://TABLES/0/\(.id)"
     }
 }
 

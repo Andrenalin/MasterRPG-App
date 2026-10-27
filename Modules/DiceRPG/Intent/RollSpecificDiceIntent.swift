@@ -68,7 +68,7 @@ struct RollResultSnippetView: View {
     let result: DiceResultModel
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack {
             // Result type indicator
             HStack {
                 RollResultSnippetResultIconView(result: result.result)
@@ -82,7 +82,7 @@ struct RollResultSnippetView: View {
                 .bold()
             
             // Result
-            HStack(spacing: 4) {
+            HStack {
                 Image(systemName: "dice.fill")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
@@ -100,6 +100,9 @@ struct RollResultSnippetView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        // One element read as "<result>, <dice>, <sum>, <values>" instead of five fragments.
+        // See CODE_AUDIT_AppIntents2 §8.1.
+        .accessibilityElement(children: .combine)
         .padding()
     }
 }
@@ -138,12 +141,16 @@ extension RollSpecificDiceIntent: TargetContentProvidingIntent {}
 
 extension DiceRootModel {
     /// Donates a roll the user made from the UI, so Siri learns it next to the voice and
-    /// Shortcuts path. See CODE_AUDIT_AppIntents §4.4.
+    /// Shortcuts path. At most once per dice set every few minutes: rolls come in bursts and the
+    /// system ignores a source that floods it. See CODE_AUDIT_AppIntents2 §5.5.
     @MainActor
     func donateRoll(of itemId: UUID) {
-        guard let model = itemController.itemSync(for: itemId) else { return }
-        let intent = RollSpecificDiceIntent(dice: DiceEntity(root: self, model: model))
-        Task { await IntentDonations.donate(intent) }
+        Task {
+            await IntentDonations.donateThrottled(for: itemId) {
+                guard let model = itemController.itemSync(for: itemId) else { return nil }
+                return RollSpecificDiceIntent(dice: DiceEntity(root: self, model: model))
+            }
+        }
     }
 }
 

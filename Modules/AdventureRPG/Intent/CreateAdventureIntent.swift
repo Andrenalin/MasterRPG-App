@@ -29,9 +29,7 @@ public struct CreateAdventureIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ReturnsValue<AdventureEntity> & ProvidesDialog {
-        await DatabaseReadiness.wait()
-        // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
-        // guards `CSSearchableIndex.isIndexingAvailable()` internally.
+        try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank
         // adventure. See CODE_AUDIT_21 §5.28.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the adventure be called?")
@@ -41,7 +39,7 @@ public struct CreateAdventureIntent: AppIntent {
         await root.itemController.save()
 
         let entity = AdventureEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.adventures(model.id, nil))

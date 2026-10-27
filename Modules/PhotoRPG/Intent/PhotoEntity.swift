@@ -13,7 +13,8 @@ struct PhotoEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
             name: LocalizedStringResource("Photo"),
-            numericFormat: "\(placeholder: .int) photos"
+            numericFormat: "\(placeholder: .int) photos",
+            synonyms: ["Picture", "Image"]
         )
     }
 
@@ -77,6 +78,16 @@ struct PhotoEntity: IndexedEntity {
 /// finished downloading from iCloud yet).
 struct PhotoEntityAssetUnavailableError: Error {}
 
+/// The link the app already opens (`RPG://PHOTOS/0/<id>`), so a tapped Spotlight result opens the
+/// item on every OS version. The literal must match `URL.appScheme` and
+/// `NetworkModules.photo.token`; see `EntityUrlRepresentationTests`.
+/// See CODE_AUDIT_AppIntents2 §4.1.
+extension PhotoEntity: URLRepresentableEntity {
+    static var urlRepresentation: URLRepresentation {
+        "RPG://PHOTOS/0/\(.id)"
+    }
+}
+
 extension PhotoEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         // Exports the actual stored photo file — not a rendered Name/
@@ -113,6 +124,9 @@ struct PhotoEntityQuery: ItemEntityQuery {
     func makeEntity(root: PhotoRootModel, model: PhotoModel) -> PhotoEntity { PhotoEntity(root: root, model: model) }
     func allIds(root: PhotoRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: PhotoRootModel, id: UUID) -> PhotoModel? { root.itemController.itemSync(for: id) }
+    func thumbnailData(root: PhotoRootModel, id: UUID) -> Data? {
+        root.cacheController?.cachedThumbnail(for: id).flatMap { try? $0.pngRepresentationData() }
+    }
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
