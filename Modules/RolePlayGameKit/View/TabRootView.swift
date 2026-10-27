@@ -15,8 +15,14 @@ struct TabRootView: View {
                 appModel.isCompactGameWindow = appSizeModel.mode == .compact
             }
             .onChange(of: appSizeModel.mode) { oldValue, newValue in
+                appModel.rememberRouteForLayoutChange()
                 appModel.isCompactGameWindow = newValue == .compact
-                appModel.resetNavigation()
+            }
+            .task(id: appModel.layoutRestoreTarget) {
+                guard appModel.layoutRestoreTarget != nil else { return }
+                try? await Task.sleep(for: .milliseconds(200))
+                guard !Task.isCancelled else { return }
+                appModel.restoreRouteAfterLayoutChange(isCompact: appSizeModel.mode == .compact)
             }
     }
 

@@ -87,6 +87,11 @@ public final class AppModel: Sendable {
     /// editors→`ExtendedTabRoute` compound.
     @ObservationIgnored public var isCompactGameWindow: Bool = false
 
+    /// What was open when the window switched between the compact and the regular layout. Set on
+    /// the size class change, consumed by `restoreRouteAfterLayoutChange` once the new layout has
+    /// settled; `TabRootView` runs a task keyed on it.
+    var layoutRestoreTarget: LayoutRestoreTarget?
+
     public static let defaultEditorModule: RootRoute = .pdfs
 
     var selectedModule: RootRoute? = .game
@@ -646,15 +651,27 @@ extension AppModel {
         }
     }
 
-    public func resetNavigation() {
-        guard let selectedTab: NetworkModules = selectedModule?.module else { return }
-        let itemId: UUID? = root[selectedTab]?.currentSelectedItemId
-        Task {
-            try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
-            navigator(for: selectedTab).perform(route: KnownRoutes.route(module: selectedTab, itemId: itemId, entryId: nil))
-        }
+    /// Remembers the module and item on screen before a size class change rebuilds the layout.
+    /// In the compact layout the `.editors` tab hosts the module chosen in the extended tab bar,
+    /// so that module is the one to remember.
+    @MainActor func rememberRouteForLayoutChange() {
+        let module = selectedModule?.module == .editor ? selectedExtendedModule?.module : selectedModule?.module
+        let itemId = module.flatMap { root[$0]?.currentSelectedItemId }
+        guard let module else { return }
+        layoutRestoreTarget = LayoutRestoreTarget(module: module, itemId: itemId)
     }
 
+    /// Selects the remembered module and item in the layout that replaced the old one, then clears it.
+    /// The regular layout selects the module as a tab; the compact layout reaches it through the
+    /// editors tab, which `WindowRouter` handles when it flattens the route.
+    @MainActor func restoreRouteAfterLayoutChange(isCompact: Bool) {
+        guard let target = layoutRestoreTarget else { return }
+        layoutRestoreTarget = nil
+        if !isCompact {
+            selectedModule = RootRoute(networkModule: target.module)
+        }
+        navigator(for: target.module).perform(route: KnownRoutes.route(module: target.module, itemId: target.itemId, entryId: nil))
+    }
 
     @MainActor public var routeActions: RouteActions {
         RouteActions(id: .object(ObjectIdentifier(self))) { [weak self] module, itemId, entryId in
@@ -681,6 +698,11 @@ extension AppModel {
         // devices. See CODE_AUDIT_18 §3.17.
         navigator(for: module).perform(route: route)
     }
+}
+
+struct LayoutRestoreTarget: Equatable {
+    let module: NetworkModules
+    let itemId: UUID?
 }
 
 private struct PendingExternalRoute: Equatable {

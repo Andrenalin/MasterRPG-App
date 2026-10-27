@@ -21,6 +21,19 @@ struct ExtendedTabRouteDestinationView: View {
     @Environment(AppModel.self) private var appModel
 
     var body: some View {
+        Group {
+            content
+        }
+        .onAppear {
+            // The route can arrive by deep link or restore instead of a tap on the editors grid,
+            // so the model learns which module is on screen here. The layout switch reads it.
+            if appModel.selectedExtendedModule != route {
+                appModel.selectedExtendedModule = route
+            }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         switch route {
         case .audios:
             AudioFactory.rootView()
