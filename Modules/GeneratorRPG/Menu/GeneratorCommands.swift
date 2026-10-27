@@ -17,7 +17,7 @@ public struct GeneratorCommands: Commands {
     let routeActions: RouteActions
 
     public var body: some Commands {
-        ModuleCommands(root: root, scenesManager: scenesManager, routeActions: routeActions, key: "-")
+        ModuleCommands(root: root, scenesManager: scenesManager, routeActions: routeActions, key: "j")
     }
 }
 

@@ -40,7 +40,6 @@ struct MenuCommandList: Commands {
                     PhotoCommands(root: appModel.photoRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     SpaceCommands(root: appModel.spaceRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     WeatherCommands(root: appModel.weatherRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
-                    GeneratorCommands(root: appModel.generatorRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                 }
             }
         }
