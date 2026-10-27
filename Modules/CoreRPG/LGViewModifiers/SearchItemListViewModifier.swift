@@ -35,6 +35,11 @@ struct SearchItemListViewModifier: ViewModifier {
             }
 #endif
             .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .onAppear {
+                // The model can already hold a search typed elsewhere (e.g. the inspector filter
+                // field binds `searchText` directly); `searchFieldText` only syncs on change.
+                searchModel.searchFieldText <=> searchModel.searchText
+            }
             .onChange(of: searchModel.searchFieldText) {
                 guard searchModel.searchFieldText.starts(with: "@") == false || searchModel.searchFieldText.count > 1 else {
                     return
