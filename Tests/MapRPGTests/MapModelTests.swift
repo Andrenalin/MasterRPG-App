@@ -154,6 +154,86 @@ struct MapModelTests {
         #expect(map.displayConfig.tileCoordinates == [CGPoint(x: 80, y: 10)])
     }
 
+    @Test func keepingPositionsChangesTheCanvasButNotTheContentCoordinates() throws {
+        let photoId = UUID()
+        let map = MapModel(
+            id: UUID(),
+            name: "Map",
+            entries: [MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: [CGPoint(x: 10, y: 20)])],
+            width: 100,
+            height: 50,
+            mapPins: [MapPinModel(id: UUID(), name: "Pin", location: CGPoint(x: 20, y: 10))],
+            degrees: 0
+        )
+
+        map.resetImage(with: photoId, size: CGSize(width: 200, height: 100), degrees: 0, adaptContent: false)
+
+        #expect(map.photoId == photoId)
+        #expect(map.width == 200)
+        #expect(map.height == 100)
+        #expect(map.entries.first?.coordinates == [CGPoint(x: 10, y: 20)])
+        #expect(map.mapPins.first?.location == CGPoint(x: 20, y: 10))
+    }
+
+    @Test func adaptingStretchesContentIndependentlyPerAxis() throws {
+        let map = MapModel(
+            id: UUID(),
+            name: "Map",
+            entries: [MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: [CGPoint(x: 10, y: 20)])],
+            width: 100,
+            height: 50,
+            mapPins: [MapPinModel(id: UUID(), name: "Pin", location: CGPoint(x: 20, y: 10))],
+            degrees: 0
+        )
+
+        map.resetImage(with: UUID(), size: CGSize(width: 200, height: 150), degrees: 0)
+
+        #expect(map.entries.first?.coordinates == [CGPoint(x: 20, y: 60)])
+        #expect(map.mapPins.first?.location == CGPoint(x: 40, y: 30))
+    }
+
+    @Test func adaptingUsesTheRealOldPhotoWhenTheStoredCanvasIsOutOfSync() throws {
+        // Duplicated map: rooms were drawn on a 100x50 photo, but the stored canvas says 300x300.
+        let map = MapModel(
+            id: UUID(),
+            name: "Map",
+            entries: [MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: [CGPoint(x: 10, y: 20)])],
+            width: 300,
+            height: 300,
+            degrees: 0
+        )
+
+        map.resetImage(
+            with: UUID(),
+            size: CGSize(width: 400, height: 200),
+            degrees: 0,
+            previousImage: MapImageGeometry(size: CGSize(width: 100, height: 50), degrees: 0)
+        )
+
+        #expect(map.width == 400)
+        #expect(map.height == 200)
+        #expect(map.entries.first?.coordinates == [CGPoint(x: 40, y: 80)])
+        #expect(map.changesCanvasSize(forImageSize: CGSize(width: 100, height: 50), degrees: 0, comparedTo: MapImageGeometry(size: CGSize(width: 100, height: 50), degrees: 0)) == false)
+    }
+
+    @Test func canvasChangeDetectionAccountsForRotationAndContent() throws {
+        let empty = MapModel(id: UUID(), name: "Map", width: 100, height: 50, degrees: 0)
+        let filled = MapModel(
+            id: UUID(),
+            name: "Map",
+            width: 100,
+            height: 50,
+            mapPins: [MapPinModel(id: UUID(), name: "Pin")],
+            degrees: 0
+        )
+
+        #expect(!empty.hasCanvasContent)
+        #expect(filled.hasCanvasContent)
+        #expect(!filled.changesCanvasSize(forImageSize: CGSize(width: 100, height: 50), degrees: 0))
+        #expect(filled.changesCanvasSize(forImageSize: CGSize(width: 200, height: 100), degrees: 0))
+        #expect(filled.changesCanvasSize(forImageSize: CGSize(width: 100, height: 50), degrees: 90))
+    }
+
     @Test func rotationMovesRoomCoordinatesIntoTheRotatedCanvas() throws {
         let map = MapModel(
             id: UUID(),

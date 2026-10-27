@@ -3,8 +3,19 @@
 import CoreGraphics
 import CoreRPG
 import Foundation
+import os.log
 
 // Split out of MapModel.swift — see CODE_AUDIT §9.13.
+
+/// A photo's real pixel size and rotation — the geometry a map's rooms and pins were drawn on.
+struct MapImageGeometry: Equatable, Sendable {
+    let size: CGSize
+    let degrees: Double
+
+    var canvasSize: CGSize {
+        ViewportGeometry.rotatedContentSize(size, rotationDegrees: degrees)
+    }
+}
 
 public extension MapModel {
     /// Whether players see fog at this location: true when a hidden room
@@ -34,20 +45,50 @@ extension MapModel {
         }
     }
 
-    func resetImage(with photoId: UUID, size: CGSize, degrees: Double) {
+    /// Whether the map has rooms, pins, walls or tiles whose coordinates depend on the canvas size.
+    var hasCanvasContent: Bool {
+        !entries.isEmpty || !mapPins.isEmpty || !walls.isEmpty || !displayConfig.tileCoordinates.isEmpty
+    }
+
+    /// Whether showing an image of `size` rotated by `degrees` gives the map another canvas size
+    /// than `previous`, the real geometry of the current photo (the stored size when unknown).
+    func changesCanvasSize(forImageSize size: CGSize, degrees: Double, comparedTo previous: MapImageGeometry? = nil) -> Bool {
+        let oldCanvasSize = previous?.canvasSize ?? CGSize(width: width, height: height)
+        return ViewportGeometry.rotatedContentSize(size, rotationDegrees: degrees) != oldCanvasSize
+    }
+
+    /// Installs the photo and the canvas size of its image. With `adaptContent` the rooms, pins,
+    /// walls, pointer and tiles are scaled with it; without, they keep their absolute coordinates.
+    /// `previousImage` is the real geometry of the photo being replaced. The stored width, height
+    /// and degrees can be out of sync with it (e.g. on a duplicated map), so it wins when given.
+    func resetImage(
+        with photoId: UUID,
+        size: CGSize,
+        degrees: Double,
+        adaptContent: Bool = true,
+        previousImage: MapImageGeometry? = nil
+    ) {
         let previousPhotoId = self.photoId
         self.photoId <=> photoId
-        let oldCanvasSize = CGSize(width: width, height: height)
-        let oldDegrees = self.degrees
+        let storedCanvasSize = CGSize(width: width, height: height)
+        let oldCanvasSize = previousImage?.canvasSize ?? storedCanvasSize
+        let oldDegrees = previousImage?.degrees ?? self.degrees
         let newCanvasSize = ViewportGeometry.rotatedContentSize(size, rotationDegrees: degrees)
-        guard newCanvasSize != oldCanvasSize || degrees != oldDegrees else { return }
+        if let previousImage, previousImage.canvasSize != storedCanvasSize || previousImage.degrees != self.degrees {
+            Logger.editController.warning("Map \(self.id, privacy: .public): stored canvas \(storedCanvasSize.debugDescription, privacy: .public) degrees \(self.degrees, privacy: .public) differs from the real old photo \(previousImage.size.debugDescription, privacy: .public) degrees \(previousImage.degrees, privacy: .public); using the photo.")
+        }
+        Logger.editController.info("Map \(self.id, privacy: .public): replace photo old \(previousImage?.size.debugDescription ?? "stored", privacy: .public) -> new \(size.debugDescription, privacy: .public) degrees \(degrees, privacy: .public), canvas \(oldCanvasSize.debugDescription, privacy: .public) -> \(newCanvasSize.debugDescription, privacy: .public), adapt \(adaptContent, privacy: .public)")
+        let canvasChanged = newCanvasSize != oldCanvasSize || degrees != oldDegrees
+        guard canvasChanged || newCanvasSize != storedCanvasSize || degrees != self.degrees else { return }
         width = newCanvasSize.width
         height = newCanvasSize.height
         self.degrees = degrees
+        guard adaptContent, canvasChanged else { return }
         resetEntryGeometry(
             oldCanvasSize: oldCanvasSize,
             oldDegrees: oldDegrees,
             previousPhotoIdMatches: previousPhotoId == photoId,
+            oldImageSize: previousImage?.size,
             newImageSize: size,
             newDegrees: degrees
         )
@@ -57,6 +98,7 @@ extension MapModel {
         oldCanvasSize: CGSize,
         oldDegrees: Double,
         previousPhotoIdMatches: Bool,
+        oldImageSize knownOldImageSize: CGSize?,
         newImageSize: CGSize,
         newDegrees: Double
     ) {
@@ -66,7 +108,7 @@ extension MapModel {
               newImageSize.height > 0 else { return }
 
         let transform: (CGPoint) -> CGPoint
-        let oldImageSize = Self.imageSize(
+        let oldImageSize = knownOldImageSize ?? Self.imageSize(
             fromCanvas: oldCanvasSize,
             degrees: oldDegrees
         ) ?? (previousPhotoIdMatches ? newImageSize : nil)

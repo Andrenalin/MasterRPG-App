@@ -13,6 +13,19 @@ import SwiftUI
 final class MapEditModel: Sendable {
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
+    /// A picked photo whose size differs from the map's canvas, waiting for the user to decide
+    /// whether rooms and pins follow the new size.
+    var photoReplacement: PhotoReplacement?
+}
+
+struct PhotoReplacement: Identifiable, Equatable {
+    let id = UUID()
+    let itemId: UUID
+    let photoId: UUID
+    let imageSize: CGSize
+    let degrees: Double
+    /// Real geometry of the photo being replaced; nil when the map had none or it can't be loaded.
+    let previousImage: MapImageGeometry?
 }
 
 struct EditController: Sendable {
@@ -139,6 +152,48 @@ extension EditController {
         save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
     }
     
+    /// Replaces the map photo. When the new photo gives the map another size and the map has
+    /// rooms or pins, the choice to adapt them is deferred to `mapEditModel.photoReplacement`.
+    @MainActor func replacePhoto(photoId: UUID?, itemId: UUID) async {
+        guard let item = editModel(for: itemId), item.photoId != photoId else { return }
+        guard let photoId else {
+            add(photoId: nil, itemId: itemId)
+            return
+        }
+        let fetched = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: false)
+        // A newer pick cancels this task; its nil image must not replace the photo.
+        guard !Task.isCancelled else { return }
+        guard let (image, degrees) = fetched else {
+            add(photoId: photoId, itemId: itemId)
+            return
+        }
+        // The stored map size can be out of sync with the photo (duplicates), so measure the old photo itself.
+        let previousFetched = await root.photoRoot.fetchPhotoImage(for: item.photoId, useGame: false)
+        guard !Task.isCancelled else { return }
+        let previousImage = previousFetched.map { MapImageGeometry(size: $0.0.size, degrees: $0.1) }
+        let replacement = PhotoReplacement(itemId: itemId, photoId: photoId, imageSize: image.size, degrees: degrees, previousImage: previousImage)
+        if item.hasCanvasContent && item.changesCanvasSize(forImageSize: replacement.imageSize, degrees: degrees, comparedTo: previousImage) {
+            mapEditModel.photoReplacement = replacement
+        } else {
+            apply(replacement, adaptContent: true)
+        }
+    }
+
+    /// Finishes a deferred replacement: `adaptContent` scales rooms, pins and walls to the new
+    /// size, otherwise they keep their coordinates.
+    @MainActor func apply(_ replacement: PhotoReplacement, adaptContent: Bool) {
+        mapEditModel.photoReplacement = nil
+        guard let item = editModel(for: replacement.itemId) else { return }
+        item.resetImage(with: replacement.photoId, size: replacement.imageSize, degrees: replacement.degrees, adaptContent: adaptContent, previousImage: replacement.previousImage)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+    }
+
+    /// Drops a deferred replacement and shows the map's current photo in the picker again.
+    @MainActor func cancel(_ replacement: PhotoReplacement) {
+        mapEditModel.photoReplacement = nil
+        mapEditModel.selectionPhoto.resetSelection(itemId: itemController.itemSync(for: replacement.itemId)?.photoId, entryId: nil)
+    }
+
     @MainActor func reset(borderThickness: Double, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         let updatedBorderThickness: CGFloat = CGFloat(borderThickness)

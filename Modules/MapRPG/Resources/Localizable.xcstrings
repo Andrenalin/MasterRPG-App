@@ -279,6 +279,38 @@
         }
       }
     },
+    "Adapt Rooms and Pins?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Räume und Pins anpassen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปรับห้องและพินให้เข้ากับขนาดใหม่หรือไม่?"
+          }
+        }
+      }
+    },
+    "Adapt to New Size" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An neue Größe anpassen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปรับตามขนาดใหม่"
+          }
+        }
+      }
+    },
     "Add map area" : {
       "localizations" : {
         "de" : {
@@ -1209,6 +1241,22 @@
         }
       }
     },
+    "Keep Positions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Positionen beibehalten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คงตำแหน่งเดิม"
+          }
+        }
+      }
+    },
     "Link" : {
       "localizations" : {
         "de" : {
@@ -2005,6 +2053,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แสดงแล้ว"
+          }
+        }
+      }
+    },
+    "The new photo has a different size than the current map. Resize the rooms and move the pins to match it, or keep them at their current positions?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das neue Foto hat eine andere Größe als die aktuelle Karte. Sollen die Räume skaliert und die Pins verschoben werden, oder sollen sie an ihrer aktuellen Position bleiben?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปภาพใหม่มีขนาดต่างจากแผนที่ปัจจุบัน ต้องการปรับขนาดห้องและย้ายพินให้ตรงกัน หรือคงไว้ที่ตำแหน่งเดิม?"
           }
         }
       }
