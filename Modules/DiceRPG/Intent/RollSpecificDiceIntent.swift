@@ -14,96 +14,145 @@ import SwiftUI
 
 public struct RollSpecificDiceIntent: AppIntent {
     public static let title: LocalizedStringResource = "Roll Specific Dice"
-    public static let description = IntentDescription("Roll a specific dice from your collection")
-    
-    @Parameter(title: "Dice", requestValueDialog: "Which dice do you want to roll?")
+    public static let description = IntentDescription(
+        "Rolls one of your saved dice sets and says the result. While a game runs, the roll is shared with the players.",
+        categoryName: "Dice",
+        searchKeywords: ["dice set", "attack", "damage", "roll"]
+    )
+
+    @Parameter(title: "Dice", requestValueDialog: .localized("Which dice do you want to roll?", bundle: .module))
     var dice: DiceEntity
-    
+
     @Dependency var root: DiceRootModel
-    
+
     public init() {}
-    
+
     init(dice: DiceEntity) {
         self.dice = dice
     }
-    
-    @MainActor
-    public func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        // Roll all dice in the dice model
-        
-        // `rollDice(rollSynced: true)` runs synchronously and internally schedules the
-        // widget's UserDefaults write via `GameController.roll(die:for:)`'s tracked,
-        // cancellable `diceGameModel.diceUpdateWidgetTask` — the exact same fields this
-        // Intent used to write again itself via an untracked `Task.detached`. That second,
-        // uncoordinated write could race the tracked one and leave the widget showing
-        // whichever roll's write happened to finish last. See CODE_AUDIT.md §3.5.
-        root.gameController.rollDice(itemId: dice.id, rollSynced: true)
-        let rollResult = root.gameController.result(itemId: dice.id)
 
-        let finalSum = rollResult.sum
-        // Create result dialog based on result type
-        let dialog: IntentDialog
-        switch rollResult.result {
-        case .coup:
-            dialog = "🎉 Critical Success! Rolled \(dice.name): \(finalSum)"
-        case .fumble:
-            dialog = "💥 Critical Failure! Rolled \(dice.name): \(finalSum)"
-        case .rolled:
-            dialog = "🎲 Rolled \(dice.name): \(finalSum)"
-        case .notRolled:
-            dialog = "Rolled \(dice.name): \(finalSum)"
-        }
-        
+    @MainActor
+    public func perform() async throws -> some IntentResult & ReturnsValue<Int> & ProvidesDialog & ShowsSnippetIntent {
+        try await requireReadyDatabase()
+        // `dice` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
+        try requiredIntentTarget(root.itemController.itemSync(for: dice.id), parameter: $dice, prompt: .localized("Which dice do you want to roll?", bundle: .module))
+        let rollResult = root.rollFromIntent(diceId: dice.id)
         return .result(
-            dialog: dialog,
-            view: RollResultSnippetView(result: rollResult)
+            value: rollResult.sum,
+            dialog: DiceRollDialog.dialog(name: dice.name, result: rollResult),
+            snippetIntent: DiceRollSnippetIntent(dice: dice)
         )
     }
-    
+}
+
+/// The result card of a saved set with a "Roll Again" button. The system runs `perform()` again
+/// after the button's intent and whenever it redraws the card, so it only reads the last result.
+/// See CODE_AUDIT_AppIntents3 §8.1.
+struct DiceRollSnippetIntent: SnippetIntent {
+    static let title: LocalizedStringResource = "Dice Roll Result"
+    static let isDiscoverable = false
+
+    @Parameter(title: "Dice")
+    var dice: DiceEntity
+
+    @Dependency var root: DiceRootModel
+
+    init() {}
+
+    init(dice: DiceEntity) {
+        self.dice = dice
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ShowsSnippetView {
+        .result(view: RollResultSnippetView(
+            result: root.gameController.result(itemId: dice.id),
+            rollAgain: RollDiceAgainIntent(dice: dice)
+        ))
+    }
+}
+
+/// The card's "Roll Again" button: rolls the same set as `RollSpecificDiceIntent` does.
+struct RollDiceAgainIntent: AppIntent {
+    static let title: LocalizedStringResource = "Roll Dice Again"
+    static let isDiscoverable = false
+
+    @Parameter(title: "Dice")
+    var dice: DiceEntity
+
+    @Dependency var root: DiceRootModel
+
+    init() {}
+
+    init(dice: DiceEntity) {
+        self.dice = dice
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        try requiredIntentTarget(root.itemController.itemSync(for: dice.id), parameter: $dice, prompt: .localized("Which dice do you want to roll?", bundle: .module))
+        root.rollFromIntent(diceId: dice.id)
+        return .result()
+    }
 }
 
 // MARK: - Snippet View
 
 struct RollResultSnippetView: View {
     let result: DiceResultModel
-    
+    var rollAgain: RollDiceAgainIntent?
+
     var body: some View {
         VStack {
-            // Result type indicator
-            HStack {
-                RollResultSnippetResultIconView(result: result.result)
-                Text(result.result.localizedTitle)
-                    .font(.headline)
-            }
+            VStack {
+                // Result type indicator
+                HStack {
+                    RollResultSnippetResultIconView(result: result.result)
+                    Text(result.result.localizedTitle)
+                        .font(.headline)
+                }
             
-            // Dice name
-            Text(verbatim: result.diceModel.name)
-                .font(.title2)
-                .bold()
-            
-            // Result
-            HStack {
-                Image(systemName: "dice.fill")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                Text(result.sum, format: .number)
-                    .font(.largeTitle)
+                // Dice name
+                Text(verbatim: result.diceModel.name)
+                    .font(.title2)
                     .bold()
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-            }
             
-            // Values breakdown
-            if !result.values.isEmpty {
-                Text(verbatim: result.values)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                // Result
+                HStack {
+                    Image(systemName: "dice.fill")
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text(result.sum, format: .number)
+                        .font(.largeTitle)
+                        .bold()
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                }
+            
+                // Values breakdown
+                if !result.values.isEmpty {
+                    Text(verbatim: DiceRollDialog.spokenValues(result.values))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            // One element read as "<result>, <dice>, <sum>, <values>" instead of five fragments.
+            // See CODE_AUDIT_AppIntents2 §8.1.
+            .accessibilityElement(children: .combine)
+            .padding()
+
+            if let rollAgain {
+                Button(intent: rollAgain) {
+                    Label {
+                        Text("Roll Again", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.bottom)
             }
         }
-        // One element read as "<result>, <dice>, <sum>, <values>" instead of five fragments.
-        // See CODE_AUDIT_AppIntents2 §8.1.
-        .accessibilityElement(children: .combine)
-        .padding()
     }
 }
 

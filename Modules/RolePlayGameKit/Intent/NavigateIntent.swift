@@ -15,7 +15,7 @@ public struct NavigateIntent: AppIntent {
     
     @Parameter(
         title: "Section",
-        requestValueDialog: "Which section?"
+        requestValueDialog: .localized("Which section?", bundle: .module)
     )
     var navigationOption: NavigationOption
     

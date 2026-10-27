@@ -11,9 +11,14 @@ import SwiftUI
 
 struct OpenCharacterIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Character"
+    static let description = IntentDescription(
+        "Opens a character in the app.",
+        categoryName: "Character",
+        searchKeywords: ["show", "player", "NPC"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Character", requestValueDialog: "Which Character?")
+    @Parameter(title: "Character", requestValueDialog: .localized("Which Character?", bundle: .module))
     var target: CharacterEntity
 
     @Dependency var navigator: Navigator

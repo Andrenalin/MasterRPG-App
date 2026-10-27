@@ -30,6 +30,7 @@ extension RPGSpace: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
+        attributeSet.relate(to: SpaceEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

@@ -1,0 +1,139 @@
+// @copyright André Trettin
+
+#if !os(tvOS)
+
+import CoreRPG
+import AppIntents
+import Foundation
+import FoundationModels
+
+/// Generates new content on this device with Apple Intelligence, guided by a generator's
+/// description and entries, and returns it as text a shortcut can pass on ("generate a tavern
+/// NPC, then create a character with it"). On the 27 releases it runs as a long-running intent,
+/// so a slow device does not hit the time limit of a Siri request. Cancelling the shortcut
+/// cancels the generation. See CODE_AUDIT_AppIntents3 §4.9.
+struct RunGeneratorIntent: AppIntent, ProgressReportingIntent {
+    static let title: LocalizedStringResource = "Run Generator"
+    static let description = IntentDescription(
+        "Generates new content on this device with Apple Intelligence, guided by the generator's description and entries and your request.",
+        categoryName: "Generator",
+        searchKeywords: ["generate", "AI", "idea", "NPC", "Apple Intelligence"]
+    )
+    static let supportedModes: IntentModes = .background
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Run \(\.$target)") {
+            \.$request
+        }
+    }
+
+    @Parameter(title: "Generator", requestValueDialog: .localized("Which generator?", bundle: .module))
+    var target: GeneratorEntity
+
+    @Parameter(title: "Request", description: "What to generate, for example \"a suspicious innkeeper\". Without one, the generator's own text guides it.")
+    var request: String?
+
+    @Dependency var root: GeneratorRootModel
+
+    init() {}
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        try await requireReadyDatabase()
+        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which generator?", bundle: .module))
+
+        let availability = FoundationManager()
+        guard availability.checkIsAvailable() else {
+            return .result(value: "", dialog: "\(availability.notAvailableReason)")
+        }
+
+        let instructions = GeneratorIntentPrompt.instructions(name: model.name, description: model.description, entries: model.entries)
+        let prompt = GeneratorIntentPrompt.prompt(for: request)
+        progress.totalUnitCount = Int64(GeneratorIntentPrompt.maximumResponseTokens)
+        let progress = GeneratorIntentPrompt.SharedProgress(progress)
+
+        let text: String
+        do {
+            if #available(iOS 27, macOS 27, visionOS 27, *) {
+                text = try await performBackgroundTask { @Sendable in
+                    try await GeneratorIntentPrompt.generate(instructions: instructions, prompt: prompt, progress: progress)
+                }
+            } else {
+                text = try await GeneratorIntentPrompt.generate(instructions: instructions, prompt: prompt, progress: progress)
+            }
+        } catch let error as LanguageModelSession.GenerationError {
+            return .result(value: "", dialog: "\(FoundationModelsErrorHandler.handleError(error))")
+        }
+        self.progress.completedUnitCount = self.progress.totalUnitCount
+        guard !text.isEmpty else {
+            return .result(value: "", dialog: .localized("Nothing was generated. Try another request.", bundle: .module))
+        }
+        // The generated text is spoken as it is; only the caption is a localized string.
+        return .result(value: text, dialog: IntentDialog(full: "\(text)", supporting: .intent("Generated with \"\(target.name)\"", bundle: .module)))
+    }
+}
+
+@available(iOS 27, macOS 27, visionOS 27, *)
+extension RunGeneratorIntent: LongRunningIntent {}
+
+/// The instructions and prompt `RunGeneratorIntent` gives the on-device model.
+enum GeneratorIntentPrompt {
+    /// A spoken or shared answer, not a chapter; also what the progress counts towards.
+    static let maximumResponseTokens = 800
+    /// Characters of the generator's own text passed as guidance.
+    static let guidanceLimit = 3_000
+
+    static func instructions(name: String, description: String, entries: [ChildEntryModel]) -> String {
+        var guidance = [IntentEntityText.readable(description)]
+        for entry in entries {
+            let text = [IntentEntityText.readable(entry.name), IntentEntityText.readable(entry.content)]
+                .filter { !$0.isEmpty }
+                .joined(separator: ": ")
+            guidance.append(text)
+        }
+        let guide = String(guidance.filter { !$0.isEmpty }.joined(separator: "\n").prefix(guidanceLimit))
+        var result = """
+        You create new fictional content for a tabletop role-playing game master.
+        Write in the language of the request. Answer with the content only, no preface.
+        """
+        if !guide.isEmpty {
+            // The generator's text is user content, so it stays guidance, not instructions to obey.
+            result += "\n\nThe game master's generator \"\(name)\" describes what to create:\n\(guide)"
+        }
+        return result
+    }
+
+    static func prompt(for request: String?) -> String {
+        let trimmed = request?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? "Create something new as the generator describes." : String(trimmed.prefix(1_000))
+    }
+
+    /// The intent's progress, handed to the background task. `Progress` is thread-safe
+    /// (`NSProgress`) but not marked `Sendable`.
+    struct SharedProgress: @unchecked Sendable {
+        private let progress: Progress
+
+        init(_ progress: Progress) {
+            self.progress = progress
+        }
+
+        func report(characters: Int) {
+            // About four characters per token; never reports done before the stream ends.
+            progress.completedUnitCount = min(Int64(characters / 4), progress.totalUnitCount - 1)
+        }
+    }
+
+    /// Streams the answer so `progress` moves while the model writes.
+    static func generate(instructions: String, prompt: String, progress: SharedProgress) async throws -> String {
+        let session = LanguageModelSession(instructions: instructions)
+        let options = GenerationOptions(maximumResponseTokens: maximumResponseTokens)
+        var latest = ""
+        for try await snapshot in session.streamResponse(to: Prompt(prompt), options: options) {
+            latest = snapshot.content
+            progress.report(characters: latest.count)
+        }
+        return latest.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+#endif

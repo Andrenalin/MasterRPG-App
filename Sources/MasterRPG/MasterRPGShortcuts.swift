@@ -90,14 +90,17 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
             shortTitle: "Roll D6",
             systemImageName: "die.face.6.fill"
         )
+        // A phrase cannot carry free text, so Siri asks which dice ("3d6 plus 2"). "Show Last Roll"
+        // stays in Shortcuts and Siri without a fixed phrase. See CODE_AUDIT_AppIntents3 §4.6.
         AppShortcut(
-            intent: ShowDiceHistoryIntent(),
+            intent: RollDiceExpressionIntent(),
             phrases: [
-                "Show my dice history in \(.applicationName)",
-                "What did I roll in \(.applicationName)"
+                "Roll custom dice in \(.applicationName)",
+                "Roll some dice in \(.applicationName)",
+                "Make a dice roll in \(.applicationName)"
             ],
-            shortTitle: "Dice History",
-            systemImageName: "clock.arrow.circlepath"
+            shortTitle: "Roll Dice Expression",
+            systemImageName: "dice"
         )
         AppShortcut(
             intent: PlayAudioIntent(),

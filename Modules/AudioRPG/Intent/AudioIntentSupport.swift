@@ -9,10 +9,15 @@ import Foundation
 
 public enum AudioIntentSupport {
     /// Names the entity type this module's donations use, so they can be deleted when an item is
-    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    /// trashed or purged, and how an item is exported as text. See CODE_AUDIT_AppIntents §4.4,
+    /// CODE_AUDIT_AppIntents3 §4.1.
     @MainActor
-    public static func registerDonations() {
+    public static func registerDonations(root: AudioRootModel) {
         IntentEntityIdentifiers.register(AudioEntity.self, for: .audio)
+        EntitySummaryExport.register(module: .audio) { [weak root] id in
+            guard let root, let model = root.itemController.itemSync(for: id) else { return nil }
+            return IntentEntityText.document(of: model)
+        }
     }
 
     @MainActor

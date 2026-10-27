@@ -12,6 +12,9 @@ import Foundation
 @MainActor
 final class TableGenerationRootManagerBox: Sendable {
     var rootManager: RootManager?
+    /// Tells Siri about an "Auto Roll" of a table (`TableRootModel.donateRoll(of:)`); set up with
+    /// the root manager. See CODE_AUDIT_AppIntents3 §4.7.
+    var donateRoll: (@MainActor (UUID) -> Void)?
 }
 
 struct TableGenerationController: Sendable {
@@ -129,9 +132,13 @@ struct TableGenerationController: Sendable {
     }
 
     @MainActor
-    func autoRoll(model: TableGenerationModel) {
+    /// `donates` is off for `RollTableIntent`: the system already knows about its own runs.
+    func autoRoll(model: TableGenerationModel, donates: Bool = true) {
         model.errorMessage = nil
         autoRoll(occurrence: model.root, model: model)
+        if donates {
+            rootManagerBox.donateRoll?(model.root.tableId)
+        }
     }
 
     @MainActor

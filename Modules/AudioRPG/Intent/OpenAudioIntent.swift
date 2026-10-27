@@ -11,9 +11,14 @@ import SwiftUI
 
 struct OpenAudioIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Audio"
+    static let description = IntentDescription(
+        "Opens an audio in the app.",
+        categoryName: "Audio",
+        searchKeywords: ["show", "music", "sound"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Audio", requestValueDialog: "Which audio?")
+    @Parameter(title: "Audio", requestValueDialog: .localized("Which audio?", bundle: .module))
     var target: AudioEntity
 
     @Dependency var navigator: Navigator

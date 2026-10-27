@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "id": "6F0C2A5E-3B7D-4E19-9A44-D1B8C57E02A3",
+      "name": "Default",
+      "options": {
+      }
+    }
+  ],
+  "defaultOptions": {
+    "language": "en",
+    "region": "US",
+    "testExecutionOrdering": "random",
+    "testTimeoutsEnabled": true
+  },
+  "testTargets": [
+    {
+      "selectedTests": [
+        "AdventureIntentTests",
+        "AudioIntentTests",
+        "DiceIntentTests",
+        "ItemIntentTests",
+        "NavigateIntentTests"
+      ],
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "8E00BC5C2990942C00C484A1",
+        "name": "MasterRPGUITests"
+      }
+    }
+  ],
+  "version": 1
+}

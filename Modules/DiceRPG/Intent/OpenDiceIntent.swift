@@ -10,9 +10,14 @@ import SwiftUI
 
 struct OpenDiceIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Dice"
+    static let description = IntentDescription(
+        "Opens a dice in the app.",
+        categoryName: "Dice",
+        searchKeywords: ["show", "die", "roll"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Dice", requestValueDialog: "Which die?")
+    @Parameter(title: "Dice", requestValueDialog: .localized("Which die?", bundle: .module))
     var target: DiceEntity
 
     @Dependency var navigator: Navigator

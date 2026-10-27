@@ -116,6 +116,9 @@ public final class TableRootModel {
     @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         rootController.rootManager = rootManager
         generationController.rootManagerBox.rootManager = rootManager
+#if !os(tvOS)
+        generationController.rootManagerBox.donateRoll = { [weak self] in self?.donateRoll(of: $0) }
+#endif
 
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController

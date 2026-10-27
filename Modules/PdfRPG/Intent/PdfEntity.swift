@@ -21,6 +21,7 @@ struct PdfEntity: IndexedEntity {
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)",
+            subtitle: subtitle.isEmpty ? nil : "\(subtitle)",
             image: .init(systemName: icon)
         )
     }
@@ -47,17 +48,21 @@ struct PdfEntity: IndexedEntity {
     var content: String { storedTextContent }
 
     let icon: String
+    /// The folder or the first line of the description, see `IntentEntityText.subtitle`.
+    let subtitle: String
     private let storedName: String
     private let storedDescription: String
     private let storedTags: [String]
     private let storedIsFolder: Bool
     private let storedTextContent: String
 
+    /// Kept for the file export, which resolves the stored PDF through it. The root is a
+    /// main-actor singleton, so holding it is safe. See CODE_AUDIT_AppIntents3 §9.1.
     var root: PdfRootModel
 
     // Display fields are captured eagerly: entity properties are nonisolated, the
     // @MainActor model must not be read from them. All queries are @MainActor.
-    // The live model is deliberately not stored: re-resolve it through the root when needed.
+    // The item model is not stored: it is re-resolved through `root` when needed.
     // See CODE_AUDIT_AppIntents §3.1.
     @MainActor
     init(root: PdfRootModel, model: PdfModel) {
@@ -68,6 +73,7 @@ struct PdfEntity: IndexedEntity {
         self.storedTags = model.tags
         self.storedIsFolder = model.category == .folder
         self.storedTextContent = IntentEntityText.excerpt(of: model)
+        self.subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
@@ -104,8 +110,8 @@ extension PdfEntity: Transferable {
             try await $0.imageRepresentationData
         }
 
-        DataRepresentation(exportedContentType: .plainText) {
-            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
+        DataRepresentation(exportedContentType: .plainText) { @MainActor item in
+            EntitySummaryExport.plainText(id: item.id, module: .pdf, name: item.name, description: item.description)
         }
     }
 }

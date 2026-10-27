@@ -108,6 +108,31 @@ struct DiceRollerControl: ControlWidget {
         .description("Roll a D20 from Control Center")
     }
 }
+
+/// Gives the turn to the next combatant of the game master's battle. The intent runs in the app.
+/// See CODE_AUDIT_AppIntents3 §4.8.
+struct NextTurnControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "NextTurnControl") {
+            ControlWidgetButton(action: NextTurnControlIntent()) {
+                Label {
+                    Text("Next Turn", bundle: .main)
+                } icon: {
+                    Image(systemName: "forward.end.fill")
+                }
+            }
+        }
+        .displayName("Next Turn")
+        .description("Give the turn to the next combatant of your battle")
+    }
+}
+
+/// The intents of the frameworks the widget uses: the Next Turn control's action.
+struct DiceRollerWidgetIntentsPackage: AppIntentsPackage {
+    static var includedPackages: [any AppIntentsPackage.Type] {
+        [CoreFrameworkPackage.self]
+    }
+}
 #endif
 
 // MARK: - Widget Configuration Intent (iOS 18+)
@@ -130,6 +155,7 @@ struct DiceRollerWidgetBundle: WidgetBundle {
         #if os(iOS)
         DiceRollerAccessoryWidget()
         DiceRollerControl()
+        NextTurnControl()
         #endif
     }
 }

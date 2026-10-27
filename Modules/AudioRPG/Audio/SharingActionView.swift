@@ -76,6 +76,9 @@ struct SharingActionView: View, Equatable {
                     let list = root.itemController.audioList(itemId: itemId)
                     guard await root.audioController.add(audio: list, replace: true) else { return }
                     root.audioController.togglePlay(id: list.first?.id)
+#if !os(tvOS)
+                    root.donatePlay(of: itemId)
+#endif
                 }
             } label: {
                 Image(systemName: "play.rectangle.on.rectangle")

@@ -211,23 +211,6 @@
         }
       }
     },
-    "Dice History" : {
-      "comment" : "Short title of the shortcut that shows the last dice roll.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Würfelverlauf"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ประวัติการทอยลูกเต๋า"
-          }
-        }
-      }
-    },
     "Editor" : {
       "localizations" : {
         "de" : {
@@ -740,6 +723,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สภาพอากาศ"
+          }
+        }
+      }
+    },
+    "Roll Dice Expression" : {
+      "comment" : "Short title of the shortcut that rolls dice notation such as 3d6+2.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelausdruck würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยลูกเต๋าตามสูตร"
           }
         }
       }

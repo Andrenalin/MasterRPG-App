@@ -100,6 +100,7 @@ extension RPGMap: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
+        attributeSet.relate(to: MapEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif
@@ -113,6 +114,7 @@ extension RPGMapEntry: SpotlightIndexerAttribute {
         attributeSet.displayName = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.title = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.textContent = CRDT(wrappedValue: content ?? "").wrappedValue
+        attributeSet.relate(to: MapEntity.self, itemId: map?.uuid)
         return attributeSet
     }
 #endif

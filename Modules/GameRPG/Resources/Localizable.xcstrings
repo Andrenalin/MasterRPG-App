@@ -5601,6 +5601,697 @@
           }
         }
       }
+    },
+    "Gives the turn to the next combatant of the running battle. Only the game master can do this." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gibt den Zug an den nächsten Kämpfer des laufenden Kampfes. Nur der Spielleiter kann das."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งตาให้ผู้ต่อสู้คนถัดไปในการต่อสู้ที่กำลังดำเนินอยู่ เฉพาะเกมมาสเตอร์เท่านั้นที่ทำได้"
+          }
+        }
+      }
+    },
+    "Game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกม"
+          }
+        }
+      }
+    },
+    "battle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kampf"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การต่อสู้"
+          }
+        }
+      }
+    },
+    "combat" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gefecht"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การสู้รบ"
+          }
+        }
+      }
+    },
+    "initiative" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Initiative"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลำดับเทิร์น"
+          }
+        }
+      }
+    },
+    "attacker" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angreifer"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้โจมตี"
+          }
+        }
+      }
+    },
+    "No battle is running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es läuft kein Kampf."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีการต่อสู้ที่กำลังดำเนินอยู่"
+          }
+        }
+      }
+    },
+    "Only the game master can do that." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das kann nur der Spielleiter."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เฉพาะเกมมาสเตอร์เท่านั้นที่ทำได้"
+          }
+        }
+      }
+    },
+    "%@ has the turn." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ist am Zug."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ถึงตาของ %@"
+          }
+        }
+      }
+    },
+    "%@" : {
+      "shouldTranslate" : false
+    },
+    "Next turn." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächster Zug."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตาถัดไป"
+          }
+        }
+      }
+    },
+    "Starts the next round of the running battle. Only the game master can do this." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startet die nächste Runde des laufenden Kampfes. Nur der Spielleiter kann das."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มยกถัดไปของการต่อสู้ที่กำลังดำเนินอยู่ เฉพาะเกมมาสเตอร์เท่านั้นที่ทำได้"
+          }
+        }
+      }
+    },
+    "round" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runde"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยก"
+          }
+        }
+      }
+    },
+    "Round %lld. %@ has the turn." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runde %1$lld. %2$@ ist am Zug."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกที่ %1$lld ถึงตาของ %2$@"
+          }
+        }
+      }
+    },
+    "Round %lld." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runde %lld."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกที่ %lld"
+          }
+        }
+      }
+    },
+    "Ends the running battle. Only the game master can do this." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beendet den laufenden Kampf. Nur der Spielleiter kann das."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สิ้นสุดการต่อสู้ที่กำลังดำเนินอยู่ เฉพาะเกมมาสเตอร์เท่านั้นที่ทำได้"
+          }
+        }
+      }
+    },
+    "stop" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "stoppen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หยุด"
+          }
+        }
+      }
+    },
+    "finish" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "beenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "จบ"
+          }
+        }
+      }
+    },
+    "End the battle for everyone?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den Kampf für alle beenden?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สิ้นสุดการต่อสู้สำหรับทุกคนหรือไม่?"
+          }
+        }
+      }
+    },
+    "The battle has ended." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Kampf ist beendet."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การต่อสู้สิ้นสุดแล้ว"
+          }
+        }
+      }
+    },
+    "Stop Game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiel beenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หยุดเกม"
+          }
+        }
+      }
+    },
+    "Ends the game you run as game master. The players are disconnected." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beendet das Spiel, das du als Spielleiter leitest. Die Spieler werden getrennt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สิ้นสุดเกมที่คุณดำเนินในฐานะเกมมาสเตอร์ ผู้เล่นจะถูกตัดการเชื่อมต่อ"
+          }
+        }
+      }
+    },
+    "session" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sitzung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เซสชัน"
+          }
+        }
+      }
+    },
+    "end" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ende"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สิ้นสุด"
+          }
+        }
+      }
+    },
+    "game master" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielleiter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมมาสเตอร์"
+          }
+        }
+      }
+    },
+    "End the game for all players?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Spiel für alle Spieler beenden?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สิ้นสุดเกมสำหรับผู้เล่นทุกคนหรือไม่?"
+          }
+        }
+      }
+    },
+    "The game has ended." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Spiel ist beendet."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมสิ้นสุดแล้ว"
+          }
+        }
+      }
+    },
+    "No game is running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es läuft kein Spiel."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีเกมที่กำลังดำเนินอยู่"
+          }
+        }
+      }
+    },
+    "Joins a game on the local network with the code the game master shows, using the character chosen for playing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tritt mit dem Code, den der Spielleiter anzeigt, einem Spiel im lokalen Netzwerk bei, mit dem zum Spielen gewählten Charakter."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เข้าร่วมเกมบนเครือข่ายท้องถิ่นด้วยรหัสที่เกมมาสเตอร์แสดง โดยใช้ตัวละครที่เลือกไว้สำหรับเล่น"
+          }
+        }
+      }
+    },
+    "player" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้เล่น"
+          }
+        }
+      }
+    },
+    "connect" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "verbinden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เชื่อมต่อ"
+          }
+        }
+      }
+    },
+    "code" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัส"
+          }
+        }
+      }
+    },
+    "The four-digit code the game master shows." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der vierstellige Code, den der Spielleiter anzeigt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสสี่หลักที่เกมมาสเตอร์แสดง"
+          }
+        }
+      }
+    },
+    "What is the game master's code?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie lautet der Code des Spielleiters?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสของเกมมาสเตอร์คืออะไร?"
+          }
+        }
+      }
+    },
+    "Which game master do you want to join?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welchem Spielleiter möchtest du beitreten?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คุณต้องการเข้าร่วมกับเกมมาสเตอร์คนใด?"
+          }
+        }
+      }
+    },
+    "Joined the game of %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du bist dem Spiel von %@ beigetreten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เข้าร่วมเกมของ %@ แล้ว"
+          }
+        }
+      }
+    },
+    "That code was not accepted. What is the game master's code?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Code wurde nicht akzeptiert. Wie lautet der Code des Spielleiters?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสนี้ไม่ได้รับการยอมรับ รหัสของเกมมาสเตอร์คืออะไร?"
+          }
+        }
+      }
+    },
+    "The game master did not accept the connection in time." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Spielleiter hat die Verbindung nicht rechtzeitig angenommen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมมาสเตอร์ไม่ได้ยอมรับการเชื่อมต่อทันเวลา"
+          }
+        }
+      }
+    },
+    "Couldn't reach the game master. Try again in a few seconds." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Spielleiter ist nicht erreichbar. Versuch es in ein paar Sekunden noch einmal."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ติดต่อเกมมาสเตอร์ไม่ได้ ลองอีกครั้งในอีกไม่กี่วินาที"
+          }
+        }
+      }
+    },
+    "No game was found on the local network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im lokalen Netzwerk wurde kein Spiel gefunden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบเกมบนเครือข่ายท้องถิ่น"
+          }
+        }
+      }
+    },
+    "Joining over the local network is not available on this device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beitreten über das lokale Netzwerk ist auf diesem Gerät nicht verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเข้าร่วมผ่านเครือข่ายท้องถิ่นใช้ไม่ได้บนอุปกรณ์นี้"
+          }
+        }
+      }
+    },
+    "Choose your character on the game screen first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle zuerst deinen Charakter auf dem Spielbildschirm."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกตัวละครของคุณบนหน้าจอเกมก่อน"
+          }
+        }
+      }
+    },
+    "A game is already running." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es läuft bereits ein Spiel."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มีเกมกำลังดำเนินอยู่แล้ว"
+          }
+        }
+      }
+    },
+    "The code has four digits. What is the game master's code?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code hat vier Ziffern. Wie lautet der Code des Spielleiters?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสมีสี่หลัก รหัสของเกมมาสเตอร์คืออะไร?"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

@@ -11,9 +11,14 @@ import SwiftUI
 
 struct OpenTableIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Table"
+    static let description = IntentDescription(
+        "Opens a table in the app.",
+        categoryName: "Table",
+        searchKeywords: ["show", "random table", "loot"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Table", requestValueDialog: "Which table?")
+    @Parameter(title: "Table", requestValueDialog: .localized("Which table?", bundle: .module))
     var target: TableEntity
 
     @Dependency var navigator: Navigator

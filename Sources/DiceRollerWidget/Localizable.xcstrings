@@ -658,6 +658,38 @@
           }
         }
       }
+    },
+    "Next Turn" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächster Zug"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตาถัดไป"
+          }
+        }
+      }
+    },
+    "Give the turn to the next combatant of your battle" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib den Zug an den nächsten Kämpfer deines Kampfes weiter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งตาให้ผู้ต่อสู้คนถัดไปในการต่อสู้ของคุณ"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

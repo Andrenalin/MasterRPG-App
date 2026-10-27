@@ -281,6 +281,24 @@ public final class AppModel: Sendable {
             guard let adventureDataModel else { return }
             ContentWidgetSnapshot.publish(module: .adventure, from: adventureDataModel)
         }
+
+        // What the game screens get from the environment, for intents that act like them.
+        // See CODE_AUDIT_AppIntents3 §5.3.
+        IntentGameContext.networkActions = { [weak gameStateModel, weak gameRoot] in
+            guard let gameStateModel, gameStateModel.isGameRunning, let gameRoot else { return nil }
+            return gameRoot.networkActions
+        }
+        IntentGameContext.gameModus = { [weak gameStateModel] in
+            guard let gameStateModel, gameStateModel.isGameRunning else { return nil }
+            return gameStateModel.gameModus
+        }
+        IntentGameContext.supporterTier = { [weak self] in self?.supporterTier ?? .none }
+        IntentGameContext.nextTurn = { [weak gameRoot] in gameRoot?.nextTurn() }
+        IntentGameContext.setGameState = { [weak gameStateModel] isRunning, modus in
+            guard let gameStateModel else { return }
+            if gameStateModel.isGameRunning != isRunning { gameStateModel.isGameRunning = isRunning }
+            if gameStateModel.gameModus != modus { gameStateModel.gameModus = modus }
+        }
 #endif
     }
     

@@ -8,6 +8,11 @@ import AppIntents
 @AppIntent(schema: .system.search)
 public struct SearchAdventuresIntent: ShowInAppSearchResultsIntent {
     public static let title: LocalizedStringResource = "Search Adventures"
+    public static let description = IntentDescription(
+        "Shows the adventures that match a search term in the app.",
+        categoryName: "Adventure",
+        searchKeywords: ["find", "campaign"]
+    )
     public static let searchScopes: [StringSearchScope] = [.general]
 
     public var criteria: StringSearchCriteria

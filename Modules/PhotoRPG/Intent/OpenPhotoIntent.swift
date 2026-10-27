@@ -10,9 +10,14 @@ import SwiftUI
 
 struct OpenPhotoIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Photo"
+    static let description = IntentDescription(
+        "Opens a photo in the app.",
+        categoryName: "Photo",
+        searchKeywords: ["show", "image", "picture"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Photo", requestValueDialog: "Which photo?")
+    @Parameter(title: "Photo", requestValueDialog: .localized("Which photo?", bundle: .module))
     var target: PhotoEntity
 
     @Dependency var navigator: Navigator

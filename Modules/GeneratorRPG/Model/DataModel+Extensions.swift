@@ -31,6 +31,7 @@ extension RPGGenerator: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
+        attributeSet.relate(to: GeneratorEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

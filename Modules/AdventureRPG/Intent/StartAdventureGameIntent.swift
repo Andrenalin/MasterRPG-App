@@ -7,13 +7,18 @@ import AppIntents
 
 public struct StartAdventureGameIntent: AppIntent {
     public static let title: LocalizedStringResource = "Start Adventure Game"
+    public static let description = IntentDescription(
+        "Starts the game mode with an adventure, so players can join on their devices.",
+        categoryName: "Game",
+        searchKeywords: ["session", "play", "campaign", "game master"]
+    )
     public static let supportedModes: IntentModes = .foreground
 
     public static var parameterSummary: some ParameterSummary {
         Summary("Start game for \(\.$target)")
     }
 
-    @Parameter(title: "Adventure", requestValueDialog: "Which adventure to run?")
+    @Parameter(title: "Adventure", requestValueDialog: .localized("Which adventure to run?", bundle: .module))
     public var target: AdventureEntity
 
     @Dependency var root: AdventureRootModel
@@ -25,11 +30,11 @@ public struct StartAdventureGameIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await requireReadyDatabase()
         // `target` may have been deleted since it was cached. See CODE_AUDIT_21 §5.28.
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: "Which adventure to run?")
+        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which adventure to run?", bundle: .module))
         await root.adventureGameControllable.startGame(with: target.id)
         root.startGame()
         navigator.perform(route: KnownRoutes.game)
-        return .result(dialog: "Starting \"\(target.name)\".")
+        return .result(dialog: .localized("Starting \"\(target.name)\".", bundle: .module))
     }
 }
 

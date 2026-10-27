@@ -21,7 +21,7 @@ struct DiceEntity: IndexedEntity {
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)",
-            subtitle: "\(description)",
+            subtitle: subtitle.isEmpty ? nil : "\(subtitle)",
             image: .init(systemName: icon)
         )
     }
@@ -48,6 +48,8 @@ struct DiceEntity: IndexedEntity {
     var content: String { storedTextContent }
 
     let icon: String
+    /// The folder or the first line of the description, see `IntentEntityText.subtitle`.
+    let subtitle: String
     private let storedName: String
     private let storedDescription: String
     private let storedIsFolder: Bool
@@ -66,6 +68,7 @@ struct DiceEntity: IndexedEntity {
         self.storedDescription = model.description
         self.storedIsFolder = model.category == .folder
         self.storedTextContent = IntentEntityText.excerpt(of: model)
+        self.subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
         self.storedTags = model.tags
         self.storedFirstDieMax = model.dice.first.map { Int($0.die.max) }
         let isSpecial = model.category == .folder || model.category.isCollection
@@ -97,8 +100,8 @@ struct DiceEntity: IndexedEntity {
 
 extension DiceEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        DataRepresentation(exportedContentType: .plainText) {
-            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
+        DataRepresentation(exportedContentType: .plainText) { @MainActor item in
+            EntitySummaryExport.plainText(id: item.id, module: .dice, name: item.name, description: item.description)
         }
     }
 }

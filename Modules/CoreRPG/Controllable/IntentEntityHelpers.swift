@@ -14,9 +14,82 @@ import UniformTypeIdentifiers
 // (the `Entity` struct, its `EntityQuery`, `Transferable` and `attributeSet`) stays in each
 // module's `*Entity.swift`; `ItemEntityQuery` holds only the query skeleton they share.
 
-/// The plain text of a rich-text intent parameter, or an empty string when none was passed.
-public func intentPlainText(from text: AttributedString?) -> String {
-    text.map { String($0.characters) } ?? ""
+/// A rich-text intent parameter as the Markdown the app stores, or an empty string when none was
+/// passed. Text from Shortcuts' Use Model action arrives with bold, italics, links, headings and
+/// lists; dropping them flattened a model-written section into one paragraph. Foundation has no
+/// `AttributedString` → Markdown writer, so the presentation intents are mapped here: inline
+/// emphasis, code and links per run, headings, list items and quotes per block.
+/// See CODE_AUDIT_AppIntents3 §4.15.
+public func intentMarkdown(from text: AttributedString?) -> String {
+    guard let text else { return "" }
+    var blocks: [(intent: PresentationIntent?, text: String)] = []
+    for run in text.runs {
+        let piece = markdownInline(String(text[run.range].characters), run: run)
+        if let last = blocks.last, last.intent == run.presentationIntent {
+            blocks[blocks.count - 1].text += piece
+        } else {
+            blocks.append((run.presentationIntent, piece))
+        }
+    }
+    var result = ""
+    var previousList: Int?
+    for block in blocks {
+        let list = listIdentity(of: block.intent)
+        if !result.isEmpty {
+            result += (list != nil && list == previousList) ? "\n" : "\n\n"
+        }
+        result += markdownBlock(block.text, intent: block.intent)
+        previousList = list
+    }
+    return result.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+private func markdownInline(_ text: String, run: AttributedString.Runs.Run) -> String {
+    let core = text.trimmingCharacters(in: .whitespaces)
+    guard !core.isEmpty else { return text }
+    var marked = core
+    if let inline = run.inlinePresentationIntent {
+        if inline.contains(.code) { marked = "`\(marked)`" }
+        if inline.contains(.stronglyEmphasized) { marked = "**\(marked)**" }
+        if inline.contains(.emphasized) { marked = "*\(marked)*" }
+        if inline.contains(.strikethrough) { marked = "~~\(marked)~~" }
+    }
+    if let link = run.link {
+        marked = "[\(marked)](\(link.absoluteString))"
+    }
+    guard marked != core else { return text }
+    let leading = text.prefix { $0 == " " }
+    let trailing = String(text.reversed().prefix { $0 == " " })
+    return "\(leading)\(marked)\(trailing)"
+}
+
+private func markdownBlock(_ text: String, intent: PresentationIntent?) -> String {
+    guard let components = intent?.components else { return text }
+    var prefix = ""
+    for component in components.reversed() {
+        switch component.kind {
+        case .header(let level):
+            prefix += String(repeating: "#", count: level) + " "
+        case .listItem(let ordinal):
+            let isOrdered = components.contains { if case .orderedList = $0.kind { true } else { false } }
+            prefix += isOrdered ? "\(ordinal). " : "- "
+        case .blockQuote:
+            prefix += "> "
+        default:
+            break
+        }
+    }
+    return prefix + text.trimmingCharacters(in: .newlines)
+}
+
+/// The identity of the list a block belongs to, so consecutive items stay on adjacent lines.
+private func listIdentity(of intent: PresentationIntent?) -> Int? {
+    intent?.components.first { component in
+        switch component.kind {
+        case .orderedList, .unorderedList: true
+        default: false
+        }
+    }?.identity
 }
 
 /// `original` with `addition` added as a new paragraph. A blank addition changes nothing, and a
@@ -130,6 +203,54 @@ public func requiredIntentTarget<Entity: AppEntity, Model>(
 ) throws -> Model {
     guard let model else { throw parameter.needsValueError(prompt) }
     return model
+}
+
+/// What every Update intent does: renames the item, replaces its description and adds or removes
+/// tags, each only when the intent was given a value (an omitted parameter keeps the field, an
+/// empty description clears it, an empty name is ignored because an item needs one). Saves once
+/// and reports whether anything changed. See CODE_AUDIT_AppIntents3 §4.5.
+@MainActor
+@discardableResult
+public func updateIntentItem(
+    id: UUID,
+    name: String?,
+    description: AttributedString?,
+    addTags: [String]?,
+    removeTags: [String]?,
+    in root: some ItemRootControllable
+) async -> Bool {
+    let edit = root.editControllable
+    guard let model = edit.editModel(for: id) else { return false }
+    var changed = false
+
+    if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty, name != model.name {
+        edit.reset(name: name, itemId: id, forceSave: false)
+        changed = true
+    }
+    if let description {
+        let text = intentMarkdown(from: description)
+        if text != model.description {
+            edit.reset(description: text, itemId: id, forceSave: false)
+            changed = true
+        }
+    }
+
+    let removed = Set((removeTags ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
+    var tags = model.tags.filter { !removed.contains($0.lowercased()) }
+    for tag in addTags ?? [] {
+        let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !tags.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) else { continue }
+        tags.append(trimmed)
+    }
+    if Set(tags) != Set(model.tags) {
+        edit.reset(tags: tags, itemId: id, forceSave: false)
+        changed = true
+    }
+
+    if changed {
+        await root.itemControllable.save()
+    }
+    return changed
 }
 
 /// Indexes entities right after an intent saved them, so a follow-up Siri request finds them. The

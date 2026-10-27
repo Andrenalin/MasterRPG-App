@@ -11,9 +11,14 @@ import SwiftUI
 
 public struct OpenAdventureIntent: AppIntent {
     public static let title: LocalizedStringResource = "Open Adventure"
+    public static let description = IntentDescription(
+        "Opens an adventure in the app.",
+        categoryName: "Adventure",
+        searchKeywords: ["show", "campaign", "story"]
+    )
     public static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Adventure", requestValueDialog: "Which Adventure?")
+    @Parameter(title: "Adventure", requestValueDialog: .localized("Which adventure?", bundle: .module))
     public var target: AdventureEntity
 
     @Dependency var navigator: Navigator

@@ -7,19 +7,24 @@ import AppIntents
 
 public struct CreateAdventureIntent: AppIntent {
     public static let title: LocalizedStringResource = "Create Adventure"
+    public static let description = IntentDescription(
+        "Creates a new adventure with a name and, optionally, the summary of its story.",
+        categoryName: "Adventure",
+        searchKeywords: ["campaign", "story", "quest", "new"]
+    )
     public static let supportedModes: IntentModes = [.background, .foreground(.dynamic)]
 
     public static var parameterSummary: some ParameterSummary {
         Summary("Create adventure named \(\.$name)")
     }
 
-    @Parameter(title: "Name", requestValueDialog: "What should the adventure be called?")
+    @Parameter(title: "Name", requestValueDialog: .localized("What should the adventure be called?", bundle: .module))
     var name: String
 
-    @Parameter(title: "Story")
+    @Parameter(title: "Story", description: "The summary of the story. Formatting is kept.")
     var story: AttributedString?
 
-    @Parameter(title: "Open When Created", default: false)
+    @Parameter(title: "Open When Created", description: "Shows the new adventure in the app.", default: false)
     var openWhenCreated: Bool
 
     @Dependency var root: AdventureRootModel
@@ -32,9 +37,8 @@ public struct CreateAdventureIntent: AppIntent {
         try await requireReadyDatabase()
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank
         // adventure. See CODE_AUDIT_21 §5.28.
-        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: "What should the adventure be called?")
-        let storyText = intentPlainText(from: story)
-        let model = AdventureModel(id: UUID(), name: trimmedName, description: storyText)
+        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: .localized("What should the adventure be called?", bundle: .module))
+        let model = AdventureModel(id: UUID(), name: trimmedName, description: intentMarkdown(from: story))
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
 
@@ -46,7 +50,7 @@ public struct CreateAdventureIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
+        return .result(value: entity, dialog: .localized("Created \"\(trimmedName)\".", bundle: .module))
     }
 }
 

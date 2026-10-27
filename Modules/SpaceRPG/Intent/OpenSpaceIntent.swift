@@ -11,9 +11,14 @@ import SwiftUI
 
 struct OpenSpaceIntent: AppIntent {
     static let title: LocalizedStringResource = "Open 3D Object"
+    static let description = IntentDescription(
+        "Opens a 3D object in the app.",
+        categoryName: "3D Object",
+        searchKeywords: ["show", "model", "miniature"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Space", requestValueDialog: "Which 3D object?")
+    @Parameter(title: "Space", requestValueDialog: .localized("Which 3D object?", bundle: .module))
     var target: SpaceEntity
 
     @Dependency var navigator: Navigator

@@ -65,6 +65,9 @@ struct MasterRPGApp: App {
 
         let generatorRootModel = appModel.generatorRoot
         AppDependencyManager.shared.add(dependency: generatorRootModel)
+        // The game intents (turns, rounds, join, stop). See CODE_AUDIT_AppIntents3 §4.8.
+        let gameRoot = appModel.gameRoot
+        AppDependencyManager.shared.add(dependency: gameRoot)
 
         // Registered synchronously: `init` already runs on the main actor, and a
         // background intent racing an unstructured Task could otherwise find no
@@ -75,7 +78,7 @@ struct MasterRPGApp: App {
 
 #if !os(tvOS)
         let appIntentAppModel = data
-        MasterRPGSpotlightIndexer.registerDonations()
+        MasterRPGSpotlightIndexer.registerDonations(appModel: appIntentAppModel)
         // Configured synchronously (`init` runs on the main actor): an `invalidate()` that
         // fired before an unstructured configure Task ran found no closures and did nothing.
         // See CODE_AUDIT_18 §3.20.

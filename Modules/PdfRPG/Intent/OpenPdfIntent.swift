@@ -10,9 +10,14 @@ import SwiftUI
 
 struct OpenPdfIntent: AppIntent {
     static let title: LocalizedStringResource = "Open PDF"
+    static let description = IntentDescription(
+        "Opens a PDF in the app.",
+        categoryName: "PDF",
+        searchKeywords: ["show", "book", "document"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "PDF", requestValueDialog: "Which PDF?")
+    @Parameter(title: "PDF", requestValueDialog: .localized("Which PDF?", bundle: .module))
     var target: PdfEntity
 
     @Dependency var navigator: Navigator

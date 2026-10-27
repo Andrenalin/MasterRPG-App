@@ -20,20 +20,21 @@ import WeatherRPG
 @MainActor
 enum MasterRPGSpotlightIndexer {
     /// Tells every module which entity type its donations name, so trashing or purging an item
-    /// deletes them. See CODE_AUDIT_AppIntents §4.4.
-    static func registerDonations() {
-        AdventureIntentSupport.registerDonations()
-        AudioIntentSupport.registerDonations()
-        CharacterIntentSupport.registerDonations()
-        DiceIntentSupport.registerDonations()
-        GeneratorIntentSupport.registerDonations()
-        MapIntentSupport.registerDonations()
-        PdfIntentSupport.registerDonations()
-        PhotoIntentSupport.registerDonations()
-        RuleIntentSupport.registerDonations()
-        SpaceIntentSupport.registerDonations()
-        TableIntentSupport.registerDonations()
-        WeatherIntentSupport.registerDonations()
+    /// deletes them, and how its items are exported as text. See CODE_AUDIT_AppIntents §4.4,
+    /// CODE_AUDIT_AppIntents3 §4.1.
+    static func registerDonations(appModel: AppModel) {
+        AdventureIntentSupport.registerDonations(root: appModel.adventureRoot)
+        AudioIntentSupport.registerDonations(root: appModel.audioRoot)
+        CharacterIntentSupport.registerDonations(root: appModel.characterRoot)
+        DiceIntentSupport.registerDonations(root: appModel.diceRoot)
+        GeneratorIntentSupport.registerDonations(root: appModel.generatorRoot)
+        MapIntentSupport.registerDonations(root: appModel.mapRoot)
+        PdfIntentSupport.registerDonations(root: appModel.pdfRoot)
+        PhotoIntentSupport.registerDonations(root: appModel.photoRoot)
+        RuleIntentSupport.registerDonations(root: appModel.ruleRoot)
+        SpaceIntentSupport.registerDonations(root: appModel.spaceRoot)
+        TableIntentSupport.registerDonations(root: appModel.tableRoot)
+        WeatherIntentSupport.registerDonations(root: appModel.weatherRoot)
     }
 
     /// The adventure names the shortcut parameters were last refreshed with.

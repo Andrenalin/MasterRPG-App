@@ -9,10 +9,14 @@ import os.log
 
 public enum AdventureIntentSupport {
     /// Names the entity type this module's donations use, so they can be deleted when an item is
-    /// trashed or purged. See CODE_AUDIT_AppIntents §4.4.
+    /// trashed or purged, and how an adventure is exported as text. See CODE_AUDIT_AppIntents §4.4,
+    /// CODE_AUDIT_AppIntents3 §4.1.
     @MainActor
-    public static func registerDonations() {
+    public static func registerDonations(root: AdventureRootModel) {
         IntentEntityIdentifiers.register(AdventureEntity.self, for: .adventure)
+        EntitySummaryExport.register(module: .adventure) { [weak root] id in
+            root?.itemController.itemSync(for: id).map { IntentEntityText.document(of: $0) }
+        }
     }
 
     /// The names the parameterized Siri phrases ("Open <adventure>") can resolve to: every adventure

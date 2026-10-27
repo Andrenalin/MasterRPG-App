@@ -38,6 +38,9 @@
          <TestPlanReference
             reference = "container:TestPlans/MasterAll.xctestplan">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:TestPlans/MasterAppIntents.xctestplan">
+         </TestPlanReference>
       </TestPlans>
    </TestAction>
    <LaunchAction

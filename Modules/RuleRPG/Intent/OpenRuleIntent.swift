@@ -9,9 +9,14 @@ import os.log
 
 struct OpenRuleIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Rule"
+    static let description = IntentDescription(
+        "Opens a rule in the app.",
+        categoryName: "Rule",
+        searchKeywords: ["show", "compendium", "rulebook"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Rule", requestValueDialog: "Which rule?")
+    @Parameter(title: "Rule", requestValueDialog: .localized("Which rule?", bundle: .ruleModule))
     var target: RuleEntity
 
     @Dependency var navigator: Navigator

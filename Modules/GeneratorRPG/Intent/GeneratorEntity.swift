@@ -20,6 +20,7 @@ struct GeneratorEntity: IndexedEntity {
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
             title: "\(name)",
+            subtitle: subtitle.isEmpty ? nil : "\(subtitle)",
             image: .init(systemName: icon)
         )
     }
@@ -46,6 +47,8 @@ struct GeneratorEntity: IndexedEntity {
     var content: String { storedTextContent }
 
     let icon: String
+    /// The folder or the first line of the description, see `IntentEntityText.subtitle`.
+    let subtitle: String
     private let storedName: String
     private let storedDescription: String
     private let storedTags: [String]
@@ -64,6 +67,7 @@ struct GeneratorEntity: IndexedEntity {
         self.storedTags = model.tags
         self.storedIsFolder = model.category == .folder
         self.storedTextContent = IntentEntityText.excerpt(of: model)
+        self.subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
@@ -81,8 +85,8 @@ extension GeneratorEntity: URLRepresentableEntity {
 
 extension GeneratorEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        DataRepresentation(exportedContentType: .plainText) {
-            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
+        DataRepresentation(exportedContentType: .plainText) { @MainActor item in
+            EntitySummaryExport.plainText(id: item.id, module: .generator, name: item.name, description: item.description)
         }
     }
 }

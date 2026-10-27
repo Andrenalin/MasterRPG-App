@@ -32,6 +32,12 @@ final class DiceIntentTests: AppIntentsUITestCase {
         }
     }
 
+    func testRollDiceExpressionRunsForNotation() async throws {
+        for expression in ["3d6+2", "2 W 20", "d20 plus 5"] {
+            try await definitions.intents["RollDiceExpressionIntent"].makeIntent(expression: expression).run()
+        }
+    }
+
     func testShowDiceHistoryRunsAfterARoll() async throws {
         try await definitions.intents["RollDiceIntent"].makeIntent(diceType: "D6").run()
         try await definitions.intents["ShowDiceHistoryIntent"].makeIntent().run()

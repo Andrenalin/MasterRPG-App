@@ -102,15 +102,24 @@ public extension ItemEntityQuery {
     /// item's cached thumbnail when there is one, else the symbol the entities use: the category's
     /// for folders and collections, the module's otherwise. See CODE_AUDIT_AppIntents2 §4.6.
     /// See CODE_AUDIT_AppIntents2 §4.3.
+    ///
+    /// It does not wait for the database: the rows Siri asks about are on screen, so their models
+    /// are in memory, and an item that is not loaded yet is simply left out instead of making Siri
+    /// wait. The subtitle follows `IntentEntityText.subtitle`, like the entities' own.
+    /// See CODE_AUDIT_AppIntents3 §4.11, §7.1.
     @available(iOS 27, macOS 27, visionOS 27, *)
     func displayRepresentations(for identifiers: [Entity.ID]) async throws -> [Entity.ID: DisplayRepresentation] {
-        await DatabaseReadiness.wait()
         var results: [Entity.ID: DisplayRepresentation] = [:]
         for id in identifiers {
             guard let model = model(root: root, id: id), include(model: model) else { continue }
             let icon = model.specialCategory ? model.category.icon : Model.typeId.icon
             let image: DisplayRepresentation.Image = thumbnailData(root: root, id: id).map { .init(data: $0) } ?? .init(systemName: icon)
-            results[id] = DisplayRepresentation(title: "\(model.name)", image: image)
+            let subtitle = IntentEntityText.subtitle(of: model) { self.model(root: root, id: $0) }
+            results[id] = DisplayRepresentation(
+                title: "\(model.name)",
+                subtitle: subtitle.isEmpty ? nil : "\(subtitle)",
+                image: image
+            )
         }
         return results
     }

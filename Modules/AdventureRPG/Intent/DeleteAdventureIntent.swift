@@ -7,6 +7,11 @@ import AppIntents
 
 public struct DeleteAdventureIntent: DeleteIntent {
     public static let title: LocalizedStringResource = "Delete Adventure"
+    public static let description = IntentDescription(
+        "Moves adventures to the trash. They can be restored in the app.",
+        categoryName: "Adventure",
+        searchKeywords: ["remove", "trash", "campaign"]
+    )
     /// A trashed item is recoverable, but a locked device should not be able to trash a campaign.
     /// Create, Add and the dice and audio intents stay open for use at the table.
     /// See CODE_AUDIT_AppIntents2 §6.1.

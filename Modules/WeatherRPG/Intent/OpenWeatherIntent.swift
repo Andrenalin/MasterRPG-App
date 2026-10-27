@@ -11,9 +11,14 @@ import SwiftUI
 
 struct OpenWeatherIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Weather"
+    static let description = IntentDescription(
+        "Opens a weather in the app.",
+        categoryName: "Weather",
+        searchKeywords: ["show", "climate", "season"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Weather", requestValueDialog: "Which Weather?")
+    @Parameter(title: "Weather", requestValueDialog: .localized("Which Weather?", bundle: .module))
     var target: WeatherEntity
 
     @Dependency var navigator: Navigator

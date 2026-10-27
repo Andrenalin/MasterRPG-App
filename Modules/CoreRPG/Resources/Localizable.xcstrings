@@ -1,669 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ item %@ changed on this device while its attachment was installed. Nothing was imported; start the import again." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das %1$@-Objekt %2$@ wurde auf diesem Gerät geändert, während sein Anhang installiert wurde. Es wurde nichts importiert; starte den Import erneut."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รายการ %2$@ ของ %1$@ ถูกเปลี่ยนบนอุปกรณ์นี้ขณะติดตั้งไฟล์แนบ ไม่มีการนำเข้าใด ๆ โปรดเริ่มการนำเข้าใหม่"
-          }
-        }
-      }
-    },
-    "A Foundry resource was requested more than once in the same batch." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eine Foundry-Ressource wurde im selben Durchlauf mehrfach angefordert."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "มีการขอทรัพยากร Foundry มากกว่าหนึ่งครั้งในชุดเดียวกัน"
-          }
-        }
-      }
-    },
-    "An external import is already running." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein externer Import läuft bereits."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังนำเข้าจากภายนอกอยู่แล้ว"
-          }
-        }
-      }
-    },
-    "Attachment integrity validation failed." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Integritätsprüfung des Anhangs ist fehlgeschlagen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การตรวจสอบความสมบูรณ์ของไฟล์แนบล้มเหลว"
-          }
-        }
-      }
-    },
-    "Attachment size mismatch: expected %lld bytes but loaded %lld." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Größe des Anhangs stimmt nicht: %1$lld Byte erwartet, %2$lld geladen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ขนาดไฟล์แนบไม่ตรงกัน: คาดไว้ %1$lld ไบต์ แต่โหลดได้ %2$lld"
-          }
-        }
-      }
-    },
-    "Could not remove %@: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ konnte nicht entfernt werden: %2$@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถลบ %1$@ ได้: %2$@"
-          }
-        }
-      }
-    },
-    "Could not remove %@: file controller unavailable." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ konnte nicht entfernt werden: Datei-Controller nicht verfügbar."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถลบ %@ ได้: ไม่มีตัวควบคุมไฟล์"
-          }
-        }
-      }
-    },
-    "Could not restore %@ item %@: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das %1$@-Objekt %2$@ konnte nicht wiederhergestellt werden: %3$@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถกู้คืนรายการ %2$@ ของ %1$@ ได้: %3$@"
-          }
-        }
-      }
-    },
-    "Could not restore %@ item after repair: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das %1$@-Objekt konnte nach der Reparatur nicht wiederhergestellt werden: %2$@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถกู้คืนรายการของ %1$@ หลังการซ่อมแซมได้: %2$@"
-          }
-        }
-      }
-    },
-    "Could not restore %@ item: controller unavailable." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das %@-Objekt konnte nicht wiederhergestellt werden: Controller nicht verfügbar."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถกู้คืนรายการของ %@ ได้: ไม่มีตัวควบคุม"
-          }
-        }
-      }
-    },
-    "Could not restore %@ repair state: controller unavailable." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Reparaturzustand von %@ konnte nicht wiederhergestellt werden: Controller nicht verfügbar."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถกู้คืนสถานะการซ่อมแซมของ %@ ได้: ไม่มีตัวควบคุม"
-          }
-        }
-      }
-    },
-    "Encrypted ZIP archives are not supported." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verschlüsselte ZIP-Archive werden nicht unterstützt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่รองรับไฟล์ ZIP ที่เข้ารหัส"
-          }
-        }
-      }
-    },
-    "Item %@ has an attachment, but %@ cannot store files." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Objekt %1$@ hat einen Anhang, aber %2$@ kann keine Dateien speichern."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รายการ %1$@ มีไฟล์แนบ แต่ %2$@ ไม่สามารถเก็บไฟล์ได้"
-          }
-        }
-      }
-    },
-    "Item %@ is not compatible with the %@ module." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Objekt %1$@ passt nicht zum Modul %2$@."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รายการ %1$@ ไม่เข้ากันกับโมดูล %2$@"
-          }
-        }
-      }
-    },
-    "Item %@ occurs more than once in the %@ import batch." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Objekt %1$@ kommt im Import für %2$@ mehrfach vor."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รายการ %1$@ ปรากฏมากกว่าหนึ่งครั้งในชุดนำเข้าของ %2$@"
-          }
-        }
-      }
-    },
-    "LevelDB compression method %lld is not supported." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die LevelDB-Komprimierungsmethode %lld wird nicht unterstützt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่รองรับวิธีบีบอัด LevelDB %lld"
-          }
-        }
-      }
-    },
-    "More than one selected attachment uses file id %@." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mehr als ein ausgewählter Anhang verwendet die Datei-ID %@."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไฟล์แนบที่เลือกมากกว่าหนึ่งรายการใช้รหัสไฟล์ %@"
-          }
-        }
-      }
-    },
-    "Select a supported Foundry package, document export, database, bridge file, or Universal VTT map." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle ein unterstütztes Foundry-Paket, einen Dokumentexport, eine Datenbank, eine Bridge-Datei oder eine Universal-VTT-Karte."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือกแพ็กเกจ Foundry เอกสารที่ส่งออก ฐานข้อมูล ไฟล์ bridge หรือแผนที่ Universal VTT ที่รองรับ"
-          }
-        }
-      }
-    },
-    "Select the folder or ZIP package containing %@, not the manifest file by itself." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle den Ordner oder das ZIP-Paket, das %@ enthält, nicht die Manifest-Datei allein."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือกโฟลเดอร์หรือแพ็กเกจ ZIP ที่มี %@ ไม่ใช่ไฟล์ manifest เพียงไฟล์เดียว"
-          }
-        }
-      }
-    },
-    "The %@ module cannot receive this import." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Modul %@ kann diesen Import nicht aufnehmen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โมดูล %@ ไม่สามารถรับการนำเข้านี้ได้"
-          }
-        }
-      }
-    },
-    "The attachment could not be installed." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Anhang konnte nicht installiert werden."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถติดตั้งไฟล์แนบได้"
-          }
-        }
-      }
-    },
-    "The Foundry compendium %@ contains %lld LevelDB tables. Import currently requires a compacted pack with exactly one table." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Foundry-Kompendium %1$@ enthält %2$lld LevelDB-Tabellen. Der Import braucht derzeit ein komprimiertes Kompendium mit genau einer Tabelle."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คอมเพนเดียม Foundry %1$@ มีตาราง LevelDB %2$lld ตาราง การนำเข้าต้องใช้ชุดที่บีบอัดแล้วซึ่งมีตารางเดียวเท่านั้น"
-          }
-        }
-      }
-    },
-    "The Foundry compendium %@ contains an invalid document at %@." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Foundry-Kompendium %1$@ enthält bei %2$@ ein ungültiges Dokument."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คอมเพนเดียม Foundry %1$@ มีเอกสารที่ไม่ถูกต้องที่ %2$@"
-          }
-        }
-      }
-    },
-    "The Foundry compendium %@ is missing." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Foundry-Kompendium %@ fehlt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่พบคอมเพนเดียม Foundry %@"
-          }
-        }
-      }
-    },
-    "The Foundry compendium database is corrupt: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Datenbank des Foundry-Kompendiums ist beschädigt: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ฐานข้อมูลคอมเพนเดียม Foundry เสียหาย: %@"
-          }
-        }
-      }
-    },
-    "The Foundry package contains too many documents (%lld)." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Foundry-Paket enthält zu viele Dokumente (%lld)."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แพ็กเกจ Foundry มีเอกสารมากเกินไป (%lld)"
-          }
-        }
-      }
-    },
-    "The Foundry package is too large (%lld bytes)." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Foundry-Paket ist zu groß (%lld Byte)."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แพ็กเกจ Foundry มีขนาดใหญ่เกินไป (%lld ไบต์)"
-          }
-        }
-      }
-    },
-    "The Foundry package manifest is invalid: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Manifest des Foundry-Pakets ist ungültig: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไฟล์ manifest ของแพ็กเกจ Foundry ไม่ถูกต้อง: %@"
-          }
-        }
-      }
-    },
-    "The Foundry resource %@ changed or failed its integrity check." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Foundry-Ressource %@ wurde geändert oder hat die Integritätsprüfung nicht bestanden."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ทรัพยากร Foundry %@ ถูกเปลี่ยนหรือไม่ผ่านการตรวจสอบความสมบูรณ์"
-          }
-        }
-      }
-    },
-    "The Foundry resource %@ is not packaged in the selected artifact." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Foundry-Ressource %@ ist im ausgewählten Paket nicht enthalten."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ทรัพยากร Foundry %@ ไม่ได้อยู่ในแพ็กเกจที่เลือก"
-          }
-        }
-      }
-    },
-    "The Foundry ZIP archive is invalid: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Foundry-ZIP-Archiv ist ungültig: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไฟล์ ZIP ของ Foundry ไม่ถูกต้อง: %@"
-          }
-        }
-      }
-    },
-    "The import failed (%@), and rollback was incomplete: %@" : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Import ist fehlgeschlagen (%1$@), und das Zurücksetzen war unvollständig: %2$@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การนำเข้าล้มเหลว (%1$@) และการย้อนกลับไม่สมบูรณ์: %2$@"
-          }
-        }
-      }
-    },
-    "The mutable LevelDB log %@ contains data that cannot be imported safely. Compact the Foundry pack first." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das veränderliche LevelDB-Log %@ enthält Daten, die nicht sicher importiert werden können. Komprimiere zuerst das Foundry-Kompendium."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บันทึก LevelDB ที่แก้ไขได้ %@ มีข้อมูลที่นำเข้าอย่างปลอดภัยไม่ได้ โปรดบีบอัดชุด Foundry ก่อน"
-          }
-        }
-      }
-    },
-    "The package contains more than one equally likely Foundry manifest." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Paket enthält mehr als ein gleich wahrscheinliches Foundry-Manifest."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แพ็กเกจมีไฟล์ manifest ของ Foundry ที่เป็นไปได้เท่ากันมากกว่าหนึ่งไฟล์"
-          }
-        }
-      }
-    },
-    "The package does not contain a supported Foundry manifest." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Paket enthält kein unterstütztes Foundry-Manifest."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แพ็กเกจไม่มีไฟล์ manifest ของ Foundry ที่รองรับ"
-          }
-        }
-      }
-    },
-    "The selected Foundry source does not match the package that was inspected." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die ausgewählte Foundry-Quelle passt nicht zu dem geprüften Paket."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แหล่ง Foundry ที่เลือกไม่ตรงกับแพ็กเกจที่ตรวจสอบไว้"
-          }
-        }
-      }
-    },
-    "The Universal VTT map contains too many geometry elements (%lld)." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Universal-VTT-Karte enthält zu viele Geometrieelemente (%lld)."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แผนที่ Universal VTT มีองค์ประกอบเรขาคณิตมากเกินไป (%lld)"
-          }
-        }
-      }
-    },
-    "This external import has already completed." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieser externe Import ist bereits abgeschlossen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การนำเข้าจากภายนอกนี้เสร็จสิ้นแล้ว"
-          }
-        }
-      }
-    },
-    "ZIP compression method %lld is not supported." : {
-      "comment" : "An import error message.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die ZIP-Komprimierungsmethode %lld wird nicht unterstützt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่รองรับวิธีบีบอัด ZIP %lld"
-          }
-        }
-      }
-    },
     "—" : {
       "comment" : "A placeholder text that is displayed when there are no tags.",
       "isCommentAutoGenerated" : true,
@@ -770,6 +107,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ เป็นกลุ่มอยู่แล้ว"
+          }
+        }
+      }
+    },
+    "%@ item %@ changed on this device while its attachment was installed. Nothing was imported; start the import again." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das %1$@-Objekt %2$@ wurde auf diesem Gerät geändert, während sein Anhang installiert wurde. Es wurde nichts importiert; starte den Import erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการ %2$@ ของ %1$@ ถูกเปลี่ยนบนอุปกรณ์นี้ขณะติดตั้งไฟล์แนบ ไม่มีการนำเข้าใด ๆ โปรดเริ่มการนำเข้าใหม่"
           }
         }
       }
@@ -1108,6 +462,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "1 รายการ"
+          }
+        }
+      }
+    },
+    "A Foundry resource was requested more than once in the same batch." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Foundry-Ressource wurde im selben Durchlauf mehrfach angefordert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มีการขอทรัพยากร Foundry มากกว่าหนึ่งครั้งในชุดเดียวกัน"
           }
         }
       }
@@ -1506,6 +877,23 @@
         }
       }
     },
+    "An external import is already running." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein externer Import läuft bereits."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังนำเข้าจากภายนอกอยู่แล้ว"
+          }
+        }
+      }
+    },
     "Analyzes selected items with AI" : {
       "localizations" : {
         "de" : {
@@ -1602,6 +990,40 @@
         }
       }
     },
+    "Attachment integrity validation failed." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Integritätsprüfung des Anhangs ist fehlgeschlagen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การตรวจสอบความสมบูรณ์ของไฟล์แนบล้มเหลว"
+          }
+        }
+      }
+    },
+    "Attachment size mismatch: expected %lld bytes but loaded %lld." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Größe des Anhangs stimmt nicht: %1$lld Byte erwartet, %2$lld geladen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขนาดไฟล์แนบไม่ตรงกัน: คาดไว้ %1$lld ไบต์ แต่โหลดได้ %2$lld"
+          }
+        }
+      }
+    },
     "Audio" : {
       "localizations" : {
         "de" : {
@@ -1614,6 +1036,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เสียง"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück"
           }
         }
       }
@@ -1700,6 +1132,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สมาชิกผู้สนับสนุนระดับบรอนซ์"
+          }
+        }
+      }
+    },
+    "Browse Free Game Bundles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kostenlose Spielpakete durchsuchen"
           }
         }
       }
@@ -2456,6 +1898,108 @@
         }
       }
     },
+    "Could not remove %@: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ konnte nicht entfernt werden: %2$@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถลบ %1$@ ได้: %2$@"
+          }
+        }
+      }
+    },
+    "Could not remove %@: file controller unavailable." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ konnte nicht entfernt werden: Datei-Controller nicht verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถลบ %@ ได้: ไม่มีตัวควบคุมไฟล์"
+          }
+        }
+      }
+    },
+    "Could not restore %@ item %@: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das %1$@-Objekt %2$@ konnte nicht wiederhergestellt werden: %3$@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถกู้คืนรายการ %2$@ ของ %1$@ ได้: %3$@"
+          }
+        }
+      }
+    },
+    "Could not restore %@ item after repair: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das %1$@-Objekt konnte nach der Reparatur nicht wiederhergestellt werden: %2$@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถกู้คืนรายการของ %1$@ หลังการซ่อมแซมได้: %2$@"
+          }
+        }
+      }
+    },
+    "Could not restore %@ item: controller unavailable." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das %@-Objekt konnte nicht wiederhergestellt werden: Controller nicht verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถกู้คืนรายการของ %@ ได้: ไม่มีตัวควบคุม"
+          }
+        }
+      }
+    },
+    "Could not restore %@ repair state: controller unavailable." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Reparaturzustand von %@ konnte nicht wiederhergestellt werden: Controller nicht verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถกู้คืนสถานะการซ่อมแซมของ %@ ได้: ไม่มีตัวควบคุม"
+          }
+        }
+      }
+    },
     "Create New Group" : {
       "localizations" : {
         "de" : {
@@ -2854,6 +2398,16 @@
         }
       }
     },
+    "Downloading %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird heruntergeladen"
+          }
+        }
+      }
+    },
     "Drag and drop links here to add them to this entry" : {
       "localizations" : {
         "de" : {
@@ -3150,6 +2704,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปิดใช้งาน"
+          }
+        }
+      }
+    },
+    "Encrypted ZIP archives are not supported." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verschlüsselte ZIP-Archive werden nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่รองรับไฟล์ ZIP ที่เข้ารหัส"
           }
         }
       }
@@ -3749,6 +3320,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "โฟลเดอร์"
+          }
+        }
+      }
+    },
+    "Forward" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorwärts"
           }
         }
       }
@@ -4385,6 +3966,57 @@
         }
       }
     },
+    "Item %@ has an attachment, but %@ cannot store files." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Objekt %1$@ hat einen Anhang, aber %2$@ kann keine Dateien speichern."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการ %1$@ มีไฟล์แนบ แต่ %2$@ ไม่สามารถเก็บไฟล์ได้"
+          }
+        }
+      }
+    },
+    "Item %@ is not compatible with the %@ module." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Objekt %1$@ passt nicht zum Modul %2$@."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการ %1$@ ไม่เข้ากันกับโมดูล %2$@"
+          }
+        }
+      }
+    },
+    "Item %@ occurs more than once in the %@ import batch." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Objekt %1$@ kommt im Import für %2$@ mehrfach vor."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการ %1$@ ปรากฏมากกว่าหนึ่งครั้งในชุดนำเข้าของ %2$@"
+          }
+        }
+      }
+    },
     "Keep another workspace open" : {
       "localizations" : {
         "de" : {
@@ -4429,6 +4061,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เก็บไว้บนดิสก์"
+          }
+        }
+      }
+    },
+    "LevelDB compression method %lld is not supported." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die LevelDB-Komprimierungsmethode %lld wird nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่รองรับวิธีบีบอัด LevelDB %lld"
           }
         }
       }
@@ -4633,6 +4282,23 @@
         }
       }
     },
+    "MasterRPG is not ready yet. Open the app and try again." : {
+      "comment" : "Error shown by Siri or Shortcuts when the database did not start in time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG ist noch nicht bereit. Öffne die App und versuche es erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ยังไม่พร้อม เปิดแอปแล้วลองอีกครั้ง"
+          }
+        }
+      }
+    },
     "Medium" : {
       "comment" : "A label for the medium display mode.",
       "isCommentAutoGenerated" : true,
@@ -4817,6 +4483,23 @@
         }
       }
     },
+    "More than one selected attachment uses file id %@." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr als ein ausgewählter Anhang verwendet die Datei-ID %@."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์แนบที่เลือกมากกว่าหนึ่งรายการใช้รหัสไฟล์ %@"
+          }
+        }
+      }
+    },
     "Move %@ into" : {
       "comment" : "A label that appears in a menu when the user long-presses an item in a list, allowing them to move that item to another folder. The argument is the name of the item that can be moved",
       "isCommentAutoGenerated" : true,
@@ -4979,6 +4662,7 @@
     },
     "Name: %@\nDescription: %@" : {
       "comment" : "Plain-text export of an item for Shortcuts and sharing.",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5148,6 +4832,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ใหม่:"
+          }
+        }
+      }
+    },
+    "Next Turn" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächster Zug"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตาถัดไป"
           }
         }
       }
@@ -5507,6 +5207,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "มีเฉพาะในเวอร์ชันที่นำเข้า"
+          }
+        }
+      }
+    },
+    "Only the MasterRPG game bundle repository can be opened here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier kann nur das MasterRPG-Spielpaket-Repository geöffnet werden."
           }
         }
       }
@@ -6449,6 +6159,23 @@
         }
       }
     },
+    "Select a supported Foundry package, document export, database, bridge file, or Universal VTT map." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle ein unterstütztes Foundry-Paket, einen Dokumentexport, eine Datenbank, eine Bridge-Datei oder eine Universal-VTT-Karte."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกแพ็กเกจ Foundry เอกสารที่ส่งออก ฐานข้อมูล ไฟล์ bridge หรือแผนที่ Universal VTT ที่รองรับ"
+          }
+        }
+      }
+    },
     "Select an Item" : {
       "comment" : "A label displayed when no item is selected in the import review.",
       "isCommentAutoGenerated" : true,
@@ -6529,6 +6256,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เลือกตัวละครที่คุณต้องการเล่นก่อนเข้าร่วมเกม"
+          }
+        }
+      }
+    },
+    "Select the folder or ZIP package containing %@, not the manifest file by itself." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle den Ordner oder das ZIP-Paket, das %@ enthält, nicht die Manifest-Datei allein."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกโฟลเดอร์หรือแพ็กเกจ ZIP ที่มี %@ ไม่ใช่ไฟล์ manifest เพียงไฟล์เดียว"
           }
         }
       }
@@ -7147,6 +6891,23 @@
         }
       }
     },
+    "The %@ module cannot receive this import." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modul %@ kann diesen Import nicht aufnehmen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมดูล %@ ไม่สามารถรับการนำเข้านี้ได้"
+          }
+        }
+      }
+    },
     "The app will be terminated to apply the database change." : {
       "localizations" : {
         "de" : {
@@ -7163,6 +6924,261 @@
         }
       }
     },
+    "The attachment could not be installed." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Anhang konnte nicht installiert werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถติดตั้งไฟล์แนบได้"
+          }
+        }
+      }
+    },
+    "The file could not be added." : {
+      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent could not be stored.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datei konnte nicht hinzugefügt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถเพิ่มไฟล์ได้"
+          }
+        }
+      }
+    },
+    "The file is not a type this item can hold." : {
+      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent has the wrong type.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datei hat einen Typ, den dieses Objekt nicht aufnehmen kann."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์นี้เป็นประเภทที่รายการนี้ไม่รองรับ"
+          }
+        }
+      }
+    },
+    "The Foundry compendium %@ contains %lld LevelDB tables. Import currently requires a compacted pack with exactly one table." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Kompendium %1$@ enthält %2$lld LevelDB-Tabellen. Der Import braucht derzeit ein komprimiertes Kompendium mit genau einer Tabelle."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คอมเพนเดียม Foundry %1$@ มีตาราง LevelDB %2$lld ตาราง การนำเข้าต้องใช้ชุดที่บีบอัดแล้วซึ่งมีตารางเดียวเท่านั้น"
+          }
+        }
+      }
+    },
+    "The Foundry compendium %@ contains an invalid document at %@." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Kompendium %1$@ enthält bei %2$@ ein ungültiges Dokument."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คอมเพนเดียม Foundry %1$@ มีเอกสารที่ไม่ถูกต้องที่ %2$@"
+          }
+        }
+      }
+    },
+    "The Foundry compendium %@ is missing." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Kompendium %@ fehlt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบคอมเพนเดียม Foundry %@"
+          }
+        }
+      }
+    },
+    "The Foundry compendium database is corrupt: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datenbank des Foundry-Kompendiums ist beschädigt: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฐานข้อมูลคอมเพนเดียม Foundry เสียหาย: %@"
+          }
+        }
+      }
+    },
+    "The Foundry package contains too many documents (%lld)." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Paket enthält zu viele Dokumente (%lld)."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจ Foundry มีเอกสารมากเกินไป (%lld)"
+          }
+        }
+      }
+    },
+    "The Foundry package is too large (%lld bytes)." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Paket ist zu groß (%lld Byte)."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจ Foundry มีขนาดใหญ่เกินไป (%lld ไบต์)"
+          }
+        }
+      }
+    },
+    "The Foundry package manifest is invalid: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Manifest des Foundry-Pakets ist ungültig: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ manifest ของแพ็กเกจ Foundry ไม่ถูกต้อง: %@"
+          }
+        }
+      }
+    },
+    "The Foundry resource %@ changed or failed its integrity check." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Foundry-Ressource %@ wurde geändert oder hat die Integritätsprüfung nicht bestanden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทรัพยากร Foundry %@ ถูกเปลี่ยนหรือไม่ผ่านการตรวจสอบความสมบูรณ์"
+          }
+        }
+      }
+    },
+    "The Foundry resource %@ is not packaged in the selected artifact." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Foundry-Ressource %@ ist im ausgewählten Paket nicht enthalten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทรัพยากร Foundry %@ ไม่ได้อยู่ในแพ็กเกจที่เลือก"
+          }
+        }
+      }
+    },
+    "The Foundry ZIP archive is invalid: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-ZIP-Archiv ist ungültig: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ ZIP ของ Foundry ไม่ถูกต้อง: %@"
+          }
+        }
+      }
+    },
+    "The import failed (%@), and rollback was incomplete: %@" : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Import ist fehlgeschlagen (%1$@), und das Zurücksetzen war unvollständig: %2$@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การนำเข้าล้มเหลว (%1$@) และการย้อนกลับไม่สมบูรณ์: %2$@"
+          }
+        }
+      }
+    },
+    "The mutable LevelDB log %@ contains data that cannot be imported safely. Compact the Foundry pack first." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das veränderliche LevelDB-Log %@ enthält Daten, die nicht sicher importiert werden können. Komprimiere zuerst das Foundry-Kompendium."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บันทึก LevelDB ที่แก้ไขได้ %@ มีข้อมูลที่นำเข้าอย่างปลอดภัยไม่ได้ โปรดบีบอัดชุด Foundry ก่อน"
+          }
+        }
+      }
+    },
     "The new file replaces “%@”. Delete the previous file or leave it on disk?" : {
       "localizations" : {
         "de" : {
@@ -7175,6 +7191,40 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ไฟล์ใหม่จะแทนที่ “%@” ต้องการลบไฟล์เดิมหรือเก็บไว้บนดิสก์"
+          }
+        }
+      }
+    },
+    "The package contains more than one equally likely Foundry manifest." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Paket enthält mehr als ein gleich wahrscheinliches Foundry-Manifest."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจมีไฟล์ manifest ของ Foundry ที่เป็นไปได้เท่ากันมากกว่าหนึ่งไฟล์"
+          }
+        }
+      }
+    },
+    "The package does not contain a supported Foundry manifest." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Paket enthält kein unterstütztes Foundry-Manifest."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจไม่มีไฟล์ manifest ของ Foundry ที่รองรับ"
           }
         }
       }
@@ -7203,6 +7253,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mit dem Schnell-Link-Editor kannst du eine weitere Tabelle auswählen, deren Verweise durchsucht werden. Er fügt Links in die Einträge ein, indem er nach demselben Text sucht und die Fundstellen ersetzt."
+          }
+        }
+      }
+    },
+    "The selected Foundry source does not match the package that was inspected." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die ausgewählte Foundry-Quelle passt nicht zu dem geprüften Paket."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แหล่ง Foundry ที่เลือกไม่ตรงกับแพ็กเกจที่ตรวจสอบไว้"
+          }
+        }
+      }
+    },
+    "The Universal VTT map contains too many geometry elements (%lld)." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Universal-VTT-Karte enthält zu viele Geometrieelemente (%lld)."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่ Universal VTT มีองค์ประกอบเรขาคณิตมากเกินไป (%lld)"
           }
         }
       }
@@ -7268,6 +7352,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รายการเหล่านี้อยู่ในคลังของคุณแต่ไม่อยู่ในไฟล์ที่นำเข้า การเลือกเวอร์ชันที่นำเข้าจะลบรายการเหล่านี้"
+          }
+        }
+      }
+    },
+    "This external import has already completed." : {
+      "comment" : "An import error message.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser externe Import ist bereits abgeschlossen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การนำเข้าจากภายนอกนี้เสร็จสิ้นแล้ว"
           }
         }
       }
@@ -7738,103 +7839,19 @@
         }
       }
     },
-    "Browse Free Game Bundles" : {
+    "ZIP compression method %lld is not supported." : {
+      "comment" : "An import error message.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kostenlose Spielpakete durchsuchen"
-          }
-        }
-      }
-    },
-    "Back" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurück"
-          }
-        }
-      }
-    },
-    "Forward" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vorwärts"
-          }
-        }
-      }
-    },
-    "Downloading %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ wird heruntergeladen"
-          }
-        }
-      }
-    },
-    "Only the MasterRPG game bundle repository can be opened here." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hier kann nur das MasterRPG-Spielpaket-Repository geöffnet werden."
-          }
-        }
-      }
-    },
-    "MasterRPG is not ready yet. Open the app and try again." : {
-      "comment" : "Error shown by Siri or Shortcuts when the database did not start in time.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG ist noch nicht bereit. Öffne die App und versuche es erneut."
+            "value" : "Die ZIP-Komprimierungsmethode %lld wird nicht unterstützt."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "MasterRPG ยังไม่พร้อม เปิดแอปแล้วลองอีกครั้ง"
-          }
-        }
-      }
-    },
-    "The file is not a type this item can hold." : {
-      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent has the wrong type.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Datei hat einen Typ, den dieses Objekt nicht aufnehmen kann."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไฟล์นี้เป็นประเภทที่รายการนี้ไม่รองรับ"
-          }
-        }
-      }
-    },
-    "The file could not be added." : {
-      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent could not be stored.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Datei konnte nicht hinzugefügt werden."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถเพิ่มไฟล์ได้"
+            "value" : "ไม่รองรับวิธีบีบอัด ZIP %lld"
           }
         }
       }

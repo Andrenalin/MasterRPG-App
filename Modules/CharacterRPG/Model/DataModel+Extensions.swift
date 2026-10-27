@@ -38,6 +38,7 @@ extension RPGValue: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
+        attributeSet.relate(to: CharacterEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif
@@ -51,6 +52,7 @@ extension RPGValueEntry: SpotlightIndexerAttribute {
         attributeSet.displayName = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.title = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.textContent = CRDT(wrappedValue: value ?? "").wrappedValue
+        attributeSet.relate(to: CharacterEntity.self, itemId: rpgValue?.uuid)
         return attributeSet
     }
 #endif

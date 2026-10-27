@@ -30,6 +30,7 @@ extension RPGWeather: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
+        attributeSet.relate(to: WeatherEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

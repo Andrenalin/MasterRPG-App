@@ -19,7 +19,11 @@ struct RuleEntity: IndexedEntity {
     }
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(name)", image: .init(systemName: icon))
+        DisplayRepresentation(
+            title: "\(name)",
+            subtitle: subtitle.isEmpty ? nil : "\(subtitle)",
+            image: .init(systemName: icon)
+        )
     }
 
     static let defaultQuery = RuleEntityQuery()
@@ -44,11 +48,15 @@ struct RuleEntity: IndexedEntity {
     var content: String { storedTextContent }
 
     let icon: String
+    /// The folder or the first line of the description, see `IntentEntityText.subtitle`.
+    let subtitle: String
     private let storedName: String
     private let storedDescription: String
     private let storedTags: [String]
     private let storedIsFolder: Bool
     private let storedTextContent: String
+    /// Kept for the exports; the item model is re-resolved through it, never stored.
+    /// See CODE_AUDIT_AppIntents3 §9.1.
     var root: RuleRootModel
 
     @MainActor
@@ -60,6 +68,7 @@ struct RuleEntity: IndexedEntity {
         storedTags = model.tags
         storedIsFolder = model.category == .folder
         storedTextContent = IntentEntityText.excerpt(of: model)
+        subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
         icon = model.specialCategory ? model.category.icon : NetworkModules.rule.icon
     }
 }
@@ -74,27 +83,18 @@ extension RuleEntity: URLRepresentableEntity {
     }
 }
 
+/// Name, description and sections, through the document `RuleIntentSupport` registers; the live
+/// model is looked up there instead of being stored on the entity. See CODE_AUDIT_AppIntents §3.1,
+/// CODE_AUDIT_AppIntents3 §4.1.
 extension RuleEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        DataRepresentation(exportedContentType: .plainText) { item in
-            await item.exportedPlainText()
+        DataRepresentation(exportedContentType: .plainText) { @MainActor item in
+            EntitySummaryExport.plainText(id: item.id, module: .rule, name: item.name, description: item.description)
         }
-    }
-}
 
-extension RuleEntity {
-    /// Name, description and sections as plain text. The live model is looked up here instead of
-    /// being stored on the entity; a rule that no longer exists still exports its name and
-    /// description, a special category exports nothing. See CODE_AUDIT_AppIntents §3.1.
-    @MainActor
-    fileprivate func exportedPlainText() -> Data {
-        let model = root.itemController.itemSync(for: id)
-        guard model?.specialCategory != true else { return Data() }
-        var result = "\(name)\n\n\(description)"
-        for entry in model?.entries ?? [] {
-            result += "\n\n\(entry.name)\n\(entry.content)"
+        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
+            .init(try EntitySummaryExport.pdf(id: item.id, module: .rule, name: item.name, description: item.description))
         }
-        return result.data(using: .utf8) ?? Data()
     }
 }
 

@@ -11,9 +11,14 @@ import SwiftUI
 
 struct OpenMapIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Map"
+    static let description = IntentDescription(
+        "Opens a map in the app.",
+        categoryName: "Map",
+        searchKeywords: ["show", "dungeon", "room"]
+    )
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Map", requestValueDialog: "Which Map?")
+    @Parameter(title: "Map", requestValueDialog: .localized("Which Map?", bundle: .module))
     var target: MapEntity
 
     @Dependency var navigator: Navigator

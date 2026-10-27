@@ -275,38 +275,6 @@
         }
       }
     },
-    "Show my dice history in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "de" : {
-          "stringSet" : {
-            "state" : "translated",
-            "values" : [
-              "Meinen Würfelverlauf in ${applicationName} zeigen",
-              "Was habe ich in ${applicationName} gewürfelt"
-            ]
-          }
-        },
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
-              "Show my dice history in ${applicationName}",
-              "What did I roll in ${applicationName}"
-            ]
-          }
-        },
-        "th" : {
-          "stringSet" : {
-            "state" : "machine_translated",
-            "values" : [
-              "แสดงประวัติการทอยลูกเต๋าของฉันใน ${applicationName}",
-              "ฉันทอยได้อะไรใน ${applicationName}"
-            ]
-          }
-        }
-      }
-    },
     "Start an adventure in ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
@@ -337,6 +305,41 @@
               "เริ่มการผจญภัยใน ${applicationName}",
               "เริ่ม ${target} ใน ${applicationName}",
               "เล่น ${target} ใน ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
+    "Roll custom dice in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Eigene Würfel in ${applicationName} würfeln",
+              "Ein paar Würfel in ${applicationName} würfeln",
+              "Einen Würfelwurf in ${applicationName} machen"
+            ]
+          }
+        },
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Roll custom dice in ${applicationName}",
+              "Roll some dice in ${applicationName}",
+              "Make a dice roll in ${applicationName}"
+            ]
+          }
+        },
+        "th" : {
+          "stringSet" : {
+            "state" : "machine_translated",
+            "values" : [
+              "ทอยลูกเต๋าแบบกำหนดเองใน ${applicationName}",
+              "ทอยลูกเต๋าสักหน่อยใน ${applicationName}",
+              "ทอยลูกเต๋าหนึ่งครั้งใน ${applicationName}"
             ]
           }
         }

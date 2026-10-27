@@ -30,6 +30,7 @@ extension RPGTable: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
+        attributeSet.relate(to: TableEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif
@@ -43,6 +44,7 @@ extension RPGTableEntry: SpotlightIndexerAttribute {
         attributeSet.displayName = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.title = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.textContent = CRDT(wrappedValue: content ?? "").wrappedValue
+        attributeSet.relate(to: TableEntity.self, itemId: table?.uuid)
         return attributeSet
     }
 #endif
