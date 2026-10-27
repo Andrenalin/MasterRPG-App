@@ -43,6 +43,11 @@ struct FileUrlDataControllerFileOperationTests {
 
     /// Waits for the detached delete of `fileUrl` to finish.
     private func waitUntilGone(_ fileUrl: FileUrl, in sut: FileUrlDataController) async throws {
+        // The deletion queues behind the file-coordination limiter, which on a busy CI machine
+        // takes longer than any fixed polling budget, so wait for the deletion itself.
+        if let location = sut.storedLocation(of: fileUrl) {
+            await PendingFileDeletions.shared.waitUntilFinished(at: CloudDocumentController.canonicalPath(location))
+        }
         for _ in 0..<50 where exists(fileUrl, in: sut) {
             try await Task.sleep(for: .milliseconds(20))
         }
@@ -299,9 +304,7 @@ struct FileUrlDataControllerFileOperationTests {
         #expect(sut.peerFiles.data(for: file.fileId) != nil)
 
         sut.delete(file)
-        for _ in 0..<50 where exists(file, in: sut) {
-            try await Task.sleep(for: .milliseconds(20))
-        }
+        try await waitUntilGone(file, in: sut)
 
         #expect(!exists(file, in: sut), "the iCloud/Documents file itself is deleted, not a temp copy")
         #expect(sut.peerFiles.data(for: file.fileId) == nil)

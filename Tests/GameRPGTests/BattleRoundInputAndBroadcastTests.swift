@@ -77,7 +77,10 @@ struct BattleRoundSymbolTests {
     /// `skull.fill` shipped in a context menu although no such symbol exists:
     /// SwiftUI only logs a fault and draws nothing. This reads the symbol
     /// names out of the battle round sources and asks the system for each.
-    @Test("Every SF Symbol the battle round views name exists")
+    @Test(
+        "Every SF Symbol the battle round views name exists",
+        .enabled(if: BattleRoundSymbolTests.sourcesAreOnDisk, "The sources are not on the machine that runs the tests (CI)")
+    )
     func everySymbolExists() throws {
         let names = try Self.symbolNamesInSources()
         // The scan found the sources and their literals at all.
@@ -92,11 +95,21 @@ struct BattleRoundSymbolTests {
     /// String literals that name a symbol: those after `systemName:` /
     /// `systemImage:` (to the end of the line, so both branches of a ternary
     /// count), and those returned by the `systemImage` properties.
-    private static func symbolNamesInSources(filePath: String = #filePath) throws -> Set<String> {
-        let repository = URL(filePath: filePath)
+    nonisolated private static func repositoryRoot(filePath: String = #filePath) -> URL {
+        URL(filePath: filePath)
             .deletingLastPathComponent()  // GameRPGTests
             .deletingLastPathComponent()  // Tests
             .deletingLastPathComponent()  // repository root
+    }
+
+    /// `#filePath` is where the test bundle was built. A runner that only receives the built
+    /// bundle (Xcode Cloud test runs) has no checkout there.
+    nonisolated static var sourcesAreOnDisk: Bool {
+        FileManager.default.fileExists(atPath: repositoryRoot().appending(path: "Modules/GameRPG/BattleRound").path(percentEncoded: false))
+    }
+
+    private static func symbolNamesInSources() throws -> Set<String> {
+        let repository = repositoryRoot()
         let folders = [
             repository.appending(path: "Modules/GameRPG/BattleRound"),
             repository.appending(path: "Modules/GameRPG/GameViews")

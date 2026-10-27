@@ -30,11 +30,22 @@ struct NetworkDiscoveryNamingTests {
         #expect(model("Morgan.MasterRPG").deviceName == "Morgan")
     }
 
-    @Test("Every service type is declared in both Info.plist files (§9.4)")
+    /// `#filePath` is where the test bundle was built. A runner that only receives the built
+    /// bundle (Xcode Cloud test runs) has no checkout there.
+    nonisolated private static let repositoryRoot = URL(filePath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+
+    nonisolated fileprivate static var plistsAreOnDisk: Bool {
+        FileManager.default.fileExists(atPath: repositoryRoot.appending(path: "Resources/Info.plist").path(percentEncoded: false))
+    }
+
+    @Test(
+        "Every service type is declared in both Info.plist files (§9.4)",
+        .enabled(if: NetworkDiscoveryNamingTests.plistsAreOnDisk, "The Info.plist files are not on the machine that runs the tests (CI)")
+    )
     func serviceTypesAreDeclaredInPlists() throws {
         let services = [GameServiceType.player, .master, .proxyServer, .proxyClient].map(\.serviceName)
-        let repositoryRoot = URL(filePath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let repositoryRoot = Self.repositoryRoot
         for plistName in ["Info.plist", "InfoTV.plist"] {
             let url = repositoryRoot.appending(path: "Resources").appending(path: plistName)
             let data = try Data(contentsOf: url)
