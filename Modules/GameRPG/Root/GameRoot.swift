@@ -34,6 +34,9 @@ public final class GameRoot {
     let weatherRoot: WeatherRootModel
 
     let gameModel: GameRootModel
+    /// The quick dice overlay's slots. Public so the app can hand them to every scene, including
+    /// the character's own window on macOS and visionOS.
+    public let quickDiceSlots = QuickDiceSlotsModel()
     let gameJoinCodeModel: GameJoinCodeModel
     let statisticsModel: GameStatisticsModel
     let gameCenterModel: GameCenterModel

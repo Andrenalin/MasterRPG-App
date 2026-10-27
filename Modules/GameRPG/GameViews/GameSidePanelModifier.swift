@@ -106,6 +106,7 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
     let onWidthChange: (@MainActor (CGFloat) -> Void)?
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(GameScreenModel.self) private var gameScreenModel
 
     func body(content: Content) -> some View {
         content
@@ -121,6 +122,8 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
 #elseif !os(visionOS)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 #endif
+            // Outside the background, so the panel itself ends above the quick dice overlay.
+            .padding(.bottom, gameScreenModel.quickDiceBottomReservation)
             .offset(
                 x: isShown
                     ? 0

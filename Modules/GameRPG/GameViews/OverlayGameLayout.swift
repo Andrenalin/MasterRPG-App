@@ -7,6 +7,8 @@ import SwiftUI
 struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: View>: View {
     let root: GameRoot
     let hideDice: Bool
+    /// Whether this screen offers the player's quick dice overlay.
+    let offersQuickDice: Bool
     let menuOverlay: () -> MenuTab
     let sideOverlay: () -> Side
     let moduleMenuOverlay: () -> ModuleMenu
@@ -15,6 +17,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     init(
         root: GameRoot,
         hideDice: Bool,
+        offersQuickDice: Bool = false,
         @ViewBuilder menuOverlay: @escaping () -> MenuTab,
         @ViewBuilder sideOverlay: @escaping () -> Side,
         @ViewBuilder moduleMenuOverlay: @escaping () -> ModuleMenu,
@@ -22,6 +25,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     ) {
         self.root = root
         self.hideDice = hideDice
+        self.offersQuickDice = offersQuickDice
         self.menuOverlay = menuOverlay
         self.sideOverlay = sideOverlay
         self.moduleMenuOverlay = moduleMenuOverlay
@@ -44,7 +48,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .onGeometryChange(for: EdgeInsets.self) { proxy in
                     proxy.safeAreaInsets
                 } action: { insets in
-                    gameScreenModel.updateChromeSafeAreaInsets(top: insets.top, trailing: insets.trailing)
+                    gameScreenModel.updateChromeSafeAreaInsets(top: insets.top, trailing: insets.trailing, bottom: insets.bottom)
                 }
 #else
                 .padding(.horizontal, horizontalPadding)
@@ -52,10 +56,10 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #if os(tvOS)
                 // The panel runs to the top screen edge; its content needs the top
                 // safe-area inset to start below the top menu.
-                .onGeometryChange(for: CGFloat.self) { proxy in
-                    proxy.safeAreaInsets.top
-                } action: { topInset in
-                    gameScreenModel.updateChromeSafeAreaInsets(top: topInset, trailing: 0)
+                .onGeometryChange(for: EdgeInsets.self) { proxy in
+                    proxy.safeAreaInsets
+                } action: { insets in
+                    gameScreenModel.updateChromeSafeAreaInsets(top: insets.top, trailing: 0, bottom: insets.bottom)
                 }
 #endif
                 .zIndex(10)
@@ -69,6 +73,21 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .zIndex(20)
 
 #if !os(visionOS)
+            if offersQuickDice && gameScreenModel.showQuickDice {
+                QuickDiceOverlay(root: root)
+#if os(iOS)
+                    // Like the side panel, it starts at the screen's trailing edge and keeps
+                    // its own content clear of that edge's safe area.
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .ignoresSafeArea(.container, edges: .horizontal)
+#else
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(.horizontal, horizontalPadding)
+#endif
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    .zIndex(15)
+            }
+
             if !hideDice && gameScreenModel.showDice {
                 root.diceRoot.viewController.overlayGameView(root: root.diceRoot)
 #if os(iOS)
@@ -103,6 +122,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
         .padding(.trailing, valueFor(iOS: 0, macOS: 0, tvOS: 0, visionOS: 20))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showDice)
+        .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showQuickDice)
     }
 
     /// Applied per layer instead of to the whole stack, so the iOS side panel can reach

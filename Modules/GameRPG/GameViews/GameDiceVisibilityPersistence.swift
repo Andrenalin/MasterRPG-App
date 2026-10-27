@@ -20,6 +20,14 @@ struct GameDiceVisibilityPersistence: ViewModifier {
                 guard appSettingsModel.showGameDice != isVisible else { return }
                 appSettingsModel.showGameDice = isVisible
             }
+            .onChange(of: appSettingsModel.showGameQuickDice, initial: true) { _, isVisible in
+                guard gameScreenModel.showQuickDice != isVisible else { return }
+                gameScreenModel.showQuickDice = isVisible
+            }
+            .onChange(of: gameScreenModel.showQuickDice) { _, isVisible in
+                guard appSettingsModel.showGameQuickDice != isVisible else { return }
+                appSettingsModel.showGameQuickDice = isVisible
+            }
             .onChange(of: appSettingsModel.showGamePlayerDice, initial: true) { _, isVisible in
                 guard diceDisplayModel.showPlayerDice != isVisible else { return }
                 diceDisplayModel.showPlayerDice = isVisible

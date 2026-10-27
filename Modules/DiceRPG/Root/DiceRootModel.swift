@@ -172,6 +172,16 @@ extension DiceRootModel {
 // MARK: Game
 
 public extension DiceRootModel {
+    /// Rolls a dice set for the whole game and shares the result, as every dice button does:
+    /// the roll, its share to the other players and the Siri donation.
+    @MainActor
+    internal func rollAndShare(diceId: UUID, networkActions: NetworkActions?, resultCategory: ResultCategory?) {
+        gameController.rollDice(itemId: diceId, networkActions: networkActions, resultCategory: resultCategory)
+#if !os(tvOS)
+        donateRoll(of: diceId)
+#endif
+    }
+
     @MainActor
     func roll(diceId: UUID) -> Int {
         itemController.itemOrEmpty(for: diceId).dice.reduce(0) { $0 + ($1.roll(resetResults: true, rerollOptions: itemController.itemOrEmpty(for: diceId).rerollOptions).result.first ?? 0) }

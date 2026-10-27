@@ -76,6 +76,7 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
             .environment(\.mapActions, appModel.mapRoot.mapActions)
             .environment(\.routeActions, appModel.routeActions)
             .environment(\.networkActions, appModel.gameRoot.networkActions)
+            .environment(\.quickDiceSlots, appModel.gameRoot.quickDiceSlots)
             .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
 #if os(visionOS)

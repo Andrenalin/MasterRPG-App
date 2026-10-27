@@ -56,7 +56,11 @@ struct PlayerGameScreen: View {
         .task {
             await prepareWindows()
         }
+        .onChange(of: root.gameModel.selectedCharacter, initial: true) { _, characterId in
+            root.quickDiceSlots.load(characterId: characterId)
+        }
         .onDisappear {
+            root.quickDiceSlots.load(characterId: nil)
             root.mapRoot.rootModel.clearGameEditorSession()
             // Covers dismissal via system window chrome (visionOS's own close affordance, or
             // any other path that tears down this view without going through the in-app Quit

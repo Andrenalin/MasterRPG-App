@@ -13,6 +13,7 @@ struct EntryListDiceRow: View, Equatable {
     }
 
     @Environment(CharacterRootModel.self) private var root
+    @Environment(\.quickDiceSlots) private var quickDiceSlots
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -21,8 +22,14 @@ struct EntryListDiceRow: View, Equatable {
             // SwiftUI re-evaluates this row whenever any entry the formula links to
             // changes — at any depth and for any number of links — and pushes the new
             // value into the game dice, which re-counts its dice via `addDiceEvery`.
-            let compareValue = root.linkController.diceCompareValue(itemId: itemId, entryId: entryId)
-            root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.config.module), player: true)
+            let linkedValue = root.linkController.diceCompareValue(itemId: itemId, entryId: entryId)
+            // A quick dice slot holding this entry shares the dice; a value typed over it there
+            // stays in force here, until the entry's own value changes.
+            let compareValue = quickDiceSlots?.effectiveValue(linkedValue: linkedValue, forItem: itemId, entry: entryId) ?? linkedValue
+            HStack(spacing: 4) {
+                root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.config.module), player: true)
+                QuickDiceFavoriteMenu(itemId: itemId, entryId: entryId)
+            }
                 .onChange(of: compareValue, initial: true) {
                     updateDiceValue(id: id, compareValue: compareValue)
                 }

@@ -24,6 +24,12 @@ struct GameToolbarContent: ToolbarContent {
                 GameDiceToggleButton()
             }
 
+            if root.offersQuickDice(isMaster: role == .master) {
+                ToolbarItem(placement: .navigation) {
+                    GameQuickDiceToggleButton()
+                }
+            }
+
             ToolbarSpacer(.fixed, placement: .navigation)
         }
 

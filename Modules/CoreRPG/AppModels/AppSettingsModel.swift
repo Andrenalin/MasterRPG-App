@@ -28,6 +28,7 @@ public final class AppSettingsModel: Sendable {
         showGameTableVolume = previewValues.showGameTableVolume
         showGameDice = previewValues.showGameDice
         showGamePlayerDice = previewValues.showGamePlayerDice
+        showGameQuickDice = previewValues.showGameQuickDice
         needsValidateDatabase = previewValues.needsValidateDatabase
         useCloudKit = previewValues.useCloudKit
     }
@@ -130,6 +131,13 @@ public final class AppSettingsModel: Sendable {
         }
     }
 
+    public var showGameQuickDice: Bool = false {
+        didSet {
+            guard oldValue != showGameQuickDice else { return }
+            defaults?.set(showGameQuickDice, forKey: AppSettingsModel.showGameQuickDiceKey)
+        }
+    }
+
     public var needsValidateDatabase: Bool = true {
         didSet {
             guard oldValue != needsValidateDatabase else { return }
@@ -189,6 +197,7 @@ public final class AppSettingsModel: Sendable {
         showGameTableVolume = defaults.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
         showGameDice = defaults.value(forKey: AppSettingsModel.showGameDiceKey) as? Bool ?? true
         showGamePlayerDice = defaults.value(forKey: AppSettingsModel.showGamePlayerDiceKey) as? Bool ?? true
+        showGameQuickDice = defaults.value(forKey: AppSettingsModel.showGameQuickDiceKey) as? Bool ?? false
         needsValidateDatabase = defaults.value(forKey: AppSettingsModel.needsValidateDatabaseKey) as? Bool ?? true
 
         // Shared across processes (main app + Share Extension) — always read from the App
@@ -228,6 +237,7 @@ public final class AppSettingsModel: Sendable {
         var showGameTableVolume = false
         var showGameDice = true
         var showGamePlayerDice = true
+        var showGameQuickDice = false
         var needsValidateDatabase = false
         var useCloudKit = false
     }
@@ -248,6 +258,7 @@ public final class AppSettingsModel: Sendable {
     private static let showGameTableVolumeKey = "showGameTableVolume"
     private static let showGameDiceKey = "showGameDice"
     private static let showGamePlayerDiceKey = "showGamePlayerDice"
+    private static let showGameQuickDiceKey = "showGameQuickDice"
     private static let needsValidateDatabaseKey = "needsValidate"
 
     private static let useCloudKitKey = "MasterRPGuseCloudKit"

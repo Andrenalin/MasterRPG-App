@@ -11,7 +11,11 @@ struct PlayerOverlayMenu: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        OverlayGameLayout(root: root, hideDice: root.gameModel.gameType == .observer) {
+        OverlayGameLayout(
+            root: root,
+            hideDice: root.gameModel.gameType == .observer,
+            offersQuickDice: root.offersQuickDice(isMaster: false)
+        ) {
 #if os(visionOS) || os(macOS)
             EmptyView()
 #else

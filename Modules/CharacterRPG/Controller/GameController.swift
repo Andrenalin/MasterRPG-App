@@ -77,6 +77,12 @@ public protocol ValueGameStorable: Sendable {
         characterId: UUID,
         entryId: UUID
     ) -> String?
+    /// The game dice attached to an entry, the very instance the character sheet's row rolls, or
+    /// `nil` when the entry has none. `itemId` is the item that directly contains the entry.
+    @MainActor func gameDiceId(itemId: UUID, entryId: UUID) -> UUID?
+    /// The calculated number the entry's dice compare against. Reading it in a view's `body`
+    /// makes Observation track every entry its formula links to.
+    @MainActor func diceCompareValue(itemId: UUID, entryId: UUID) -> Int?
     /// Resolves an arbitrary value string through the same link-substitution
     /// + arithmetic pipeline `gameEntryDisplayValue` runs a stored entry's own
     /// `value` through — for evaluating just a *portion* of another entry's

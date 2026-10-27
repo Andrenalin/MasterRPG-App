@@ -57,6 +57,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
             focusedEntryId: $focusedEntryId
         )
         .environment(\.isSheetEditor, isEditor)
+        .environment(\.sheetRootItemId, rootModel.sheetModel.source.itemId)
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)
         .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)

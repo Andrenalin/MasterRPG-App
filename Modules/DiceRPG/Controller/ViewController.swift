@@ -86,6 +86,25 @@ public extension ViewController {
             .environment(root)
     }
 
+    /// A quick dice slot's dice: tapping focuses and rolls them, and shares the result.
+    @MainActor func quickDiceRollButton(root: DiceRootModel, diceId: UUID, resultCategory: ResultCategory?) -> some View {
+        QuickDiceRollButton(diceId: diceId, resultCategory: resultCategory)
+            .environment(root)
+    }
+
+    /// The value of a quick dice slot's dice, opening the compare-value editor on tap. Empty for
+    /// dice that neither compare nor scale their count by a value.
+    @MainActor func quickDiceValueButton(root: DiceRootModel, diceId: UUID, onValueChange: @escaping (Int) -> Void) -> some View {
+        QuickDiceValueButton(diceId: diceId, onValueChange: onValueChange)
+            .environment(root)
+    }
+
+    /// The dice list for choosing a quick dice slot's base dice into `selectionModel`.
+    @MainActor func quickDicePickerView(root: DiceRootModel, selectionModel: ItemSelectionModel) -> some View {
+        QuickDicePicker(selectionModel: selectionModel)
+            .environment(root)
+    }
+
     /// The dice overlay's entry for another player: name, supporter crown and the result of
     /// the dice they last shared. `diceId` comes from `DiceGameStorable.playerDiceId(named:)`.
     @MainActor func dicePlayerResultView(root: DiceRootModel, diceId: UUID) -> some View {

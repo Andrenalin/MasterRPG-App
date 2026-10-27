@@ -29,6 +29,7 @@ final class GameScreenModel {
     }
 
     var showDice: Bool = false
+    var showQuickDice: Bool = false
     var showExport: Bool = false
     var showQuitGameAlert: Bool = false
     var showsBattleRoundAnnouncement: Bool = false
@@ -124,6 +125,7 @@ final class GameScreenModel {
     /// the safe area, so it reads zero itself; the chrome measures them for it.
     private(set) var chromeTopSafeAreaInset: CGFloat = 0
     private(set) var chromeTrailingSafeAreaInset: CGFloat = 0
+    private(set) var chromeBottomSafeAreaInset: CGFloat = 0
 
     /// Screen-space top edge for the side panel's content: one spacing step below the
     /// top menu, which overlaps the panel in the compact layout.
@@ -138,11 +140,28 @@ final class GameScreenModel {
         return max(0, inlineMainOverlayWidth - chromeTrailingSafeAreaInset - Self.chromeHorizontalPadding)
     }
 
-    func updateChromeSafeAreaInsets(top: CGFloat, trailing: CGFloat) {
+    func updateChromeSafeAreaInsets(top: CGFloat, trailing: CGFloat, bottom: CGFloat = 0) {
         let top = top.isFinite ? max(0, top) : 0
         let trailing = trailing.isFinite ? max(0, trailing) : 0
+        let bottom = bottom.isFinite ? max(0, bottom) : 0
         if chromeTopSafeAreaInset != top { chromeTopSafeAreaInset = top }
         if chromeTrailingSafeAreaInset != trailing { chromeTrailingSafeAreaInset = trailing }
+        if chromeBottomSafeAreaInset != bottom { chromeBottomSafeAreaInset = bottom }
+    }
+
+    /// The rendered height of the quick dice overlay at the bottom trailing edge.
+    private(set) var quickDiceOverlayHeight: CGFloat = 0
+
+    /// How far the sidebar stops short of the bottom edge to leave room for the quick dice overlay.
+    var quickDiceBottomReservation: CGFloat {
+        guard showQuickDice, quickDiceOverlayHeight > 0 else { return 0 }
+        return quickDiceOverlayHeight + chromeBottomSafeAreaInset + Self.mapOverlaySpacing
+    }
+
+    func updateQuickDiceOverlayHeight(_ height: CGFloat) {
+        let height = height.isFinite ? max(0, height) : 0
+        guard quickDiceOverlayHeight != height else { return }
+        quickDiceOverlayHeight = height
     }
 
     func updateTopGameMenuHeight(_ height: CGFloat) {

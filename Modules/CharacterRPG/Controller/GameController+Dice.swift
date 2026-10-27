@@ -17,6 +17,11 @@ extension GameController {
     }
 
     @MainActor
+    func diceCompareValue(itemId: UUID, entryId: UUID) -> Int? {
+        root.linkController.diceCompareValue(itemId: itemId, entryId: entryId)
+    }
+
+    @MainActor
     func gameDiceId(itemId: UUID, diceId: UUID) -> UUID? {
         cachedGameDice(key: itemId, diceId: diceId)
     }

@@ -36,6 +36,11 @@ extension View {
                 VStack {
                     sideMenu()
                         .environment(gameScreenModel)
+                    // Below the side menu, in the same ornament, so the two never overlap.
+                    if root.offersQuickDice(isMaster: isMaster) && gameScreenModel.showQuickDice {
+                        QuickDiceOverlay(root: root)
+                            .environment(gameScreenModel)
+                    }
                 }
                 .padding(12)
             }

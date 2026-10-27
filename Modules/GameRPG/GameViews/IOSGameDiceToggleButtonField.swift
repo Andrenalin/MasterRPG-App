@@ -4,15 +4,35 @@ import CoreRPG
 #if os(iOS)
 import SwiftUI
 
-struct IOSGameDiceToggleButtonField: View {
+/// The round glass field the iOS overlay menu puts around a toggle button.
+private struct IOSGameToggleButtonField<ToggleButton: View>: View {
+    @ViewBuilder let toggleButton: ToggleButton
+
     var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        GameDiceToggleButton()
+        toggleButton
             .buttonStyle(.plain)
             .imageScale(.large)
             .padding(8)
             .contentShape(.circle)
             .glassEffect(.regular.interactive(), in: .circle)
+    }
+}
+
+struct IOSGameDiceToggleButtonField: View {
+    var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        IOSGameToggleButtonField {
+            GameDiceToggleButton()
+        }
+    }
+}
+
+struct IOSGameQuickDiceToggleButtonField: View {
+    var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        IOSGameToggleButtonField {
+            GameQuickDiceToggleButton()
+        }
     }
 }
 

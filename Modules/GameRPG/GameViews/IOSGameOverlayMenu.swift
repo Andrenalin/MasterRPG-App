@@ -25,6 +25,9 @@ struct IOSGameOverlayMenu: View {
                         if isMaster || root.gameModel.gameType != .observer {
                             IOSGameDiceToggleButtonField()
                         }
+                        if root.offersQuickDice(isMaster: isMaster) {
+                            IOSGameQuickDiceToggleButtonField()
+                        }
                         if isMaster {
                             GameElapsedTimerText(startDate: root.gameModel.startGameTime)
                         }
@@ -49,6 +52,9 @@ struct IOSGameOverlayMenu: View {
 
                     if isMaster || root.gameModel.gameType != .observer {
                         IOSGameDiceToggleButtonField()
+                    }
+                    if root.offersQuickDice(isMaster: isMaster) {
+                        IOSGameQuickDiceToggleButtonField()
                     }
                     Spacer(minLength: 0)
                     IOSGameOverlayControlField(

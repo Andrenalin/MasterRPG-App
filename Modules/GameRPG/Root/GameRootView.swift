@@ -116,6 +116,7 @@ struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
         content
             .environment(\.mapActions, root.mapRoot.mapActions)
             .environment(\.networkActions, root.networkActions)
+            .environment(\.quickDiceSlots, root.quickDiceSlots)
             .environment(\.sharingControlActions, root.sharingControlActions)
             .environment(\.sharingFeatureActions, root.sharingFeatureActions)
             .environment(

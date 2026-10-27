@@ -829,6 +829,22 @@
         }
       }
     },
+    "Change compare value" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergleichswert ändern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนค่าเปรียบเทียบ"
+          }
+        }
+      }
+    },
     "change coup option" : {
       "localizations" : {
         "de" : {
@@ -2732,6 +2748,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ทอย & แชร์"
+          }
+        }
+      }
+    },
+    "Roll %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอย %@"
           }
         }
       }
