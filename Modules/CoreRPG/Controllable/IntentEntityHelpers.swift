@@ -119,10 +119,13 @@ public struct DatabaseNotReadyError: Error, CustomLocalizedStringResourceConvert
 /// Waits for the database like `DatabaseReadiness.wait()` and throws `DatabaseNotReadyError` when
 /// it still cannot take writes after the timeout. Every intent that creates, changes or deletes
 /// items starts with this; read-only intents may keep using `DatabaseReadiness.wait()`.
-/// See CODE_AUDIT §5.1.
+/// A cancelled intent (the user dismissed Siri while it waited) throws `CancellationError`
+/// instead of writing once the store is ready. See CODE_AUDIT §5.1, CODE_AUDIT_Since_3.0.1 §3.4.
 @MainActor
 public func requireReadyDatabase() async throws {
-    guard await DatabaseReadiness.wait() else { throw DatabaseNotReadyError() }
+    let canSave = await DatabaseReadiness.wait()
+    try Task.checkCancellation()
+    guard canSave else { throw DatabaseNotReadyError() }
 }
 
 /// The file passed to a Create intent has a type the item cannot hold.
@@ -153,14 +156,16 @@ public struct IntentFileStoreError: Error, CustomLocalizedStringResourceConverti
 
 /// The bytes of the optional file parameter of a Create intent, or `nil` when none was passed.
 /// Throws `IntentFileTypeError` before anything is created when the file is not one of the types
-/// the module holds, so a wrong file leaves no empty item behind. See CODE_AUDIT_AppIntents2 §4.4.
-public func intentFileData(_ file: IntentFile?, allowedTypes: [UTType]) throws -> Data? {
+/// the module holds, so a wrong file leaves no empty item behind. The bytes are read off the
+/// caller's actor: a Create intent runs on the main actor, and the file can be a large audio,
+/// PDF or USDZ file. See CODE_AUDIT_AppIntents2 §4.4, CODE_AUDIT_Since_3.0.1 §3.2.
+public func intentFileData(_ file: IntentFile?, allowedTypes: [UTType]) async throws -> Data? {
     guard let file else { return nil }
     let type = file.type ?? UTType(filenameExtension: URL(filePath: file.filename).pathExtension)
     guard let type, allowedTypes.contains(where: { type.conforms(to: $0) }) else {
         throw IntentFileTypeError()
     }
-    return file.data
+    return try await runOffCallerExecutor { file.data }
 }
 
 /// Stores the file of a just-created item through `store`, which reports whether it worked. When it
@@ -306,29 +311,36 @@ public func trashIntentItems<Entity: IndexedEntity>(
 }
 
 /// Brings the module's App Entity index up to date with what changed since the last run: the ids
-/// `itemDataModel` marked (added, edited, trashed, removed) are indexed again, and the ones whose
-/// item is gone, trashed or not `isIndexable` (e.g. the rule compendium's own categories) leave
-/// the index, because the queries hide them and Siri would find an item it cannot open. A run
-/// without changes does nothing. The first run per module covers every item and also clears what
-/// earlier versions left in the index (everything of the type on iOS 27). Trashing and purging in
-/// the UI additionally remove entries at once (`IntentEntityIdentifiers.removeFromIndex`).
-/// See CODE_AUDIT_AppIntents §5.3, §7.1.
+/// `itemDataModel` marked (edited, trashed, removed) and the ids added or removed since the
+/// `ledger` last saw them are indexed again, and the ones whose item is gone, trashed or not
+/// `isIndexable` (e.g. the rule compendium's own categories) leave the index, because the queries
+/// hide them and Siri would find an item it cannot open. A run without changes, including the
+/// first one after a launch, does nothing. The first run per module (no ledger list yet) covers
+/// every item and also clears what earlier versions left in the index (everything of the type on
+/// iOS 27). Trashing and purging in the UI additionally remove entries at once
+/// (`IntentEntityIdentifiers.removeFromIndex`). A run waits while a module's initial load is
+/// still running: its ids would look removed. See CODE_AUDIT_AppIntents §5.3, §7.1,
+/// CODE_AUDIT_Since_3.0.1 §3.1.
 @MainActor
 public func reindexIntentEntities<Entity: IndexedEntity, Model: ItemDataAccessible>(
     itemDataModel: ItemDataModel,
     module: NetworkModules,
+    ledger: AppEntityIndexLedger = .shared,
     model: (UUID) -> Model?,
     isIndexable: (Model) -> Bool = { _ in true },
     makeEntity: (Model) -> Entity
 ) async where Entity.ID == UUID {
     guard CSSearchableIndex.isIndexingAvailable() else { return }
+    // The last initial load calls the invalidator when it ends, so the marks wait for that run.
+    guard InitialLoadTracker.shared.isIdle else { return }
 
-    let prunedKey = "AppEntityIndexPruned.\(module.token)"
-    let needsPrune = !UserDefaults.standard.bool(forKey: prunedKey)
-    guard itemDataModel.hasIndexChanges || needsPrune else { return }
-
+    let indexed = await ledger.indexedIds(for: module.token)
+    let needsPrune = indexed == nil
+    let current = Set(itemDataModel.items)
     let changedIds = itemDataModel.takeIndexDirtyIds()
-    let ids = needsPrune ? Array(Set(itemDataModel.items).union(changedIds)) : Array(changedIds)
+    let looked = AppEntityIndexPass.ids(current: current, changed: changedIds, indexed: indexed)
+    guard !looked.isEmpty || needsPrune else { return }
+    let ids = Array(looked)
 
     var entities: [Entity] = []
     var notIndexed: [UUID] = []
@@ -346,23 +358,28 @@ public func reindexIntentEntities<Entity: IndexedEntity, Model: ItemDataAccessib
                 try await CSSearchableIndex.default().deleteAppEntities(ofType: Entity.self)
             } catch {
                 Logger.appIntents.error("Clearing the \(module.token, privacy: .public) App Entity index failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                // Not marked as pruned, so the next run tries again; the changes are kept for it.
+                // No ledger list is written, so the next run prunes again; the changes are kept for it.
                 changedIds.forEach(itemDataModel.markIndexDirty)
                 return
             }
         }
-        UserDefaults.standard.set(true, forKey: prunedKey)
     }
 
     await deleteIntentEntities(ids: notIndexed, ofType: Entity.self)
 
+    var failed: Set<UUID> = []
     do {
         try await CSSearchableIndex.default().indexAppEntities(entities)
     } catch {
         Logger.appIntents.error("\(module.token, privacy: .public) reindex failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        // Left marked, so the next run indexes them again.
-        entities.forEach { itemDataModel.markIndexDirty($0.id) }
+        // Left marked, so the next run indexes them again, and out of the ledger for the next launch.
+        failed = Set(entities.map(\.id))
+        failed.forEach(itemDataModel.markIndexDirty)
     }
+    await ledger.setIndexedIds(
+        AppEntityIndexPass.indexed(before: indexed, looked: looked, failed: failed, current: current),
+        for: module.token
+    )
 }
 
 #endif

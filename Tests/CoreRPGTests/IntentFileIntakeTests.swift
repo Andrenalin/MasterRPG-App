@@ -14,49 +14,49 @@ struct IntentFileIntakeTests {
     private let bytes = Data([1, 2, 3])
 
     @Test("No file passed returns no data")
-    func noFile() throws {
-        #expect(try intentFileData(nil, allowedTypes: [.pdf]) == nil)
+    func noFile() async throws {
+        #expect(try await intentFileData(nil, allowedTypes: [.pdf]) == nil)
     }
 
     @Test("A file of an allowed type returns its bytes")
-    func allowedType() throws {
+    func allowedType() async throws {
         let file = IntentFile(data: bytes, filename: "rules.pdf", type: .pdf)
-        #expect(try intentFileData(file, allowedTypes: [.pdf]) == bytes)
+        #expect(try await intentFileData(file, allowedTypes: [.pdf]) == bytes)
     }
 
     @Test("A subtype conforms to the allowed type")
-    func conformingType() throws {
+    func conformingType() async throws {
         let file = IntentFile(data: bytes, filename: "tavern.mp3", type: .mp3)
-        #expect(try intentFileData(file, allowedTypes: [.audio]) == bytes)
+        #expect(try await intentFileData(file, allowedTypes: [.audio]) == bytes)
     }
 
     @Test("The file name's extension stands in when the type is missing")
-    func typeFromExtension() throws {
+    func typeFromExtension() async throws {
         let file = IntentFile(data: bytes, filename: "dragon.usdz")
-        #expect(try intentFileData(file, allowedTypes: [.usdz]) == bytes)
+        #expect(try await intentFileData(file, allowedTypes: [.usdz]) == bytes)
     }
 
     @Test("A file of another type is rejected", arguments: [UTType.png, .plainText, .movie])
-    func wrongType(type: UTType) {
+    func wrongType(type: UTType) async {
         let file = IntentFile(data: bytes, filename: "file", type: type)
-        #expect(throws: IntentFileTypeError.self) {
-            try intentFileData(file, allowedTypes: [.pdf])
+        await #expect(throws: IntentFileTypeError.self) {
+            try await intentFileData(file, allowedTypes: [.pdf])
         }
     }
 
     @Test("A file with no known type and no extension is rejected")
-    func unknownType() {
+    func unknownType() async {
         let file = IntentFile(data: bytes, filename: "file")
-        #expect(throws: IntentFileTypeError.self) {
-            try intentFileData(file, allowedTypes: [.pdf])
+        await #expect(throws: IntentFileTypeError.self) {
+            try await intentFileData(file, allowedTypes: [.pdf])
         }
     }
 
     @Test("A module that holds no file takes none")
-    func moduleWithoutFiles() {
+    func moduleWithoutFiles() async {
         let file = IntentFile(data: bytes, filename: "rules.pdf", type: .pdf)
-        #expect(throws: IntentFileTypeError.self) {
-            try intentFileData(file, allowedTypes: [])
+        await #expect(throws: IntentFileTypeError.self) {
+            try await intentFileData(file, allowedTypes: [])
         }
     }
 }

@@ -373,9 +373,6 @@ extension GameRoot {
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
 
         await adventureRoot.adventureGameControllable.startGame(with: id)
-#if !os(tvOS)
-        await adventureRoot.donateStartGame(of: id)
-#endif
         gameModel.playerController = PlayerController(root: self, asGameMaster: true)
         gameModel.masterController = MasterController(root: self, asProxy: false)
 
@@ -386,7 +383,10 @@ extension GameRoot {
 
         await gameModel.masterController?.start()
         await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: id))
-        
+#if !os(tvOS)
+        adventureRoot.donateStartGame(of: id)
+#endif
+
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true
 #endif

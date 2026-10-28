@@ -39,12 +39,13 @@ public enum EntitySummaryExport {
     /// empties: the text is private campaign content and must not outlive the export. The file name
     /// is derived from `id`, not the user-editable name, so equal names or concurrent exports can't
     /// collide (CODE_AUDIT_Character §6.1). Throws when the PDF context can't be created.
-    /// See CODE_AUDIT_AppIntents2 §6.2.
+    /// The text is read on the main actor; laying out and writing the pages, up to 50,000
+    /// characters, runs off it. See CODE_AUDIT_AppIntents2 §6.2, CODE_AUDIT_Since_3.0.1 §3.2.
     @MainActor
-    public static func pdf(id: UUID, module: NetworkModules, name: String, description: String) throws -> URL {
+    public static func pdf(id: UUID, module: NetworkModules, name: String, description: String) async throws -> URL {
         let url = URL.temporaryDirectory.appending(component: "\(id.uuidString).pdf")
         let body = text(id: id, module: module, name: name, description: description)
-        try renderPdf(body, to: url)
+        try await runOffCallerExecutor { try renderPdf(body, to: url) }
         return url
     }
 

@@ -102,9 +102,10 @@ public final class ItemDataModel: Sendable {
         }
     }
     
+    /// Not marked for the App Entity index: the initial load sets every item, and a new id is
+    /// found by `reindexIntentEntities` through the ledger. See CODE_AUDIT_Since_3.0.1 §3.1.
     func setItem(id: UUID, item: ModelType) {
         itemData[id] = item
-        markIndexDirty(id)
     }
     
     func removeItem(itemId: UUID) -> Bool {
@@ -133,10 +134,11 @@ public final class ItemDataModel: Sendable {
         }
     }
 
-    /// The ids added, edited, trashed or removed since the App Entity index last took them, so the
+    /// The ids edited, trashed or removed since the App Entity index last took them, so the
     /// Spotlight reindex touches only those instead of every item of every module. Marked by the
-    /// item controller wherever it changes a library item; taken by `reindexIntentEntities`.
-    /// See CODE_AUDIT_AppIntents §7.1.
+    /// item controller wherever it changes a library item; taken by `reindexIntentEntities`, which
+    /// finds added ids through `AppEntityIndexLedger`. See CODE_AUDIT_AppIntents §7.1,
+    /// CODE_AUDIT_Since_3.0.1 §3.1.
     @ObservationIgnored private var indexDirtyIds: Set<UUID> = []
 
     public var hasIndexChanges: Bool { !indexDirtyIds.isEmpty }

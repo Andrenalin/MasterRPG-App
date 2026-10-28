@@ -93,7 +93,7 @@ extension RuleEntity: Transferable {
         }
 
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            .init(try EntitySummaryExport.pdf(id: item.id, module: .rule, name: item.name, description: item.description))
+            .init(try await EntitySummaryExport.pdf(id: item.id, module: .rule, name: item.name, description: item.description))
         }
     }
 }

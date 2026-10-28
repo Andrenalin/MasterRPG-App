@@ -43,7 +43,7 @@ struct CreatePhotoIntent: AppIntent {
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: .localized("What should the photo be called?", bundle: .module))
-        let fileData = try intentFileData(file, allowedTypes: root.config.fileTypes)
+        let fileData = try await intentFileData(file, allowedTypes: root.config.fileTypes)
         let model = PhotoModel(
             id: UUID(),
             name: trimmedName,

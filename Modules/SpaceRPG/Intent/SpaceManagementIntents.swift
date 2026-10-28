@@ -43,7 +43,7 @@ struct CreateSpaceIntent: AppIntent {
         // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: .localized("What should the 3D object be called?", bundle: .module))
-        let fileData = try intentFileData(file, allowedTypes: root.config.fileTypes)
+        let fileData = try await intentFileData(file, allowedTypes: root.config.fileTypes)
         let model = SpaceModel(
             id: UUID(),
             name: trimmedName,
