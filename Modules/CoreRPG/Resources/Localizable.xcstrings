@@ -7412,6 +7412,23 @@
         }
       }
     },
+    "This is the table you are editing. Its entries can't link to themselves, so the scan was ignored." : {
+      "comment" : "Quick Link alert message when the chosen table is the table being edited.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das ist die Tabelle, die gerade bearbeitet wird. Ihre Einträge können nicht auf sich selbst verweisen, daher wurde der Scan ignoriert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นี่คือตารางที่กำลังแก้ไขอยู่ รายการในตารางนี้ลิงก์ไปยังตัวเองไม่ได้ จึงไม่ได้สแกน"
+          }
+        }
+      }
+    },
     "This option let you export only the database data without the files included in the export. If you store your file in iCloud but don't want to use CloudKit for sync the database. Use this option with care you might losing the file data and you cannot exchange it with other users." : {
       "localizations" : {
         "de" : {

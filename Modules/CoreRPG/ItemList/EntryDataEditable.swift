@@ -237,13 +237,17 @@ public extension EntryDataEditable {
     /// (and links to it) when only its content changed. Each existing entry is used at most
     /// once: with a plain first match, two entries of the same name collapsed onto one id.
     /// Adventure had this fix, the copies in Map, Table and Character did not.
-    /// See CODE_AUDIT_Folder §9.10.
+    /// Names are compared without link markup, so a name that only gained or lost a link keeps its
+    /// entry (a map room its outline, a character value its dice and formula) and takes the edited
+    /// name. See CODE_AUDIT_Folder §9.10, CODE_AUDIT_Since_3.0.1 §5.1.
     @MainActor func entriesMatchedByName(itemId: UUID, entries: [Model.Entry]) -> [Model.Entry] {
         guard let item = editModel(for: itemId) else { return entries }
         var available = item.entries
         return entries.map { entry in
-            guard let index = available.firstIndex(where: { $0.name == entry.name }) else { return entry }
+            let name = entry.name.withoutLink()
+            guard let index = available.firstIndex(where: { $0.name.withoutLink() == name }) else { return entry }
             var matched = available.remove(at: index)
+            matched.name = entry.name
             matched.content = entry.content
             return matched
         }

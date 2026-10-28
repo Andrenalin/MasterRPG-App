@@ -104,9 +104,12 @@ extension EditController: EntryDataEditable {
             let stableIdentityIndex = existing.indices.first {
                 !matchedExistingIndices.contains($0) && existing[$0].id == importedEntry.id
             }
+            // Compared without link markup, as `entriesMatchedByName` does: a name that only
+            // gained a link is the same entry. See CODE_AUDIT_Since_3.0.1 §5.1.
+            let importedName = importedEntry.name.withoutLink()
             let hierarchyFallbackIndices = existing.indices.filter {
                 !matchedExistingIndices.contains($0) &&
-                existing[$0].name == importedEntry.name &&
+                existing[$0].name.withoutLink() == importedName &&
                 existing[$0].kind == importedEntry.kind &&
                 existing[$0].parentId == importedEntry.parentId
             }

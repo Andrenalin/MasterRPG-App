@@ -48,7 +48,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     
     @State private var showQuickLinkPicker = false
     @State private var quickLinkSelection = ItemSelectionModel(isSingleSelection: true, allowCollections: false)
-    @State private var quickLinkCount: Int?
+    @State private var quickLinkOutcome: QuickLinkScanner.Outcome?
 
     @State private var showAffectedLinksAlert: Bool = false
     @State private var editorModel = RemoveEntryListModel()
@@ -91,12 +91,15 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                     guard let tableId = quickLinkSelection.itemId else { return }
                     applyQuickLink(tableId: tableId)
                 }
-                .alert(Text("Quick Link", bundle: .module), isPresented: Binding(get: { quickLinkCount != nil }, set: { if !$0 { quickLinkCount = nil } })) {
-                    Button { quickLinkCount = nil } label: { Text("OK", bundle: .module) }
+                .alert(Text("Quick Link", bundle: .module), isPresented: Binding(get: { quickLinkOutcome != nil }, set: { if !$0 { quickLinkOutcome = nil } })) {
+                    Button { quickLinkOutcome = nil } label: { Text("OK", bundle: .module) }
                 } message: {
-                    if let quickLinkCount, quickLinkCount > 0 {
-                        Text("\(quickLinkCount) links added", bundle: .module)
-                    } else {
+                    switch quickLinkOutcome {
+                    case .sameTable:
+                        Text("This is the table you are editing. Its entries can't link to themselves, so the scan was ignored.", bundle: .module)
+                    case .linked(let result) where result.count > 0:
+                        Text("\(result.count) links added", bundle: .module)
+                    default:
                         Text("No matching entries found", bundle: .module)
                     }
                 }
@@ -167,15 +170,17 @@ private extension QuickEntryEditorView {
         root.rootManager?.itemRootController(for: .table)
     }
 
-    /// Links every entry name of the chosen table found in the editor text. The text is reset
-    /// in the editor as well, because the editor only reads `referenceText` on appear.
+    /// Links every entry name of the chosen table found in the entries' content of the editor
+    /// text; the titles stay as they are (CODE_AUDIT_Since_3.0.1 §5.1). Choosing the table being
+    /// edited is ignored with an explanation. The text is reset in the editor as well, because
+    /// the editor only reads `referenceText` on appear.
     func applyQuickLink(tableId: UUID) {
         showQuickLinkPicker = false
         quickLinkSelection.resetSelection(itemId: nil, entryId: nil)
         guard let table = tableRootController?.itemControllable.itemDataModel.item(for: tableId) as? any ItemDataAccessible else { return }
-        let result = QuickLinkScanner.apply(QuickLinkScanner.candidates(for: table), to: textEditModel.text)
-        quickLinkCount = result.count
-        guard result.count > 0 else { return }
+        let outcome = QuickLinkScanner.scan(table, editedItemId: model.id, text: textEditModel.text)
+        quickLinkOutcome = outcome
+        guard case .linked(let result) = outcome, result.count > 0 else { return }
         textEditModel.reset(text: result.text, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
         referenceText.input = result.text
     }

@@ -44,6 +44,65 @@ struct EditControllerTests {
         #expect(item.entries[13].content == "Was ist in 7a")
     }
 
+    /// A map with two rooms that have outlines, as the quick editor merges them.
+    private func mapWithRooms() async throws -> (root: MapRootModel, itemId: UUID, rooms: [MapEntryModel]) {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .map))
+        let rooms = [
+            MapEntryModel(id: UUID(), name: "Goblin Den", content: "Smells of smoke.", coordinates: [CGPoint(x: 1, y: 1), CGPoint(x: 5, y: 1), CGPoint(x: 5, y: 4)]),
+            MapEntryModel(id: UUID(), name: "Wolf Pit", content: "A wolf sleeps here.", coordinates: [CGPoint(x: 6, y: 6), CGPoint(x: 9, y: 6), CGPoint(x: 9, y: 9)])
+        ]
+        rooms.forEach { root.editController.add(entry: $0, into: itemId) }
+        return (root, itemId, rooms)
+    }
+
+    private var monsterLinks: [LinkEntryModel] {
+        QuickLinkScanner.candidates(tableId: UUID(), module: .table, entries: [(UUID(), "Goblin"), (UUID(), "Wolf")])
+    }
+
+    /// CODE_AUDIT_Since_3.0.1 §5.1: Quick Link, then Apply in the quick editor, re-created every
+    /// room whose title held a table entry name, without its outline.
+    @Test func quickLinkThenApplyKeepsRooms() async throws {
+        let (root, itemId, rooms) = try await mapWithRooms()
+        let sut = root.editController
+        let parser = EntryTextParser()
+        let text = parser.format(rooms.map { (name: $0.name, content: $0.content) })
+
+        let linked = QuickLinkScanner.applyToContent(monsterLinks, to: text)
+        #expect(linked.count == 1, "only the wolf in the content")
+        let edited = parser.parse(linked.text).map { sut.create(name: $0.name, content: $0.content) }
+        let removed = sut.merge(itemId: itemId, entries: edited, recoverEntries: nil, forceSave: true)
+
+        #expect(removed.isEmpty)
+        let saved = root.itemController.itemOrEmpty(for: itemId).entries
+        #expect(saved.map(\.id) == rooms.map(\.id))
+        #expect(saved.map(\.name) == ["Goblin Den", "Wolf Pit"])
+        #expect(saved.map(\.coordinates) == rooms.map(\.coordinates))
+        #expect(saved[1].content.contains("](RPG://"))
+    }
+
+    /// CODE_AUDIT_Since_3.0.1 §5.1: a title that did gain a link (typed by hand, or by an older
+    /// Quick Link) still matches its room, which takes the linked name.
+    @Test func linkedTitleKeepsRoom() async throws {
+        let (root, itemId, rooms) = try await mapWithRooms()
+        let sut = root.editController
+        let text = EntryTextParser().format(rooms.map { (name: $0.name, content: $0.content) })
+
+        let linked = QuickLinkScanner.apply(monsterLinks, to: text)
+        let edited = EntryTextParser().parse(linked.text).map { sut.create(name: $0.name, content: $0.content) }
+        #expect(edited.map(\.name) != rooms.map(\.name), "the titles were linked")
+        let removed = sut.merge(itemId: itemId, entries: edited, recoverEntries: nil, forceSave: true)
+
+        #expect(removed.isEmpty)
+        let saved = root.itemController.itemOrEmpty(for: itemId).entries
+        #expect(saved.map(\.id) == rooms.map(\.id))
+        #expect(saved.map(\.coordinates) == rooms.map(\.coordinates))
+        #expect(saved.map(\.name) == edited.map(\.name))
+        #expect(saved.map { $0.name.withoutLink() } == ["Goblin Den", "Wolf Pit"])
+    }
+
     @Test func editControllerRoutesAndLinkRules() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

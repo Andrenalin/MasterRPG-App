@@ -44,6 +44,28 @@ public struct EntryTextParser {
         return entries
     }
 
+    /// `text` with `transform` applied to every content line. Title lines (what `parse` takes as an
+    /// entry name: the first line of a block with text in it) and empty lines stay as they are,
+    /// because a changed name no longer matches its entry on merge and the entry is created anew.
+    /// Line endings are normalized as `parse` reads them. See CODE_AUDIT_Since_3.0.1 §5.1.
+    public func transformingContent(of text: String, _ transform: (String) -> String) -> String {
+        var hasName = false
+        return normalizeLineEndings(text)
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line in
+                guard !line.isEmpty else {
+                    hasName = false
+                    return String(line)
+                }
+                guard hasName else {
+                    hasName = !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    return String(line)
+                }
+                return transform(String(line))
+            }
+            .joined(separator: "\n")
+    }
+
     /// Remove soft line breaks from text (typically from PDF copies)
     ///
     /// Combines lines within paragraphs while preserving paragraph structure

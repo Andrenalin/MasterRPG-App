@@ -39,11 +39,71 @@ struct QuickLinkScannerTests {
         #expect(result.count == 2)
     }
 
-    @Test("Names and contents are both replaced, every occurrence")
+    @Test("Plain apply replaces every occurrence of the text it is given")
     func namesAndContents() {
         let result = QuickLinkScanner.apply(candidates(), to: "Goblin\nA Goblin hits a goblin.")
         #expect(result.text == "\(link("Goblin", goblinId))\nA \(link("Goblin", goblinId)) hits a \(link("Goblin", goblinId)).")
         #expect(result.count == 3)
+    }
+
+    // MARK: Entry text (CODE_AUDIT_Since_3.0.1 §5.1)
+
+    @Test("In an entry text only the content is linked, every title stays as it is")
+    func contentOnly() {
+        let text = "Goblin Den\nA Goblin hides.\n\nWolf Pit\nTwo wolves and a Wolf."
+        let result = QuickLinkScanner.applyToContent(candidates(), to: text)
+        #expect(result.text == "Goblin Den\nA \(link("Goblin", goblinId)) hides.\n\nWolf Pit\nTwo wolves and a \(link("Wolf", wolfId)).")
+        #expect(result.count == 2)
+    }
+
+    @Test("A title that is exactly a candidate name is not linked")
+    func titleEqualToCandidate() {
+        let result = QuickLinkScanner.applyToContent(candidates(), to: "Goblin\nThe goblin.")
+        #expect(result.text == "Goblin\nThe \(link("Goblin", goblinId)).")
+    }
+
+    @Test(
+        "The parsed entry names never change",
+        arguments: [
+            "Goblin Den\nA Goblin hides.\n\nWolf Pit\nA wolf.",
+            "   \nGoblin\ngoblin attacks",
+            "\n\nDire Wolf\n\nWolf\nThe Dire Wolf howls.",
+            "Goblin\r\nA goblin.\r\n\r\nWolf\r\nA wolf.",
+            "Goblin"
+        ]
+    )
+    func parsedNamesUnchanged(text: String) {
+        let parser = EntryTextParser()
+        let result = QuickLinkScanner.applyToContent(candidates(), to: text)
+        #expect(parser.parse(result.text).map(\.name) == parser.parse(text).map(\.name))
+    }
+
+    @Test("Without a match the text is returned untouched, line endings included")
+    func contentOnlyNoMatch() {
+        let text = "Goblin\r\nNothing here."
+        #expect(QuickLinkScanner.applyToContent(candidates(), to: text) == QuickLinkScanner.Result(text: text, count: 0))
+    }
+
+    // MARK: Scan outcome
+
+    private var monsters: FakeItemModel {
+        FakeItemModel(id: tableId, name: "Monsters", entries: [FakeEntryModel(id: goblinId, name: "Goblin", content: "")])
+    }
+
+    @Test("Choosing the table being edited is ignored and reported, the text is not scanned")
+    func sameTableIgnored() {
+        let outcome = QuickLinkScanner.scan(monsters, editedItemId: tableId, text: "Goblin\nA goblin.")
+        #expect(outcome == .sameTable)
+    }
+
+    @Test("Another table is scanned in the content")
+    func otherTableScanned() {
+        let outcome = QuickLinkScanner.scan(monsters, editedItemId: UUID(), text: "Cave\nA goblin.")
+        let linked = FakeItemModel.typeId
+        #expect(outcome == .linked(QuickLinkScanner.Result(
+            text: "Cave\nA \(LinkBuilder.markdown(name: "Goblin", module: linked, itemId: tableId, entryId: goblinId)).",
+            count: 1
+        )))
     }
 
     @Test("Text inside an existing link is left alone")

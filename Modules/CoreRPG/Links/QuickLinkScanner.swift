@@ -35,6 +35,36 @@ public enum QuickLinkScanner {
         }
     }
 
+    /// What a Quick Link scan of the quick editor's text did.
+    public enum Outcome: Equatable, Sendable {
+        case linked(Result)
+        /// The chosen table is the item being edited. Its entries would link to themselves, so
+        /// the scan is skipped and the editor says why.
+        case sameTable
+    }
+
+    /// Links the entries of `table` in the content of `text`, unless `table` is the item being
+    /// edited (`editedItemId`).
+    @MainActor
+    public static func scan(_ table: some ItemDataAccessible, editedItemId: UUID, text: String) -> Outcome {
+        guard table.id != editedItemId else { return .sameTable }
+        return .linked(applyToContent(candidates(for: table), to: text))
+    }
+
+    /// `apply(_:to:)` on the content lines of an entry text only, as `EntryTextParser` reads it.
+    /// A title line that gained a link was a new name: on Apply the entry matched nothing and was
+    /// created again, so a map room lost its outline and a character value its dice and formula.
+    /// See CODE_AUDIT_Since_3.0.1 §5.1.
+    public static func applyToContent(_ candidates: [LinkEntryModel], to text: String) -> Result {
+        var count = 0
+        let linked = EntryTextParser().transformingContent(of: text) { line in
+            let result = apply(candidates, to: line)
+            count += result.count
+            return result.text
+        }
+        return Result(text: count > 0 ? linked : text, count: count)
+    }
+
     public static func apply(_ candidates: [LinkEntryModel], to text: String) -> Result {
         let protectedRanges = text.ranges(of: /\[[^\]]*\]\([^)]*\)/)
         var replacements: [(range: Range<String.Index>, markdownUrl: String)] = []

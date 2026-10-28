@@ -222,6 +222,25 @@ struct RuleModelTests {
         #expect(merged[0].content == "new")
     }
 
+    /// CODE_AUDIT_Since_3.0.1 §5.1: the name fallback compares names without link markup.
+    @Test("A name that only gained a link keeps its entry")
+    func linkedNameFallback() throws {
+        // Given
+        let existingID = try #require(UUID(uuidString: "0B4E6C1F-3E0D-4C5B-9F60-7D2A1E8C4B11"))
+        let importedID = try #require(UUID(uuidString: "5C9A2D47-8B1E-4F3A-A6D2-0E7B3C9F1A22"))
+        let linkedName = "[Goblin](RPG://table/0/\(UUID().uuidString)) Den"
+        let existing = [RuleEntryModel.fixture(id: existingID, name: "Goblin Den", kind: .value)]
+        let imported = [RuleEntryModel.fixture(id: importedID, name: linkedName, content: "new", kind: .value)]
+
+        // When
+        let merged = EditController.mergeEntries(existing: existing, imported: imported)
+
+        // Then
+        #expect(merged.map(\.id) == [existingID])
+        #expect(merged[0].name == linkedName)
+        #expect(merged[0].content == "new")
+    }
+
     @Test("Stable versions and localized search include source metadata and sections")
     func versionAndFiltering() {
         // Given
