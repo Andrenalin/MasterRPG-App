@@ -92,7 +92,7 @@ extension MapModel {
         if let previousImage, previousImage.canvasSize != storedCanvasSize || previousImage.degrees != self.degrees {
             Logger.editController.warning("Map \(self.id, privacy: .public): stored canvas \(storedCanvasSize.debugDescription, privacy: .public) degrees \(self.degrees, privacy: .public) differs from the real old photo \(previousImage.size.debugDescription, privacy: .public) degrees \(previousImage.degrees, privacy: .public); using the photo.")
         }
-        Logger.editController.info("Map \(self.id, privacy: .public): replace photo old \(previousImage?.size.debugDescription ?? "stored", privacy: .public) -> new \(size.debugDescription, privacy: .public) degrees \(degrees, privacy: .public), canvas \(oldCanvasSize.debugDescription, privacy: .public) -> \(newCanvasSize.debugDescription, privacy: .public), adapt \(adaptContent, privacy: .public)")
+        Logger.editController.debug("Map \(self.id, privacy: .public): replace photo old \(previousImage?.size.debugDescription ?? "stored", privacy: .public) -> new \(size.debugDescription, privacy: .public) degrees \(degrees, privacy: .public), canvas \(oldCanvasSize.debugDescription, privacy: .public) -> \(newCanvasSize.debugDescription, privacy: .public), adapt \(adaptContent, privacy: .public)")
         let canvasChanged = newCanvasSize != oldCanvasSize || degrees != oldDegrees
         guard canvasChanged || newCanvasSize != storedCanvasSize || degrees != self.degrees else { return }
         width = newCanvasSize.width

@@ -342,9 +342,9 @@ extension DiceModel {
         return diceModel.text
     }
     
-    /// Largest magnitude accepted for a decoded modifier or compare value; it also fits `Float`
-    /// storage. Non-finite values become 0. See CODE_AUDIT_16 §5.4.
-    nonisolated static let maximumValueMagnitude = 1_000_000_000.0
+    /// Largest magnitude accepted for a decoded modifier or compare value (`DiceValueLimit`, shared
+    /// with the Quick Dice slots). Non-finite values become 0. See CODE_AUDIT_16 §5.4.
+    nonisolated static let maximumValueMagnitude = Double(DiceValueLimit.maximumMagnitude)
 
     nonisolated static func boundedValue(_ value: Double) -> Double {
         guard value.isFinite else { return 0 }
@@ -352,7 +352,7 @@ extension DiceModel {
     }
 
     /// Most dice a compare value can add. See CODE_AUDIT_16 §5.4.
-    static let maximumDiceCount = 100
+    nonisolated static let maximumDiceCount = 100
 
     func resetDice() {
         guard addDiceEvery > 0 else { return }

@@ -59,8 +59,12 @@ struct PlayerGameScreen: View {
         .onChange(of: root.gameModel.selectedCharacter, initial: true) { _, characterId in
             root.quickDiceSlots.load(characterId: characterId)
         }
+        .onChange(of: root.offersQuickDice(isMaster: false), initial: true) { _, isOffered in
+            root.quickDiceSlots.isOfferedNow = isOffered
+        }
         .onDisappear {
             root.quickDiceSlots.load(characterId: nil)
+            root.quickDiceSlots.isOfferedNow = false
             root.mapRoot.rootModel.clearGameEditorSession()
             // Covers dismissal via system window chrome (visionOS's own close affordance, or
             // any other path that tears down this view without going through the in-app Quit

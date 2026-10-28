@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -99,7 +98,7 @@ struct AddCharacterEntryIntent: AppIntent {
         // `target` may be stale — deleted since Siri/Shortcuts last cached it.
         // Confirm it still resolves before reporting success, rather than
         // silently no-opping while still returning a success dialog.
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which character?", bundle: .module))
+        try requiredIntentModel($target, prompt: CharacterIntentSupport.targetPrompt, in: root)
 
         let entry = root.editController.create(
             name: trimmedEntryName,
@@ -111,9 +110,7 @@ struct AddCharacterEntryIntent: AppIntent {
 
         // The updated character is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which character?", bundle: .module))
-        let updated = CharacterEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: CharacterIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added \"\(trimmedEntryName)\" to \"\(target.name)\".", bundle: .module))
     }
@@ -162,14 +159,10 @@ struct UpdateCharacterIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<CharacterEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which character?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which character?", bundle: .module))
-        let updated = CharacterEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: CharacterIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }

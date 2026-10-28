@@ -5,10 +5,9 @@
 import CoreRPG
 import AppIntents
 import Foundation
-import os.log
 import SwiftUI
 
-struct OpenDiceIntent: AppIntent {
+struct OpenDiceIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open Dice"
     static let description = IntentDescription(
         "Opens a dice in the app.",
@@ -23,7 +22,7 @@ struct OpenDiceIntent: AppIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.dice(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -38,7 +37,7 @@ extension OpenDiceIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenDiceSchemaIntent: OpenIntent {
+struct OpenDiceSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -50,7 +49,7 @@ struct OpenDiceSchemaIntent: OpenIntent {
     init() {}
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.dice(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -69,13 +68,9 @@ extension DiceRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = DiceEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenDiceSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenDiceSchemaIntent.opening(entity)
         }
-        let intent = OpenDiceIntent()
-        intent.target = entity
-        return intent
+        return OpenDiceIntent.opening(entity)
     }
 }
 

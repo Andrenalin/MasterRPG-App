@@ -24,7 +24,7 @@ public struct QuickDiceSlot: Codable, Hashable, Sendable {
     }
 
     /// Largest compare value a slot keeps, the same bound a dice model accepts when decoding.
-    public static let maximumValue = 1_000_000_000
+    public static let maximumValue = DiceValueLimit.maximumMagnitude
 }
 
 /// A value typed over a sheet-linked slot, good for as long as the entry's value is the one it
@@ -80,6 +80,17 @@ public final class QuickDiceSlotsModel {
 
     public private(set) var slots: [QuickDiceSlot?] = Array(repeating: nil, count: QuickDiceSlotsModel.slotCount)
     public private(set) var characterId: UUID?
+
+    /// The one rule for who gets Quick Dice: a player who plays, not the game master and not an
+    /// observer. See CODE_AUDIT_QuickDice §9.2, CODE_AUDIT_Since_3.0.1 §9.14.
+    public nonisolated static func isOffered(isMaster: Bool, gameType: GameType) -> Bool {
+        !isMaster && gameType != .observer
+    }
+
+    /// `isOffered(isMaster:gameType:)` for the game on screen, kept by the player's game screen
+    /// (GameRPG) for the views that cannot see the game, such as the sheet's favorite menu
+    /// (CharacterRPG). `false` outside a game.
+    public var isOfferedNow = false
 
     /// The temporary overrides of `.entry` slots by slot index. Session-only.
     public private(set) var overrides: [Int: QuickDiceOverride] = [:]

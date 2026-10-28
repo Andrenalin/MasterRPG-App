@@ -25,26 +25,25 @@ public extension String {
     }
 
 
+    /// The text without backticks and with every markdown link reduced to its label, through the
+    /// shared `LinkBuilder.markdownLinkPattern`. See CODE_AUDIT_Since_3.0.1 §9.3.
     func withoutLink() -> String {
-        var result = self
-        result = result.replacing("`", with: "")
-        var searchRange = Range(uncheckedBounds: (result.startIndex, result.endIndex))
-        while let range = result.range(of: "](", range: searchRange),
-                let closing = result.range(of: ")", range: Range(uncheckedBounds: (range.upperBound, result.endIndex))) {
-            
-            if let opening = result.range(of: "[", options: .backwards, range: Range(uncheckedBounds: (result.startIndex, range.lowerBound))) {
+        LinkBuilder.labels(in: replacing("`", with: ""))
+    }
 
-                let urlRange = Range(uncheckedBounds: (range.lowerBound, closing.upperBound))
-                result.replaceSubrange(urlRange, with: "")
-                
-                let openingRange = Range(uncheckedBounds: (opening.lowerBound, opening.upperBound))
-                result.replaceSubrange(openingRange, with: "")
-                
-                searchRange = Range(uncheckedBounds: (result.startIndex, result.endIndex))
-            } else {
-                searchRange = Range(uncheckedBounds: (range.upperBound, result.endIndex))
-            }
+    /// The text with each range replaced by its text, in order of position. A range that overlaps
+    /// one before it is skipped. The ranges must be ranges of this string.
+    /// See CODE_AUDIT_Since_3.0.1 §9.3.
+    func replacing(ranges replacements: [(range: Range<String.Index>, text: String)]) -> String {
+        var result = ""
+        var position = startIndex
+        for replacement in replacements.sorted(by: { $0.range.lowerBound < $1.range.lowerBound })
+        where replacement.range.lowerBound >= position {
+            result += self[position..<replacement.range.lowerBound]
+            result += replacement.text
+            position = replacement.range.upperBound
         }
+        result += self[position...]
         return result
     }
 }

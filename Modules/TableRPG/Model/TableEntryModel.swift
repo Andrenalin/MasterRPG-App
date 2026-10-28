@@ -98,13 +98,3 @@ extension TableEntryModel {
     }
 }
 #endif
-
-// MARK: - Attributed Text with links
-
-extension TableEntryModel {
-    public func entryLinkText(otherValue: String) -> String {
-        let bold = name.starts(with: "**") ? "" : "**"
-        return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(content)\(otherValue)"
-    }
-
-}

@@ -5,9 +5,8 @@
 import AppIntents
 import CoreRPG
 import Foundation
-import os.log
 
-struct OpenRuleIntent: AppIntent {
+struct OpenRuleIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open Rule"
     static let description = IntentDescription(
         "Opens a rule in the app.",
@@ -22,7 +21,7 @@ struct OpenRuleIntent: AppIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.rules(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -37,7 +36,7 @@ extension OpenRuleIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenRuleSchemaIntent: OpenIntent {
+struct OpenRuleSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -49,7 +48,7 @@ struct OpenRuleSchemaIntent: OpenIntent {
     init() {}
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.rules(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -71,13 +70,9 @@ extension RuleRootModel: SiriItemContext {
               !model.specialCategory else { return nil }
         let entity = RuleEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenRuleSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenRuleSchemaIntent.opening(entity)
         }
-        let intent = OpenRuleIntent()
-        intent.target = entity
-        return intent
+        return OpenRuleIntent.opening(entity)
     }
 }
 

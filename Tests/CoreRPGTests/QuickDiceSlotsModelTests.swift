@@ -222,6 +222,24 @@ struct QuickDiceSlotsModelTests {
         #expect(sut.slots[0]?.manualValue == nil)
     }
 
+    /// CODE_AUDIT_Since_3.0.1 §9.14: the overlay and the sheet's favorite menu had two rules.
+    @Test("Quick Dice are offered to a playing player only", arguments: [
+        (false, GameType.player, true),
+        (false, GameType.proxy, true),
+        (false, GameType.observer, false),
+        (true, GameType.master, false),
+        (true, GameType.player, false)
+    ])
+    func offeredRule(isMaster: Bool, gameType: GameType, offered: Bool) {
+        #expect(QuickDiceSlotsModel.isOffered(isMaster: isMaster, gameType: gameType) == offered)
+        #expect(!QuickDiceSlotsModel(store: MemoryQuickDiceSlotStore()).isOfferedNow, "nothing is offered outside a game")
+    }
+
+    @Test("The slot bound is the dice value bound")
+    func sharedBound() {
+        #expect(QuickDiceSlot.maximumValue == DiceValueLimit.maximumMagnitude)
+    }
+
     @Test("A sheet row of an entry without a slot just uses the linked value")
     func rowWithoutSlot() {
         let sut = QuickDiceSlotsModel(store: MemoryQuickDiceSlotStore())

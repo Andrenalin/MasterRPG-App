@@ -131,11 +131,9 @@ extension AudioRootModel {
     /// Throttled per item, like dice rolls. See CODE_AUDIT_AppIntents3 §4.13.
     @MainActor
     func donatePlay(of itemId: UUID) {
-        Task {
-            await IntentDonations.donateThrottled(for: itemId) {
-                guard let model = itemController.itemSync(for: itemId) else { return nil }
-                return PlayAudioIntent(target: AudioEntity(root: self, model: model))
-            }
+        IntentDonations.startThrottledDonation(for: itemId) { [self] in
+            guard let model = itemController.itemSync(for: itemId) else { return nil }
+            return PlayAudioIntent(target: AudioEntity(root: self, model: model))
         }
     }
 }

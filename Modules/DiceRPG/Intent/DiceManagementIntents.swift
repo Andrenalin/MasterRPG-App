@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -91,7 +90,7 @@ struct AddDieToDiceIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<DiceEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
+        try requiredIntentModel($target, prompt: DiceIntentSupport.targetPrompt, in: root)
         let die = DieModel(id: UUID(), die: diceType.rawDie)
         try requireOutsideGame([target.id], in: root)
         root.editController.add(die: die, itemId: target.id, forceSave: true)
@@ -99,9 +98,7 @@ struct AddDieToDiceIntent: AppIntent {
 
         // The updated dice is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
-        let updated = DiceEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: DiceIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added \(diceType.rawValue) to \"\(target.name)\".", bundle: .module))
     }
@@ -150,14 +147,10 @@ struct UpdateDiceIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<DiceEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
-        let updated = DiceEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: DiceIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }

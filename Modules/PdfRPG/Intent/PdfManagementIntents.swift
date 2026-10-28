@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -104,7 +103,7 @@ struct AddPdfBookmarkIntent: AppIntent {
         // ask again instead of adding a blank entry or reporting a success that changed nothing.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedBookmarkName = try requiredIntentName(bookmarkName, parameter: $bookmarkName, prompt: .localized("What should the bookmark be called?", bundle: .module))
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which PDF?", bundle: .module))
+        try requiredIntentModel($target, prompt: PdfIntentSupport.targetPrompt, in: root)
         let entry = root.editController.create(
             name: trimmedBookmarkName,
             content: intentMarkdown(from: content)
@@ -115,9 +114,7 @@ struct AddPdfBookmarkIntent: AppIntent {
 
         // The updated PDF is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which PDF?", bundle: .module))
-        let updated = PdfEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: PdfIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added \"\(trimmedBookmarkName)\" to \"\(target.name)\".", bundle: .module))
     }
@@ -166,14 +163,10 @@ struct UpdatePdfIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PdfEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which PDF?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which PDF?", bundle: .module))
-        let updated = PdfEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: PdfIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }

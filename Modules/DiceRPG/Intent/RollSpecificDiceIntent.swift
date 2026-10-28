@@ -194,11 +194,9 @@ extension DiceRootModel {
     /// system ignores a source that floods it. See CODE_AUDIT_AppIntents2 §5.5.
     @MainActor
     func donateRoll(of itemId: UUID) {
-        Task {
-            await IntentDonations.donateThrottled(for: itemId) {
-                guard let model = itemController.itemSync(for: itemId) else { return nil }
-                return RollSpecificDiceIntent(dice: DiceEntity(root: self, model: model))
-            }
+        IntentDonations.startThrottledDonation(for: itemId) { [self] in
+            guard let model = itemController.itemSync(for: itemId) else { return nil }
+            return RollSpecificDiceIntent(dice: DiceEntity(root: self, model: model))
         }
     }
 }

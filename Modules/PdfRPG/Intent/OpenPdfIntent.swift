@@ -4,11 +4,10 @@
 import CoreRPG
 import AppIntents
 import Foundation
-import os.log
 import SwiftUI
 
 
-struct OpenPdfIntent: AppIntent {
+struct OpenPdfIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open PDF"
     static let description = IntentDescription(
         "Opens a PDF in the app.",
@@ -23,7 +22,7 @@ struct OpenPdfIntent: AppIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.pdfs(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -38,7 +37,7 @@ extension OpenPdfIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenPdfSchemaIntent: OpenIntent {
+struct OpenPdfSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -50,7 +49,7 @@ struct OpenPdfSchemaIntent: OpenIntent {
     init() {}
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.pdfs(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -69,13 +68,9 @@ extension PdfRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = PdfEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenPdfSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenPdfSchemaIntent.opening(entity)
         }
-        let intent = OpenPdfIntent()
-        intent.target = entity
-        return intent
+        return OpenPdfIntent.opening(entity)
     }
 }
 

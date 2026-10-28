@@ -40,7 +40,7 @@ struct RunGeneratorIntent: AppIntent, ProgressReportingIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         try await requireReadyDatabase()
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which generator?", bundle: .module))
+        let model = try requiredIntentModel($target, prompt: GeneratorIntentSupport.targetPrompt, in: root)
 
         let availability = FoundationManager()
         guard availability.checkIsAvailable() else {

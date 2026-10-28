@@ -79,20 +79,10 @@ public final class LinkReplaceController: Sendable {
 
     /// `source` with every link whose stored number disagrees rewritten in place.
     private static func rewritten(_ source: String, numbered: [NumberedLink], ranges: [Range<String.Index>?]) -> String {
-        let fixes = zip(numbered, ranges)
-            .compactMap { link, range in
-                range.flatMap { link.original == link.markDown ? nil : (range: $0, markDown: link.markDown) }
-            }
-            .sorted { $0.range.lowerBound < $1.range.lowerBound }
-        var result = ""
-        var position = source.startIndex
-        for fix in fixes where fix.range.lowerBound >= position {
-            result += source[position..<fix.range.lowerBound]
-            result += fix.markDown
-            position = fix.range.upperBound
+        let fixes = zip(numbered, ranges).compactMap { link, range in
+            range.flatMap { link.original == link.markDown ? nil : (range: $0, text: link.markDown) }
         }
-        result += source[position...]
-        return result
+        return source.replacing(ranges: fixes)
     }
 
     private struct NumberedLink {
@@ -105,30 +95,6 @@ public final class LinkReplaceController: Sendable {
         /// The link as written in the text, and as it reads with its computed number.
         let original: String
         let markDown: String
-    }
-
-    public static func removeLinks(for text: String) -> String {
-        let list = links(for: text)
-        var result = text
-        list.forEach {
-            result = result.replacing($0.markDown, with: $0.name)
-        }
-        return result
-    }
-
-    public static func updateLinks(for text: String) -> String {
-        let list = links(for: text)
-        var result = text
-        list.forEach {
-            var entryPart = ""
-            if let entryId = $0.entryId {
-                entryPart = "/\(entryId.uuidString)"
-            }
-            let oldLink = "[\($0.name)](\(scheme)://\($0.module.token)/\($0.itemId.uuidString)\(entryPart))"
-
-            result = result.replacing(oldLink, with: $0.markDown, maxReplacements: 1)
-        }
-        return result
     }
 }
 

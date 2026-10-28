@@ -7,7 +7,6 @@ import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
-import PDFKit
 
 struct TableEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -118,19 +117,6 @@ extension TableEntity: SyncableEntity {}
 // 'CSSearchableIndexDescription' cannot be sent... into main actor-isolated
 // implementation". See CODE_AUDIT_Table §4.1.
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension TableEntityQuery: @preconcurrency IndexedEntityQuery {
-    func reindexEntities(
-        for identifiers: [TableEntity.ID],
-        indexDescription: CSSearchableIndexDescription
-    ) async throws {
-        let entities = try await entities(for: identifiers)
-        try await CSSearchableIndex.default().indexAppEntities(entities)
-    }
-
-    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        let all = try await allEntities()
-        try await CSSearchableIndex.default().indexAppEntities(all)
-    }
-}
+extension TableEntityQuery: @preconcurrency IndexedEntityQuery {}
 
 #endif

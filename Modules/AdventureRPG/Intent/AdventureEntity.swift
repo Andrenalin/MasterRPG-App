@@ -7,7 +7,6 @@ import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
-import PDFKit
 
 public struct AdventureEntity: IndexedEntity {
     public static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -123,20 +122,7 @@ public struct AdventureEntityQuery: @preconcurrency ItemEntityQuery {
 extension AdventureEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
-    public func reindexEntities(
-        for identifiers: [AdventureEntity.ID],
-        indexDescription: CSSearchableIndexDescription
-    ) async throws {
-        let entities = try await entities(for: identifiers)
-        try await CSSearchableIndex.default().indexAppEntities(entities)
-    }
-
-    public func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        let all = try await allEntities()
-        try await CSSearchableIndex.default().indexAppEntities(all)
-    }
-}
+extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {}
 
 // MARK: - Find action
 

@@ -81,8 +81,7 @@ public enum IntentEntityText {
         guard markdown.contains("](") || markdown.contains("**") || markdown.contains("__") else {
             return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        let withoutLinks = markdown.replacing(/\[([^\]]*)\]\([^)\s]*\)/) { String($0.output.1) }
-        return withoutLinks
+        return LinkBuilder.labels(in: markdown)
             .replacing("**", with: "")
             .replacing("__", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)

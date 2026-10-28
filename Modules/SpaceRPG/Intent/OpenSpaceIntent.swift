@@ -6,10 +6,9 @@ import CoreRPG
 import AppIntents
 
 import Foundation
-import os.log
 import SwiftUI
 
-struct OpenSpaceIntent: AppIntent {
+struct OpenSpaceIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open 3D Object"
     static let description = IntentDescription(
         "Opens a 3D object in the app.",
@@ -24,7 +23,7 @@ struct OpenSpaceIntent: AppIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.spaces(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -39,7 +38,7 @@ extension OpenSpaceIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenSpaceSchemaIntent: OpenIntent {
+struct OpenSpaceSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -51,7 +50,7 @@ struct OpenSpaceSchemaIntent: OpenIntent {
     init() {}
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.spaces(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -70,13 +69,9 @@ extension SpaceRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = SpaceEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenSpaceSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenSpaceSchemaIntent.opening(entity)
         }
-        let intent = OpenSpaceIntent()
-        intent.target = entity
-        return intent
+        return OpenSpaceIntent.opening(entity)
     }
 }
 

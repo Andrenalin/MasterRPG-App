@@ -72,7 +72,7 @@ public enum QuickLinkScanner {
     }
 
     public static func apply(_ candidates: [LinkEntryModel], to text: String) -> Result {
-        let protectedRanges = text.ranges(of: /\[[^\]]*\]\([^)]*\)/)
+        let protectedRanges = text.ranges(of: LinkBuilder.markdownLinkPattern)
         var replacements: [(range: Range<String.Index>, markdownUrl: String)] = []
 
         for candidate in candidates.sorted(by: { $0.reference.count > $1.reference.count }) where !candidate.reference.isEmpty {
@@ -87,15 +87,8 @@ public enum QuickLinkScanner {
         }
         guard !replacements.isEmpty else { return Result(text: text, count: 0) }
 
-        var result = ""
-        var position = text.startIndex
-        for replacement in replacements.sorted(by: { $0.range.lowerBound < $1.range.lowerBound }) {
-            result += text[position..<replacement.range.lowerBound]
-            result += relabeled(replacement.markdownUrl, as: text[replacement.range])
-            position = replacement.range.upperBound
-        }
-        result += text[position...]
-        return Result(text: result, count: replacements.count)
+        let linked = text.replacing(ranges: replacements.map { (range: $0.range, text: relabeled($0.markdownUrl, as: text[$0.range])) })
+        return Result(text: linked, count: replacements.count)
     }
 
     /// `markdownLink` (`[Name](address)`) with the matched text as its label, so the prose keeps

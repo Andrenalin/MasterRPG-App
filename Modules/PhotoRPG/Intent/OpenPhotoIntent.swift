@@ -4,11 +4,10 @@
 import CoreRPG
 import AppIntents
 import Foundation
-import os.log
 import SwiftUI
 
 
-struct OpenPhotoIntent: AppIntent {
+struct OpenPhotoIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open Photo"
     static let description = IntentDescription(
         "Opens a photo in the app.",
@@ -23,7 +22,7 @@ struct OpenPhotoIntent: AppIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.photos(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -38,7 +37,7 @@ extension OpenPhotoIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenPhotoSchemaIntent: OpenIntent {
+struct OpenPhotoSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -50,7 +49,7 @@ struct OpenPhotoSchemaIntent: OpenIntent {
     init() {}
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.photos(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -69,13 +68,9 @@ extension PhotoRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = PhotoEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenPhotoSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenPhotoSchemaIntent.opening(entity)
         }
-        let intent = OpenPhotoIntent()
-        intent.target = entity
-        return intent
+        return OpenPhotoIntent.opening(entity)
     }
 }
 

@@ -59,7 +59,7 @@ public struct NextRoundIntent: AppIntent {
         guard root.gameModel.gameConfig.isMaster else { return .result(dialog: GameIntentDialog.masterOnly) }
         guard root.battleRoundController.nextRound() else { return .result(dialog: GameIntentDialog.nobodyCanAct) }
         let round = model.roundCounter
-        if let name = model.activeEntry.flatMap({ model.attacker(for: $0) })?.name, !name.isEmpty {
+        if let name = GameIntentDialog.activeName(in: model) {
             return .result(dialog: .localized(full: "Round \(round). \(name) has the turn.", supporting: "Round \(round)", bundle: .module))
         }
         return .result(dialog: .localized("Round \(round).", bundle: .module))
@@ -137,6 +137,8 @@ public struct JoinGameIntent: AppIntent {
 
     /// How long the intent looks for a game master on the local network.
     static let searchTimeout: Duration = .seconds(10)
+    /// How often the intent looks at the browser's results while it waits.
+    static let searchPollInterval: Duration = .milliseconds(250)
 
     @Parameter(
         title: "Code",
@@ -218,7 +220,7 @@ public struct JoinGameIntent: AppIntent {
         while true {
             let masters = browser.games.filter { $0.connectionMode == .observer }
             guard masters.isEmpty, ContinuousClock.now < deadline else { return masters }
-            try await Task.sleep(for: .milliseconds(250))
+            try await Task.sleep(for: Self.searchPollInterval)
         }
     }
 }
@@ -250,10 +252,17 @@ enum GameIntentDialog {
 
     @MainActor
     static func turn(of model: BattleRoundModel) -> IntentDialog {
-        guard let name = model.activeEntry.flatMap({ model.attacker(for: $0) })?.name, !name.isEmpty else {
+        guard let name = activeName(in: model) else {
             return .localized("Next turn.", bundle: .module)
         }
         return .localized(full: "\(name) has the turn.", supporting: "\(name)", bundle: .module)
+    }
+
+    /// The name of the combatant whose turn it is, or `nil` when there is none or it has no name.
+    @MainActor
+    static func activeName(in model: BattleRoundModel) -> String? {
+        guard let name = model.activeEntry.flatMap({ model.attacker(for: $0) })?.name, !name.isEmpty else { return nil }
+        return name
     }
 }
 

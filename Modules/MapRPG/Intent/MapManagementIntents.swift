@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -93,7 +92,7 @@ struct AddMapRoomIntent: AppIntent {
         // ask again instead of adding a blank entry or reporting a success that changed nothing.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedRoomName = try requiredIntentName(roomName, parameter: $roomName, prompt: .localized("What should the room be called?", bundle: .module))
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which map?", bundle: .module))
+        try requiredIntentModel($target, prompt: MapIntentSupport.targetPrompt, in: root)
         let entry = root.editController.create(
             name: trimmedRoomName,
             content: intentMarkdown(from: content)
@@ -104,9 +103,7 @@ struct AddMapRoomIntent: AppIntent {
 
         // The updated map is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which map?", bundle: .module))
-        let updated = MapEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: MapIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added \"\(trimmedRoomName)\" to \"\(target.name)\".", bundle: .module))
     }
@@ -155,14 +152,10 @@ struct UpdateMapIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<MapEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which map?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which map?", bundle: .module))
-        let updated = MapEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: MapIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }

@@ -7,7 +7,6 @@ import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
-import PDFKit
 
 struct WeatherEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -113,19 +112,6 @@ struct WeatherEntityQuery: ItemEntityQuery {
 extension WeatherEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension WeatherEntityQuery: @preconcurrency IndexedEntityQuery {
-    func reindexEntities(
-        for identifiers: [WeatherEntity.ID],
-        indexDescription: CSSearchableIndexDescription
-    ) async throws {
-        let entities = try await entities(for: identifiers)
-        try await CSSearchableIndex.default().indexAppEntities(entities)
-    }
-
-    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        let all = try await allEntities()
-        try await CSSearchableIndex.default().indexAppEntities(all)
-    }
-}
+extension WeatherEntityQuery: @preconcurrency IndexedEntityQuery {}
 
 #endif

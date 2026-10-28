@@ -58,6 +58,14 @@ public enum IntentDonations {
         await donate(intent)
     }
 
+    /// `donateThrottled(for:makeIntent:)` for a UI action that does not wait for the donation,
+    /// such as a roll or a play button. See CODE_AUDIT_Since_3.0.1 §9.8.
+    public static func startThrottledDonation(for itemId: UUID, makeIntent: @escaping @MainActor () -> (any AppIntent)?) {
+        Task {
+            await donateThrottled(for: itemId, makeIntent: makeIntent)
+        }
+    }
+
     /// Donates an action the user just completed in the UI. The system already donates intents
     /// that Siri or Shortcuts ran, so this is only for the UI's own path to the same action.
     public static func donate(_ intent: some AppIntent) async {

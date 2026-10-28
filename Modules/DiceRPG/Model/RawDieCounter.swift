@@ -12,22 +12,6 @@ public struct RawDieCounter: Equatable, Hashable {
         self.count = count
     }
 
-    public init(text: String) {
-        count = 1
-        let pattern = "(?<Count>[\\-0-9]*)(?<Die>d)(?<Sides>[0-9]+)"
-        let results = RegularExpressionParser.parse(text, with: pattern, extract: ["Count"])
-        if results.count == 1 {
-            if results[0] == "-" {
-                count = -1
-            } else if let number = Int(results[0]) {
-                // Notation can come from imported or peer text; an unbounded count made `roll()`
-                // loop practically forever and `abs(Int.min)` trap. See CODE_AUDIT_15 §5.11.
-                count = Swift.min(Swift.max(number, -Self.maximumCount), Self.maximumCount)
-            }
-        }
-        die = RawDie(text: text)
-    }
-
     public func roll() -> Int {
         // `count == 0` (e.g. parsed from a malformed "0d6" notation string)
         // previously built the invalid range `1...0` and trapped. See
@@ -40,9 +24,6 @@ public struct RawDieCounter: Equatable, Hashable {
         }
         return result
     }
-
-    /// Largest number of dice one notation term may stand for.
-    public static let maximumCount = 1_000
 
     public var min: Int {
         count.saturatingProduct(die.min)

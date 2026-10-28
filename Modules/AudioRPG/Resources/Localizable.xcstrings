@@ -1023,23 +1023,6 @@
         }
       }
     },
-    "Pause the audio that is playing" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das laufende Audio pausieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "หยุดเสียงที่กำลังเล่นชั่วคราว"
-          }
-        }
-      }
-    },
     "Paused the audio." : {
       "localizations" : {
         "de" : {
@@ -1132,23 +1115,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เล่น ${target}"
-          }
-        }
-      }
-    },
-    "Play a track or playlist from your audio collection" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einen Titel oder eine Wiedergabeliste aus deiner Audiosammlung abspielen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เล่นแทร็กหรือเพลย์ลิสต์จากคอลเลกชันเสียงของคุณ"
           }
         }
       }

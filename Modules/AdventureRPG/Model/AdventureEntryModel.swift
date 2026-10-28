@@ -84,13 +84,6 @@ extension AdventureEntryModel: ItemDiffComparable {
     }
 }
 
-extension AdventureEntryModel {
-    public func entryLinkText() -> String {
-        let bold = name.starts(with: "**") ? "" : "**"
-        return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(content)"
-    }
-}
-
 
 #if DEBUG
 extension AdventureEntryModel {

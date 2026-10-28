@@ -133,18 +133,5 @@ struct RuleEntityQuery: ItemEntityQuery {
 extension RuleEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension RuleEntityQuery: @preconcurrency IndexedEntityQuery {
-    func reindexEntities(
-        for identifiers: [UUID],
-        indexDescription: CSSearchableIndexDescription
-    ) async throws {
-        try await CSSearchableIndex.default().indexAppEntities(
-            try await entities(for: identifiers)
-        )
-    }
-
-    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        try await CSSearchableIndex.default().indexAppEntities(try await allEntities())
-    }
-}
+extension RuleEntityQuery: @preconcurrency IndexedEntityQuery {}
 #endif

@@ -27,12 +27,6 @@ public struct RawDice: Equatable, Hashable {
         dieCounters.forEach { addDie($0) }
     }
 
-    public init(text: String) {
-        let result = parse(text)
-        dieCounters = result.0
-        modifier = result.1
-    }
-
     public mutating func addDie(_ dieCounter: RawDieCounter) {
         guard let existingIndex = dieCounters.firstIndex(where: { $0.die.sides == dieCounter.die.sides }) else {
             dieCounters.append(dieCounter)
@@ -102,28 +96,5 @@ public struct RawDice: Equatable, Hashable {
             result = String(result.dropFirst())
         }
         return result
-    }
-
-    private func parse(_ text: String) -> ([RawDieCounter], Int) {
-        var modifier = 0
-        var dieCounters: [RawDieCounter] = []
-
-        var modifierText = text
-
-        let diePattern = "(?<Die>[+\\-]?[0-9]*d[0-9]+)"
-        let dieResults = RegularExpressionParser.parse(text, with: diePattern, extract: ["Die"])
-        dieResults.forEach {
-            dieCounters.append(RawDieCounter(text: $0))
-            modifierText = modifierText.replacing($0, with: "")
-        }
-
-        let modifierPattern = "(?<Modifier>[+\\-]+[0-9]+)"
-        let modifierResults = RegularExpressionParser.parse(modifierText, with: modifierPattern, extract: ["Modifier"])
-        modifierResults.forEach {
-            if let number = Int($0) {
-                modifier = modifier.saturatingSum(number)
-            }
-        }
-        return (dieCounters, modifier)
     }
 }

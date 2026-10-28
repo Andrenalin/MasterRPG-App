@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import Foundation
 import Testing
 
 @testable import CoreRPG
@@ -40,5 +41,32 @@ struct WithoutLinkTests {
     ])
     func bracketsInsideName(testCase: LinkRemovalTestCase) async throws {
         #expect(testCase.input.withoutLink() == testCase.expected)
+    }
+
+    /// CODE_AUDIT_Since_3.0.1 §9.3: `withoutLink()`, `IntentEntityText.readable` and Quick Link
+    /// share `LinkBuilder.markdownLinkPattern`.
+    @Test("One link pattern for every reader")
+    func sharedPattern() {
+        // The link is the innermost `[…](…)`, as the old hand-written scan found it.
+        #expect("[a [b](x)".withoutLink() == "[a b")
+        #expect("`[Orc](RPG://TABLES/0/1)`".withoutLink() == "Orc")
+        // A target with a space counts as a link everywhere now.
+        #expect(IntentEntityText.readable("[Orc](some target)") == "Orc")
+        #expect("[Orc](some target)".withoutLink() == "Orc")
+        let linked = QuickLinkScanner.apply([LinkEntryModel(reference: "Orc", markdownUrl: "[Orc](RPG://TABLES/0/1)")], to: "[Orc](some target) and Orc")
+        #expect(linked.count == 1)
+        #expect(linked.text == "[Orc](some target) and [Orc](RPG://TABLES/0/1)")
+    }
+
+    @Test("Ranges are replaced in order, and an overlapping one is skipped")
+    func replacingRanges() throws {
+        let text = "one two three"
+        let one = try #require(text.range(of: "one"))
+        let three = try #require(text.range(of: "three"))
+        let overlap = try #require(text.range(of: "e tw"))
+
+        #expect(text.replacing(ranges: [(range: three, text: "3"), (range: one, text: "1")]) == "1 two 3")
+        #expect(text.replacing(ranges: [(range: one, text: "1"), (range: overlap, text: "X")]) == "1 two three")
+        #expect(text.replacing(ranges: []) == text)
     }
 }

@@ -6,10 +6,9 @@ import CoreRPG
 import AppIntents
 
 import Foundation
-import os.log
 import SwiftUI
 
-public struct OpenAdventureIntent: AppIntent {
+public struct OpenAdventureIntent: AppIntent, ItemOpenIntent {
     public static let title: LocalizedStringResource = "Open Adventure"
     public static let description = IntentDescription(
         "Opens an adventure in the app.",
@@ -21,12 +20,12 @@ public struct OpenAdventureIntent: AppIntent {
     @Parameter(title: "Adventure", requestValueDialog: .localized("Which adventure?", bundle: .module))
     public var target: AdventureEntity
 
-    @Dependency var navigator: Navigator
+    @Dependency public var navigator: Navigator
 
     public init() {}
 
     public func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.adventures(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -41,19 +40,19 @@ extension OpenAdventureIntent: TargetContentProvidingIntent {}
 /// route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-public struct OpenAdventureSchemaIntent: OpenIntent {
+public struct OpenAdventureSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     public static let isDiscoverable = false
 
     public var target: AdventureEntity
 
-    @Dependency var navigator: Navigator
+    @Dependency public var navigator: Navigator
 
     public init() {}
 
     public func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.adventures(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -72,13 +71,9 @@ extension AdventureRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = AdventureEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenAdventureSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenAdventureSchemaIntent.opening(entity)
         }
-        let intent = OpenAdventureIntent()
-        intent.target = entity
-        return intent
+        return OpenAdventureIntent.opening(entity)
     }
 }
 

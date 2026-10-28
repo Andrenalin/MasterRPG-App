@@ -4,7 +4,6 @@
 
 import AppIntents
 import CoreRPG
-import CoreSpotlight
 import Foundation
 
 struct CreateRuleIntent: AppIntent {
@@ -91,7 +90,7 @@ struct AddRuleSectionIntent: AppIntent {
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedSectionName = try requiredIntentName(sectionName, parameter: $sectionName, prompt: .localized("What should the section be called?", bundle: .ruleModule))
         let current = root.itemController.itemSync(for: target.id).flatMap { $0.specialCategory ? nil : $0 }
-        try requiredIntentTarget(current, parameter: $target, prompt: .localized("Which rule?", bundle: .ruleModule))
+        try requiredIntentTarget(current, parameter: $target, prompt: RuleIntentSupport.targetPrompt)
         let entry = root.editController.create(
             name: trimmedSectionName,
             content: intentMarkdown(from: content)
@@ -101,9 +100,7 @@ struct AddRuleSectionIntent: AppIntent {
         try await root.itemController.saveForIntent()
         // The updated rule is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which rule?", bundle: .ruleModule))
-        let updated = RuleEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: RuleIntentSupport.targetPrompt, in: root)
         return .result(value: updated, dialog: .localized("Added \"\(trimmedSectionName)\" to \"\(target.name)\".", bundle: .ruleModule))
     }
 }
@@ -151,14 +148,10 @@ struct UpdateRuleIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<RuleEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which rule?", bundle: .ruleModule))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which rule?", bundle: .ruleModule))
-        let updated = RuleEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: RuleIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .ruleModule))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .ruleModule))
     }
 }

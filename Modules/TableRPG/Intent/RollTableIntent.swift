@@ -90,11 +90,9 @@ extension TableRootModel {
     /// at the table. Throttled per table like dice rolls. See CODE_AUDIT_AppIntents3 §4.7.
     @MainActor
     func donateRoll(of itemId: UUID) {
-        Task {
-            await IntentDonations.donateThrottled(for: itemId) {
-                guard let model = itemController.itemSync(for: itemId) else { return nil }
-                return RollTableIntent(target: TableEntity(root: self, model: model))
-            }
+        IntentDonations.startThrottledDonation(for: itemId) { [self] in
+            guard let model = itemController.itemSync(for: itemId) else { return nil }
+            return RollTableIntent(target: TableEntity(root: self, model: model))
         }
     }
 }

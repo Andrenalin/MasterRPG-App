@@ -6,10 +6,9 @@ import CoreRPG
 import AppIntents
 
 import Foundation
-import os.log
 import SwiftUI
 
-struct OpenWeatherIntent: AppIntent {
+struct OpenWeatherIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open Weather"
     static let description = IntentDescription(
         "Opens a weather in the app.",
@@ -24,7 +23,7 @@ struct OpenWeatherIntent: AppIntent {
     @Dependency var navigator: Navigator
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.weathers(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -39,7 +38,7 @@ extension OpenWeatherIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenWeatherSchemaIntent: OpenIntent {
+struct OpenWeatherSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -51,7 +50,7 @@ struct OpenWeatherSchemaIntent: OpenIntent {
     init() {}
 
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.weathers(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -70,13 +69,9 @@ extension WeatherRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = WeatherEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenWeatherSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenWeatherSchemaIntent.opening(entity)
         }
-        let intent = OpenWeatherIntent()
-        intent.target = entity
-        return intent
+        return OpenWeatherIntent.opening(entity)
     }
 }
 

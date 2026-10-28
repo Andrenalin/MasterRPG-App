@@ -37,4 +37,17 @@ public enum LinkBuilder {
     ) -> String {
         "[\(name)](\(address(module: module, linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)))"
     }
+
+    /// The one pattern that finds a markdown link `[label](target)` in text, of any target, not
+    /// only the app's. The label has no brackets, so in `[a [b](x)` only `[b](x)` is the link;
+    /// the target runs to the first `)`. `withoutLink()`, `IntentEntityText.readable` and the
+    /// Quick Link scanner use it. See CODE_AUDIT_Since_3.0.1 §9.3.
+    public static var markdownLinkPattern: Regex<(Substring, label: Substring, target: Substring)> {
+        #/\[(?<label>[^\[\]]*)\]\((?<target>[^)]*)\)/#
+    }
+
+    /// `text` with every markdown link replaced by its label.
+    public static func labels(in text: String) -> String {
+        text.replacing(markdownLinkPattern) { String($0.output.label) }
+    }
 }

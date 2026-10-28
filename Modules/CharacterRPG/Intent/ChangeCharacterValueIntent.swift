@@ -96,7 +96,7 @@ struct ChangeCharacterValueIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Double> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which character?", bundle: .module))
+        try requiredIntentModel($target, prompt: CharacterIntentSupport.targetPrompt, in: root)
 
         let matches = CharacterValueLookup.values(named: valueName, in: target.id, itemController: root.itemController)
         let value: CharacterValueLookup.Value
@@ -118,9 +118,12 @@ struct ChangeCharacterValueIntent: AppIntent {
 
         let edit = root.editController
         let isDecimal = value.type == .decimal
-        let before = isDecimal
-            ? edit.entryValueAsDecimal(itemId: value.itemId, entryId: value.entryId)
-            : Double(edit.entryValueAsNumber(itemId: value.itemId, entryId: value.entryId))
+        func currentValue() -> Double {
+            isDecimal
+                ? edit.entryValueAsDecimal(itemId: value.itemId, entryId: value.entryId)
+                : Double(edit.entryValueAsNumber(itemId: value.itemId, entryId: value.entryId))
+        }
+        let before = currentValue()
         let wanted = mode.apply(Double(amount), to: before)
         guard wanted.isFinite else {
             throw $amount.needsValueError(.localized("That number is too large. By how much?", bundle: .module))
@@ -130,9 +133,7 @@ struct ChangeCharacterValueIntent: AppIntent {
         } else {
             edit.updateValue(itemId: value.itemId, entryId: value.entryId, number: CharacterValueChange.storableNumber(wanted))
         }
-        let after = isDecimal
-            ? edit.entryValueAsDecimal(itemId: value.itemId, entryId: value.entryId)
-            : Double(edit.entryValueAsNumber(itemId: value.itemId, entryId: value.entryId))
+        let after = currentValue()
 
         // A player's change goes to the master, as `SheetEntryInlineEditorRowView` sends it.
         if IntentGameContext.gameModus() == .player,

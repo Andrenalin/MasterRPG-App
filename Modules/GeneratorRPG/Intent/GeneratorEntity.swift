@@ -7,7 +7,6 @@ import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
-import PDFKit
 
 struct GeneratorEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
@@ -107,20 +106,7 @@ struct GeneratorEntityQuery: ItemEntityQuery {
 extension GeneratorEntity: SyncableEntity {}
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension GeneratorEntityQuery: @preconcurrency IndexedEntityQuery {
-    func reindexEntities(
-        for identifiers: [GeneratorEntity.ID],
-        indexDescription: CSSearchableIndexDescription
-    ) async throws {
-        let entities = try await entities(for: identifiers)
-        try await CSSearchableIndex.default().indexAppEntities(entities)
-    }
-
-    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
-        let all = try await allEntities()
-        try await CSSearchableIndex.default().indexAppEntities(all)
-    }
-}
+extension GeneratorEntityQuery: @preconcurrency IndexedEntityQuery {}
 
 /// The generator has no list of its own; its views are inlined where they are needed. So it has
 /// no open intent to donate, only the entity for on-screen awareness. See CODE_AUDIT_Since_3.0.1 §5.3.

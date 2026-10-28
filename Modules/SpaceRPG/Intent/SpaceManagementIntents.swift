@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -101,7 +100,7 @@ struct AddSpaceNoteIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<SpaceEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
-        let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which 3D object?", bundle: .module))
+        let targetModel = try requiredIntentModel($target, prompt: SpaceIntentSupport.targetPrompt, in: root)
         let currentDescription = targetModel.description
         let updatedDescription = appendingIntentText(
             intentMarkdown(from: note),
@@ -118,9 +117,7 @@ struct AddSpaceNoteIntent: AppIntent {
 
         // The updated 3D object is returned so a shortcut can go on with it. Indexing it is
         // CODE_AUDIT_Space §5.5. See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which 3D object?", bundle: .module))
-        let updated = SpaceEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: SpaceIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added note to \"\(target.name)\".", bundle: .module))
     }
@@ -169,14 +166,10 @@ struct UpdateSpaceIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<SpaceEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which 3D object?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which 3D object?", bundle: .module))
-        let updated = SpaceEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: SpaceIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }

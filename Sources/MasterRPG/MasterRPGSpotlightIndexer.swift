@@ -22,19 +22,19 @@ enum MasterRPGSpotlightIndexer {
     /// Tells every module which entity type its donations name, so trashing or purging an item
     /// deletes them, and how its items are exported as text. See CODE_AUDIT_AppIntents §4.4,
     /// CODE_AUDIT_AppIntents3 §4.1.
-    static func registerDonations(appModel: AppModel) {
-        AdventureIntentSupport.registerDonations(root: appModel.adventureRoot)
-        AudioIntentSupport.registerDonations(root: appModel.audioRoot)
-        CharacterIntentSupport.registerDonations(root: appModel.characterRoot)
-        DiceIntentSupport.registerDonations(root: appModel.diceRoot)
-        GeneratorIntentSupport.registerDonations(root: appModel.generatorRoot)
-        MapIntentSupport.registerDonations(root: appModel.mapRoot)
-        PdfIntentSupport.registerDonations(root: appModel.pdfRoot)
-        PhotoIntentSupport.registerDonations(root: appModel.photoRoot)
-        RuleIntentSupport.registerDonations(root: appModel.ruleRoot)
-        SpaceIntentSupport.registerDonations(root: appModel.spaceRoot)
-        TableIntentSupport.registerDonations(root: appModel.tableRoot)
-        WeatherIntentSupport.registerDonations(root: appModel.weatherRoot)
+    static func registerIntentSupport(appModel: AppModel) {
+        AdventureIntentSupport.registerIntentSupport(root: appModel.adventureRoot)
+        AudioIntentSupport.registerIntentSupport(root: appModel.audioRoot)
+        CharacterIntentSupport.registerIntentSupport(root: appModel.characterRoot)
+        DiceIntentSupport.registerIntentSupport(root: appModel.diceRoot)
+        GeneratorIntentSupport.registerIntentSupport(root: appModel.generatorRoot)
+        MapIntentSupport.registerIntentSupport(root: appModel.mapRoot)
+        PdfIntentSupport.registerIntentSupport(root: appModel.pdfRoot)
+        PhotoIntentSupport.registerIntentSupport(root: appModel.photoRoot)
+        RuleIntentSupport.registerIntentSupport(root: appModel.ruleRoot)
+        SpaceIntentSupport.registerIntentSupport(root: appModel.spaceRoot)
+        TableIntentSupport.registerIntentSupport(root: appModel.tableRoot)
+        WeatherIntentSupport.registerIntentSupport(root: appModel.weatherRoot)
     }
 
     /// Indexes what changed since the last pass; a module without changes costs nothing. No App

@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -94,7 +93,7 @@ struct AddTableRowIntent: AppIntent {
         // ask again instead of adding a blank entry or reporting a success that changed nothing.
         // See CODE_AUDIT_AppIntents §5.2.
         let trimmedRowName = try requiredIntentName(rowName, parameter: $rowName, prompt: .localized("What should the row be called?", bundle: .module))
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which table?", bundle: .module))
+        try requiredIntentModel($target, prompt: TableIntentSupport.targetPrompt, in: root)
         let entry = root.editController.create(
             name: trimmedRowName,
             content: intentMarkdown(from: content)
@@ -105,9 +104,7 @@ struct AddTableRowIntent: AppIntent {
 
         // The updated table is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which table?", bundle: .module))
-        let updated = TableEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: TableIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added \"\(trimmedRowName)\" to \"\(target.name)\".", bundle: .module))
     }
@@ -156,14 +153,10 @@ struct UpdateTableIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<TableEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which table?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which table?", bundle: .module))
-        let updated = TableEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: TableIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }

@@ -16,7 +16,9 @@ struct QuickDiceFavoriteMenu: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
     var body: some View {
-        if let quickDiceSlots, !isSheetEditor, appGameStateModel.isGameRunning, appGameStateModel.gameModus == .player,
+        // The player's game screen keeps `isOfferedNow` by the one Quick Dice rule, so an observer
+        // gets no favorites either. See CODE_AUDIT_Since_3.0.1 §9.14.
+        if let quickDiceSlots, !isSheetEditor, appGameStateModel.isGameRunning, quickDiceSlots.isOfferedNow,
            let characterId = quickDiceSlots.characterId, sheetRootItemId == characterId {
             let currentIndex = quickDiceSlots.index(forItem: itemId, entry: entryId)
             Menu {
@@ -69,6 +71,7 @@ struct QuickDiceFavoriteMenu: View {
 #Preview {
     let slots = QuickDiceSlotsModel(store: UserDefaultsQuickDiceSlotStore(defaults: UserDefaults(suiteName: "preview") ?? .standard))
     slots.load(characterId: ValueModel.previewId)
+    slots.isOfferedNow = true
     return QuickDiceFavoriteMenu(itemId: ValueModel.previewId, entryId: UUID())
         .environment(\.quickDiceSlots, slots)
         .environment(\.sheetRootItemId, ValueModel.previewId)

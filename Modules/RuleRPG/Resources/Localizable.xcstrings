@@ -1348,23 +1348,6 @@
         }
       }
     },
-    "The selected rule is no longer available." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die ausgewählte Regel ist nicht mehr verfügbar."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "กฎที่เลือกไม่พร้อมใช้งานอีกต่อไป"
-          }
-        }
-      }
-    },
     "Title" : {
       "localizations" : {
         "de" : {

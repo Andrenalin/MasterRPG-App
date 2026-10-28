@@ -3561,23 +3561,6 @@
         }
       }
     },
-    "Hide Help" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe ausblenden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซ่อนวิธีใช้"
-          }
-        }
-      }
-    },
     "Hide Keyboard" : {
       "localizations" : {
         "de" : {
@@ -4690,30 +4673,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ชื่อ"
-          }
-        }
-      }
-    },
-    "Name: %@\nDescription: %@" : {
-      "comment" : "Plain-text export of an item for Shortcuts and sharing.",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name: %1$@\nBeschreibung: %2$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Name: %1$@\nDescription: %2$@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ชื่อ: %1$@\nคำอธิบาย: %2$@"
           }
         }
       }

@@ -6,10 +6,9 @@ import CoreRPG
 import AppIntents
 
 import Foundation
-import os.log
 import SwiftUI
 
-struct OpenCharacterIntent: AppIntent {
+struct OpenCharacterIntent: AppIntent, ItemOpenIntent {
     static let title: LocalizedStringResource = "Open Character"
     static let description = IntentDescription(
         "Opens a character in the app.",
@@ -25,7 +24,7 @@ struct OpenCharacterIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.values(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -40,7 +39,7 @@ extension OpenCharacterIntent: TargetContentProvidingIntent {}
 /// an entity type) and takes the same route. See CODE_AUDIT_AppIntents §4.2.
 @available(iOS 27, macOS 27, visionOS 27, *)
 @AppIntent(schema: .system.open)
-struct OpenCharacterSchemaIntent: OpenIntent {
+struct OpenCharacterSchemaIntent: OpenIntent, ItemOpenIntent {
     /// Serves Siri and Spotlight; the legacy open intent is the one Shortcuts lists, so the library
     /// does not show two "open" actions per module. See CODE_AUDIT_AppIntents2 §4.2.
     static let isDiscoverable = false
@@ -53,7 +52,7 @@ struct OpenCharacterSchemaIntent: OpenIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await navigator.perform(route: KnownRoutes.values(target.id, nil))
+        await openTarget()
         return .result()
     }
 }
@@ -72,13 +71,9 @@ extension CharacterRootModel: SiriItemContext {
         guard let model = itemController.itemSync(for: itemId) else { return nil }
         let entity = CharacterEntity(root: self, model: model)
         if #available(iOS 27, macOS 27, visionOS 27, *) {
-            let intent = OpenCharacterSchemaIntent()
-            intent.target = entity
-            return intent
+            return OpenCharacterSchemaIntent.opening(entity)
         }
-        let intent = OpenCharacterIntent()
-        intent.target = entity
-        return intent
+        return OpenCharacterIntent.opening(entity)
     }
 }
 

@@ -2,32 +2,25 @@
 
 #if !os(tvOS)
 
-import CoreRPG
 import AppIntents
-import CoreSpotlight
+import CoreRPG
 import Foundation
 
 public enum PhotoIntentSupport {
+    /// What Siri asks when an intent's photo is missing, e.g. deleted since Shortcuts cached it.
+    static var targetPrompt: IntentDialog { .localized("Which photo?", bundle: .module) }
+
     /// Names the entity type this module's donations use, so they can be deleted when an item is
     /// trashed or purged, and how an item is exported as text. See CODE_AUDIT_AppIntents §4.4,
     /// CODE_AUDIT_AppIntents3 §4.1.
     @MainActor
-    public static func registerDonations(root: PhotoRootModel) {
-        IntentEntityIdentifiers.register(PhotoEntity.self, for: .photo)
-        EntitySummaryExport.register(module: .photo) { [weak root] id in
-            guard let root, let model = root.itemController.itemSync(for: id) else { return nil }
-            return IntentEntityText.document(of: model)
-        }
+    public static func registerIntentSupport(root: PhotoRootModel) {
+        PhotoEntityQuery.registerIntentSupport(root: root)
     }
 
     @MainActor
     public static func reindexChanged(root: PhotoRootModel) async {
-        await reindexIntentEntities(
-            itemDataModel: root.itemController.itemDataModel,
-            module: .photo,
-            model: { root.itemController.itemSync(for: $0) },
-            makeEntity: { PhotoEntity(root: root, model: $0) }
-        )
+        await PhotoEntityQuery.reindexChanged(root: root)
     }
 }
 

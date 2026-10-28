@@ -5,11 +5,13 @@ import Foundation
 
 /// Dice notation as Siri hears it or a shortcut passes it ("3d6+2", "2 W 20", "D20 plus 5"),
 /// reduced to the dice to roll and a flat modifier. Only adds dice: a set cannot subtract a die.
-/// See CODE_AUDIT_AppIntents3 §4.6.
+/// The app's only parser for dice notation; it builds the `RawDice` the rest of the module uses,
+/// and its text is that `RawDice`'s. See CODE_AUDIT_AppIntents3 §4.6, CODE_AUDIT_Since_3.0.1 §9.2.
 public struct DiceExpression: Equatable, Sendable {
-    /// Dice one spoken roll may have, so a misheard "300d6" does not hang the reply.
-    public static let maximumDice = 100
-    /// Sides a die may have; covers d2…d1000.
+    /// Dice one roll may have, so a misheard "300d6" does not hang the reply. The same bound as a
+    /// compare value can add to a dice model.
+    public static let maximumDice = DiceModel.maximumDiceCount
+    /// Sides a spoken die may have; covers d2…d1000, well inside `RawDie.maximumDecodedSides`.
     public static let sidesRange = 2...1_000
 
     public struct Term: Equatable, Sendable {
@@ -50,14 +52,14 @@ public struct DiceExpression: Equatable, Sendable {
         self.modifier = modifier
     }
 
+    /// The dice and modifier as the module's `RawDice`.
+    public var rawDice: RawDice {
+        RawDice(dieCounters: terms.map { RawDieCounter(die: RawDie(.sides($0.sides)), count: $0.count) }, modifier: modifier)
+    }
+
     /// Canonical notation, e.g. `3d6+2`, used as the name of the roll.
     public var text: String {
-        let dice = terms.map { "\($0.count == 1 ? "" : "\($0.count)")d\($0.sides)" }.joined(separator: "+")
-        switch modifier {
-        case 0: return dice
-        case 1...: return "\(dice)+\(modifier)"
-        default: return "\(dice)\(modifier)"
-        }
+        rawDice.text
     }
 
     /// One die model per die, in the order of the terms.

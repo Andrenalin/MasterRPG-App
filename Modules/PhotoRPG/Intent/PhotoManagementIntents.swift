@@ -3,7 +3,6 @@
 #if !os(tvOS)
 
 import AppIntents
-import CoreSpotlight
 import CoreRPG
 import Foundation
 
@@ -97,7 +96,7 @@ struct AddPhotoNoteIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<PhotoEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
-        let targetModel = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which photo?", bundle: .module))
+        let targetModel = try requiredIntentModel($target, prompt: PhotoIntentSupport.targetPrompt, in: root)
         let currentDescription = targetModel.description
         let updatedDescription = appendingIntentText(
             intentMarkdown(from: note),
@@ -114,9 +113,7 @@ struct AddPhotoNoteIntent: AppIntent {
 
         // The updated photo is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which photo?", bundle: .module))
-        let updated = PhotoEntity(root: root, model: model)
-        await indexIntentEntities([updated])
+        let updated = try await reindexedIntentTarget($target, prompt: PhotoIntentSupport.targetPrompt, in: root)
 
         return .result(value: updated, dialog: .localized("Added note to \"\(target.name)\".", bundle: .module))
     }
@@ -165,14 +162,10 @@ struct UpdatePhotoIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PhotoEntity> & ProvidesDialog {
         try await requireReadyDatabase()
-        try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which photo?", bundle: .module))
-        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
-        let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which photo?", bundle: .module))
-        let updated = PhotoEntity(root: root, model: model)
+        let (updated, changed) = try await updateIntentTarget($target, prompt: PhotoIntentSupport.targetPrompt, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         guard changed else {
             return .result(value: updated, dialog: .localized("Nothing changed in \"\(updated.name)\".", bundle: .module))
         }
-        await indexIntentEntities([updated])
         return .result(value: updated, dialog: .localized("Updated \"\(updated.name)\".", bundle: .module))
     }
 }
