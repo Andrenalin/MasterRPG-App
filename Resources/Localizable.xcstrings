@@ -243,23 +243,6 @@
         }
       }
     },
-    "Game is not running" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spiel läuft nicht"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เกมไม่ได้ทำงาน"
-          }
-        }
-      }
-    },
     "Game Statistics" : {
       "localizations" : {
         "de" : {

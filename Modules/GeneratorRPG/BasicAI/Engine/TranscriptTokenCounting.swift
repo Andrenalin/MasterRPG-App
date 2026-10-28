@@ -21,7 +21,11 @@ extension Transcript.Entry {
             return output.segments.reduce(0) { $0 + $1.foundationLabEstimatedTokenCount } + 3
         case .reasoning(let reasoning):
             return reasoning.segments.reduce(0) { $0 + $1.foundationLabEstimatedTokenCount }
-        @unknown default:
+        // A plain `default`, not `@unknown default`: it also takes the cases an SDK adds that this
+        // switch can't name on every supported Xcode (`.data` from the 27.2 SDK, whose payload
+        // carries executor actions). Their description is counted, which errs on the high side.
+        // See CODE_AUDIT_Since_3.0.1 §4.4.
+        default:
             return foundationLabEstimateTokens(String(describing: self))
         }
     }

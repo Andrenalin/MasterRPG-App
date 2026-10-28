@@ -44,7 +44,7 @@ struct RollTableIntent: AppIntent {
         let lines = TableRollText.lines(for: model.root)
         guard !lines.isEmpty else {
             let message = model.errorMessage ?? String(localized: "\(target.name) has no entries.", bundle: .module)
-            return .result(value: "", dialog: "\(message)")
+            return .result(value: "", dialog: .verbatim(message))
         }
         let text = lines.joined(separator: "\n")
         let spoken = TableRollText.spoken(lines)

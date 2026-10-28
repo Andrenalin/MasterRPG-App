@@ -219,7 +219,7 @@ struct DeleteGeneratorIntent: DeleteIntent {
 
         let count = entities.count
         let message = AttributedString(localized: "Deleted ^[\(count) generator](inflect: true).", bundle: .module)
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

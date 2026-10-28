@@ -222,7 +222,7 @@ struct DeleteMapIntent: DeleteIntent {
             localized: "Deleted ^[\(count) map](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

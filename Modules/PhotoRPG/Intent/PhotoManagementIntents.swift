@@ -231,7 +231,7 @@ struct DeletePhotoIntent: DeleteIntent {
             localized: "Deleted ^[\(count) photo](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

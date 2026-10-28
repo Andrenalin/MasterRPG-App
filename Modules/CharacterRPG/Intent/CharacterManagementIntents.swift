@@ -229,7 +229,7 @@ struct DeleteCharacterIntent: DeleteIntent {
             localized: "Deleted ^[\(count) character](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

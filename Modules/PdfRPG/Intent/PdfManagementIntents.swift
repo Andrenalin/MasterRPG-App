@@ -233,7 +233,7 @@ struct DeletePdfIntent: DeleteIntent {
             localized: "Deleted ^[\(count) PDF](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

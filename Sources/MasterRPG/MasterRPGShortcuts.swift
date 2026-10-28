@@ -21,9 +21,14 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
         ])
     }
 
-    /// The 10 shortcuts the system allows, each with several wordings. Open and Start take an
-    /// adventure by name. The rest of the intents are still in Shortcuts and found by Siri through
-    /// the App Entity index, only without a fixed phrase. See CODE_AUDIT_AppIntents §5.6.
+    /// The 10 shortcuts the system allows, each with several wordings. The rest of the intents are
+    /// still in Shortcuts and found by Siri through the App Entity index, only without a fixed
+    /// phrase. See CODE_AUDIT_AppIntents §5.6.
+    ///
+    /// No phrase names an adventure ("Open \(\.$target)"): an App Entity parameter has no values at
+    /// build time, and the App Intents training step then fails to archive its artifacts, so the
+    /// app shipped without the flexible matching of every shortcut. Open and Start ask which
+    /// adventure. See CODE_AUDIT_Since_3.0.1 §4.3.
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: NavigateIntent(),
@@ -38,8 +43,7 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
             intent: OpenAdventureIntent(),
             phrases: [
                 "Open an adventure in \(.applicationName)",
-                "Open \(\.$target) in \(.applicationName)",
-                "Show \(\.$target) in \(.applicationName)"
+                "Show an adventure in \(.applicationName)"
             ],
             shortTitle: "Open Adventure",
             systemImageName: "wand.and.stars"
@@ -48,8 +52,7 @@ struct MasterRPGShortcuts: AppShortcutsProvider {
             intent: StartAdventureGameIntent(),
             phrases: [
                 "Start an adventure in \(.applicationName)",
-                "Start \(\.$target) in \(.applicationName)",
-                "Play \(\.$target) in \(.applicationName)"
+                "Play an adventure in \(.applicationName)"
             ],
             shortTitle: "Start Adventure Game",
             systemImageName: "gamecontroller"

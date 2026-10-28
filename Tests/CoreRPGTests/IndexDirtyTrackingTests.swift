@@ -139,6 +139,8 @@ struct AppIntentContentInvalidatorTests {
         var cancelled = false
     }
 
+    /// The invalidator is global and other suites run in parallel: their saves invalidate too, so
+    /// the test waits for states instead of sleeping fixed times, and allows extra runs.
     @Test("A burst of invalidations is one reindex; one during a reindex runs it again, never overlapping")
     func burstsCoalesceAndNeverOverlap() async throws {
         let counter = Counter()
@@ -153,18 +155,24 @@ struct AppIntentContentInvalidatorTests {
         defer { AppIntentContentInvalidator.configure { } }
 
         for _ in 0..<5 { AppIntentContentInvalidator.invalidate() }
-        try await Task.sleep(for: .seconds(1.5))
-        #expect(counter.runs == 1, "the burst ran once, after the debounce")
-        #expect(counter.running == 1, "still inside the first reindex")
+        try await waitUntil { counter.running == 1 }
+        let runsOfBurst = counter.runs
+        #expect(runsOfBurst < 5, "the burst was coalesced, not run once per invalidation")
 
-        // Arrives while the first reindex (1 s to 3 s) is running; its debounce ends at 2.5 s.
+        // Arrives while the reindex is running; its debounce ends before that reindex does.
         AppIntentContentInvalidator.invalidate()
-        try await Task.sleep(for: .seconds(4.5))
+        try await waitUntil { counter.runs > runsOfBurst && counter.running == 0 }
 
-        #expect(counter.runs == 2, "the change made during the reindex is indexed afterwards")
         #expect(counter.overlapped == false)
-        #expect(counter.running == 0)
         // CODE_AUDIT_Since_3.0.1 §3.3: the new debounce cancelled the task the reindex ran in.
         #expect(counter.cancelled == false, "the running reindex was not cancelled")
+    }
+
+    private func waitUntil(_ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + .seconds(15)
+        while !condition() {
+            try #require(ContinuousClock.now < deadline, "timed out")
+            try await Task.sleep(for: .milliseconds(20))
+        }
     }
 }

@@ -215,7 +215,7 @@ struct DeleteRuleIntent: DeleteIntent {
         }
         await trashIntentItems(ids: ids, ofType: RuleEntity.self, in: root)
         let message = AttributedString(localized: "Deleted ^[\(ids.count) rule](inflect: true).", bundle: .ruleModule)
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

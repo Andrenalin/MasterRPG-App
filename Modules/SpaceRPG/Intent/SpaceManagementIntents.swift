@@ -235,7 +235,7 @@ struct DeleteSpaceIntent: DeleteIntent {
             localized: "Deleted ^[\(count) 3D object](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

@@ -73,8 +73,7 @@
             "state" : "translated",
             "values" : [
               "Ein Abenteuer in ${applicationName} öffnen",
-              "${target} in ${applicationName} öffnen",
-              "${target} in ${applicationName} zeigen"
+              "Ein Abenteuer in ${applicationName} zeigen"
             ]
           }
         },
@@ -83,8 +82,7 @@
             "state" : "new",
             "values" : [
               "Open an adventure in ${applicationName}",
-              "Open ${target} in ${applicationName}",
-              "Show ${target} in ${applicationName}"
+              "Show an adventure in ${applicationName}"
             ]
           }
         },
@@ -93,8 +91,7 @@
             "state" : "machine_translated",
             "values" : [
               "เปิดการผจญภัยใน ${applicationName}",
-              "เปิด ${target} ใน ${applicationName}",
-              "แสดง ${target} ใน ${applicationName}"
+              "แสดงการผจญภัยใน ${applicationName}"
             ]
           }
         }
@@ -283,8 +280,7 @@
             "state" : "translated",
             "values" : [
               "Ein Abenteuer in ${applicationName} starten",
-              "${target} in ${applicationName} starten",
-              "${target} in ${applicationName} spielen"
+              "Ein Abenteuer in ${applicationName} spielen"
             ]
           }
         },
@@ -293,8 +289,7 @@
             "state" : "new",
             "values" : [
               "Start an adventure in ${applicationName}",
-              "Start ${target} in ${applicationName}",
-              "Play ${target} in ${applicationName}"
+              "Play an adventure in ${applicationName}"
             ]
           }
         },
@@ -303,8 +298,7 @@
             "state" : "machine_translated",
             "values" : [
               "เริ่มการผจญภัยใน ${applicationName}",
-              "เริ่ม ${target} ใน ${applicationName}",
-              "เล่น ${target} ใน ${applicationName}"
+              "เล่นการผจญภัยใน ${applicationName}"
             ]
           }
         }

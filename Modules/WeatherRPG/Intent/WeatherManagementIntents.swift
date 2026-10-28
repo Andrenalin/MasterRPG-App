@@ -220,7 +220,7 @@ struct DeleteWeatherIntent: DeleteIntent {
             localized: "Deleted ^[\(count) weather item](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

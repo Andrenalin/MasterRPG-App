@@ -44,7 +44,7 @@ struct RunGeneratorIntent: AppIntent, ProgressReportingIntent {
 
         let availability = FoundationManager()
         guard availability.checkIsAvailable() else {
-            return .result(value: "", dialog: "\(availability.notAvailableReason)")
+            return .result(value: "", dialog: .verbatim(availability.notAvailableReason))
         }
 
         let instructions = GeneratorIntentPrompt.instructions(name: model.name, description: model.description, entries: model.entries)
@@ -62,7 +62,7 @@ struct RunGeneratorIntent: AppIntent, ProgressReportingIntent {
                 text = try await GeneratorIntentPrompt.generate(instructions: instructions, prompt: prompt, progress: progress)
             }
         } catch let error as LanguageModelSession.GenerationError {
-            return .result(value: "", dialog: "\(FoundationModelsErrorHandler.handleError(error))")
+            return .result(value: "", dialog: .verbatim(FoundationModelsErrorHandler.handleError(error)))
         }
         self.progress.completedUnitCount = self.progress.totalUnitCount
         guard !text.isEmpty else {

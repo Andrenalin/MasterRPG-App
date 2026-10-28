@@ -217,7 +217,7 @@ struct DeleteDiceIntent: DeleteIntent {
             localized: "Deleted ^[\(count) dice set](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

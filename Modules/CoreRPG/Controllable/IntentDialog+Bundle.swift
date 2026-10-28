@@ -26,6 +26,17 @@ public extension IntentDialog {
             supporting: LocalizedStringResource(supporting, bundle: bundle)
         )
     }
+
+    /// Text that is already localized (a module's inflected count, a message of the generator or
+    /// the model framework), shown as is. See `LocalizedStringResource.verbatim(_:)`.
+    static func verbatim(_ text: String) -> IntentDialog {
+        IntentDialog(.verbatim(text))
+    }
+
+    /// An inflected `AttributedString(localized:)` as is; the inflection already happened there.
+    static func verbatim(_ text: AttributedString) -> IntentDialog {
+        verbatim(String(text.characters))
+    }
 }
 
 public extension LocalizedStringResource {
@@ -33,5 +44,23 @@ public extension LocalizedStringResource {
     /// See `IntentDialog.localized(_:bundle:)`.
     static func intent(_ value: String.LocalizationValue, bundle: Bundle) -> LocalizedStringResource {
         LocalizedStringResource(value, bundle: bundle)
+    }
+
+    /// The table `verbatim(_:)` looks in. No catalog has it, so the lookup always falls back to the
+    /// default value.
+    static let verbatimTable = "IntentVerbatim"
+
+    /// `text` as a resource that resolves to exactly `text` in every language. A dialog literal such
+    /// as `"\(message)"` is an app-bundle lookup of the key `%@`, which only showed the text because
+    /// no catalog had that key. Built without a literal, so Xcode extracts nothing into a catalog.
+    /// See CODE_AUDIT_Since_3.0.1 §4.1.
+    static func verbatim(_ text: String) -> LocalizedStringResource {
+        var interpolation = String.LocalizationValue.StringInterpolation(literalCapacity: 0, interpolationCount: 1)
+        interpolation.appendInterpolation(text)
+        return LocalizedStringResource(
+            String.LocalizationValue(stringInterpolation: interpolation),
+            table: verbatimTable,
+            bundle: .module
+        )
     }
 }

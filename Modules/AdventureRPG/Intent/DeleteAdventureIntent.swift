@@ -36,7 +36,7 @@ public struct DeleteAdventureIntent: DeleteIntent {
             localized: "Deleted ^[\(count) adventure](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 

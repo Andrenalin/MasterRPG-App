@@ -22,7 +22,7 @@ public struct ExternalPlayerWindow: View {
             } else {
                 theme.backgroundGradient
                     .overlay {
-                        Text("Game is not running", bundle: .main)
+                        Text("Game is not running", bundle: .module)
                             .foregroundStyle(.white)
                             .font(.largeTitle)
                             .accessibilityAddTraits(.isHeader)

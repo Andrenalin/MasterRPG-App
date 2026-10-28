@@ -232,7 +232,7 @@ struct DeleteAudioIntent: DeleteIntent {
             localized: "Deleted ^[\(count) audio item](inflect: true).",
             bundle: .module
         )
-        return .result(dialog: "\(message)")
+        return .result(dialog: .verbatim(message))
     }
 }
 
