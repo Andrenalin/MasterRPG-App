@@ -76,3 +76,28 @@ public extension FolderEntryMerge {
         return CRDTDataUpdate(wrappedValue: members, update: local.$update.merged(other: remote.$update))
     }
 }
+
+public extension FolderEntryMerge {
+    /// `entries` with every member listed once, or `nil` when none is listed twice. A folder
+    /// holds a member once, but Photo, Audio and Space mint a new entry id on every add, so two
+    /// devices adding the same member (or one device adding it twice) leave two entries that
+    /// CloudKit unions into two rows. The entry with the smallest id string stays: every device
+    /// picks the same one, so their repairs agree instead of removing each other's survivor.
+    /// The order of the remaining entries is kept.
+    static func deduplicated<Entry>(
+        _ entries: [Entry],
+        id: (Entry) -> UUID,
+        childId: (Entry) -> UUID
+    ) -> [Entry]? {
+        var winners: [UUID: UUID] = [:]
+        for entry in entries {
+            let child = childId(entry)
+            let entryId = id(entry)
+            if let winner = winners[child], winner.uuidString <= entryId.uuidString { continue }
+            winners[child] = entryId
+        }
+        guard winners.count < entries.count else { return nil }
+        var seen: Set<UUID> = []
+        return entries.filter { winners[childId($0)] == id($0) && seen.insert(childId($0)).inserted }
+    }
+}

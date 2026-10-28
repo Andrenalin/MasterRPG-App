@@ -147,6 +147,7 @@ public extension ItemControllable {
                 applyMergedUpdate(model: item)
             } else {
                 setModel(with: item)
+                healDuplicateFolderMembers(itemId: item.id)
             }
             updatedItems.append(item.id)
         }

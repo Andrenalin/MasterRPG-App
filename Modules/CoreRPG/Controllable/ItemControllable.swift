@@ -653,6 +653,24 @@ public extension ItemControllable {
             }
             itemDataModel.publishContentWidgetSnapshot()
         }
+        healDuplicateFolderMembers(itemId: original.id)
+    }
+
+    /// Lists every member of the library folder `itemId` once and writes the result back, which
+    /// also removes the surplus rows from the database and the other devices. A folder loaded
+    /// or synced with two entries for one member (see `FolderEntryMerge.deduplicated`) showed
+    /// the member twice in the folder's own entries. Returns whether a duplicate was removed.
+    @MainActor @discardableResult func healDuplicateFolderMembers(itemId: UUID) -> Bool {
+        guard let item = itemSync(for: itemId, noGame: true), item.isFolder,
+              let unique = FolderEntryMerge.deduplicated(item.entries, id: \.id, childId: \.childId) else { return false }
+        item.entries = unique
+        itemDataModel.markIndexDirty(itemId)
+        do {
+            try dataControllable?.replaceSync(id: itemId, with: item.copy())
+        } catch {
+            recordPersistenceFailure(error, operation: "ItemControllable.healDuplicateFolderMembers")
+        }
+        return true
     }
 }
 

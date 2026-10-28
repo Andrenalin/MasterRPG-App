@@ -410,4 +410,166 @@ struct FolderListControllerTests {
         #expect(folderResult.children.map(\.itemId).contains(itemId),
                 "Inspector folder mode must nest the matching item inside the folder")
     }
+
+    @Test("Fuzz: no sequence of folder operations lists a member twice")
+    func fuzzNoDuplicateMembers() async throws {
+        let root = await makeRoot()
+        var folders: [UUID] = []
+        var items: [UUID] = []
+        for index in 0..<3 {
+            let id = await root.itemController.addNew(type: .folder)
+            root.editController.reset(name: "Folder \(index)", itemId: id)
+            folders.append(id)
+        }
+        for index in 0..<4 {
+            let id = await root.itemController.addNew(type: .item)
+            root.editController.reset(name: "Item \(index)", itemId: id)
+            items.append(id)
+        }
+        root.editController.addItem(itemId: folders[2], parentId: folders[0])
+
+        var seed: UInt64 = 42
+        func next(_ upper: Int) -> Int {
+            seed = seed &* 6364136223846793005 &+ 1442695040888963407
+            return Int((seed >> 33) % UInt64(upper))
+        }
+        var log: [String] = []
+        for step in 0..<400 {
+            let all = items + folders
+            let itemId = all[next(all.count)]
+            switch next(5) {
+            case 0, 1:
+                let target = folders[next(folders.count)]
+                log.append("add \(itemId.uuidString.prefix(4)) -> \(target.uuidString.prefix(4))")
+                root.editController.addItem(itemId: itemId, parentId: target)
+            case 2:
+                if let parentId = root.itemController.itemSync(for: itemId)?.parentId {
+                    let oneUp = next(2) == 0
+                    log.append("remove \(itemId.uuidString.prefix(4)) from \(parentId.uuidString.prefix(4)) oneUp \(oneUp)")
+                    root.editController.remove(itemId: itemId, parentId: parentId, oneUp: oneUp)
+                }
+            case 3:
+                let target = folders[next(folders.count)]
+                log.append("remove(stale) \(itemId.uuidString.prefix(4)) from \(target.uuidString.prefix(4))")
+                root.editController.remove(itemId: itemId, parentId: target, oneUp: false)
+            default:
+                root.editController.repairFolders(itemIds: [itemId])
+                log.append("repair \(itemId.uuidString.prefix(4))")
+            }
+            for folderId in folders {
+                guard let folder = root.itemController.itemSync(for: folderId) else { continue }
+                let children = folder.entries.map(\.childId)
+                if Set(children).count != children.count {
+                    Issue.record("duplicate member after step \(step): \(log.suffix(6))")
+                    return
+                }
+            }
+        }
+    }
+
+    // MARK: - Game delivery of a folder that already lists the member
+
+    private func memberCount(_ folderId: UUID, of childId: UUID, in root: SpaceRootModel, noGame: Bool = true) -> Int {
+        root.itemController.itemSync(for: folderId, noGame: noGame)?.entries.filter { $0.childId == childId }.count ?? -1
+    }
+
+    /// The receiver has folder P with member X; the sender's copy of P lists the same X under a
+    /// different entry id (every Space add mints a new one).
+    private func makeSharedFolder(_ root: SpaceRootModel) async throws -> (folderId: UUID, itemId: UUID, sender: SpaceModel) {
+        let folderId = await root.itemController.addNew(type: .folder)
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Ruines", itemId: folderId)
+        root.editController.reset(name: "Item", itemId: itemId)
+        root.editController.addItem(itemId: itemId, parentId: folderId)
+        let local = try #require(root.itemController.itemSync(for: folderId, noGame: true))
+        let sender = local.copy()
+        sender.entries = [SpaceEntryModel(id: UUID(), spaceId: itemId)]
+        #expect(sender.entries.first?.id != local.entries.first?.id)
+        return (folderId, itemId, sender)
+    }
+
+    @Test("Game: merging the sender's copy of the folder into the library lists a member once")
+    func gameLibraryMergeKeepsMemberOnce() async throws {
+        let root = await makeRoot()
+        let (folderId, itemId, sender) = try await makeSharedFolder(root)
+        let merged = root.itemController.mergeSync(with: sender, forceMerge: true, noGame: true)
+        if let merged { root.itemController.replaceImportedModel(model: merged, isInsert: true, forceSave: true) }
+        #expect(memberCount(folderId, of: itemId, in: root) == 1)
+    }
+
+    @Test("Game: persisting a game-memory copy of the sender's folder lists a member once")
+    func gamePersistKeepsMemberOnce() async throws {
+        for authoritative in [false, true] {
+            let root = await makeRoot()
+            let (folderId, itemId, sender) = try await makeSharedFolder(root)
+            root.itemController.replaceInGameMemory(model: sender)
+            let gameCopy = try #require(root.itemController.itemSync(for: folderId))
+            root.itemController.persistFromGame(model: gameCopy, authoritative: authoritative)
+            #expect(memberCount(folderId, of: itemId, in: root) == 1, "authoritative: \(authoritative)")
+        }
+    }
+
+    @Test("Game: a package import in game mode and the repair afterwards list a member once")
+    func gameImportThenRepairKeepsMemberOnce() async throws {
+        let root = await makeRoot()
+        let (folderId, itemId, sender) = try await makeSharedFolder(root)
+        root.itemController.itemDataModel.isGameMode = true
+        // As `applyImportedItem` does in game mode: the delivery replaces the game-memory copy.
+        root.itemController.replaceInGameMemory(model: sender)
+        root.editController.repairFolders(itemIds: [folderId, itemId])
+        #expect(memberCount(folderId, of: itemId, in: root, noGame: false) == 1, "game copy")
+        #expect(memberCount(folderId, of: itemId, in: root, noGame: true) == 1, "library copy")
+    }
+
+    // MARK: - Duplicate folder members are healed
+
+    @Test("Deduplicating keeps the smallest entry id per member and the order")
+    func deduplicatedKeepsSmallestEntryId() {
+        let childA = UUID(), childB = UUID()
+        let low = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let high = UUID(uuidString: "FFFFFFFF-0000-0000-0000-000000000001")!
+        let entries = [
+            SpaceEntryModel(id: high, spaceId: childA),
+            SpaceEntryModel(id: UUID(), spaceId: childB),
+            SpaceEntryModel(id: low, spaceId: childA)
+        ]
+        let unique = FolderEntryMerge.deduplicated(entries, id: \.id, childId: \.childId)
+        #expect(unique?.map(\.childId) == [childB, childA])
+        #expect(unique?.last?.id == low)
+        #expect(FolderEntryMerge.deduplicated(unique ?? [], id: \.id, childId: \.childId) == nil)
+    }
+
+    @Test("A synced folder carrying a member twice lists it once")
+    func syncedDuplicateMemberIsHealed() async throws {
+        let root = await makeRoot()
+        let (folderId, itemId, sender) = try await makeSharedFolder(root)
+        // Both rows reach this device, as CloudKit unions them.
+        let synced = try #require(root.itemController.itemSync(for: folderId, noGame: true)).copy()
+        synced.entries.append(contentsOf: sender.entries)
+        #expect(synced.entries.filter { $0.childId == itemId }.count == 2)
+        root.itemController.applyMergedUpdate(model: synced)
+        #expect(memberCount(folderId, of: itemId, in: root) == 1)
+    }
+
+    @Test("A loaded folder with a member twice is healed")
+    func loadedDuplicateMemberIsHealed() async throws {
+        let root = await makeRoot()
+        let (folderId, itemId, sender) = try await makeSharedFolder(root)
+        let folder = try #require(root.itemController.itemSync(for: folderId, noGame: true))
+        folder.entries.append(contentsOf: sender.entries)
+        #expect(memberCount(folderId, of: itemId, in: root) == 2)
+        #expect(root.itemController.healDuplicateFolderMembers(itemId: folderId))
+        #expect(memberCount(folderId, of: itemId, in: root) == 1)
+        #expect(!root.itemController.healDuplicateFolderMembers(itemId: folderId))
+    }
+
+    @Test("Repairing folders removes a duplicate member")
+    func repairRemovesDuplicateMember() async throws {
+        let root = await makeRoot()
+        let (folderId, itemId, sender) = try await makeSharedFolder(root)
+        let folder = try #require(root.itemController.itemSync(for: folderId, noGame: true))
+        folder.entries.append(contentsOf: sender.entries)
+        root.editController.repairFolders(itemIds: [folderId])
+        #expect(memberCount(folderId, of: itemId, in: root) == 1)
+    }
 }

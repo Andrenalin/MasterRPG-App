@@ -271,10 +271,14 @@ public extension EditControllable {
             where !listed.contains(childId) && !missing.contains(childId) {
                 missing.append(childId)
             }
-            guard checkItem.entries.contains(where: { isStale($0.childId) }) || !missing.isEmpty,
+            let hasDuplicates = FolderEntryMerge.deduplicated(checkItem.entries, id: \.id, childId: \.childId) != nil
+            guard checkItem.entries.contains(where: { isStale($0.childId) }) || !missing.isEmpty || hasDuplicates,
                   let folderItem = editModel(for: id) else { continue }
             folderItem.entries.removeAll { isStale($0.childId) }
             folderItem.entries.append(contentsOf: missing.map { Model.Entry.newChild(id: $0) })
+            if let unique = FolderEntryMerge.deduplicated(folderItem.entries, id: \.id, childId: \.childId) {
+                folderItem.entries = unique
+            }
             save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module).localizedString)
         }
     }

@@ -136,6 +136,7 @@ public extension SyncDataControllable {
                     await itemControllable.mergeUpdates(model: model)
                 } else {
                     itemControllable.resetModel(with: model)
+                    itemControllable.healDuplicateFolderMembers(itemId: insertedId)
                 }
             } catch {
                 Logger.syncDataControllable.error("updateFromSync insert \(insertedId, privacy: .public) failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
