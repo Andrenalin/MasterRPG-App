@@ -113,9 +113,16 @@ private struct FilePathDisplayView: View {
 
     private var displayedFileURL: String? {
         guard let url = model.url else { return nil }
-        return model.fileUrl?.location == .url
-            ? url.absoluteString
-            : url.path(percentEncoded: false)
+        switch model.fileUrl?.location {
+        case .url:
+            return url.absoluteString
+        case .appCloud, .newCloud:
+            // Stored relative to the module's cloud folder; a file at its root has a bare
+            // leading "/" while a file in a folder reads "Folder/Filename".
+            return url.path(percentEncoded: false).trimmingPrefix("/").description
+        default:
+            return url.path(percentEncoded: false)
+        }
     }
 }
 
