@@ -39,7 +39,8 @@ public struct CreateAdventureIntent: AppIntent {
         // adventure. See CODE_AUDIT_21 §5.28.
         let trimmedName = try requiredIntentName(name, parameter: $name, prompt: .localized("What should the adventure be called?", bundle: .module))
         let model = AdventureModel(id: UUID(), name: trimmedName, description: intentMarkdown(from: story))
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
 
         let entity = AdventureEntity(root: root, model: model)

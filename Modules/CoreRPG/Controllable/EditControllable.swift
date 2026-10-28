@@ -140,11 +140,11 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module).localizedString, forceSave: forceSave)
     }
 
-    @MainActor func reset(fileUrl: FileUrl?, itemId: UUID) {
+    @MainActor func reset(fileUrl: FileUrl?, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.fileUrl != fileUrl else { return }
         item.fileUrl = fileUrl
-        save(updated: item, message: String(localized: "Change file", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change file", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor private func updateTags(addedTags: [String], removedTags: [String]) {
@@ -727,14 +727,16 @@ public extension EditControllable {
         return duplicate
     }
 
-    @MainActor func markForDeletion(itemId: UUID) {
+    /// - Parameter forceSave: `true` trashes the library item also during a game (the Delete
+    ///   intents). See CODE_AUDIT_Since_3.0.1 §5.2.
+    @MainActor func markForDeletion(itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId),
               item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
         // Idempotent: a second pass over an already trashed item removed the tags twice.
         // See CODE_AUDIT_Folder §5.19.
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
         item.displayState = DisplayStateMask.totalHidden.rawValue
-        save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString, forceSave: forceSave)
         IntentDonations.forget(itemId: itemId, module: itemControllable.config.module)
     }
 

@@ -164,6 +164,7 @@ private struct SplitNavigationAllTabsView: View {
 
         }
         .tabViewStyle(.sidebarAdaptable)
+        .defaultTabBarPlacementAll(.sidebar)
     }
 
     private func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {

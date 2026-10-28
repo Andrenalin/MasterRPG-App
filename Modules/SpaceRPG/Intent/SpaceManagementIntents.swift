@@ -50,12 +50,13 @@ struct CreateSpaceIntent: AppIntent {
             description: intentMarkdown(from: details),
             displayState: 0
         )
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
 
         if let fileData {
             try await attachIntentFile(to: model.id, editControllable: root.editController) {
-                try await root.editController.resetFile(data: fileData, itemId: model.id, path: "")
+                try await root.editController.resetFile(data: fileData, itemId: model.id, path: "", forceSave: true)
                 return true
             }
         }
@@ -110,7 +111,9 @@ struct AddSpaceNoteIntent: AppIntent {
             return .result(value: SpaceEntity(root: root, model: targetModel), dialog: .localized("No note added.", bundle: .module))
         }
 
-        root.editController.reset(description: updatedDescription, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+
+        root.editController.reset(description: updatedDescription, itemId: target.id, forceSave: true)
         await root.itemController.save()
 
         // The updated 3D object is returned so a shortcut can go on with it. Indexing it is
@@ -167,7 +170,7 @@ struct UpdateSpaceIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<SpaceEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which 3D object?", bundle: .module))
-        let changed = await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which 3D object?", bundle: .module))
         let updated = SpaceEntity(root: root, model: model)
         guard changed else {
@@ -228,7 +231,7 @@ struct DeleteSpaceIntent: DeleteIntent {
         try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
-        await trashIntentItems(ids: ids, ofType: SpaceEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: SpaceEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(

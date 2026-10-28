@@ -49,12 +49,13 @@ struct CreatePdfIntent: AppIntent {
             name: trimmedName,
             description: intentMarkdown(from: details)
         )
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
 
         if let fileData {
             try await attachIntentFile(to: model.id, editControllable: root.editController) {
-                try await root.editController.resetFile(data: fileData, itemId: model.id, path: "")
+                try await root.editController.resetFile(data: fileData, itemId: model.id, path: "", forceSave: true)
                 return true
             }
         }
@@ -108,7 +109,8 @@ struct AddPdfBookmarkIntent: AppIntent {
             name: trimmedBookmarkName,
             content: intentMarkdown(from: content)
         )
-        root.editController.add(entry: entry, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+        root.editController.add(entry: entry, itemId: target.id, forceSave: true)
         await root.itemController.save()
 
         // The updated PDF is returned so a shortcut can go on with it.
@@ -165,7 +167,7 @@ struct UpdatePdfIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<PdfEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which PDF?", bundle: .module))
-        let changed = await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which PDF?", bundle: .module))
         let updated = PdfEntity(root: root, model: model)
         guard changed else {
@@ -226,7 +228,7 @@ struct DeletePdfIntent: DeleteIntent {
         try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
-        await trashIntentItems(ids: ids, ofType: PdfEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: PdfEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(

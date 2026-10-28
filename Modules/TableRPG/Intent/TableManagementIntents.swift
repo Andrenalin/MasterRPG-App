@@ -46,7 +46,8 @@ struct CreateTableIntent: AppIntent {
             description: intentMarkdown(from: details),
             entries: []
         )
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
 
         let entity = TableEntity(root: root, model: model)
@@ -98,7 +99,8 @@ struct AddTableRowIntent: AppIntent {
             name: trimmedRowName,
             content: intentMarkdown(from: content)
         )
-        root.editController.add(entry: entry, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+        root.editController.add(entry: entry, itemId: target.id, forceSave: true)
         await root.itemController.save()
 
         // The updated table is returned so a shortcut can go on with it.
@@ -155,7 +157,7 @@ struct UpdateTableIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<TableEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which table?", bundle: .module))
-        let changed = await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which table?", bundle: .module))
         let updated = TableEntity(root: root, model: model)
         guard changed else {
@@ -216,7 +218,7 @@ struct DeleteTableIntent: DeleteIntent {
         try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
-        await trashIntentItems(ids: ids, ofType: TableEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: TableEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(localized: "Deleted ^[\(count) table](inflect: true).", bundle: .module)

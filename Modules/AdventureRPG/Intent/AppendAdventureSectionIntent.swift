@@ -39,7 +39,8 @@ public struct AppendAdventureSectionIntent: AppIntent {
         let trimmedName = try requiredIntentName(sectionName, parameter: $sectionName, prompt: .localized("What should the section be called?", bundle: .module))
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which adventure?", bundle: .module))
         let entry = root.editController.create(name: trimmedName, content: intentMarkdown(from: content))
-        root.editController.add(entry: entry, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+        root.editController.add(entry: entry, itemId: target.id, forceSave: true)
         await root.itemController.save()
 
         // The updated adventure is returned so a shortcut can go on with it.
@@ -96,7 +97,7 @@ public struct UpdateAdventureIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ReturnsValue<AdventureEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which adventure?", bundle: .module))
-        let changed = await updateIntentItem(id: target.id, name: name, description: story, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: story, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which adventure?", bundle: .module))
         let updated = AdventureEntity(root: root, model: model)
         guard changed else {

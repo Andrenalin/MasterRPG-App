@@ -227,14 +227,16 @@ public extension EditControllable {
     /// same location, or when another item uses it. The file is named after the item; a name
     /// another item's file already has gets a numbered suffix instead of overwriting that file,
     /// and so does the item's own file when it is kept (`replaced` is `.keep`).
-    /// See CODE_AUDIT_20 §5.4, CODE_AUDIT_21 §5.2.
-    @MainActor func resetFile(data: Data?, itemId: UUID, path: String, replaced: ReplacedFileDisposal = .delete) async throws {
+    /// `forceSave` stores the new file on the library item also during a game (the Create
+    /// intents); without it the file reached only a game copy. See CODE_AUDIT_20 §5.4,
+    /// CODE_AUDIT_21 §5.2, CODE_AUDIT_Since_3.0.1 §5.2.
+    @MainActor func resetFile(data: Data?, itemId: UUID, path: String, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = false) async throws {
         try await enqueueFileOperation(itemId: itemId) {
-            try await writeFile(data: data, itemId: itemId, replaced: replaced)
+            try await writeFile(data: data, itemId: itemId, replaced: replaced, forceSave: forceSave)
         }.value
     }
 
-    @MainActor private func writeFile(data: Data?, itemId: UUID, replaced: ReplacedFileDisposal) async throws {
+    @MainActor private func writeFile(data: Data?, itemId: UUID, replaced: ReplacedFileDisposal, forceSave: Bool) async throws {
         guard let item = editModel(for: itemId) else { return }
         let replacedFileUrl = item.fileUrl
         guard let data else {
@@ -271,7 +273,7 @@ public extension EditControllable {
             throw CocoaError(.fileWriteUnknown)
         }
         await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: true)
-        reset(fileUrl: fileUrl, itemId: itemId)
+        reset(fileUrl: fileUrl, itemId: itemId, forceSave: forceSave)
         if replaced == .delete, let replacedFileUrl, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
             await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: fileUrl)
         }

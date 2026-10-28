@@ -44,7 +44,9 @@ struct CreateWeatherIntent: AppIntent {
         model.name = trimmedName
         model.description = intentMarkdown(from: details)
 
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
 
         let entity = WeatherEntity(root: root, model: model)
@@ -95,7 +97,9 @@ struct AddWeatherNoteIntent: AppIntent {
             return .result(value: WeatherEntity(root: root, model: targetModel), dialog: .localized("No note added.", bundle: .module))
         }
 
-        root.editController.reset(description: updatedDescription, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+
+        root.editController.reset(description: updatedDescription, itemId: target.id, forceSave: true)
         await root.itemController.save()
 
         // The updated weather is returned so a shortcut can go on with it.
@@ -152,7 +156,7 @@ struct UpdateWeatherIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<WeatherEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which weather?", bundle: .module))
-        let changed = await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which weather?", bundle: .module))
         let updated = WeatherEntity(root: root, model: model)
         guard changed else {
@@ -213,7 +217,7 @@ struct DeleteWeatherIntent: DeleteIntent {
         try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
-        await trashIntentItems(ids: ids, ofType: WeatherEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: WeatherEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(

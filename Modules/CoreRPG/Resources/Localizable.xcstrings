@@ -7412,6 +7412,23 @@
         }
       }
     },
+    "This is part of the current game. Change it after the game has ended." : {
+      "comment" : "Error shown by Siri or Shortcuts when an intent would change an item the running game uses.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das gehört zum laufenden Spiel. Änderungen sind nach dem Ende des Spiels möglich."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการนี้เป็นส่วนหนึ่งของเกมที่กำลังเล่นอยู่ แก้ไขได้หลังจากเกมจบแล้ว"
+          }
+        }
+      }
+    },
     "This is the table you are editing. Its entries can't link to themselves, so the scan was ignored." : {
       "comment" : "Quick Link alert message when the chosen table is the table being edited.",
       "localizations" : {

@@ -9,10 +9,12 @@ import Observation
 typealias EditController = GenericEditController<DiceModel>
 
 extension EditController {
-    @MainActor func add(die: DieModel, itemId: UUID) {
+    /// - Parameter forceSave: `true` adds the die to the library dice also during a game (the
+    ///   Add Die intent). See CODE_AUDIT_Since_3.0.1 §5.2.
+    @MainActor func add(die: DieModel, itemId: UUID, forceSave: Bool = false) {
         guard let editModel = editModel(for: itemId) else { return }
         editModel.dice.append(die)
-        save(updated: editModel, message: String(localized: "Add \(die.name)", bundle: .module))
+        save(updated: editModel, message: String(localized: "Add \(die.name)", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func remove(die: DieModel, itemId: UUID) {

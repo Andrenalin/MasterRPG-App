@@ -128,6 +128,37 @@ public func requireReadyDatabase() async throws {
     guard canSave else { throw DatabaseNotReadyError() }
 }
 
+/// Thrown by an intent that would change an item loaded into the current game, so Siri says why
+/// instead of reporting a change that would be lost. See CODE_AUDIT_Since_3.0.1 §5.2.
+public struct ItemInGameError: Error, CustomLocalizedStringResourceConvertible {
+    public init() {}
+
+    public var localizedStringResource: LocalizedStringResource {
+        LocalizedStringResource(
+            "This is part of the current game. Change it after the game has ended.",
+            bundle: .module,
+            comment: "Error shown by Siri or Shortcuts when an intent would change an item the running game uses."
+        )
+    }
+}
+
+/// Intents write to the library, also while a game runs: every intent write passes
+/// `forceSave: true`. Without it a write during a game only reached game memory, was gone when the
+/// game ended, and Siri still said "Created" or "Updated". An item the game has loaded (it has a
+/// game copy) is refused instead: its copy holds session state such as hit points or revealed
+/// rooms, which a library write must neither take over nor overwrite. Throws `ItemInGameError`.
+/// See CODE_AUDIT_Since_3.0.1 §5.2.
+@MainActor
+public func requireOutsideGame(_ ids: [UUID], in itemDataModel: ItemDataModel) throws {
+    guard !ids.contains(where: { itemDataModel.gameItemData[$0] != nil }) else { throw ItemInGameError() }
+}
+
+/// `requireOutsideGame(_:in:)` for the items of a module root.
+@MainActor
+public func requireOutsideGame(_ ids: [UUID], in root: some ItemRootControllable) throws {
+    try requireOutsideGame(ids, in: root.itemControllable.itemDataModel)
+}
+
 /// The file passed to a Create intent has a type the item cannot hold.
 public struct IntentFileTypeError: Error, CustomLocalizedStringResourceConvertible {
     public init() {}
@@ -213,7 +244,8 @@ public func requiredIntentTarget<Entity: AppEntity, Model>(
 /// What every Update intent does: renames the item, replaces its description and adds or removes
 /// tags, each only when the intent was given a value (an omitted parameter keeps the field, an
 /// empty description clears it, an empty name is ignored because an item needs one). Saves once
-/// and reports whether anything changed. See CODE_AUDIT_AppIntents3 §4.5.
+/// and reports whether anything changed. An item the current game uses is refused with
+/// `ItemInGameError`. See CODE_AUDIT_AppIntents3 §4.5, CODE_AUDIT_Since_3.0.1 §5.2.
 @MainActor
 @discardableResult
 public func updateIntentItem(
@@ -223,19 +255,20 @@ public func updateIntentItem(
     addTags: [String]?,
     removeTags: [String]?,
     in root: some ItemRootControllable
-) async -> Bool {
+) async throws -> Bool {
+    try requireOutsideGame([id], in: root)
     let edit = root.editControllable
     guard let model = edit.editModel(for: id) else { return false }
     var changed = false
 
     if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty, name != model.name {
-        edit.reset(name: name, itemId: id, forceSave: false)
+        edit.reset(name: name, itemId: id, forceSave: true)
         changed = true
     }
     if let description {
         let text = intentMarkdown(from: description)
         if text != model.description {
-            edit.reset(description: text, itemId: id, forceSave: false)
+            edit.reset(description: text, itemId: id, forceSave: true)
             changed = true
         }
     }
@@ -248,7 +281,7 @@ public func updateIntentItem(
         tags.append(trimmed)
     }
     if Set(tags) != Set(model.tags) {
-        edit.reset(tags: tags, itemId: id, forceSave: false)
+        edit.reset(tags: tags, itemId: id, forceSave: true)
         changed = true
     }
 
@@ -296,15 +329,17 @@ public func deleteIntentEntities<Entity: IndexedEntity>(
 
 /// What every Delete intent does: moves the items to the trash, saves, and takes them out of the
 /// Spotlight index. The trash is recoverable, and the dialog stays with the intent because each
-/// module localizes it from its own bundle. See CODE_AUDIT_AppIntents §9.3.
+/// module localizes it from its own bundle. Nothing is trashed when one of the items is used by
+/// the current game (`ItemInGameError`). See CODE_AUDIT_AppIntents §9.3, CODE_AUDIT_Since_3.0.1 §5.2.
 @MainActor
 public func trashIntentItems<Entity: IndexedEntity>(
     ids: [UUID],
     ofType entityType: Entity.Type,
     in root: some ItemRootControllable
-) async where Entity.ID == UUID {
+) async throws where Entity.ID == UUID {
+    try requireOutsideGame(ids, in: root)
     for id in ids {
-        root.editControllable.markForDeletion(itemId: id)
+        root.editControllable.markForDeletion(itemId: id, forceSave: true)
     }
     await root.itemControllable.save()
     await deleteIntentEntities(ids: ids, ofType: entityType)

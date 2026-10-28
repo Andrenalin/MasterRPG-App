@@ -49,7 +49,8 @@ struct CreateDiceIntent: AppIntent {
             description: intentMarkdown(from: details),
             dice: [DieModel(id: UUID(), die: diceType.rawDie)]
         )
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
 
         let entity = DiceEntity(root: root, model: model)
@@ -92,7 +93,8 @@ struct AddDieToDiceIntent: AppIntent {
         // `target` can be deleted since Siri or Shortcuts cached it. See CODE_AUDIT_AppIntents §5.2.
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
         let die = DieModel(id: UUID(), die: diceType.rawDie)
-        root.editController.add(die: die, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+        root.editController.add(die: die, itemId: target.id, forceSave: true)
         await root.itemController.save()
 
         // The updated dice is returned so a shortcut can go on with it.
@@ -149,7 +151,7 @@ struct UpdateDiceIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<DiceEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
-        let changed = await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which dice?", bundle: .module))
         let updated = DiceEntity(root: root, model: model)
         guard changed else {
@@ -210,7 +212,7 @@ struct DeleteDiceIntent: DeleteIntent {
         try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
-        await trashIntentItems(ids: ids, ofType: DiceEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: DiceEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(

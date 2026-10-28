@@ -29,7 +29,7 @@ public struct DeleteAdventureIntent: DeleteIntent {
         try await requireReadyDatabase()
         let ids = entities.map(\.id)
 
-        await trashIntentItems(ids: ids, ofType: AdventureEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: AdventureEntity.self, in: root)
 
         let count = entities.count
         let message = AttributedString(

@@ -45,7 +45,8 @@ struct CreateRuleIntent: AppIntent {
             name: trimmedName,
             description: details.map { String($0.characters) } ?? ""
         )
-        root.itemController.replace(model: model, isInsert: true)
+        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
+        root.itemController.replace(model: model, isInsert: true, forceSave: true)
         await root.itemController.save()
         let entity = RuleEntity(root: root, model: model)
         await indexIntentEntities([entity])
@@ -95,7 +96,8 @@ struct AddRuleSectionIntent: AppIntent {
             name: trimmedSectionName,
             content: intentMarkdown(from: content)
         )
-        root.editController.add(entry: entry, itemId: target.id)
+        try requireOutsideGame([target.id], in: root)
+        root.editController.add(entry: entry, itemId: target.id, forceSave: true)
         await root.itemController.save()
         // The updated rule is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.
@@ -150,7 +152,7 @@ struct UpdateRuleIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<RuleEntity> & ProvidesDialog {
         try await requireReadyDatabase()
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which rule?", bundle: .ruleModule))
-        let changed = await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
+        let changed = try await updateIntentItem(id: target.id, name: name, description: details, addTags: addTags, removeTags: removeTags, in: root)
         let model = try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which rule?", bundle: .ruleModule))
         let updated = RuleEntity(root: root, model: model)
         guard changed else {
@@ -213,7 +215,7 @@ struct DeleteRuleIntent: DeleteIntent {
                   !model.specialCategory else { return nil }
             return entity.id
         }
-        await trashIntentItems(ids: ids, ofType: RuleEntity.self, in: root)
+        try await trashIntentItems(ids: ids, ofType: RuleEntity.self, in: root)
         let message = AttributedString(localized: "Deleted ^[\(ids.count) rule](inflect: true).", bundle: .ruleModule)
         return .result(dialog: .verbatim(message))
     }

@@ -77,9 +77,9 @@ extension EditController {
     /// data is no image. Decoding and encoding run off the main actor, and the image is decoded
     /// at most at the size the app shows images at; the library and drop paths used to decode
     /// and re-encode at full resolution on the main actor. See CODE_AUDIT_21 §7.10.
-    func resetPhoto(data: Data, itemId: UUID, replaced: ReplacedFileDisposal = .delete) async throws -> Bool {
+    func resetPhoto(data: Data, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = false) async throws -> Bool {
         guard let jpeg = await Self.importedJPEG(from: data) else { return false }
-        try await resetFile(data: jpeg, itemId: itemId, path: "", replaced: replaced)
+        try await resetFile(data: jpeg, itemId: itemId, path: "", replaced: replaced, forceSave: forceSave)
         return true
     }
 
