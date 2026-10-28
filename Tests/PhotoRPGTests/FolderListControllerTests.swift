@@ -1269,5 +1269,277 @@ struct FolderListControllerTests {
             }
         }
     }
+
+    @Test("A detail search scheduled next to a root search does not cancel it (list-mode toggle)")
+    func detailSearchDoesNotCancelRootSearch() async throws {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Folder", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        let controller = root.folderListController
+        controller.listDisplayModel.listMode = .list
+        await controller.performSearch(source: "test")
+        controller.resetDetail(model: root.itemController.itemOrEmpty(for: folderId))
+        #expect(!controller.listModel.list.contains(where: { $0.source.itemId == folderId }),
+                "List mode excludes folders")
+
+        // The toggle: the root list and the detail list (sharing this controller) both react.
+        controller.listDisplayModel.listMode = .folder
+        controller.scheduleSearch()
+        controller.scheduleDetailSearch()
+        try await Task.sleep(for: .milliseconds(500))
+
+        #expect(controller.listModel.list.contains(where: { $0.source.itemId == folderId }),
+                "The root search must still run after the detail search was scheduled")
+    }
+
+    // MARK: - Move refresh
+
+    private func rootRowItemIds(_ root: PhotoRootModel) -> [UUID] {
+        root.folderListController.listModel.list.map(\.source.itemId)
+    }
+
+    private func waitForRefresh(_ root: PhotoRootModel) async {
+        try? await Task.sleep(for: .milliseconds(400))
+        while let task = root.folderListController.searchModel.currentTask {
+            await task.value
+            if root.folderListController.searchModel.currentTask == task { break }
+        }
+    }
+
+    @Test("Moving the selected item into a closed folder opens the folder and shows the item in it")
+    func moveIntoClosedFolderRefreshesList() async throws {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Folder", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        await searchFolder(root)
+        #expect(rootRowItemIds(root).contains(childId))
+
+        let controller = root.folderListController
+        let row = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
+        controller.listModel.selected = row.id
+        let menu = root.menuController
+        menu.place(currentSelected: childId, in: FolderRepresentable(id: folderId, name: "Folder"))
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let childRows = controller.listModel.list.filter { $0.source.itemId == childId }
+        #expect(childRows.count == 1, "the moved item must be listed once")
+        #expect(childRows.first?.level == 1, "...inside the folder, which opens to show where it went")
+        #expect(controller.listModel.list.first(where: { $0.source.itemId == folderId })?.isOpen == true)
+    }
+
+    @Test("Moving an item into an open folder shows it inside the folder at once")
+    func moveIntoOpenFolderRefreshesList() async throws {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        let otherId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Folder", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Other", itemId: otherId)
+        root.editController.addItem(itemId: otherId, parentId: folderId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        let folderRow = try #require(controller.listModel.list.first(where: { $0.source.itemId == folderId }))
+        controller.toggleFolder(item: folderRow)
+        #expect(rootRowItemIds(root).contains(otherId), "folder must be open")
+
+        let row = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
+        controller.listModel.selected = row.id
+        root.menuController.place(currentSelected: childId, in: FolderRepresentable(id: folderId, name: "Folder"))
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let rows = controller.listModel.list
+        let childRows = rows.filter { $0.source.itemId == childId }
+        #expect(childRows.count == 1, "the moved item must appear exactly once")
+        #expect(childRows.first?.level == 1, "...inside the open folder")
+    }
+
+    @Test("Moving an item out of an open folder shows it at root at once")
+    func moveOutOfOpenFolderRefreshesList() async throws {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Folder", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        let folderRow = try #require(controller.listModel.list.first(where: { $0.source.itemId == folderId }))
+        controller.toggleFolder(item: folderRow)
+        let childRow = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
+        controller.listModel.selected = childRow.id
+
+        root.menuController.removeItemsFromFolder(currentSelected: childId, parentId: folderId, oneUp: false)
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let childRows = controller.listModel.list.filter { $0.source.itemId == childId }
+        #expect(childRows.count == 1)
+        #expect(childRows.first?.level == 0, "the item must now be a root row")
+    }
+
+    private func detailItemIds(_ root: PhotoRootModel) -> [UUID] {
+        root.folderListController.listModel.detailListModel?.list.map(\.source.itemId) ?? []
+    }
+
+    @Test("Detail list: moving a child into a closed sibling folder refreshes the detail list")
+    func detailMoveIntoClosedFolderRefreshes() async throws {
+        let root = await makeRoot()
+        let activeId = await root.itemController.addNew(type: .folder)
+        let subId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Active", itemId: activeId)
+        root.editController.reset(name: "Sub", itemId: subId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.addItem(itemId: subId, parentId: activeId)
+        root.editController.addItem(itemId: childId, parentId: activeId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        controller.resetDetail(model: root.itemController.itemOrEmpty(for: activeId))
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(detailItemIds(root).contains(childId))
+
+        let detail = try #require(controller.listModel.detailListModel)
+        let row = try #require(detail.list.first(where: { $0.source.itemId == childId }))
+        detail.selected = row.id
+        // As `ListRootView` builds it: over the scoped (detail) list model.
+        let menu = ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: detail)
+        menu.place(currentSelected: childId, in: FolderRepresentable(id: subId, name: "Sub"))
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let childRows = detail.list.filter { $0.source.itemId == childId }
+        #expect(childRows.count == 1, "the moved child must be listed once")
+        #expect(childRows.first?.level == 1, "...inside the sub folder, which opens to show where it went")
+    }
+
+    @Test("Detail list: moving a child out of an open sub folder refreshes the detail list")
+    func detailMoveOutRefreshes() async throws {
+        let root = await makeRoot()
+        let activeId = await root.itemController.addNew(type: .folder)
+        let subId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Active", itemId: activeId)
+        root.editController.reset(name: "Sub", itemId: subId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.addItem(itemId: subId, parentId: activeId)
+        root.editController.addItem(itemId: childId, parentId: subId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        controller.resetDetail(model: root.itemController.itemOrEmpty(for: activeId))
+        try await Task.sleep(for: .milliseconds(300))
+        let detail = try #require(controller.listModel.detailListModel)
+        let subRow = try #require(detail.list.first(where: { $0.source.itemId == subId }))
+        controller.toggleFolder(item: subRow)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(detailItemIds(root).contains(childId), "sub folder must be open")
+
+        root.menuController.removeItemsFromFolder(currentSelected: childId, parentId: subId, oneUp: true)
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let rows = detail.list.filter { $0.source.itemId == childId }
+        #expect(rows.count == 1)
+        #expect(rows.first?.level == 0, "the child must now be a direct row of the active folder")
+    }
+
+    @Test("Moving an item into a closed folder and back out shows it at root again")
+    func moveIntoClosedFolderAndBackOut() async throws {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Folder", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        let row = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
+        controller.listModel.selected = row.id
+        root.menuController.place(currentSelected: childId, in: FolderRepresentable(id: folderId, name: "Folder"))
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let inside = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
+        #expect(inside.level == 1)
+        controller.listModel.selected = inside.id
+        root.menuController.removeItemsFromFolder(currentSelected: childId, parentId: folderId, oneUp: false)
+        controller.update(debounce: false)
+        await waitForRefresh(root)
+
+        let rows = controller.listModel.list.filter { $0.source.itemId == childId }
+        #expect(rows.count == 1, "listed once")
+        #expect(rows.first?.level == 0, "back at root")
+    }
+
+    @Test("Round trip with the observation stream's debounced refresh racing the immediate one")
+    func moveRoundTripWithRacingRefresh() async throws {
+        let root = await makeRoot()
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Folder", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        let row = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
+        controller.listModel.selected = row.id
+
+        for round in 0..<3 {
+            root.menuController.place(currentSelected: childId, in: FolderRepresentable(id: folderId, name: "Folder"))
+            controller.update(debounce: false)
+            controller.update()
+            await waitForRefresh(root)
+            let inside = controller.listModel.list.filter { $0.source.itemId == childId }
+            #expect(inside.count == 1 && inside.first?.level == 1, "round \(round): inside the folder")
+
+            root.menuController.removeItemsFromFolder(currentSelected: childId, parentId: folderId, oneUp: false)
+            controller.update(debounce: false)
+            controller.update()
+            await waitForRefresh(root)
+            let outside = controller.listModel.list.filter { $0.source.itemId == childId }
+            #expect(outside.count == 1 && outside.first?.level == 0, "round \(round): back at root")
+        }
+    }
+
+    @Test("Detail list round trip: into a closed sub folder (auto-opened), then out one level up")
+    func detailRoundTrip() async throws {
+        let root = await makeRoot()
+        let activeId = await root.itemController.addNew(type: .folder)
+        let subId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Active", itemId: activeId)
+        root.editController.reset(name: "Sub", itemId: subId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.addItem(itemId: subId, parentId: activeId)
+        root.editController.addItem(itemId: childId, parentId: activeId)
+        await searchFolder(root)
+        let controller = root.folderListController
+        controller.resetDetail(model: root.itemController.itemOrEmpty(for: activeId))
+        try await Task.sleep(for: .milliseconds(300))
+        let detail = try #require(controller.listModel.detailListModel)
+        let menu = ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: detail)
+
+        for round in 0..<3 {
+            menu.place(currentSelected: childId, in: FolderRepresentable(id: subId, name: "Sub"))
+            controller.update(debounce: false)
+            controller.update()
+            await waitForRefresh(root)
+            let inside = detail.list.filter { $0.source.itemId == childId }
+            #expect(inside.count == 1 && inside.first?.level == 1, "round \(round): inside the sub folder")
+
+            menu.removeItemsFromFolder(currentSelected: childId, parentId: subId, oneUp: true)
+            controller.update(debounce: false)
+            controller.update()
+            await waitForRefresh(root)
+            let outside = detail.list.filter { $0.source.itemId == childId }
+            #expect(outside.count == 1 && outside.first?.level == 0, "round \(round): back in the active folder")
+        }
+    }
 }
 #endif

@@ -111,7 +111,7 @@ extension FolderListControllable {
     /// other trigger uses `ListSearchTiming.coalesceWindow` so bursts still settle into a
     /// single call.
     @MainActor func runSearch(source: String, kind: FolderSearchKind, debounceText: Bool) {
-        searchModel.currentTask = Task(name: "List Search") {
+        let task = Task(name: "List Search") {
             let delay: Duration = debounceText && !searchModel.searchText.isEmpty ? ListSearchTiming.typingDebounce : ListSearchTiming.coalesceWindow
             do { try await Task.sleep(for: delay) } catch { return }
             guard !Task.isCancelled else { return }
@@ -119,6 +119,12 @@ extension FolderListControllable {
             case .root: await performSearch(source: source)
             case .detail: await performDetailSearch()
             }
+        }
+        // A root and a detail search must not cancel each other: the root list and a detail list
+        // can share this controller and both fire on one list-mode toggle.
+        switch kind {
+        case .root: searchModel.currentTask = task
+        case .detail: searchModel.detailTask = task
         }
     }
 

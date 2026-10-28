@@ -53,6 +53,15 @@ public final class SearchModel: Sendable {
         didSet { oldValue?.cancel() }
     }
 
+    /// Token of the scoped detail search (`scheduleDetailSearch`). Separate from `currentTask`
+    /// because a detail list can share this model with the root list (the module detail views
+    /// receive the root's controller): both react to the same list-mode toggle, and with one
+    /// token the later `scheduleDetailSearch` cancelled the root list's `scheduleSearch`, so the
+    /// root list refreshed only after the next typed search.
+    @ObservationIgnored public var detailTask: Task<Void, Never>? {
+        didSet { oldValue?.cancel() }
+    }
+
     /// Incremented when a root search starts. A search that finishes after a newer one started
     /// discards its results instead of overwriting the newer ones; this also covers searches
     /// started outside `currentTask`, which cancel-and-replace does not reach.
@@ -67,6 +76,7 @@ public final class SearchModel: Sendable {
 
     deinit {
         currentTask?.cancel()
+        detailTask?.cancel()
         tagTask?.cancel()
     }
     

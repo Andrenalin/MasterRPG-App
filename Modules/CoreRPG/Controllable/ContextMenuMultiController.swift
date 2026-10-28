@@ -86,6 +86,18 @@ struct ContextMenuMultiController {
             guard let model = itemController.itemSync(for: itemId) else { continue }
             editController.addItem(itemId: model.id, parentId: target.id)
         }
+        openTargetFolder(target)
+    }
+
+    /// A moved item leaves its row, so a closed target folder is opened to show where it went.
+    /// Only the row's open state is set: the list refresh that follows rebuilds the folder with
+    /// its children. A collection keeps the item in the list as well and stays as it is.
+    private func openTargetFolder(_ target: FolderRepresentable) {
+        guard itemController.itemSync(for: target.id)?.isFolder == true,
+              let row = listModel.row(itemId: target.id), !row.isOpen else { return }
+        row.isOpen = true
+        row.lastIsOpen = true
+        row.wasExplicitlyClosed = false
     }
 
     func removeItemsFromFolder(currentSelected: UUID?, parentId: UUID?, oneUp: Bool) {
