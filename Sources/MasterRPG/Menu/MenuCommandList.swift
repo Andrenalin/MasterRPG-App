@@ -40,6 +40,8 @@ struct MenuCommandList: Commands {
                     PhotoCommands(root: appModel.photoRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     SpaceCommands(root: appModel.spaceRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
                     WeatherCommands(root: appModel.weatherRoot, scenesManager: appModel.scenesManager, routeActions: routeActions)
+                    // No GeneratorCommands on purpose: the generator has no list of its own.
+                    // See CODE_AUDIT_Since_3.0.1 §5.3.
                 }
             }
         }

@@ -1006,22 +1006,6 @@
         }
       }
     },
-    "Generator" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generator"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตัวสร้าง"
-          }
-        }
-      }
-    },
     "iCloud Account Issues" : {
       "localizations" : {
         "de" : {

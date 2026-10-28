@@ -4,13 +4,14 @@ import CoreRPG
 import AppIntents
 import SwiftUI
 
+/// The sections Siri and Shortcuts can navigate to. The generator is left out on purpose: it has no
+/// list of its own, its views are inlined where they are needed. See CODE_AUDIT_Since_3.0.1 §5.3.
 enum NavigationOption: String, CaseIterable, AppEnum {
     case adventure
     case audio
     case character
     case dice
     case game
-    case generator
     case map
     case pdf
     case photo
@@ -47,10 +48,6 @@ enum NavigationOption: String, CaseIterable, AppEnum {
         NavigationOption.game: DisplayRepresentation(
             title: "Game",
             image: .init(systemName: "person.2")
-        ),
-        NavigationOption.generator: DisplayRepresentation(
-            title: "Generator",
-            image: .init(systemName: "apple.intelligence")
         ),
         NavigationOption.map: DisplayRepresentation(
             title: "Map",
@@ -93,7 +90,6 @@ enum NavigationOption: String, CaseIterable, AppEnum {
         case .character: .value
         case .dice: .dice
         case .game: .game
-        case .generator: .generator
         case .map: .map
         case .pdf: .pdf
         case .photo: .photo

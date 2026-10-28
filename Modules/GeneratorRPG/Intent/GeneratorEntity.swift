@@ -121,4 +121,16 @@ extension GeneratorEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
+
+/// The generator has no list of its own; its views are inlined where they are needed. So it has
+/// no open intent to donate, only the entity for on-screen awareness. See CODE_AUDIT_Since_3.0.1 §5.3.
+extension GeneratorRootModel: SiriItemContext {
+    public func siriEntityIdentifier(for itemId: UUID) -> EntityIdentifier? {
+        EntityIdentifier(for: GeneratorEntity.self, identifier: itemId)
+    }
+
+    public func siriOpenIntent(for itemId: UUID) -> (any AppIntent)? {
+        nil
+    }
+}
 #endif

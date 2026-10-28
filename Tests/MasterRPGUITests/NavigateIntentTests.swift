@@ -14,7 +14,6 @@ final class NavigateIntentTests: AppIntentsUITestCase {
         ("character", "VALUES", true),
         ("dice", "DICE", true),
         ("game", "GAME", false),
-        ("generator", nil, false),
         ("map", "MAPS", true),
         ("pdf", "PDFS", true),
         ("photo", "PHOTOS", true),

@@ -61,14 +61,6 @@ struct IntentModule: Sendable {
         addIntent: nil, addParameter: "", addValueIsNote: false,
         listToken: "DICE"
     )
-    static let generator = IntentModule(
-        name: "Generator", entityType: "GeneratorEntity",
-        createIntent: "CreateGeneratorIntent", openIntent: "OpenGeneratorIntent",
-        searchIntent: "SearchGeneratorsIntent", deleteIntent: "DeleteGeneratorIntent",
-        detailsParameter: "instructions",
-        addIntent: "AddGeneratorNoteIntent", addParameter: "note", addValueIsNote: true,
-        listToken: "GENERATOR"
-    )
     static let map = IntentModule(
         name: "Map", entityType: "MapEntity",
         createIntent: "CreateMapIntent", openIntent: "OpenMapIntent",
@@ -126,8 +118,10 @@ struct IntentModule: Sendable {
         listToken: "WEATHERS"
     )
 
+    /// The generator is left out: without a list of its own it has no Create, Open or Search
+    /// intent. See CODE_AUDIT_Since_3.0.1 §5.3.
     static let all: [IntentModule] = [
-        .adventure, .audio, .character, .dice, .generator, .map,
+        .adventure, .audio, .character, .dice, .map,
         .pdf, .photo, .rule, .space, .table, .weather
     ]
 }

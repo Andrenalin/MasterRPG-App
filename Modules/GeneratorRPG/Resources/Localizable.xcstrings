@@ -691,54 +691,6 @@
         }
       }
     },
-    "Create Generator" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generator erstellen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวสร้าง"
-          }
-        }
-      }
-    },
-    "Create generator named ${name}" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generator mit dem Namen ${name} erstellen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวสร้างชื่อ ${name}"
-          }
-        }
-      }
-    },
-    "Created \"%@\"." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "„%@“ erstellt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้าง “%@” แล้ว"
-          }
-        }
-      }
-    },
     "Delete Generator" : {
       "localizations" : {
         "de" : {
@@ -1333,22 +1285,6 @@
         }
       }
     },
-    "Instructions" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anweisungen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คำแนะนำ"
-          }
-        }
-      }
-    },
     "Invalid request: %@" : {
       "localizations" : {
         "de" : {
@@ -1477,22 +1413,6 @@
         }
       }
     },
-    "Name" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ชื่อ"
-          }
-        }
-      }
-    },
     "No note added." : {
       "localizations" : {
         "de" : {
@@ -1537,38 +1457,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตกลง"
-          }
-        }
-      }
-    },
-    "Open Generator" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generator öffnen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดตัวสร้าง"
-          }
-        }
-      }
-    },
-    "Open When Created" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nach dem Erstellen öffnen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดเมื่อสร้าง"
           }
         }
       }
@@ -1784,22 +1672,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สกีมามีข้อจำกัดที่ไม่รองรับ: %@"
-          }
-        }
-      }
-    },
-    "Search Generators" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generatoren durchsuchen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ค้นหาตัวสร้าง"
           }
         }
       }
@@ -2370,38 +2242,6 @@
         }
       }
     },
-    "What should the generator be called?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wie soll der Generator heißen?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ควรตั้งชื่อตัวสร้างว่าอะไร?"
-          }
-        }
-      }
-    },
-    "Which generator instructions?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welche Generatoranweisungen?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คำแนะนำตัวสร้างใด?"
-          }
-        }
-      }
-    },
     "Which generator?" : {
       "localizations" : {
         "de" : {
@@ -2626,22 +2466,6 @@
         }
       }
     },
-    "Creates a generator with a name and, optionally, a description." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erstellt einen Generator mit einem Namen und optional einer Beschreibung."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวสร้างด้วยชื่อ และคำอธิบาย (ไม่บังคับ)"
-          }
-        }
-      }
-    },
     "prompt" : {
       "localizations" : {
         "de" : {
@@ -2654,22 +2478,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "พรอมต์"
-          }
-        }
-      }
-    },
-    "new" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "neu"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ใหม่"
           }
         }
       }
@@ -2914,38 +2722,6 @@
         }
       }
     },
-    "Shows the generators that match a search term in the app." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigt die Generatoren in der App, die zu einem Suchbegriff passen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงตัวสร้างที่ตรงกับคำค้นหาในแอป"
-          }
-        }
-      }
-    },
-    "find" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "finden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ค้นหา"
-          }
-        }
-      }
-    },
     "Moves generators to the trash. They can be restored in the app." : {
       "localizations" : {
         "de" : {
@@ -2990,38 +2766,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ถังขยะ"
-          }
-        }
-      }
-    },
-    "Opens a generator in the app." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öffnet einen Generator in der App."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดตัวสร้างในแอป"
-          }
-        }
-      }
-    },
-    "show" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "zeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดง"
           }
         }
       }

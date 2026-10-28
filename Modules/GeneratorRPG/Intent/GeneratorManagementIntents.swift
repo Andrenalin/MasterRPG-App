@@ -7,60 +7,9 @@ import CoreSpotlight
 import CoreRPG
 import Foundation
 
-struct CreateGeneratorIntent: AppIntent {
-    static let title: LocalizedStringResource = "Create Generator"
-    static let description = IntentDescription(
-        "Creates a generator with a name and, optionally, a description.",
-        categoryName: "Generator",
-        searchKeywords: ["prompt", "idea", "new"]
-    )
-    static let supportedModes: IntentModes = [.background, .foreground(.dynamic)]
-
-    static var parameterSummary: some ParameterSummary {
-        Summary("Create generator named \(\.$name)")
-    }
-
-    @Parameter(title: "Name", requestValueDialog: .localized("What should the generator be called?", bundle: .module))
-    var name: String
-
-    @Parameter(title: "Instructions")
-    var instructions: AttributedString?
-
-    @Parameter(title: "Open When Created", default: false)
-    var openWhenCreated: Bool
-
-    @Dependency var root: GeneratorRootModel
-    @Dependency var navigator: Navigator
-
-    init() {}
-
-    @MainActor
-    func perform() async throws -> some IntentResult & ReturnsValue<GeneratorEntity> & ProvidesDialog {
-        try await requireReadyDatabase()
-        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank item.
-        // See CODE_AUDIT_AppIntents §5.2.
-        let trimmedName = try requiredIntentName(name, parameter: $name, prompt: .localized("What should the generator be called?", bundle: .module))
-        let model = GeneratorModel(
-            id: UUID(),
-            name: trimmedName,
-            description: intentMarkdown(from: instructions),
-            displayState: 0
-        )
-        // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
-        root.itemController.replace(model: model, isInsert: true, forceSave: true)
-        await root.itemController.save()
-
-        let entity = GeneratorEntity(root: root, model: model)
-        await indexIntentEntities([entity])
-
-        if openWhenCreated {
-            await navigator.perform(route: KnownRoutes.generators(model.id, nil))
-            try await continueInForeground(alwaysConfirm: false)
-        }
-
-        return .result(value: entity, dialog: .localized("Created \"\(trimmedName)\".", bundle: .module))
-    }
-}
+// The generator has no list of its own; its views are inlined where they are needed. So it has no
+// Create, Open or Search intents, only the ones that work without a generator screen.
+// See CODE_AUDIT_Since_3.0.1 §5.3.
 
 struct AddGeneratorNoteIntent: AppIntent {
     static let title: LocalizedStringResource = "Add Generator Note"
@@ -168,32 +117,6 @@ struct UpdateGeneratorIntent: AppIntent {
     }
 }
 
-@AppIntent(schema: .system.search)
-struct SearchGeneratorsIntent: ShowInAppSearchResultsIntent {
-    static let title: LocalizedStringResource = "Search Generators"
-    static let description = IntentDescription(
-        "Shows the generators that match a search term in the app.",
-        categoryName: "Generator",
-        searchKeywords: ["find", "prompt"]
-    )
-    static let searchScopes: [StringSearchScope] = [.general]
-
-    var criteria: StringSearchCriteria
-
-    @Dependency var root: GeneratorRootModel
-    @Dependency var navigator: Navigator
-
-    init() {}
-
-    @MainActor
-    func perform() async throws -> some IntentResult {
-        await DatabaseReadiness.wait()
-        root.searchModel.searchText = criteria.term
-        await navigator.perform(route: KnownRoutes.generators(nil, nil))
-        return .result()
-    }
-}
-
 struct DeleteGeneratorIntent: DeleteIntent {
     static let title: LocalizedStringResource = "Delete Generator"
     static let description = IntentDescription(
@@ -225,9 +148,5 @@ struct DeleteGeneratorIntent: DeleteIntent {
         return .result(dialog: .verbatim(message))
     }
 }
-
-#if os(iOS)
-extension SearchGeneratorsIntent: TargetContentProvidingIntent {}
-#endif
 
 #endif

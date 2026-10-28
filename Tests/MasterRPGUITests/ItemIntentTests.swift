@@ -280,7 +280,7 @@ final class ItemIntentTests: AppIntentsUITestCase {
     }
 
     func testSchemaOpenIntentShowsTheModule() async {
-        await forEachModule(IntentModule.all.filter { $0.name != "Generator" && $0.name != "Rule" }) { module in
+        await forEachModule(IntentModule.all.filter { $0.name != "Rule" }) { module in
             let (entity, _) = try await createItem(module)
             try await definitions.intents[module.openSchemaIntent].makeIntent(target: entity).run()
 
