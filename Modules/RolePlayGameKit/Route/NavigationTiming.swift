@@ -20,4 +20,10 @@ enum NavigationTiming {
     /// module's navigator, for the same reason as `crossWindowRouteDelay`: the destination
     /// `ManagedNavigationStack` needs a moment to mount and subscribe after becoming selected.
     static let tabSwitchMountDelay: TimeInterval = 0.8
+
+    /// Delay between a size-class change and restoring the remembered module and item in the
+    /// layout that replaced the old one (`TabRootView`), so the new layout has settled first. The
+    /// navigator buffers a route no receiver takes, so a signal from the new layout could replace
+    /// this delay, but that has to be tried on a device first. See CODE_AUDIT_Since_3.0.1 §8.2.
+    static let layoutChangeSettleDelay: Duration = .milliseconds(200)
 }

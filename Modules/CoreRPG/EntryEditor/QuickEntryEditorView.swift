@@ -73,7 +73,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                     .accessibilityHidden(!showHelp)
                     .animation(accessibilityReduceMotion ? nil : .default, value: showHelp)
                 }
-                .sizedSheet(isPresented: $showAffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
+                .sizedSheet(isPresented: $showAffectedLinksAlert, idealSize: .panelSheet) {
                     AffectedLinkActionPanelView(root: root, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
                         // The standalone item editor always persists, even while a game
@@ -83,7 +83,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                         navigator.dismiss()
                     }
                 }
-                .sizedSheet(isPresented: $showQuickLinkPicker, idealSize: CGSize(width: 500, height: 700)) {
+                .sizedSheet(isPresented: $showQuickLinkPicker, idealSize: .pickerSheet) {
                     if let tableRoot = tableRootController {
                         QuickEntryEditorTablePickerView(tableRoot: tableRoot, selection: quickLinkSelection)
                     }

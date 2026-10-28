@@ -61,14 +61,16 @@ struct DiceEntity: IndexedEntity {
     // @MainActor model must not be read from them. All queries are @MainActor.
     // The live model is deliberately not stored: re-resolve it through the root when needed.
     // See CODE_AUDIT_AppIntents §3.1.
+    /// `includingText: false` leaves out the excerpt and subtitle, for the Find action's matching
+    /// (`makeFindEntity`).
     @MainActor
-    init(root: DiceRootModel, model: DiceModel) {
+    init(root: DiceRootModel, model: DiceModel, includingText: Bool = true) {
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description
         self.storedIsFolder = model.category == .folder
-        self.storedTextContent = IntentEntityText.excerpt(of: model)
-        self.subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
+        self.storedTextContent = includingText ? IntentEntityText.excerpt(of: model) : ""
+        self.subtitle = includingText ? IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) } : ""
         self.storedTags = model.tags
         self.storedFirstDieMax = model.dice.first.map { Int($0.die.max) }
         let isSpecial = model.category == .folder || model.category.isCollection
@@ -136,6 +138,7 @@ struct DiceEntityQuery: ItemEntityQuery {
     @Dependency var root: DiceRootModel
 
     func makeEntity(root: DiceRootModel, model: DiceModel) -> DiceEntity { DiceEntity(root: root, model: model) }
+    func makeFindEntity(root: DiceRootModel, model: DiceModel) -> DiceEntity { DiceEntity(root: root, model: model, includingText: false) }
     func allIds(root: DiceRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: DiceRootModel, id: UUID) -> DiceModel? { root.itemController.itemSync(for: id) }
 

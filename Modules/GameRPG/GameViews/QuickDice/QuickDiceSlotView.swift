@@ -13,6 +13,7 @@ struct QuickDiceSlotView: View {
     let index: Int
 
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.appTheme) private var theme
 
     @State private var isPickerShown = false
     @State private var isDropTargeted = false
@@ -33,8 +34,8 @@ struct QuickDiceSlotView: View {
         // A slot that takes other dice starts over, with the game copy of its new dice.
         .id(slot?.source)
         .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isDropTargeted ? Color.accentColor.opacity(0.4) : .clear)
+            RoundedRectangle(cornerRadius: ResolvedAppTheme.elementCornerRadius, style: .continuous)
+                .fill(isDropTargeted ? theme.dropTargetColor : .clear)
         }
         .dropDestination(for: .dice) { _, diceId, _ in
             root.quickDiceSlots.assign(QuickDiceSlot(source: .dice(diceId: diceId)), to: index)

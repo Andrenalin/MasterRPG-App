@@ -94,7 +94,7 @@ struct RuleQuickEntryEditor: View {
         }
         .sizedSheet(
             isPresented: $showsAffectedLinks,
-            idealSize: CGSize(width: 400, height: 600)
+            idealSize: .panelSheet
         ) {
             AffectedLinkActionPanelView(root: root.rootController, overwrite: true) { removed in
                 affectedEntries.removeAll(where: { removed.contains($0) })

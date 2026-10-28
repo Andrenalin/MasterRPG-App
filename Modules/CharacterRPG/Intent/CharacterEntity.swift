@@ -60,15 +60,19 @@ struct CharacterEntity: IndexedEntity {
     // @MainActor model must not be read from them. All queries are @MainActor.
     // The live model is deliberately not stored: re-resolve it through the root when needed.
     // See CODE_AUDIT_AppIntents §3.1.
+    /// `includingText: false` leaves out the excerpt and subtitle, for the Find action's matching
+    /// (`makeFindEntity`).
     @MainActor
-    init(root: CharacterRootModel, model: ValueModel) {
+    init(root: CharacterRootModel, model: ValueModel, includingText: Bool = true) {
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description
         self.storedTags = model.tags
         self.storedIsFolder = model.category == .folder
-        self.storedTextContent = IntentEntityText.excerpt(of: model) { root.linkController.calculate(entry: $0) ?? $0.content }
-        self.subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
+        self.storedTextContent = includingText
+            ? IntentEntityText.excerpt(of: model) { root.linkController.calculate(entry: $0) ?? $0.content }
+            : ""
+        self.subtitle = includingText ? IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) } : ""
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
@@ -104,6 +108,7 @@ struct CharacterEntityQuery: ItemEntityQuery {
     @Dependency var root: CharacterRootModel
 
     func makeEntity(root: CharacterRootModel, model: ValueModel) -> CharacterEntity { CharacterEntity(root: root, model: model) }
+    func makeFindEntity(root: CharacterRootModel, model: ValueModel) -> CharacterEntity { CharacterEntity(root: root, model: model, includingText: false) }
     func allIds(root: CharacterRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: CharacterRootModel, id: UUID) -> ValueModel? { root.itemController.itemSync(for: id) }
 }

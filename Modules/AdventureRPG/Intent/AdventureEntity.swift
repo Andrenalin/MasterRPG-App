@@ -60,15 +60,17 @@ public struct AdventureEntity: IndexedEntity {
     // @MainActor model must not be read from them. All queries are @MainActor.
     // The live model is deliberately not stored: re-resolve it through the root when needed.
     // See CODE_AUDIT_AppIntents §3.1.
+    /// `includingText: false` leaves out the excerpt and subtitle, for the Find action's matching
+    /// (`makeFindEntity`).
     @MainActor
-    init(root: AdventureRootModel, model: AdventureModel) {
+    init(root: AdventureRootModel, model: AdventureModel, includingText: Bool = true) {
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description
         self.storedTags = model.tags
         self.storedIsFolder = model.category == .folder
-        self.storedTextContent = IntentEntityText.excerpt(of: model)
-        self.subtitle = IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) }
+        self.storedTextContent = includingText ? IntentEntityText.excerpt(of: model) : ""
+        self.subtitle = includingText ? IntentEntityText.subtitle(of: model) { root.itemController.itemSync(for: $0) } : ""
         let isSpecial = model.category == .folder || model.category.isCollection
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
@@ -109,6 +111,9 @@ public struct AdventureEntityQuery: @preconcurrency ItemEntityQuery {
 
     public func makeEntity(root: AdventureRootModel, model: AdventureModel) -> AdventureEntity {
         AdventureEntity(root: root, model: model)
+    }
+    public func makeFindEntity(root: AdventureRootModel, model: AdventureModel) -> AdventureEntity {
+        AdventureEntity(root: root, model: model, includingText: false)
     }
     public func allIds(root: AdventureRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     public func model(root: AdventureRootModel, id: UUID) -> AdventureModel? { root.itemController.itemSync(for: id) }

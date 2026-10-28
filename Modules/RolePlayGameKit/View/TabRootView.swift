@@ -25,7 +25,7 @@ struct TabRootView: View {
             }
             .task(id: appModel.layoutRestoreTarget) {
                 guard appModel.layoutRestoreTarget != nil else { return }
-                try? await Task.sleep(for: .milliseconds(200))
+                try? await Task.sleep(for: NavigationTiming.layoutChangeSettleDelay)
                 guard !Task.isCancelled else { return }
                 appModel.restoreRouteAfterLayoutChange(isCompact: appSizeModel.mode == .compact)
             }

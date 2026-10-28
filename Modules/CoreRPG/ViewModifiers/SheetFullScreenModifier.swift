@@ -8,6 +8,16 @@ public extension View {
     }
 }
 
+/// Ideal sizes for `sizedSheet`. They apply only on macOS, where a sheet takes its content's ideal
+/// size and the window can still be resized; other platforms size sheets themselves.
+/// See CODE_AUDIT_Since_3.0.1 §8.1.
+public extension CGSize {
+    /// A sheet with a short panel of choices, such as the affected-links panel.
+    static let panelSheet = CGSize(width: 400, height: 600)
+    /// A sheet that lists items to pick from, such as the Quick Link table picker.
+    static let pickerSheet = CGSize(width: 500, height: 700)
+}
+
 struct SizedSheetViewModifier<SheetContent: View>: ViewModifier {
     let isPresented: Binding<Bool>
     let idealSize: CGSize

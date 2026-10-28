@@ -29,6 +29,10 @@ public protocol ItemEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntit
     static var matchingLimit: Int { get }
 
     func makeEntity(root: Root, model: Model) -> Entity
+    /// An entity the Find action's predicates and sorting can read (name, description, tags,
+    /// folder) without the costly text excerpt and subtitle; `findEntities` builds the full entity
+    /// only for the results. Default: `makeEntity`. See CODE_AUDIT_Since_3.0.1 §7.2.
+    func makeFindEntity(root: Root, model: Model) -> Entity
     func allIds(root: Root) -> [UUID]
     func model(root: Root, id: UUID) -> Model?
 
@@ -51,6 +55,10 @@ public extension ItemEntityQuery {
     static var matchingLimit: Int { 25 }
 
     func thumbnailData(root: Root, id: UUID) -> Data? { nil }
+
+    func makeFindEntity(root: Root, model: Model) -> Entity {
+        makeEntity(root: root, model: model)
+    }
 
     func matches(model: Model, text: String) -> Bool {
         model.name.localizedStandardContains(text) || model.description.localizedStandardContains(text)

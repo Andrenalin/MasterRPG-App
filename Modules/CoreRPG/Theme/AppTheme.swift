@@ -56,6 +56,9 @@ public struct ResolvedAppTheme: Hashable, Sendable {
     /// The corner radius of every floating panel (game side panels, overlays, review cards).
     /// See CODE_AUDIT_20 §9.17.
     public static let panelCornerRadius: CGFloat = 14
+    /// The corner radius of a highlighted element inside a panel, such as a drop target. Smaller
+    /// than `panelCornerRadius`, so it nests inside the panel. See CODE_AUDIT_Since_3.0.1 §8.1.
+    public static let elementCornerRadius: CGFloat = 12
 
     public let id: AppThemeID
     public let canvas: ThemeColorComponents
@@ -80,6 +83,11 @@ public struct ResolvedAppTheme: Hashable, Sendable {
 
     public var panelColor: Color {
         panel.color
+    }
+
+    /// The fill of an element a drag hovers over, in the theme's accent.
+    public var dropTargetColor: Color {
+        accent.color.opacity(0.4)
     }
 
     public var backgroundGradient: LinearGradient {
