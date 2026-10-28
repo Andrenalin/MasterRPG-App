@@ -52,7 +52,7 @@ struct CreateSpaceIntent: AppIntent {
         )
         // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
         root.itemController.replace(model: model, isInsert: true, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         if let fileData {
             try await attachIntentFile(to: model.id, editControllable: root.editController) {
@@ -114,7 +114,7 @@ struct AddSpaceNoteIntent: AppIntent {
         try requireOutsideGame([target.id], in: root)
 
         root.editController.reset(description: updatedDescription, itemId: target.id, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         // The updated 3D object is returned so a shortcut can go on with it. Indexing it is
         // CODE_AUDIT_Space §5.5. See CODE_AUDIT_AppIntents3 §4.14.

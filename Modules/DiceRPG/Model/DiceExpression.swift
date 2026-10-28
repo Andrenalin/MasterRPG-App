@@ -67,15 +67,29 @@ public struct DiceExpression: Equatable, Sendable {
         }
     }
 
-    /// Lowercased without spaces; "plus"/"minus" become signs, the German "W" (Würfel) and
-    /// "d%" become `d` notation.
+    /// Lowercased without spaces; spoken numbers become digits ("two d six"), "plus"/"minus" become
+    /// signs, the German "W" (Würfel) and "d%" become `d` notation. "W" is replaced before "%" so
+    /// "W%" works, and the number words before "W" because "zwei" contains a "w".
+    /// See CODE_AUDIT_Since_3.0.1 §5.21.
     static func normalized(_ input: String) -> String {
         input.lowercased()
+            .split(whereSeparator: \.isWhitespace)
+            .map { numberWords[String($0)] ?? String($0) }
+            .joined()
             .replacing("plus", with: "+")
             .replacing("minus", with: "-")
             .replacing("−", with: "-")
-            .replacing("d%", with: "d100")
             .replacing("w", with: "d")
-            .filter { !$0.isWhitespace }
+            .replacing("d%", with: "d100")
     }
+
+    /// Spoken numbers in English and German, as whole words, up to the common die sizes.
+    static let numberWords: [String: String] = [
+        "a": "1", "an": "1", "one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6",
+        "seven": "7", "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12",
+        "twenty": "20", "hundred": "100",
+        "ein": "1", "eins": "1", "eine": "1", "einen": "1", "zwei": "2", "drei": "3", "vier": "4", "fünf": "5",
+        "sechs": "6", "sieben": "7", "acht": "8", "neun": "9", "zehn": "10", "elf": "11", "zwölf": "12",
+        "zwanzig": "20", "hundert": "100"
+    ]
 }

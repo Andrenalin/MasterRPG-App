@@ -119,6 +119,45 @@ struct IntentGameModeWriteTests {
         #expect(library(gameId, of: root)?.displayState != DisplayStateMask.totalHidden.rawValue)
     }
 
+    /// CODE_AUDIT_Since_3.0.1 §5.4: a Delete intent trashed a folder but left its children live.
+    @Test("Trashing a folder by intent also trashes everything below it")
+    func trashFolderTakesChildren() async throws {
+        let root = makeRoot()
+        let edit = root.editController
+        let folderId = try #require(await edit.addNew(type: .folder)?.id)
+        let innerId = try #require(await edit.addNew(type: .folder)?.id)
+        let childId = await addTable(root, name: "Loot")
+        let grandchildId = await addTable(root, name: "Encounters")
+        let outsideId = await addTable(root, name: "Weather")
+        edit.addItem(itemId: childId, parentId: folderId)
+        edit.addItem(itemId: innerId, parentId: folderId)
+        edit.addItem(itemId: grandchildId, parentId: innerId)
+
+        try await trashIntentItems(ids: [folderId], ofType: TableEntity.self, in: root)
+
+        let trashed = DisplayStateMask.totalHidden.rawValue
+        for id in [folderId, innerId, childId, grandchildId] {
+            #expect(library(id, of: root)?.displayState == trashed)
+        }
+        #expect(library(outsideId, of: root)?.displayState != trashed)
+    }
+
+    @Test("A folder is not trashed when the game uses one of its children")
+    func trashFolderWithGameChildIsRefused() async throws {
+        let root = makeRoot()
+        let edit = root.editController
+        let folderId = try #require(await edit.addNew(type: .folder)?.id)
+        let childId = await addTable(root, name: "Loot")
+        edit.addItem(itemId: childId, parentId: folderId)
+        root.itemController.itemDataModel.isGameMode = true
+        try loadIntoGame(childId, of: root)
+
+        await #expect(throws: ItemInGameError.self) {
+            try await trashIntentItems(ids: [folderId], ofType: TableEntity.self, in: root)
+        }
+        #expect(library(folderId, of: root)?.displayState != DisplayStateMask.totalHidden.rawValue)
+    }
+
     @Test("Without a game, writes behave as before")
     func noGameUnchanged() async throws {
         let root = makeRoot()

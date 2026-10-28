@@ -48,8 +48,11 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
         "masterRPG-index"
     }
 
+    /// No attribute set for a trashed item or an entry of one, so trashed content leaves the index
+    /// when it is trashed and comes back when it is restored. See CODE_AUDIT_Since_3.0.1 §5.6.
     public override func attributeSet(for object: NSManagedObject) -> CSSearchableItemAttributeSet? {
-        guard let objectAttribute = object as? SpotlightIndexerAttribute else { return nil }
+        guard let objectAttribute = object as? SpotlightIndexerAttribute,
+              !SpotlightActivityRoute.isTrashed(object) else { return nil }
         return objectAttribute.attributeSet()
     }
 

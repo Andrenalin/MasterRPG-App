@@ -90,6 +90,7 @@ public final class GameRoot {
         statisticsModel.setAchievementReporter { [weak gameCenterController] summary in
             await gameCenterController?.reportAchievements(from: summary)
         }
+        restoreSelectedCharacter()
     }
 
     // Force-unwrapped with `!` rather than `.unsafelyUnwrapped`: both backing
@@ -315,6 +316,14 @@ extension GameRoot {
             return
         }
         gameModel.selectedCharacter <=> uuid
+    }
+
+    /// Loads the character saved on the player setup screen when none is selected yet. Only that
+    /// screen's `.task` used to load it, so Join Game by Siri failed in a run where the screen had
+    /// not appeared. See CODE_AUDIT_Since_3.0.1 §5.7.
+    func restoreSelectedCharacter(defaults: UserDefaults = .standard) {
+        guard gameModel.selectedCharacter == nil else { return }
+        resetSelectedCharacter(uuidString: defaults.string(forKey: GameStorageKeys.lastPlayerUUID) ?? "")
     }
 
     func resetSelectedGameMaster(uuidString: String) {

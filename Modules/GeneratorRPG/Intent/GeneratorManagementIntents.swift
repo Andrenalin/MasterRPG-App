@@ -50,7 +50,7 @@ struct AddGeneratorNoteIntent: AppIntent {
         try requireOutsideGame([target.id], in: root)
 
         root.editController.reset(description: updatedDescription, itemId: target.id, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         // The updated generator is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.

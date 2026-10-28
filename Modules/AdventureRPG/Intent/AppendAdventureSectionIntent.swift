@@ -41,7 +41,7 @@ public struct AppendAdventureSectionIntent: AppIntent {
         let entry = root.editController.create(name: trimmedName, content: intentMarkdown(from: content))
         try requireOutsideGame([target.id], in: root)
         root.editController.add(entry: entry, itemId: target.id, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         // The updated adventure is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.

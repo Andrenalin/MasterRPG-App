@@ -58,9 +58,13 @@ public struct PauseAudioIntent: AudioPlaybackIntent {
 
     public init() {}
 
+    /// Playback needs no database, so the three playback-only intents answer at once, also on a
+    /// cold launch. See CODE_AUDIT_Since_3.0.1 §5.20, §5.22.
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
+        guard root.audioController.model.isPlaying else {
+            return .result(dialog: .localized("There is no audio playing.", bundle: .module))
+        }
         root.audioController.pause()
         return .result(dialog: .localized("Paused the audio.", bundle: .module))
     }
@@ -81,7 +85,6 @@ public struct ResumeAudioIntent: AudioPlaybackIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
         let player = root.audioController.model
         guard let index = player.currentIndex, player.playList.indices.contains(index) else {
             return .result(dialog: .localized("There is no audio to resume.", bundle: .module))
@@ -110,7 +113,6 @@ public struct NextTrackIntent: AudioPlaybackIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        await DatabaseReadiness.wait()
         let player = root.audioController.model
         guard let index = player.currentIndex else {
             return .result(dialog: .localized("There is no audio playing.", bundle: .module))

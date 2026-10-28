@@ -128,6 +128,30 @@ public func requireReadyDatabase() async throws {
     guard canSave else { throw DatabaseNotReadyError() }
 }
 
+/// Thrown by an intent whose save failed (full disk, broken store), so Siri does not confirm a
+/// change that is not on disk. The app's persistence banner says why. See CODE_AUDIT_Since_3.0.1 §5.5.
+public struct IntentSaveError: Error, CustomLocalizedStringResourceConvertible {
+    public init() {}
+
+    public var localizedStringResource: LocalizedStringResource {
+        LocalizedStringResource(
+            "The change could not be saved. Open MasterRPG to see why.",
+            bundle: .module,
+            comment: "Error shown by Siri or Shortcuts when an intent changed an item but saving it failed."
+        )
+    }
+}
+
+public extension ItemControllable {
+    /// `save()` for an App Intent: throws `IntentSaveError` when the save failed. `save()` records
+    /// a failure in `lastPersistenceError` and clears it on success, so the check reads this
+    /// save's outcome. Every intent that writes saves through here. See CODE_AUDIT_Since_3.0.1 §5.5.
+    @MainActor func saveForIntent() async throws {
+        await save()
+        guard itemDataModel.lastPersistenceError == nil else { throw IntentSaveError() }
+    }
+}
+
 /// Thrown by an intent that would change an item loaded into the current game, so Siri says why
 /// instead of reporting a change that would be lost. See CODE_AUDIT_Since_3.0.1 §5.2.
 public struct ItemInGameError: Error, CustomLocalizedStringResourceConvertible {
@@ -228,6 +252,28 @@ public func requiredIntentName(
     return trimmed
 }
 
+/// `labels` for a Siri or Shortcuts disambiguation, each one unique: a repeated label gets its
+/// count, "HP", "HP (2)". The choice comes back as a string, so with repeated labels the second
+/// one could never be picked. The order and the count stay, so an index still maps back to the
+/// source. See CODE_AUDIT_Since_3.0.1 §5.18.
+public func uniqueIntentLabels(_ labels: [String]) -> [String] {
+    var seen: [String: Int] = [:]
+    var used = Set(labels)
+    return labels.map { label in
+        let count = seen[label, default: 0] + 1
+        seen[label] = count
+        guard count > 1 else { return label }
+        var number = count
+        var unique = "\(label) (\(number))"
+        while used.contains(unique) {
+            number += 1
+            unique = "\(label) (\(number))"
+        }
+        used.insert(unique)
+        return unique
+    }
+}
+
 /// The model behind an entity parameter. The entity can be stale — deleted since Siri or
 /// Shortcuts cached it — so a missing model asks for the target again instead of reporting a
 /// success that changed nothing. See CODE_AUDIT_AppIntents §5.2.
@@ -286,7 +332,7 @@ public func updateIntentItem(
     }
 
     if changed {
-        await root.itemControllable.save()
+        try await root.itemControllable.saveForIntent()
     }
     return changed
 }
@@ -328,21 +374,27 @@ public func deleteIntentEntities<Entity: IndexedEntity>(
 }
 
 /// What every Delete intent does: moves the items to the trash, saves, and takes them out of the
-/// Spotlight index. The trash is recoverable, and the dialog stays with the intent because each
-/// module localizes it from its own bundle. Nothing is trashed when one of the items is used by
-/// the current game (`ItemInGameError`). See CODE_AUDIT_AppIntents §9.3, CODE_AUDIT_Since_3.0.1 §5.2.
+/// Spotlight index. A folder takes everything below it along, as the delete in the list does;
+/// trashing only the folder left its children live under a trashed parent. The trash is
+/// recoverable, and the dialog stays with the intent because each module localizes it from its own
+/// bundle. Nothing is trashed when one of the items is used by the current game
+/// (`ItemInGameError`). See CODE_AUDIT_AppIntents §9.3, CODE_AUDIT_Since_3.0.1 §5.2, §5.4.
 @MainActor
 public func trashIntentItems<Entity: IndexedEntity>(
     ids: [UUID],
     ofType entityType: Entity.Type,
     in root: some ItemRootControllable
 ) async throws where Entity.ID == UUID {
-    try requireOutsideGame(ids, in: root)
-    for id in ids {
+    let module = root.itemControllable.config.module
+    let removing = root.editControllable
+        .collectionItemsForRemoval(for: ids.map { ItemRowModel(itemId: $0, typeId: module) })
+        .map(\.itemId)
+    try requireOutsideGame(removing, in: root)
+    for id in removing {
         root.editControllable.markForDeletion(itemId: id, forceSave: true)
     }
-    await root.itemControllable.save()
-    await deleteIntentEntities(ids: ids, ofType: entityType)
+    try await root.itemControllable.saveForIntent()
+    await deleteIntentEntities(ids: removing, ofType: entityType)
 }
 
 /// Brings the module's App Entity index up to date with what changed since the last run: the ids

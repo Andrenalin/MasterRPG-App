@@ -39,6 +39,31 @@ struct SpotlightActivityRouteTests {
         let entryRoute = await SpotlightActivityRoute.resolve(tapActivity(on: entryRow), in: store.container.viewContext)
         #expect(entryRoute == SpotlightActivityRoute(module: .table, itemId: itemId, entryId: entry.id))
     }
+
+    /// CODE_AUDIT_Since_3.0.1 §5.6: a trashed item and its entry rows open nothing from Spotlight
+    /// and are not indexed, and they come back once the item is restored.
+    @Test func trashedItemAndEntryRowsAreNotOpenedOrIndexed() async throws {
+        let store = try SpotlightTestStore(bundles: [CoreRPG.Resources.bundle, TableRPG.Resources.bundle])
+        let sut = DataController(context: store.writeContext, token: NetworkModules.table.token)
+        let itemId = UUID()
+        let entry = TableEntryModel(id: UUID(), name: "One", content: "First result")
+        let trashed = TableModel(id: itemId, name: "Loot", description: "", tags: [], category: .loot, displayState: DisplayStateMask.totalHidden.rawValue, tableType: .dice, diceId: nil, entries: [entry], parentId: nil)
+        try sut.replaceSync(id: itemId, with: trashed)
+        try await sut.save()
+
+        let context = store.container.viewContext
+        let table = try #require(try context.fetch(NSFetchRequest<RPGTable>(entityName: "RPGTable")).first)
+        let entryRow = try #require(try context.fetch(NSFetchRequest<RPGTableEntry>(entityName: "RPGTableEntry")).first)
+        #expect(await SpotlightActivityRoute.resolve(tapActivity(on: table), in: context) == nil)
+        #expect(await SpotlightActivityRoute.resolve(tapActivity(on: entryRow), in: context) == nil)
+        #expect(SpotlightActivityRoute.isTrashed(table))
+        #expect(SpotlightActivityRoute.isTrashed(entryRow))
+
+        table.displayState = 0
+        #expect(!SpotlightActivityRoute.isTrashed(table))
+        #expect(!SpotlightActivityRoute.isTrashed(entryRow))
+        #expect(await SpotlightActivityRoute.resolve(tapActivity(on: entryRow), in: context) == SpotlightActivityRoute(module: .table, itemId: itemId, entryId: entry.id))
+    }
 }
 
 private struct SpotlightTestStore {

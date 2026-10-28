@@ -28,22 +28,65 @@ struct QuickLinkScannerTests {
     @Test("Matches whole words case-insensitively")
     func caseInsensitiveWholeWord() {
         let result = QuickLinkScanner.apply(candidates(), to: "A goblin, two Goblins and a hobgoblin.")
-        #expect(result.text == "A \(link("Goblin", goblinId)), two Goblins and a hobgoblin.")
+        #expect(result.text == "A \(link("goblin", goblinId)), two Goblins and a hobgoblin.")
         #expect(result.count == 1)
     }
 
     @Test("Longest name wins on overlap")
     func longestNameWins() {
         let result = QuickLinkScanner.apply(candidates(), to: "Dire Wolf and wolf")
-        #expect(result.text == "\(link("Dire Wolf", direWolfId)) and \(link("Wolf", wolfId))")
+        #expect(result.text == "\(link("Dire Wolf", direWolfId)) and \(link("wolf", wolfId))")
         #expect(result.count == 2)
     }
 
     @Test("Plain apply replaces every occurrence of the text it is given")
     func namesAndContents() {
         let result = QuickLinkScanner.apply(candidates(), to: "Goblin\nA Goblin hits a goblin.")
-        #expect(result.text == "\(link("Goblin", goblinId))\nA \(link("Goblin", goblinId)) hits a \(link("Goblin", goblinId)).")
+        #expect(result.text == "\(link("Goblin", goblinId))\nA \(link("Goblin", goblinId)) hits a \(link("goblin", goblinId)).")
         #expect(result.count == 3)
+    }
+
+    // MARK: Length and casing (CODE_AUDIT_Since_3.0.1 §5.9)
+
+    @Test("Names shorter than three characters are not linked")
+    func shortNamesSkipped() {
+        let entries: [(id: UUID, name: String)] = [(UUID(), "A"), (UUID(), "Ox"), (UUID(), "**I**"), (goblinId, "Orc")]
+        let found = candidates(entries)
+        #expect(found.map(\.reference) == ["Orc"])
+        let result = QuickLinkScanner.apply(found, to: "A Ox and I see an orc.")
+        #expect(result.text == "A Ox and I see an \(link("orc", goblinId)).")
+    }
+
+    @Test("A link keeps the casing of the text it replaces, and the address of the entry")
+    func linkKeepsCasing() {
+        let result = QuickLinkScanner.apply(candidates(), to: "DIRE WOLF, dire wolf, Dire Wolf")
+        #expect(result.text == "\(link("DIRE WOLF", direWolfId)), \(link("dire wolf", direWolfId)), \(link("Dire Wolf", direWolfId))")
+        #expect(result.count == 3)
+    }
+
+    @Test("The Quick Link rewrite is one undoable and redoable step")
+    func quickLinkUndo() {
+        let undoManager = UndoManager()
+        undoManager.groupsByEvent = false
+        let model = TextEditModel(linkRegisterController: nil)
+        let source = ItemRowModel(itemId: UUID(), typeId: .table)
+        model.reset(text: "A goblin.", source: source)
+        var mirrored = ""
+
+        undoManager.beginUndoGrouping()
+        model.replaceText("A [goblin](x).", source: source, undoManager: undoManager, actionName: "Quick Link") { mirrored = $0 }
+        undoManager.endUndoGrouping()
+        #expect(model.text == "A [goblin](x).")
+        #expect(mirrored == "A [goblin](x).")
+        #expect(undoManager.undoActionName == "Quick Link")
+
+        undoManager.undo()
+        #expect(model.text == "A goblin.")
+        #expect(mirrored == "A goblin.")
+
+        undoManager.redo()
+        #expect(model.text == "A [goblin](x).")
+        #expect(mirrored == "A [goblin](x).")
     }
 
     // MARK: Entry text (CODE_AUDIT_Since_3.0.1 §5.1)
@@ -59,7 +102,7 @@ struct QuickLinkScannerTests {
     @Test("A title that is exactly a candidate name is not linked")
     func titleEqualToCandidate() {
         let result = QuickLinkScanner.applyToContent(candidates(), to: "Goblin\nThe goblin.")
-        #expect(result.text == "Goblin\nThe \(link("Goblin", goblinId)).")
+        #expect(result.text == "Goblin\nThe \(link("goblin", goblinId)).")
     }
 
     @Test(
@@ -101,7 +144,7 @@ struct QuickLinkScannerTests {
         let outcome = QuickLinkScanner.scan(monsters, editedItemId: UUID(), text: "Cave\nA goblin.")
         let linked = FakeItemModel.typeId
         #expect(outcome == .linked(QuickLinkScanner.Result(
-            text: "Cave\nA \(LinkBuilder.markdown(name: "Goblin", module: linked, itemId: tableId, entryId: goblinId)).",
+            text: "Cave\nA \(LinkBuilder.markdown(name: "goblin", module: linked, itemId: tableId, entryId: goblinId)).",
             count: 1
         )))
     }

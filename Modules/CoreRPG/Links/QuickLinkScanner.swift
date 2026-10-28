@@ -5,16 +5,22 @@ import Foundation
 /// The quick linker: replaces the occurrences of a table's entry names in a text by links to
 /// that table entry.
 ///
-/// Matching is case-insensitive and whole-word. The longest name wins where two names overlap
-/// (`Dire Wolf` before `Wolf`), and text that already sits inside a markdown link is left alone.
+/// Matching is case-insensitive and whole-word, and a link keeps the casing of the text it
+/// replaces ("wolf" stays "wolf"). The longest name wins where two names overlap (`Dire Wolf`
+/// before `Wolf`), and text that already sits inside a markdown link is left alone.
 public enum QuickLinkScanner {
+    /// Names shorter than this are not linked: "A", "I" or "Ox" turned up all over prose.
+    /// See CODE_AUDIT_Since_3.0.1 §5.9.
+    public static let minimumNameLength = 3
+
     public struct Result: Equatable, Sendable {
         public let text: String
         public let count: Int
     }
 
-    /// One link candidate per entry of `table`, skipping entries without a usable name and
-    /// entries named like a dice roll range (`1`, `5-10`), so numbers never turn into links.
+    /// One link candidate per entry of `table`, skipping entries without a usable name, names
+    /// shorter than `minimumNameLength`, and entries named like a dice roll range (`1`, `5-10`),
+    /// so numbers never turn into links.
     @MainActor
     public static func candidates(for table: some ItemDataAccessible) -> [LinkEntryModel] {
         candidates(tableId: table.id, module: type(of: table).typeId, entries: table.entries.map { (id: $0.id, name: $0.name) })
@@ -24,7 +30,7 @@ public enum QuickLinkScanner {
         var seen = Set<String>()
         return entries.compactMap { entry in
             let name = entry.name.withoutLink().trimmingCharacters(in: CharacterSet(charactersIn: "* ").union(.whitespacesAndNewlines))
-            guard !name.isEmpty,
+            guard name.count >= minimumNameLength,
                   !name.contains(where: { $0 == "[" || $0 == "]" }),
                   TableRollRange.selectorRange(for: name) == nil,
                   seen.insert(name.lowercased()).inserted else { return nil }
@@ -85,11 +91,18 @@ public enum QuickLinkScanner {
         var position = text.startIndex
         for replacement in replacements.sorted(by: { $0.range.lowerBound < $1.range.lowerBound }) {
             result += text[position..<replacement.range.lowerBound]
-            result += replacement.markdownUrl
+            result += relabeled(replacement.markdownUrl, as: text[replacement.range])
             position = replacement.range.upperBound
         }
         result += text[position...]
         return Result(text: result, count: replacements.count)
+    }
+
+    /// `markdownLink` (`[Name](address)`) with the matched text as its label, so the prose keeps
+    /// its own casing. See CODE_AUDIT_Since_3.0.1 §5.9.
+    private static func relabeled(_ markdownLink: String, as label: Substring) -> String {
+        guard let addressStart = markdownLink.range(of: "](") else { return markdownLink }
+        return "[\(label)" + markdownLink[addressStart.lowerBound...]
     }
 
     /// A match is a whole word when it isn't glued to a letter or digit on a side where the

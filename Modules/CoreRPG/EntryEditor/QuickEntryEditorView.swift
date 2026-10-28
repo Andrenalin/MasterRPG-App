@@ -35,6 +35,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.undoManager) private var undoManager
 
     @FocusState private var focusedField: QuickEntryEditorFocusField?
 
@@ -173,7 +174,7 @@ private extension QuickEntryEditorView {
     /// Links every entry name of the chosen table found in the entries' content of the editor
     /// text; the titles stay as they are (CODE_AUDIT_Since_3.0.1 §5.1). Choosing the table being
     /// edited is ignored with an explanation. The text is reset in the editor as well, because
-    /// the editor only reads `referenceText` on appear.
+    /// the editor only reads `referenceText` on appear. The rewrite is one undoable step (§5.9).
     func applyQuickLink(tableId: UUID) {
         showQuickLinkPicker = false
         quickLinkSelection.resetSelection(itemId: nil, entryId: nil)
@@ -181,8 +182,15 @@ private extension QuickEntryEditorView {
         let outcome = QuickLinkScanner.scan(table, editedItemId: model.id, text: textEditModel.text)
         quickLinkOutcome = outcome
         guard case .linked(let result) = outcome, result.count > 0 else { return }
-        textEditModel.reset(text: result.text, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
-        referenceText.input = result.text
+        let referenceText = referenceText
+        textEditModel.replaceText(
+            result.text,
+            source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module),
+            undoManager: undoManager,
+            actionName: String(localized: "Quick Link", bundle: .module)
+        ) { text in
+            referenceText.input = text
+        }
     }
 }
 

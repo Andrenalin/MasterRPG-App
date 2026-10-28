@@ -135,6 +135,8 @@ private struct GameTableRealityContent: View {
 
     var body: some View {
         RealityView { content in
+            // The 3D scanner can no longer get its camera afterwards. See `RealityViewPresence`.
+            RealityViewPresence.noteCreated()
             content.camera = .virtual
             content.add(game.renderer.root)
             content.add(game.renderer.camera)

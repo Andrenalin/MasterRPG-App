@@ -137,8 +137,12 @@ struct QuickDiceSlotsModelTests {
         sut.assign(QuickDiceSlot(source: .dice(diceId: diceId), manualValue: .max), to: 0)
         #expect(sut.slots[0]?.manualValue == QuickDiceSlot.maximumValue)
 
+        sut.setManualValue(1, at: 0)
+        sut.setManualValue(.max, at: 0)
+        #expect(sut.slots[0]?.manualValue == QuickDiceSlot.maximumValue)
+        // Values of 0 or less are ignored since CODE_AUDIT_Since_3.0.1 §5.12.
         sut.setManualValue(.min, at: 0)
-        #expect(sut.slots[0]?.manualValue == -QuickDiceSlot.maximumValue)
+        #expect(sut.slots[0]?.manualValue == QuickDiceSlot.maximumValue)
 
         store.save([QuickDiceSlot(source: .dice(diceId: diceId), manualValue: .max), nil, nil, nil], for: characterId)
         let reloaded = QuickDiceSlotsModel(store: store)
@@ -182,6 +186,40 @@ struct QuickDiceSlotsModelTests {
         sut.setOverride(4, linkedValue: 5, at: 0)
         sut.clear(0)
         #expect(sut.effectiveValue(linkedValue: 5, at: 0) == 5)
+    }
+
+    /// CODE_AUDIT_Since_3.0.1 §5.13: with the overlay hidden nothing called `linkedValueChanged`,
+    /// so an A→B→A change brought the stale override back.
+    @Test("An override ends in the model, also when only the sheet row reads it")
+    func overrideEndsWithoutTheOverlay() {
+        let sut = QuickDiceSlotsModel(store: MemoryQuickDiceSlotStore())
+        sut.assign(QuickDiceSlot(source: .entry(itemId: itemId, entryId: entryId)), to: 1)
+        sut.setOverride(8, linkedValue: 5, at: 1)
+
+        #expect(sut.effectiveValue(linkedValue: 6, forItem: itemId, entry: entryId) == 6)
+        #expect(sut.effectiveValue(linkedValue: 5, forItem: itemId, entry: entryId) == 5)
+        #expect(sut.effectiveValue(linkedValue: 5, at: 1) == 5)
+
+        // A new override is good again.
+        #expect(sut.setOverride(9, linkedValue: 5, at: 1))
+        #expect(sut.effectiveValue(linkedValue: 5, at: 1) == 9)
+    }
+
+    /// CODE_AUDIT_Since_3.0.1 §5.12: a manual value of 0 was saved, and the dice ignored it.
+    @Test("A base dice slot keeps no manual value of 0 or less")
+    func manualValueMustBePositive() {
+        let store = MemoryQuickDiceSlotStore()
+        let sut = QuickDiceSlotsModel(store: store)
+        sut.load(characterId: characterId)
+        sut.assign(QuickDiceSlot(source: .dice(diceId: UUID()), manualValue: 12), to: 0)
+
+        #expect(!sut.setManualValue(0, at: 0))
+        #expect(!sut.setManualValue(-4, at: 0))
+        #expect(sut.slots[0]?.manualValue == 12)
+        #expect(sut.setManualValue(15, at: 0))
+        #expect(store.slots(for: characterId)[0]?.manualValue == 15)
+        #expect(sut.setManualValue(nil, at: 0))
+        #expect(sut.slots[0]?.manualValue == nil)
     }
 
     @Test("A sheet row of an entry without a slot just uses the linked value")

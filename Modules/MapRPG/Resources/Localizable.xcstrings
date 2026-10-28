@@ -2057,6 +2057,23 @@
         }
       }
     },
+    "The new photo has a different size and shape than the current map. Adapting stretches the rooms and moves the pins to match it, and a hex grid is created again. Or keep them at their current positions?" : {
+      "comment" : "Message of the dialog shown when a map gets a new photo with another aspect ratio.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das neue Foto hat eine andere Größe und Form als die aktuelle Karte. Beim Anpassen werden die Räume gestreckt und die Pins verschoben, und ein Hex-Raster wird neu erstellt. Oder sollen sie an ihren aktuellen Positionen bleiben?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปภาพใหม่มีขนาดและรูปทรงต่างจากแผนที่ปัจจุบัน การปรับจะยืดห้องและย้ายหมุดให้ตรงกัน และสร้างตารางหกเหลี่ยมใหม่ หรือจะคงไว้ที่ตำแหน่งเดิม"
+          }
+        }
+      }
+    },
     "The new photo has a different size than the current map. Resize the rooms and move the pins to match it, or keep them at their current positions?" : {
       "localizations" : {
         "de" : {

@@ -37,6 +37,27 @@ import SwiftUI
         resetAttributedText()
     }
     
+    /// Replaces the text as one step on `undoManager`: undo puts the previous text back, redo the
+    /// new one again. `didChange` mirrors every change into what else holds the text (the quick
+    /// editor's input). A bulk rewrite such as Quick Link could only be dropped by cancelling the
+    /// whole editor before. See CODE_AUDIT_Since_3.0.1 §5.9.
+    public func replaceText(
+        _ newText: String,
+        source: ItemRowModel,
+        undoManager: UndoManager?,
+        actionName: String,
+        didChange: @escaping @MainActor (String) -> Void
+    ) {
+        let previous = text
+        reset(text: newText, source: source)
+        didChange(newText)
+        guard let undoManager else { return }
+        undoManager.registerUndo(withTarget: self) { [weak undoManager] model in
+            model.replaceText(previous, source: source, undoManager: undoManager, actionName: actionName, didChange: didChange)
+        }
+        undoManager.setActionName(actionName)
+    }
+
     func reset(entry: any EntryDataAccessible, source: ItemRowModel) {
         // Cancel any pending updates
         nameUpdateTask?.cancel()

@@ -84,6 +84,11 @@ public final class QuickDiceSlotsModel {
     /// The temporary overrides of `.entry` slots by slot index. Session-only.
     public private(set) var overrides: [Int: QuickDiceOverride] = [:]
 
+    /// Slots whose override saw its entry's value change. Such an override never comes back, even
+    /// when the value returns to the one it was made against. Kept out of observation because
+    /// `effectiveValue` marks it while a view's body reads it. See CODE_AUDIT_Since_3.0.1 §5.13.
+    @ObservationIgnored private var outdatedOverrides: Set<Int> = []
+
     @ObservationIgnored private let store: any QuickDiceSlotStoring
     /// The game copy of each `.dice` slot's base dice, so the same copy keeps its results for
     /// as long as the slot holds that dice. Session-only.
@@ -103,6 +108,7 @@ public final class QuickDiceSlotsModel {
         }
         gameDice = [:]
         overrides = [:]
+        outdatedOverrides = []
     }
 
     /// The game copy made for the base dice `diceId` in slot `index`, if there is one.
@@ -123,6 +129,7 @@ public final class QuickDiceSlotsModel {
                 slots[other] = nil
                 gameDice[other] = nil
                 overrides[other] = nil
+                outdatedOverrides.remove(other)
             }
         }
         var slot = slot
@@ -133,6 +140,7 @@ public final class QuickDiceSlotsModel {
         }
         slots[index] = slot
         overrides[index] = nil
+        outdatedOverrides.remove(index)
         persist()
     }
 
@@ -141,14 +149,20 @@ public final class QuickDiceSlotsModel {
         slots[index] = nil
         gameDice[index] = nil
         overrides[index] = nil
+        outdatedOverrides.remove(index)
         persist()
     }
 
-    public func setManualValue(_ value: Int?, at index: Int) {
+    /// Sets the compare value of the base-dice slot at `index`. A value the dice would not take
+    /// (0 or less) is ignored, as `setOverride` does. See CODE_AUDIT_Since_3.0.1 §5.12.
+    @discardableResult
+    public func setManualValue(_ value: Int?, at index: Int) -> Bool {
+        if let value, value <= 0 { return false }
         let value = value.map(Self.boundedValue)
-        guard slots.indices.contains(index), slots[index]?.manualValue != value else { return }
+        guard slots.indices.contains(index), slots[index]?.manualValue != value else { return false }
         slots[index]?.manualValue = value
         persist()
+        return true
     }
 
     /// The slot that holds this entry, for the favorite menu's checkmark.
@@ -164,13 +178,20 @@ public final class QuickDiceSlotsModel {
     public func setOverride(_ value: Int, linkedValue: Int?, at index: Int) -> Bool {
         guard slots.indices.contains(index), value > 0 else { return false }
         overrides[index] = QuickDiceOverride(value: Self.boundedValue(value), linkedValue: linkedValue)
+        outdatedOverrides.remove(index)
         return true
     }
 
     /// The value the dice of the entry slot at `index` use: the override while the entry's value
-    /// is still the one it was made against, the entry's value otherwise.
+    /// is still the one it was made against, the entry's value otherwise. Seeing another value
+    /// ends the override here, in the model, so it also ends while only the sheet's row reads it
+    /// (the overlay hidden). See CODE_AUDIT_Since_3.0.1 §5.13.
     public func effectiveValue(linkedValue: Int?, at index: Int) -> Int? {
-        guard let override = overrides[index], override.linkedValue == linkedValue else { return linkedValue }
+        guard let override = overrides[index], !outdatedOverrides.contains(index) else { return linkedValue }
+        guard override.linkedValue == linkedValue else {
+            outdatedOverrides.insert(index)
+            return linkedValue
+        }
         return override.value
     }
 
@@ -186,6 +207,7 @@ public final class QuickDiceSlotsModel {
     public func linkedValueChanged(_ linkedValue: Int?, at index: Int) {
         guard let override = overrides[index], override.linkedValue != linkedValue else { return }
         overrides[index] = nil
+        outdatedOverrides.remove(index)
     }
 
     public static func boundedValue(_ value: Int) -> Int {

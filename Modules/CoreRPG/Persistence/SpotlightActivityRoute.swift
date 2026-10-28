@@ -49,8 +49,10 @@ public struct SpotlightActivityRoute: Sendable, Equatable {
         userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String
     }
 
-    /// Resolves the tapped result, or `nil` when it is not a Core Data object of this store or
-    /// the object is gone.
+    /// Resolves the tapped result, or `nil` when it is not a Core Data object of this store, the
+    /// object is gone, or it is in the trash (an item or an entry row of one). The index can still
+    /// hold a trashed row: trashing an item does not touch its entry rows.
+    /// See CODE_AUDIT_Since_3.0.1 §5.6.
     public static func resolve(_ userActivity: NSUserActivity, in context: NSManagedObjectContext) async -> SpotlightActivityRoute? {
         guard isSpotlightActivity(userActivity),
               let identifier = uniqueIdentifier(of: userActivity),
@@ -59,7 +61,7 @@ public struct SpotlightActivityRoute: Sendable, Equatable {
               let objectId = coordinator.managedObjectID(forURIRepresentation: uri)
         else { return nil }
         return await context.perform {
-            guard let object = try? context.existingObject(with: objectId) else { return nil }
+            guard let object = try? context.existingObject(with: objectId), !isTrashed(object) else { return nil }
             return route(for: object)
         }
     }
@@ -78,6 +80,26 @@ public struct SpotlightActivityRoute: Sendable, Equatable {
               let itemId = (parent as? any CoreDataId)?.uuid
         else { return nil }
         return SpotlightActivityRoute(module: module, itemId: itemId, entryId: entryId)
+    }
+
+    /// Whether `object` is a trashed item or an entry row of a trashed item. Trashed content is
+    /// neither indexed (`RpgSpotlightIndexerDelegate`) nor opened from a Spotlight tap.
+    /// Run on the context's queue. See CODE_AUDIT_Since_3.0.1 §5.6.
+    public static func isTrashed(_ object: NSManagedObject) -> Bool {
+        guard let name = object.entity.name else { return false }
+        if itemEntities[name] != nil {
+            return isTrashedItem(object)
+        }
+        guard name.hasSuffix("Entry"),
+              itemEntities[String(name.dropLast("Entry".count))] != nil,
+              let parent = parent(of: object, parentEntityName: String(name.dropLast("Entry".count)))
+        else { return false }
+        return isTrashedItem(parent)
+    }
+
+    private static func isTrashedItem(_ item: NSManagedObject) -> Bool {
+        guard item.entity.attributesByName["displayState"] != nil else { return false }
+        return (item.value(forKey: "displayState") as? NSNumber)?.intValue == DisplayStateMask.totalHidden.rawValue
     }
 
     private static func parent(of entry: NSManagedObject, parentEntityName: String) -> NSManagedObject? {

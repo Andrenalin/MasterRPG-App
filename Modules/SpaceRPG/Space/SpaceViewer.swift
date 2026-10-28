@@ -549,7 +549,7 @@ private extension SpaceViewer {
     func loadEntity(into content: some RealityViewContentProtocol) async {
         // This runs from the `RealityView` being made, i.e. one exists now. The 3D scanner
         // can no longer get its camera afterwards. See `SpaceRootModel.liveViewerWasShown`.
-        root.liveViewerWasShown = true
+        RealityViewPresence.noteCreated()
 
         // Prevent reloading same model
         guard loadedItemId != id else { return }

@@ -45,7 +45,14 @@ private struct AdaptToPhotoSizeDialog: ViewModifier {
             Text("Adapt Rooms and Pins?", bundle: .module),
             isPresented: Binding(
                 get: { editModel.photoReplacement != nil },
-                set: { if !$0 { editModel.photoReplacement = nil } }
+                set: { isPresented in
+                    // Dismissed without a button (outside the iPad popover, Esc): the same as
+                    // Cancel, so the picker shows the map's photo again. After Adapt or Keep the
+                    // replacement is already gone; a reset to the old photo there is corrected by
+                    // the picker's `.task(id: model.photoId)`. See CODE_AUDIT_Since_3.0.1 §5.11.
+                    guard !isPresented, let replacement = editModel.photoReplacement else { return }
+                    root.editController.cancel(replacement)
+                }
             ),
             titleVisibility: .visible,
             presenting: editModel.photoReplacement
@@ -65,8 +72,13 @@ private struct AdaptToPhotoSizeDialog: ViewModifier {
             } label: {
                 Text("Cancel", bundle: .module)
             }
-        } message: { _ in
-            Text("The new photo has a different size than the current map. Resize the rooms and move the pins to match it, or keep them at their current positions?", bundle: .module)
+        } message: { replacement in
+            if replacement.changesAspectRatio {
+                // Rooms are scaled per axis, so another shape stretches them. See CODE_AUDIT_Since_3.0.1 §5.10.
+                Text("The new photo has a different size and shape than the current map. Adapting stretches the rooms and moves the pins to match it, and a hex grid is created again. Or keep them at their current positions?", bundle: .module)
+            } else {
+                Text("The new photo has a different size than the current map. Resize the rooms and move the pins to match it, or keep them at their current positions?", bundle: .module)
+            }
         }
     }
 }

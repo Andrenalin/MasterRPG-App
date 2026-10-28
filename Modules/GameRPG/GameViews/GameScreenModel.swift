@@ -153,9 +153,15 @@ final class GameScreenModel {
     private(set) var quickDiceOverlayHeight: CGFloat = 0
 
     /// How far the sidebar stops short of the bottom edge to leave room for the quick dice overlay.
+    /// On visionOS the overlay lives in the trailing ornament, outside the window, so the window
+    /// keeps its full height. See CODE_AUDIT_Since_3.0.1 §5.14.
     var quickDiceBottomReservation: CGFloat {
+#if os(visionOS)
+        return 0
+#else
         guard showQuickDice, quickDiceOverlayHeight > 0 else { return 0 }
         return quickDiceOverlayHeight + chromeBottomSafeAreaInset + Self.mapOverlaySpacing
+#endif
     }
 
     func updateQuickDiceOverlayHeight(_ height: CGFloat) {

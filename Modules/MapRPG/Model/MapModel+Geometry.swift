@@ -57,6 +57,21 @@ extension MapModel {
         return ViewportGeometry.rotatedContentSize(size, rotationDegrees: degrees) != oldCanvasSize
     }
 
+    /// Whether showing an image of `size` rotated by `degrees` gives the canvas another shape than
+    /// `previous` (the stored size when unknown), more than 1 % apart. "Adapt to New Size" then
+    /// stretches rooms and pins, which the dialog says. See CODE_AUDIT_Since_3.0.1 §5.10.
+    func changesAspectRatio(forImageSize size: CGSize, degrees: Double, comparedTo previous: MapImageGeometry? = nil) -> Bool {
+        let oldCanvasSize = previous?.canvasSize ?? CGSize(width: width, height: height)
+        let newCanvasSize = ViewportGeometry.rotatedContentSize(size, rotationDegrees: degrees)
+        guard oldCanvasSize.width > 0, oldCanvasSize.height > 0, newCanvasSize.width > 0, newCanvasSize.height > 0 else { return false }
+        let oldRatio = oldCanvasSize.width / oldCanvasSize.height
+        let newRatio = newCanvasSize.width / newCanvasSize.height
+        return abs(newRatio - oldRatio) / oldRatio > Self.aspectRatioTolerance
+    }
+
+    /// How far two canvas shapes may differ and still count as the same, for rounding in photo sizes.
+    static let aspectRatioTolerance: Double = 0.01
+
     /// Installs the photo and the canvas size of its image. With `adaptContent` the rooms, pins,
     /// walls, pointer and tiles are scaled with it; without, they keep their absolute coordinates.
     /// `previousImage` is the real geometry of the photo being replaced. The stored width, height
@@ -140,10 +155,15 @@ extension MapModel {
             }
         }
 
-        entries = entries.map {
-            var replacedEntry = $0
+        func moved(_ entry: MapEntryModel) -> MapEntryModel {
+            var replacedEntry = entry
             replacedEntry.coordinates = replacedEntry.coordinates.map(transform)
             return replacedEntry
+        }
+        let oldHexCells = entries.filter(\.isHexGrid)
+        entries = entries.filter { !$0.isHexGrid }.map(moved)
+        if !oldHexCells.isEmpty {
+            entries += rebuiltHexGrid(replacing: oldHexCells.map(moved), oldCanvasSize: oldCanvasSize)
         }
         mapPins = mapPins.map {
             var updatedPin = $0
@@ -160,6 +180,26 @@ extension MapModel {
         var updatedDisplayConfig = displayConfig
         updatedDisplayConfig.tileCoordinates = updatedDisplayConfig.tileCoordinates.map(transform)
         displayConfig = updatedDisplayConfig
+    }
+
+    /// A new regular hex grid over the new canvas instead of the old cells transformed, which
+    /// stretched every cell when the shape changed. The cell size follows the canvas, so about the
+    /// same map area stays in one cell, and the revealed area carries over from `movedCells`, the
+    /// old cells already moved to the new canvas. See CODE_AUDIT_Since_3.0.1 §5.10.
+    private func rebuiltHexGrid(replacing movedCells: [MapEntryModel], oldCanvasSize: CGSize) -> [MapEntryModel] {
+        let oldSize = hexMapScale > 0
+            ? hexMapScale
+            : (movedCells.map { cell in
+                let xs = cell.coordinates.map(\.x)
+                return (xs.max() ?? 0) - (xs.min() ?? 0)
+            }.max() ?? 0) / sqrt(3)
+        let factor = sqrt((width / oldCanvasSize.width) * (height / oldCanvasSize.height))
+        guard oldSize > 0, factor.isFinite, factor > 0 else { return movedCells }
+        let size = MapHexGridGeometry.fittedSize(oldSize * factor, width: width, height: height)
+        let grid = MapHexGridGeometry.grid(for: size, in: CGRect(origin: .zero, size: CGSize(width: width, height: height)))
+        guard !grid.isEmpty else { return movedCells }
+        hexMapScale = size
+        return MapHexGridGeometry.carryingRevealedArea(from: movedCells, to: grid)
     }
 
     private static func imageSize(

@@ -51,7 +51,7 @@ struct CreateDiceIntent: AppIntent {
         )
         // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
         root.itemController.replace(model: model, isInsert: true, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         let entity = DiceEntity(root: root, model: model)
         await indexIntentEntities([entity])
@@ -95,7 +95,7 @@ struct AddDieToDiceIntent: AppIntent {
         let die = DieModel(id: UUID(), die: diceType.rawDie)
         try requireOutsideGame([target.id], in: root)
         root.editController.add(die: die, itemId: target.id, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         // The updated dice is returned so a shortcut can go on with it.
         // See CODE_AUDIT_AppIntents3 §4.14.

@@ -3592,6 +3592,23 @@
         }
       }
     },
+    "Nobody can take a turn." : {
+      "comment" : "Siri's answer to Next Turn or Next Round when the battle runs but no combatant can act.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niemand kann am Zug sein."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีใครสามารถเล่นตาได้"
+          }
+        }
+      }
+    },
     "Not a whole number" : {
       "localizations" : {
         "de" : {

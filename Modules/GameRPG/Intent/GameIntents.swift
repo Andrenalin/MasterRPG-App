@@ -30,7 +30,10 @@ public struct NextTurnIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         let model = root.battleRoundController.model
         guard model.isRunning else { return .result(dialog: GameIntentDialog.noBattle) }
-        guard root.battleRoundController.nextAttacker() else { return .result(dialog: GameIntentDialog.masterOnly) }
+        // The master check comes first, so a `false` below means nobody can take a turn.
+        // See CODE_AUDIT_Since_3.0.1 §5.19.
+        guard root.gameModel.gameConfig.isMaster else { return .result(dialog: GameIntentDialog.masterOnly) }
+        guard root.battleRoundController.nextAttacker() else { return .result(dialog: GameIntentDialog.nobodyCanAct) }
         return .result(dialog: GameIntentDialog.turn(of: model))
     }
 }
@@ -53,7 +56,8 @@ public struct NextRoundIntent: AppIntent {
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         let model = root.battleRoundController.model
         guard model.isRunning else { return .result(dialog: GameIntentDialog.noBattle) }
-        guard root.battleRoundController.nextRound() else { return .result(dialog: GameIntentDialog.masterOnly) }
+        guard root.gameModel.gameConfig.isMaster else { return .result(dialog: GameIntentDialog.masterOnly) }
+        guard root.battleRoundController.nextRound() else { return .result(dialog: GameIntentDialog.nobodyCanAct) }
         let round = model.roundCounter
         if let name = model.activeEntry.flatMap({ model.attacker(for: $0) })?.name, !name.isEmpty {
             return .result(dialog: .localized(full: "Round \(round). \(name) has the turn.", supporting: "Round \(round)", bundle: .module))
@@ -80,8 +84,10 @@ public struct EndBattleIntent: AppIntent {
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         guard root.battleRoundController.model.isRunning else { return .result(dialog: GameIntentDialog.noBattle) }
+        // A player is told before the confirmation, not after it. See CODE_AUDIT_Since_3.0.1 §5.19.
+        guard root.gameModel.gameConfig.isMaster else { return .result(dialog: GameIntentDialog.masterOnly) }
         try await requestConfirmation(dialog: .localized("End the battle for everyone?", bundle: .module))
-        guard root.battleRoundController.end() else { return .result(dialog: GameIntentDialog.masterOnly) }
+        guard root.battleRoundController.end() else { return .result(dialog: GameIntentDialog.noBattle) }
         return .result(dialog: .localized("The battle has ended.", bundle: .module))
     }
 }
@@ -152,6 +158,10 @@ public struct JoinGameIntent: AppIntent {
         guard root.gameModel.gameConfig.state != .started else {
             return .result(dialog: .localized("A game is already running.", bundle: .module))
         }
+        // The character check needs the loaded characters, and the saved choice on a cold launch.
+        // See CODE_AUDIT_Since_3.0.1 §5.7.
+        await DatabaseReadiness.wait()
+        root.restoreSelectedCharacter()
         guard root.characterRoot.linkControllable.validateLink(itemId: root.gameModel.selectedCharacter ?? UUID()) else {
             return .result(dialog: .localized("Choose your character on the game screen first.", bundle: .module))
         }
@@ -173,7 +183,8 @@ public struct JoinGameIntent: AppIntent {
         if masters.count == 1 {
             target = masters[0]
         } else {
-            let names = masters.map(\.deviceName)
+            // Two game masters can have the same device name. See CODE_AUDIT_Since_3.0.1 §5.18.
+            let names = uniqueIntentLabels(masters.map(\.deviceName))
             let chosen = try await $code.requestDisambiguation(
                 among: names,
                 dialog: .localized("Which game master do you want to join?", bundle: .module)
@@ -230,6 +241,11 @@ enum GameIntentDialog {
 
     static var masterOnly: IntentDialog {
         .localized("Only the game master can do that.", bundle: .module)
+    }
+
+    /// The battle runs, but no combatant can take a turn (none left, or all skipped).
+    static var nobodyCanAct: IntentDialog {
+        .localized("Nobody can take a turn.", bundle: .module)
     }
 
     @MainActor

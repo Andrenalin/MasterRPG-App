@@ -113,13 +113,16 @@ public final class SpaceRootModel {
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
     public let removeEntryListModel: RemoveEntryListModel
 
-    /// Set once a live `RealityView` viewer has been created in this app session.
+    /// Whether any `RealityView` has been created in this app session, the 3D viewer's or another
+    /// module's (the iOS 3D game table).
     ///
     /// On a device that can scan, `ObjectCaptureSession` gets no camera feed anymore after any
     /// `RealityView` existed earlier in the process, even a removed or empty one. So only an
     /// item without a file shows no viewer and offers the scanner, and the scanner still
-    /// refuses to open (and asks for a relaunch) when this is set.
-    @ObservationIgnored var liveViewerWasShown = false
+    /// refuses to open (and asks for a relaunch) when this is set. See `RealityViewPresence`.
+    var liveViewerWasShown: Bool {
+        RealityViewPresence.wasCreated
+    }
 
     let searchModel: SearchModel
     let listDisplayModel: ListDisplayModel

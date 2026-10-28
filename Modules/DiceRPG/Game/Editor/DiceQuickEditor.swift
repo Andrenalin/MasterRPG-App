@@ -21,6 +21,12 @@ struct DiceQuickEditor: View {
     @State private var value: String = ""
     @FocusState private var isFocused: Bool
 
+    /// The typed value, or `nil` while it is not one a dice takes (empty, 0 or less), so Apply
+    /// stays disabled instead of closing with no change. See CODE_AUDIT_Since_3.0.1 §5.12.
+    private var compareValue: Int? {
+        Int(value).flatMap { $0 > 0 ? $0 : nil }
+    }
+
     private var valueIntBinding: Binding<Int> {
         Binding {
             Int(value) ?? 0
@@ -49,14 +55,16 @@ struct DiceQuickEditor: View {
                 .focused($isFocused)
                 .submitLabel(.done)
                 .onSubmit {
+                    guard let compareValue else { return }
                     Task {
-                        await action(Int(value) ?? 0)
+                        await action(compareValue)
                     }
                 }
 
                 Button {
+                    guard let compareValue else { return }
                     Task {
-                        await action(Int(value) ?? 0)
+                        await action(compareValue)
                     }
                 } label: {
                     Label {
@@ -67,6 +75,7 @@ struct DiceQuickEditor: View {
                     .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.bordered)
+                .disabled(compareValue == nil)
                 .frame(minWidth: 44, minHeight: 44)
             }
             .rowEditColor()

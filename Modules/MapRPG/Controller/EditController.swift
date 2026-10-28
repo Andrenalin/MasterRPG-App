@@ -26,6 +26,9 @@ struct PhotoReplacement: Identifiable, Equatable {
     let degrees: Double
     /// Real geometry of the photo being replaced; nil when the map had none or it can't be loaded.
     let previousImage: MapImageGeometry?
+    /// The new photo also has another shape, so adapting stretches rooms and pins.
+    /// See CODE_AUDIT_Since_3.0.1 §5.10.
+    var changesAspectRatio = false
 }
 
 struct EditController: Sendable {
@@ -150,6 +153,16 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
         save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        shareWithNextSend(itemId)
+    }
+
+    /// A photo change from the item editor during a game changes the map on the game master's
+    /// screen only. The map is marked like a structural edit made while sharing was paused, so the
+    /// next shared edit on the 2D map or "Refresh Shared Map" sends its content (photo, rooms, pins)
+    /// before the map state. See CODE_AUDIT_Since_3.0.1 §5.8.
+    @MainActor private func shareWithNextSend(_ itemId: UUID) {
+        guard itemController.itemDataModel.isGameMode else { return }
+        root.rootModel.mapsWithUnsharedStructure.insert(itemId)
     }
     
     /// Replaces the map photo. When the new photo gives the map another size and the map has
@@ -171,7 +184,14 @@ extension EditController {
         let previousFetched = await root.photoRoot.fetchPhotoImage(for: item.photoId, useGame: false)
         guard !Task.isCancelled else { return }
         let previousImage = previousFetched.map { MapImageGeometry(size: $0.0.size, degrees: $0.1) }
-        let replacement = PhotoReplacement(itemId: itemId, photoId: photoId, imageSize: image.size, degrees: degrees, previousImage: previousImage)
+        let replacement = PhotoReplacement(
+            itemId: itemId,
+            photoId: photoId,
+            imageSize: image.size,
+            degrees: degrees,
+            previousImage: previousImage,
+            changesAspectRatio: item.changesAspectRatio(forImageSize: image.size, degrees: degrees, comparedTo: previousImage)
+        )
         if item.hasCanvasContent && item.changesCanvasSize(forImageSize: replacement.imageSize, degrees: degrees, comparedTo: previousImage) {
             mapEditModel.photoReplacement = replacement
         } else {
@@ -186,9 +206,11 @@ extension EditController {
         guard let item = editModel(for: replacement.itemId) else { return }
         item.resetImage(with: replacement.photoId, size: replacement.imageSize, degrees: replacement.degrees, adaptContent: adaptContent, previousImage: replacement.previousImage)
         save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        shareWithNextSend(replacement.itemId)
     }
 
     /// Drops a deferred replacement and shows the map's current photo in the picker again.
+    /// Idempotent: Cancel and a dismissal of the dialog both end here.
     @MainActor func cancel(_ replacement: PhotoReplacement) {
         mapEditModel.photoReplacement = nil
         mapEditModel.selectionPhoto.resetSelection(itemId: itemController.itemSync(for: replacement.itemId)?.photoId, entryId: nil)

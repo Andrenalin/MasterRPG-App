@@ -31,6 +31,27 @@ struct DiceExpressionTests {
         #expect(DiceExpression(input)?.text == text)
     }
 
+    /// CODE_AUDIT_Since_3.0.1 §5.21: "W%" was rejected, and so were spoken numbers.
+    @Test("German percent dice and spoken numbers are read", arguments: [
+        ("W%", "d100"),
+        ("2 W%", "2d100"),
+        ("two d six", "2d6"),
+        ("a d twenty plus three", "d20+3"),
+        ("zwei W sechs", "2d6"),
+        ("drei W zwanzig plus fünf", "3d20+5"),
+        ("zwölf w zehn minus eins", "12d10-1")
+    ])
+    func germanPercentAndNumberWords(input: String, text: String) {
+        #expect(DiceExpression(input)?.text == text)
+    }
+
+    @Test("Number words only count as whole words")
+    func numberWordsAreWholeWords() {
+        // "zwei" holds a "w": replaced as a word it is a count, not a die.
+        #expect(DiceExpression("zwei w sechs")?.terms == [.init(count: 2, sides: 6)])
+        #expect(DiceExpression("sixd6") == nil)
+    }
+
     @Test("Text that is not a roll within the limits is refused", arguments: [
         "", "5", "fireball", "d1", "d1001", "300d6", "0d6", "1d20-1d4", "3d6+"
     ])

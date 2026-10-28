@@ -15,7 +15,12 @@ struct TabRootView: View {
                 appModel.isCompactGameWindow = appSizeModel.mode == .compact
             }
             .onChange(of: appSizeModel.mode) { oldValue, newValue in
-                appModel.rememberRouteForLayoutChange()
+                // Only a real layout swap (iPhone/iPad tabbed ↔ split) loses the route. On Mac and
+                // visionOS the layout stays, and re-navigating popped a pushed detail.
+                // See CODE_AUDIT_Since_3.0.1 §5.16.
+                if Self.layout(for: oldValue) != Self.layout(for: newValue) {
+                    appModel.rememberRouteForLayoutChange()
+                }
                 appModel.isCompactGameWindow = newValue == .compact
             }
             .task(id: appModel.layoutRestoreTarget) {
@@ -27,7 +32,19 @@ struct TabRootView: View {
     }
 
     private var layout: AppNavigationRouteType {
-        valueFor(iOS: appSizeModel.mode == .compact ? .tabbed : .split, macOS: .tabbedSplit, tvOS: .tabbed, visionOS: .split)
+        Self.layout(for: appSizeModel.mode)
+    }
+
+    static func layout(for mode: AppSizeMode) -> AppNavigationRouteType {
+#if os(iOS)
+        mode == .compact ? .tabbed : .split
+#elseif os(macOS)
+        .tabbedSplit
+#elseif os(tvOS)
+        .tabbed
+#else
+        .split
+#endif
     }
 }
 

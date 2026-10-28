@@ -31,6 +31,17 @@ enum CharacterValueChange: String, AppEnum {
         case .set: amount
         }
     }
+
+    /// `value` rounded to a whole number the sheet can store. `Int(_:)` traps on a value outside
+    /// `Int` (an amount near `Int.max` from another shortcut) or on NaN, so it is clamped instead.
+    /// See CODE_AUDIT_Since_3.0.1 §5.17.
+    static func storableNumber(_ value: Double) -> Int {
+        guard !value.isNaN else { return 0 }
+        let rounded = value.rounded()
+        if rounded >= Double(Int.max) { return .max }
+        if rounded <= Double(Int.min) { return .min }
+        return Int(rounded)
+    }
 }
 
 /// Adds to, subtracts from or sets a number on a character sheet ("subtract 7 from the hit points
@@ -95,7 +106,9 @@ struct ChangeCharacterValueIntent: AppIntent {
         case 1:
             value = matches[0]
         default:
-            let labels = matches.map(\.label)
+            // Two entries can share a label ("HP" twice in one group), so the labels are made unique
+            // and the chosen one maps back to its own entry. See CODE_AUDIT_Since_3.0.1 §5.18.
+            let labels = uniqueIntentLabels(matches.map(\.label))
             let chosen = try await $valueName.requestDisambiguation(
                 among: labels,
                 dialog: .localized("Which \"\(valueName)\" do you mean?", bundle: .module)
@@ -109,10 +122,13 @@ struct ChangeCharacterValueIntent: AppIntent {
             ? edit.entryValueAsDecimal(itemId: value.itemId, entryId: value.entryId)
             : Double(edit.entryValueAsNumber(itemId: value.itemId, entryId: value.entryId))
         let wanted = mode.apply(Double(amount), to: before)
+        guard wanted.isFinite else {
+            throw $amount.needsValueError(.localized("That number is too large. By how much?", bundle: .module))
+        }
         if isDecimal {
             edit.updateValue(itemId: value.itemId, entryId: value.entryId, decimal: wanted)
         } else {
-            edit.updateValue(itemId: value.itemId, entryId: value.entryId, number: Int(wanted.rounded()))
+            edit.updateValue(itemId: value.itemId, entryId: value.entryId, number: CharacterValueChange.storableNumber(wanted))
         }
         let after = isDecimal
             ? edit.entryValueAsDecimal(itemId: value.itemId, entryId: value.entryId)
@@ -151,6 +167,8 @@ struct CharacterValueNameOptions: DynamicOptionsProvider {
     @MainActor
     func results() async throws -> [String] {
         guard let target = intent?.target else { return [] }
+        // On a cold launch Shortcuts asks before the characters are loaded. See CODE_AUDIT_Since_3.0.1 §5.7.
+        await DatabaseReadiness.wait()
         var seen = Set<String>()
         return CharacterValueLookup.values(named: nil, in: target.id, itemController: root.itemController)
             .map(\.name)

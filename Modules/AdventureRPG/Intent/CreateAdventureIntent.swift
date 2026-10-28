@@ -41,7 +41,7 @@ public struct CreateAdventureIntent: AppIntent {
         let model = AdventureModel(id: UUID(), name: trimmedName, description: intentMarkdown(from: story))
         // Saved to the library also during a game. See CODE_AUDIT_Since_3.0.1 §5.2.
         root.itemController.replace(model: model, isInsert: true, forceSave: true)
-        await root.itemController.save()
+        try await root.itemController.saveForIntent()
 
         let entity = AdventureEntity(root: root, model: model)
         await indexIntentEntities([entity])
