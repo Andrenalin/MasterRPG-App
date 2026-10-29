@@ -14,6 +14,8 @@ final class GameStatisticsModel: Sendable {
     }
 
     var summary: GameStatisticsSummary = .empty
+    /// Every completed game regardless of the dashboard filter; filled by `loadAllSessions()`.
+    private(set) var allSessions: [GameStatisticSessionSnapshot] = []
     var configuration: GameStatisticsDashboardConfiguration {
         didSet {
             guard configuration != oldValue else { return }
@@ -74,6 +76,7 @@ final class GameStatisticsModel: Sendable {
             guard let self else { return }
             do {
                 try await dataController.recoverInterruptedSessions(in: context)
+                await pruneShortSessions()
                 await reload()
                 await reportAchievements()
             } catch is CancellationError {
@@ -85,7 +88,11 @@ final class GameStatisticsModel: Sendable {
     }
 
     func beginSession(_ draft: GameStatisticSessionDraft) async {
-        guard isCollectionEnabled, !draft.isDemo, let context else { return }
+        guard isCollectionEnabled,
+              !draft.isDemo,
+              !GameStatisticsController.uncountedRoles.contains(draft.role),
+              let context
+        else { return }
         await flushPendingEvents()
         lastCheckpointedRosterIds = []
         do {
@@ -285,6 +292,7 @@ final class GameStatisticsModel: Sendable {
             lastCompletedSessionID = activeSessionID
             self.activeSessionID = nil
             activeLocalParticipantID = nil
+            await pruneShortSessions()
             await reload()
             await reportAchievements()
         } catch {
@@ -388,16 +396,53 @@ final class GameStatisticsModel: Sendable {
             activeLocalParticipantID = nil
             lastCompletedSessionID = nil
             summary = .empty
+            allSessions = []
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    func deleteSession(id: UUID) async {
+    /// Repairs the stored statistics (removes games under `GameStatisticsController.minimumCountedSessionDuration` and observer/proxy games) and
+    /// reloads the dashboard. Run by the pull-to-refresh of the report pages.
+    func repair() async {
+        await flushPendingEvents()
+        await pruneShortSessions()
+        await reload()
+        if !allSessions.isEmpty { await loadAllSessions() }
+    }
+
+    private func pruneShortSessions() async {
         guard let context else { return }
         do {
-            try await dataController.deleteSession(id: id, in: context)
+            try await dataController.deleteSessions(
+                shorterThan: GameStatisticsController.minimumCountedSessionDuration,
+                orRoles: GameStatisticsController.uncountedRoles,
+                in: context
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadAllSessions() async {
+        guard let context else { return }
+        await flushPendingEvents()
+        do {
+            allSessions = try await dataController.fetchSessions(in: context)
+            errorMessage = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteSessions(ids: Set<UUID>) async {
+        guard let context, !ids.isEmpty else { return }
+        do {
+            try await dataController.deleteSessions(ids: ids, in: context)
+            allSessions.removeAll { ids.contains($0.id) }
             await reload()
         } catch {
             errorMessage = error.localizedDescription

@@ -13,14 +13,21 @@ struct GameStatisticsRecentSessionsView: View {
         ) {
             LazyVStack {
                 ForEach(sessions) { session in
-                    NavigationLink {
-                        GameStatisticsSessionDetailView(session: session, model: model)
-                    } label: {
-                        GameStatisticsSessionRow(session: session)
-                    }
-                    .buttonStyle(.plain)
+                    GameStatisticsSessionRow(session: session)
                     Divider()
                 }
+                NavigationLink {
+                    GameStatisticsAllSessionsView(model: model)
+                } label: {
+                    Label {
+                        Text("Show All Games", bundle: .module)
+                    } icon: {
+                        Image(systemName: "list.bullet")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

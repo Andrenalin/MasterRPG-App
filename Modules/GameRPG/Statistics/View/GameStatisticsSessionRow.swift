@@ -4,15 +4,13 @@ import SwiftUI
 
 struct GameStatisticsSessionRow: View, Equatable {
     let session: GameStatisticSessionSnapshot
-    let showsDisclosureIndicator: Bool
-
-    init(session: GameStatisticSessionSnapshot, showsDisclosureIndicator: Bool = true) {
-        self.session = session
-        self.showsDisclosureIndicator = showsDisclosureIndicator
-    }
 
     var body: some View {
         HStack {
+            Image(systemName: session.role.systemImage)
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 24)
+                .accessibilityLabel(Text(session.role.title))
             VStack(alignment: .leading) {
                 Text(session.adventureTitle.isEmpty ? session.role.title : session.adventureTitle)
                     .bold()
@@ -21,12 +19,17 @@ struct GameStatisticsSessionRow: View, Equatable {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text(GameStatisticsFormat.duration(session.duration))
-                .foregroundStyle(.secondary)
-            if showsDisclosureIndicator {
-                Image(systemName: "chevron.forward")
-                    .foregroundStyle(.tertiary)
+            VStack(alignment: .trailing) {
+                Text(GameStatisticsFormat.duration(session.duration))
+                Label {
+                    Text(session.maxParticipantCount, format: .number)
+                } icon: {
+                    Image(systemName: "person.2")
+                }
+                .font(.caption)
+                .accessibilityLabel(Text("\(session.maxParticipantCount) participants", bundle: .module))
             }
+            .foregroundStyle(.secondary)
         }
         .contentShape(.rect)
         .accessibilityElement(children: .combine)

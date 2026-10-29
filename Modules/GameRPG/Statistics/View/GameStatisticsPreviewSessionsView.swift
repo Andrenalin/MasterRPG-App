@@ -12,7 +12,7 @@ struct GameStatisticsPreviewSessionsView: View {
         ) {
             LazyVStack {
                 ForEach(sessions) { session in
-                    GameStatisticsSessionRow(session: session, showsDisclosureIndicator: false)
+                    GameStatisticsSessionRow(session: session)
                     Divider()
                 }
             }

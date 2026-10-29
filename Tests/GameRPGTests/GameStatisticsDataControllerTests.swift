@@ -98,6 +98,82 @@ struct GameStatisticsDataControllerTests {
         #expect(persistedSession.endedAt == startedAt.addingTimeInterval(900))
         #expect(persistedSession.duration == 900)
     }
+
+    @Test("completed sessions under the minimum duration are deleted with their events")
+    func deletesShortSessions() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let shortId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11))
+        let longId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12))
+        let openId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13))
+        let participant = GameStatisticParticipantDraft.fixture()
+        for (id, duration) in [(shortId, 600.0), (longId, 900.0)] {
+            try await sut.beginSession(
+                .fixture(id: id, startedAt: startedAt, participants: [participant]),
+                in: store.context
+            )
+            try await sut.recordEvents(
+                [(.fixture(id: UUID(), sessionId: id, deduplicationKey: "event-\(id)"), participant)],
+                in: store.context
+            )
+            try await sut.finishSession(
+                id: id,
+                at: startedAt.addingTimeInterval(duration),
+                reason: .stopped,
+                in: store.context
+            )
+        }
+        try await sut.beginSession(
+            .fixture(id: openId, startedAt: startedAt, participants: [participant]),
+            in: store.context
+        )
+
+        // When
+        try await sut.deleteSessions(shorterThan: 900, orRoles: [], in: store.context)
+        let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+        let openCount = try await store.context.perform {
+            let request = NSFetchRequest<NSManagedObject>(entityName: "RPGGameStatisticSession")
+            request.predicate = NSPredicate(format: "isComplete == NO")
+            return try store.context.count(for: request)
+        }
+
+        // Then
+        #expect(dataSet.sessions.map(\.id) == [longId])
+        #expect(dataSet.events.map(\.sessionId) == [longId])
+        #expect(openCount == 1)
+    }
+
+    @Test("completed observer and proxy sessions are deleted regardless of duration")
+    func deletesUncountedRoleSessions() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let roles: [(UUID, GameStatisticRole)] = [
+            (UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21)), .player),
+            (UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22)), .gameMaster),
+            (UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23)), .observer),
+            (UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24)), .proxy)
+        ]
+        for (id, role) in roles {
+            try await sut.beginSession(.fixture(id: id, startedAt: startedAt, role: role), in: store.context)
+            try await sut.finishSession(
+                id: id,
+                at: startedAt.addingTimeInterval(3_600),
+                reason: .stopped,
+                in: store.context
+            )
+        }
+
+        // When
+        try await sut.deleteSessions(shorterThan: 900, orRoles: [.observer, .proxy], in: store.context)
+        let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+
+        // Then
+        #expect(Set(dataSet.sessions.map(\.id)) == Set(roles.prefix(2).map(\.0)))
+    }
 }
 
 private struct PersistentGameStatisticsTestStore {

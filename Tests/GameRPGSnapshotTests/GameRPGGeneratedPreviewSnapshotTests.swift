@@ -883,19 +883,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::GameStatisticsSessionDetailView
-    @Test("GameStatisticsSessionDetailView")
-    func snapshotGameStatisticsSessionDetailView() async throws {
-        try await assertPreviewSnapshot("GameStatisticsSessionDetailView") {
-            let model = GameStatisticsModel.previewFixture()
-            if let session = model.summary.recentSessions.first {
-                NavigationStack {
-                    GameRPG.GameStatisticsSessionDetailView(session: session, model: model)
-                }
-            }
-        }
-    }
-
     // snapshot-root: GameRPG::GameStatisticsSessionRow
     @Test("GameStatisticsSessionRow")
     func snapshotGameStatisticsSessionRow() async throws {

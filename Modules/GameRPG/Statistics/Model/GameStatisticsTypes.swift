@@ -33,6 +33,16 @@ enum GameStatisticRole: Int16, CaseIterable, Codable, Hashable, Identifiable, Se
         case .proxy: String(localized: "Proxy", bundle: .module)
         }
     }
+
+    var systemImage: String {
+        switch self {
+        case .unknown: "questionmark.circle"
+        case .gameMaster: "crown"
+        case .player: "person"
+        case .observer: "eye"
+        case .proxy: "arrow.triangle.branch"
+        }
+    }
 }
 
 enum GameStatisticSessionEndReason: Int16, Codable, Hashable, Sendable {

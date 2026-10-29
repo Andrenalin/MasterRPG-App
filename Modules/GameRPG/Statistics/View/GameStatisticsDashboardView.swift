@@ -316,7 +316,7 @@ private struct GameStatisticsDashboardContent: View {
             .padding()
         }
         .refreshable {
-            await model.reload()
+            await model.repair()
         }
         .task(id: model.configuration) {
             await model.reload()

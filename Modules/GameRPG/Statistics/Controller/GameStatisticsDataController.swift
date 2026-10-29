@@ -244,6 +244,21 @@ struct GameStatisticsDataController: Sendable {
         }
     }
 
+    /// Every completed, non-demo game, newest first, without the events and participants
+    /// `fetchDataSet` loads for the charts.
+    func fetchSessions(in context: NSManagedObjectContext) async throws -> [GameStatisticSessionSnapshot] {
+        try await context.perform {
+            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "isComplete == YES"),
+                NSPredicate(format: "isDemo == NO")
+            ])
+            request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: false)]
+            request.fetchBatchSize = 100
+            return try context.fetch(request).compactMap(Self.sessionSnapshot)
+        }
+    }
+
     func deleteAll(in context: NSManagedObjectContext) async throws {
         try await context.perform {
             for entityName in ["RPGGameStatisticEvent", "RPGGameStatisticParticipant", "RPGGameStatisticSession"] {
@@ -255,10 +270,32 @@ struct GameStatisticsDataController: Sendable {
         }
     }
 
-    func deleteSession(id: UUID, in context: NSManagedObjectContext) async throws {
+    /// Removes completed games that ran for less than `duration` seconds or were played in one of
+    /// `roles`; events and participants go with them through the cascade rules.
+    func deleteSessions(
+        shorterThan duration: TimeInterval,
+        orRoles roles: Set<GameStatisticRole>,
+        in context: NSManagedObjectContext
+    ) async throws {
         try await context.perform {
-            guard let session = try self.fetchSession(id: id, in: context) else { return }
-            context.delete(session)
+            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
+            request.predicate = NSPredicate(
+                format: "isComplete == YES AND (durationSeconds < %f OR roleRaw IN %@)",
+                duration,
+                roles.map(\.rawValue)
+            )
+            request.fetchBatchSize = 100
+            try context.fetch(request).forEach(context.delete)
+            try self.saveIfNeeded(context)
+        }
+    }
+
+    func deleteSessions(ids: Set<UUID>, in context: NSManagedObjectContext) async throws {
+        guard !ids.isEmpty else { return }
+        try await context.perform {
+            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
+            request.predicate = NSPredicate(format: "uuid IN %@", ids.map { $0 as NSUUID })
+            try context.fetch(request).forEach(context.delete)
             try self.saveIfNeeded(context)
         }
     }

@@ -6,6 +6,8 @@ import Foundation
 
 struct GameStatisticsController: Sendable {
     static let minimumCountedSessionDuration: TimeInterval = 15 * 60
+    /// Roles whose games are never recorded: an observer or proxy only relays someone else's game.
+    static let uncountedRoles: Set<GameStatisticRole> = [.observer, .proxy]
 
     func eventDraft(
         for model: GameNetworkModel,
@@ -89,7 +91,7 @@ struct GameStatisticsController: Sendable {
         calendar: Calendar = .autoupdatingCurrent
     ) -> GameStatisticsSummary {
         let sessions = dataSet.sessions.filter {
-            $0.duration >= Self.minimumCountedSessionDuration
+            $0.duration >= Self.minimumCountedSessionDuration && !Self.uncountedRoles.contains($0.role)
         }
         let countedSessionIDs = Set(sessions.map(\.id))
         let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionId) }
