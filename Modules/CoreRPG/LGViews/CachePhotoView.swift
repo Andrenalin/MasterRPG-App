@@ -72,7 +72,10 @@ private extension CachePhotoView {
     }
 
     func loadImage() {
-        Task(priority: .userInitiated) {
+        // Default priority, not `.userInitiated`: the awaited ImageIO decode inherits the task's
+        // priority and waits on ImageIO's own Default-QoS threads, which the system reports as a
+        // priority inversion.
+        Task(priority: .medium) {
             let fileId = model.id
             if highResolution {
                 await cacheController.photoId(for: fileId, item: model, shouldDownload: false)
