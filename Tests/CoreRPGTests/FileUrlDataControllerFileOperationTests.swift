@@ -76,6 +76,35 @@ struct FileUrlDataControllerFileOperationTests {
         #expect(try text(of: other, in: sut) == "other", "the module's other files survive")
     }
 
+    @Test("Deleting the last file of a folder removes the empty folders above it, not the module folder")
+    func deleteRemovesEmptyFolders() async throws {
+        let module = "EmptyFoldersModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let id = UUID().uuidString
+        let nested = try await createFile("Top-\(id)/Mid/Deep/Nested.test", text: "nested", module: module, with: sut)
+        let sibling = try await createFile("Top-\(id)/Sibling.test", text: "sibling", module: module, with: sut)
+        let top = try #require(sut.storedLocation(of: sibling)).deletingLastPathComponent()
+        let deep = try #require(sut.storedLocation(of: nested)).deletingLastPathComponent()
+        // Finder leaves this in every folder it showed.
+        try Data().write(to: deep.appending(path: ".DS_Store"))
+
+        sut.delete(nested)
+        try await waitUntilGone(nested, in: sut)
+        // The folders go after the file, inside the same queued deletion.
+        await PendingFileDeletions.shared.waitUntilFinished(at: CloudDocumentController.canonicalPath(try #require(sut.storedLocation(of: nested))))
+
+        #expect(!FileManager.default.fileExists(atPath: deep.path(percentEncoded: false)), "the emptied folder and its .DS_Store go")
+        #expect(!FileManager.default.fileExists(atPath: deep.deletingLastPathComponent().path(percentEncoded: false)))
+        #expect(FileManager.default.fileExists(atPath: top.path(percentEncoded: false)), "a folder with another file stays")
+        #expect(try text(of: sibling, in: sut) == "sibling")
+
+        sut.delete(sibling)
+        try await waitUntilGone(sibling, in: sut)
+        await PendingFileDeletions.shared.waitUntilFinished(at: CloudDocumentController.canonicalPath(try #require(sut.storedLocation(of: sibling))))
+        #expect(!FileManager.default.fileExists(atPath: top.path(percentEncoded: false)))
+        #expect(FileManager.default.fileExists(atPath: sut.cloudDocumentController.moduleUrl.path(percentEncoded: false)), "the module folder stays")
+    }
+
     @Test("A reference that names no file never deletes the module folder", arguments: [
         "/", "file:///Users/other/Documents/pdf"
     ])
@@ -348,6 +377,109 @@ struct FileUrlDataControllerFileOperationTests {
         #expect(!exists(old, in: sut))
         #expect(exists(new, in: sut))
         #expect(!sut.isSameStoredFile(old, new))
+    }
+
+    // MARK: - Empty folders after a move or a replace
+
+    private func folderExists(_ url: URL) -> Bool {
+        FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
+    }
+
+    @Test("Moving the last file out of a folder removes the emptied folders, and only those")
+    func moveRemovesEmptyFolders() async throws {
+        let module = "MoveFoldersModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let id = UUID().uuidString
+        let moving = try await createFile("From-\(id)/Mid/Moving.test", text: "moving", module: module, with: sut)
+        let staying = try await createFile("From-\(id)/Staying.test", text: "staying", module: module, with: sut)
+        let from = try #require(sut.storedLocation(of: staying)).deletingLastPathComponent()
+        let mid = try #require(sut.storedLocation(of: moving)).deletingLastPathComponent()
+        try Data().write(to: mid.appending(path: ".DS_Store"))
+
+        let moved = try #require(try await sut.move(fileUrl: moving, to: "To-\(id)/Moved"))
+
+        #expect(exists(moved, in: sut))
+        #expect(try text(of: moved, in: sut) == "moving")
+        #expect(!folderExists(mid), "the emptied folder goes with its .DS_Store")
+        #expect(folderExists(from), "a folder that still holds a file stays")
+        #expect(try text(of: staying, in: sut) == "staying")
+        #expect(folderExists(sut.cloudDocumentController.moduleUrl))
+    }
+
+    @Test("Renaming a file inside its folder keeps the folder")
+    func renameKeepsFolder() async throws {
+        let module = "RenameFolderModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let id = UUID().uuidString
+        let file = try await createFile("Same-\(id)/Old.test", text: "same", module: module, with: sut)
+        let folder = try #require(sut.storedLocation(of: file)).deletingLastPathComponent()
+
+        let renamed = try #require(try await sut.move(fileUrl: file, to: "Same-\(id)/New"))
+
+        #expect(exists(renamed, in: sut))
+        #expect(folderExists(folder))
+    }
+
+    @Test("Moving a file to another category removes the category folders it left empty")
+    func categoryMoveRemovesEmptyFolders() async throws {
+        let module = "CategoryMoveModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let id = UUID().uuidString
+        let source = ItemListCategory.folder
+        let file = try await createFile("\(source.title)/Sub-\(id)/Category.test", text: "category", module: module, with: sut)
+        let sourceFolder = try #require(sut.storedLocation(of: file)).deletingLastPathComponent()
+
+        let moved = try #require(await sut.move(fileUrl: file, from: source, to: .entry))
+
+        #expect(exists(moved, in: sut))
+        #expect(!folderExists(sourceFolder))
+    }
+
+    @Test("Replacing a file removes the folders the old file left empty")
+    func replaceRemovesEmptyFolders() async throws {
+        let module = "ReplaceFoldersModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let id = UUID().uuidString
+        let old = try await createFile("Old-\(id)/Deep/Old.test", text: "old", module: module, with: sut)
+        let kept = try await createFile("Old-\(id)/Kept.test", text: "kept", module: module, with: sut)
+        let new = try await createFile("New-\(id)/New.test", text: "new", module: module, with: sut)
+        let top = try #require(sut.storedLocation(of: kept)).deletingLastPathComponent()
+        let deep = try #require(sut.storedLocation(of: old)).deletingLastPathComponent()
+
+        await sut.deleteReplaced(old, keeping: new)
+
+        #expect(!exists(old, in: sut))
+        #expect(!folderExists(deep))
+        #expect(folderExists(top), "a folder with another file stays")
+        #expect(exists(new, in: sut))
+    }
+
+    @Test("Replacing with the file at the same location removes nothing")
+    func replaceWithSameLocationKeepsFolders() async throws {
+        let module = "ReplaceSameModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let file = try await createFile("Same-\(UUID().uuidString)/Deep/Same.test", text: "same", module: module, with: sut)
+        let folder = try #require(sut.storedLocation(of: file)).deletingLastPathComponent()
+        let sameLocation = FileUrl(fileId: file.fileId, url: file.rawUrl, location: .newCloud, module: module, relativeUrl: nil)
+
+        await sut.deleteReplaced(file, keeping: sameLocation)
+
+        #expect(exists(file, in: sut))
+        #expect(folderExists(folder))
+    }
+
+    @Test("Removing an unused stored file removes the folders it left empty")
+    func removeStoredFileRemovesEmptyFolders() async throws {
+        let module = "StoredFoldersModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let file = try await createFile("Unused-\(UUID().uuidString)/Deep/Unused.test", text: "unused", module: module, with: sut)
+        let folder = try #require(sut.storedLocation(of: file)).deletingLastPathComponent()
+
+        await sut.removeStoredFile(file)
+
+        #expect(!exists(file, in: sut))
+        #expect(!folderExists(folder))
+        #expect(!folderExists(folder.deletingLastPathComponent()))
     }
 
     @Test("Releasing all held peer bytes empties the store")

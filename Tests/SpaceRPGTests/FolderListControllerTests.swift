@@ -563,6 +563,18 @@ struct FolderListControllerTests {
         #expect(!root.itemController.healDuplicateFolderMembers(itemId: folderId))
     }
 
+    @Test("Validate & Repair removes a duplicate member")
+    func validateRepairRemovesDuplicateMember() async throws {
+        let root = await makeRoot()
+        let (folderId, itemId, sender) = try await makeSharedFolder(root)
+        let folder = try #require(root.itemController.itemSync(for: folderId, noGame: true))
+        folder.entries.append(contentsOf: sender.entries)
+        #expect(memberCount(folderId, of: itemId, in: root) == 2)
+        let converter = ConvertController(itemController: root.itemController, editController: root.editController)
+        await converter.repairHiddenAndFolders(reportModel: ValidateRepairModel())
+        #expect(memberCount(folderId, of: itemId, in: root) == 1)
+    }
+
     @Test("Repairing folders removes a duplicate member")
     func repairRemovesDuplicateMember() async throws {
         let root = await makeRoot()

@@ -203,9 +203,11 @@ public extension ItemControllable {
             if withFileData {
                 // Two items can reference one stored file; it goes with its last item only.
                 // See CODE_AUDIT_21 §5.2.
+                let keepsStoredFile = isFileUsedElsewhere(fileUrl, excluding: itemId)
+                Logger.fileStore.notice("delete item file: location \(String(describing: fileUrl.location), privacy: .public) name \(fileUrl.rawUrl.lastPathComponent, privacy: .private) shared \(keepsStoredFile, privacy: .public) announced \(announcedFileDeletion != nil, privacy: .public)")
                 fileUrlDataController.delete(
                     fileUrl,
-                    keepingStoredFile: isFileUsedElsewhere(fileUrl, excluding: itemId),
+                    keepingStoredFile: keepsStoredFile,
                     announced: announcedFileDeletion
                 )
             }

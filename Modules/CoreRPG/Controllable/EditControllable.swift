@@ -368,6 +368,11 @@ public extension EditControllable {
             }
             return false
         }
+        // A member listed by two entries (see `FolderEntryMerge.deduplicated`) is repaired here
+        // too, so "Validate & Repair" writes the fix and its final save sends it to other devices.
+        if let unique = FolderEntryMerge.deduplicated(item.entries, id: \.id, childId: \.childId) {
+            item.entries = unique
+        }
         save(updated: item, message: String(localized: "update folder", bundle: .module).localizedString)
     }
 }

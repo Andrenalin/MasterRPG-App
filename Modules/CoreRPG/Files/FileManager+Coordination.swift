@@ -39,6 +39,24 @@ extension FileManager {
         }
     }
     
+    /// Removes the folder at `dirURL` when nothing is in it but Finder's `.DS_Store`, and returns
+    /// whether it did. Emptiness is checked inside the deleting coordination, so a file written
+    /// into the folder meanwhile keeps it. A file, a missing path and a folder with content
+    /// return `false`; hidden iCloud placeholders (`.name.icloud`) count as content.
+    func removeEmptyDirectory(coordinatingAccessAt dirURL: URL) async throws -> Bool {
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: dirURL, options: .forDeleting) { url in
+                var isDirectory: ObjCBool = false
+                guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory),
+                      isDirectory.boolValue else { return false }
+                let content = try FileManager.default.contentsOfDirectory(atPath: url.path(percentEncoded: false))
+                guard content.allSatisfy({ $0 == ".DS_Store" }) else { return false }
+                try FileManager.default.removeItem(at: url)
+                return true
+            }
+        }
+    }
+
     public func copyItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
         try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fromURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in

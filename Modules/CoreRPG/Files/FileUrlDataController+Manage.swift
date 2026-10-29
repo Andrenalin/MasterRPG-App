@@ -58,8 +58,12 @@ extension FileUrlDataController {
             let components = fileUrl.rawUrl.pathComponents
             let firstComponent = components.first ?? ""
             let secondComponent = components.count > 1 ? components[1] : ""
+            let sourceUrl = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
             guard firstComponent == source.title || secondComponent == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newCategory: destination.title) else { return nil }
             await bookmark(url: fullUrl, fileId: fileUrl.fileId)
+            if let sourceUrl {
+                await removeEmptyFolders(above: sourceUrl)
+            }
 
             return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
         } catch {
@@ -74,8 +78,14 @@ extension FileUrlDataController {
     public func move(fileUrl: FileUrl?, to destination: String) async throws -> FileUrl? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:to:)", file: "FileUrlDataController.swift")
 
+        let sourceUrl = fileUrl.flatMap { cloudDocumentController.fullUrl(fileUrl: $0.rawUrl) }
         guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
         await bookmark(url: fullUrl, fileId: fileUrl.fileId)
+        // The folders the file left empty: moving a file out of the last place in a folder
+        // used to leave that folder behind on iCloud.
+        if let sourceUrl {
+            await removeEmptyFolders(above: sourceUrl)
+        }
 
         return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
     }

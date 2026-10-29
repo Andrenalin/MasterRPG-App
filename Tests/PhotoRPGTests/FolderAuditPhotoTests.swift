@@ -34,6 +34,39 @@ struct FolderAuditPhotoTests {
         #expect(stored.parentId == copyFolderId)
     }
 
+    @Test("A healed duplicate folder member is written to the store and reaches a device that holds both rows")
+    func healedDuplicateMemberIsPersistedAndSynced() async throws {
+        let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])
+        let root = PhotoRootModel.persistentTestRoot(context: store.context)
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Ruines", itemId: folderId)
+        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+        await root.itemController.save()
+        let storage = DataController(context: store.context, token: NetworkModules.photo.token)
+        let beforeHeal = try #require(try await storage.fetch(id: folderId) as? PhotoModel)
+
+        // CloudKit unioned a second row for the same member into the folder.
+        let folder = try #require(root.itemController.itemSync(for: folderId, noGame: true))
+        folder.entries.append(PhotoEntryModel(id: UUID(), photoId: childId))
+        #expect(folder.entries.count == 2)
+        #expect(root.itemController.healDuplicateFolderMembers(itemId: folderId))
+        // The save the periodic housekeeping and the app exit run.
+        await root.itemController.save()
+
+        let stored = try #require(try await storage.fetch(id: folderId) as? PhotoModel)
+        #expect(stored.entries.count == 1, "the surplus row is gone from the store")
+        #expect(stored.entries_.update != beforeHeal.entries_.update, "other devices only take the entries when the marker changed")
+
+        // A second device still holding both rows receives the healed folder.
+        let other = beforeHeal.copy()
+        other.entries.append(PhotoEntryModel(id: UUID(), photoId: childId))
+        #expect(!other.isSame(stored))
+        #expect(other.replace(with: stored))
+        #expect(other.entries.count == 1)
+    }
+
     @Test("Every shared image gets its own sanitised file name (§5.11)")
     func shareFileNamesAreUniqueAndSafe() {
         let first = ShareImportPhotoController.fileName(for: "Map/Night: 1", photoId: UUID(), extension: "jpg")

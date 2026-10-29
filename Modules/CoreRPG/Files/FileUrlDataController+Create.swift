@@ -305,13 +305,18 @@ public extension FileUrlDataController {
                     await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)", file: "FileUrlDataController.swift")
 
                     // The real file, never the temp copy of held peer bytes. See CODE_AUDIT_20 §5.3.
-                    guard let accessUrl = await deviceUrl(for: fileUrl, action: { $0 }) else { return }
+                    guard let accessUrl = await deviceUrl(for: fileUrl, action: { $0 }) else {
+                        Logger.fileStore.notice("delete item file: no location resolved for \(fileUrl.rawUrl.lastPathComponent, privacy: .private), file stays")
+                        return
+                    }
                     // Only drop the bookmark once the file is actually gone (or was
                     // already gone) — a genuine removal failure (coordination
                     // timeout, permission error, transient iCloud state) instead
                     // keeps the bookmark so the file isn't silently orphaned with
                     // nothing left referencing it. See CODE_AUDIT §5.3.
                     guard await removeFileLoggingFailure(at: accessUrl) else { return }
+                    Logger.fileStore.notice("delete item file: removed \(accessUrl.lastPathComponent, privacy: .private)")
+                    await removeEmptyFolders(above: accessUrl)
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
             case .url:
@@ -321,6 +326,7 @@ public extension FileUrlDataController {
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
             case .icloud, .other:
+                Logger.fileStore.notice("delete item file: \(String(describing: fileUrl.location), privacy: .public) file is not owned by the app, only its bookmark goes")
                 announced?.withdraw()
                 fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 break
@@ -347,7 +353,9 @@ public extension FileUrlDataController {
     /// files an import wrote that no item references. See CODE_AUDIT_Folder §5.26.
     func removeStoredFile(_ fileUrl: FileUrl) async {
         guard let location = storedLocation(of: fileUrl) else { return }
-        _ = await removeFileLoggingFailure(at: location)
+        if await removeFileLoggingFailure(at: location) {
+            await removeEmptyFolders(above: location)
+        }
     }
 
     /// Where imported bytes for `fileUrl` are written. The sender's relative path is used when
@@ -424,7 +432,9 @@ public extension FileUrlDataController {
         if let newLocation = storedLocation(of: newFileUrl), Self.normalizedPath(newLocation) == Self.normalizedPath(fileLocation) {
             return
         }
-        _ = await removeFileLoggingFailure(at: fileLocation)
+        if await removeFileLoggingFailure(at: fileLocation) {
+            await removeEmptyFolders(above: fileLocation)
+        }
     }
 
     /// Removes the file at `url`, logging (rather than silently discarding)
@@ -455,6 +465,23 @@ public extension FileUrlDataController {
                 return false
             }
             return true
+        }
+    }
+
+    /// Removes the folders a deleted file left empty, from its own folder upwards, and stops at
+    /// the first folder that holds anything else. The module folder itself stays, and so does
+    /// anything outside it: only the folders the app made for its files in the module are pruned.
+    func removeEmptyFolders(above fileUrl: URL) async {
+        let rootPath = Self.normalizedPath(cloudDocumentController.moduleUrl)
+        var folder = fileUrl.deletingLastPathComponent()
+        while Self.normalizedPath(folder).hasPrefix(rootPath + "/") {
+            do {
+                guard try await FileManager.default.removeEmptyDirectory(coordinatingAccessAt: folder) else { return }
+            } catch {
+                Logger.fileStore.error("Cannot remove empty folder \(folder.lastPathComponent, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+                return
+            }
+            folder = folder.deletingLastPathComponent()
         }
     }
 
