@@ -22,4 +22,5 @@ import SwiftUI
     public var triggerSpaceAction: Bool = false
     public var triggerBatchExtraction: Bool = false
     public var triggerDelete: Bool = false
+    public var triggerCloudScan: Bool = false
 }

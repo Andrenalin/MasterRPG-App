@@ -7904,6 +7904,376 @@
           }
         }
       }
+    },
+    "Scanning iCloud folder…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud-Ordner wird durchsucht …"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังสแกนโฟลเดอร์ iCloud…"
+          }
+        }
+      }
+    },
+    "No iCloud files" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine iCloud-Dateien"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีไฟล์ iCloud"
+          }
+        }
+      }
+    },
+    "This module does not keep files in iCloud." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Modul speichert keine Dateien in iCloud."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โมดูลนี้ไม่เก็บไฟล์ใน iCloud"
+          }
+        }
+      }
+    },
+    "Another change is running" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine andere Änderung läuft gerade"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มีการเปลี่ยนแปลงอื่นกำลังทำงานอยู่"
+          }
+        }
+      }
+    },
+    "Try again when the import or repair has finished." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versuche es erneut, wenn der Import oder die Reparatur abgeschlossen ist."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลองอีกครั้งเมื่อการนำเข้าหรือการซ่อมแซมเสร็จสิ้น"
+          }
+        }
+      }
+    },
+    "New folders" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Ordner"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โฟลเดอร์ใหม่"
+          }
+        }
+      }
+    },
+    "Sync with iCloud…" : {
+      "comment" : "List menu entry: compares the module's items with its iCloud folder.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit iCloud abgleichen…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซิงค์กับ iCloud…"
+          }
+        }
+      }
+    },
+    "Sync with iCloud" : {
+      "comment" : "Title of the sheet that lists the differences between the items and the iCloud folder.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit iCloud abgleichen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซิงค์กับ iCloud"
+          }
+        }
+      }
+    },
+    "Sync" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abgleichen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซิงค์"
+          }
+        }
+      }
+    },
+    "Syncing…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abgleich läuft …"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังซิงค์…"
+          }
+        }
+      }
+    },
+    "Everything is in sync" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alles ist abgeglichen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทุกอย่างซิงค์แล้ว"
+          }
+        }
+      }
+    },
+    "The items and the files in the iCloud folder match." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Elemente und die Dateien im iCloud-Ordner stimmen überein."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการและไฟล์ในโฟลเดอร์ iCloud ตรงกัน"
+          }
+        }
+      }
+    },
+    "iCloud folder not available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud-Ordner nicht verfügbar"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบโฟลเดอร์ iCloud"
+          }
+        }
+      }
+    },
+    "The folder cannot be read. Check that iCloud Drive is on and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Ordner kann nicht gelesen werden. Prüfe, ob iCloud Drive aktiviert ist, und versuche es erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถอ่านโฟลเดอร์ได้ ตรวจสอบว่าเปิด iCloud Drive แล้วลองอีกครั้ง"
+          }
+        }
+      }
+    },
+    "Added %lld items in %lld new folders, moved %lld items, trashed %lld items." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Elemente in %lld neuen Ordnern hinzugefügt, %lld Elemente verschoben, %lld Elemente in den Papierkorb gelegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่ม %lld รายการใน %lld โฟลเดอร์ใหม่ ย้าย %lld รายการ ลบ %lld รายการลงถังขยะ"
+          }
+        }
+      }
+    },
+    "Most files are missing. iCloud may still be syncing. Check the list before the items are trashed." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die meisten Dateien fehlen. Möglicherweise synchronisiert iCloud noch. Prüfe die Liste, bevor die Elemente in den Papierkorb gelegt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ส่วนใหญ่หายไป iCloud อาจยังซิงค์อยู่ ตรวจสอบรายการก่อนย้ายรายการลงถังขยะ"
+          }
+        }
+      }
+    },
+    "Files without item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateien ohne Element"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ที่ไม่มีรายการ"
+          }
+        }
+      }
+    },
+    "Files moved on iCloud" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In iCloud verschobene Dateien"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ที่ย้ายใน iCloud"
+          }
+        }
+      }
+    },
+    "Items in another folder than their file" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elemente in einem anderen Ordner als ihre Datei"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการที่อยู่คนละโฟลเดอร์กับไฟล์"
+          }
+        }
+      }
+    },
+    "Files missing on iCloud" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In iCloud fehlende Dateien"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ที่หายไปจาก iCloud"
+          }
+        }
+      }
+    },
+    "The items are moved to the trash." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Elemente werden in den Papierkorb gelegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการจะถูกย้ายไปยังถังขยะ"
+          }
+        }
+      }
+    },
+    "Select All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle auswählen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกทั้งหมด"
+          }
+        }
+      }
+    },
+    "Deselect All" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle abwählen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิกการเลือกทั้งหมด"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

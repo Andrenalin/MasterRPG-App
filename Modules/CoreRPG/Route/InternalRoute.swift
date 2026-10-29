@@ -8,6 +8,7 @@ enum InternalRoute: Equatable, Codable {
     case removeAlert
     case batchExtraction(ids: [UUID])
     case convertGroup(source: ItemRowModel)
+    case cloudFolderScan
 }
 
 extension InternalRoute: NavigationDestination {
@@ -44,6 +45,8 @@ struct InternalRouteDestinationView: View {
             // See CODE_AUDIT_18 §8.5.
             SheetEntryConvertToGroupView(rootModel: root.editControllable.editorModel.sheetRootModel, source: source)
                 .id(source)
+        case .cloudFolderScan:
+            CloudFolderScanView(root: root)
         }
     }
 }

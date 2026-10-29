@@ -164,6 +164,10 @@ private struct ToolbarItemListActionMenuView: View {
                     Divider()
                 }
             }
+            if parentModel == nil && modal == false {
+                Divider()
+                CloudFolderScanButton(root: root)
+            }
         } label: {
             // A `Label` (not a bare `Image`) so VoiceOver announces this
             // overflow menu's purpose — the toolbar still renders it
@@ -229,6 +233,7 @@ private struct ToolbarItemListSecondaryActionMenuView: View {
                 ControlGroup {
                     toggleFolder(listController: listController)
                 }
+                CloudFolderScanButton(root: root)
             }
         }
     }

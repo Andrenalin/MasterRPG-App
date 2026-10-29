@@ -10,6 +10,8 @@ import Testing
 
 /// CODE_AUDIT_Folder §5: fixes that need PhotoRPG — persisted duplicates, share-extension file
 /// names and closing a parent folder in the list.
+// Serialized: the sync tests take the process-wide data-mutation lock, and a parallel one is refused.
+@Suite(.serialized)
 @MainActor
 struct FolderAuditPhotoTests {
     @Test("A duplicated folder's children are persisted with the copy as parent (§5.5)")
@@ -65,6 +67,163 @@ struct FolderAuditPhotoTests {
         #expect(!other.isSame(stored))
         #expect(other.replace(with: stored))
         #expect(other.entries.count == 1)
+    }
+
+    @Test("The iCloud folder scan adds items for files without one, in the folder structure of their path")
+    func cloudFolderScanAddsMissingItems() async throws {
+        let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])
+        let root = PhotoRootModel.persistentTestRoot(context: store.context)
+        let files = try #require(root.itemController.fileUrlDataController)
+        let top = "ScanTest-\(UUID().uuidString)"
+        let topUrl = files.cloudDocumentController.moduleUrl.appending(path: top, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: topUrl) }
+        for path in ["Sub/One.png", "Two.png", ".Three.png.icloud", "notes.txt"] {
+            let url = topUrl.appending(path: path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data("x".utf8).write(to: url)
+        }
+        let controller = CloudScanController(itemController: root.itemController, editController: root.editController)
+
+        // Only what this test wrote: the module folder may hold other files.
+        var plan = try await scannedPlan(controller)
+        plan.items.removeAll { $0.file.components.first != top }
+        plan.folders.removeAll { $0.path.first != top }
+        #expect(plan.folders.map { $0.path.joined(separator: "/") } == [top, "\(top)/Sub"])
+        #expect(plan.items.map(\.name).sorted() == ["One", "Three", "Two"], "the placeholder counts, the text file does not")
+
+        let outcome = await controller.apply(plan)
+        #expect(outcome == .synced(added: 3, folders: 2, moved: 0, trashed: 0))
+
+        let library = root.itemController
+        let topId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top], isFolder: true)
+        let subId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Sub"], isFolder: true)
+        let oneId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Sub", "One.png"], isFolder: false)
+        let one = try #require(library.itemSync(for: oneId, noGame: true))
+        #expect(one.name == "One")
+        #expect(one.parentId == subId)
+        #expect(one.category == .item)
+        let oneFile = try #require(one.fileUrl)
+        #expect(oneFile.location == .newCloud)
+        let stored = try #require(files.storedLocation(of: oneFile))
+        #expect(CloudDocumentController.canonicalPath(stored) == CloudDocumentController.canonicalPath(topUrl.appending(path: "Sub/One.png")))
+
+        let topFolder = try #require(library.itemSync(for: topId, noGame: true))
+        #expect(topFolder.isFolder)
+        let twoId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Two.png"], isFolder: false)
+        let threeId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Three.png"], isFolder: false)
+        #expect(Set(topFolder.entries.map(\.childId)) == [subId, twoId, threeId], "the folder lists its sub folder and both files")
+        #expect(topFolder.entries.count == 3)
+        #expect(library.itemSync(for: subId, noGame: true)?.entries.map(\.childId) == [oneId])
+
+        // What the other devices get: the rows in the store.
+        let storage = DataController(context: store.context, token: NetworkModules.photo.token)
+        let storedTop = try #require(try await storage.fetch(id: topId) as? PhotoModel)
+        #expect(storedTop.entries.count == 3)
+        let storedOne = try #require(try await storage.fetch(id: oneId) as? PhotoModel)
+        #expect(storedOne.parentId == subId)
+
+        // A second scan finds nothing of this test's, and applying the old plan again adds nothing.
+        let rescan = try await scannedPlan(controller)
+        #expect(!rescan.items.contains { $0.file.components.first == top })
+        #expect(!rescan.folders.contains { $0.path.first == top })
+        #expect(await controller.apply(plan) == .synced(added: 0, folders: 0, moved: 0, trashed: 0))
+        #expect(library.itemDataModel.items.filter { library.itemSync(for: $0, noGame: true)?.name == "One" }.count == 1)
+    }
+
+    private func scannedPlan(_ controller: CloudScanController) async throws -> CloudScanPlan {
+        guard case .plan(let plan) = try #require(await controller.scan()) else {
+            Issue.record("the module folder should be readable")
+            return CloudScanPlan()
+        }
+        return plan
+    }
+
+    @Test("The iCloud sync follows a file moved on iCloud, moves an item to the folder of its file and trashes an item whose file is gone")
+    func cloudFolderSyncMovesAndTrashes() async throws {
+        let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])
+        let root = PhotoRootModel.persistentTestRoot(context: store.context)
+        let files = try #require(root.itemController.fileUrlDataController)
+        let module = NetworkModules.photo.token
+        let top = "SyncTest-\(UUID().uuidString)"
+        let topUrl = files.cloudDocumentController.moduleUrl.appending(path: top, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: topUrl) }
+        func write(_ path: String) throws {
+            let url = topUrl.appending(path: path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data(path.utf8).write(to: url)
+        }
+        for path in ["Old/Moved.png", "Old/Gone.png", "Old/Stay.png"] { try write(path) }
+        let controller = CloudScanController(itemController: root.itemController, editController: root.editController)
+        var first = try await scannedPlan(controller)
+        first.items.removeAll { $0.file.components.first != top }
+        first.folders.removeAll { $0.path.first != top }
+        #expect(await controller.apply(first) == .synced(added: 3, folders: 2, moved: 0, trashed: 0))
+
+        func id(_ path: [String], folder: Bool = false) -> UUID {
+            CloudFolderScan.derivedId(module: module, path: [top] + path, isFolder: folder)
+        }
+        let oldId = id(["Old"], folder: true)
+        let movedId = id(["Old", "Moved.png"]), goneId = id(["Old", "Gone.png"]), stayId = id(["Old", "Stay.png"])
+        let library = root.itemController
+
+        // On iCloud: one file goes to a new folder, one is deleted. In the app: one item is taken
+        // out of the folder of its file.
+        try FileManager.default.createDirectory(at: topUrl.appending(path: "New"), withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: topUrl.appending(path: "Old/Moved.png"), to: topUrl.appending(path: "New/Moved.png"))
+        try FileManager.default.removeItem(at: topUrl.appending(path: "Old/Gone.png"))
+        let strayId = await library.addNew(type: .folder)
+        root.editController.reset(name: "Stray", itemId: strayId)
+        let stay = try #require(library.itemSync(for: stayId, noGame: true))
+        stay.parentId = strayId
+        root.editController.repairFolders(itemIds: [stayId])
+
+        var plan = try await scannedPlan(controller)
+        plan.items.removeAll { $0.file.components.first != top }
+        plan.folders.removeAll { $0.path.first != top }
+        plan.moves.removeAll { !($0.file?.components.first == top || $0.from.first == "Stray" || $0.to.first == top) }
+        plan.removals.removeAll { $0.path.first != top }
+        #expect(plan.items.isEmpty, "no file without an item")
+        #expect(plan.removals.map(\.id) == [goneId])
+        #expect(plan.movedFiles.map(\.id) == [movedId])
+        #expect(plan.movedItems.map(\.id) == [stayId])
+        #expect(plan.folders.map { $0.path.joined(separator: "/") } == ["\(top)/New"])
+
+        // The user keeps the Gone item.
+        let kept = plan.restricted(toDeselected: [goneId])
+        #expect(kept.removals.isEmpty)
+
+        let outcome = await controller.apply(plan)
+        #expect(outcome == .synced(added: 0, folders: 1, moved: 2, trashed: 1))
+
+        let newId = id(["New"], folder: true)
+        let moved = try #require(library.itemSync(for: movedId, noGame: true))
+        #expect(moved.parentId == newId)
+        let movedFile = try #require(moved.fileUrl)
+        #expect(CloudDocumentController.canonicalPath(try #require(files.storedLocation(of: movedFile)))
+                == CloudDocumentController.canonicalPath(topUrl.appending(path: "New/Moved.png")))
+        #expect(FileManager.default.fileExists(atPath: topUrl.appending(path: "New/Moved.png").path(percentEncoded: false)))
+        #expect(library.itemSync(for: newId, noGame: true)?.entries.map(\.childId) == [movedId])
+        #expect(library.itemSync(for: oldId, noGame: true)?.entries.map(\.childId).contains(movedId) == false, "the old folder no longer lists it")
+
+        let stayed = try #require(library.itemSync(for: stayId, noGame: true))
+        #expect(stayed.parentId == oldId)
+        #expect(library.itemSync(for: strayId, noGame: true)?.entries.isEmpty == true)
+        #expect(stayed.fileUrl?.rawUrl.lastPathComponent == "Stay.png", "the file keeps its name: only the item moved")
+        #expect(FileManager.default.fileExists(atPath: topUrl.appending(path: "Old/Stay.png").path(percentEncoded: false)))
+
+        #expect(library.itemSync(for: goneId, noGame: true)?.displayState == DisplayStateMask.totalHidden.rawValue, "trashed, not deleted")
+
+        // The store has the same.
+        let storage = DataController(context: store.context, token: module)
+        let storedMoved = try #require(try await storage.fetch(id: movedId) as? PhotoModel)
+        #expect(storedMoved.parentId == newId)
+        #expect(storedMoved.fileUrl?.rawUrl.path(percentEncoded: false) == "/\(top)/New/Moved.png")
+
+        // Nothing differs afterwards, apart from the trashed item that still references its file.
+        var rescan = try await scannedPlan(controller)
+        rescan.moves.removeAll { !($0.file?.components.first == top || $0.to.first == top) }
+        rescan.items.removeAll { $0.file.components.first != top }
+        #expect(rescan.moves.isEmpty && rescan.items.isEmpty)
     }
 
     @Test("Every shared image gets its own sanitised file name (§5.11)")

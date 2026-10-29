@@ -125,6 +125,11 @@ struct ListRootView: View {
                     root.navigationModel.triggerBatchExtraction = false
                     navigator.navigate(to: InternalRoute.batchExtraction(ids: [itemId]), method: .sheet)
                 }
+                .onChange(of: root.navigationModel.triggerCloudScan) {
+                    guard root.navigationModel.triggerCloudScan else { return }
+                    root.navigationModel.triggerCloudScan = false
+                    navigator.navigate(to: InternalRoute.cloudFolderScan, method: .sheet)
+                }
                 .onChange(of: root.navigationModel.triggerDelete) {
                     guard root.navigationModel.triggerDelete else { return }
                     root.navigationModel.triggerDelete = false

@@ -87,6 +87,12 @@ struct CloudDocumentController: Sendable {
         moduleFileUrl(filePath.split(separator: "/").map(String.init))
     }
 
+    /// The path of the stored file `fileUrl` below the module folder, or `nil` when it names no
+    /// file there.
+    func relativeComponents(of fileUrl: URL) -> [String]? {
+        fullUrl(fileUrl: fileUrl).flatMap { componentsBelowContainer(of: $0) }
+    }
+
     func nameUrl(fullUrl: URL) -> URL {
         let namePath = componentsBelowContainer(of: fullUrl) ?? []
         // `pathComponents` yields already-decoded segments, which can contain characters
