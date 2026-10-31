@@ -30,7 +30,6 @@ extension RPGPdf: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
-        attributeSet.relate(to: PdfEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

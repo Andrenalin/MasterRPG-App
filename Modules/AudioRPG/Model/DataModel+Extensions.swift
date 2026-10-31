@@ -30,7 +30,6 @@ extension RPGAudio: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
-        attributeSet.relate(to: AudioEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

@@ -221,7 +221,9 @@ public struct CoreDataPersistenceController {
         guard model.installBackgroundContext(from: container) else { return }
 
 #if !os(tvOS)
-        model.spotlightIndexer?.startSpotlightIndexing()
+        if let spotlightIndexer = model.spotlightIndexer {
+            Task { await spotlightIndexer.startIndexing() }
+        }
 #endif
         model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: model.currentActor, viewBackupContext: model.context)
 

@@ -149,7 +149,9 @@ public struct CloudKitCoreDataPersistenceController {
         guard model.installBackgroundContext(from: container) else { return }
 
 #if !os(tvOS)
-        model.spotlightIndexer?.startSpotlightIndexing()
+        if let spotlightIndexer = model.spotlightIndexer {
+            Task { await spotlightIndexer.startIndexing() }
+        }
 #endif
 
         // Setup CloudKit event monitoring if sync is enabled

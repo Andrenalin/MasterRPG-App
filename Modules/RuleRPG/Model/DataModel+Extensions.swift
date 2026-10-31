@@ -25,7 +25,6 @@ extension RPGRule: SpotlightIndexerAttribute {
         attributes.textContent = CRDT(wrappedValue: information ?? "").wrappedValue
         let convertedTags = CRDT(string: tags ?? "", defaultValue: [String]())
         attributes.keywords = convertedTags.wrappedValue
-        attributes.relate(to: RuleEntity.self, itemId: uuid)
         return attributes
     }
 #endif

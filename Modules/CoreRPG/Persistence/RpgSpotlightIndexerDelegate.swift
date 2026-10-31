@@ -56,6 +56,28 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
         return objectAttribute.attributeSet()
     }
 
+    /// Bump when `attributeSet()` changes what the rows carry. The delegate re-donates only the
+    /// objects that changed in the persistent history, so rows that are never saved again keep the
+    /// attribute set they were first donated with.
+    private static let indexVersion = 2
+    private static let indexVersionKey = "spotlightCoreDataIndexVersion"
+
+    /// Starts indexing; first deletes the index once per `indexVersion`, so every row is donated
+    /// again with the current attribute set. The deletion only touches this delegate's index
+    /// (`indexName()`), not the App Entity donations.
+    public func startIndexing() async {
+        let defaults = UserDefaults.standard
+        if defaults.integer(forKey: Self.indexVersionKey) < Self.indexVersion {
+            do {
+                try await deleteSpotlightIndex()
+                defaults.set(Self.indexVersion, forKey: Self.indexVersionKey)
+            } catch {
+                // Keep the old version so the next launch tries again.
+            }
+        }
+        startSpotlightIndexing()
+    }
+
     public func observeIndexing() {
         if isIndexingEnabled && indexingTask == nil {
             let model = model
@@ -81,6 +103,8 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
 public final class RpgSpotlightIndexerDelegate {
     public let model: RpgSpotlightIndexerModel = RpgSpotlightIndexerModel()
     
+    public func startIndexing() async {}
+
     public func observeIndexing() {}
 
     public func stopSpotlightIndexing() {}

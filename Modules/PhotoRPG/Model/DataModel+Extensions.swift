@@ -31,7 +31,6 @@ extension RPGPhoto: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
-        attributeSet.relate(to: PhotoEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

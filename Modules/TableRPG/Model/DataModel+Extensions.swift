@@ -30,7 +30,6 @@ extension RPGTable: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
-        attributeSet.relate(to: TableEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif

@@ -100,7 +100,6 @@ extension RPGMap: SpotlightIndexerAttribute {
                 attributeSet.keywords = [String($0)]
             }
         }
-        attributeSet.relate(to: MapEntity.self, itemId: uuid)
         return attributeSet
     }
 #endif
