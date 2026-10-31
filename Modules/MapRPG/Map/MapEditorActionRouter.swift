@@ -282,6 +282,13 @@ final class MapEditorActionRouter {
     ) {
         guard !isPointer else { return }
         if context == .editor {
+            if type == .character, let characterId = pin.characterId {
+                mapEditController.appendCharacterLinks(
+                    [characterId],
+                    to: session.entry(for: pin.location, in: map)?.id,
+                    editorModel: session
+                )
+            }
             mapEditController.commitPinMutation(editorModel: session)
             return
         }

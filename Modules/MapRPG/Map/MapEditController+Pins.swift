@@ -69,11 +69,14 @@ extension MapEditController {
             characterRoot: editController.root.characterRoot
         )
 
-        if let entryId, location == nil {
-            pins = MapPinPlacement.cascade(pins: pins, in: copy[entryId], pinScale: copy.pinScale)
+        // Without a selected room, pins added by selection go into the first room.
+        let targetEntryId = entryId ?? (location == nil ? copy.entries.first(where: { !$0.isHexGrid })?.id : nil)
+        if let targetEntryId, location == nil {
+            pins = MapPinPlacement.cascade(pins: pins, in: copy[targetEntryId], pinScale: copy.pinScale)
         }
 
         editorModel.pins.mapPins = copy.mapPins + pins
+        appendCharacterLinks(monsters.map(\.itemId), to: targetEntryId, editorModel: editorModel)
         commitPinMutation(editorModel: editorModel)
     }
 }

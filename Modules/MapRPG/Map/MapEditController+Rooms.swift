@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CharacterRPG
 import CoreGraphics
 import CoreRPG
 import Foundation
@@ -94,6 +95,63 @@ extension MapEditController {
             editorModel.editEntries.resetEntries(mapId: copy.id, entries: [activeEntry])
         }
         syncDisplayEntries(from: copy, editorModel: editorModel)
+    }
+}
+
+// MARK: - Character Links
+
+extension MapEditController {
+    /// Appends a link of each character to the room's content, unless the room already links
+    /// that character. Links of other characters stay. Part of the caller's mutation: it
+    /// records no history entry itself.
+    @MainActor
+    func appendCharacterLinks(
+        _ characterIds: [UUID],
+        to entryId: UUID?,
+        editorModel: MapEditorSession
+    ) {
+        guard let copy = editorModel.workingCopy,
+              let entryId,
+              copy.entries.contains(where: { $0.id == entryId }) else { return }
+        synchronizeWorkingCopy(editorModel: editorModel)
+
+        // The map sheet shows the stored model, whose content is the one the user edits there.
+        let storedMap = editController.itemController.itemSync(for: copy.id)?.copy()
+        let stored = storedMap?.entries.contains(where: { $0.id == entryId }) == true ? storedMap : nil
+        var entry = copy[entryId]
+        let originalContent = stored?[entryId].content ?? entry.content
+        var content = originalContent.trimmingCharacters(in: .whitespaces)
+        for characterId in characterIds {
+            let isLinked = LinkReplaceController.links(for: content)
+                .contains { $0.module == .value && $0.itemId == characterId && $0.entryId == nil }
+            guard !isLinked else { continue }
+            let link = LinkBuilder.markdown(
+                name: editController.root.characterRoot.linkControllable.name(for: characterId),
+                module: .value,
+                itemId: characterId
+            )
+            content += content.isEmpty ? link : " " + link
+        }
+        guard content != originalContent else { return }
+        entry.content = content
+        copy[entryId] = entry
+        synchronizeRoomPresentation(from: copy, editorModel: editorModel)
+        reloadSheetEntry(entryId, content: content, stored: stored)
+    }
+
+    /// Writes the new content into the stored map and reloads the map sheet, which reads the
+    /// stored model and would otherwise show the old content until the editor commits.
+    @MainActor
+    private func reloadSheetEntry(_ entryId: UUID, content: String, stored: MapModel?) {
+        guard let stored else { return }
+        var storedEntry = stored[entryId]
+        storedEntry.content = content
+        stored[entryId] = storedEntry
+        editController.save(
+            updated: stored,
+            message: String(localized: "Add Link", bundle: .module).localizedString
+        )
+        editController.editorModel.sheetRootModel?.updateFromRoot()
     }
 }
 
