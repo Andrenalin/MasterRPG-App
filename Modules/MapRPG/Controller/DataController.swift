@@ -50,8 +50,9 @@ extension DataController: CoreDataSnapshotPersistable {
             pinScale: model.pinScale,
             hexMapScale: CRDT(string: model.hexMapScale ?? "", defaultValue: 0.0),
             scale: 1,
-            degrees: 0,
-            parentId: model.parentId
+            degrees: model.degrees?.doubleValue ?? 0,
+            parentId: model.parentId,
+            hasRecordedDegrees: model.degrees != nil
         )
     }
 
@@ -95,6 +96,10 @@ extension DataController: CoreDataSnapshotPersistable {
         }
         if let wallsData = MapWallPersistenceCodec.encode(snapshot.walls) {
             model.wallsData <=> wallsData
+        }
+        // An unrecorded rotation stays nil in the store; the repair records it from the photo.
+        if snapshot.hasRecordedDegrees, model.degrees?.doubleValue != snapshot.degrees {
+            model.degrees = NSNumber(value: snapshot.degrees)
         }
         model.pinScale <=> snapshot.pinScale
         model.hexMapScale <=> snapshot.hexMapScale.rawValue

@@ -262,9 +262,13 @@ extension CharacterRootModel {
                 editController.reset(tags: [], itemId: valueId)
                 await editController.removePhotos(itemId: valueId)
 
-                if entry.name != value.name {
+                // The entry shows the group item's name as plain text. Comparing it with the raw name
+                // (a markdown link for table-generated items) never matches what is written here,
+                // so every repair rewrote the entry and moved its sync clock.
+                let linkFreeName = value.name.withoutLink()
+                if entry.name != linkFreeName {
                     var updatedEntry = entry
-                    updatedEntry.name = value.name.withoutLink()
+                    updatedEntry.name = linkFreeName
                     updatedEntry.content = value.description
                     entries.append(updatedEntry)
                 } else {

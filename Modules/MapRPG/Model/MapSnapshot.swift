@@ -26,6 +26,7 @@ struct MapSnapshot: Codable, Sendable, Identifiable {
     let scale: CGFloat
     let degrees: Double
     let parentId: UUID?
+    var hasRecordedDegrees: Bool = true
 }
 
 extension MapSnapshot {
@@ -49,6 +50,7 @@ extension MapSnapshot {
         scale = model.scale
         degrees = model.degrees
         parentId = model.parentId
+        hasRecordedDegrees = model.hasRecordedDegrees
     }
 
     @MainActor
@@ -71,7 +73,8 @@ extension MapSnapshot {
             hexMapScale: hexMapScale,
             scale: scale,
             degrees: degrees,
-            parentId: parentId
+            parentId: parentId,
+            hasRecordedDegrees: hasRecordedDegrees
         )
     }
 
@@ -133,6 +136,7 @@ extension MapSnapshot {
         model.hexMapScale_ = hexMapScale
         model.scale = scale
         model.degrees = degrees
+        model.hasRecordedDegrees = hasRecordedDegrees
         model.parentId = parentId
         model.pointer = pointer
     }
@@ -173,7 +177,8 @@ extension MapSnapshot {
             hexMapScale: hexMapScale,
             scale: scale,
             degrees: degrees,
-            parentId: parentId
+            parentId: parentId,
+            hasRecordedDegrees: hasRecordedDegrees
         )
     }
 }
@@ -200,6 +205,7 @@ extension MapSnapshot {
         case scale
         case degrees
         case parentId
+        case hasRecordedDegrees
     }
 
     init(from decoder: Decoder) throws {
@@ -222,6 +228,8 @@ extension MapSnapshot {
         scale = try container.decode(CGFloat.self, forKey: .scale)
         degrees = try container.decode(Double.self, forKey: .degrees)
         parentId = try container.decodeIfPresent(UUID.self, forKey: .parentId)
+        // A sender that predates the flag never stored its rotation, so its `degrees` is not a record.
+        hasRecordedDegrees = try container.decodeIfPresent(Bool.self, forKey: .hasRecordedDegrees) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -244,5 +252,6 @@ extension MapSnapshot {
         try container.encode(scale, forKey: .scale)
         try container.encode(degrees, forKey: .degrees)
         try container.encodeIfPresent(parentId, forKey: .parentId)
+        try container.encode(hasRecordedDegrees, forKey: .hasRecordedDegrees)
     }
 }

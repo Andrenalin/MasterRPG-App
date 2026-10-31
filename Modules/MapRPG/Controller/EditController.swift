@@ -261,12 +261,14 @@ extension EditController {
 extension EditController {
     @MainActor
     func resetImageSize(photoId: UUID, updateModel: MapModel, save: Bool = false) async {
-        if let (image, degrees) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: false) {
-            let size = image.size
+        // Only the photo's size and rotation matter here; reading them must not decode the image.
+        if let (size, degrees) = await root.photoRoot.fetchPhotoGeometry(for: photoId, useGame: false) {
             if save {
                 // The photo was loaded asynchronously: write onto the map as it is now, not the
                 // copy taken before, which would undo edits made meanwhile.
                 let target = itemController.copy(of: updateModel.id) ?? updateModel
+                // A map saved before the rotation was persisted keeps its content where it is.
+                target.recordLegacyDegrees(degrees)
                 target.resetImage(with: photoId, size: size, degrees: degrees)
                 itemController.replace(model: target, isInsert: false)
             } else {

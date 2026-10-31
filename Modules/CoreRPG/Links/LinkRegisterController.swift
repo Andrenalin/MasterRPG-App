@@ -146,7 +146,12 @@ public extension LinkRegisterController {
                 for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
                     context.delete(object)
                 }
-                if context.hasChanges { try context.save() }
+                if context.hasChanges {
+#if DEBUG
+                    context.logPendingSave("links")
+#endif
+                    try context.save()
+                }
             } catch {
                 context.rollbackRestoringFlushedOperations(after: error)
                 Logger.coreDataController.error("link resetData error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
@@ -173,45 +178,69 @@ public extension LinkRegisterController {
         // so deletions never reached other devices and mirrored rows duplicated rebuilt ones.
         // See CODE_AUDIT_15 §5.8.
         do {
-            try await context.perform {
-                // Diff against the persisted rows instead of delete-and-reinsert: only changed rows
-                // reach the CloudKit export and concurrent devices no longer duplicate rows.
-                // See CODE_AUDIT_17 §7.7.
-                let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
-                request.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
-                var existing: [UUID: LinkReferenceDataModel] = [:]
-                // Keep the duplicate every device keeps (`DuplicateRowOrder`), not whichever the
-                // unsorted fetch returned first, and not the lowest object-ID URI, which differs
-                // per device. See CODE_AUDIT_18 §5.13, CODE_AUDIT_21 §5.7.
-                let fetched = try context.fetch(request) as? [LinkReferenceDataModel] ?? []
-                var rowsById: [UUID: [LinkReferenceDataModel]] = [:]
-                for object in fetched {
-                    if let id = object.uuid {
-                        rowsById[id, default: []].append(object)
-                    } else {
+            // Duplicate rows are sorted by CloudKit record names, which are looked up off the
+            // context's thread (a utility-priority wait that must not block it). A pass that meets
+            // duplicates whose names are not known yet changes nothing and asks for them.
+            var recordNames: DuplicateRowOrder.RecordNames?
+            var attempts = 0
+            while true {
+                attempts += 1
+                let names = recordNames
+                let useBlockingLookup = attempts > DuplicateRowOrder.maxLookupAttempts
+                let unknownRows: [NSManagedObjectID] = try await context.perform {
+                    // Diff against the persisted rows instead of delete-and-reinsert: only changed rows
+                    // reach the CloudKit export and concurrent devices no longer duplicate rows.
+                    // See CODE_AUDIT_17 §7.7.
+                    let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                    request.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
+                    var existing: [UUID: LinkReferenceDataModel] = [:]
+                    // Keep the duplicate every device keeps (`DuplicateRowOrder`), not whichever the
+                    // unsorted fetch returned first, and not the lowest object-ID URI, which differs
+                    // per device. See CODE_AUDIT_18 §5.13, CODE_AUDIT_21 §5.7.
+                    let fetched = try context.fetch(request) as? [LinkReferenceDataModel] ?? []
+                    var rowsById: [UUID: [LinkReferenceDataModel]] = [:]
+                    var rowsWithoutId: [LinkReferenceDataModel] = []
+                    for object in fetched {
+                        if let id = object.uuid {
+                            rowsById[id, default: []].append(object)
+                        } else {
+                            rowsWithoutId.append(object)
+                        }
+                    }
+                    let duplicateRows = rowsById.values.filter { $0.count > 1 }.flatMap { $0 }
+                    if !useBlockingLookup, !duplicateRows.isEmpty, !(names?.covers(duplicateRows) ?? false) {
+                        return duplicateRows.map(\.objectID)
+                    }
+                    rowsWithoutId.forEach(context.delete)
+                    for (id, rows) in rowsById {
+                        let ordered = names.map { DuplicateRowOrder.sorted(rows, using: $0) } ?? DuplicateRowOrder.sorted(rows)
+                        existing[id] = ordered.first
+                        ordered.dropFirst().forEach(context.delete)
+                    }
+                    var currentIds: Set<UUID> = []
+                    for link in currentLinks {
+                        currentIds.insert(link.id)
+                        let dbModel = existing[link.id] ?? LinkReferenceDataModel(context: context)
+                        Self.assign(link, to: dbModel)
+                    }
+                    for (id, object) in existing where !currentIds.contains(id) {
                         context.delete(object)
                     }
+                    do {
+                        if context.hasChanges {
+#if DEBUG
+                            context.logPendingSave("links")
+#endif
+                            try context.save()
+                        }
+                    } catch {
+                        context.rollbackRestoringFlushedOperations(after: error)
+                        throw error
+                    }
+                    return []
                 }
-                for (id, rows) in rowsById {
-                    let ordered = DuplicateRowOrder.sorted(rows)
-                    existing[id] = ordered.first
-                    ordered.dropFirst().forEach(context.delete)
-                }
-                var currentIds: Set<UUID> = []
-                for link in currentLinks {
-                    currentIds.insert(link.id)
-                    let dbModel = existing[link.id] ?? LinkReferenceDataModel(context: context)
-                    Self.assign(link, to: dbModel)
-                }
-                for (id, object) in existing where !currentIds.contains(id) {
-                    context.delete(object)
-                }
-                do {
-                    if context.hasChanges { try context.save() }
-                } catch {
-                    context.rollbackRestoringFlushedOperations(after: error)
-                    throw error
-                }
+                if unknownRows.isEmpty { break }
+                recordNames = await DuplicateRowOrder.recordNames(for: unknownRows)
             }
         } catch {
             Logger.coreDataController.error("link save error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")

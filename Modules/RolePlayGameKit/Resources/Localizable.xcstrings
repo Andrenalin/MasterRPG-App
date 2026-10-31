@@ -2889,6 +2889,22 @@
         }
       }
     },
+    "Saving Changes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Änderungen werden gespeichert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังบันทึกการเปลี่ยนแปลง"
+          }
+        }
+      }
+    },
     "Validation progress" : {
       "localizations" : {
         "de" : {

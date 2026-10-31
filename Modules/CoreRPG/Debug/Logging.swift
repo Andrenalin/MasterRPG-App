@@ -29,5 +29,6 @@ public extension Logger {
     static let sharePlay = Logger(subsystem: subsystem, category: "sharePlay")
     static let syncDataControllable = Logger(subsystem: subsystem, category: "SyncDataControllable")
     static let tipKit = Logger(subsystem: subsystem, category: "TipKit")
+    static let validateRepair = Logger(subsystem: subsystem, category: "ValidateRepair")
     static let widget = Logger(subsystem: subsystem, category: "widget")
 }

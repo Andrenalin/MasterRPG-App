@@ -269,6 +269,69 @@ struct DataControllerTests {
         #expect(model.photoId == photoId)
         #expect(model.walls.isEmpty)
     }
+
+    @Test func rotationIsOptionalWithoutDefaultSoLegacyRowsReadAsUnrecorded() throws {
+        let store = try PersistentTestStore(bundles: [
+            CoreRPG.Resources.bundle,
+            MapRPG.Resources.bundle
+        ])
+        let mapEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMap"])
+        let degreesAttribute = try #require(mapEntity.attributesByName["degrees"])
+
+        #expect(degreesAttribute.isOptional)
+        #expect(degreesAttribute.defaultValue == nil)
+        #expect(degreesAttribute.attributeType == .doubleAttributeType)
+    }
+
+    @Test func rotationIsStoredWithTheMapAndAnUnrecordedOneStaysNil() async throws {
+        let store = try PersistentTestStore(bundles: [
+            CoreRPG.Resources.bundle,
+            MapRPG.Resources.bundle
+        ])
+        let sut = DataController(context: store.context, token: NetworkModules.map.token)
+        let itemId = UUID()
+
+        func storedDegrees() async throws -> [NSNumber?] {
+            try await store.context.perform {
+                try store.context.fetch(NSFetchRequest<NSManagedObject>(entityName: "RPGMap")).map { $0.value(forKey: "degrees") as? NSNumber }
+            }
+        }
+
+        // A map as loaded from a row that never stored the rotation.
+        try sut.replaceSync(id: itemId, with: MapModel(id: itemId, name: "Legacy", degrees: 0, hasRecordedDegrees: false))
+        try await sut.save()
+        let legacy = try #require(try await sut.fetch(id: itemId) as? MapModel)
+        #expect(!legacy.hasRecordedDegrees)
+        #expect(legacy.degrees == 0)
+        #expect(try await storedDegrees() == [nil])
+
+        // Saving the unrecorded map again (any edit) must not turn the placeholder into a record.
+        let renamed = legacy.copy()
+        renamed.name = "Legacy renamed"
+        try await sut.replace(id: itemId, with: renamed)
+        try await sut.save()
+        #expect(try await storedDegrees() == [nil])
+
+        // The repair records the photo's rotation.
+        let repaired = legacy.copy()
+        repaired.recordLegacyDegrees(90)
+        try await sut.replace(id: itemId, with: repaired)
+        try await sut.save()
+        let fetchedRepaired = try #require(try await sut.fetch(id: itemId) as? MapModel)
+        #expect(fetchedRepaired.hasRecordedDegrees)
+        #expect(fetchedRepaired.degrees == 90)
+        #expect(try await storedDegrees() == [90])
+
+        // A recorded 0° is a record too, not "unknown".
+        let flat = fetchedRepaired.copy()
+        flat.degrees = 0
+        try await sut.replace(id: itemId, with: flat)
+        try await sut.save()
+        let fetchedFlat = try #require(try await sut.fetch(id: itemId) as? MapModel)
+        #expect(fetchedFlat.hasRecordedDegrees)
+        #expect(fetchedFlat.degrees == 0)
+        #expect(try await storedDegrees() == [0])
+    }
 }
 
 private struct PersistentTestStore {

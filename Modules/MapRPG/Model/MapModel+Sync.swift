@@ -123,8 +123,10 @@ extension MapModel: nonisolated ItemDiffComparable {
                 pinScale: other.pinScale,
                 hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
                 scale: other.scale,
-                degrees: other.degrees,
-                parentId: other.parentId
+                // An unrecorded rotation is only a placeholder 0; it never overrides a recorded one.
+                degrees: other.hasRecordedDegrees ? other.degrees : degrees,
+                parentId: other.parentId,
+                hasRecordedDegrees: hasRecordedDegrees || other.hasRecordedDegrees
             )
 
         }
@@ -154,6 +156,7 @@ extension MapModel: nonisolated ItemDiffComparable {
                 pinScale == other.pinScale &&
                 scale == other.scale &&
                 degrees == other.degrees &&
+                hasRecordedDegrees == other.hasRecordedDegrees &&
                 parentId == other.parentId
             )
             guard configMatch else { return false }

@@ -3,6 +3,12 @@
 import CoreRPG
 import Foundation
 
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+
 /// Photo-access API surface (thumbnail/image fetch, list, cleanup, repair) — extracted
 /// from PhotoRootModel.swift's own constructor/property-declaration bulk. See CODE_AUDIT §9.10.
 public extension PhotoRootModel {
@@ -37,6 +43,27 @@ public extension PhotoRootModel {
         // CODE_AUDIT §3.1.
         guard let image = await editController.loadImage(cacheType: .image, item: model, itemId: model.id, fileUrl: model.fileUrl) else { return nil }
         return (image, model.degrees)
+    }
+
+    /// The size and rotation `fetchPhotoImage` would report, for callers that only measure the
+    /// photo (e.g. the map repair, which runs for every map). The size comes from the file header,
+    /// so no photo is decoded; a photo that is not downloaded, has no readable header or exceeds the
+    /// decode bound goes through `fetchPhotoImage`.
+    @MainActor
+    func fetchPhotoGeometry(for id: UUID?, useGame: Bool) async -> (size: CGSize, degrees: Double)? {
+        guard let id else { return nil }
+        let model = useGame ? gameController.gameItem(for: id) : itemController.itemOrEmpty(for: id)
+        if let fileUrl = model.fileUrl, let fileUrlDataController,
+           await fileUrlDataController.isAvailableWithoutDownloading(fileUrl),
+           let size = await fileUrlDataController.resolvedImage(
+               for: fileUrl,
+               decodeData: { AKImage.boundedDecodedSize(from: $0) },
+               decodeUrl: { AKImage.boundedDecodedSize(from: $0) }
+           ) {
+            return (size, model.degrees)
+        }
+        guard let (image, degrees) = await fetchPhotoImage(for: id, useGame: useGame) else { return nil }
+        return (image.size, degrees)
     }
 
     func itemDataCleanup() async throws {

@@ -5,11 +5,13 @@ import SwiftUI
 public enum ValidatePhase: String, Sendable {
     case repairFolders
     case validateLinks
+    case saveChanges
 
     public var title: String {
         switch self {
         case .repairFolders: "Repair Folders"
         case .validateLinks: "Validate Links"
+        case .saveChanges: "Saving Changes"
         }
     }
 }

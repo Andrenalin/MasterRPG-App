@@ -20,7 +20,7 @@ enum MapPinId {
 // the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
 @MainActor @Observable
 public final class MapModel: nonisolated Identifiable {
-    nonisolated public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], walls: [MapWallModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil) {
+    nonisolated public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], walls: [MapWallModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil, hasRecordedDegrees: Bool = true) {
         self.id = id
         _name_ = CRDT(wrappedValue: name)
         _description_ = CRDT(wrappedValue: description)
@@ -39,9 +39,10 @@ public final class MapModel: nonisolated Identifiable {
         self._scale = scale
         self._degrees = degrees
         self._parentId = parentId
+        self._hasRecordedDegrees = hasRecordedDegrees
     }
 
-    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, walls: CRDTDataUpdate<[MapWallModel]> = CRDTDataUpdate(wrappedValue: []), pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?) {
+    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, walls: CRDTDataUpdate<[MapWallModel]> = CRDTDataUpdate(wrappedValue: []), pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?, hasRecordedDegrees: Bool = true) {
         self.id = id
         _name_ = name
         _description_ = description
@@ -60,6 +61,7 @@ public final class MapModel: nonisolated Identifiable {
         self._scale = scale
         self._degrees = degrees
         self._parentId = parentId
+        self._hasRecordedDegrees = hasRecordedDegrees
     }
 
     nonisolated public init(from decoder: Decoder) throws {
@@ -83,6 +85,8 @@ public final class MapModel: nonisolated Identifiable {
         self._scale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._scale)
         self._degrees = try container.decode(Double.self, forKey: MapModel.CodingKeys._degrees)
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: MapModel.CodingKeys._parentId)
+        // A sender that predates the flag never stored its rotation, so its `_degrees` is not a record.
+        self._hasRecordedDegrees = try container.decodeIfPresent(Bool.self, forKey: MapModel.CodingKeys._hasRecordedDegrees) ?? false
     }
 
     // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
@@ -161,6 +165,10 @@ public final class MapModel: nonisolated Identifiable {
     public var pointer: MapPinModel = MapPinModel(id: UUID(), name: "Pointer", color: .red, isShown: false)
 
     var degrees: Double = 0
+    /// Whether `degrees` was ever stored with the map. Maps saved before the rotation was persisted
+    /// load with `degrees` 0 and `false`; their rooms and pins already follow the photo's rotation,
+    /// so the repair adopts the photo's degrees without moving content. See `recordLegacyDegrees`.
+    var hasRecordedDegrees: Bool = true
 
     public var parentId: UUID? = nil
 }
@@ -189,6 +197,7 @@ extension MapModel: nonisolated Codable {
         case _scale
         case _degrees
         case _parentId
+        case _hasRecordedDegrees
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
@@ -213,6 +222,7 @@ extension MapModel: nonisolated Codable {
             try container.encode(self._scale, forKey: MapModel.CodingKeys._scale)
             try container.encode(self._degrees, forKey: MapModel.CodingKeys._degrees)
             try container.encodeIfPresent(self._parentId, forKey: MapModel.CodingKeys._parentId)
+            try container.encode(self.hasRecordedDegrees, forKey: MapModel.CodingKeys._hasRecordedDegrees)
         }
     }
 }
@@ -230,7 +240,7 @@ extension MapModel: nonisolated ItemDataAccessible {
     nonisolated public static let typeId: NetworkModules = .map
 
     public func copy() -> MapModel {
-        MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, walls: walls_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId)
+        MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, walls: walls_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId, hasRecordedDegrees: hasRecordedDegrees)
     }
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
@@ -275,6 +285,7 @@ extension MapModel: nonisolated ItemDataAccessible {
         hexMapScale_ <=> model.hexMapScale_
         scale <=> model.scale
         degrees <=> model.degrees
+        hasRecordedDegrees <=> model.hasRecordedDegrees
         parentId <=> model.parentId
         return true
     }

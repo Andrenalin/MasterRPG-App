@@ -28,14 +28,46 @@ enum DuplicateRowOrder {
         }
     }
 
+    /// How often a save asks for record names before it falls back to `sorted(_:)` and looks
+    /// them up itself: duplicates that appear between the lookup and the save need names again.
+    static let maxLookupAttempts = 3
+
+    /// The record names of rows, looked up ahead of `sorted(_:using:)`.
+    struct RecordNames: Sendable {
+        fileprivate(set) var byObjectId: [NSManagedObjectID: String] = [:]
+        fileprivate(set) var lookedUp: Set<NSManagedObjectID> = []
+
+        /// Whether every row's record name was looked up. A temporary id has no record, so it
+        /// needs no lookup.
+        func covers(_ objects: [NSManagedObject]) -> Bool {
+            objects.allSatisfy { $0.objectID.isTemporaryID || lookedUp.contains($0.objectID) }
+        }
+    }
+
+    /// The record names of the rows with `objectIds`, looked up on a utility-priority task.
+    /// The lookup waits on a queue of the CloudKit container that runs at utility priority, so
+    /// a thread holding the context (often the main thread) must not wait for it: ask for the
+    /// names first, then call `sorted(_:using:)` with them. See `RecordNames.covers(_:)`.
+    static func recordNames(for objectIds: [NSManagedObjectID]) async -> RecordNames {
+        await Task.detached(priority: .utility) { lookUp(objectIds) }.value
+    }
+
+    /// `objects` with the row to keep first, from record names looked up ahead. A row the
+    /// lookup did not cover counts as having no record.
+    static func sorted<Object: NSManagedObject>(_ objects: [Object], using names: RecordNames) -> [Object] {
+        guard objects.count > 1 else { return objects }
+        return objects.sorted { lhs, rhs in
+            precedes(key(for: lhs, names: names.byObjectId), key(for: rhs, names: names.byObjectId))
+        }
+    }
+
     /// `objects` with the row to keep first. Call it only for rows that are duplicates of each
-    /// other: the record names are looked up per call.
+    /// other: the record names are looked up per call, and the caller waits for the lookup. Where
+    /// the caller can await, `recordNames(for:)` and `sorted(_:using:)` do not block.
     static func sorted<Object: NSManagedObject>(_ objects: [Object]) -> [Object] {
         guard objects.count > 1 else { return objects }
-        let names = recordNames(for: objects)
-        return objects.sorted { lhs, rhs in
-            precedes(key(for: lhs, names: names), key(for: rhs, names: names))
-        }
+        let coordinator = objects.first?.managedObjectContext?.persistentStoreCoordinator
+        return sorted(objects, using: lookUp(objects.map(\.objectID), coordinator: coordinator))
     }
 
     /// The same order from the three parts it is made of: has no record, record name, local URI.
@@ -51,11 +83,14 @@ enum DuplicateRowOrder {
         (names[object.objectID], object.objectID.uriRepresentation().absoluteString)
     }
 
-    private static func recordNames(for objects: [NSManagedObject]) -> [NSManagedObjectID: String] {
-        guard let coordinator = objects.first?.managedObjectContext?.persistentStoreCoordinator,
-              let container = containers.withLock({ $0[ObjectIdentifier(coordinator)]?.container }) else { return [:] }
+    private static func lookUp(_ objectIds: [NSManagedObjectID], coordinator: NSPersistentStoreCoordinator? = nil) -> RecordNames {
+        var names = RecordNames()
         // A temporary id has no record and the lookup does not accept it.
-        let ids = objects.map(\.objectID).filter { !$0.isTemporaryID }
-        return container.recordIDs(for: ids).mapValues(\.recordName)
+        let ids = objectIds.filter { !$0.isTemporaryID }
+        names.lookedUp = Set(ids)
+        guard let coordinator = coordinator ?? ids.first?.persistentStore?.persistentStoreCoordinator,
+              let container = containers.withLock({ $0[ObjectIdentifier(coordinator)]?.container }) else { return names }
+        names.byObjectId = container.recordIDs(for: ids).mapValues(\.recordName)
+        return names
     }
 }

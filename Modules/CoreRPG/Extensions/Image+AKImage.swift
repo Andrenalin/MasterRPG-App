@@ -243,6 +243,35 @@ public extension AKImage {
         return boundedDecode(from: source, maxPixelSize: maxPixelSize)
     }
 
+    /// The size `boundedDecode(from:maxPixelSize:)` gives the image (EXIF orientation applied),
+    /// read from the header without decoding a pixel. `nil` when the header names no size or the
+    /// image is larger than `maxPixelSize`, where the decode scales it down and only the decode
+    /// knows the rounded result.
+    static func boundedDecodedSize(from data: Data, maxPixelSize: CGFloat = maximumDecodedPixelSize) -> CGSize? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return boundedDecodedSize(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    /// File-URL variant of `boundedDecodedSize(from:maxPixelSize:)`.
+    static func boundedDecodedSize(from url: URL, maxPixelSize: CGFloat = maximumDecodedPixelSize) -> CGSize? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return boundedDecodedSize(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    private static func boundedDecodedSize(from source: CGImageSource, maxPixelSize: CGFloat) -> CGSize? {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue,
+              width > 0, height > 0, max(width, height) <= maxPixelSize else { return nil }
+        // EXIF orientations 5...8 are the quarter turns, which swap the axes.
+        let orientation = (properties[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1
+        return (5...8).contains(orientation) ? CGSize(width: height, height: width) : CGSize(width: width, height: height)
+    }
+
     private static func boundedDecode(from source: CGImageSource, maxPixelSize: CGFloat) -> AKImage? {
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let width = (properties?[kCGImagePropertyPixelWidth] as? CGFloat) ?? 0

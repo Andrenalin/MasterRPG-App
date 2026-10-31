@@ -542,6 +542,9 @@ private extension CoreDataController {
     func saveCoreDataThrowing() throws {
         guard context.hasPersistentChanges else { return }
         Logger.coreDataController.debug("save changes")
+#if DEBUG
+        context.logPendingSave("context")
+#endif
 
         // Log CloudKit operation before save
         Task {
@@ -579,3 +582,61 @@ private extension NSManagedObjectContext {
         updatedObjects.contains { !$0.changedValues().isEmpty }
     }
 }
+
+#if DEBUG
+extension NSManagedObjectContext {
+    /// Logs what the next `save()` writes: inserts and deletes per entity, and every updated object
+    /// with the attributes whose value really differs from the committed one. An object that was only
+    /// assigned its current values again still counts as updated (`changedValues()` is not empty), and
+    /// is reported separately as "unchanged", because it makes a save that writes nothing.
+    /// Must run on the context's queue.
+    func logPendingSave(_ source: String) {
+        let logger = Logger.coreDataController
+        func counts(_ objects: Set<NSManagedObject>) -> String {
+            Dictionary(grouping: objects, by: { $0.entity.name ?? "?" })
+                .map { "\($0.key)×\($0.value.count)" }
+                .sorted()
+                .joined(separator: " ")
+        }
+        if !insertedObjects.isEmpty { logger.info("Save[\(source)] inserts: \(counts(self.insertedObjects), privacy: .public)") }
+        if !deletedObjects.isEmpty { logger.info("Save[\(source)] deletes: \(counts(self.deletedObjects), privacy: .public)") }
+
+        var changed: [(entity: String, uuid: String, keys: [String])] = []
+        var unchanged: [String: Int] = [:]
+        for object in updatedObjects {
+            let values = object.changedValues()
+            guard !values.isEmpty else { continue }
+            let entity = object.entity.name ?? "?"
+            guard object.hasPersistentChangedValues else {
+                unchanged[entity, default: 0] += 1
+                continue
+            }
+            let attributeKeys = values.keys.filter { object.entity.attributesByName[$0] != nil }
+            let committed = object.committedValues(forKeys: attributeKeys)
+            let differing = attributeKeys.filter { key in
+                let new = values[key] as? NSObject
+                let old = committed[key] as? NSObject
+                return !(new?.isEqual(old) ?? (old == nil))
+            }
+            let relationships = values.keys.filter { object.entity.relationshipsByName[$0] != nil }
+            // Not every entity has a uuid (tags do not): fall back to the row's store id.
+            let uuid = object.entity.attributesByName["uuid"] != nil
+                ? (object.value(forKey: "uuid") as? UUID)?.uuidString ?? "-"
+                : object.objectID.uriRepresentation().lastPathComponent
+            changed.append((entity, uuid, (differing + relationships.map { "\($0)(relationship)" }).sorted()))
+        }
+        if !unchanged.isEmpty {
+            let list = unchanged.sorted { $0.key < $1.key }.map { "\($0.key)×\($0.value)" }.joined(separator: " ")
+            logger.info("Save[\(source)] updated without a different value (no-op): \(list, privacy: .public)")
+        }
+        let byEntity = Dictionary(grouping: changed, by: \.entity)
+        for (entity, rows) in byEntity.sorted(by: { $0.key < $1.key }) {
+            logger.info("Save[\(source)] updates \(entity, privacy: .public)×\(rows.count)")
+            for row in rows.prefix(15) {
+                logger.info("  \(entity, privacy: .public) \(row.uuid, privacy: .public): \(row.keys.joined(separator: ","), privacy: .public)")
+            }
+            if rows.count > 15 { logger.info("  … and \(rows.count - 15) more \(entity, privacy: .public)") }
+        }
+    }
+}
+#endif

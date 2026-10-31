@@ -9,6 +9,7 @@
         <relationship name="tileCoordinates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGPosition" inverseName="displayConfig" inverseEntity="RPGPosition"/>
     </entity>
     <entity name="RPGMap" representedClassName="RPGMap" syncable="YES" codeGenerationType="class">
+        <attribute name="degrees" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
         <attribute name="displayConfigUpdate" attributeType="String" defaultValueString=""/>
         <attribute name="displayState" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="entriesUpdate" optional="YES" attributeType="String"/>

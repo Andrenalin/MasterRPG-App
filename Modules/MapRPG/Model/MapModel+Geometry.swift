@@ -72,6 +72,16 @@ extension MapModel {
     /// How far two canvas shapes may differ and still count as the same, for rounding in photo sizes.
     static let aspectRatioTolerance: Double = 0.01
 
+    /// Records the rotation of a map saved before `degrees` was persisted. Its rooms, pins and walls
+    /// already follow the photo's rotation, so the photo's degrees are adopted as the stored ones
+    /// and no content moves; treating the unrecorded 0 as the old rotation would turn the content
+    /// again on every repair. A map whose rotation is already recorded is left alone.
+    func recordLegacyDegrees(_ photoDegrees: Double) {
+        guard !hasRecordedDegrees else { return }
+        degrees = photoDegrees
+        hasRecordedDegrees = true
+    }
+
     /// Installs the photo and the canvas size of its image. With `adaptContent` the rooms, pins,
     /// walls, pointer and tiles are scaled with it; without, they keep their absolute coordinates.
     /// `previousImage` is the real geometry of the photo being replaced. The stored width, height
@@ -83,6 +93,8 @@ extension MapModel {
         adaptContent: Bool = true,
         previousImage: MapImageGeometry? = nil
     ) {
+        // Whatever happens below, the rotation stored with the map now follows the photo.
+        defer { hasRecordedDegrees = true }
         let previousPhotoId = self.photoId
         self.photoId <=> photoId
         let storedCanvasSize = CGSize(width: width, height: height)
@@ -92,9 +104,9 @@ extension MapModel {
         if let previousImage, previousImage.canvasSize != storedCanvasSize || previousImage.degrees != self.degrees {
             Logger.editController.warning("Map \(self.id, privacy: .public): stored canvas \(storedCanvasSize.debugDescription, privacy: .public) degrees \(self.degrees, privacy: .public) differs from the real old photo \(previousImage.size.debugDescription, privacy: .public) degrees \(previousImage.degrees, privacy: .public); using the photo.")
         }
-        Logger.editController.debug("Map \(self.id, privacy: .public): replace photo old \(previousImage?.size.debugDescription ?? "stored", privacy: .public) -> new \(size.debugDescription, privacy: .public) degrees \(degrees, privacy: .public), canvas \(oldCanvasSize.debugDescription, privacy: .public) -> \(newCanvasSize.debugDescription, privacy: .public), adapt \(adaptContent, privacy: .public)")
         let canvasChanged = newCanvasSize != oldCanvasSize || degrees != oldDegrees
         guard canvasChanged || newCanvasSize != storedCanvasSize || degrees != self.degrees else { return }
+        Logger.editController.debug("Map \(self.id, privacy: .public): replace photo old \(previousImage?.size.debugDescription ?? "stored", privacy: .public) -> new \(size.debugDescription, privacy: .public) degrees \(degrees, privacy: .public), canvas \(oldCanvasSize.debugDescription, privacy: .public) -> \(newCanvasSize.debugDescription, privacy: .public), adapt \(adaptContent, privacy: .public)")
         width = newCanvasSize.width
         height = newCanvasSize.height
         self.degrees = degrees

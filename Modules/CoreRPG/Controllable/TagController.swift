@@ -110,7 +110,12 @@ public struct TagController: Sendable {
                 for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
                     context.delete(object)
                 }
-                if context.hasChanges { try context.save() }
+                if context.hasChanges {
+#if DEBUG
+                    context.logPendingSave("tags")
+#endif
+                    try context.save()
+                }
             } catch {
                 context.rollbackRestoringFlushedOperations(after: error)
                 Logger.coreDataController.error("tag resetData error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
@@ -132,42 +137,64 @@ public struct TagController: Sendable {
         // Context-based delete + insert: `TagDataModel` is CloudKit-mirrored and batch requests
         // bypass the export. See CODE_AUDIT_15 §5.8.
         do {
-            try await context.perform {
-                // Upsert by (module, title) instead of delete-and-reinsert: only changed rows reach
-                // the CloudKit export. See CODE_AUDIT_17 §7.7.
-                let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
-                request.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
-                var existing: [String: TagDataModel] = [:]
-                // The survivor every device keeps (`DuplicateRowOrder`); the lowest object-ID
-                // URI differs per device. See CODE_AUDIT_18 §5.13, CODE_AUDIT_21 §5.7.
-                let fetched = try context.fetch(request) as? [TagDataModel] ?? []
-                var rowsByKey: [String: [TagDataModel]] = [:]
-                for object in fetched {
-                    rowsByKey["\(object.module)|\(object.title ?? "")", default: []].append(object)
+            // Duplicate rows are sorted by CloudKit record names, which are looked up off the
+            // context's thread (a utility-priority wait that must not block it). A pass that meets
+            // duplicates whose names are not known yet changes nothing and asks for them.
+            var recordNames: DuplicateRowOrder.RecordNames?
+            var attempts = 0
+            while true {
+                attempts += 1
+                let names = recordNames
+                let useBlockingLookup = attempts > DuplicateRowOrder.maxLookupAttempts
+                let unknownRows: [NSManagedObjectID] = try await context.perform {
+                    // Upsert by (module, title) instead of delete-and-reinsert: only changed rows reach
+                    // the CloudKit export. See CODE_AUDIT_17 §7.7.
+                    let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
+                    request.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
+                    var existing: [String: TagDataModel] = [:]
+                    // The survivor every device keeps (`DuplicateRowOrder`); the lowest object-ID
+                    // URI differs per device. See CODE_AUDIT_18 §5.13, CODE_AUDIT_21 §5.7.
+                    let fetched = try context.fetch(request) as? [TagDataModel] ?? []
+                    var rowsByKey: [String: [TagDataModel]] = [:]
+                    for object in fetched {
+                        rowsByKey["\(object.module)|\(object.title ?? "")", default: []].append(object)
+                    }
+                    let duplicateRows = rowsByKey.values.filter { $0.count > 1 }.flatMap { $0 }
+                    if !useBlockingLookup, !duplicateRows.isEmpty, !(names?.covers(duplicateRows) ?? false) {
+                        return duplicateRows.map(\.objectID)
+                    }
+                    for (key, rows) in rowsByKey {
+                        let ordered = names.map { DuplicateRowOrder.sorted(rows, using: $0) } ?? DuplicateRowOrder.sorted(rows)
+                        existing[key] = ordered.first
+                        ordered.dropFirst().forEach(context.delete)
+                    }
+                    var currentKeys: Set<String> = []
+                    for tag in currentTags {
+                        let key = "\(Int16(tag.module.rawValue))|\(tag.title)"
+                        currentKeys.insert(key)
+                        let dbModel = existing[key] ?? TagDataModel(context: context)
+                        if dbModel.module != Int16(tag.module.rawValue) { dbModel.module = Int16(tag.module.rawValue) }
+                        if dbModel.title != tag.title { dbModel.title = tag.title }
+                        if dbModel.count != Int32(tag.count) { dbModel.count = Int32(tag.count) }
+                    }
+                    for (key, object) in existing where !currentKeys.contains(key) {
+                        context.delete(object)
+                    }
+                    do {
+                        if context.hasChanges {
+#if DEBUG
+                            context.logPendingSave("tags")
+#endif
+                            try context.save()
+                        }
+                    } catch {
+                        context.rollbackRestoringFlushedOperations(after: error)
+                        throw error
+                    }
+                    return []
                 }
-                for (key, rows) in rowsByKey {
-                    let ordered = DuplicateRowOrder.sorted(rows)
-                    existing[key] = ordered.first
-                    ordered.dropFirst().forEach(context.delete)
-                }
-                var currentKeys: Set<String> = []
-                for tag in currentTags {
-                    let key = "\(Int16(tag.module.rawValue))|\(tag.title)"
-                    currentKeys.insert(key)
-                    let dbModel = existing[key] ?? TagDataModel(context: context)
-                    if dbModel.module != Int16(tag.module.rawValue) { dbModel.module = Int16(tag.module.rawValue) }
-                    if dbModel.title != tag.title { dbModel.title = tag.title }
-                    if dbModel.count != Int32(tag.count) { dbModel.count = Int32(tag.count) }
-                }
-                for (key, object) in existing where !currentKeys.contains(key) {
-                    context.delete(object)
-                }
-                do {
-                    if context.hasChanges { try context.save() }
-                } catch {
-                    context.rollbackRestoringFlushedOperations(after: error)
-                    throw error
-                }
+                if unknownRows.isEmpty { break }
+                recordNames = await DuplicateRowOrder.recordNames(for: unknownRows)
             }
         } catch {
             Logger.coreDataController.error("tag save error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
