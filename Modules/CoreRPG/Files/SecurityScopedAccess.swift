@@ -55,6 +55,17 @@ public extension URL {
     }
 }
 
+/// Runs `work` in a child task at `.medium` (Default QoS) instead of the caller's priority.
+/// ImageIO's decode hands its work to Default-QoS threads and blocks until they finish, so
+/// a decode inherited from a User-initiated caller (a view's `.task`) is reported as a
+/// priority inversion. The child task is structured: cancellation of the caller reaches it.
+public func runAtDefaultPriority<T: Sendable>(_ work: @escaping @Sendable () async -> T) async -> T {
+    await withTaskGroup(of: T.self) { group in
+        group.addTask(priority: .medium) { await work() }
+        return await group.next()!
+    }
+}
+
 /// Runs synchronous `work` off the caller's executor. Structured (unlike `Task.detached`), so
 /// the calling task's cancellation reaches `work`'s own `Task.checkCancellation()` calls
 /// without a separate cancellation handler. See CODE_AUDIT_18 §4.4.

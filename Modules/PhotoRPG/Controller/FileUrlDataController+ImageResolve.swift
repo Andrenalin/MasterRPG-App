@@ -11,20 +11,24 @@ extension FileUrlDataController {
     /// `PhotoRootModel.fetchPhotoThumbnailSource`. See CODE_AUDIT §9.6.
     /// `@concurrent`: the decode closures are synchronous ImageIO work that must not run on the
     /// caller's (usually main) actor. See CODE_AUDIT_16 §3.4.
+    /// Runs at Default priority (`runAtDefaultPriority`), where ImageIO's own workers run, so a
+    /// User-initiated caller does not wait on a lower-priority thread.
     @concurrent
     func resolvedImage<T: Sendable>(
         for fileUrl: FileUrl,
-        decodeData: @Sendable (Data) -> T?,
+        decodeData: @escaping @Sendable (Data) -> T?,
         decodeUrl: @Sendable @escaping (URL) -> T?
     ) async -> T? {
-        if let data = fileUrl.data {
-            return decodeData(data)
-        } else if let data = try? await loadData(for: fileUrl) {
-            return decodeData(data)
-        } else {
-            return await url(for: fileUrl) { url -> T? in
-                guard let url else { return nil }
-                return decodeUrl(url)
+        await runAtDefaultPriority {
+            if let data = fileUrl.data {
+                return decodeData(data)
+            } else if let data = try? await loadData(for: fileUrl) {
+                return decodeData(data)
+            } else {
+                return await url(for: fileUrl) { url -> T? in
+                    guard let url else { return nil }
+                    return decodeUrl(url)
+                }
             }
         }
     }
