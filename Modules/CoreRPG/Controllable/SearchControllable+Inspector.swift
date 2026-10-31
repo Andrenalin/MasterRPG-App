@@ -92,15 +92,7 @@ public extension SearchControllable {
                     for entry in item.entries {
                         if entry.name.localizedStandardContains(searchText)
                             || entry.content.localizedStandardContains(searchText) {
-                            children.append(SearchResult(
-                                itemId: item.id, itemName: item.name,
-                                module: itemControllable.config.module, category: item.category,
-                                entryId: entry.id, entryName: entry.name,
-                                matchedContent: entry.content.isEmpty ? nil : entry.content,
-                                relevanceScore: calculateRelevance(searchText: searchText,
-                                    itemName: item.name, entryName: entry.name,
-                                    content: entry.content, isItemMatch: false)
-                            ))
+                            children.append(entryHit(itemId: item.id, itemName: item.name, category: item.category, entryId: entry.id, entryName: entry.name, content: entry.content, searchText: searchText))
                         }
                     }
                     if !children.isEmpty { entryChildrenMap[itemId] = children }
@@ -112,15 +104,7 @@ public extension SearchControllable {
                 for (itemId, item) in allItems {
                     var nameChildren: [SearchResult] = []
                     for entry in item.entries where entry.name.localizedStandardContains(searchText) {
-                        nameChildren.append(SearchResult(
-                            itemId: item.id, itemName: item.name,
-                            module: itemControllable.config.module, category: item.category,
-                            entryId: entry.id, entryName: entry.name,
-                            matchedContent: entry.content.isEmpty ? nil : entry.content,
-                            relevanceScore: calculateRelevance(searchText: searchText,
-                                itemName: item.name, entryName: entry.name,
-                                content: entry.content, isItemMatch: false)
-                        ))
+                        nameChildren.append(entryHit(itemId: item.id, itemName: item.name, category: item.category, entryId: entry.id, entryName: entry.name, content: entry.content, searchText: searchText))
                     }
                     if !nameChildren.isEmpty {
                         nameOnlyMap[itemId] = nameChildren
@@ -134,15 +118,7 @@ public extension SearchControllable {
                         let seenIds = Set(children.compactMap(\.entryId))
                         for entry in item.entries where !seenIds.contains(entry.id) {
                             if entry.content.localizedStandardContains(searchText) {
-                                children.append(SearchResult(
-                                    itemId: item.id, itemName: item.name,
-                                    module: itemControllable.config.module, category: item.category,
-                                    entryId: entry.id, entryName: entry.name,
-                                    matchedContent: entry.content.isEmpty ? nil : entry.content,
-                                    relevanceScore: calculateRelevance(searchText: searchText,
-                                        itemName: item.name, entryName: entry.name,
-                                        content: entry.content, isItemMatch: false)
-                                ))
+                                children.append(entryHit(itemId: item.id, itemName: item.name, category: item.category, entryId: entry.id, entryName: entry.name, content: entry.content, searchText: searchText))
                             }
                         }
                     }
@@ -217,22 +193,7 @@ public extension SearchControllable {
 
             if entry.name.localizedStandardContains(searchText)
                 || entry.content.localizedStandardContains(searchText) {
-                entryChildren.append(SearchResult(
-                    itemId: item.id,
-                    itemName: item.name,
-                    module: itemControllable.config.module,
-                    category: item.category,
-                    entryId: entry.id,
-                    entryName: entry.name,
-                    matchedContent: entry.content.isEmpty ? nil : entry.content,
-                    relevanceScore: calculateRelevance(
-                        searchText: searchText,
-                        itemName: item.name,
-                        entryName: entry.name,
-                        content: entry.content,
-                        isItemMatch: false
-                    )
-                ))
+                entryChildren.append(entryHit(itemId: item.id, itemName: item.name, category: item.category, entryId: entry.id, entryName: entry.name, content: entry.content, searchText: searchText))
             }
 
             if item.specialCategory,

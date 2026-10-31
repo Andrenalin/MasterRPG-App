@@ -113,12 +113,12 @@ extension RuleModel {
             let label = reference.label?.isEmpty == false
                 ? FoundryTextDecoder.decodedText(reference.label ?? reference.target)
                 : FoundryTextDecoder.decodedText(reference.target)
-            var details = "**Target:** \(reference.target)"
+            var details = "**Target:** \(inert(reference.target))"
             if let packName = reference.packName, !packName.isEmpty {
-                details += "\n\n**Pack:** \(FoundryTextDecoder.decodedText(packName))"
+                details += "\n\n**Pack:** \(inert(FoundryTextDecoder.decodedText(packName)))"
             }
             if let documentID = reference.documentID, !documentID.isEmpty {
-                details += "\n\n**Document:** \(documentID)"
+                details += "\n\n**Document:** \(inert(documentID))"
             }
             return RuleEntryModel(
                 id: FoundryRuleIdentity.uuid(
@@ -134,7 +134,7 @@ extension RuleModel {
             var sections = [readableText(fromHTML: embedded.descriptionHTML)]
                 .filter { !$0.isEmpty }
             let values = embedded.values.map {
-                "- **\(FoundryTextDecoder.decodedText($0.path)):** \(presentation($0.value))"
+                "- **\(inert(FoundryTextDecoder.decodedText($0.path))):** \(inert(presentation($0.value)))"
             }
             if !values.isEmpty {
                 sections.append("**Values**\n\(values.joined(separator: "\n"))")
@@ -150,7 +150,7 @@ extension RuleModel {
                     let name = effect.name.isEmpty
                         ? "Effect \(index + 1)"
                         : FoundryTextDecoder.decodedText(effect.name)
-                    return "**\(name)**\n\(foundryEffectDetails(effect))"
+                    return "**\(inert(name))**\n\(foundryEffectDetails(effect))"
                 }
                 sections.append("**Effects**\n\n\(effects.joined(separator: "\n\n"))")
             }
@@ -179,6 +179,20 @@ extension RuleModel {
         return result
     }
 
+    /// Imported text placed into rule markdown. Emphasis and code markers are escaped so a value
+    /// cannot break the entry's structure, and `](` and `://` are split by a zero-width space so
+    /// it cannot form a link, nor one of the app's own item links. See CODE_AUDIT_22 §6.5.
+    static func inert(_ text: String) -> String {
+        var result = ""
+        for character in text {
+            if "\\*_`".contains(character) { result.append("\\") }
+            result.append(character)
+        }
+        return result
+            .replacing("](", with: "]\u{200B}(")
+            .replacing("://", with: ":\u{200B}//")
+    }
+
     static func foundryReferenceDetails(
         _ reference: FoundryRuleReference,
         index: Int
@@ -187,40 +201,40 @@ extension RuleModel {
             ? FoundryTextDecoder.decodedText(reference.label ?? reference.target)
             : FoundryTextDecoder.decodedText(reference.target)
         var lines = [
-            "**Reference \(index + 1): \(label)**",
-            "- **Target:** \(reference.target)",
+            "**Reference \(index + 1): \(inert(label))**",
+            "- **Target:** \(inert(reference.target))",
             "- **Type:** \(reference.kind.rawValue)",
-            "- **Source:** \(reference.sourcePath)",
-            "- **Token:** \(reference.rawToken)",
+            "- **Source:** \(inert(reference.sourcePath))",
+            "- **Token:** \(inert(reference.rawToken))",
         ]
         if let packName = reference.packName, !packName.isEmpty {
-            lines.append("- **Pack:** \(FoundryTextDecoder.decodedText(packName))")
+            lines.append("- **Pack:** \(inert(FoundryTextDecoder.decodedText(packName)))")
         }
         if let documentID = reference.documentID, !documentID.isEmpty {
-            lines.append("- **Document:** \(documentID)")
+            lines.append("- **Document:** \(inert(documentID))")
         }
         return lines.joined(separator: "\n")
     }
 
     static func foundryEffectDetails(_ effect: FoundryRuleEffect) -> String {
         var lines = [
-            "- **ID:** \(effect.id)",
+            "- **ID:** \(inert(effect.id))",
             "- **Disabled:** \(effect.isDisabled ? "yes" : "no")",
             "- **Transfers to actor:** \(effect.transfersToActor ? "yes" : "no")",
         ]
         if !effect.statuses.isEmpty {
             lines.append(
-                "- **Statuses:** \(effect.statuses.map(FoundryTextDecoder.decodedText).joined(separator: ", "))"
+                "- **Statuses:** \(effect.statuses.map { inert(FoundryTextDecoder.decodedText($0)) }.joined(separator: ", "))"
             )
         }
         if let duration = effect.duration {
-            lines.append("- **Duration:** \(presentation(duration))")
+            lines.append("- **Duration:** \(inert(presentation(duration)))")
         }
         if !effect.changes.isEmpty {
             lines.append("**Changes**")
             lines.append(contentsOf: effect.changes.map { change in
                 let priority = change.priority.map { ", priority \($0)" } ?? ""
-                return "- **\(change.path):** \(presentation(change.operand)) (mode \(change.mode)\(priority))"
+                return "- **\(inert(change.path)):** \(inert(presentation(change.operand))) (mode \(change.mode)\(priority))"
             })
         }
         return lines.joined(separator: "\n")

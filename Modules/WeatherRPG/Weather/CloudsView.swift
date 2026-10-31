@@ -13,7 +13,11 @@ struct CloudsView: View {
         self.topTint = topTint
         self.bottomTint = bottomTint
         self.deterministic = deterministic
-        _cloudGroup = State(initialValue: CloudGroup(thickness: thickness, deterministic: deterministic))
+        _cloudGroup = State(initialValue: Self.makeCloudGroup(thickness: thickness, deterministic: deterministic))
+    }
+
+    private static func makeCloudGroup(thickness: Cloud.Thickness, deterministic: Bool) -> LazyBox<CloudGroup> {
+        LazyBox { CloudGroup(thickness: thickness, deterministic: deterministic) }
     }
 
     let thickness: Cloud.Thickness
@@ -24,13 +28,14 @@ struct CloudsView: View {
     // Boxed in @State so the cloud particles survive `WeatherViewer.body`
     // re-evaluations triggered by unrelated model changes (rain, lightning,
     // time) instead of resetting on every edit. See CODE_AUDIT_Weather §8.1.
-    @State private var cloudGroup: CloudGroup
+    @State private var cloudGroup: LazyBox<CloudGroup>
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         TimelineView(.animation(paused: accessibilityReduceMotion)) { timeline in
             Canvas { context, size in
+                let cloudGroup = cloudGroup.value
                 cloudGroup.update(date: timeline.date, size: size)
                 context.opacity = cloudGroup.opacity
 
@@ -61,7 +66,7 @@ struct CloudsView: View {
             // Cloud count/opacity/scale range are baked in at construction, so a
             // genuine thickness edit still needs a fresh CloudGroup — only re-renders
             // from unrelated model changes should preserve the existing one.
-            cloudGroup = CloudGroup(thickness: newThickness, deterministic: deterministic)
+            cloudGroup = Self.makeCloudGroup(thickness: newThickness, deterministic: deterministic)
         }
     }
 }

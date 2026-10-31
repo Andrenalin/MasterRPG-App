@@ -7,8 +7,8 @@ import Foundation
 /// Versioned, photo-free map metadata sent through the ordinary chunked
 /// messenger path. UUID photo references are present in the snapshot for
 /// shown pins, but no photo bytes or exported dependent-module records are
-/// included. Hidden-room content and hidden-pin identity/photo references
-/// are stripped entirely before this leaves the sender — see
+/// included. Hidden-room name and content are stripped and hidden pins are left
+/// out entirely before this leaves the sender — see
 /// `MapSnapshot.redactedForNonMaster()`.
 struct MapUpdatePayload: Codable, Sendable, MessageMapper {
     static let currentSchemaVersion = 1

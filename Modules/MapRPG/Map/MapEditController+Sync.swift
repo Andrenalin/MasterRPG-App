@@ -29,9 +29,13 @@ extension MapEditController {
                 copy.entries.append(externalEntry)
             }
         }
-        // Remove entries that no longer exist in the external map (except active)
+        // Remove entries that were deleted externally (except active). Entries the external map
+        // never held are uncommitted local additions and stay.
+        let externalIds = Set(newMap.entries.map(\.id))
+        let baseline = editorModel.externalEntryIds
         copy.entries.removeAll { entry in
-            entry.id != activeEntryId && !newMap.entries.contains(where: { $0.id == entry.id })
+            entry.id != activeEntryId && baseline.contains(entry.id) && !externalIds.contains(entry.id)
         }
+        editorModel.externalEntryIds = externalIds
     }
 }

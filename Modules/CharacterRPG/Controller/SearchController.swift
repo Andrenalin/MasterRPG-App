@@ -418,22 +418,7 @@ extension SearchController {
                             || entry.content.localizedStandardContains(searchText)
 
             if entryMatches {
-                entryChildren.append(SearchResult(
-                    itemId: characterId,
-                    itemName: characterName,
-                    module: itemControllable.config.module,
-                    category: item.category,
-                    entryId: entry.id,
-                    entryName: entry.name,
-                    matchedContent: entry.content.isEmpty ? nil : entry.content,
-                    relevanceScore: calculateRelevance(
-                        searchText: searchText,
-                        itemName: characterName,
-                        entryName: entry.name,
-                        content: entry.content,
-                        isItemMatch: false
-                    )
-                ))
+                entryChildren.append(entryHit(itemId: characterId, itemName: characterName, category: item.category, entryId: entry.id, entryName: entry.name, content: entry.content, searchText: searchText))
             }
 
             if let subValueId = entry.valueId {

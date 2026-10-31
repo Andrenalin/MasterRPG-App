@@ -12,6 +12,13 @@ enum GameLimits {
     /// See CODE_AUDIT_17 §6.2.
     static let maximumMessageBytes = 100 * ByteUnit.megabyte
 
+    /// Largest payload of a player's group event (a Dice roll, a moved pin, a Space transform).
+    /// The master relays these to every peer as soon as their shape is right, so the shape check
+    /// bounds the bytes as well: these events are a few hundred bytes to a few kilobytes, and
+    /// without a bound one player could have the master forward 100 MB frames to all others.
+    /// See CODE_AUDIT_22 §6.3.
+    static let maximumGroupEventPayloadBytes = 256 * ByteUnit.kibibyte
+
     /// Cumulative payload bytes the inbound message pipeline may hold queued at once (an empty
     /// queue still admits one message of any size). See CODE_AUDIT_16 §6.3.
     static let maximumQueuedBytes = 300 * ByteUnit.megabyte

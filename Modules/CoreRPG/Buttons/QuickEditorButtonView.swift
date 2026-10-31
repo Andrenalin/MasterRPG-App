@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public struct QuickEditorButtonView<Value: Numeric>: View {
+public struct QuickEditorButtonView<Value: Numeric & Comparable>: View {
     public init(number: Binding<Value>, value: Value, title: String, isAddition: Bool) {
         _number = number
         self.value = value
@@ -10,19 +10,31 @@ public struct QuickEditorButtonView<Value: Numeric>: View {
         self.isAddition = isAddition
     }
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @Binding public var number: Value
     public let value: Value
     public let title: String
     public let isAddition: Bool
     
+    /// The number after one step. Both operands are held to `SheetNumberLimit` first, so a number
+    /// typed near `Int.max` cannot overflow the addition. See CODE_AUDIT_22 §5.6.
+    private func stepped() -> Value {
+        guard let limit = Value(exactly: SheetNumberLimit.maximumMagnitude) else {
+            return isAddition ? number + value : number - value
+        }
+        func bounded(_ candidate: Value) -> Value {
+            min(max(candidate, 0 - limit), limit)
+        }
+        let current = bounded(number)
+        let step = bounded(value)
+        return bounded(isAddition ? current + step : current - step)
+    }
+
     public var body: some View {
         Button {
-            withAnimation {
-                if isAddition {
-                    number += value
-                } else {
-                    number -= value
-                }
+            withAnimation(.default.reduced(if: reduceMotion)) {
+                number = stepped()
             }
         } label: {
             Text(verbatim: "\(isAddition ? "+" : "-")\(title)")

@@ -262,13 +262,17 @@ public extension GameControllable {
         // version and the metadata imported by the receiver describe the same
         // bytes.
         await backfillContentHashIfNeeded(itemId: itemId)
-        let itemIds = await exportControllable.exporting(ids: Set([itemId]))
 
         let stream = OutputStream.toMemory()
         stream.open()
         defer { stream.close() }
 
-        _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream)
+        // A package for players: the module exporters leave out what only the game master may
+        // see. See CODE_AUDIT_22 §6.2.
+        try await ExportAudience.$current.withValue(.players) {
+            let itemIds = await exportControllable.exporting(ids: Set([itemId]))
+            _ = try await exportControllable.rootExportController.export(itemIds: itemIds, into: stream)
+        }
 
         guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
             throw ItemGameStorableError.memoryStreamError

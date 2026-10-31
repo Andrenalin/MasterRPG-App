@@ -5,6 +5,7 @@ import CoreRPG
 import DiceRPG
 import Foundation
 import GroupActivities
+import os.log
 import AudioRPG
 import MapRPG
 import PdfRPG
@@ -52,6 +53,11 @@ public final class GameRoot {
     /// entry point awaits this before proceeding, and `stopGame()` itself coalesces concurrent
     /// callers onto the same in-flight task rather than tearing down twice.
     private var stopGameTask: Task<Void, Never>?
+    /// Which `stopGame` call created `stopGameTask`: only that teardown may clear it.
+    private var stopGameTaskToken: UUID?
+    /// A `startGame` is running: a second call (double tap, intent and UI together) would reset
+    /// the roster and the player controller under the first.
+    private var isStartingGame = false
 
     /// Set synchronously at the top of `startMaster` and cleared when it returns. The game is
     /// only `.started` after the adventure's game start has been awaited, so a second call in
@@ -325,16 +331,6 @@ extension GameRoot {
         guard gameModel.selectedCharacter == nil else { return }
         resetSelectedCharacter(uuidString: defaults.string(forKey: GameStorageKeys.lastPlayerUUID) ?? "")
     }
-
-    func resetSelectedGameMaster(uuidString: String) {
-        guard let uuid = UUID(uuidString: uuidString) else {
-            if gameModel.selectedGameMaster != nil {
-                gameModel.selectedGameMaster = nil
-            }
-            return
-        }
-        gameModel.selectedGameMaster <=> uuid
-    }
 }
 
 // MARK: - Master Control Game
@@ -423,6 +419,12 @@ extension GameRoot {
         joinCode: String = ""
     ) async {
         await awaitInFlightStop()
+        guard !isStartingGame else {
+            Logger.networking.info("GameRoot: startGame ignored, another start is still running")
+            return
+        }
+        isStartingGame = true
+        defer { isStartingGame = false }
         // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
         // boundary as well as in the setup UI so programmatic callers cannot join
         // SharePlay by passing a nil target.
@@ -521,13 +523,21 @@ extension GameRoot {
             await stopGameTask.value
             return
         }
+        let token = UUID()
         let task = Task { @MainActor [weak self] in
             guard let self else { return }
             await performStopGame()
+            // Cleared by the teardown itself, without a suspension after it ended: a caller that
+            // resumed late used to clear the task of a later stop, or leave a finished one that a
+            // later `stopGame` coalesced onto without tearing anything down.
+            if stopGameTaskToken == token {
+                stopGameTask = nil
+                stopGameTaskToken = nil
+            }
         }
         stopGameTask = task
+        stopGameTaskToken = token
         await task.value
-        stopGameTask = nil
     }
 
     private func awaitInFlightStop() async {

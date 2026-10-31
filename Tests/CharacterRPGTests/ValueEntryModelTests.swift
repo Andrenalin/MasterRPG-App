@@ -128,6 +128,15 @@ struct ValueEntryModelTests {
         }
     }
 
+    @Test("A step keeps its precision: a fraction times its divisor is exact, binary noise is gone")
+    func calculateKeepsPrecision() {
+        #expect(Calculator.calculate("1/3*3") == 1.0)
+        #expect(Calculator.calculate("2/3*3") == 2.0)
+        #expect(Calculator.calculate("0.1+0.2") == 0.3)
+        #expect(Calculator.calculate("10/4") == 2.5)
+        #expect(Calculator.calculate("100000*100000") == 10_000_000_000)
+    }
+
     @Test func calculate() async throws {
         var sut = setUp()
         sut.reset(valueType: .number)

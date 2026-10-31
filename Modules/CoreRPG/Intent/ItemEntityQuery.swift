@@ -75,9 +75,12 @@ public extension ItemEntityQuery {
     func suggestedEntities() async throws -> [Entity] {
         await DatabaseReadiness.wait()
         var results: [Entity] = []
-        for id in allIds(root: root).prefix(Self.suggestedLimit) {
+        // The limit counts the suggestions, not the ids looked at: hidden and excluded items at the
+        // front of the list must not eat it. See CODE_AUDIT_22 §5.14.
+        for id in allIds(root: root) {
             guard let model = model(root: root, id: id), include(model: model) else { continue }
             results.append(makeEntity(root: root, model: model))
+            guard results.count < Self.suggestedLimit else { break }
         }
         return results
     }

@@ -33,14 +33,11 @@ enum CharacterValueChange: String, AppEnum {
     }
 
     /// `value` rounded to a whole number the sheet can store. `Int(_:)` traps on a value outside
-    /// `Int` (an amount near `Int.max` from another shortcut) or on NaN, so it is clamped instead.
-    /// See CODE_AUDIT_Since_3.0.1 §5.17.
+    /// `Int` (an amount near `Int.max` from another shortcut) or on NaN, and the sheet's own
+    /// arithmetic (the modifier of a formula-backed value) traps well before `Int.max`, so it is
+    /// clamped to `SheetNumberLimit`. See CODE_AUDIT_Since_3.0.1 §5.17, CODE_AUDIT_22 §5.6.
     static func storableNumber(_ value: Double) -> Int {
-        guard !value.isNaN else { return 0 }
-        let rounded = value.rounded()
-        if rounded >= Double(Int.max) { return .max }
-        if rounded <= Double(Int.min) { return .min }
-        return Int(rounded)
+        SheetNumberLimit.clamped(value)
     }
 }
 

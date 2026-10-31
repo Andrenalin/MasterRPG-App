@@ -390,5 +390,21 @@ struct MapPinVisibilityTests {
         #expect(decoded.isShown == pointer.isShown)
         #expect(decoded.timeInterval == pointer.timeInterval)
     }
+
+    @Test("A map state for players carries the shown pins only")
+    func mapStateLeavesHiddenPinsOut() throws {
+        // Given
+        let shown = MapPinModel(id: UUID(), name: "Goblin", isShown: true)
+        let hidden = MapPinModel(id: UUID(), name: "Hidden dragon", location: CGPoint(x: 3, y: 4), isShown: false)
+        let map = MapModel(id: UUID(), name: "Dungeon", entries: [], mapPins: [shown, hidden])
+
+        // When
+        let visible = GameController.pinsVisibleToPlayers(in: map)
+        let encoded = try #require(JSONString.encode(value: visible))
+
+        // Then
+        #expect(visible.map(\.id) == [shown.id])
+        #expect(!encoded.contains("Hidden dragon"))
+    }
 }
 #endif

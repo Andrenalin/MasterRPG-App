@@ -86,13 +86,12 @@ extension SheetController: SheetControllable {
                     isEditor: isEditor
                 )
             } else {
-                linkedSheet = root.rootModel(for: link.module)?.sheetControllable.sheet(
+                linkedSheet = SheetLinkGuard.linkedSheet(
                     root: root,
+                    module: link.module,
                     itemId: link.itemId,
                     destination: destination,
                     level: level + 1,
-                    isShown: false,
-                    moduleDepth: 0,
                     isEditor: isEditor
                 )
             }

@@ -28,8 +28,9 @@ extension ItemControllable {
 
     /// Inserts the folders and items of `plan` into the library and returns their ids. Folders
     /// come first, so a parent exists before its children. The caller lists the new items in their
-    /// folders (`EditControllable.repairFolders(itemIds:)`) and saves.
-    @MainActor func insertCloudScan(_ plan: CloudScanPlan) -> [UUID] {
+    /// folders (`EditControllable.repairFolders(itemIds:)`) and saves. `hashes` are the content
+    /// hashes by `CloudFolderScan.key`, so a later rename of a new file is found as a move.
+    @MainActor func insertCloudScan(_ plan: CloudScanPlan, hashes: [String: String] = [:]) -> [UUID] {
         var insertedIds: [UUID] = []
         for folder in plan.folders {
             var model = Model.empty(folder.id)
@@ -44,7 +45,7 @@ extension ItemControllable {
             model.name = item.name
             model.category = .item
             model.parentId = item.parentId
-            model.fileUrl = FileUrl(fileId: item.id, url: item.file.storedUrl, location: .newCloud, module: config.module.token, relativeUrl: nil)
+            model.fileUrl = FileUrl(fileId: item.id, url: item.file.storedUrl, location: .newCloud, module: config.module.token, relativeUrl: nil, contentHash: hashes[CloudFolderScan.key(item.file.components)])
             replace(model: model, isInsert: true, forceSave: true)
             insertedIds.append(item.id)
         }

@@ -104,6 +104,7 @@ struct GameStatisticsController: Sendable {
             totalDuration: totalDuration,
             averageDuration: sessions.isEmpty ? 0 : totalDuration / Double(sessions.count),
             longestDuration: sessions.map(\.duration).max() ?? 0,
+            largestPartySize: sessions.map(\.maxParticipantCount).max() ?? 0,
             gameMasterDuration: sessions.filter { $0.role == .gameMaster }.reduce(0) { $0 + $1.duration },
             playerDuration: sessions.filter { $0.role == .player }.reduce(0) { $0 + $1.duration },
             diceRollCount: diceEvents.reduce(0) { $0 + $1.quantity },

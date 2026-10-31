@@ -4,6 +4,13 @@ import RolePlayGameKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The attachments of every input item: a share of several files arrives as several extension
+/// items, and reading only the first dropped the rest.
+private func shareAttachments(of context: NSExtensionContext?) -> [NSItemProvider] {
+    (context?.inputItems ?? [])
+        .compactMap { $0 as? NSExtensionItem }
+        .flatMap { $0.attachments ?? [] }
+}
 
 #if os(iOS) || os(visionOS)
 
@@ -19,8 +26,8 @@ final class ShareViewController: UIViewController {
         
         isModalInPresentation = true
         
-        guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
-              let itemProviders = extensionItem.attachments else {
+        let itemProviders = shareAttachments(of: extensionContext)
+        guard !itemProviders.isEmpty else {
             completeRequest(returningItems: [])
             return
         }
@@ -61,8 +68,8 @@ class ShareViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
-              let itemProviders = extensionItem.attachments else {
+        let itemProviders = shareAttachments(of: extensionContext)
+        guard !itemProviders.isEmpty else {
             // Nothing to share: finish the request, like the iOS controller does. Returning
             // without it left an empty share sheet with no way out. See CODE_AUDIT_21 §5.27.
             extensionContext?.completeRequest(returningItems: [])

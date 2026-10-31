@@ -256,7 +256,7 @@ extension LinkHighlightTextModel {
     private func highlight(text: String, range: Range<String.Index>, isBold: Bool, deep: Int, custom: [any TextAttribute] = []) -> [HighlightedTextComponent] {
         if let searchText = highlightedText {
             let restText = String(text[range])
-            let searchRanges = restText.ranges(of: searchText, options: .caseInsensitive)
+            let searchRanges = restText.ranges(of: searchText, options: [.caseInsensitive, .diacriticInsensitive])
             var searchHighlightRanges = searchRanges.map {
                 return highlightComponent(text: String(restText[$0]), range: $0, isBold: isBold, deep: deep, attributes: custom + [SearchHighlightAttribute()])
             }

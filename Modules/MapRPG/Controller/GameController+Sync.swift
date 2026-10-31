@@ -30,7 +30,16 @@ extension GameController {
         // `reduce(into:)` appends in place; `reduce("")` copied the whole string per entry
         // (quadratic on hex maps). See CODE_AUDIT_17 §7.3.
         let first = model.entries.reduce(into: "") { $0 += "\($1.id):\($1.isShown):\($1.focused)|" }
-        return first + (JSONString.encode(value: [model.pointer] + model.mapPins) ?? "")
+        return first + (JSONString.encode(value: [model.pointer] + Self.pinsVisibleToPlayers(in: model)) ?? "")
+    }
+
+    /// The pins a `.mapState` message may carry. The message only ever goes master to players, so
+    /// a hidden pin is left out entirely: its name, portrait id, character link and position are
+    /// not on a player device until the pin is shown. A player replaces its pins with this list, so
+    /// a pin the game master hides disappears there. See CODE_AUDIT_22 §6.1.
+    @MainActor
+    static func pinsVisibleToPlayers(in model: MapModel) -> [MapPinModel] {
+        model.mapPins.filter(\.isShown)
     }
 
     /// The same live state as comparable values, for a sender that wants to
@@ -47,7 +56,7 @@ extension GameController {
             generation: networkGeneration(for: itemId),
             rooms: model.entries.map { MapLiveState.Room(id: $0.id, isShown: $0.isShown, focused: $0.focused) },
             pointer: model.pointer,
-            pins: model.mapPins
+            pins: Self.pinsVisibleToPlayers(in: model)
         )
     }
 

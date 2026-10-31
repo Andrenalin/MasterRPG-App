@@ -401,7 +401,7 @@ public extension CoreDataController {
     /// "nothing exists".
     /// The rows with these uuids, as the context sees them: an object fetch includes the
     /// context's unsaved inserts and leaves out its unsaved deletes, which is what
-    /// `existingUUIDsInContext` works out by hand for its dictionary fetch. Of rows sharing a
+    /// a dictionary fetch would have to work out by hand. Of rows sharing a
     /// uuid the first fetched is taken, as `fetchCoreData(uuid:)` does.
     /// See CODE_AUDIT_20 §5.7, CODE_AUDIT_21 §7.4.
     func existingRowsInContext(_ uuids: [UUID]) throws -> [UUID: DataType] {
@@ -416,27 +416,6 @@ public extension CoreDataController {
             rowsByUUID[uuid] = row
         }
         return rowsByUUID
-    }
-
-    func existingUUIDsInContext(_ uuids: [UUID]) throws -> Set<UUID> {
-        guard !uuids.isEmpty else { return Set() }
-        let request = NSFetchRequest<NSDictionary>(entityName: String(describing: DataType.self))
-        request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
-        request.propertiesToFetch = ["uuid"]
-        request.resultType = .dictionaryResultType
-        let results = try context.fetch(request)
-        var existing = Set(results.compactMap { $0["uuid"] as? UUID })
-        // A dictionary fetch reflects the store only. Unsaved inserts and deletes of the shared
-        // context count too, or a second flush would insert a duplicate row for an unsaved
-        // insert and drop an update that follows an unsaved delete. See CODE_AUDIT_20 §5.7.
-        let requested = Set(uuids)
-        for case let inserted as DataType in context.insertedObjects {
-            if let uuid = inserted.uuid, requested.contains(uuid) { existing.insert(uuid) }
-        }
-        for case let deleted as DataType in context.deletedObjects {
-            if let uuid = deleted.uuid { existing.remove(uuid) }
-        }
-        return existing
     }
 }
 

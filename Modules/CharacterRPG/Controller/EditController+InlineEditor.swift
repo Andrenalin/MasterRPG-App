@@ -48,7 +48,7 @@ extension EditController {
         guard let entryId else { return 0 }
         let entry = itemController.itemOrEmpty(for: itemId)[entryId]
         guard let resolved = resolvedBaseAndCurrent(for: entry) else { return entry.valueNumber }
-        return Int(resolved.current.rounded())
+        return SheetNumberLimit.clamped(resolved.current)
     }
 
     @MainActor func entryValueAsSelected(itemId: UUID, entryId: UUID?) -> Bool {
@@ -90,9 +90,10 @@ extension EditController {
                 entry.valueNumber = number
                 return true
             }
-            guard Int(resolved.current.rounded()) != number else { return false }
+            let number = SheetNumberLimit.clamped(number)
+            guard SheetNumberLimit.clamped(resolved.current) != number else { return false }
             let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
-            let modifier = Int((Double(number) - resolved.base).rounded())
+            let modifier = SheetNumberLimit.clamped(Double(number) - resolved.base)
             entry.value = "\(baseText)|\(modifier)"
             return true
         }

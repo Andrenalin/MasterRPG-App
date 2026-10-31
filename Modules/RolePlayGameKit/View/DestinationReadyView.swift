@@ -10,7 +10,7 @@ struct DestinationReadyView: View {
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // Fix #4: single Identifiable enum replaces three separate Bool @State
+    // A single Identifiable enum drives the alerts instead of three separate Bool @State
     // properties. Only one alert can be active at a time; using an enum makes
     // that constraint explicit and prevents the three-alert priority ambiguity.
     private enum ActiveAlert: Identifiable, Hashable {
@@ -50,7 +50,7 @@ struct DestinationReadyView: View {
                 guard !Task.isCancelled else { return }
                 await appModel.cleanDatabase()
             }
-            // Fix #4 (continued): single alert modifier driven by the enum.
+            // A single alert modifier driven by the enum.
             // The `presenting:` overload passes the current case into both the
             // actions and message builders, so each case can provide its own
             // buttons and copy without separate alert modifiers.
@@ -109,8 +109,6 @@ struct DestinationReadyView: View {
                     }
                 }
             } message: { kind in
-                // Fix #1: corrected "first lunch" → "first launch",
-                // "Explaination" → "Example", and other typos throughout.
                 switch kind {
                 case .firstLaunch:
                     Text("This is the first launch and there is no data in the database. Do you want to initialize the database with example data? No download is required — the example data is pre-bundled.", bundle: .module)

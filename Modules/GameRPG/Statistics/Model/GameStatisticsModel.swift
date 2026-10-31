@@ -391,13 +391,16 @@ final class GameStatisticsModel: Sendable {
     func deleteAll() async {
         guard let context else { return }
         do {
-            try await dataController.deleteAll(in: context)
-            activeSessionID = nil
-            activeLocalParticipantID = nil
+            // Events still queued belong to the running game and must not be flushed into nothing.
+            await flushPendingEvents()
+            try await dataController.deleteAll(keeping: activeSessionID, in: context)
             lastCompletedSessionID = nil
             summary = .empty
             allSessions = []
             errorMessage = nil
+            if activeSessionID != nil {
+                await reload()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

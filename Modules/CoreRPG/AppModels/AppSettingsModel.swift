@@ -244,7 +244,6 @@ public final class AppSettingsModel: Sendable {
     
     // MARK: - Keys
     
-    private static let migrationKey = "MasterRPGMigrationAppGroup"
     /// The stored key keeps its historic spelling: renaming it would reset the flag on every
     /// installed device. See CODE_AUDIT_21 §9.9.
     private static let firstLaunchKey = "FirstLunchMasterRPG"

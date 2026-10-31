@@ -184,22 +184,7 @@ public extension SearchControllable {
                 for entry in item.entries {
                     if entry.name.localizedStandardContains(searchText)
                         || entry.content.localizedStandardContains(searchText) {
-                        entryChildren.append(SearchResult(
-                            itemId: item.id,
-                            itemName: item.name,
-                            module: itemControllable.config.module,
-                            category: item.category,
-                            entryId: entry.id,
-                            entryName: entry.name,
-                            matchedContent: entry.content.isEmpty ? nil : entry.content,
-                            relevanceScore: calculateRelevance(
-                                searchText: searchText,
-                                itemName: item.name,
-                                entryName: entry.name,
-                                content: entry.content,
-                                isItemMatch: false
-                            )
-                        ))
+                        entryChildren.append(entryHit(itemId: item.id, itemName: item.name, category: item.category, entryId: entry.id, entryName: entry.name, content: entry.content, searchText: searchText))
                     }
                 }
             }
@@ -260,6 +245,35 @@ public extension SearchControllable {
 // `SearchControllable+Inspector.swift`.
 
 public extension SearchControllable {
+    /// A hit on one entry of an item: the entry's name and content, scored against `searchText`.
+    /// The one construction every module's search shares. See CODE_AUDIT_22 §9.1.
+    func entryHit(
+        itemId: UUID,
+        itemName: String,
+        category: ItemListCategory,
+        entryId: UUID,
+        entryName: String,
+        content: String,
+        searchText: String
+    ) -> SearchResult {
+        SearchResult(
+            itemId: itemId,
+            itemName: itemName,
+            module: itemControllable.config.module,
+            category: category,
+            entryId: entryId,
+            entryName: entryName,
+            matchedContent: content.isEmpty ? nil : content,
+            relevanceScore: calculateRelevance(
+                searchText: searchText,
+                itemName: itemName,
+                entryName: entryName,
+                content: content,
+                isItemMatch: false
+            )
+        )
+    }
+
     func calculateRelevance(searchText: String, itemName: String, entryName: String?, content: String?, isItemMatch: Bool) -> Int {
         var score = 0
         

@@ -74,7 +74,15 @@ extension EditController {
 
 #if !os(tvOS)
 extension EditController {
-    @MainActor func applyExtractedContent(_ content: PdfSummaryAnalysis, to itemId: UUID, selection: PdfPropertySelection) {
+    /// - Parameter pageLabel: the label of the document's page at a 1-based position (what the
+    ///   bookmark list shows and the viewer looks a bookmark up by), or `nil` when it is unknown.
+    ///   The summary names pages by position. See CODE_AUDIT_22 §5.8.
+    @MainActor func applyExtractedContent(
+        _ content: PdfSummaryAnalysis,
+        to itemId: UUID,
+        selection: PdfPropertySelection,
+        pageLabel: (Int) -> String? = { _ in nil }
+    ) {
         // Update name if selected and (empty or forcing update)
         if selection.applyTitle {
             reset(name: content.title, itemId: itemId)
@@ -92,16 +100,16 @@ extension EditController {
 
         // Create entries from sections if selected
         if selection.applySections && !content.sections.isEmpty {
-            appendSectionsAsEntries(content.sections, to: itemId)
+            appendSectionsAsEntries(content.sections, to: itemId, pageLabel: pageLabel)
         }
     }
 
-    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID) {
+    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID, pageLabel: (Int) -> String?) {
         guard let item = editModel(for: itemId) else { return }
 
         var newEntries: [PdfEntryModel] = []
         for section in sections {
-            let pageNumberString = section.pageNumber.map { String($0) } ?? ""
+            let pageNumberString = section.pageNumber.map { pageLabel($0) ?? String($0) } ?? ""
             let entry = PdfEntryModel(
                 id: UUID(),
                 name: section.heading,

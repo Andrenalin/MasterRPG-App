@@ -90,13 +90,13 @@ struct WeatherViewer: View {
                 
                 LightningView(
                     frequency: model.lightningFrequency,
-                    maximumBolts: Int(model.lightningMaxBolts),
-                    forkProbability: Int(model.lightningForkProbability),
+                    maximumBolts: WeatherLimits.count(model.lightningMaxBolts, in: WeatherLimits.lightningMaxBolts),
+                    forkProbability: WeatherLimits.count(model.lightningForkProbability, in: WeatherLimits.lightningForkProbability),
                     trigger: lightningTrigger
                 )
                 
                 if model.stormType != .none {
-                    StormView(type: model.stormType, direction: .degrees(model.rainAngle), strength: Int(model.rainIntensity))
+                    StormView(type: model.stormType, direction: .degrees(model.rainAngle), strength: WeatherLimits.count(model.rainIntensity, in: WeatherLimits.rainIntensity))
                 }
             }
         }

@@ -130,7 +130,7 @@ struct BattleRoundController: Sendable {
               let current = hitPoints(for: combatant) else {
             return false
         }
-        return setHitPoints(combatantId, current + amount)
+        return setHitPoints(combatantId, SheetNumberLimit.sum(current, amount))
     }
 
     /// Saves the initiative order and re-sorts the turn list. Needs no

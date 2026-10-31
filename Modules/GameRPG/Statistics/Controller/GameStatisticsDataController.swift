@@ -6,14 +6,27 @@ import Foundation
 import os.log
 
 struct GameStatisticsDataController: Sendable {
-    func recoverInterruptedSessions(in context: NSManagedObjectContext, at date: Date = .now) async throws {
+    /// How long an unfinished session must have been idle before launch recovery completes it.
+    /// The statistics sync between a user's devices, so an open session may be a game another
+    /// device is playing right now; completing it from here would end that game's statistics (and
+    /// the prune would delete it again if it is short). A session of this device that was cut off
+    /// is recovered a day later. See CODE_AUDIT_22 §5.4.
+    static let interruptedSessionIdleAge: TimeInterval = 24 * 60 * 60
+
+    func recoverInterruptedSessions(
+        in context: NSManagedObjectContext,
+        at date: Date = .now,
+        idleAge: TimeInterval = Self.interruptedSessionIdleAge
+    ) async throws {
         try await context.perform {
             let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
             request.predicate = NSPredicate(format: "isComplete == NO")
             request.fetchBatchSize = 20
 
             for session in try context.fetch(request) {
-                let end = min(session.lastActivityAt ?? session.startedAt ?? date, date)
+                let lastActivity = session.lastActivityAt ?? session.startedAt ?? date
+                guard date.timeIntervalSince(lastActivity) >= idleAge else { continue }
+                let end = min(lastActivity, date)
                 session.endedAt = end
                 session.lastActivityAt = end
                 session.durationSeconds = max(0, end.timeIntervalSince(session.startedAt ?? end))
@@ -259,11 +272,20 @@ struct GameStatisticsDataController: Sendable {
         }
     }
 
-    func deleteAll(in context: NSManagedObjectContext) async throws {
+    /// Deletes all statistics. The game that is running now (`activeSessionId`) is kept, so its
+    /// later events still land in a session.
+    func deleteAll(keeping activeSessionId: UUID? = nil, in context: NSManagedObjectContext) async throws {
         try await context.perform {
-            for entityName in ["RPGGameStatisticEvent", "RPGGameStatisticParticipant", "RPGGameStatisticSession"] {
+            for (entityName, idKey) in [
+                ("RPGGameStatisticEvent", "sessionID"),
+                ("RPGGameStatisticParticipant", "sessionID"),
+                ("RPGGameStatisticSession", "uuid")
+            ] {
                 let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
                 request.fetchBatchSize = 500
+                if let activeSessionId {
+                    request.predicate = NSPredicate(format: "\(idKey) == nil OR \(idKey) != %@", activeSessionId as NSUUID)
+                }
                 try context.fetch(request).forEach(context.delete)
             }
             try self.saveIfNeeded(context)
@@ -407,9 +429,30 @@ struct GameStatisticsDataController: Sendable {
     }
 
     private func saveIfNeeded(_ context: NSManagedObjectContext) throws {
-        if context.hasChanges {
+        guard context.hasChanges else { return }
+        do {
             try context.save()
+        } catch {
+            discardUnsavedStatistics(in: context)
+            throw error
         }
+    }
+
+    /// After a failed save the inserted rows stay pending in the context, and the caller's retry
+    /// inserts them a second time. Only the statistics objects are dropped: the context is shared
+    /// with other modules, so `rollback()` would discard their changes too.
+    func discardUnsavedStatistics(in context: NSManagedObjectContext) {
+        func isStatistics(_ object: NSManagedObject) -> Bool {
+            object.entity.name?.hasPrefix("RPGGameStatistic") == true
+        }
+        for object in context.insertedObjects where isStatistics(object) {
+            context.delete(object)
+        }
+        for object in context.updatedObjects.union(context.deletedObjects) where isStatistics(object) {
+            context.refresh(object, mergeChanges: false)
+        }
+        // The deleted inserts stay in the change sets until the context has processed them.
+        context.processPendingChanges()
     }
 
     private static func sessionSnapshot(_ session: RPGGameStatisticSession) -> GameStatisticSessionSnapshot? {

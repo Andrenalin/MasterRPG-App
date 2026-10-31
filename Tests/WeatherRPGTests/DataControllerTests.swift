@@ -31,13 +31,13 @@ struct DataControllerTests {
             category: .scenario,
             displayState: 6,
             weatherUpdate: weatherUpdate,
-            time: 3600,
+            time: 0.75,
             cloudThickness: .ultra,
             stormType: .rain,
             rainAngle: 90,
             rainIntensity: 500,
             lightningFrequency: 60,
-            lightningMaxBolts: 120,
+            lightningMaxBolts: 8,
             lightningForkProbability: 80,
             photoId: photoId,
             entries: [firstEntry, secondEntry],
@@ -53,13 +53,13 @@ struct DataControllerTests {
         #expect(fetchedOriginal.tags == ["rain", "night"])
         #expect(fetchedOriginal.category == .scenario)
         #expect(fetchedOriginal.displayState == 6)
-        #expect(fetchedOriginal.time == 3600)
+        #expect(fetchedOriginal.time == 0.75)
         #expect(fetchedOriginal.cloudThickness == .ultra)
         #expect(fetchedOriginal.stormType == .rain)
         #expect(fetchedOriginal.rainAngle == 90)
         #expect(fetchedOriginal.rainIntensity == 500)
         #expect(fetchedOriginal.lightningFrequency == 60)
-        #expect(fetchedOriginal.lightningMaxBolts == 120)
+        #expect(fetchedOriginal.lightningMaxBolts == 8)
         #expect(fetchedOriginal.lightningForkProbability == 80)
         #expect(fetchedOriginal.photoId == photoId)
         #expect(fetchedOriginal.parentId == parentId)
@@ -75,7 +75,7 @@ struct DataControllerTests {
             category: .scenario,
             displayState: 8,
             weatherUpdate: UUID(),
-            time: 7200,
+            time: 0.25,
             cloudThickness: .thin,
             stormType: .none,
             rainAngle: 0,
@@ -96,7 +96,7 @@ struct DataControllerTests {
         #expect(fetchedUpdated.description == "Updated weather")
         #expect(fetchedUpdated.tags == ["day"])
         #expect(fetchedUpdated.displayState == 8)
-        #expect(fetchedUpdated.time == 7200)
+        #expect(fetchedUpdated.time == 0.25)
         #expect(fetchedUpdated.cloudThickness == .thin)
         #expect(fetchedUpdated.stormType == .none)
         #expect(fetchedUpdated.rainIntensity == 0)

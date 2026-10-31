@@ -24,8 +24,7 @@ struct DatabaseInitializationView: View {
             if appModel.databaseModel.hasError {
                 DatabaseInitializationErrorView()
             } else {
-                // Fix #4: ProgressView with a label provides automatic
-                // accessibility description — no separate Text needed.
+                // A ProgressView with a label describes itself to VoiceOver; no separate Text needed.
                 ProgressView {
                     Text("Setting up your database...", bundle: .module)
                 }
@@ -49,8 +48,7 @@ struct DatabaseInitializationView: View {
     }
 
     private func initializeDatabase() async {
-        // Fix #2: iCloudAccount demoted to a local variable — it was @State
-        // but never read in body, so it had no effect on rendering.
+        // The iCloud account is a local variable: it is not read in `body`, so it is no @State.
         if appModel.settingsModel.useCloudKit {
             let iCloudAccount = await CloudKitAccountController.checkAccountStatus()
             if iCloudAccount != .available {
@@ -77,9 +75,9 @@ private struct DatabaseInitializationErrorView: View {
     @State private var showDeleteAlert = false
 
     var body: some View {
-        // Fix #3: alert is now on the VStack container instead of the Button.
+        // The alert sits on the VStack container, not on the Button.
         VStack(spacing: 16) {
-            // Fix #4: explicit accessibility label for the decorative SF Symbol.
+            // The decorative symbol carries an explicit accessibility label.
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.red)

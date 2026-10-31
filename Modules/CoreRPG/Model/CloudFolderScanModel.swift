@@ -18,10 +18,29 @@ final class CloudFolderScanModel {
         case busy
     }
 
-    private(set) var phase: Phase = .scanning
+    private(set) var phase: Phase = .scanning {
+        didSet { refreshSelectedPlan() }
+    }
 
-    /// What the user took out. Everything is selected by default, so only the exceptions are kept.
-    private(set) var deselected: Set<UUID> = []
+    /// What the user took out. Additions and moves are selected by default, so only the exceptions
+    /// are kept; removals start deselected, so trashing an item is always the user's own choice.
+    /// See CODE_AUDIT_22 §5.2.
+    private(set) var deselected: Set<UUID> = [] {
+        didSet { refreshSelectedPlan() }
+    }
+
+    /// The plan as it will be applied: without the deselected entries, and with the new folders
+    /// only the selected ones need. Kept up to date when the selection changes, so the sheet does not
+    /// restrict the plan again on every evaluation of its body.
+    private(set) var selectedPlan: CloudScanPlan?
+
+    private func refreshSelectedPlan() {
+        guard case .found(let plan) = phase else {
+            selectedPlan = nil
+            return
+        }
+        selectedPlan = plan.restricted(toDeselected: deselected)
+    }
 
     func scan(with controller: CloudScanController) async {
         guard controller.isAvailable else {
@@ -35,6 +54,7 @@ final class CloudFolderScanModel {
         case .unreachable:
             phase = .unreachable
         case .plan(let plan):
+            deselected = Set(plan.removals.map(\.id))
             phase = plan.isEmpty ? .nothingFound : .found(plan)
         }
     }
@@ -62,13 +82,6 @@ final class CloudFolderScanModel {
         ids.allSatisfy { !deselected.contains($0) }
     }
 
-    /// The plan as it will be applied: without the deselected entries, and with the new folders
-    /// only the selected ones need.
-    var selectedPlan: CloudScanPlan? {
-        guard case .found(let plan) = phase else { return nil }
-        return plan.restricted(toDeselected: deselected)
-    }
-
     /// Whether Sync has anything to apply.
     var hasSelection: Bool {
         guard let plan = selectedPlan else { return false }
@@ -83,6 +96,8 @@ final class CloudFolderScanModel {
             phase = .synced(added: added, folders: folders, moved: moved, trashed: trashed)
         case .busy:
             phase = .busy
+        case .unreachable:
+            phase = .unreachable
         }
     }
 }

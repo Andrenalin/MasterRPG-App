@@ -99,11 +99,14 @@ public struct InAppController {
                         entitlementProductIDs: InAppController.currentEntitlementProductIDs
                     )
                     await transaction.finish()
-                case .unverified:
+                case .unverified(let transaction, _):
                     model.message = String(
                         localized: "A purchase could not be verified.",
                         bundle: .module
                     )
+                    // Nothing is granted, but an unfinished transaction is delivered again at every
+                    // launch. See CODE_AUDIT_22 §6.5.
+                    await transaction.finish()
                 }
             }
         }

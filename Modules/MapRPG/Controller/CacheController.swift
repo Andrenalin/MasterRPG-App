@@ -35,8 +35,10 @@ extension CacheController: ImageCacheControllable {
         ) else { return }
         guard !Task.isCancelled else { return }
         let entry = item[itemId]
-        let scaledRect = entry.rect.applying(CGAffineTransform(scaleX: source.scale, y: source.scale))
-        let thumbnail = source.image.cropping(to: scaledRect)
+        let scaledRect = entry.thumbnailRect.applying(CGAffineTransform(scaleX: source.scale, y: source.scale))
+        // Room rects live on the map canvas, which shows the photo rotated by its degrees.
+        guard let canvasImage = source.image.rotated(byDegrees: source.degrees) else { return }
+        let thumbnail = canvasImage.cropping(to: scaledRect)
         await cacheThumbnail(thumbnail, for: itemId)
     }
 }

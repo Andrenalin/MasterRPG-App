@@ -94,7 +94,7 @@ struct CloudFolderScanTests {
         try write("Rollenspiel/picture.png")
         try write(".hidden/Secret.pdf")
 
-        let found = try #require(await CloudFolderScan.files(below: root, fileTypes: [.pdf]))
+        let found = try #require(await CloudFolderScan.listing(below: root, fileTypes: [.pdf])).files
 
         #expect(found.map { $0.components.joined(separator: "/") } == [
             "Rollenspiel/PDFs/Example/00 Pdf.pdf",
@@ -108,12 +108,12 @@ struct CloudFolderScanTests {
     @Test("An unreadable module folder is not the same as a folder without files")
     func listingMissingFolder() async throws {
         let missing = URL.temporaryDirectory.appending(path: "CloudScanMissing-\(UUID().uuidString)")
-        #expect(await CloudFolderScan.files(below: missing, fileTypes: [.pdf]) == nil)
+        #expect(await CloudFolderScan.listing(below: missing, fileTypes: [.pdf]) == nil)
 
         let empty = URL.temporaryDirectory.appending(path: "CloudScanEmpty-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: empty) }
-        #expect(try #require(await CloudFolderScan.files(below: empty, fileTypes: [.pdf])).isEmpty)
+        #expect(try #require(await CloudFolderScan.listing(below: empty, fileTypes: [.pdf])).files.isEmpty)
     }
 
     // MARK: - Planning

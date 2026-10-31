@@ -15,6 +15,8 @@ struct SummaryAnalysisView: View {
 
     @State private var propertySelection = PdfPropertySelection()
     @State private var viewState: ViewState = .loading
+    /// Kept for the page labels of the applied sections; the view state drops the document once the summary exists.
+    @State private var loadedDocument: PDFDocument?
 
     var body: some View {
         ContentView(viewState: $viewState, propertySelection: $propertySelection)
@@ -64,6 +66,7 @@ struct SummaryAnalysisView: View {
             viewState = .unavailable
             return
         }
+        loadedDocument = document
         viewState = .extracting(document)
     }
 
@@ -73,7 +76,10 @@ struct SummaryAnalysisView: View {
             return
         }
 
-        root.editController.applyExtractedContent(content, to: itemId, selection: propertySelection)
+        let document = loadedDocument
+        root.editController.applyExtractedContent(content, to: itemId, selection: propertySelection) { position in
+            document?.page(at: position - 1)?.label
+        }
         navigator.back()
     }
 

@@ -27,9 +27,6 @@ public extension UserDefaults {
 
         /// Compact dice payload read by widgets
         public static let widgetSnapshot = "diceWidgetSnapshot"
-        
-        /// History of dice rolls
-        public static let rollHistory = "rollHistory"
     }
 }
 

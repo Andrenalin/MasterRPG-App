@@ -19,7 +19,7 @@ struct CloudScanFile: Sendable, Hashable {
     /// the stored path back from the item names, and the move appends the extension again.
     var itemName: String {
         let name = fileName
-        let withoutExtension = (name as NSString).deletingPathExtension
+        let withoutExtension = URL(filePath: name).deletingPathExtension().lastPathComponent
         return (withoutExtension.isEmpty ? name : withoutExtension).precomposedStringWithCanonicalMapping
     }
 
@@ -30,6 +30,14 @@ struct CloudScanFile: Sendable, Hashable {
         components.forEach { url.append(path: $0) }
         return url
     }
+}
+
+/// The files found below a module folder, and the subfolders that could not be listed.
+struct CloudScanListing: Sendable {
+    var files: [CloudScanFile]
+    /// Folder names from the module folder down to each folder whose listing failed. The files in
+    /// it are unknown, which is not the same as gone. See CODE_AUDIT_22 §5.2.
+    var unreadableFolders: [[String]]
 }
 
 /// What the sync with a module's iCloud folder found. Every entry has the id of the item it is
@@ -81,8 +89,10 @@ struct CloudScanPlan: Sendable, Equatable {
     var removals: [Removal] = []
     /// Most of the items with a file lost it. The iCloud folder is probably still syncing.
     var mostFilesMissing = false
+    /// Folders that could not be read. Their items are left alone, neither moved nor removed.
+    var unreadableFolders: [[String]] = []
 
-    var isEmpty: Bool { folders.isEmpty && items.isEmpty && moves.isEmpty && removals.isEmpty }
+    var isEmpty: Bool { folders.isEmpty && items.isEmpty && moves.isEmpty && removals.isEmpty && unreadableFolders.isEmpty }
 
     /// The moves that follow a file moved on iCloud; the others only change the item's folder.
     var movedFiles: [Move] { moves.filter { $0.file != nil } }
@@ -153,10 +163,12 @@ enum CloudFolderScan {
     /// files that are only in iCloud are listed with their real name. Hidden files and folders
     /// are skipped. `nil` when the module folder cannot be read at all, which is not the same as a
     /// folder without files: with iCloud unavailable every item would look like its file is gone.
+    /// A subfolder that cannot be read is reported in `unreadableFolders`, not skipped silently.
     /// `@concurrent`: a large iCloud folder is walked on disk.
     @concurrent
-    static func files(below moduleUrl: URL, fileTypes: [UTType]) async -> [CloudScanFile]? {
+    static func listing(below moduleUrl: URL, fileTypes: [UTType]) async -> CloudScanListing? {
         var found: [CloudScanFile] = []
+        var unreadable: [[String]] = []
         var pending: [(url: URL, components: [String])] = [(moduleUrl, [])]
         while let (folder, folderComponents) = pending.popLast() {
             guard !Task.isCancelled else { return nil }
@@ -166,6 +178,7 @@ enum CloudFolderScan {
                 options: []
             ) else {
                 if folderComponents.isEmpty { return nil }
+                unreadable.append(folderComponents)
                 continue
             }
             for url in contents {
@@ -181,7 +194,19 @@ enum CloudFolderScan {
                 found.append(CloudScanFile(components: folderComponents + [realName], isPlaceholder: realName != name))
             }
         }
-        return found.sorted { key($0.components) < key($1.components) }
+        return CloudScanListing(
+            files: found.sorted { key($0.components) < key($1.components) },
+            unreadableFolders: unreadable.sorted { key($0) < key($1) }
+        )
+    }
+
+    /// Whether `components` lies in or below one of `folders`.
+    static func isInside(_ components: [String], anyOf folders: [[String]]) -> Bool {
+        let path = key(components)
+        return folders.contains { folder in
+            let prefix = key(folder)
+            return path == prefix || path.hasPrefix(prefix + "/")
+        }
     }
 
     /// `name` of a listed file, with the iCloud placeholder wrapping (`.name.icloud`) removed;
@@ -194,7 +219,7 @@ enum CloudFolderScan {
     }
 
     static func matches(_ fileName: String, fileTypes: [UTType]) -> Bool {
-        let fileExtension = (fileName as NSString).pathExtension
+        let fileExtension = URL(filePath: fileName).pathExtension
         guard !fileExtension.isEmpty, let type = UTType(filenameExtension: fileExtension) else { return false }
         return fileTypes.contains { type.conforms(to: $0) }
     }
@@ -235,8 +260,18 @@ enum CloudFolderScan {
         var fileBackedCount = 0
     }
 
-    private static func analyze(files: [CloudScanFile], existing: [CloudScanExistingItem]) -> Analysis {
+    private static func analyze(
+        files: [CloudScanFile],
+        existing: [CloudScanExistingItem],
+        unreadableFolders: [[String]] = []
+    ) -> Analysis {
         let listedKeys = Set(files.map { key($0.components) })
+        // An item whose file sits in a folder that could not be listed is neither missing nor
+        // counted: nothing is known about its file.
+        let existing = existing.filter { item in
+            guard let components = item.fileComponents else { return true }
+            return !isInside(components, anyOf: unreadableFolders)
+        }
         var analysis = Analysis()
         analysis.referencedKeys = Set(existing.compactMap { $0.fileComponents.map(key) })
         analysis.missing = existing
@@ -266,13 +301,15 @@ enum CloudFolderScan {
         files: [CloudScanFile],
         existing: [CloudScanExistingItem],
         module: String,
-        hashes: [String: String] = [:]
+        hashes: [String: String] = [:],
+        unreadableFolders: [[String]] = []
     ) -> CloudScanPlan {
-        let analysis = analyze(files: files, existing: existing)
+        let analysis = analyze(files: files, existing: existing, unreadableFolders: unreadableFolders)
         let existingIds = Set(existing.map(\.id))
         let byId = Dictionary(existing.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var folderIds = existingFolderIds(existing)
         var plan = CloudScanPlan()
+        plan.unreadableFolders = unreadableFolders
 
         /// The folder for `path`, created (with its missing ancestors) when it does not exist.
         func ensureFolder(_ names: [String]) -> UUID? {

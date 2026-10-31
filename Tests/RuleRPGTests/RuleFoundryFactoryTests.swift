@@ -10,6 +10,14 @@ import Testing
 @Suite("Foundry rule mapping")
 @MainActor
 struct RuleFoundryFactoryTests {
+    @Test("Imported text cannot form emphasis, a link or an app link")
+    func importedTextIsInert() {
+        #expect(RuleModel.inert("a*b_c`d\\e") == "a\\*b\\_c\\`d\\\\e")
+        #expect(!RuleModel.inert("[x](https://example.com)").contains("]("))
+        #expect(!RuleModel.inert("https://example.com").contains("://"))
+        #expect(RuleModel.inert("plain text") == "plain text")
+    }
+
     @Test("Typed Foundry rules retain provenance and their lossless payload")
     func typedRuleMapping() throws {
         // Given

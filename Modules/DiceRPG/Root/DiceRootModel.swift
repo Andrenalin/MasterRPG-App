@@ -184,7 +184,13 @@ public extension DiceRootModel {
 
     @MainActor
     func roll(diceId: UUID) -> Int {
-        itemController.itemOrEmpty(for: diceId).dice.reduce(0) { $0 + ($1.roll(resetResults: true, rerollOptions: itemController.itemOrEmpty(for: diceId).rerollOptions).result.first ?? 0) }
+        // Rolled on a copy and counted like a player's roll (reroll options, percent dice, the
+        // per-die maximum, the modifier), not by adding the first face of each die. A table's
+        // dice always add up. See CODE_AUDIT_22 §5.7.
+        let dice = itemController.itemOrEmpty(for: diceId).copy(withId: UUID())
+        dice.dice = dice.dice.map { $0.roll(resetResults: true, rerollOptions: dice.rerollOptions) }
+        dice.sumUp = true
+        return gameController.sumResult(of: dice)
     }
 
     func roll(number: Int) -> Int {

@@ -9,6 +9,22 @@ import AppKit
 import UIKit
 #endif
 
+/// Who an export is for. A package for the other players of a running game must not carry the game
+/// master's hidden content or the items a room only links to; a Save Game or library export must.
+/// `createGameData` and the network overload `export(itemIds:into:)` set `.players` for the whole
+/// export they run, the module exporters read it. The default is `.owner` because the export
+/// panel resolves its ids from the UI, outside any export, and must see everything. A new path
+/// that builds a package for players has to go through one of the two entry points above.
+/// See CODE_AUDIT_22 §6.2, CODE_AUDIT_22a §6.1.
+public enum ExportAudience: Sendable {
+    case owner
+    case players
+
+    @TaskLocal public static var current: ExportAudience = .owner
+
+    public static var isPlayerPackage: Bool { current == .players }
+}
+
 public protocol ExportControllable: Sendable {
     var hubControllable: any RootExportControllable { get }
     var itemControllable: any ItemControllable { get }
@@ -17,6 +33,11 @@ public protocol ExportControllable: Sendable {
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds
     func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds
     func finalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds
+    /// The encoded item as a game's non-master peers may hold it, or `nil` for the item as stored.
+    /// Only called inside `ExportAudience.players` (a package built for players), never for
+    /// a Save Game or a library export. A module with game-master-only content (Map: hidden rooms
+    /// and pins) overrides this.
+    @MainActor func playerExportData(for itemId: UUID) throws -> Data?
 }
 
 /// An `ExportControllable` conformer that resolves `hubControllable` through a
@@ -63,6 +84,10 @@ public extension ExportControllable {
 
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         itemIds
+    }
+
+    @MainActor func playerExportData(for itemId: UUID) throws -> Data? {
+        nil
     }
 
     func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {
@@ -315,7 +340,10 @@ public extension ExportControllable {
         // to construct it, no `MainActor.run` wrapper needed (calling an isolated
         // initializer/function works the same as calling an isolated method).
         let exportModel = await ItemDataExportModel()
-        return try await export(itemIds: itemIds, into: stream, exportModel: exportModel)
+        // This overload only builds the packages sent to the other players of a game.
+        return try await ExportAudience.$current.withValue(.players) {
+            try await export(itemIds: itemIds, into: stream, exportModel: exportModel)
+        }
     }
 
     // List Selection & Setting export
@@ -342,7 +370,7 @@ public extension ExportControllable {
             }
             // Models may be @MainActor-isolated; encode on the main actor so the
             // Codable implementation (wire format) stays untouched.
-            let data = try await encoded(item)
+            let data = try await encodedForExport(item, id: itemId)
 
             if await !exportModel.exportWithoutFileData {
                 let fileWritten = try await appendFile(for: itemId, to: outputStream)
@@ -362,6 +390,16 @@ public extension ExportControllable {
     @MainActor
     private func encoded<T: Encodable>(_ item: T) throws -> Data {
         try JSONCoding.encoder.encode(item)
+    }
+
+    /// The item as written into the export: in a running game the module's player version, so a
+    /// package for players never carries game-master-only content. See CODE_AUDIT_22 §6.2.
+    @MainActor
+    private func encodedForExport<T: Encodable>(_ item: T, id itemId: UUID) throws -> Data {
+        if ExportAudience.isPlayerPackage, let data = try playerExportData(for: itemId) {
+            return data
+        }
+        return try encoded(item)
     }
 
     @MainActor

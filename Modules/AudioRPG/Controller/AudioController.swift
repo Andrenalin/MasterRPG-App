@@ -295,6 +295,9 @@ extension AudioController {
         // (and therefore hasNext/hasPrev). Clear it explicitly instead. See CODE_AUDIT_Audio §5.3.
         if model.currentId == id {
             model.currentItem = nil
+            // The player and the lock screen still held the removed track.
+            model.player.replaceCurrentItem(with: nil)
+            MediaPlayerCoordinator.handleItemChange(item: nil, index: 0, count: model.playList.count)
         }
     }
 

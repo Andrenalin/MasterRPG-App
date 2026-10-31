@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Testing
 
 @testable import CharacterRPG
@@ -19,10 +20,10 @@ struct CharacterValueChangeTests {
     func storableNumber() {
         #expect(CharacterValueChange.storableNumber(2.5) == 3)
         #expect(CharacterValueChange.storableNumber(-2.4) == -2)
-        #expect(CharacterValueChange.storableNumber(CharacterValueChange.add.apply(Double(Int.max), to: 10)) == .max)
-        #expect(CharacterValueChange.storableNumber(CharacterValueChange.subtract.apply(Double(Int.max), to: -10)) == .min)
-        #expect(CharacterValueChange.storableNumber(.infinity) == .max)
-        #expect(CharacterValueChange.storableNumber(-.infinity) == .min)
+        #expect(CharacterValueChange.storableNumber(CharacterValueChange.add.apply(Double(Int.max), to: 10)) == SheetNumberLimit.maximumMagnitude)
+        #expect(CharacterValueChange.storableNumber(CharacterValueChange.subtract.apply(Double(Int.max), to: -10)) == -SheetNumberLimit.maximumMagnitude)
+        #expect(CharacterValueChange.storableNumber(.infinity) == SheetNumberLimit.maximumMagnitude)
+        #expect(CharacterValueChange.storableNumber(-.infinity) == -SheetNumberLimit.maximumMagnitude)
         #expect(CharacterValueChange.storableNumber(.nan) == 0)
     }
 }

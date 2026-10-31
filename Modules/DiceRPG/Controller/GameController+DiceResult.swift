@@ -45,8 +45,15 @@ extension GameController {
     
     @MainActor
     func sumResult(itemId: UUID) -> Int {
-        let item = gameItem(for: itemId)
-        let orderedDice = reorder(for: itemId)
+        sumResult(of: gameItem(for: itemId))
+    }
+
+    /// The sum of the rolled dice of `item`: reroll overrides, percent dice, the per-die maximum
+    /// and the modifier. Works on any dice model, so a roll that is not a game item (a table's
+    /// dice) is counted by the same rules as a player's. See CODE_AUDIT_22 §5.7.
+    @MainActor
+    func sumResult(of item: DiceModel) -> Int {
+        let orderedDice = reorder(item)
         var result = 0
         if item.sumUp {
             if item.canPercentDice, item.percentDice {
@@ -60,7 +67,7 @@ extension GameController {
                 }
             } else {
                 orderedDice.enumerated().forEach { index, die in
-                    let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
+                    let maxValue = maxValuePerDice(for: index + 1, item: item)
                     die.result.forEach { diceValue in
                         // Saturating: a decoded reroll value can be any `Int`. See CODE_AUDIT_21 §6.7.
                         result = result.saturatingSum(resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions))
@@ -133,7 +140,11 @@ extension GameController {
     
     @MainActor
     func maxValuePerDice(for index: Int, itemId: UUID) -> Int {
-        let item = gameItem(for: itemId)
+        maxValuePerDice(for: index, item: gameItem(for: itemId))
+    }
+
+    @MainActor
+    func maxValuePerDice(for index: Int, item: DiceModel) -> Int {
         let maxDieValue = item.dice.first?.die.max ?? 1
         guard item.addDiceEvery > 0 else { return maxDieValue }
         let maxValue = item.compareValue.saturatingInt
@@ -176,7 +187,11 @@ extension GameController {
     
     @MainActor
     func reorder(for itemId: UUID) -> [DieModel] {
-        let item = gameItem(for: itemId)
+        reorder(gameItem(for: itemId))
+    }
+
+    @MainActor
+    func reorder(_ item: DiceModel) -> [DieModel] {
         guard item.reorderDice else { return item.dice }
         let dice = item.dice.sorted {
             var first = $0.result.first ?? 0

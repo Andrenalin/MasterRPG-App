@@ -66,6 +66,11 @@ final class TableGenerationOccurrence: Identifiable {
     var hiddenEntryIds: Set<UUID> = []
     var children: [TableGenerationOccurrence] = []
     var ignoredCycleNames: [String] = []
+
+    /// This occurrence and every occurrence below it.
+    var occurrenceCount: Int {
+        children.reduce(1) { $0 + $1.occurrenceCount }
+    }
     var lastRoll: Int?
     var isAwaitingPlayerRoll = false
     var awaitingPlayerId: UUID?

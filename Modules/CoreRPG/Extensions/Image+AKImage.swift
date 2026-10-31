@@ -287,7 +287,11 @@ public extension AKImage {
         guard let cgImage = ImageDownsampler.downsampledImage(from: source, maxPixelSize: maxPixelSize) else { return nil }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let originalWidth = (properties?[kCGImagePropertyPixelWidth] as? CGFloat) ?? CGFloat(cgImage.width)
-        let scale = originalWidth > 0 ? CGFloat(cgImage.width) / originalWidth : 1
+        let originalHeight = (properties?[kCGImagePropertyPixelHeight] as? CGFloat) ?? CGFloat(cgImage.height)
+        // Longest edges, not widths: the thumbnail has the EXIF orientation applied, the stored
+        // pixel size does not, so a 90° photo would swap width and height.
+        let originalLongestEdge = max(originalWidth, originalHeight)
+        let scale = originalLongestEdge > 0 ? CGFloat(max(cgImage.width, cgImage.height)) / originalLongestEdge : 1
 #if os(macOS)
         // An explicit bitmap rep, not `NSImage(cgImage:size:)`: that wraps the image in an
         // `NSCGImageSnapshotRep` whose `pixelsWide`/`pixelsHigh` report the screen's backing

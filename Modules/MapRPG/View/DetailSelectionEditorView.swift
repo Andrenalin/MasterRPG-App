@@ -21,7 +21,7 @@ struct DetailSelectionEditorView: View {
                 await root.editController.replacePhoto(photoId: pickedPhoto.photoId, itemId: model.id)
                 self.pickedPhoto = nil
             }
-            .modifier(AdaptToPhotoSizeDialog(root: root, editModel: root.editController.mapEditModel))
+            .modifier(AdaptToPhotoSizeDialog(root: root, editModel: root.editController.mapEditModel, mapId: model.id))
             .task(id: model.photoId) {
                 root.editController.mapEditModel.selectionPhoto.resetSelection(
                     itemId: model.photoId,
@@ -39,23 +39,30 @@ private struct PickedPhoto: Equatable {
 private struct AdaptToPhotoSizeDialog: ViewModifier {
     let root: MapRootModel
     @Bindable var editModel: MapEditModel
+    let mapId: UUID
+
+    /// The pending replacement of this map. The model is shared by all maps, so another map's
+    /// pending choice must not show here.
+    private var replacement: PhotoReplacement? {
+        editModel.photoReplacement.flatMap { $0.itemId == mapId ? $0 : nil }
+    }
 
     func body(content: Content) -> some View {
         content.confirmationDialog(
             Text("Adapt Rooms and Pins?", bundle: .module),
             isPresented: Binding(
-                get: { editModel.photoReplacement != nil },
+                get: { replacement != nil },
                 set: { isPresented in
                     // Dismissed without a button (outside the iPad popover, Esc): the same as
                     // Cancel, so the picker shows the map's photo again. After Adapt or Keep the
                     // replacement is already gone; a reset to the old photo there is corrected by
                     // the picker's `.task(id: model.photoId)`. See CODE_AUDIT_Since_3.0.1 §5.11.
-                    guard !isPresented, let replacement = editModel.photoReplacement else { return }
+                    guard !isPresented, let replacement else { return }
                     root.editController.cancel(replacement)
                 }
             ),
             titleVisibility: .visible,
-            presenting: editModel.photoReplacement
+            presenting: replacement
         ) { replacement in
             Button {
                 withAnimation { root.editController.apply(replacement, adaptContent: true) }

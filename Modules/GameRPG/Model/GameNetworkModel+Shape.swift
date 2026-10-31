@@ -58,7 +58,8 @@ extension GameNetworkModel {
         guard sender.role == .player,
               masterState == nil,
               targetId == nil,
-              data.data != nil,
+              let payload = data.data,
+              payload.count <= GameLimits.maximumGroupEventPayloadBytes,
               GameNetworkModel.acceptsEventTimestamp(timestamp)
         else { return false }
 

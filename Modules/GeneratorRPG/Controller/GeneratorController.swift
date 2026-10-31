@@ -6,6 +6,7 @@ import CoreRPG
 import Foundation
 import FoundationModels
 import SwiftUI
+import Synchronization
 
 // MARK: - Session Model
 
@@ -166,6 +167,7 @@ struct GeneratorController: Sendable {
     }
             
     @MainActor func request(message: String, rootModel: SheetRootModel) {
+        let previousTask = model.currentTask
         model.cancel()
         let generation = model.startNewGeneration()
         model.isLoading = true
@@ -202,6 +204,13 @@ struct GeneratorController: Sendable {
             defer {
                 if model.currentGeneration == generation { model.isLoading = false }
             }
+            // The cancelled predecessor may still be draining its stream on the shared session;
+            // sending before it ended fails with "already responding". A predecessor that does not
+            // end is not waited for forever. See CODE_AUDIT_22a §5.5.
+            if let previousTask {
+                await GeneratorTaskWait.end(of: previousTask, timeout: GeneratorTaskWait.predecessorTimeout)
+            }
+            guard !Task.isCancelled, model.currentGeneration == generation else { return }
             do {
                 let typeId = rootSheetModel.source.typeId
                 let response = try await model.conversationEngine.sendStreamingMessage(
@@ -442,3 +451,54 @@ private extension GeneratorController {
 }
 
 #endif
+
+/// Waits for a task to end, but no longer than a timeout. `task.value` alone does not stop waiting
+/// when the waiter is cancelled and never returns for a task that ignores its cancellation.
+private enum GeneratorTaskWait {
+    static let predecessorTimeout: Duration = .seconds(5)
+
+    static func end(of task: Task<Void, Never>, timeout: Duration) async {
+        let gate = OneShotGate()
+        let timer = Task {
+            try? await Task.sleep(for: timeout)
+            gate.open()
+        }
+        Task {
+            await task.value
+            gate.open()
+        }
+        await gate.wait()
+        timer.cancel()
+    }
+}
+
+/// Resumes its one waiter the first time it is opened, also when that is before `wait`.
+private final class OneShotGate: Sendable {
+    private enum State {
+        case idle
+        case waiting(CheckedContinuation<Void, Never>)
+        case open
+    }
+
+    private let state = Mutex<State>(.idle)
+
+    func wait() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let isOpen = state.withLock { state -> Bool in
+                if case .open = state { return true }
+                state = .waiting(continuation)
+                return false
+            }
+            if isOpen { continuation.resume() }
+        }
+    }
+
+    func open() {
+        let continuation = state.withLock { state -> CheckedContinuation<Void, Never>? in
+            defer { state = .open }
+            if case let .waiting(continuation) = state { return continuation }
+            return nil
+        }
+        continuation?.resume()
+    }
+}

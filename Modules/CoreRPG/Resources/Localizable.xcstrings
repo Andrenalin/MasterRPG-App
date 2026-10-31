@@ -8227,22 +8227,6 @@
         }
       }
     },
-    "The items are moved to the trash." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Elemente werden in den Papierkorb gelegt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รายการจะถูกย้ายไปยังถังขยะ"
-          }
-        }
-      }
-    },
     "Select All" : {
       "localizations" : {
         "de" : {
@@ -8271,6 +8255,38 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ยกเลิกการเลือกทั้งหมด"
+          }
+        }
+      }
+    },
+    "Some folders could not be read. Their items were left unchanged." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einige Ordner konnten nicht gelesen werden. Ihre Elemente blieben unverändert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถอ่านบางโฟลเดอร์ได้ รายการในโฟลเดอร์เหล่านั้นไม่มีการเปลี่ยนแปลง"
+          }
+        }
+      }
+    },
+    "Select the items to move to the trash. Nothing is trashed unless you select it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle die Elemente aus, die in den Papierkorb sollen. Ohne Auswahl wird nichts gelöscht."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกรายการที่จะย้ายไปถังขยะ จะไม่มีการย้ายหากไม่ได้เลือก"
           }
         }
       }

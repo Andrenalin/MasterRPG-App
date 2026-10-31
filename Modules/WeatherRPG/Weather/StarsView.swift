@@ -9,11 +9,11 @@ import SwiftUI
 
 struct StarsView: View {
     init(deterministic: Bool = false) {
-        self._starField = State(initialValue: StarField(deterministic: deterministic))
+        self._starField = State(initialValue: LazyBox { StarField(deterministic: deterministic) })
         self.snapshotDate = deterministic ? Date(timeIntervalSinceReferenceDate: 0) : nil
     }
 
-    @State private var starField: StarField
+    @State private var starField: LazyBox<StarField>
     let snapshotDate: Date?
 
     @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
@@ -24,6 +24,7 @@ struct StarsView: View {
             Canvas { context, size in
                 let renderingDate = snapshotDate ?? timeline.date
                 let timeInterval = renderingDate.timeIntervalSince1970
+                let starField = starField.value
                 starField.update(date: renderingDate, size: size)
                 context.addFilter(.blur(radius: 0.3))
 

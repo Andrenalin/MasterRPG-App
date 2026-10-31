@@ -2351,6 +2351,22 @@
         }
       }
     },
+    "The 3D model file is too large to show." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die 3D-Modelldatei ist zu groß, um angezeigt zu werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์โมเดล 3D ใหญ่เกินกว่าจะแสดงได้"
+          }
+        }
+      }
+    },
     "Tilt Down" : {
       "localizations" : {
         "de" : {

@@ -15,16 +15,20 @@ extension GameController {
         matchingAny names: [String],
         characterId: UUID
     ) -> ValueEntryModel? {
-        gameEntry(matchingAny: names, characterId: characterId, depth: 0)
+        var visited: Set<UUID> = []
+        return gameEntry(matchingAny: names, characterId: characterId, depth: 0, visited: &visited)
     }
 
     @MainActor
     private func gameEntry(
         matchingAny names: [String],
         characterId: UUID,
-        depth: Int
+        depth: Int,
+        visited: inout Set<UUID>
     ) -> ValueEntryModel? {
-        guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
+        // A group reached by several entries is searched once: without this a fan-out of groups
+        // pointing at shared groups is searched once per path, up to the depth limit.
+        guard depth < RecursionLimits.maxValueLinkDepth, visited.insert(characterId).inserted else { return nil }
         let normalizedNames = names
             .map(Self.comparableName)
             .filter { !$0.isEmpty }
@@ -51,7 +55,7 @@ extension GameController {
         }
         for entry in item.entries {
             guard let valueId = entry.valueId,
-                  let found = gameEntry(matchingAny: names, characterId: valueId, depth: depth + 1) else {
+                  let found = gameEntry(matchingAny: names, characterId: valueId, depth: depth + 1, visited: &visited) else {
                 continue
             }
             return found
@@ -73,19 +77,20 @@ extension GameController {
         characterId: UUID,
         entryId: UUID
     ) -> ValueEntryModel? {
-        gameEntry(characterId: characterId, entryId: entryId, depth: 0)
+        var visited: Set<UUID> = []
+        return gameEntry(characterId: characterId, entryId: entryId, depth: 0, visited: &visited)
     }
 
     @MainActor
-    private func gameEntry(characterId: UUID, entryId: UUID, depth: Int) -> ValueEntryModel? {
-        guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
+    private func gameEntry(characterId: UUID, entryId: UUID, depth: Int, visited: inout Set<UUID>) -> ValueEntryModel? {
+        guard depth < RecursionLimits.maxValueLinkDepth, visited.insert(characterId).inserted else { return nil }
         let item = gameItem(for: characterId)
         if let direct = item.entries.first(where: { $0.id == entryId }) {
             return direct
         }
         for entry in item.entries {
             guard let valueId = entry.valueId,
-                  let found = gameEntry(characterId: valueId, entryId: entryId, depth: depth + 1) else {
+                  let found = gameEntry(characterId: valueId, entryId: entryId, depth: depth + 1, visited: &visited) else {
                 continue
             }
             return found
@@ -173,7 +178,7 @@ extension GameController {
               let current = resolvedNumber(entry.value) else {
             return nil
         }
-        return Int(current.rounded())
+        return SheetNumberLimit.clamped(current)
     }
 
     @MainActor
@@ -185,7 +190,9 @@ extension GameController {
     ) -> Bool {
         // Only the owning item is promoted into game memory, so the change
         // never reaches persistence.
-        guard let ownerId = gameEntryOwnerId(characterId: characterId, entryId: entryId, depth: 0),
+        let number = SheetNumberLimit.clamped(number)
+        var visited: Set<UUID> = []
+        guard let ownerId = gameEntryOwnerId(characterId: characterId, entryId: entryId, depth: 0, visited: &visited),
               let owner = gameMemoryCopy(for: ownerId),
               let index = owner.entries.firstIndex(where: { $0.id == entryId }) else {
             return false
@@ -195,10 +202,11 @@ extension GameController {
         let newValue: String
         if let base = resolvedNumber(baseText) {
             let modifier = Double(number) - base
+            guard modifier.isFinite else { return false }
             if modifier == 0 {
                 newValue = baseText
             } else if modifier == modifier.rounded() {
-                newValue = "\(baseText)|\(Int(modifier))"
+                newValue = "\(baseText)|\(SheetNumberLimit.clamped(modifier))"
             } else {
                 newValue = "\(baseText)|\(modifier)"
             }
@@ -255,15 +263,15 @@ extension GameController {
     /// The item that directly holds `entryId`: `characterId` itself or one of
     /// its nested value groups.
     @MainActor
-    private func gameEntryOwnerId(characterId: UUID, entryId: UUID, depth: Int) -> UUID? {
-        guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
+    private func gameEntryOwnerId(characterId: UUID, entryId: UUID, depth: Int, visited: inout Set<UUID>) -> UUID? {
+        guard depth < RecursionLimits.maxValueLinkDepth, visited.insert(characterId).inserted else { return nil }
         let item = gameItem(for: characterId)
         if item.entries.contains(where: { $0.id == entryId }) {
             return characterId
         }
         for entry in item.entries {
             guard let valueId = entry.valueId,
-                  let found = gameEntryOwnerId(characterId: valueId, entryId: entryId, depth: depth + 1) else {
+                  let found = gameEntryOwnerId(characterId: valueId, entryId: entryId, depth: depth + 1, visited: &visited) else {
                 continue
             }
             return found

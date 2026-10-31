@@ -404,6 +404,8 @@ struct GameStatisticsSummary: Sendable {
     let totalDuration: TimeInterval
     let averageDuration: TimeInterval
     let longestDuration: TimeInterval
+    /// Most participants in any counted game; `recentSessions` only holds the newest few.
+    var largestPartySize: Int = 0
     let gameMasterDuration: TimeInterval
     let playerDuration: TimeInterval
     let diceRollCount: Int

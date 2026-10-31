@@ -140,26 +140,21 @@ extension MapSnapshot {
 
 extension MapSnapshot {
     /// Strips GM-only content before this snapshot crosses the wire to a
-    /// non-master peer: hidden-room text and hidden-pin name/photo/character
-    /// links. Client-side `isShown` checks only ever suppressed *rendering* —
-    /// the underlying data was otherwise fully present on every recipient's
-    /// device the moment a map package or content update arrived, defeating
-    /// fog-of-war. See CODE_AUDIT §6.1.
+    /// non-master peer: the name and text of hidden rooms, and every hidden pin. A hidden pin is
+    /// left out entirely (as in the live `mapState`), so its name, portrait, character link,
+    /// position and even its existence stay on the master until it is shown. Client-side
+    /// `isShown` checks only ever suppressed *rendering* — the underlying data was otherwise
+    /// fully present on every recipient's device the moment a map package or content update
+    /// arrived, defeating fog-of-war. See CODE_AUDIT §6.1, CODE_AUDIT_22a §6.2.
     func redactedForNonMaster() -> MapSnapshot {
         let redactedEntries = entries.wrappedValue.map { entry -> MapEntryModel in
             var redacted = entry
             guard !redacted.isShown else { return redacted }
+            redacted.name = ""
             redacted.content = ""
             return redacted
         }
-        let redactedPins = mapPins.wrappedValue.map { pin -> MapPinModel in
-            guard !pin.isShown else { return pin }
-            var redacted = pin
-            redacted.name = ""
-            redacted.photoId = nil
-            redacted.characterId = nil
-            return redacted
-        }
+        let redactedPins = mapPins.wrappedValue.filter(\.isShown)
         return MapSnapshot(
             id: id,
             name: name,

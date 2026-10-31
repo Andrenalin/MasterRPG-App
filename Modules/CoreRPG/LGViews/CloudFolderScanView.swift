@@ -132,6 +132,20 @@ struct CloudFolderScanPlanList: View {
                     }
                 }
             }
+            if !plan.unreadableFolders.isEmpty {
+                Section {
+                    Label {
+                        Text("Some folders could not be read. Their items were left unchanged.", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                    }
+                    ForEach(plan.unreadableFolders, id: \.self) { folder in
+                        Text(folder.joined(separator: "/"))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             if !plan.items.isEmpty {
                 Section {
                     ForEach(plan.items) { item in
@@ -167,11 +181,11 @@ struct CloudFolderScanPlanList: View {
                 } header: {
                     CloudSyncSectionHeader(model: model, title: Text("Files missing on iCloud", bundle: .module), ids: plan.removals.map(\.id))
                 } footer: {
-                    Text("The items are moved to the trash.", bundle: .module)
+                    Text("Select the items to move to the trash. Nothing is trashed unless you select it.", bundle: .module)
                 }
             }
             // The folders the selected rows need, created when synced.
-            let newFolders = plan.restricted(toDeselected: model.deselected).folders
+            let newFolders = model.selectedPlan?.folders ?? []
             if !newFolders.isEmpty {
                 Section {
                     ForEach(newFolders) { folder in

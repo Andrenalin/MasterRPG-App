@@ -53,7 +53,7 @@ extension SheetController: SheetControllable {
                     linkedSheet = nil
                 }
             default:
-                linkedSheet = root.rootModel(for: linkDestination.typeId)?.sheetControllable.sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
+                linkedSheet = SheetLinkGuard.linkedSheet(root: root, module: linkDestination.typeId, itemId: linkDestination.itemId, destination: destination, level: level + 1, isEditor: isEditor)
             }
             linkedSheet?.linkNumber = link.linkNumber
             return linkedSheet

@@ -32,12 +32,11 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
 
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        // Fix #6: extract the single property we actually read so @Observable
-        // tracking stays narrow — the view won't re-render for unrelated
-        // AppModel changes.
+        // Only the property that is read: @Observable tracking stays narrow, so the view does
+        // not re-render for unrelated AppModel changes.
         let isReady = appModel.appNavigationModel.initialRouteType == .ready
-        // Fix #7: animate the switch so the waiting text fades out instead of
-        // cutting to content abruptly on first launch.
+        // The switch is animated so the waiting text fades out instead of cutting to the
+        // content on first launch.
         Group {
             if isReady {
                 contentView(appModel)

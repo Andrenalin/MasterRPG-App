@@ -51,6 +51,15 @@ extension ExportController: ExportModelBacked {
         return itemIds
     }
     
+    /// The map as a player may hold it: hidden rooms without name and text, hidden pins left out.
+    /// The same redaction the live content update applies.
+    @MainActor public func playerExportData(for itemId: UUID) throws -> Data? {
+        guard let item = itemController.itemSync(for: itemId) else { return nil }
+        let redacted = item.copy()
+        MapSnapshot(item).redactedForNonMaster().apply(to: redacted)
+        return try JSONCoding.encoder.encode(redacted)
+    }
+
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var audioIds: Set<UUID> = []
         var diceIds: Set<UUID> = []
@@ -63,9 +72,16 @@ extension ExportController: ExportModelBacked {
         let results = bfsExportResults(seedIds: itemIds.ids[itemController.config.module, default: []]) { id in
             guard let item = itemController.itemSync(for: id) else { return nil }
 
-            photoIds.formUnion(item.mapPins.compactMap { $0.photoId }.compactMap { photoRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
-            if !isGameMode {
-                valueIds.formUnion(item.mapPins.compactMap { $0.characterId }.compactMap { characterRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+            // A package for players holds the map and its background only. The links in the rooms'
+            // text (maps, audio, pdf, photo, dice, table) are never sent ahead, and the pin photos
+            // come through the map request once the pin is shown. Save Game and library exports
+            // keep everything. See CODE_AUDIT_22 §6.2, CODE_AUDIT_22a §5.3.
+            let forPlayers = ExportAudience.isPlayerPackage
+            if !forPlayers {
+                photoIds.formUnion(item.mapPins.compactMap { $0.photoId }.compactMap { photoRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+                if !isGameMode {
+                    valueIds.formUnion(item.mapPins.compactMap { $0.characterId }.compactMap { characterRoot.linkControllable.validateLink(itemId: $0) ? $0 : nil })
+                }
             }
             if let photoId = item.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) {
                 photoIds.insert(photoId)
@@ -78,6 +94,7 @@ extension ExportController: ExportModelBacked {
             }
 
             var childIds: [UUID] = []
+            guard !forPlayers else { return childIds }
             let links = item.entries.flatMap {
                 let text = $0.content
                 return LinkReplaceController.links(for: text)
@@ -122,8 +139,8 @@ extension ExportController: ExportModelBacked {
         // In a running game the map package must carry the player photos as
         // well — player pins may not be appended to the exported item's mapPins
         // yet. Only when a map is actually exported: the hub chain also calls
-        // this with no map ids at all.
-        if itemControllable.itemDataModel.isGameMode, !results.isEmpty {
+        // this with no map ids at all. Not in a package for players, whose pin photos are requested.
+        if itemControllable.itemDataModel.isGameMode, !ExportAudience.isPlayerPackage, !results.isEmpty {
             photoIds.formUnion(root.gameController.mapGameModel.playerPins.compactMap { pin in
                 guard let photoId = pin.photoId, photoRoot.linkControllable.validateLink(itemId: photoId) else { return nil }
                 return photoId

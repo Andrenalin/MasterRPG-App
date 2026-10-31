@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 public struct AudioPlayerMiniBarView: View {
@@ -43,11 +44,12 @@ public struct AudioPlayerMiniBarView: View {
 private struct AudioPlayerMiniBarPlaybackControlsView: View {
     @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 12) {
             Button {
-                withAnimation { root.audioController.togglePlay() }
+                withAnimation(.default.reduced(if: reduceMotion)) { root.audioController.togglePlay() }
             } label: {
                 Label {
                     Text(root.audioPlayerModel.isPlaying ? "Pause" : "Play", bundle: .module)
@@ -66,7 +68,7 @@ private struct AudioPlayerMiniBarPlaybackControlsView: View {
 
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {
-                    withAnimation { root.audioController.skipToCurrentItem(offsetBy: 1) }
+                    withAnimation(.default.reduced(if: reduceMotion)) { root.audioController.skipToCurrentItem(offsetBy: 1) }
                 } label: {
                     Label {
                         Text("Next", bundle: .module)
@@ -91,13 +93,14 @@ private struct AudioPlayerMiniBarMusicArtTitleTimelineView: View {
 
     @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
     var body: some View {
         HStack {
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {
-                    withAnimation { root.audioPlayerModel.showPlayerToolBar = false }
+                    withAnimation(.default.reduced(if: reduceMotion)) { root.audioPlayerModel.showPlayerToolBar = false }
                 } label: {
                     AlbumArtworkView(
                         artwork: viewModel.albumArtwork,

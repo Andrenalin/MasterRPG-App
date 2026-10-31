@@ -26,6 +26,12 @@ struct TableGenerationController: Sendable {
     /// against a link chain recursing indefinitely.
     static let maxTableRecursionCount = 10
 
+    /// The most table occurrences one generation holds. The depth limit above bounds a path, not
+    /// the tree: a table whose entries each link a few tables (itself included) multiplies at
+    /// every level and reaches millions of nodes within ten levels. A link that would go beyond
+    /// the cap is skipped like a recursive one. See CODE_AUDIT_22 §5.7.
+    static let maxOccurrenceCount = 500
+
     let itemController: ItemController
     let diceRoot: DiceRootModel
     let rootManagerBox: TableGenerationRootManagerBox
@@ -84,7 +90,7 @@ struct TableGenerationController: Sendable {
             occurrence.selectedEntryIds = [entryId]
         }
 
-        rebuildChildren(in: occurrence)
+        rebuildChildren(in: occurrence, model: model)
     }
 
     @MainActor
@@ -167,7 +173,7 @@ struct TableGenerationController: Sendable {
         occurrence.selectedEntryIds = newSelection
         occurrence.hiddenEntryIds.remove(entry.id)
         if selectionChanged {
-            rebuildChildren(in: occurrence)
+            rebuildChildren(in: occurrence, model: model)
         }
         occurrence.lastRoll = result
         clearPendingRoll(in: occurrence)
@@ -267,7 +273,8 @@ struct TableGenerationController: Sendable {
 
     @MainActor
     private func rebuildChildren(
-        in occurrence: TableGenerationOccurrence
+        in occurrence: TableGenerationOccurrence,
+        model: TableGenerationModel
     ) {
         // Reuse an already-selected entry's existing child occurrence
         // instead of recreating it, so toggling a sibling selection in a
@@ -292,6 +299,13 @@ struct TableGenerationController: Sendable {
                     $0.sourceEntryId == entry.id && $0.tableId == link.itemId
                 }) {
                     newChildren.append(existing)
+                    continue
+                }
+                // This occurrence's old children are replaced below, so they do not count.
+                let kept = model.root.occurrenceCount - occurrence.children.reduce(0) { $0 + $1.occurrenceCount }
+                    + newChildren.reduce(0) { $0 + $1.occurrenceCount }
+                if kept >= Self.maxOccurrenceCount {
+                    occurrence.ignoredCycleNames.append(link.name)
                     continue
                 }
                 if let child = makeOccurrence(

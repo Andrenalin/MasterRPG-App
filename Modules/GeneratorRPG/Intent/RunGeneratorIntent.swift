@@ -127,8 +127,14 @@ enum GeneratorIntentPrompt {
     }
 
     /// `text` without the block markers, in any casing, also with spaces inside the brackets.
+    /// Removed until none is left: one pass turns `<gener<generator>ator>` into a marker again.
     static func withoutMarkers(_ text: String) -> String {
-        text.replacing(#/<\s*/?\s*generator\s*>/#.ignoresCase(), with: "")
+        var result = text
+        while true {
+            let stripped = result.replacing(#/<\s*/?\s*generator\s*>/#.ignoresCase(), with: "")
+            if stripped == result { return result }
+            result = stripped
+        }
     }
 
     /// The intent's progress, handed to the background task. `Progress` is thread-safe

@@ -155,9 +155,12 @@ struct PdfWrapperView: CustomViewRepresentable {
         }
 
         func documentDidEndDocumentFind(_ notification: Notification) {
+            // Not drained: `cancelFindString` in `beginSearch` can deliver the end of the cancelled
+            // scan after the new scan has started, and draining there took the new scan's matches
+            // and left its real end with the rest. The buffer holds the matches of the current scan
+            // until `beginSearch` clears it, so the last end notification shows all of them.
             let handoff = pendingMatches.withLock { matches in
-                defer { matches.removeAll() }
-                return MatchHandoff(selections: matches.map(\.value))
+                MatchHandoff(selections: matches.map(\.value))
             }
             let pdfView = pdfView
             let searchModel = parent.searchModel

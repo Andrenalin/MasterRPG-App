@@ -263,9 +263,14 @@ extension EditController {
     func resetImageSize(photoId: UUID, updateModel: MapModel, save: Bool = false) async {
         if let (image, degrees) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: false) {
             let size = image.size
-            updateModel.resetImage(with: photoId, size: size, degrees: degrees)
             if save {
-                itemController.replace(model: updateModel, isInsert: false)
+                // The photo was loaded asynchronously: write onto the map as it is now, not the
+                // copy taken before, which would undo edits made meanwhile.
+                let target = itemController.copy(of: updateModel.id) ?? updateModel
+                target.resetImage(with: photoId, size: size, degrees: degrees)
+                itemController.replace(model: target, isInsert: false)
+            } else {
+                updateModel.resetImage(with: photoId, size: size, degrees: degrees)
             }
         }
     }
@@ -379,6 +384,14 @@ extension EditController {
             scaledPin.location[keyPath: axis] = scaledPin.location[keyPath: axis] * factor
             return scaledPin
         }
+        // Walls and the pointer sit on the same canvas; left alone they would end up beside the rooms.
+        model.walls = model.walls.map { wall in
+            var scaledWall = wall
+            scaledWall.start[keyPath: axis] *= factor
+            scaledWall.end[keyPath: axis] *= factor
+            return scaledWall
+        }
+        model.pointer.location[keyPath: axis] *= factor
     }
 }
 

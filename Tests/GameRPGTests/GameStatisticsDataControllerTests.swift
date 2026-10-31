@@ -88,7 +88,7 @@ struct GameStatisticsDataControllerTests {
         // When
         try await sut.recoverInterruptedSessions(
             in: store.context,
-            at: startedAt.addingTimeInterval(3_600)
+            at: startedAt.addingTimeInterval(900 + GameStatisticsDataController.interruptedSessionIdleAge)
         )
         let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
 
@@ -97,6 +97,34 @@ struct GameStatisticsDataControllerTests {
         #expect(dataSet.sessions.count == 1)
         #expect(persistedSession.endedAt == startedAt.addingTimeInterval(900))
         #expect(persistedSession.duration == 900)
+    }
+
+    @Test("a session that was active recently is left open: another device may be playing it")
+    func keepsRecentlyActiveSessionOpen() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let session = GameStatisticSessionDraft.fixture(startedAt: startedAt)
+        try await sut.beginSession(session, in: store.context)
+        try await sut.checkpointSession(
+            id: session.id,
+            participants: session.participants,
+            at: startedAt.addingTimeInterval(900),
+            in: store.context
+        )
+
+        // When
+        try await sut.recoverInterruptedSessions(
+            in: store.context,
+            at: startedAt.addingTimeInterval(900 + GameStatisticsDataController.interruptedSessionIdleAge - 1)
+        )
+        let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
+        let persisted = try await store.context.perform { try store.context.fetch(request) }
+
+        // Then
+        #expect(persisted.count == 1)
+        #expect(persisted.first?.isComplete == false)
     }
 
     @Test("completed sessions under the minimum duration are deleted with their events")
@@ -173,6 +201,83 @@ struct GameStatisticsDataControllerTests {
 
         // Then
         #expect(Set(dataSet.sessions.map(\.id)) == Set(roles.prefix(2).map(\.0)))
+    }
+
+    @Test("deleting all statistics keeps the running game and its rows")
+    func deleteAllKeepsActiveSession() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let activeId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21))
+        let oldId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 22))
+        let participant = GameStatisticParticipantDraft.fixture()
+        for id in [activeId, oldId] {
+            try await sut.beginSession(.fixture(id: id, startedAt: startedAt, participants: [participant]), in: store.context)
+            try await sut.recordEvents(
+                [(.fixture(id: UUID(), sessionId: id, deduplicationKey: "event-\(id)"), participant)],
+                in: store.context
+            )
+        }
+
+        // When
+        try await sut.deleteAll(keeping: activeId, in: store.context)
+        let remaining = try await store.context.perform {
+            try ["RPGGameStatisticSession", "RPGGameStatisticEvent", "RPGGameStatisticParticipant"].map { entityName in
+                try store.context.count(for: NSFetchRequest<NSManagedObject>(entityName: entityName))
+            }
+        }
+        let sessionIds = try await store.context.perform {
+            try store.context.fetch(NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")).compactMap(\.uuid)
+        }
+
+        // Then
+        #expect(sessionIds == [activeId])
+        #expect(remaining == [1, 1, 1])
+    }
+
+    @Test("deleting all statistics without a running game removes everything")
+    func deleteAllWithoutActiveSession() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let participant = GameStatisticParticipantDraft.fixture()
+        try await sut.beginSession(.fixture(startedAt: .now, participants: [participant]), in: store.context)
+
+        // When
+        try await sut.deleteAll(in: store.context)
+        let count = try await store.context.perform {
+            try store.context.count(for: NSFetchRequest<NSManagedObject>(entityName: "RPGGameStatisticSession"))
+        }
+
+        // Then
+        #expect(count == 0)
+    }
+
+    @Test("after a failed save the unsaved statistics are dropped and a pending delete is undone")
+    func discardsUnsavedStatistics() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        try await sut.beginSession(.fixture(startedAt: .now, participants: [.fixture()]), in: store.context)
+
+        // When
+        let result = try await store.context.perform {
+            let saved = try #require(try store.context.fetch(NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")).first)
+            store.context.delete(saved)
+            let inserted = NSEntityDescription.insertNewObject(forEntityName: "RPGGameStatisticSession", into: store.context)
+            sut.discardUnsavedStatistics(in: store.context)
+            return (
+                isInsertedDropped: inserted.isDeleted || inserted.isFault || !store.context.insertedObjects.contains(inserted),
+                isDeleteUndone: !saved.isDeleted,
+                hasPendingObjects: !(store.context.insertedObjects.isEmpty && store.context.updatedObjects.isEmpty && store.context.deletedObjects.isEmpty)
+            )
+        }
+
+        // Then
+        #expect(result.isInsertedDropped)
+        #expect(result.isDeleteUndone)
+        #expect(!result.hasPendingObjects)
     }
 }
 

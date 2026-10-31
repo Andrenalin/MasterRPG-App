@@ -355,7 +355,7 @@ extension CloudDocumentController {
 
 private extension CloudDocumentController {
     func isCloud(url: URL) -> Bool {
-        url.absoluteString.hasPrefix(moduleUrl.absoluteString)
+        CloudDocumentController.isContained(url, in: moduleUrl)
     }
 
     /// `components` below the module folder. `nil` when nothing is left once `.`, `..` and empty

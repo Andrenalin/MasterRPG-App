@@ -20,6 +20,9 @@ struct CloudScanController: Sendable {
         case synced(added: Int, folders: Int, moved: Int, trashed: Int)
         /// An import, a repair or another bulk write is running.
         case busy
+        /// The folder could not be listed again, so nothing was applied. Nothing is trashed, moved
+        /// or added from a picture that may be out of date. See CODE_AUDIT_22a §5.1.
+        case unreachable
     }
 
     /// Whether the module keeps its files in iCloud at all.
@@ -33,34 +36,59 @@ struct CloudScanController: Sendable {
         guard let files = itemController.fileUrlDataController else { return nil }
         let moduleUrl = files.cloudDocumentController.moduleUrl
         let existing = itemController.cloudScanExistingItems()
-        let listed = await CloudFolderScan.files(below: moduleUrl, fileTypes: itemController.config.fileTypes)
+        let listing = await CloudFolderScan.listing(below: moduleUrl, fileTypes: itemController.config.fileTypes)
         guard !Task.isCancelled else { return nil }
-        guard let listed else {
+        guard let listing else {
             return existing.contains { $0.fileComponents != nil } ? .unreachable : .plan(CloudScanPlan())
         }
+        let listed = listing.files
         let hashes = await CloudFolderScan.hashes(of: CloudFolderScan.hashCandidates(files: listed, existing: existing), below: moduleUrl)
         guard !Task.isCancelled else { return nil }
-        return .plan(CloudFolderScan.plan(files: listed, existing: existing, module: itemController.config.module.token, hashes: hashes))
+        return .plan(CloudFolderScan.plan(
+            files: listed,
+            existing: existing,
+            module: itemController.config.module.token,
+            hashes: hashes,
+            unreadableFolders: listing.unreadableFolders
+        ))
     }
 
-    /// Applies `plan` and saves. What the library has meanwhile (the plan is shown to the user
-    /// first, and sync keeps running) is not added or changed a second time.
+    /// Applies `plan` and saves. The folder is listed again first: the plan is shown to the user
+    /// and sync keeps running, so a file that came back or moved on is not trashed or moved from
+    /// the old picture, and a file that went is not added; when the folder cannot be listed again
+    /// nothing is applied (`.unreachable`). What the library has meanwhile is not added or changed
+    /// a second time.
     @MainActor func apply(_ plan: CloudScanPlan) async -> Outcome {
+        let current = await scan()
+        let hashes = await newItemHashes(of: plan)
         guard let token = DataMutationCoordinator.shared.begin() else { return .busy }
         defer { DataMutationCoordinator.shared.end(token) }
 
+        // Without a fresh plan nothing is applied: it cannot be told whether the old picture still
+        // holds, and the user is told so instead of seeing a sync of zero.
+        guard case let .plan(currentPlan)? = current else { return .unreachable }
+        var confirmed = plan
+        let currentRemovals = Set(currentPlan.removals.map(\.id))
+        let currentItems = Set(currentPlan.items.map(\.id))
+        let currentFolders = Set(currentPlan.folders.map(\.id))
+        let currentMoves = Dictionary(currentPlan.moves.map { ($0.id, $0.to) }, uniquingKeysWith: { first, _ in first })
+        confirmed.removals.removeAll { !currentRemovals.contains($0.id) }
+        confirmed.items.removeAll { !currentItems.contains($0.id) }
+        confirmed.folders.removeAll { !currentFolders.contains($0.id) }
+        confirmed.moves.removeAll { currentMoves[$0.id] != $0.to }
+
         let known = Set(itemController.itemDataModel.items)
-        var fresh = plan
+        var fresh = confirmed
         fresh.folders.removeAll { known.contains($0.id) }
         fresh.items.removeAll { known.contains($0.id) }
 
-        var changedIds = itemController.insertCloudScan(fresh)
-        let movedIds = itemController.moveCloudScanItems(plan.moves)
+        var changedIds = itemController.insertCloudScan(fresh, hashes: hashes)
+        let movedIds = itemController.moveCloudScanItems(confirmed.moves)
         changedIds += movedIds
         editController.repairFolders(itemIds: Set(changedIds))
 
         let module = itemController.config.module
-        let trashed = plan.removals.filter { removal in
+        let trashed = confirmed.removals.filter { removal in
             guard let item = itemController.itemSync(for: removal.id, noGame: true) else { return false }
             return item.displayState != DisplayStateMask.totalHidden.rawValue
         }
@@ -68,5 +96,11 @@ struct CloudScanController: Sendable {
 
         await itemController.save()
         return .synced(added: fresh.items.count, folders: fresh.folders.count, moved: movedIds.count, trashed: trashed.count)
+    }
+
+    /// The content hashes of the files that become items, read off the main actor.
+    @MainActor private func newItemHashes(of plan: CloudScanPlan) async -> [String: String] {
+        guard !plan.items.isEmpty, let files = itemController.fileUrlDataController else { return [:] }
+        return await CloudFolderScan.hashes(of: plan.items.map(\.file), below: files.cloudDocumentController.moduleUrl)
     }
 }

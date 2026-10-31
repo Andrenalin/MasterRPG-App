@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
+import CoreGraphics
 import CoreRPG
 import Foundation
 import Testing
@@ -19,6 +20,21 @@ struct MapEntryModelTests {
             focused: true,
             displayState: 3
         )
+    }
+
+    @Test("The thumbnail crop has 25 points of margin on every side; rect keeps its geometry")
+    func rectAndThumbnailRect() async throws {
+        var sut = try await setUp()
+        sut.coordinates = [CGPoint(x: 100, y: 100), CGPoint(x: 200, y: 160)]
+        let rect = sut.rect
+        let thumbnail = sut.thumbnailRect
+
+        // The two share the origin; only the thumbnail also grows on the far sides.
+        #expect(thumbnail.origin == rect.origin)
+        #expect(thumbnail.width == rect.width + 25)
+        #expect(thumbnail.height == rect.height + 25)
+        #expect(thumbnail.maxX == rect.maxX + 25)
+        #expect(thumbnail.maxY == rect.maxY + 25)
     }
 
     @Test func assignAndDuplicate() async throws {

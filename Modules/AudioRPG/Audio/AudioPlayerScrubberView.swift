@@ -36,6 +36,9 @@ struct AudioPlayerScrubberView: View {
                 ),
                 in: sliderRange
             ) { editing in
+                // A press that ends without moving must seek to where the thumb is, not to
+                // the value of the last drag.
+                if editing { editingValue = clampedCurrentTime }
                 isEditing = editing
                 if !editing {
                     onSeek(editingValue)

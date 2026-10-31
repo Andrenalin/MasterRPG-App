@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import SwiftUI
 
 // Item models are MainActor-owned observable reference types. Diffing reads

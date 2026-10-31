@@ -50,7 +50,8 @@ extension FileManager {
                 guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory),
                       isDirectory.boolValue else { return false }
                 let content = try FileManager.default.contentsOfDirectory(atPath: url.path(percentEncoded: false))
-                guard content.allSatisfy({ $0 == ".DS_Store" }) else { return false }
+                // Finder metadata is not content: `.DS_Store`, `.localized` and AppleDouble `._*` files.
+                guard content.allSatisfy({ $0 == ".DS_Store" || $0 == ".localized" || $0.hasPrefix("._") }) else { return false }
                 try FileManager.default.removeItem(at: url)
                 return true
             }
@@ -110,10 +111,21 @@ extension FileManager {
                 // Replacing a file with itself would delete it. See CODE_AUDIT_20 §5.1.
                 guard readURL.standardizedFileURL.resolvingSymlinksInPath() != writeURL.standardizedFileURL.resolvingSymlinksInPath() else { return }
                 try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-                if FileManager.default.fileExists(atPath: writeURL.path(percentEncoded: false)) {
-                    try FileManager.default.removeItem(at: writeURL)
+                // Copy beside the target first and swap it in, so a copy that fails half way (disk
+                // full, file evicted) leaves the old file instead of nothing.
+                let temporaryURL = writeURL.deletingLastPathComponent()
+                    .appending(path: ".\(UUID().uuidString).copy", directoryHint: .notDirectory)
+                do {
+                    try FileManager.default.copyItem(at: readURL, to: temporaryURL)
+                    if FileManager.default.fileExists(atPath: writeURL.path(percentEncoded: false)) {
+                        _ = try FileManager.default.replaceItemAt(writeURL, withItemAt: temporaryURL)
+                    } else {
+                        try FileManager.default.moveItem(at: temporaryURL, to: writeURL)
+                    }
+                } catch {
+                    try? FileManager.default.removeItem(at: temporaryURL)
+                    throw error
                 }
-                try FileManager.default.copyItem(at: readURL, to: writeURL)
             }
         }
     }

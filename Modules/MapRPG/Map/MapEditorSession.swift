@@ -32,6 +32,9 @@ final class MapEditorSession {
 
     // Working copy of MapModel — owned here, mutated by MapEditController
     var workingCopy: MapModel?
+    /// Entry ids the external map held when the working copy was last aligned with it.
+    /// Only these may be removed by an external merge; other entries are uncommitted local additions.
+    var externalEntryIds: Set<UUID> = []
     var undoDepthAtOpen: Int = 0
     let history: MapEditorHistory
 

@@ -62,6 +62,57 @@ struct ExportControllerTests {
         #expect(ids.ids[.map]!.count == 1)
     }
 
+    @Test("A package for players holds the map only: a room's linked map is not exported")
+    func exportingForPlayersSkipsLinks() async throws {
+        let root = try await MockRoot.importTestData()
+        await root.itemController.resetData()
+
+        let sut = root.exportController
+        let mapId = await root.itemController.addNew(type: .item)
+        let linkedMapId = await root.itemController.addNew(type: .item)
+        let url = root.itemController.itemOrEmpty(for: linkedMapId).url(linkNumber: 0)
+        root.itemController.itemOrEmpty(for: mapId).entries.append(
+            MapEntryModel(id: UUID(), name: "Shown room", content: "\(url)", coordinates: [], isShown: true)
+        )
+        let seed = ItemModuleIds(ids: Set(arrayLiteral: mapId), module: .map)
+
+        let owner = sut.exporting(itemIds: seed)
+        let players = ExportAudience.$current.withValue(.players) { sut.exporting(itemIds: seed) }
+
+        #expect(Set(owner.ids[.map] ?? []) == [mapId, linkedMapId])
+        #expect(Set(players.ids[.map] ?? []) == [mapId])
+    }
+
+    @Test("The map data for players has no hidden pin and no hidden room name or text")
+    func playerExportDataIsRedacted() async throws {
+        let root = try await MockRoot.importTestData()
+        await root.itemController.resetData()
+
+        let mapId = await root.itemController.addNew(type: .item)
+        let map = root.itemController.itemOrEmpty(for: mapId)
+        map.entries = [
+            MapEntryModel(id: UUID(), name: "Secret vault", content: "Hidden text", coordinates: [], isShown: false),
+            MapEntryModel(id: UUID(), name: "Entrance hall", content: "Shown text", coordinates: [], isShown: true)
+        ]
+        map.mapPins = [
+            MapPinModel(id: UUID(), name: "Hidden dragon", location: CGPoint(x: 7, y: 9), isShown: false),
+            MapPinModel(id: UUID(), name: "Goblin", isShown: true)
+        ]
+
+        let data = try #require(try root.exportController.playerExportData(for: mapId))
+        let text = String(decoding: data, as: UTF8.self)
+
+        #expect(!text.contains("Secret vault"))
+        #expect(!text.contains("Hidden text"))
+        #expect(!text.contains("Hidden dragon"))
+        #expect(text.contains("Entrance hall"))
+        #expect(text.contains("Shown text"))
+        #expect(text.contains("Goblin"))
+        // The master's own item keeps everything.
+        #expect(root.itemController.itemOrEmpty(for: mapId).mapPins.count == 2)
+        #expect(root.itemController.itemOrEmpty(for: mapId).entries.first?.name == "Secret vault")
+    }
+
     @Test func exporting() async throws {
         let root = try await MockRoot.importTestData()
         await root.itemController.resetData()

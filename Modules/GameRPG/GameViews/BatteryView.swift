@@ -45,9 +45,8 @@ struct BatteryView: View {
         // can't reach the notification observers / poll `Task` it would need to
         // cancel. `.onDisappear` reliably fires before the owning view (and its
         // `@State` `monitor`) is torn down, closing the leak described in
-        // CODE_AUDIT §5.5 without requiring isolated deinit. `startMonitoring()`
-        // already guards against a redundant restart on the initial appearance
-        // (monitoring was already started by `BatteryMonitor.init`).
+        // CODE_AUDIT §5.5 without requiring isolated deinit. Monitoring starts only here, never in
+        // `BatteryMonitor.init`; see CODE_AUDIT_22 §3.1.
         .onAppear { monitor.startMonitoring() }
         .onDisappear { monitor.stopMonitoring() }
     }
@@ -81,9 +80,11 @@ struct BatteryView: View {
 @MainActor
 @Observable
 final class BatteryMonitor {
-    init() {
-        startMonitoring()
-    }
+    /// Does not start monitoring: `BatteryView` creates this in its `@State` initial value, which
+    /// runs on every re-evaluation of the parent although SwiftUI keeps only the first instance.
+    /// A monitor that started here left observers (or, on macOS, an endless poll) behind for
+    /// each discarded one. The view starts the kept instance in `onAppear`. See CODE_AUDIT_22 §3.1.
+    init() {}
 
     enum Status: Equatable, Sendable {
         case unavailable
@@ -126,8 +127,8 @@ final class BatteryMonitor {
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: Self.pollInterval)
-                guard !Task.isCancelled else { return }
-                self?.refresh()
+                guard !Task.isCancelled, let self else { return }
+                self.refresh()
             }
         }
         #endif

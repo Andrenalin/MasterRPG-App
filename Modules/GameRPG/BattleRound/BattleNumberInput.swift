@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 
 /// Reading and writing the whole numbers the game master types into a battle
@@ -14,15 +15,16 @@ enum BattleNumberInput {
         guard !trimmed.isEmpty else { return nil }
         let asciiMinus = trimmed.replacing("\u{2212}", with: "-")
         if let value = Int(asciiMinus) {
-            return value
+            return SheetNumberLimit.clamped(value)
         }
         // The format style reads a leading number and ignores what follows
         // ("12abc" would be 12), so only text made of number characters gets
         // that far.
         guard isNumberText(trimmed, locale: locale) else { return nil }
         let format = IntegerFormatStyle<Int>.number.locale(locale)
-        return (try? Int(trimmed, format: format, lenient: false))
+        let parsed = (try? Int(trimmed, format: format, lenient: false))
             ?? (try? Int(asciiMinus, format: format, lenient: false))
+        return parsed.map { SheetNumberLimit.clamped($0) }
     }
 
     /// Only digits (of any script), signs, the locale's grouping separator,

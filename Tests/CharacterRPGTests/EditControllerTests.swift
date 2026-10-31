@@ -159,6 +159,10 @@ struct EditControllerTests {
         #expect(sut.create(name: "Count", content: "42").type == .number)
         #expect(sut.create(name: "Ratio", content: "3.5").type == .decimal)
         #expect(sut.create(name: "Note", content: "hello").type == .text)
+        // Number characters alone do not make a number: a range, a fraction and a list stay text.
+        #expect(sut.create(name: "Damage", content: "5-10").type == .text)
+        #expect(sut.create(name: "Ratio", content: "3/4").type == .text)
+        #expect(sut.create(name: "List", content: "1,2,3").type == .text)
 
         let merged = sut.merge(itemId: itemId, entries: [
             ValueEntryModel(id: UUID(), name: "Text", type: .text, value: "merged"),

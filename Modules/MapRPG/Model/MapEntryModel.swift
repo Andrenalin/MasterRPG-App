@@ -107,6 +107,13 @@ extension MapEntryModel {
     var rect: CGRect {
         CGRect(origin: CGPoint(x: xOffset, y: yOffset) - 25, size: size + 25)
     }
+
+    /// The room with 25 points of margin on every side, for the thumbnail crop: the origin moves
+    /// up-left by the margin, so the size grows by it twice. `rect` stays as it was because the
+    /// hex-grid toggle and the pin counter read it. See CODE_AUDIT_22a §5.2.
+    var thumbnailRect: CGRect {
+        CGRect(origin: CGPoint(x: xOffset, y: yOffset) - 25, size: size + 50)
+    }
 }
 
 extension MapEntryModel: EntryDataAccessible {

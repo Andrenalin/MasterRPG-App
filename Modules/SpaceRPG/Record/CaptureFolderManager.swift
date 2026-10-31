@@ -201,8 +201,26 @@ final class CaptureFolderManager {
             includingPropertiesForKeys: nil
         ) else { return }
         for folder in staleFolders {
+            // A scan whose model could not be attached keeps its Models folder (see
+            // `AppDataModel.reset()`): it is the only copy, so only the raw photos go.
+            if hasModelFiles(in: folder) {
+                for name in ["Images", "Snapshots"] {
+                    try? FileManager.default.removeItem(at: folder.appending(path: name, directoryHint: .isDirectory))
+                }
+                continue
+            }
             try? FileManager.default.removeItem(at: folder)
         }
+    }
+
+    private static func hasModelFiles(in scanFolder: URL) -> Bool {
+        let modelsFolder = scanFolder.appending(path: "Models", directoryHint: .isDirectory)
+        let contents = try? FileManager.default.contentsOfDirectory(
+            at: modelsFolder,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+        return contents?.isEmpty == false
     }
 }
 

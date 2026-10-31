@@ -575,6 +575,14 @@ private extension SpaceViewer {
             let securityScope = url.startSecurityScopedAccess()
             defer { securityScope.stop() }
 
+            // RealityKit parses the file on the main actor, so a file far above what the app
+            // accepts as a source file would freeze the screen. See CODE_AUDIT_22 §6.5.
+            if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > ByteLimits.maximumSourceFileBytes {
+                loadError = String(localized: "The 3D model file is too large to show.", bundle: .module)
+                hasLoaded = true
+                return
+            }
+
             // Load entity from USDZ file
             let loadedEntity = try await Entity(contentsOf: url, withName: "3DMaster")
 

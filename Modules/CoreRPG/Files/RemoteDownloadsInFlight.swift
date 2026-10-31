@@ -27,9 +27,60 @@ final class RemoteDownloadsInFlight: Sendable {
             tasks[cachePath] = task
             return task
         }
+        // `task.value` does not stop waiting when the caller is cancelled, so the wait is a
+        // continuation that either the download or the cancellation resumes, whichever is first.
+        let wait = CancellableWait()
+        Task {
+            do {
+                try await task.value
+                wait.finish(.success(()))
+            } catch {
+                wait.finish(.failure(error))
+            }
+        }
         try await withTaskCancellationHandler {
-            try await task.value
-        } onCancel: {}
+            try await wait.wait()
+        } onCancel: {
+            wait.finish(.failure(CancellationError()))
+        }
         try Task.checkCancellation()
+    }
+}
+
+/// A one-shot wait that `finish` ends from any thread, also when it comes before `wait`.
+private final class CancellableWait: Sendable {
+    private enum State {
+        case idle
+        case waiting(CheckedContinuation<Void, any Error>)
+        case finished(Result<Void, any Error>)
+    }
+
+    private let state = Mutex<State>(.idle)
+
+    func wait() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            let finished: Result<Void, any Error>? = state.withLock { state in
+                if case let .finished(result) = state { return result }
+                state = .waiting(continuation)
+                return nil
+            }
+            if let finished { continuation.resume(with: finished) }
+        }
+    }
+
+    func finish(_ result: Result<Void, any Error>) {
+        let continuation: CheckedContinuation<Void, any Error>? = state.withLock { state in
+            switch state {
+            case .finished:
+                return nil
+            case let .waiting(continuation):
+                state = .finished(result)
+                return continuation
+            case .idle:
+                state = .finished(result)
+                return nil
+            }
+        }
+        continuation?.resume(with: result)
     }
 }

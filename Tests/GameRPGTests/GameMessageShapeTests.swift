@@ -93,6 +93,16 @@ struct GameMessageShapeTests {
         #expect(!message(role: .player, type: .update, subType: .generic, module: .dice, bytes: Data([1]), targetId: UUID()).isPlayerGroupEvent)
     }
 
+    @Test("A group event larger than its bound is not relayed to the group")
+    func oversizedGroupEvent() {
+        let atLimit = Data(count: GameLimits.maximumGroupEventPayloadBytes)
+        let overLimit = Data(count: GameLimits.maximumGroupEventPayloadBytes + 1)
+        #expect(message(role: .player, type: .update, subType: .mapPin, module: .map, bytes: atLimit).isPlayerGroupEvent)
+        #expect(!message(role: .player, type: .update, subType: .mapPin, module: .map, bytes: overLimit).isPlayerGroupEvent)
+        #expect(!message(role: .player, type: .update, subType: .generic, module: .dice, bytes: overLimit).isPlayerGroupEvent)
+        #expect(!message(role: .player, type: .update, subType: .spaceTransform, module: .space, bytes: overLimit).isPlayerGroupEvent)
+    }
+
     @Test("Only a player publishes a group event", arguments: [GameType.observer, .proxy, .master])
     func otherRolesHaveNoGroupEvents(role: GameType) {
         #expect(!message(role: role, type: .update, subType: .generic, module: .dice, bytes: Data([1])).isPlayerGroupEvent)

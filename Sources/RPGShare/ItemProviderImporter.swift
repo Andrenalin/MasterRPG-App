@@ -4,6 +4,7 @@ import CoreRPG
 import ImageIO
 import os.log
 import SwiftUI
+import Synchronization
 import UniformTypeIdentifiers
 
 struct ImageItem: Identifiable, Hashable {
@@ -255,15 +256,27 @@ private extension ItemProviderImporter {
 
     /// The provider's data for `type`. `NSItemProvider` offers this only with a completion
     /// handler (it returns a `Progress`), so there is no async variant to call.
+    /// Cancelling the task cancels the provider's `Progress`, which ends the load with an error,
+    /// instead of leaving a large item loading for a share that was dismissed.
     nonisolated static func loadDataRepresentation(provider: NSItemProvider, type: UTType) async throws -> Data {
-        try await withCheckedThrowingContinuation { continuation in
-            _ = provider.loadDataRepresentation(for: type) { data, error in
-                if let data {
-                    continuation.resume(returning: data)
-                } else {
-                    continuation.resume(throwing: error ?? Error.noItems)
+        let progress = Mutex<Progress?>(nil)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let loading = provider.loadDataRepresentation(for: type) { data, error in
+                    if let data {
+                        continuation.resume(returning: data)
+                    } else {
+                        continuation.resume(throwing: error ?? Error.noItems)
+                    }
                 }
+                let cancelled = progress.withLock { stored in
+                    stored = loading
+                    return Task.isCancelled
+                }
+                if cancelled { loading.cancel() }
             }
+        } onCancel: {
+            progress.withLock { $0 }?.cancel()
         }
     }
 

@@ -69,6 +69,36 @@ struct FolderAuditPhotoTests {
         #expect(other.entries.count == 1)
     }
 
+    @Test("Sync leaves out a file that went away after the plan was shown")
+    func cloudFolderScanApplyDropsVanishedFile() async throws {
+        let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])
+        let root = PhotoRootModel.persistentTestRoot(context: store.context)
+        let files = try #require(root.itemController.fileUrlDataController)
+        let top = "ScanTest-\(UUID().uuidString)"
+        let topUrl = files.cloudDocumentController.moduleUrl.appending(path: top, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: topUrl) }
+        for path in ["Keep.png", "Gone.png"] {
+            let url = topUrl.appending(path: path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data("x".utf8).write(to: url)
+        }
+        let controller = CloudScanController(itemController: root.itemController, editController: root.editController)
+        var plan = try await scannedPlan(controller)
+        plan.items.removeAll { $0.file.components.first != top }
+        plan.folders.removeAll { $0.path.first != top }
+        #expect(plan.items.map(\.name).sorted() == ["Gone", "Keep"])
+
+        // The plan is on screen; the file goes before the user taps Sync.
+        try FileManager.default.removeItem(at: topUrl.appending(path: "Gone.png"))
+        let outcome = await controller.apply(plan)
+
+        #expect(outcome == .synced(added: 1, folders: 1, moved: 0, trashed: 0))
+        let goneId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Gone.png"], isFolder: false)
+        let keepId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Keep.png"], isFolder: false)
+        #expect(root.itemController.itemSync(for: goneId, noGame: true) == nil)
+        #expect(root.itemController.itemSync(for: keepId, noGame: true) != nil)
+    }
+
     @Test("The iCloud folder scan adds items for files without one, in the folder structure of their path")
     func cloudFolderScanAddsMissingItems() async throws {
         let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])

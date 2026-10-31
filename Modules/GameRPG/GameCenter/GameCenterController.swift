@@ -160,7 +160,7 @@ struct GameCenterAchievementEvaluator: Sendable {
         let longestCharacterDuration = summary.characters.map(\.value).max() ?? 0
         let longestAdventureCount = summary.adventures.map(\.count).max() ?? 0
         let sharedModuleCount = Set(summary.modules.filter { $0.count > 0 }.map(\.key)).count
-        let largestParty = summary.recentSessions.map(\.maxParticipantCount).max() ?? 0
+        let largestParty = summary.largestPartySize
         // Each side of the screen is worth half: game master and player time.
         let rolesPlayed = (summary.gameMasterDuration > 0 ? 1.0 : 0) + (summary.playerDuration > 0 ? 1 : 0)
 

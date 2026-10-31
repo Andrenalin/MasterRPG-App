@@ -61,7 +61,7 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
     
     // iOS 18+: Provide recommended configurations
     func recommendations() -> [AppIntentRecommendation<ConfigureDiceWidgetIntent>] {
-        [AppIntentRecommendation(intent: ConfigureDiceWidgetIntent(), description: "Standard Dice Roller")]
+        [AppIntentRecommendation(intent: ConfigureDiceWidgetIntent(), description: LocalizedStringResource("Standard Dice Roller", bundle: .main))]
     }
 
     private func relevance(for snapshot: DiceWidgetSnapshot, at date: Date) -> TimelineEntryRelevance {

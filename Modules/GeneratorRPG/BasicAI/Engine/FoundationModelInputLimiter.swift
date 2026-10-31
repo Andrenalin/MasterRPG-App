@@ -29,11 +29,27 @@ struct FoundationModelInputLimiter {
         maxPages: Int,
         maxCharacters: Int
     ) -> String {
+        limitedCombinedText(
+            pages: pages.enumerated().map { (pageNumber: $0.offset + 1, text: $0.element) },
+            maxPages: maxPages,
+            maxCharacters: maxCharacters
+        )
+    }
+
+    /// The same for pages that carry their own number. A document's empty pages are dropped
+    /// before this, so the position in the list is not the page number: labelling by position
+    /// told the model that page 7 was page 3 and made every section's page number wrong.
+    /// See CODE_AUDIT_22 §5.8.
+    static func limitedCombinedText(
+        pages: [(pageNumber: Int, text: String)],
+        maxPages: Int,
+        maxCharacters: Int
+    ) -> String {
         guard maxPages > 0, maxCharacters > 0 else { return "" }
 
         var combined = ""
-        for (offset, pageText) in pages.prefix(maxPages).enumerated() where !pageText.isEmpty {
-            let pageBlock = "--- Page \(offset + 1) ---\n\(pageText)\n\n"
+        for (pageNumber, pageText) in pages.prefix(maxPages) where !pageText.isEmpty {
+            let pageBlock = "--- Page \(pageNumber) ---\n\(pageText)\n\n"
             if combined.count + pageBlock.count > maxCharacters {
                 let remaining = maxCharacters - combined.count
                 if remaining > 0 {

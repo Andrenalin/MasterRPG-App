@@ -25,6 +25,17 @@ class Lightning {
     /// Bolt width lost per second while fading out.
     private static let fadeRate = 15.0
 
+    /// Where a bolt may start: 50 pt in from both edges, or the middle of a view narrower than
+    /// 100 pt, where `50 ... width - 50` would be an invalid range and trap. See CODE_AUDIT_22 §5.12.
+    static func boltStartRange(width: CGFloat) -> ClosedRange<Double> {
+        let inset = 50.0
+        guard width.isFinite, width > inset * 2 else {
+            let middle = width.isFinite ? max(width, 0) / 2 : 0
+            return middle ... middle
+        }
+        return inset ... Double(width) - inset
+    }
+
     var bolts = [LightningBolt]()
     var state = LightningState.waiting
     var lastUpdate = Date.now
@@ -47,7 +58,7 @@ class Lightning {
             break
 
         case .preparing:
-            let startPosition = CGPoint(x: Double.random(in: 50 ... size.width - 50), y: 0)
+            let startPosition = CGPoint(x: Double.random(in: Self.boltStartRange(width: size.width)), y: 0)
             let newBolt = LightningBolt(start: startPosition, width: 5, angle: Angle.degrees(270).radians)
             bolts.append(newBolt)
             state = .striking

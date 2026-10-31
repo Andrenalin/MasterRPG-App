@@ -26,6 +26,7 @@ extension MapEditController {
     func prepareWorkingCopy(from map: MapModel, editorModel: MapEditorSession) {
         guard editorModel.workingCopy?.id != map.id else { return }
         editorModel.workingCopy = map.copy()
+        editorModel.externalEntryIds = Set(map.entries.map(\.id))
         editorModel.undoDepthAtOpen = editController.editorModel.undoManaged.undoDepth
         if let copy = editorModel.workingCopy {
             editorModel.pinScale = copy.pinScale

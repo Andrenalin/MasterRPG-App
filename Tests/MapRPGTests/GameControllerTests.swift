@@ -685,7 +685,8 @@ struct GameControllerTests {
             photoId: UUID(),
             location: CGPoint(x: 1, y: 2),
             size: .large,
-            isShown: false,
+            // Shown: the master never sends hidden pins to players.
+            isShown: true,
             isPlayer: true,
             players: [playerId],
             timeInterval: 10,
@@ -713,7 +714,7 @@ struct GameControllerTests {
         optimisticPlayer.photoId = UUID()
         optimisticPlayer.location = CGPoint(x: 50, y: 60)
         optimisticPlayer.size = .tiny
-        optimisticPlayer.isShown = true
+        optimisticPlayer.isShown = false
         optimisticPlayer.isZoom = true
         optimisticPlayer.isDead = false
         optimisticPlayer.isHighlighted = true

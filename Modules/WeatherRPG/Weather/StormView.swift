@@ -18,13 +18,14 @@ struct StormView: View {
     // construction, so a genuine change to any of them still rebuilds the
     // storm — only re-renders from unrelated model changes preserve it.
     // See CODE_AUDIT_Weather §8.1.
-    @State private var storm: Storm
+    @State private var storm: LazyBox<Storm>
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         TimelineView(.animation(paused: accessibilityReduceMotion)) { timeline in
             Canvas { context, size in
+                let storm = storm.value
                 storm.update(date: timeline.date, size: size)
 
                 for drop in storm.drops {
@@ -43,7 +44,7 @@ struct StormView: View {
         }
         .ignoresSafeArea()
         .onChange(of: stormKey) { _, _ in
-            storm = Storm(type: type, direction: direction, strength: strength)
+            storm = Self.makeStorm(type: type, direction: direction, strength: strength)
         }
     }
 
@@ -51,7 +52,11 @@ struct StormView: View {
         self.type = type
         self.direction = direction
         self.strength = strength
-        _storm = State(initialValue: Storm(type: type, direction: direction, strength: strength))
+        _storm = State(initialValue: Self.makeStorm(type: type, direction: direction, strength: strength))
+    }
+
+    private static func makeStorm(type: Storm.Contents, direction: Angle, strength: Int) -> LazyBox<Storm> {
+        LazyBox { Storm(type: type, direction: direction, strength: strength) }
     }
 
     private struct StormKey: Equatable {

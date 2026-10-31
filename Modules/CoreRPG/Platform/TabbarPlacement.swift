@@ -8,8 +8,14 @@ public extension View {
         Group {
         
             if #available(iOS 27.0, *) {
-                self
-                    .defaultTabBarPlacement(.sidebar)
+                switch defaultPlacement {
+                case .automatic:
+                    self.defaultTabBarPlacement(.automatic)
+                case .tabBar:
+                    self.defaultTabBarPlacement(.tabBar)
+                case .sidebar:
+                    self.defaultTabBarPlacement(.sidebar)
+                }
             } else {
                 self
             }

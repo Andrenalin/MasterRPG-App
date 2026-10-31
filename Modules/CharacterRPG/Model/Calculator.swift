@@ -28,7 +28,25 @@ struct Calculator {
         // `Double(_:format:)` does prefix matching (e.g. "2-" parses as 2.0, silently
         // ignoring the trailing "-"), unlike the strict NumberFormatter this replaced.
         // `wholeMatch(of:)` requires the entire string to match, restoring that behavior.
-        return nextInput.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US")))?.output
+        guard let value = nextInput.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US")))?.output else {
+            return nil
+        }
+        return roundedToResultPrecision(value)
+    }
+
+    /// The steps carry a `Double` exactly (see `formatNumber`), so binary noise such as the 4e-17 of
+    /// 0.1 + 0.2 survives to the end. The final result is rounded to 15 significant digits, which
+    /// collapses that noise and leaves every number a sheet can hold unchanged.
+    /// See CODE_AUDIT_22 §5.7, CODE_AUDIT_22a §5.4.
+    private static func roundedToResultPrecision(_ value: Double) -> Double {
+        guard value.isFinite, value != 0 else { return value }
+        let text = value.formatted(
+            .number
+                .locale(Locale(identifier: "en_US"))
+                .grouping(.never)
+                .precision(.significantDigits(1 ... 15))
+        )
+        return (try? Double(text, format: .number.locale(Locale(identifier: "en_US")), lenient: false)) ?? value
     }
 
     @MainActor
@@ -115,9 +133,16 @@ struct Calculator {
         return (nextInput, true)
     }
 
+    /// An intermediate result as the text the next step parses. The text keeps up to 17 significant
+    /// digits, which is exact for a `Double`: "1/3*3" is 1, not the 0.999 that the default `.number`
+    /// style (three fraction digits) rounded to after the first step.
+    /// See CODE_AUDIT_22 §5.7, CODE_AUDIT_22a §5.4.
     private static func formatNumber(_ number: Double) -> String {
-        var result = "\(number.formatted(.number.locale(Locale(identifier: "en_US"))))"
-        result = result.replacing(",", with: "")
-        return result
+        number.formatted(
+            .number
+                .locale(Locale(identifier: "en_US"))
+                .grouping(.never)
+                .precision(.significantDigits(1 ... 17))
+        )
     }
 }
