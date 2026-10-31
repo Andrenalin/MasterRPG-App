@@ -25,6 +25,10 @@ struct AdditionalEntryRow: View, Equatable {
                 Text("Shown", bundle: .module)
             }
             Text("\(pinsCounter) pins", bundle: .module)
+            if missingCharacterCounter > 0 {
+                Text("\(missingCharacterCounter) missing", bundle: .module)
+                    .foregroundStyle(.red)
+            }
         }
     }
 
@@ -40,11 +44,20 @@ struct AdditionalEntryRow: View, Equatable {
         source.entryId ?? UUID()
     }
     
-    private var pinsCounter: Int {
+    private var pinsInEntry: [MapPinModel] {
         let entryRect = mapEntryModel.rect
-        return model.mapPins.filter { entryRect.contains($0.location) }.count
-        
+        return model.mapPins.filter { entryRect.contains($0.location) }
     }
+
+    private var pinsCounter: Int {
+        pinsInEntry.count
+    }
+
+    /// Pins without a linked character — the editor outlines them in red.
+    private var missingCharacterCounter: Int {
+        pinsInEntry.filter { $0.characterId == nil }.count
+    }
+
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source
     }

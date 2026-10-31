@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CharacterRPG
 import CoreRPG
 import PhotoRPG
 import SwiftUI
@@ -25,7 +26,7 @@ struct MapPinActionMenuStack: View {
                 MapPinActionMenuButton(pin: model.pin, type: type) {
                     model.perform(type, context: context)
                 }
-                .applyIf(type == .photo) {
+                .applyIf(type == .photo || type == .character) {
                     $0.matchedTransitionSource(id: type.label, in: photoSpace)
                 }
             }
@@ -36,6 +37,13 @@ struct MapPinActionMenuStack: View {
                 model: model,
                 context: context,
                 photoSpace: photoSpace
+            )
+        )
+        .modifier(
+            MapPinCharacterSelectionModifier(
+                model: model,
+                context: context,
+                characterSpace: photoSpace
             )
         )
     }
@@ -126,6 +134,54 @@ struct MapPinPhotoSelectionModifier: ViewModifier {
                       !selectedPhoto.selection.isEmpty else { return }
                 withAnimation { model.replacePhoto(with: selectedPhoto.itemId) }
                 selectedPhoto.resetSelection(itemId: nil, entryId: nil)
+            }
+#endif
+    }
+}
+
+/// Presents the character picker for the editor's "Choose Pin Character" action and
+/// writes the selection back into the pin's `characterId`.
+struct MapPinCharacterSelectionModifier: ViewModifier {
+    let model: MapPinNode
+    let context: MapPinActionContext
+    let characterSpace: Namespace.ID
+
+    @Environment(MapRootModel.self) private var root
+#if os(macOS)
+    @Environment(ScenesManager.self) private var scenesManager
+#endif
+
+    @State private var selectedCharacter = ItemSelectionModel(isSingleSelection: true, allowCollections: false)
+
+    func body(content: Content) -> some View {
+        @Bindable var model = model
+
+        content
+#if os(macOS)
+            .onChange(of: model.isCharacterSelectionPresented) { _, isPresented in
+                guard context == .editor, isPresented else { return }
+                root.characterRoot.itemSelectionModel = selectedCharacter
+                scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
+                model.isCharacterSelectionPresented = false
+            }
+            .onChange(of: selectedCharacter.selection) {
+                guard context == .editor, let itemId = selectedCharacter.itemId else { return }
+                withAnimation { model.replaceCharacter(with: itemId) }
+                selectedCharacter.resetSelection(itemId: nil, entryId: nil)
+            }
+#else
+            .sheet(isPresented: context == .editor ? $model.isCharacterSelectionPresented : .constant(false)) {
+                ManagedPresentationView {
+                    root.viewController.characterSelection(root: root, selectionModel: selectedCharacter)
+                        .navigationTransition(.zoom(sourceID: MapPinButtonType.character.label, in: characterSpace))
+                }
+            }
+            .onChange(of: model.isCharacterSelectionPresented) {
+                guard context == .editor,
+                      !model.isCharacterSelectionPresented,
+                      !selectedCharacter.selection.isEmpty else { return }
+                withAnimation { model.replaceCharacter(with: selectedCharacter.itemId) }
+                selectedCharacter.resetSelection(itemId: nil, entryId: nil)
             }
 #endif
     }

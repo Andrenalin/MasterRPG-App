@@ -315,7 +315,7 @@ final class MapEditorActionRouter {
                     pinId: pin.id
                 )
             }
-        case .remove, .copy, .photo:
+        case .remove, .copy, .photo, .character:
             break
         }
     }

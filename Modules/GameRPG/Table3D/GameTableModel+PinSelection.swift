@@ -210,7 +210,7 @@ extension GameTableModel {
         case .zoom: toggleSelectedPinZoom()
         case .highlight: toggleSelectedPinHighlight()
         case .battle: addSelectedPinToBattleRound()
-        case .remove, .copy, .photo:
+        case .remove, .copy, .photo, .character:
             // Map editor actions; the game master's popover doesn't offer them.
             break
         }

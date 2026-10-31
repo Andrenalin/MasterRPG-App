@@ -34,6 +34,7 @@ final class MapPinNode: Identifiable {
     private(set) var pin: MapPinModel
     private(set) var isExpanded = false
     var isPhotoSelectionPresented = false
+    var isCharacterSelectionPresented = false
     let isPointer: Bool
 
     @ObservationIgnored private weak var store: MapPinViewModel?
@@ -74,6 +75,10 @@ final class MapPinNode: Identifiable {
         store?.replacePhoto(pinId: id, itemId: itemId)
     }
 
+    func replaceCharacter(with itemId: UUID?) {
+        store?.replaceCharacter(pinId: id, itemId: itemId)
+    }
+
     fileprivate func attach(to store: MapPinViewModel) {
         self.store = store
     }
@@ -88,6 +93,7 @@ final class MapPinNode: Identifiable {
         self.isExpanded = isExpanded
         if !isExpanded {
             isPhotoSelectionPresented = false
+            isCharacterSelectionPresented = false
         }
     }
 }
@@ -175,6 +181,20 @@ final class MapPinViewModel {
         node.update(pin: updatedPin)
         interactionHandler?(.action(
             .photo,
+            pin: updatedPin,
+            isPointer: node.isPointer,
+            context: .editor
+        ))
+    }
+
+    func replaceCharacter(pinId: UUID, itemId: UUID?) {
+        guard let node = pinNode(for: pinId) else { return }
+        var updatedPin = node.pin
+        guard updatedPin.characterId != itemId else { return }
+        updatedPin.characterId = itemId
+        node.update(pin: updatedPin)
+        interactionHandler?(.action(
+            .character,
             pin: updatedPin,
             isPointer: node.isPointer,
             context: .editor
@@ -278,6 +298,9 @@ final class MapPinViewModel {
             }
         case (.editor, .photo):
             node.isPhotoSelectionPresented = true
+            return
+        case (.editor, .character):
+            node.isCharacterSelectionPresented = true
             return
         case (.editor, .resize):
             resizePin(id: node.id)

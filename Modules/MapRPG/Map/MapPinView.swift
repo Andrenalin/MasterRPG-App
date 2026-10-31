@@ -26,6 +26,21 @@ struct MapPinView: View {
     }
 }
 
+/// What a pin accepts by drop in the editor: a photo for its image or a character.
+/// The dropped `module` tells them apart.
+struct MapPinDropTransferable: LinkDataTransferable {
+    let module: NetworkModules
+    let itemId: UUID
+    let entryId: UUID?
+    let name: String
+    let isMove: Bool
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .photoLink)
+        CodableRepresentation(contentType: .characterLink)
+    }
+}
+
 private struct MapPinTapGestureModifier: ViewModifier {
     let model: MapPinNode
     let actionContext: MapPinActionContext
@@ -132,6 +147,13 @@ private struct MapPinContentView: View {
             MapPinHealthRing(pinId: pin.id, broadcastHealthPercent: pin.healthPercent, isDead: pin.isDead)
         }
         .overlay {
+            if actionContext == .editor, pin.characterId == nil {
+                Circle()
+                    .strokeBorder(.red, lineWidth: 3)
+                    .accessibilityHidden(true)
+            }
+        }
+        .overlay {
             if pin.isDead {
                 Image(systemName: "xmark")
                     .resizable()
@@ -163,14 +185,20 @@ private struct MapPinContentView: View {
             reduceMotion: reduceMotion
         ))
 #if os(macOS) || os(visionOS)
+        // One destination for both link types: stacked `dropDestination`s for different
+        // types on the same view don't all receive their drops.
         .dropDestination(
-            for: LinkPhotoData.self,
+            for: MapPinDropTransferable.self,
             isEnabled: actionContext == .editor
-        ) { photos, _ in
-            guard let photo = photos.first else { return }
-            // A pin owns one displayed photo. Accept only the first dropped
-            // item so one user drop produces one model/persistence event.
-            model.replacePhoto(with: photo.itemId)
+        ) { links, _ in
+            // A pin owns one displayed photo and one character. Accept only the first
+            // dropped item so one user drop produces one model/persistence event.
+            guard let link = links.first else { return }
+            switch link.module {
+            case .photo: model.replacePhoto(with: link.itemId)
+            case .value where link.entryId == nil: model.replaceCharacter(with: link.itemId)
+            default: break
+            }
         }
 #endif
         .accessibilityElement(children: .ignore)

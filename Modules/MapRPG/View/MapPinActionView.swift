@@ -14,7 +14,7 @@ enum MapPinActionContext: Equatable {
         case .none:
             []
         case .editor:
-            [.remove, .copy, .photo, .resize, .dead]
+            [.remove, .copy, .photo, .character, .resize, .dead]
         case .gameMaster:
             [.dead, .visibility, .resize, .zoom, .highlight, .battle]
         }
@@ -24,13 +24,14 @@ enum MapPinActionContext: Equatable {
 /// Public because GameRPG's 3D table performs the game master's actions itself; see
 /// `ViewController.gamePinActionPopover`.
 public enum MapPinButtonType: String, Hashable, Sendable {
-    case remove, copy, photo, resize, dead, visibility, zoom, highlight, battle
+    case remove, copy, photo, character, resize, dead, visibility, zoom, highlight, battle
 
     func systemImage(for pin: MapPinModel) -> String {
         switch self {
         case .remove: return "trash"
         case .copy:   return "document.on.document"
-        case .photo:  return "photo"
+        case .photo:  return NetworkModules.photo.icon
+        case .character: return NetworkModules.value.icon
         case .resize: return "square.resize"
         case .dead: return pin.isDead ? "heart.fill" : "xmark.circle"
         case .visibility: return pin.isShown ? "eye.slash" : "eye"
@@ -47,6 +48,7 @@ public enum MapPinButtonType: String, Hashable, Sendable {
         case .remove: .red
         case .copy: .gray
         case .photo: .purple
+        case .character: .mint
         case .resize: .teal
         case .visibility: .blue
         case .zoom: .indigo
@@ -61,6 +63,7 @@ public enum MapPinButtonType: String, Hashable, Sendable {
         case .remove: LocalizedStringResource("Remove Pin", bundle: .module)
         case .copy: LocalizedStringResource("Copy Pin", bundle: .module)
         case .photo: LocalizedStringResource("Choose Pin Photo", bundle: .module)
+        case .character: LocalizedStringResource("Choose Pin Character", bundle: .module)
         case .resize: LocalizedStringResource("Resize Pin", bundle: .module)
         case .dead:
             pin.isDead
