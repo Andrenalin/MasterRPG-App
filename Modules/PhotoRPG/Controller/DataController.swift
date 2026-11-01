@@ -20,14 +20,14 @@ extension DataController: CoreDataSnapshotPersistable {
     @Sendable
     func mapSnapshot(_ model: RPGPhoto, token: String) -> PhotoSnapshot {
         PhotoSnapshot(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
             category: CRDT(string: model.photoCategory ?? "", defaultValue: ItemListCategory.adventure),
             displayState: Int(model.displayState),
             degrees: CRDT(string: model.degrees ?? "", defaultValue: 0.0),
-            fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
+            fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: repairedUuid(of: model, at: \.uuid), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
             entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
             parentId: model.parentId
         )
@@ -75,8 +75,8 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGPhotoEntry) -> PhotoEntryModel {
         PhotoEntryModel(
-            id: model.uuid ?? UUID(),
-            photoId: (model.photoUUID ?? model.uuid ?? UUID())
+            id: repairedUuid(of: model, at: \.uuid),
+            photoId: (model.photoUUID ?? repairedUuid(of: model, at: \.uuid))
         )
     }
 

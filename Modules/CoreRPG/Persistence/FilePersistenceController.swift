@@ -34,6 +34,14 @@ struct FilePersistenceController: Sendable {
 extension FilePersistenceController {
     @concurrent
     func load() async -> [DataModel] {
+        await loadIfReadable() ?? []
+    }
+
+    /// The stored entries, or `nil` when the file exists but could not be read. A caller that
+    /// writes the store back must not treat `nil` as an empty store: the next save would replace
+    /// every entry that was still on disk. See CODE_AUDIT_23 §5.5.
+    @concurrent
+    func loadIfReadable() async -> [DataModel]? {
         guard type != .memory else { return await model.cache }
         let oldUrl = oldFileUrl
         let loadUrl = fileUrl
@@ -68,8 +76,8 @@ extension FilePersistenceController {
             }
         } catch {
             Logger.filePersistenceController.error("Error loading data \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            return nil
         }
-        return []
     }
 
     @concurrent
@@ -111,7 +119,8 @@ extension FilePersistenceController {
     @concurrent
     func saveData(_ data: Data, for uuid: String) async throws {
         guard let url = try dataUrl(for: uuid) else { return }
-        try data.write(to: url)
+        // Atomic: a kill or a full disk must not leave a truncated file. See CODE_AUDIT_23 §5.25.
+        try data.write(to: url, options: .atomic)
     }
 
     @concurrent

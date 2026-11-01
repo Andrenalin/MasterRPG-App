@@ -35,10 +35,10 @@ struct MapEditorCharacterLinkTests {
         #expect(room1Links.map(\.itemId) == [spiderId, wolfId])
         #expect(LinkReplaceController.links(for: copy[room2.id].content).map(\.itemId) == [spiderId])
         #expect(copy.mapPins.count == 4)
-        // The map sheet reads the stored model.
+        // The stored map is written when the editor commits, not by a mutation.
         let stored = try #require(context.root.itemController.itemSync(for: map.id))
-        #expect(LinkReplaceController.links(for: stored[room1.id].content).map(\.itemId) == [spiderId, wolfId])
-        #expect(LinkReplaceController.links(for: stored[room2.id].content).map(\.itemId) == [spiderId])
+        #expect(stored[room1.id].content == "Old text")
+        #expect(stored[room2.id].content.isEmpty)
     }
 
     @Test("Without a selected room a selected character goes into the first room")

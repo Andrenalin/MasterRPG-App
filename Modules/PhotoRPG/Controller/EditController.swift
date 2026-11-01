@@ -85,7 +85,7 @@ extension EditController {
 
     @concurrent
     private static func importedJPEG(from data: Data) async -> Data? {
-        (AKImage.boundedDecode(from: data) ?? AKImage(data: data))?
+        AKImage.decodedImage(from: data)?
             .jpegData(compressionQuality: JPEGQuality.export)
     }
 

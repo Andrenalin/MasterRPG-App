@@ -16,6 +16,7 @@ import IOKit.ps
 /// battery level can't be determined (tvOS, or a Mac without a battery).
 struct BatteryView: View {
     @State private var monitor = BatteryMonitor()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -25,7 +26,7 @@ struct BatteryView: View {
                     Text(level, format: .percent.precision(.fractionLength(0)))
                 } icon: {
                     Image(systemName: Self.symbolName(for: level))
-                        .symbolEffect(.pulse, options: .repeating, isActive: level < 0.05)
+                        .symbolEffect(.pulse, options: .repeating, isActive: level < 0.05 && !reduceMotion)
                 }
                 .labelStyle(.iconOnly)
                 .foregroundStyle(Self.color(for: level))
@@ -95,6 +96,9 @@ final class BatteryMonitor {
 
     #if os(iOS) || os(visionOS)
     private var observationTokens: [NotificationCenter.ObservationToken] = []
+    /// `isBatteryMonitoringEnabled` is process-wide, so it stays on until the last monitor
+    /// stops. See CODE_AUDIT_23 §3.4.
+    private static var activeMonitorCount = 0
     #endif
     #if os(macOS)
     private var pollTask: Task<Void, Never>?
@@ -107,6 +111,7 @@ final class BatteryMonitor {
         refresh()
         #if os(iOS) || os(visionOS)
         guard observationTokens.isEmpty else { return }
+        Self.activeMonitorCount += 1
         UIDevice.current.isBatteryMonitoringEnabled = true
         observationTokens = [
             NotificationCenter.default.addObserver(
@@ -136,11 +141,15 @@ final class BatteryMonitor {
 
     func stopMonitoring() {
         #if os(iOS) || os(visionOS)
+        guard !observationTokens.isEmpty else { return }
         for token in observationTokens {
             NotificationCenter.default.removeObserver(token)
         }
         observationTokens.removeAll()
-        UIDevice.current.isBatteryMonitoringEnabled = false
+        Self.activeMonitorCount -= 1
+        if Self.activeMonitorCount <= 0 {
+            UIDevice.current.isBatteryMonitoringEnabled = false
+        }
         #elseif os(macOS)
         pollTask?.cancel()
         pollTask = nil

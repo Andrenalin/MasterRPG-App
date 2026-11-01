@@ -30,16 +30,28 @@ extension GameController {
         // `reduce(into:)` appends in place; `reduce("")` copied the whole string per entry
         // (quadratic on hex maps). See CODE_AUDIT_17 §7.3.
         let first = model.entries.reduce(into: "") { $0 += "\($1.id):\($1.isShown):\($1.focused)|" }
-        return first + (JSONString.encode(value: [model.pointer] + Self.pinsVisibleToPlayers(in: model)) ?? "")
+        return first + (JSONString.encode(value: [Self.pointerVisibleToPlayers(in: model)] + Self.pinsVisibleToPlayers(in: model)) ?? "")
     }
 
     /// The pins a `.mapState` message may carry. The message only ever goes master to players, so
     /// a hidden pin is left out entirely: its name, portrait id, character link and position are
     /// not on a player device until the pin is shown. A player replaces its pins with this list, so
-    /// a pin the game master hides disappears there. See CODE_AUDIT_22 §6.1.
+    /// a pin the game master hides disappears there. A monster inside an unrevealed room counts as
+    /// hidden too, so it goes out when that room is revealed. See CODE_AUDIT_22 §6.1,
+    /// CODE_AUDIT_23 §6.1.
     @MainActor
     static func pinsVisibleToPlayers(in model: MapModel) -> [MapPinModel] {
-        model.mapPins.filter(\.isShown)
+        model.mapPins.filter { model.isPinVisibleToPlayers($0) }
+    }
+
+    /// The shared pointer as players may read it: a hidden pointer keeps no position, so players do
+    /// not learn where the game master is pointing before it is shown. See CODE_AUDIT_23 §6.2.
+    @MainActor
+    static func pointerVisibleToPlayers(in model: MapModel) -> MapPinModel {
+        guard !model.pointer.isShown else { return model.pointer }
+        var pointer = model.pointer
+        pointer.location = .zero
+        return pointer
     }
 
     /// The same live state as comparable values, for a sender that wants to
@@ -55,7 +67,7 @@ extension GameController {
             mapId: itemId,
             generation: networkGeneration(for: itemId),
             rooms: model.entries.map { MapLiveState.Room(id: $0.id, isShown: $0.isShown, focused: $0.focused) },
-            pointer: model.pointer,
+            pointer: Self.pointerVisibleToPlayers(in: model),
             pins: Self.pinsVisibleToPlayers(in: model)
         )
     }

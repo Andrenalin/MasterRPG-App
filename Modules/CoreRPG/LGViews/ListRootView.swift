@@ -128,6 +128,7 @@ struct ListRootView: View {
                 .onChange(of: root.navigationModel.triggerCloudScan) {
                     guard root.navigationModel.triggerCloudScan else { return }
                     root.navigationModel.triggerCloudScan = false
+                    guard !root.itemControllable.itemDataModel.isGameMode else { return }
                     navigator.navigate(to: InternalRoute.cloudFolderScan, method: .sheet)
                 }
                 .onChange(of: root.navigationModel.triggerDelete) {
@@ -246,7 +247,9 @@ private struct RevealAddedRowModifier: ViewModifier {
                 pendingRevealItemId = addedId
                 revealPendingRow()
             }
-            .onChange(of: listModel.list.map(\.id)) {
+            // The ids are only tracked while a reveal waits for its row.
+            // See CODE_AUDIT_23 §7.15.
+            .onChange(of: pendingRevealItemId == nil ? [] : listModel.list.map(\.id)) {
                 revealPendingRow()
             }
     }

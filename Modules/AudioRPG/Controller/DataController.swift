@@ -22,13 +22,13 @@ extension DataController: CoreDataSnapshotPersistable {
     @Sendable
     func mapSnapshot(_ model: RPGAudio, token: String) -> AudioSnapshot {
         AudioSnapshot(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
             category: CRDT(string: model.audioCategory ?? "", defaultValue: ItemListCategory.music),
             displayState: Int(model.displayState),
-            fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
+            fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: repairedUuid(of: model, at: \.uuid), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
             entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
             parentId: model.parentId
         )
@@ -74,8 +74,8 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGAudioEntry) -> AudioEntryModel {
         AudioEntryModel(
-            id: model.uuid ?? UUID(),
-            audioId: (model.audioUUID ?? model.uuid ?? UUID())
+            id: repairedUuid(of: model, at: \.uuid),
+            audioId: (model.audioUUID ?? repairedUuid(of: model, at: \.uuid))
         )
     }
 

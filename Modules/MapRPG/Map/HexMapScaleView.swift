@@ -76,6 +76,7 @@ struct HexMapScaleView: View {
         .opacity(model.hideCloseButton ? 0 : 1)
         .allowsHitTesting(!model.hideCloseButton)
         .accessibilityHidden(model.hideCloseButton)
+        .disabled(model.hideCloseButton)
     }
 }
 

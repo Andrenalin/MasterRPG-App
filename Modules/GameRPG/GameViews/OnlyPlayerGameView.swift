@@ -26,6 +26,7 @@ struct OnlyPlayerGameView: View {
             .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
             .allowsHitTesting(gameScreenModel.showMainTab != .none)
             .accessibilityHidden(gameScreenModel.showMainTab == .none)
+            .disabled(gameScreenModel.showMainTab == .none)
             .shadow(radius: 8)
             .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showMainTab)
             .onGeometryChange(for: CGFloat.self) { proxy in

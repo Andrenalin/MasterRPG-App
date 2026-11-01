@@ -5,12 +5,12 @@ import CoreRPG
 import Foundation
 import MapRPG
 import PhotoRPG
+import Combine
 import RealityKit
 import SwiftUI
 import os.log
 
 #if os(visionOS)
-import Combine
 import DiceRPG
 import TabletopKit
 #endif

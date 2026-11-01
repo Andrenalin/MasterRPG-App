@@ -13,24 +13,26 @@ struct AudioPlayerPlaybackControls: View {
     let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: 8) {
             Button {
-                withAnimation {
+                withAnimation(.default.reduced(if: reduceMotion)) {
                     audioController.skipToCurrentItem(offsetBy: -1)
                 }
             } label: {
                 Label { Text("Previous Track", bundle: .module) } icon: { Image(systemName: "backward.fill") }
                     .labelStyle(.iconOnly)
                     .font(.title3)
-                    .frame(width: 32, height: 32)
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(.rect) // Ensure full frame is tappable
             }
             .buttonStyle(.plain)
             .disabled(!audioPlayerModel.hasPrev)
 
             Button {
-                withAnimation {
+                withAnimation(.default.reduced(if: reduceMotion)) {
                     audioController.togglePlay()
                 }
             } label: {
@@ -48,14 +50,14 @@ struct AudioPlayerPlaybackControls: View {
             .disabled(audioPlayerModel.playList.isEmpty)
 
             Button {
-                withAnimation {
+                withAnimation(.default.reduced(if: reduceMotion)) {
                     audioController.skipToCurrentItem(offsetBy: 1)
                 }
             } label: {
                 Label { Text("Next Track", bundle: .module) } icon: { Image(systemName: "forward.fill") }
                     .labelStyle(.iconOnly)
                     .font(.title3)
-                    .frame(width: 32, height: 32)
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(.rect) // Ensure full frame is tappable
             }
             .buttonStyle(.plain)

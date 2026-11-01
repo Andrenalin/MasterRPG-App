@@ -20,7 +20,7 @@ extension DataController: CoreDataSnapshotPersistable {
     @Sendable
     func mapSnapshot(_ model: RPGDice, token: String) -> DiceSnapshot {
         DiceSnapshot(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
@@ -152,8 +152,8 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGDiceEntry) -> ChildEntryModel {
         ChildEntryModel(
-            id: model.uuid ?? UUID(),
-            childId: (model.childUUID ?? model.uuid ?? UUID())
+            id: repairedUuid(of: model, at: \.uuid),
+            childId: (model.childUUID ?? repairedUuid(of: model, at: \.uuid))
         )
     }
 

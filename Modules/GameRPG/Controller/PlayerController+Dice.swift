@@ -23,6 +23,14 @@ extension PlayerController {
             return nil
         }
 
+        // A peer's roll is not authoritative here either: refuse values no dice can produce.
+        // See CODE_AUDIT_23 §6.4.
+        if !model.sender.isMaster, model.type == .update,
+           let reported = DiceResultModel.decodeData(of: model.data.data), !reported.isPlausibleReport {
+            Logger.networking.warning("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — implausible roll")
+            return nil
+        }
+
         switch model.type {
         case .reveal:
             if try await !root.diceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {

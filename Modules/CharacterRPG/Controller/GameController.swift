@@ -13,6 +13,9 @@ final class ValueGameModel {
 
     var gameEntryDiceId: [UUID: UUID] = [:]
     var gameDiceId: [UUID: UUID] = [:]
+    /// The deep-copied value groups of each battle clone (clone id to group copy ids), so the
+    /// clone's HP/initiative groups are its own and go away with it. See CODE_AUDIT_23 §5.3.
+    var battleGroupCopyIds: [UUID: Set<UUID>] = [:]
 
     /// Clears both dice-cache dictionaries for `entryId`, matching the
     /// symmetric clearing `removeBattleCharacterCopies` already does for
@@ -28,8 +31,8 @@ final class ValueGameModel {
 /// A resolved route from a top-level Character down to one of its entries,
 /// through zero or more nested value "group" tables (`ValueModel.groupId`).
 /// `duplicateWithoutCopy()` only mints fresh ids for a Character's own
-/// top-level entries — nested group tables are shared, not duplicated — so
-/// this path lets `gameEntry(matching:characterId:)` relocate the
+/// top-level entries and `createBattleCharacterCopy` gives each clone its own
+/// group tables with fresh ids, so this path lets `gameEntry(matching:characterId:)` relocate the
 /// structurally-equivalent entry on a different (e.g. battle-copy) Character
 /// without relying on the id, which may not carry over.
 public struct GameEntryPath: Sendable {
@@ -201,11 +204,39 @@ extension GameController: ValueGameStorable {
     public func createBattleCharacterCopy(for characterId: UUID) -> UUID? {
         guard let source = itemController.itemSync(for: characterId) else { return nil }
         let copy = source.duplicateWithoutCopy()
+        // Nested value groups hold the clone's HP and initiative; sharing the template's group
+        // items would make damage to one clone hit every clone and the template.
+        var groupCopies: [UUID: UUID] = [:]
+        copyValueGroups(into: copy, groupCopies: &groupCopies, depth: 0)
+        if !groupCopies.isEmpty {
+            gameDiceModel.battleGroupCopyIds[copy.id] = Set(groupCopies.values)
+        }
         // Battle clones are lookup-only runtime data. Do not add them to the
         // presented game item order: that would make the latest monster the
         // current Character whenever an encounter starts.
         gameModel.itemData[copy.id] = copy
         return copy.id
+    }
+
+    /// Replaces each group entry's `valueId` in `owner` with a fresh copy of the group item,
+    /// recursively. One group referenced twice (or in a cycle) maps to one copy.
+    @MainActor
+    private func copyValueGroups(into owner: ValueModel, groupCopies: inout [UUID: UUID], depth: Int) {
+        guard depth < RecursionLimits.maxValueLinkDepth else { return }
+        for index in owner.entries.indices {
+            guard let groupId = owner.entries[index].valueId else { continue }
+            if let existing = groupCopies[groupId] {
+                owner.entries[index].valueId = existing
+                continue
+            }
+            guard let group = itemController.itemSync(for: groupId) else { continue }
+            let groupCopy = group.duplicateWithoutCopy()
+            groupCopy.groupId = owner.id
+            groupCopies[groupId] = groupCopy.id
+            gameModel.itemData[groupCopy.id] = groupCopy
+            owner.entries[index].valueId = groupCopy.id
+            copyValueGroups(into: groupCopy, groupCopies: &groupCopies, depth: depth + 1)
+        }
     }
 
     @MainActor
@@ -216,12 +247,16 @@ extension GameController: ValueGameStorable {
     @MainActor
     public func removeBattleCharacterCopies(_ gameCharacterIds: Set<UUID>) {
         guard !gameCharacterIds.isEmpty else { return }
-        let entryIds = gameCharacterIds.reduce(into: Set<UUID>()) { result, characterId in
-            guard let character = gameModel.itemData[characterId] as? ValueModel else { return }
-            result.formUnion(character.entries.map(\.id))
+        var itemIds = gameCharacterIds
+        for characterId in gameCharacterIds {
+            itemIds.formUnion(gameDiceModel.battleGroupCopyIds.removeValue(forKey: characterId) ?? [])
+        }
+        let entryIds = itemIds.reduce(into: Set<UUID>()) { result, itemId in
+            guard let item = gameModel.itemData[itemId] as? ValueModel else { return }
+            result.formUnion(item.entries.map(\.id))
         }
         gameModel.items.removeAll { gameCharacterIds.contains($0) }
-        for characterId in gameCharacterIds {
+        for characterId in itemIds {
             gameModel.itemData[characterId] = nil
             gameDiceModel.gameEntryDiceId[characterId] = nil
             gameDiceModel.gameDiceId[characterId] = nil

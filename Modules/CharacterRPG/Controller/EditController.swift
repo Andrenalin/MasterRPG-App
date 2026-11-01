@@ -302,13 +302,17 @@ extension EditController {
         return currentType
     }
 
+    /// The locale the calculator evaluates in, so what is classified as a number is a number it can
+    /// read. See CODE_AUDIT_23 §5.16.
+    private static let calculatorLocale = Locale(identifier: "en_US")
+
     private func parseDouble(from string: String) -> Double? {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
         // `Double(_:format:)`/`Int(_:format:)` do prefix matching (e.g. "3.5" parses as
         // the Int 3, silently dropping ".5"), unlike the strict, allowsFloats-respecting
         // NumberFormatter this replaced. `wholeMatch(of:)` requires the entire string to
         // match, restoring that behavior.
-        return trimmed.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale.current))?.output
+        return trimmed.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Self.calculatorLocale))?.output
     }
 
     private func parseInteger(from string: String) -> Int? {
@@ -317,9 +321,9 @@ extension EditController {
         // `IntegerFormatStyle`'s `wholeMatch` alone still accepts "3.5" (parsing the
         // integer prefix "3" and treating the match as complete), so explicitly reject
         // any decimal separator to keep the old `allowsFloats = false` semantics.
-        let decimalSeparator = Locale.current.decimalSeparator ?? "."
+        let decimalSeparator = Self.calculatorLocale.decimalSeparator ?? "."
         guard !trimmed.contains(decimalSeparator) else { return nil }
-        return trimmed.wholeMatch(of: IntegerFormatStyle<Int>(locale: Locale.current))?.output
+        return trimmed.wholeMatch(of: IntegerFormatStyle<Int>(locale: Self.calculatorLocale))?.output
     }
 }
 

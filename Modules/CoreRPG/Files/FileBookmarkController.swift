@@ -24,45 +24,76 @@ actor FileBookmarkModel {
         let bookmarks: [UUID: Data]
     }
     private let itemController: FileDataController<Bookmarks>
-    private let fetchTask: Task<Void, Never>
+    private let fetchTask: Task<Bool, Never>
+    /// Changes made while the stored file could not be read. They are merged into the stored
+    /// bookmarks once a read succeeds and are never written over the unread file.
+    private var pendingRemovals: Set<UUID> = []
+    private var hasPendingChanges = false
 
     func bookmarkData(for fileId: UUID, folder: Bool) async -> Data? {
-        await fetchIfNeeded()
+        _ = await fetchIfNeeded()
         return folder ? folderBookmarks[fileId] : fileBookmarks[fileId]
     }
 
     func changeBookmarks(fileId: UUID, data: Data, folder: Bool) async {
-        await fetchIfNeeded()
+        let isFetched = await fetchIfNeeded()
+        pendingRemovals.remove(fileId)
         if folder {
             folderBookmarks[fileId] = data
         } else {
             fileBookmarks[fileId] = data
         }
+        guard isFetched else {
+            hasPendingChanges = true
+            return
+        }
         await save()
     }
 
     func folders() async -> [UUID] {
-        await fetchIfNeeded()
+        _ = await fetchIfNeeded()
         return Array(folderBookmarks.keys)
     }
 
     func removeBookmark(fileId: UUID) async {
-        await fetchIfNeeded()
+        let isFetched = await fetchIfNeeded()
         fileBookmarks.removeValue(forKey: fileId)
         folderBookmarks.removeValue(forKey: fileId)
+        guard isFetched else {
+            pendingRemovals.insert(fileId)
+            hasPendingChanges = true
+            return
+        }
         await save()
     }
 
-    private func fetchIfNeeded() async {
-        guard !didFetch else { return }
-        await fetchTask.value
+    /// - Returns: `false` while the stored bookmarks cannot be read. The read is retried on the
+    ///   next call; a failed read is never taken as "no bookmarks". See CODE_AUDIT_23 §5.5.
+    private func fetchIfNeeded() async -> Bool {
+        guard !didFetch else { return true }
+        var isFetched = await fetchTask.value
+        if !isFetched, !didFetch {
+            isFetched = await itemController.fetch()
+        }
+        guard !didFetch else { return true }
+        guard isFetched else { return false }
         let fileData = await itemController.read(id: Self.deviceId)?.bookmarks ?? [:]
         let folderData = await itemController.read(id: Self.folderId)?.bookmarks ?? [:]
 
-        guard !didFetch else { return }
-        fileBookmarks = fileData
-        folderBookmarks = folderData
+        guard !didFetch else { return true }
+        fileBookmarks = fileData.merging(fileBookmarks) { _, new in new }
+        folderBookmarks = folderData.merging(folderBookmarks) { _, new in new }
+        for fileId in pendingRemovals {
+            fileBookmarks.removeValue(forKey: fileId)
+            folderBookmarks.removeValue(forKey: fileId)
+        }
         didFetch = true
+        if hasPendingChanges {
+            hasPendingChanges = false
+            pendingRemovals = []
+            await save()
+        }
+        return true
     }
 
     private var isSaving = false
@@ -133,7 +164,13 @@ extension FileBookmarkController {
                 Logger.bookmarkStore.info("Stale Bookmark: \(url.absoluteString, privacy: .private)")
                 let securityScope = url.startSecurityScopedAccess()
                 defer { securityScope.stop() }
-                try await saveBookmark(fileId: fileId, fileUrl: url, folder: folder)
+                // The resolved URL is usable even when the refresh cannot be saved.
+                // See CODE_AUDIT_23 §5.25.
+                do {
+                    try await saveBookmark(fileId: fileId, fileUrl: url, folder: folder)
+                } catch {
+                    Logger.bookmarkStore.error("Refreshing stale Bookmark: \(fileId, privacy: .public) with error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+                }
             }
             return url
         } catch {

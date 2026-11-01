@@ -34,7 +34,7 @@ extension DataController: CoreDataSnapshotPersistable {
     @Sendable
     func mapSnapshot(_ model: RPGMap, token: String) -> MapSnapshot {
         MapSnapshot(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
@@ -127,7 +127,7 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGMapEntry) -> MapEntryModel {
         MapEntryModel(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(string: model.name ?? "", defaultValue: ""),
             content: CRDT(string: model.content ?? "", defaultValue: ""),
             coordinates: CRDTDataUpdate(wrappedValue: map(model.coordinateModels), update: CRDT(string: model.coordinatesUpdate ?? "", defaultValue: UUID())),
@@ -167,7 +167,7 @@ extension DataController: CoreDataSnapshotPersistable {
     private func map(_ model: RPGMapPin) -> MapPinModel {
         let color: CodableColor? = JSONString.decode(text: model.color)
         return MapPinModel(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: model.name ?? "",
             color: color?.color ?? .red,
             photoId: model.photoUUID,

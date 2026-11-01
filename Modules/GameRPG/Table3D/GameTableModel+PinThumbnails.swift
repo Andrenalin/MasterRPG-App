@@ -49,8 +49,12 @@ extension GameTableModel {
             failedPinPhotoIds[pinId] = photoId
             return
         }
+        guard pawn.setPhotoTexture(image) else {
+            // The texture could not be made from this thumbnail; retry only when the photo changes.
+            failedPinPhotoIds[pinId] = photoId
+            return
+        }
         failedPinPhotoIds[pinId] = nil
-        pawn.setPhotoTexture(image)
         pawn.loadedPhotoId = photoId
     }
 

@@ -74,7 +74,9 @@ struct BattleRoundControllerRuleTests {
         // map state message are not.
         #expect(sut.mapLiveState(for: fixture.mapId) == before)
 
-        #expect(sut.toggleDeadPin(itemId: fixture.mapId, pinId: fixture.monsterPinId))
+        // The goblin sits in an unrevealed room, which the live state leaves out for players
+        // (CODE_AUDIT_23 §6.1), so the visible dragon is the pin that changes it.
+        #expect(sut.toggleDeadPin(itemId: fixture.mapId, pinId: fixture.outsidePinId))
 
         #expect(sut.mapLiveState(for: fixture.mapId) != before)
     }

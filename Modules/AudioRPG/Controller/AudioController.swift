@@ -138,6 +138,9 @@ extension AudioController {
             model.playList = []
             model.isPlaybackComplete = false
             model.playListGeneration += 1
+            // The old track must not go on playing without a playlist entry if the new load
+            // fails. See CODE_AUDIT_23 §5.9.
+            model.player.replaceCurrentItem(with: nil)
         }
         // Another replacement can interleave during the loading await below (shared-audio
         // observation, `loadAndPlay`, a game reveal). Items loaded for a playlist that has
@@ -178,6 +181,8 @@ extension AudioController {
             }
             return false
         }
+        // Nothing loaded (offline iCloud file, failed copy): there is no track to select or play.
+        guard !playItems.isEmpty || requests.isEmpty else { return false }
         // Single mutation: one observation change instead of one per item.
         model.playList.append(contentsOf: playItems)
         return true
@@ -314,6 +319,12 @@ extension AudioController {
         if model.currentId != id {
             model.set(currentId: id)
         }
+        // A track that did not load is no current item: do not resume whatever the player held
+        // before. See CODE_AUDIT_23 §5.9.
+        guard model.currentItem != nil else {
+            model.player.replaceCurrentItem(with: nil)
+            return
+        }
         // Must set coordinator ID before replacing the item — the AVPlayerPlaybackCoordinator
         // calls identifierFor(_:) during replaceCurrentItem, and needs the UUID already set.
         // Without this order the coordinator gets a random UUID on first play (works second time
@@ -408,11 +419,15 @@ private extension AudioController {
 
     @MainActor private func updateCurrentTime(time: CMTime) {
         guard let duration = model.player.currentItem?.duration else { return }
-        model.playerTime = PlayerTime(elapsedTime: time.seconds, remainingTime: duration.seconds - time.seconds)
+        // An item whose duration is not known yet (or a stream) reports NaN or infinity; neither
+        // may reach the progress bar or the now-playing info. See CODE_AUDIT_23 §5.22.
+        let elapsed = time.seconds.isFinite ? time.seconds : 0
+        let total = duration.seconds.isFinite ? duration.seconds : elapsed
+        model.playerTime = PlayerTime(elapsedTime: elapsed, remainingTime: total - elapsed)
 
         // Track advancing is driven by AVPlayerItemDidPlayToEndTime (see observePlayback) —
         // a remaining-time heuristic here would also fire when the user scrubs near the end.
-        MediaPlayerCoordinator.handlePlaybackChange(playing: model.isPlaying, rate: model.player.rate, position: time.seconds, duration: duration.seconds)
+        MediaPlayerCoordinator.handlePlaybackChange(playing: model.isPlaying, rate: model.player.rate, position: elapsed, duration: total)
     }
     
     @MainActor private func removeTimeObserver() {
@@ -505,6 +520,11 @@ extension AudioController: AudioPlayerSessionDelegate {
         model.wantsPlayback = false
         model.isInitialized = false
         initAudioSessionEngine()
+        // The new coordinator must know the shared audio id before the item is replaced, as in
+        // `preparePlay`; otherwise it asks for it and gets a random one. See CODE_AUDIT_23 §5.22.
+        if let currentId = model.currentId {
+            model.coordinator?.coordinatePlayback(of: currentId)
+        }
         replaceCurrentItem()
     }
 }

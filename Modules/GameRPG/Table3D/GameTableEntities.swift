@@ -299,12 +299,24 @@ final class PinPawn {
     }
 
     /// Puts the pin's photo (thumbnail) onto the token face.
-    func setPhotoTexture(_ image: AKImage) {
+    /// - Returns: whether the texture was made; a failed one leaves the face as it was, so the
+    ///   caller does not record the photo as loaded. See CODE_AUDIT_23 §5.24.
+    @discardableResult
+    func setPhotoTexture(_ image: AKImage) -> Bool {
         guard let cgImage = GameTableImage.cgImage(from: image),
-              let texture = try? TextureResource(image: cgImage, options: .init(semantic: .color)) else { return }
+              let texture = try? TextureResource(image: cgImage, options: .init(semantic: .color)) else { return false }
         var material = UnlitMaterial()
         material.color = .init(texture: .init(texture))
         photoPlane.model?.materials = [material]
+        return true
+    }
+
+    /// Back to the pin's color after its photo was removed.
+    func clearPhotoTexture(for pin: MapPinModel) {
+        var material = UnlitMaterial()
+        material.color = .init(tint: GameTablePlatformColor(pin.color))
+        photoPlane.model?.materials = [material]
+        loadedPhotoId = nil
     }
 
     private func applySize(_ size: MapPinModel.MapPinSize, pointsToMeters: Float) {

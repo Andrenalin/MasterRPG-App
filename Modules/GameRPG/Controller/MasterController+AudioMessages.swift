@@ -49,7 +49,15 @@ extension MasterController {
             await showPlayerContribution(model, controllable: root.audioRoot.gameControllable)
         case .playAudio:
             guard root.gameModel.gameControl.features.audioSharing else { return nil }
-            await requestAudioPlay(model.data)
+            // Pass on only what the master understood: the player's payload is never relayed or
+            // held, and an id the master has no audio for is dropped. See CODE_AUDIT_23 §6.3.
+            guard let request = root.audioRoot.audioGameControllable.sanitizedPlayRequest(from: model.data),
+                  await root.audioRoot.gameControllable.hasItem(id: request.id, version: 0)
+            else {
+                Logger.networking.debug("MasterController: Ignored malformed or unknown playAudio request from \(model.sender.id, privacy: .public)")
+                return nil
+            }
+            await requestAudioPlay(request)
         case .audioList:
             guard applyAudioList(model) else { return nil }
             await broadcastAudioList()

@@ -282,7 +282,9 @@ final class MapEditorActionRouter {
     ) {
         guard !isPointer else { return }
         if context == .editor {
-            if type == .character, let characterId = pin.characterId {
+            // A hidden pin's character stays out of the room text players read.
+            // See CODE_AUDIT_23 §5.11.
+            if type == .character, pin.isShown, let characterId = pin.characterId {
                 mapEditController.appendCharacterLinks(
                     [characterId],
                     to: session.entry(for: pin.location, in: map)?.id,

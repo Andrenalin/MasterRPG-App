@@ -1696,15 +1696,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::HideKeyboardView
-    @Test("HideKeyboardView")
-    func snapshotHideKeyboardView() async throws {
-        try await assertPreviewSnapshot("HideKeyboardView") {
-            CoreRPG.HideKeyboardView(show: true)
-                .padding()
-        }
-    }
-
     // snapshot-root: CoreRPG::MenuTV
     @Test("MenuTV")
     func snapshotMenuTV() async throws {

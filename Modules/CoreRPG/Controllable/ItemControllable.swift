@@ -193,6 +193,11 @@ public extension ItemControllable {
                 try await dataControllable?.delete(id: item.id)
             } catch {
                 recordPersistenceFailure(error, operation: "ItemControllable.delete")
+                // The row survives on disk and in CloudKit and comes back at the next launch or
+                // sync, so its file must stay and the item stays usable. See CODE_AUDIT_23 §5.6.
+                announcedFileDeletion?.withdraw()
+                resetModel(with: item)
+                return
             }
             // An upsert queued while the delete above was suspended would recreate the row on
             // the next flush. See CODE_AUDIT_Folder §3.9.

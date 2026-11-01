@@ -152,10 +152,12 @@ private extension AudioPlayerSession {
               let rawValue = info[AVAudioSessionRouteChangeReasonKey] as? UInt else { return }
 
         let reason = AVAudioSession.RouteChangeReason(rawValue: rawValue)
+        // Any external output that went away pauses, not only wired headphones: AirPods, a
+        // Bluetooth speaker or USB audio would otherwise continue from the device speaker.
+        // See CODE_AUDIT_23 §5.18.
         guard reason == .oldDeviceUnavailable,
               let previousRoute = info[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription,
-              let previousOutput = previousRoute.outputs.first,
-              previousOutput.portType == .headphones else { return }
+              previousRoute.outputs.contains(where: { $0.portType != .builtInSpeaker && $0.portType != .builtInReceiver }) else { return }
 
         Task {
             await model.delegate?.routeChanged()
@@ -170,7 +172,7 @@ private extension AudioPlayerSession {
         if type == .began {
             model.reset(wasPlaying: model.delegate?.beginInterruption() ?? false)
         } else if let optionsRaw,
-                  AVAudioSession.InterruptionOptions(rawValue: optionsRaw) == .shouldResume {
+                  AVAudioSession.InterruptionOptions(rawValue: optionsRaw).contains(.shouldResume) {
             let wasPlaying = model.wasPlaying
             Task { [weak self] in
                 await self?.setActive()

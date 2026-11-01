@@ -132,6 +132,7 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
             .opacity(isShown ? 1 : 0)
             .allowsHitTesting(isShown)
             .accessibilityHidden(!isShown)
+            .disabled(!isShown)
             .shadow(radius: 8)
             .animation(accessibilityReduceMotion ? nil : .bouncy, value: animationValue)
             .onGeometryChange(for: CGFloat.self) { proxy in

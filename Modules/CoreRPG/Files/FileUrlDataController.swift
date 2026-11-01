@@ -326,8 +326,8 @@ public extension FileUrlDataController {
     }
 
     func loadData(for fileUrl: FileUrl) async throws -> Data? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.loadData(for:)", file: "FileUrlDataController.swift")
-        
+        // A read is not counted as a CloudKit operation: browsing a thousand thumbnails would
+        // log a false sync-loop warning. See CODE_AUDIT_23 §3.5.
         guard !fileUrl.hasUnconvertedData else { return fileUrl.data }
         if let held = peerFiles.data(for: fileUrl.fileId) { return held }
         return try await url(for: fileUrl) { url async throws -> Data? in

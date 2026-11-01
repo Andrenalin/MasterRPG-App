@@ -142,6 +142,9 @@ public final class LinkRegisterListModel: Sendable {
     // Source item IDs whose links changed since the last savePendingLinks() call.
     // savePendingLinks() does a delete-and-replace for these source IDs from the current in-memory state.
     var pendingAffectedSourceIds: Set<UUID> = []
+    /// The persisted rows could not be fetched, so the register is not what is stored. Nothing is
+    /// saved or deleted from it until a fetch succeeds. See CODE_AUDIT_23 §5.12.
+    var hydrationFailed = false
     
     func reset() {
         items = [:]

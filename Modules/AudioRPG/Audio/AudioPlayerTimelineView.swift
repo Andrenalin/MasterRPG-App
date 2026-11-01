@@ -187,8 +187,8 @@ private struct AudioPlayerTimelineProgressOverlayView: View {
     var body: some View {
         if !viewModel.isScrubberVisible {
             ProgressView(
-                value: audioPlayerModel.currentTime,
-                total: max(audioPlayerModel.playerTime.totalDuration, 1)
+                value: audioPlayerModel.currentTime.isFinite ? audioPlayerModel.currentTime : 0,
+                total: audioPlayerModel.playerTime.totalDuration.isFinite ? max(audioPlayerModel.playerTime.totalDuration, 1) : 1
             )
             .progressViewStyle(.linear)
             .tint(.primary.opacity(0.7))

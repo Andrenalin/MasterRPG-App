@@ -170,8 +170,22 @@ extension GameController {
     @MainActor
     func networkBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType? {
         guard battleRoundModel.mapId == itemId,
-              let state = battleRoundModel.networkState() else {
+              var state = battleRoundModel.networkState() else {
             return nil
+        }
+        // A hidden pin that acts must not be named: players would learn that an unseen token
+        // is on its turn. See CODE_AUDIT_23 §6.2.
+        if let activePinId = state.activePinId {
+            let map = gameItem(for: itemId)
+            if let pin = map.mapPins.first(where: { $0.id == activePinId }), !map.isPinVisibleToPlayers(pin) {
+                state = BattleRoundNetworkState(
+                    mapId: state.mapId,
+                    isRunning: state.isRunning,
+                    roundCounter: state.roundCounter,
+                    activePinId: nil,
+                    sequence: state.sequence
+                )
+            }
         }
         // The shared envelope factory.
         return Self.mapNetworkData(

@@ -491,6 +491,9 @@ final class RPGSharePlayController {
     // records it here and a single drain task processes it; a slow or hung attachment load can
     // no longer keep later publications from even being looked at.
     var pendingJournalSnapshot: GroupSessionJournal.Attachments.Element?
+    /// Metadata of each attachment already seen, so a snapshot that lists it again does not load
+    /// it again. Pruned to the attachments of the newest snapshot. See CODE_AUDIT_23 §6.5.
+    var journalMetadataCache: [UUID: GameNetworkModel] = [:]
     var currentJournalAttachmentIds: Set<UUID> = []
     var journalDrainTask: Task<Void, Never>?
     // Normal Messenger sends are admitted before encoding, then processed in

@@ -31,6 +31,7 @@ struct GameSharePlayButton: View {
         .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
         .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
         .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+        .disabled(sharePlayStore.canActivateSharePlay)
     }
 }
 

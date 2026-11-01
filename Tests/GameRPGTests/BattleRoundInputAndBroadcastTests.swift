@@ -215,6 +215,9 @@ struct BattleRoundBroadcastTests {
         let fixture = try await BattleScreenFixture.make()
         let spy = BroadcastSpy()
         fixture.root.networkActions = spy.actions
+        // The goblin's room is revealed: a pin in an unrevealed room is not sent to players, so
+        // its change would not go out at all (CODE_AUDIT_23 §6.1).
+        fixture.root.mapRoot.gameController.gameItem(for: fixture.mapId).entries[0].isShown = true
         #expect(fixture.controller.nextRound())
         spy.reset()
 

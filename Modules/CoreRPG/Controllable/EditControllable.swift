@@ -267,8 +267,9 @@ public extension EditControllable {
             }
             let listed = Set(checkItem.entries.map(\.childId))
             var missing: [UUID] = []
+            var missingIds = Set<UUID>()
             for childId in (batchChildrenByParent[id] ?? []) + (isBatchFolder ? childrenByFolder[id] ?? [] : [])
-            where !listed.contains(childId) && !missing.contains(childId) {
+            where !listed.contains(childId) && missingIds.insert(childId).inserted {
                 missing.append(childId)
             }
             let hasDuplicates = FolderEntryMerge.deduplicated(checkItem.entries, id: \.id, childId: \.childId) != nil
@@ -534,7 +535,13 @@ public extension EditControllable {
 
                 if let model = itemControllable.itemSync(for: itemModel.itemId), model.isFolder {
                     // Only folders delete their children, so only add folder children to the removing list
-                    let children = model.entries.map {
+                    // An entry left behind by a move, a CloudKit merge or an import can name an
+                    // item that lives in another folder now; only a child that still belongs to
+                    // this folder is removed with it, as in `delete(itemId:visited:)`.
+                    // See CODE_AUDIT_23 §5.8.
+                    let children = model.entries.filter {
+                        itemControllable.itemSync(for: $0.childId)?.parentId == model.id
+                    }.map {
                         ItemRowModel(itemId: $0.childId, typeId: itemModel.typeId)
                     }
                     allRemovingItems.append(contentsOf: children)

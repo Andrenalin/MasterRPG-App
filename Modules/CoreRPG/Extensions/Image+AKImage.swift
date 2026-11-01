@@ -203,6 +203,9 @@ public enum ImageDownsampler {
     /// its longest edge, with the orientation applied, instead of decoding it at native size
     /// and scaling afterwards.
     public static func downsampledImage(from source: CGImageSource, maxPixelSize: CGFloat) -> CGImage? {
+        // The header is read first, whichever caller this is: an image that declares more than
+        // the limits is not decoded at all. See CODE_AUDIT_23 §6.7.
+        guard declaredSize(of: source) != .overLimits else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -233,6 +236,24 @@ public extension AKImage {
             return nil
         }
         return boundedDecode(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    /// `boundedDecode(from:)`, falling back to the platform decoder only for an image whose
+    /// header names no usable size. An image over the declared-size limits is never decoded at
+    /// native size as a fallback. See CODE_AUDIT_23 §6.7.
+    static func decodedImage(from data: Data) -> AKImage? {
+        if let image = boundedDecode(from: data) { return image }
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+              ImageDownsampler.declaredSize(of: source) != .overLimits else { return nil }
+        return AKImage(data: data)
+    }
+
+    /// File-URL variant of `decodedImage(from:)`.
+    static func decodedImage(from url: URL) -> AKImage? {
+        if let image = boundedDecode(from: url) { return image }
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
+              ImageDownsampler.declaredSize(of: source) != .overLimits else { return nil }
+        return AKImage(contentsOfFile: url.path(percentEncoded: false))
     }
 
     /// File-URL variant of `boundedDecode(from:maxPixelSize:)`.

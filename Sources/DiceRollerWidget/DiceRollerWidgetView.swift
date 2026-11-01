@@ -177,12 +177,36 @@ private struct DiceResultView: View {
             }
             .widgetAccentable() // Mark the entire result as accentable content
 
-            Text(verbatim: result.dice.name)
-                .font(.caption)
+            HStack(spacing: 2) {
+                if let symbol = outcomeSymbol {
+                    Image(systemName: symbol)
+                        .imageScale(.small)
+                }
+                Text(verbatim: result.dice.name)
+            }
+            .font(.caption)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: result.dice.name))
-        .accessibilityValue(Text(verbatim: "\(result.sum)"))
+        .accessibilityValue(accessibilityValue)
+    }
+
+    /// A coup or fumble is also shown as a symbol, so it is not conveyed by tint alone, which
+    /// tinted widgets drop. See CODE_AUDIT_23 §8.3.
+    private var outcomeSymbol: String? {
+        switch result.result {
+        case .coup: "star.fill"
+        case .fumble: "exclamationmark.triangle.fill"
+        case .rolled, .notRolled: nil
+        }
+    }
+
+    private var accessibilityValue: Text {
+        switch result.result {
+        case .coup: Text(verbatim: "\(result.sum), \(String(localized: "Coup", bundle: .main))")
+        case .fumble: Text(verbatim: "\(result.sum), \(String(localized: "Fumble", bundle: .main))")
+        case .rolled, .notRolled: Text(verbatim: "\(result.sum)")
+        }
     }
 }
 

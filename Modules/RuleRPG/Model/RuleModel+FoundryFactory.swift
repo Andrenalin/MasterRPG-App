@@ -181,12 +181,22 @@ extension RuleModel {
 
     /// Imported text placed into rule markdown. Emphasis and code markers are escaped so a value
     /// cannot break the entry's structure, and `](` and `://` are split by a zero-width space so
-    /// it cannot form a link, nor one of the app's own item links. See CODE_AUDIT_22 §6.5.
+    /// it cannot form a link, nor one of the app's own item links. Line breaks become spaces and a
+    /// leading heading, quote, list or reference marker is escaped, so a value cannot start a new
+    /// block of its own. See CODE_AUDIT_22 §6.5, CODE_AUDIT_23 §6.8.
     static func inert(_ text: String) -> String {
         var result = ""
-        for character in text {
+        let singleLine = text
+            .replacing("\r\n", with: " ")
+            .replacing("\n", with: " ")
+            .replacing("\r", with: " ")
+        for character in singleLine {
             if "\\*_`".contains(character) { result.append("\\") }
             result.append(character)
+        }
+        if let first = result.first(where: { !$0.isWhitespace }), "#>-+[<".contains(first),
+           let index = result.firstIndex(of: first) {
+            result.insert("\\", at: index)
         }
         return result
             .replacing("](", with: "]\u{200B}(")

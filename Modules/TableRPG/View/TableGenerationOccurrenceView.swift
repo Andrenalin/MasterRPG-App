@@ -46,6 +46,19 @@ struct TableGenerationOccurrenceView: View {
                 }
             }
 
+            if !occurrence.truncatedLinkNames.isEmpty {
+                Label {
+                    Text(
+                        "Not generated, size limit reached: \(occurrence.truncatedLinkNames.joined(separator: ", "))",
+                        bundle: .module
+                    )
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
             if !occurrence.ignoredCycleNames.isEmpty {
                 Label {
                     Text(

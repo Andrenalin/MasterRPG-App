@@ -59,12 +59,19 @@ extension RPGSharePlayController {
         var currentAttachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
         var entries: [(attachment: GroupSessionJournal.Attachment, metadata: GameNetworkModel)] = []
 
+        let attachmentIds = Set(attachments.map(\.id))
+        journalMetadataCache = journalMetadataCache.filter { attachmentIds.contains($0.key) }
         for attachment in attachments {
+            if let cached = journalMetadataCache[attachment.id] {
+                entries.append((attachment, cached))
+                continue
+            }
             do {
                 let metadata = try await attachment.loadMetadata(of: GameNetworkModel.self)
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
+                journalMetadataCache[attachment.id] = metadata
                 entries.append((attachment, metadata))
             } catch is CancellationError {
                 return
@@ -121,6 +128,12 @@ extension RPGSharePlayController {
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }
+                // A participant can publish a blob of any size; the Messenger path refuses more
+                // than this. See CODE_AUDIT_23 §6.5.
+                guard data.count <= GameLimits.maximumMessageBytes else {
+                    Logger.sharePlay.warning("Journal: attachment \(attachment.id, privacy: .public) of message \(metadata.counter, privacy: .public) exceeds the size limit; ignored")
+                    continue
+                }
                 let size = Self.formattedByteCount(data.count)
                 Logger.sharePlay.debug("Journal ✓: received message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public), size \(size, privacy: .public)")
                 metadata.data = NetworkCodableDataType(

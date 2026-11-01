@@ -23,6 +23,22 @@ public extension MapModel {
     func isLocationHiddenForPlayers(_ location: CGPoint) -> Bool {
         entries.contains { !$0.isShown && $0.contains(location) }
     }
+
+    /// Whether a pin may be sent to players. The single source of the rule the client also
+    /// applies when it renders: a pin must be shown, and a monster (a non-player pin) must not
+    /// sit inside a hidden room. See CODE_AUDIT_23 §6.1.
+    func isPinVisibleToPlayers(_ pin: MapPinModel) -> Bool {
+        pin.isVisibleToPlayers(hiddenBy: entries)
+    }
+}
+
+public extension MapPinModel {
+    /// `isShown` and, for a non-player pin, not covered by an unrevealed room in `entries`.
+    func isVisibleToPlayers(hiddenBy entries: [MapEntryModel]) -> Bool {
+        guard isShown else { return false }
+        if isPlayer { return true }
+        return !entries.contains { !$0.isShown && $0.contains(location) }
+    }
 }
 
 extension MapModel {

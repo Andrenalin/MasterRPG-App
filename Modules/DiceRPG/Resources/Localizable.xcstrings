@@ -1609,6 +1609,22 @@
         }
       }
     },
+    "Failure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fehlschlag"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ล้มเหลว"
+          }
+        }
+      }
+    },
     "find" : {
       "localizations" : {
         "de" : {
@@ -3093,6 +3109,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวเลือกพิเศษ"
+          }
+        }
+      }
+    },
+    "Success" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erfolg"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สำเร็จ"
           }
         }
       }

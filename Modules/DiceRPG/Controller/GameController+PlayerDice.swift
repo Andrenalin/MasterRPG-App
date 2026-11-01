@@ -91,10 +91,12 @@ extension GameController {
             shareRoll(of: itemId, networkActions: networkActions, resultCategory: resultCategory)
         }
         
+        diceGameModel.pendingRollTasks[itemId]?.cancel()
+        diceGameModel.pendingRollTasks[itemId] = nil
         if rollSynced {
             rollFunction()
         } else {
-            Task { @MainActor in
+            diceGameModel.pendingRollTasks[itemId] = Task { @MainActor in
                 // `try?` previously swallowed cancellation and rolled
                 // anyway — a roll issued during teardown (or any other
                 // cancellation of this task) must not still fire.
@@ -105,6 +107,7 @@ extension GameController {
                     return
                 }
                 guard !Task.isCancelled else { return }
+                diceGameModel.pendingRollTasks[itemId] = nil
                 rollFunction()
             }
         }

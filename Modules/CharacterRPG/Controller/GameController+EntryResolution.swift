@@ -198,7 +198,7 @@ extension GameController {
             return false
         }
         var entry = owner.entries[index]
-        let baseText = entry.value.split(separator: "|").first.map(String.init) ?? ""
+        let baseText = ValueEntryModel.baseText(of: entry.value)
         let newValue: String
         if let base = resolvedNumber(baseText) {
             let modifier = Double(number) - base
@@ -208,7 +208,7 @@ extension GameController {
             } else if modifier == modifier.rounded() {
                 newValue = "\(baseText)|\(SheetNumberLimit.clamped(modifier))"
             } else {
-                newValue = "\(baseText)|\(modifier)"
+                newValue = "\(baseText)|\(ValueEntryModel.modifierText(modifier))"
             }
         } else if entry.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             newValue = "\(number)"
@@ -230,24 +230,9 @@ extension GameController {
         return (base, resolvedNumber(value.replacing("|", with: "+")) ?? base)
     }
 
-    /// The part of a "base|modifier" value before the separator. A "|" inside
-    /// a markdown link (`[name](url)`) or inside parentheses belongs to the
-    /// base, so a link whose visible name contains one is not cut in half.
+    /// The part of a "base|modifier" value before the separator; see `ValueEntryModel.baseText(of:)`.
     static func baseText(of value: String) -> String {
-        var depth = 0
-        for index in value.indices {
-            switch value[index] {
-            case "[", "(":
-                depth += 1
-            case "]", ")":
-                depth = max(0, depth - 1)
-            case "|" where depth == 0:
-                return String(value[..<index])
-            default:
-                break
-            }
-        }
-        return value
+        ValueEntryModel.baseText(of: value)
     }
 
     /// The text as a number, with value links and "base|modifier" resolved.

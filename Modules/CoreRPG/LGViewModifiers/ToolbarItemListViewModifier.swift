@@ -204,6 +204,7 @@ private struct ToolbarItemListSecondaryActionMenuView: View {
                 .opacity(listDisplayModel.isSelectionMode ? 0 : 1)
                 .allowsHitTesting(!listDisplayModel.isSelectionMode)
                 .accessibilityHidden(listDisplayModel.isSelectionMode)
+                .disabled(listDisplayModel.isSelectionMode)
         }
         if parentModel == nil && modal == false {
             ControlGroup {

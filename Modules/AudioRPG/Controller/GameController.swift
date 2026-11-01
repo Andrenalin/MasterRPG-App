@@ -26,6 +26,10 @@ public protocol AudioGameStorable: Sendable {
     func hasLocalAudioData(for itemId: UUID) async -> Bool
     @MainActor func play(with data: NetworkCodableDataType) async throws
     func shouldPlay(with data: NetworkCodableDataType) -> Bool
+    /// A fresh play command built from the request in `data`, or `nil` when `data` is not a
+    /// well-formed, small request for `data.id`. Lets the master pass on what it understood
+    /// instead of relaying a peer's payload. See CODE_AUDIT_23 §6.3.
+    func sanitizedPlayRequest(from data: NetworkCodableDataType) -> NetworkCodableDataType?
     @MainActor func requestPlay(id: UUID) -> NetworkCodableDataType
 }
 
@@ -293,6 +297,18 @@ extension GameController: AudioGameStorable {
 
     func shouldPlay(with data: NetworkCodableDataType) -> Bool {
         AudioPlayRequest.decodeData(of: data.data)?.shouldPlay ?? false
+    }
+
+    /// A play request is two fields; anything larger is not one.
+    private static let maximumPlayRequestBytes = 1024
+
+    func sanitizedPlayRequest(from data: NetworkCodableDataType) -> NetworkCodableDataType? {
+        guard let payload = data.data,
+              payload.count <= Self.maximumPlayRequestBytes,
+              let request = AudioPlayRequest.decodeData(of: payload),
+              request.id == data.id
+        else { return nil }
+        return NetworkCodableDataType(id: request.id, type: .audio, version: 0, data: request.encodeData())
     }
 
     @MainActor

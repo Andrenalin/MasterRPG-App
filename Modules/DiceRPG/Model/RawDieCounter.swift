@@ -18,7 +18,10 @@ public struct RawDieCounter: Equatable, Hashable {
         // CODE_AUDIT §5.7.
         guard count != 0 else { return 0 }
         var result = 0
-        (1 ... abs(count)).forEach { _ in result = result.saturatingSum(die.roll()) }
+        // `abs(Int.min)` traps and a count in the millions would loop for as long. A roll never
+        // needs more than the dice a set may hold. See CODE_AUDIT_23 §5.20.
+        let rolls = Int(Swift.min(count.magnitude, UInt(DiceModel.maximumDecodedDiceCount)))
+        (1 ... rolls).forEach { _ in result = result.saturatingSum(die.roll()) }
         if count < 0 {
             result *= -1
         }

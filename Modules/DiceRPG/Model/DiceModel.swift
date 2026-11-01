@@ -69,19 +69,19 @@ public final class DiceModel: nonisolated Identifiable {
         self._tags_ = try container.decode(CRDT<[String]>.self, forKey: DiceModel.CodingKeys._tags_)
         self._category_ = try container.decode(CRDT<ItemListCategory>.self, forKey: DiceModel.CodingKeys._category_)
         self._displayState = try container.decode(Int.self, forKey: DiceModel.CodingKeys._displayState)
-        self._dice_ = try container.decode(CRDTDataUpdate<[DieModel]>.self, forKey: DiceModel.CodingKeys._dice_)
+        self._dice_ = Self.bounded(dice: try container.decode(CRDTDataUpdate<[DieModel]>.self, forKey: DiceModel.CodingKeys._dice_))
         self._sumUp = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._sumUp)
         self._modifier = Self.boundedValue(try container.decode(Double.self, forKey: DiceModel.CodingKeys._modifier))
         self._percentDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._percentDice)
         self._compareOption = try container.decode(DiceModel.CompareValue.self, forKey: DiceModel.CodingKeys._compareOption)
         self._compareValue = Self.boundedValue(try container.decode(Double.self, forKey: DiceModel.CodingKeys._compareValue))
-        self._coupValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._coupValues)
+        self._coupValues = Self.bounded(options: try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._coupValues))
         self._coupOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
-        self._fumbleValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._fumbleValues)
+        self._fumbleValues = Self.bounded(options: try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._fumbleValues))
         self._fumbleOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._fumbleOnlyOnFirstDie)
-        self._rerollOptions = try container.decode([DiceModel.RerollOption].self, forKey: DiceModel.CodingKeys._rerollOptions)
+        self._rerollOptions = Self.bounded(options: try container.decode([DiceModel.RerollOption].self, forKey: DiceModel.CodingKeys._rerollOptions))
         self._reorderDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._reorderDice)
-        self._addDiceEvery = try container.decode(Int.self, forKey: DiceModel.CodingKeys._addDiceEvery)
+        self._addDiceEvery = Self.boundedDiceEvery(try container.decode(Int.self, forKey: DiceModel.CodingKeys._addDiceEvery))
         self._resultCategory = try container.decodeIfPresent(ResultCategory.self, forKey: DiceModel.CodingKeys._resultCategory)
         self._entries_ = try container.decodeIfPresent(CRDTDataUpdate<[ChildEntryModel]>.self, forKey: DiceModel.CodingKeys._entries_) ?? CRDTDataUpdate<[ChildEntryModel]>(wrappedValue: [])
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: DiceModel.CodingKeys._parentId)
@@ -353,6 +353,24 @@ extension DiceModel {
 
     /// Most dice a compare value can add. See CODE_AUDIT_16 §5.4.
     nonisolated static let maximumDiceCount = 100
+
+    /// Bounds for a decoded set (peer package, `.gmz` import): a roll allocates and animates every
+    /// die, and each option list is scanned per roll. See CODE_AUDIT_23 §5.20.
+    nonisolated static let maximumDecodedDiceCount = 1_000
+    nonisolated static let maximumDecodedOptionCount = 100
+
+    nonisolated static func bounded(dice: CRDTDataUpdate<[DieModel]>) -> CRDTDataUpdate<[DieModel]> {
+        guard dice.wrappedValue.count > maximumDecodedDiceCount else { return dice }
+        return CRDTDataUpdate(wrappedValue: Array(dice.wrappedValue.prefix(maximumDecodedDiceCount)), update: dice.$update)
+    }
+
+    nonisolated static func bounded<Element>(options: [Element]) -> [Element] {
+        options.count > maximumDecodedOptionCount ? Array(options.prefix(maximumDecodedOptionCount)) : options
+    }
+
+    nonisolated static func boundedDiceEvery(_ value: Int) -> Int {
+        min(max(value, 0), DiceValueLimit.maximumMagnitude)
+    }
 
     func resetDice() {
         guard addDiceEvery > 0 else { return }

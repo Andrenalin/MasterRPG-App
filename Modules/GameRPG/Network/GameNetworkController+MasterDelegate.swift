@@ -39,7 +39,7 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
                 Logger.networking.debug("GameNetworkController: Rejected unauthenticated LAN message from \(connectionId)")
                 return
             }
-            if gameData.isPlayerGroupEvent {
+            if gameData.isPlayerGroupEvent, await model.masterDelegate?.mayRelay(gameData, origin: origin) != false {
                 // A Dice roll, a moved pin or a Space transform is for the whole group: the
                 // other local-network players and the SharePlay session get it from here.
                 // Forward the received bytes as they are when their size matches the decoded

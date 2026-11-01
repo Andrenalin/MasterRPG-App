@@ -103,7 +103,7 @@ extension ValueEntryModel {
             if type == .number {
                 valueNumber = Int(newValue)
             } else {
-                setValue(from: "\(newValue)")
+                setValue(from: Self.modifierText(newValue))
             }
         }
     }
@@ -116,12 +116,53 @@ extension ValueEntryModel {
     }
     
     mutating func setValue(from text: String) {
-        let comp = value.split(separator: "|")
-        var newValue = comp.isEmpty ? "0" : String(comp[0])
+        let base = Self.baseText(of: value)
+        var newValue = base.isEmpty ? "0" : base
         if text != "0" {
             newValue.append("|\(text)")
         }
         value = newValue
+    }
+
+    /// The part of a "base|modifier" value before the separator. A "|" inside a markdown link
+    /// (`[name](url)`) or inside parentheses belongs to the base, so a link whose visible name
+    /// contains one is not cut in half. See CODE_AUDIT_23 §5.15.
+    nonisolated static func baseText(of value: String) -> String {
+        topLevelComponents(of: value).first ?? value
+    }
+
+    /// `value` split at each "|" outside a link or parentheses. Empty parts are kept.
+    nonisolated static func topLevelComponents(of value: String) -> [String] {
+        var components: [String] = []
+        var depth = 0
+        var start = value.startIndex
+        for index in value.indices {
+            switch value[index] {
+            case "[", "(":
+                depth += 1
+            case "]", ")":
+                depth = max(0, depth - 1)
+            case "|" where depth == 0:
+                components.append(String(value[start..<index]))
+                start = value.index(after: index)
+            default:
+                break
+            }
+        }
+        components.append(String(value[start...]))
+        return components
+    }
+
+    /// A modifier as stored text: fixed notation with an `en_US` decimal point, as the
+    /// calculator reads it. `"\(Double)"` gives "1e-05" for a small number, which the
+    /// calculator cannot parse. See CODE_AUDIT_23 §5.16.
+    nonisolated static func modifierText(_ number: Double) -> String {
+        number.formatted(
+            .number
+                .locale(Locale(identifier: "en_US"))
+                .grouping(.never)
+                .precision(.significantDigits(1 ... 17))
+        )
     }
     
     var valueSelected: Bool {
@@ -144,9 +185,9 @@ extension ValueEntryModel {
     
     var valueCalculated: String {
         guard type == .number || type == .decimal else { return "0" }
-        let calcValues =  value.split(separator: "|")
-        if calcValues.count == 2 {
-            return String(calcValues[1])
+        let calcValues = Self.topLevelComponents(of: value)
+        if calcValues.count == 2, !calcValues[1].isEmpty {
+            return calcValues[1]
         } else {
             return "0"
         }

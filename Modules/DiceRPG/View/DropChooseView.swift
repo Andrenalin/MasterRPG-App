@@ -50,6 +50,7 @@ struct DropChooseView: View {
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)
             .allowsHitTesting(selectionModel.itemId != nil)
             .accessibilityHidden(selectionModel.itemId == nil)
+            .disabled(selectionModel.itemId == nil)
         }
     }
 

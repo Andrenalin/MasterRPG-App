@@ -92,7 +92,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
                 hasTable: message.senderPlatform == .visionOS,
                 participantId: id
             )
-            if message.isPlayerGroupEvent {
+            if message.isPlayerGroupEvent, await masterDelegate.mayRelay(message, origin: origin) {
                 // The session already delivered the event to the SharePlay players; the
                 // local-network players get it from the game master.
                 await model.masterStore?.sendResponse(data: message)

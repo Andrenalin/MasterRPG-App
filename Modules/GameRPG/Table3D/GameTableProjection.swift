@@ -102,8 +102,13 @@ extension TableGameSetup {
                 pinPawns.append(pawn)
                 pinContainer.addChild(pawn.entity)
             }
-            if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
-                photoLoads[pin.id] = photoId
+            if let photoId = pin.photoId {
+                if pawn.loadedPhotoId != photoId {
+                    photoLoads[pin.id] = photoId
+                }
+            } else if pawn.loadedPhotoId != nil {
+                // The photo was removed: do not keep showing the old picture.
+                pawn.clearPhotoTexture(for: pin)
             }
         }
 
@@ -111,7 +116,6 @@ extension TableGameSetup {
             pawn.entity.removeFromParent()
         }
         pinPawns.removeAll { !keptIds.contains($0.pinId) }
-
         Logger.gameTable.debug("Pin sync: \(self.pinPawns.count, privacy: .public) tokens, \(photoLoads.count, privacy: .public) photo loads pending")
         return photoLoads
     }
@@ -276,6 +280,14 @@ extension GameTableModel {
             isGameMaster: isGameMaster
         )
         updateSelectedPinState(mapModel: mapModel)
+        // Bookkeeping of a pin that is gone must not outlive it. See CODE_AUDIT_23 §5.24.
+        let keptIds = Set(setup.pinPawns.map(\.pinId))
+        for removedId in pendingThumbnailTasks.keys where !keptIds.contains(removedId) {
+            pendingThumbnailTasks[removedId]?.cancel()
+            pendingThumbnailTasks[removedId] = nil
+        }
+        pendingPinPhotoIds = pendingPinPhotoIds.filter { keptIds.contains($0.key) }
+        failedPinPhotoIds = failedPinPhotoIds.filter { keptIds.contains($0.key) }
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
             let task = Task { [weak self] in

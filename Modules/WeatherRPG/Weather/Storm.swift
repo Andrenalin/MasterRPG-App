@@ -46,7 +46,9 @@ public class Storm {
     }
 
     public func update(date: Date, size: CGSize) {
-        let delta = date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970
+        // Clamped: after a long pause (background, a sheet) a minutes-long step would move every
+        // drop off the wrap range for many frames. See CODE_AUDIT_23 §5.17.
+        let delta = min(max(date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970, 0), 0.1)
         let divisor = size.height / size.width
 
         for drop in drops {

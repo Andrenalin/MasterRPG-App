@@ -47,6 +47,14 @@ struct GamePlayerRoutes: Sendable {
         return playerId
     }
 
+    /// Whether `origin` still speaks for `senderId`. A message is checked again when it is
+    /// processed: its connection may have been lost while it waited in the queue. Origins
+    /// without a physical identity always pass. See CODE_AUDIT_23 §5.4.
+    func isBound(_ origin: GameMessageOrigin, to senderId: UUID) -> Bool {
+        guard let connectionId = origin.participantConnectionId else { return true }
+        return playersByConnection[connectionId] == senderId
+    }
+
     func playerId(for connectionId: UUID) -> UUID? {
         playersByConnection[connectionId]
     }

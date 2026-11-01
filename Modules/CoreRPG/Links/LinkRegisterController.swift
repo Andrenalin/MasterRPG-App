@@ -27,13 +27,13 @@ import os.log
         model.context = context
 
         return Task(priority: .userInitiated) {
-            let parsedModels: [LinkRegisterModel] = await context.perform {
+            let parsedModels: [LinkRegisterModel]? = await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                     // Grows with every cross-item link reference in every module; batch the
                     // fetch instead of materializing the whole table at once.
                     request.fetchBatchSize = 500
-                    guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return [] }
+                    guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return nil }
                     var nextLegacyOccurrence: [LegacyLinkKey: Int] = [:]
                     var results: [LinkRegisterModel] = []
                     results.reserveCapacity(linkReferenceModels.count)
@@ -65,9 +65,14 @@ import os.log
                     return results
                 } catch {
                     Logger.coreDataController.error("tagdata error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                    return []
+                    return nil
                 }
             }
+            guard let parsedModels else {
+                model.hydrationFailed = true
+                return
+            }
+            model.hydrationFailed = false
 
             // Apply the fully-parsed batch with a single MainActor hop instead of one
             // unstructured `Task` per row (the old `updateLink(addedModel:)` behavior) —
@@ -167,6 +172,12 @@ public extension LinkRegisterController {
     @MainActor func savePendingLinks() async throws {
         let affectedIds = model.pendingAffectedSourceIds
         guard !affectedIds.isEmpty, let context = model.context else { return }
+        // An empty register that stands for an unread table would delete the stored rows of every
+        // affected source. Retry the fetch; the changes wait until it succeeds.
+        if model.hydrationFailed {
+            await setup(context: context)?.value
+            guard !model.hydrationFailed else { return }
+        }
         model.pendingAffectedSourceIds.removeAll()
 
         // From the index by source: filtering every link of the register scanned all of them on

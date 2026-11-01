@@ -66,6 +66,8 @@ final class TableGenerationOccurrence: Identifiable {
     var hiddenEntryIds: Set<UUID> = []
     var children: [TableGenerationOccurrence] = []
     var ignoredCycleNames: [String] = []
+    /// Links left out because the generation reached `maxOccurrenceCount`.
+    var truncatedLinkNames: [String] = []
 
     /// This occurrence and every occurrence below it.
     var occurrenceCount: Int {

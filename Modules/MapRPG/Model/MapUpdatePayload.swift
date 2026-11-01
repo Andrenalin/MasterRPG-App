@@ -120,6 +120,9 @@ private struct CanonicalMapEntry: Codable, Sendable {
     let coordinates: [CGPoint]
     let isHexGrid: Bool
     let displayState: Int
+    /// Whether the room is revealed. Players get a hidden room's name and text blanked, so a
+    /// reveal must change the fingerprint to make the master resend them. See CODE_AUDIT_23 §5.2.
+    let isShown: Bool
 
     init(_ entry: MapEntryModel) {
         id = entry.id
@@ -128,6 +131,7 @@ private struct CanonicalMapEntry: Codable, Sendable {
         coordinates = entry.coordinates
         isHexGrid = entry.isHexGrid
         displayState = entry.displayState
+        isShown = entry.isShown
     }
 }
 

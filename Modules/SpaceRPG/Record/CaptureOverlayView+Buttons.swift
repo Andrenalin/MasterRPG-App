@@ -11,7 +11,6 @@ import CoreRPG
 import SwiftUI
 import RealityKit
 import UniformTypeIdentifiers
-import os
 
 extension CaptureOverlayView {
     struct DocumentBrowser: UIViewControllerRepresentable {

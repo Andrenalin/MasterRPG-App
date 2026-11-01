@@ -339,7 +339,8 @@ struct GameControllerTests {
         )
 
         // When: only live game state changes.
-        gameMap.entries[0].isShown.toggle()
+        // A room's `isShown` is not live state any more: revealing it changes what a player
+        // may see, so it is part of the fingerprint (CODE_AUDIT_23 §5.2).
         gameMap.entries[0].focused.toggle()
         gameMap.pointer = MapPinModel(
             id: UUID(),

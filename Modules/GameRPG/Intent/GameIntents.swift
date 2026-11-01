@@ -12,7 +12,9 @@ import MapRPG
 
 /// Hands the turn to the next combatant of the running battle, as the Battle Round's "Next"
 /// button does; the players get the change through the same broadcast. Only on the game master's
-/// device. See CODE_AUDIT_AppIntents3 §4.8.
+/// device. It needs no unlock on purpose: it is a routine gameplay step, reversible from the
+/// Battle Round, and only the game master's own device has the battle. See CODE_AUDIT_AppIntents3
+/// §4.8, CODE_AUDIT_23 §6.10.
 public struct NextTurnIntent: AppIntent {
     public static let title: LocalizedStringResource = "Next Turn"
     public static let description = IntentDescription(
@@ -67,7 +69,8 @@ public struct NextRoundIntent: AppIntent {
 }
 
 /// Ends the running battle after a confirmation, as the Battle Round's End button does.
-/// See CODE_AUDIT_AppIntents3 §4.8.
+/// It asks for the confirmation instead of an unlock, because a battle is only game state on the
+/// game master's own device. See CODE_AUDIT_AppIntents3 §4.8, CODE_AUDIT_23 §6.10.
 public struct EndBattleIntent: AppIntent {
     public static let title: LocalizedStringResource = "End Battle"
     public static let description = IntentDescription(
@@ -125,7 +128,9 @@ public struct StopGameIntent: AppIntent {
 
 /// Joins a game master's game on the local network with the code the master shows, as the
 /// player's join screen does, with the character chosen there. The app comes to the front: a
-/// game runs on screen. See CODE_AUDIT_AppIntents3 §4.8.
+/// game runs on screen. The code is a parameter so a Shortcut can pass it; guessing codes is
+/// bounded by the master's per-source join throttle, not by the intent. See
+/// CODE_AUDIT_AppIntents3 §4.8, CODE_AUDIT_23 §6.10.
 public struct JoinGameIntent: AppIntent {
     public static let title: LocalizedStringResource = "Join Game"
     public static let description = IntentDescription(

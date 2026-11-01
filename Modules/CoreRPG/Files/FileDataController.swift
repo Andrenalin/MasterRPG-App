@@ -9,9 +9,13 @@ public protocol Storable {
 
 actor FileDataModel<Datatype: Codable & Storable & Sendable> {
     private(set) var data: [Datatype] = []
+    /// Stored entries this build could not decode. They are written back unchanged, so a save
+    /// never drops data a newer or different shape still owns. See CODE_AUDIT_23 §5.5.
+    private(set) var undecodable: [DataModel] = []
 
-    func setData(update: [Datatype]) {
+    func setData(update: [Datatype], undecodable: [DataModel] = []) {
         data = update
+        self.undecodable = undecodable
     }
 
     func appendData(_ update: Datatype) {
@@ -57,17 +61,24 @@ public struct FileDataController<Datatype: Codable & Storable & Sendable>: Senda
 // MARK: - Fetch / store data
 
 public extension FileDataController {
-    func fetch() async {
+    /// - Returns: `false` when the stored file exists but could not be read. Nothing is replaced
+    ///   then, and the caller must not save over the file. See CODE_AUDIT_23 §5.5.
+    @discardableResult
+    func fetch() async -> Bool {
         let persistenceLoader = persistence
         let decoder = JSONCoding.decoder
-        let jsonData = await persistenceLoader.load()
-        let data = jsonData.compactMap { entry in
+        guard let jsonData = await persistenceLoader.loadIfReadable() else { return false }
+        var data: [Datatype] = []
+        var undecodable: [DataModel] = []
+        for entry in jsonData {
             if let restoreData = try? decoder.decode(Datatype.self, from: entry.data) {
-                return restoreData
+                data.append(restoreData)
+            } else {
+                undecodable.append(entry)
             }
-            return nil
         }
-        await model.setData(update: data)
+        await model.setData(update: data, undecodable: undecodable)
+        return true
     }
 
     func save() async {
@@ -78,7 +89,9 @@ public extension FileDataController {
             }
             return nil
         }
-        await persistence.save(data: mappedData)
+        let writtenIds = Set(mappedData.map(\.id))
+        let kept = await model.undecodable.filter { !writtenIds.contains($0.id) }
+        await persistence.save(data: mappedData + kept)
     }
 }
 

@@ -102,6 +102,42 @@ struct MapPinVisibilityTests {
         #expect(pin.healthBorderColor == .green)
     }
 
+    @Test func monsterInHiddenRoomIsNotSentToPlayers() throws {
+        // Given: a hidden room with a shown monster inside, a shown player pin inside, and a
+        // shown monster outside every room.
+        let room = MapEntryModel(id: UUID(), name: "Crypt", content: "", coordinates: square, isShown: false)
+        let inside = CGPoint(x: 50, y: 50)
+        let monster = MapPinModel(id: UUID(), name: "Lich", location: inside, isShown: true)
+        let player = MapPinModel(id: UUID(), name: "Hero", location: inside, isShown: true, isPlayer: true)
+        let outside = MapPinModel(id: UUID(), name: "Rat", location: CGPoint(x: 500, y: 500), isShown: true)
+        let map = MapModel(id: UUID(), name: "Map", entries: [room], mapPins: [monster, player, outside])
+
+        // When
+        let hiddenVisible = GameController.pinsVisibleToPlayers(in: map).map(\.id)
+        let hiddenSnapshot = MapSnapshot(map).redactedForNonMaster().mapPins.wrappedValue.map(\.id)
+        map.toggle(room.id)
+        let revealedVisible = GameController.pinsVisibleToPlayers(in: map).map(\.id)
+
+        // Then
+        #expect(Set(hiddenVisible) == [player.id, outside.id])
+        #expect(Set(hiddenSnapshot) == [player.id, outside.id])
+        #expect(Set(revealedVisible) == [monster.id, player.id, outside.id])
+    }
+
+    @Test func revealingARoomChangesTheContentFingerprint() {
+        // Given
+        let room = MapEntryModel(id: UUID(), name: "Crypt", content: "Secret", coordinates: square, isShown: false)
+        let map = MapModel(id: UUID(), name: "Map", entries: [room])
+        let hiddenVersion = MapUpdatePayload(model: map).contentVersion
+
+        // When
+        map.toggle(room.id)
+        let revealedVersion = MapUpdatePayload(model: map).contentVersion
+
+        // Then
+        #expect(hiddenVersion != revealedVersion)
+    }
+
     @Test func entryContainsPoint() {
         let entry = MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: square)
 

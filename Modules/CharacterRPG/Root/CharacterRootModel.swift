@@ -249,6 +249,7 @@ extension CharacterRootModel {
                     continue
                 }
                 if let valueItem = editController.editModel(for: valueId) {
+                    let before = (valueItem.groupId, valueItem.parentId, valueItem.displayState)
                     valueItem.groupId <=> model.id
                     // Only clear parentId if it was used as the group reference (Phase 2 data).
                     // A real folder parentId (pointing to a folder, not the group owner) must be kept.
@@ -256,11 +257,19 @@ extension CharacterRootModel {
                         valueItem.parentId = nil
                     }
                     valueItem.displayState <=> 1
-                    editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module).localizedString)
+                    // Only a changed group item is saved, so a repair run does not move the sync
+                    // clocks of unchanged data. See CODE_AUDIT_23 §5.21.
+                    if (valueItem.groupId, valueItem.parentId, valueItem.displayState) != before {
+                        editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module).localizedString)
+                    }
                 }
 
-                editController.reset(tags: [], itemId: valueId)
-                await editController.removePhotos(itemId: valueId)
+                if !value.tags.isEmpty {
+                    editController.reset(tags: [], itemId: valueId)
+                }
+                if value.photoId != nil || !value.photos.isEmpty {
+                    await editController.removePhotos(itemId: valueId)
+                }
 
                 // The entry shows the group item's name as plain text. Comparing it with the raw name
                 // (a markdown link for table-generated items) never matches what is written here,

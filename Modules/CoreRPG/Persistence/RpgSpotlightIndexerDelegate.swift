@@ -3,6 +3,8 @@
 import Foundation
 import CoreData
 import CoreSpotlight
+import Synchronization
+import os.log
 
 public protocol SpotlightIndexerAttribute {
 #if !os(tvOS)
@@ -67,15 +69,28 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     /// (`indexName()`), not the App Entity donations.
     public func startIndexing() async {
         let defaults = UserDefaults.standard
-        if defaults.integer(forKey: Self.indexVersionKey) < Self.indexVersion {
+        // One attempt per launch for the whole process: a store swap creates a second delegate,
+        // and two deletions of the one index would race. See CODE_AUDIT_23 §5.27.
+        if defaults.integer(forKey: Self.indexVersionKey) < Self.indexVersion, Self.claimIndexReset() {
             do {
                 try await deleteSpotlightIndex()
                 defaults.set(Self.indexVersion, forKey: Self.indexVersionKey)
             } catch {
                 // Keep the old version so the next launch tries again.
+                Logger.coreDataController.error("Spotlight index reset failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
         startSpotlightIndexing()
+    }
+
+    private static let didClaimIndexReset = Mutex(false)
+
+    /// `true` for the first caller of the launch only.
+    private static func claimIndexReset() -> Bool {
+        didClaimIndexReset.withLock { claimed in
+            defer { claimed = true }
+            return !claimed
+        }
     }
 
     public func observeIndexing() {

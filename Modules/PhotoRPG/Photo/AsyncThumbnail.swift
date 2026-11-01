@@ -48,9 +48,13 @@ struct AsyncThumbnail: View {
 
 // MARK: - Private Helpers
 
+/// Identifies a load without holding the `FileUrl` itself: its synthesized equality compares the
+/// inline `Data`, megabytes per `body` pass for a received photo. See CODE_AUDIT_23 §7.14.
 private struct AsyncThumbnailLoadKey: Equatable {
     let itemId: UUID
-    let fileUrl: FileUrl?
+    let fileId: UUID?
+    let fileLocation: FileLocation?
+    let contentHash: String?
     let hasInlineData: Bool
     let usesFullImage: Bool
     let version: Int
@@ -83,7 +87,9 @@ private extension AsyncThumbnail {
     func loadKey(for model: PhotoModel) -> AsyncThumbnailLoadKey {
         AsyncThumbnailLoadKey(
             itemId: model.id,
-            fileUrl: model.fileUrl,
+            fileId: model.fileUrl?.fileId,
+            fileLocation: model.fileUrl?.location,
+            contentHash: model.fileUrl?.contentHash,
             hasInlineData: model.fileUrl?.data != nil,
             usesFullImage: usesFullImage,
             version: model.version

@@ -18,6 +18,15 @@ struct RuleFoundryFactoryTests {
         #expect(RuleModel.inert("plain text") == "plain text")
     }
 
+    @Test("Imported text cannot start a block of its own")
+    func importedTextStaysOnOneLine() {
+        #expect(RuleModel.inert("line one\nline two\r\nline three") == "line one line two line three")
+        #expect(RuleModel.inert("# Heading") == "\\# Heading")
+        #expect(RuleModel.inert("> quote") == "\\> quote")
+        #expect(RuleModel.inert("- item") == "\\- item")
+        #expect(RuleModel.inert("a\n# inline") == "a # inline")
+    }
+
     @Test("Typed Foundry rules retain provenance and their lossless payload")
     func typedRuleMapping() throws {
         // Given

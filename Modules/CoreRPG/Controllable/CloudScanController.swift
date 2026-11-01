@@ -59,10 +59,16 @@ struct CloudScanController: Sendable {
     /// nothing is applied (`.unreachable`). What the library has meanwhile is not added or changed
     /// a second time.
     @MainActor func apply(_ plan: CloudScanPlan) async -> Outcome {
-        let current = await scan()
+        // The sync changes the permanent library; a running game keeps its changes in game
+        // memory only, which would leave the library half-synced. See CODE_AUDIT_23 §5.7.
+        guard !itemController.itemDataModel.isGameMode else { return .busy }
+        // Content only, so it is safe to read before the lock.
         let hashes = await newItemHashes(of: plan)
         guard let token = DataMutationCoordinator.shared.begin() else { return .busy }
         defer { DataMutationCoordinator.shared.end(token) }
+        // The picture the removals are checked against is taken under the lock, so an item the
+        // user re-pointed meanwhile is not trashed from an older one. See CODE_AUDIT_23 §3.6.
+        let current = await scan()
 
         // Without a fresh plan nothing is applied: it cannot be told whether the old picture still
         // holds, and the user is told so instead of seeing a sync of zero.
@@ -99,8 +105,15 @@ struct CloudScanController: Sendable {
     }
 
     /// The content hashes of the files that become items, read off the main actor.
+    /// At most `maximumHashedNewFiles` files are read here; the others get their hash when they
+    /// are first exported. See CODE_AUDIT_23 §7.2.
     @MainActor private func newItemHashes(of plan: CloudScanPlan) async -> [String: String] {
         guard !plan.items.isEmpty, let files = itemController.fileUrlDataController else { return [:] }
-        return await CloudFolderScan.hashes(of: plan.items.map(\.file), below: files.cloudDocumentController.moduleUrl)
+        return await CloudFolderScan.hashes(
+            of: Array(plan.items.map(\.file).prefix(Self.maximumHashedNewFiles)),
+            below: files.cloudDocumentController.moduleUrl
+        )
     }
+
+    private static let maximumHashedNewFiles = 200
 }

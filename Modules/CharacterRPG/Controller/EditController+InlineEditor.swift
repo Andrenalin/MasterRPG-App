@@ -28,7 +28,7 @@ extension EditController {
     /// resolve to a number, so callers fall back to the plain stored text.
     @MainActor private func resolvedBaseAndCurrent(for entry: ValueEntryModel) -> (base: Double, current: Double)? {
         guard entry.canCalculate else { return nil }
-        let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
+        let baseText = ValueEntryModel.baseText(of: entry.value)
         let baseEntry = ValueEntryModel(id: entry.id, name: entry.name, type: entry.type, value: baseText)
         guard let resolvedBaseText = root.linkController.calculate(entry: baseEntry),
               let base = Double(resolvedBaseText) else {
@@ -77,8 +77,8 @@ extension EditController {
                 return true
             }
             guard resolved.current != decimal else { return false }
-            let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
-            entry.value = "\(baseText)|\(decimal - resolved.base)"
+            let baseText = ValueEntryModel.baseText(of: entry.value)
+            entry.value = "\(baseText)|\(ValueEntryModel.modifierText(decimal - resolved.base))"
             return true
         }
     }
@@ -92,7 +92,7 @@ extension EditController {
             }
             let number = SheetNumberLimit.clamped(number)
             guard SheetNumberLimit.clamped(resolved.current) != number else { return false }
-            let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
+            let baseText = ValueEntryModel.baseText(of: entry.value)
             let modifier = SheetNumberLimit.clamped(Double(number) - resolved.base)
             entry.value = "\(baseText)|\(modifier)"
             return true

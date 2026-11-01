@@ -55,6 +55,30 @@ struct LinkHighlightTextModelTests {
         #expect(sut.requiresCustomRenderer)
     }
 
+    @Test(
+        "Unbalanced expand markers render without trapping",
+        arguments: [
+            "➡️ north corridor",
+            "➡️ a ➡️ b ⬅️",
+            "south ⬅️ corridor",
+            "➡️➡️⬅️⬅️⬅️ x ➡️",
+        ]
+    )
+    @MainActor
+    func unbalancedMarkersDoNotTrap(text: String) {
+        // Given
+        let sut = LinkHighlightTextModel(
+            linkControllable: FakeLinkController.fake,
+            text: text
+        )
+
+        // When
+        let components = sut.displayText
+
+        // Then
+        #expect(!components.isEmpty)
+    }
+
     @Test
     func parseLink() async throws {
         let text = "**4**: [Dolch](RPG://TABLES/0/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1)"

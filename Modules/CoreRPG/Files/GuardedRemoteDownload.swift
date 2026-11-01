@@ -21,7 +21,7 @@ public enum GuardedRemoteDownload {
         allowsPrivateHosts: Bool = false
     ) async throws -> (fileUrl: URL, response: URLResponse) {
         let delegate = Delegate(maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts)
-        let (temporaryUrl, response) = try await URLSession.shared.download(from: url, delegate: delegate)
+        let (temporaryUrl, response) = try await Self.session.download(from: url, delegate: delegate)
         // A host name can resolve to a loopback or LAN address, and so can any redirect hop,
         // which the string check cannot see. The addresses actually connected to are checked
         // after the transfer; a private one discards the file. See CODE_AUDIT_20 §6.2.
@@ -41,6 +41,14 @@ public enum GuardedRemoteDownload {
         }
         return (temporaryUrl, response)
     }
+
+    /// `URLSession.shared` gives a transfer seven days to finish, so a host that drips bytes
+    /// would hold its cache file for that long. See CODE_AUDIT_23 §3.2.
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForResource = 300
+        return URLSession(configuration: configuration)
+    }()
 
     private final class Delegate: NSObject, URLSessionDownloadDelegate, Sendable {
         let maximumBytes: Int

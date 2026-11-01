@@ -26,9 +26,15 @@ protocol MasterNetworkStoreDelegate: Sendable & AnyObject {
     func received(_ model: GameNetworkModel, origin: GameMessageOrigin) async
     func receivedFile(_ model: GameNetworkModel) async
     func lostPlayer(for connectionId: ConnectionController.ID) async
+    /// Whether a player's group event may be relayed to the other players: the master checks the
+    /// event before it passes it on, so an implausible, repeated or disabled one is not
+    /// multiplied to every device. See CODE_AUDIT_23 §6.4.
+    func mayRelay(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool
 }
 
 extension MasterNetworkStoreDelegate {
+    func mayRelay(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool { true }
+
     func ready(for connectionId: ConnectionController.ID) async {
         await ready(for: .direct(connectionId))
     }

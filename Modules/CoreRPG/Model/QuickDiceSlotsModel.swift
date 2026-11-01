@@ -41,7 +41,8 @@ public protocol QuickDiceSlotStoring: Sendable {
 
 /// Keeps each character's slots in `UserDefaults`, like the other game settings.
 public struct UserDefaultsQuickDiceSlotStore: QuickDiceSlotStoring {
-    // `UserDefaults` is thread-safe by documentation but not yet `Sendable` in this SDK.
+    // `UserDefaults` is thread-safe by documentation but still not `Sendable` in this SDK:
+    // removing the escape hatch fails to compile (checked for CODE_AUDIT_23 §4.4).
     private nonisolated(unsafe) let defaults: UserDefaults
 
     public init(defaults: UserDefaults = .standard) {

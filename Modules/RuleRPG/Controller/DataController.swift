@@ -25,7 +25,7 @@ extension DataController: CoreDataSnapshotPersistable {
     @Sendable
     func mapSnapshot(_ model: RPGRule, token: String) -> RuleSnapshot {
         RuleSnapshot(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: []),
@@ -86,7 +86,7 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGRuleEntry) -> RuleEntryModel {
         RuleEntryModel(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: model.name ?? "",
             content: model.content ?? "",
             kind: RuleEntryKind(rawValue: model.kind ?? "") ?? .text,

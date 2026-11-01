@@ -53,6 +53,48 @@ struct GameValueBaseAndCurrentTests {
         #expect(sut.gameValueBaseAndCurrent("20+10+") == nil)
     }
 
+    @Test("Two battle clones of one template keep their own value group")
+    func battleClonesDoNotShareValueGroups() throws {
+        // Given: a template whose HP lives in a value group
+        let root = Self.makeRoot()
+        let sut = root.gameController
+        let hp = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "30")
+        let group = ValueModel(id: UUID(), name: "Vitals", entries: [hp])
+        let templateId = UUID()
+        let template = ValueModel(
+            id: templateId,
+            name: "Goblin",
+            entries: [ValueEntryModel(id: UUID(), name: "Vitals", type: .text, value: "", valueId: group.id)]
+        )
+        root.itemController.replace(model: group, isInsert: true)
+        root.itemController.replace(model: template, isInsert: true)
+
+        // When: two clones are made and the first one takes damage
+        let firstId = try #require(sut.createBattleCharacterCopy(for: templateId))
+        let secondId = try #require(sut.createBattleCharacterCopy(for: templateId))
+        let first = try #require(sut.battleCharacterCopy(for: firstId))
+        let second = try #require(sut.battleCharacterCopy(for: secondId))
+        let firstGroupId = try #require(first.entries.first?.valueId)
+        let secondGroupId = try #require(second.entries.first?.valueId)
+        let firstHp = try #require(sut.gameItem(for: firstGroupId).entries.first)
+        let changed = sut.setGameEntryCurrentNumber(12, characterId: firstId, entryId: firstHp.id)
+
+        // Then
+        #expect(changed)
+        #expect(firstGroupId != group.id)
+        #expect(secondGroupId != group.id)
+        #expect(firstGroupId != secondGroupId)
+        #expect(sut.gameItem(for: firstGroupId).entries.first?.value == "30|-18")
+        #expect(sut.gameItem(for: secondGroupId).entries.first?.value == "30")
+        #expect(sut.gameItem(for: group.id).entries.first?.value == "30")
+
+        // And removing the clones removes their group copies
+        sut.removeBattleCharacterCopies([firstId, secondId])
+        #expect(sut.battleCharacterCopy(for: firstId) == nil)
+        #expect(sut.gameModel.itemData[firstGroupId] == nil)
+        #expect(sut.gameModel.itemData[secondGroupId] == nil)
+    }
+
     private static func makeRoot() -> CharacterRootModel {
         let diceRoot = DiceRootModel.testRoot()
         let pdfRoot = PdfRootModel.testRoot()

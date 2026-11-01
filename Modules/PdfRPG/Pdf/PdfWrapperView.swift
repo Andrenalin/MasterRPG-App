@@ -151,10 +151,22 @@ struct PdfWrapperView: CustomViewRepresentable {
         // `PDFSelection.color` mutation to `documentDidEndDocumentFind`, which hops
         // to the main actor before touching it. See CODE_AUDIT_17 §3.8.
         func didMatchString(_ instance: PDFSelection) {
-            pendingMatches.withLock { $0.append(MatchHandoff.Selection(value: instance)) }
+            pendingMatches.withLock { matches in
+                // A one-letter query on a long PDF would otherwise keep every selection and
+                // re-assign them all on each next/previous step. See CODE_AUDIT_23 §5.26.
+                guard matches.count < Self.maximumMatches else { return }
+                matches.append(MatchHandoff.Selection(value: instance))
+            }
         }
 
+        /// Most matches kept per search.
+        private static let maximumMatches = 1_000
+
         func documentDidEndDocumentFind(_ notification: Notification) {
+            // The end of a cancelled scan can arrive while the next scan is already running; it
+            // would publish that scan's partial matches and stop the spinner early.
+            // See CODE_AUDIT_23 §5.26.
+            if let document = notification.object as? PDFDocument, document.isFinding { return }
             // Not drained: `cancelFindString` in `beginSearch` can deliver the end of the cancelled
             // scan after the new scan has started, and draining there took the new scan's matches
             // and left its real end with the rest. The buffer holds the matches of the current scan

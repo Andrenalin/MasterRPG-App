@@ -65,6 +65,11 @@ public final class GameRoot {
     /// controller pair. See CODE_AUDIT_21 §3.2.
     private var isStartingMaster = false
 
+    /// Bumped by every `stopGame`. A start that was running during a stop compares it after its
+    /// suspensions and gives up, instead of building controllers and a `.started` game on top
+    /// of the teardown. See CODE_AUDIT_23 §3.1.
+    private var stopGeneration = 0
+
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel, gameJoinCodeModel: GameJoinCodeModel = GameJoinCodeModel()) {
         self.gameJoinCodeModel = gameJoinCodeModel
         self.adventureRoot = adventureRoot
@@ -339,10 +344,13 @@ extension GameRoot {
     func startMaster(supporterTier: SupporterTier = .none) async {
         // Checked and set before the first suspension: a call that arrives while a start is
         // running is ignored, it neither starts a second game nor stops the one being started.
-        guard !isStartingMaster else { return }
+        // A start of either kind blocks the other: a Siri join racing a master start used to
+        // tear the other down.
+        guard !isStartingMaster, !isStartingGame else { return }
         isStartingMaster = true
         defer { isStartingMaster = false }
         await awaitInFlightStop()
+        let generation = stopGeneration
         guard gameModel.gameConfig.state == .stopped else {
             await stopGame()
             return
@@ -378,6 +386,7 @@ extension GameRoot {
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
 
         await adventureRoot.adventureGameControllable.startGame(with: id)
+        guard generation == stopGeneration else { return }
         gameModel.playerController = PlayerController(root: self, asGameMaster: true)
         gameModel.masterController = MasterController(root: self, asProxy: false)
 
@@ -388,6 +397,7 @@ extension GameRoot {
 
         await gameModel.masterController?.start()
         await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: id))
+        guard generation == stopGeneration else { return }
 #if !os(tvOS)
         adventureRoot.donateStartGame(of: id)
 #endif
@@ -419,12 +429,13 @@ extension GameRoot {
         joinCode: String = ""
     ) async {
         await awaitInFlightStop()
-        guard !isStartingGame else {
+        guard !isStartingGame, !isStartingMaster else {
             Logger.networking.info("GameRoot: startGame ignored, another start is still running")
             return
         }
         isStartingGame = true
         defer { isStartingGame = false }
+        let generation = stopGeneration
         // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
         // boundary as well as in the setup UI so programmatic callers cannot join
         // SharePlay by passing a nil target.
@@ -452,6 +463,7 @@ extension GameRoot {
         }
 
         await adventureRoot.adventureGameControllable.resetGame()
+        guard generation == stopGeneration else { return }
         #if os(visionOS)
         gameModel.shareState.isMaster = false
         #endif
@@ -469,6 +481,8 @@ extension GameRoot {
             UIApplication.shared.isIdleTimerDisabled = true
 #endif
         } else if await player.start(to: model, joinCode: joinCode) {
+            // A stop during the connect already tore the game down.
+            guard generation == stopGeneration else { return }
             await joinGame(for: mode, supporterTier: supporterTier)
 
 #if !os(macOS)
@@ -517,6 +531,7 @@ extension GameRoot {
 
     // both
     func stopGame() async {
+        stopGeneration += 1
         // Coalesce concurrent callers onto the single in-flight teardown instead of running
         // it twice (or racing a fresh `startGame` — see `awaitInFlightStop()`).
         if let stopGameTask {

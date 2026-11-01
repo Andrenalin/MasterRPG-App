@@ -106,7 +106,7 @@ private extension ItemProviderImporter {
             // Off the caller's executor: under approachable concurrency this nonisolated
             // function runs on the caller's actor (the main actor here), and decoding an image
             // above the raw-size cap would hitch the extension's UI. See CODE_AUDIT_Folder §3.12.
-            let imageData = try await runOffCallerExecutor { downsampledIfNeeded(data) }
+            let imageData = try await runOffCallerExecutor { try downsampledIfNeeded(data) }
             return ImageItem(imageData: imageData)
         }
 
@@ -127,11 +127,15 @@ private extension ItemProviderImporter {
     /// decodes directly at the target size rather than fully decoding the source and scaling
     /// afterward — so the oversized original is never fully materialized in memory. Small
     /// images pass through untouched. See CODE_AUDIT §6.3.
-    nonisolated static func downsampledIfNeeded(_ data: Data) -> Data {
-        guard data.count > maximumRawImageByteSize,
-              let source = CGImageSourceCreateWithData(data as CFData, nil) else {
-            return data
+    nonisolated static func downsampledIfNeeded(_ data: Data) throws -> Data {
+        // Bytes that ImageIO does not read as an image are not stored as a Photo, however small.
+        // See CODE_AUDIT_23 §6.6.
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              CGImageSourceGetCount(source) > 0,
+              ImageDownsampler.declaredSize(of: source) != .overLimits else {
+            throw Error.failedToLoad
         }
+        guard data.count > maximumRawImageByteSize else { return data }
         return downsampled(source) ?? data
     }
 
@@ -152,13 +156,19 @@ private extension ItemProviderImporter {
                 }
                 return downsampledData
             }
-            return downsampledIfNeeded(try Data(contentsOf: url))
+            return try downsampledIfNeeded(try Data(contentsOf: url))
         }
     }
 
     nonisolated static func imageData(from url: URL) async throws -> Data {
         if url.isFileURL {
             return try await imageData(fromFile: url)
+        }
+        // Only a link that names an image file is fetched. A shared web page would otherwise be
+        // requested (private hosts, one-shot links) up to the download cap before it is found
+        // not to be an image. See CODE_AUDIT_23 §6.6.
+        guard UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true else {
+            throw Error.failedToLoad
         }
         // A shared web page URL is not an image: download to disk (not memory), capped while it
         // downloads and with checked redirects, then require an image content type before

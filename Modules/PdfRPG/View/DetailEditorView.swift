@@ -40,6 +40,7 @@ struct DetailEditorView: View {
         .opacity(model.specialCategory ? 0 : 1)
         .allowsHitTesting(!model.specialCategory)
         .accessibilityHidden(model.specialCategory)
+        .disabled(model.specialCategory)
         .padding()
         .onChange(of: model.id, initial: true) {
             if sheetRootModel == nil {

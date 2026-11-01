@@ -176,6 +176,12 @@ actor GameMessagePipeline {
         return .enqueued
     }
 
+    /// Whether `event` repeats one that is queued or was processed recently.
+    func hasSeen(_ event: GameMessageEvent) -> Bool {
+        guard let key = event.deduplicationKey else { return false }
+        return recentKeySet.contains(key) || pendingKeySet.contains(key)
+    }
+
     /// Lets a drain loop that bailed out on cancellation (see
     /// `PlayerController.processMessages()`, CODE_AUDIT.md §3.4) decide whether it needs to
     /// hand off to a fresh Task to avoid stranding whatever is still queued.

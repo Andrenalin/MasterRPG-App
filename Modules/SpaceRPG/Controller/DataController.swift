@@ -20,14 +20,14 @@ extension DataController: CoreDataSnapshotPersistable {
     @Sendable
     func mapSnapshot(_ model: RPGSpace, token: String) -> SpaceSnapshot {
         SpaceSnapshot(
-            id: model.uuid ?? UUID(),
+            id: repairedUuid(of: model, at: \.uuid),
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
             category: CRDT(string: model.spaceCategory ?? "", defaultValue: ItemListCategory.item),
             displayState: Int(model.displayState),
             degrees: CRDT(string: model.degrees ?? "", defaultValue: 0.0),
-            fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: model.uuid ?? UUID(), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
+            fileUrl: CRDTDataUpdate(wrappedValue: FileUrl(string: model.fileUrl ?? "", fileId: repairedUuid(of: model, at: \.uuid), module: token, unconvertedData: nil), update: CRDT(string: model.fileUrlUpdate ?? "", defaultValue: UUID())),
             entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
             parentId: model.parentId
         )
@@ -75,8 +75,8 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGSpaceEntry) -> SpaceEntryModel {
         SpaceEntryModel(
-            id: model.uuid ?? UUID(),
-            spaceId: (model.spaceUUID ?? model.uuid ?? UUID())
+            id: repairedUuid(of: model, at: \.uuid),
+            spaceId: (model.spaceUUID ?? repairedUuid(of: model, at: \.uuid))
         )
     }
 

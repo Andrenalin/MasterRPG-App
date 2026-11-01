@@ -28,11 +28,12 @@ struct ListRowItemView: View, Equatable {
     /// dependencies passed down unchanged across parent redraws — none of those are compared.
     /// `isDropTargeted` is `@State`-owned and drives its own re-render independent of this
     /// conformance. What actually determines this row's rendered output is: which item it
-    /// shows, where in the hierarchy, its content, and whether it's selected. See CODE_AUDIT §8.4.
+    /// shows, where in the hierarchy, its content and its inset. Selection is read from the same
+    /// live `listModel` on both sides, so it is not compared. See CODE_AUDIT §8.4, CODE_AUDIT_23 §8.7.
     static func == (lhs: ListRowItemView, rhs: ListRowItemView) -> Bool {
         lhs.item.id == rhs.item.id
             && lhs.item.level == rhs.item.level
-            && lhs.isSelected == rhs.isSelected
+            && lhs.leadingPadding == rhs.leadingPadding
             && lhs.model.isEqualErased(to: rhs.model)
     }
 

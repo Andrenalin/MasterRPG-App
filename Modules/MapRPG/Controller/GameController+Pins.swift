@@ -195,7 +195,7 @@ extension GameController {
         // part of the full map package and must stay on that transfer path.
         // Hidden pins are excluded outright — their photo must never be
         // proactively shared ahead of the GM revealing them. See CODE_AUDIT §6.1.
-        let photoIds = model.mapPins.filter(\.isShown).compactMap { $0.photoId }
+        let photoIds = model.mapPins.filter { model.isPinVisibleToPlayers($0) }.compactMap { $0.photoId }
         var result: [NetworkCodableDataType] = []
         var uniquePhotoIds: Set<UUID> = []
         for photoId in photoIds where uniquePhotoIds.insert(photoId).inserted {

@@ -40,6 +40,8 @@ struct DieViewerView: View {
                             .font(.title)
 #endif
                             .foregroundStyle(color(for: index))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                             .frame(width: 44, height: 44)
                             .background(.ultraThinMaterial)
                             .clipShape(.circle)
@@ -88,7 +90,16 @@ struct DieViewerView: View {
         if withoutResult || die.result.isEmpty {
             return Text("Not rolled", bundle: .module)
         }
-        return Text(verbatim: die.result.map(String.init).joined(separator: ", "))
+        // The colour alone loses the outcome for VoiceOver and colour-blind players, so the
+        // word of each result follows its number. See CODE_AUDIT_23 §8.2.
+        let values = result.indexed().map { index, value in
+            guard index < resultColor.count else { return String(value) }
+            let outcome = resultColor[index]
+                ? String(localized: "Success", bundle: .module)
+                : String(localized: "Failure", bundle: .module)
+            return "\(value) \(outcome)"
+        }
+        return Text(verbatim: values.reversed().joined(separator: ", "))
     }
 }
 

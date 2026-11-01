@@ -12,21 +12,42 @@ import Synchronization
 final class RemoteDownloadsInFlight: Sendable {
     static let shared = RemoteDownloadsInFlight()
 
-    private let tasks = Mutex<[String: Task<Void, any Error>]>([:])
+    private struct Entry {
+        let id = UUID()
+        var task: Task<Void, any Error>?
+        var waiters = 0
+    }
+
+    private let entries = Mutex<[String: Entry]>([:])
 
     /// Runs `download` unless one for `cachePath` is running already, and waits for whichever
-    /// it is. A caller that is cancelled stops waiting; the download goes on for the others.
+    /// it is. A caller that is cancelled stops waiting; the download goes on for the others and
+    /// is cancelled when the last of them has left. See CODE_AUDIT_23 §3.2.
     func run(cachePath: String, _ download: @escaping @Sendable () async throws -> Void) async throws {
         // The task is created under the lock, so it cannot remove itself before it is stored.
-        let task = tasks.withLock { tasks in
-            if let running = tasks[cachePath] { return running }
+        let (task, entryId) = entries.withLock { entries -> (Task<Void, any Error>, UUID) in
+            if var running = entries[cachePath], let task = running.task {
+                running.waiters += 1
+                entries[cachePath] = running
+                return (task, running.id)
+            }
+            var entry = Entry()
+            let entryId = entry.id
             let task = Task {
-                defer { self.tasks.withLock { $0[cachePath] = nil } }
+                defer {
+                    // A cancelled download may already have been replaced by a newer one.
+                    self.entries.withLock { entries in
+                        if entries[cachePath]?.id == entryId { entries[cachePath] = nil }
+                    }
+                }
                 try await download()
             }
-            tasks[cachePath] = task
-            return task
+            entry.task = task
+            entry.waiters = 1
+            entries[cachePath] = entry
+            return (task, entryId)
         }
+        defer { leave(cachePath: cachePath, entryId: entryId) }
         // `task.value` does not stop waiting when the caller is cancelled, so the wait is a
         // continuation that either the download or the cancellation resumes, whichever is first.
         let wait = CancellableWait()
@@ -44,6 +65,21 @@ final class RemoteDownloadsInFlight: Sendable {
             wait.finish(.failure(CancellationError()))
         }
         try Task.checkCancellation()
+    }
+
+    /// Drops one waiter, and cancels the download, which nobody waits for any more.
+    private func leave(cachePath: String, entryId: UUID) {
+        let abandoned: Task<Void, any Error>? = entries.withLock { entries in
+            guard var entry = entries[cachePath], entry.id == entryId else { return nil }
+            entry.waiters -= 1
+            guard entry.waiters <= 0 else {
+                entries[cachePath] = entry
+                return nil
+            }
+            entries[cachePath] = nil
+            return entry.task
+        }
+        abandoned?.cancel()
     }
 }
 

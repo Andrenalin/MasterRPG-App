@@ -129,8 +129,12 @@ enum MapHexGridGeometry {
         // Cells by the squares of a coarse raster their bounds touch, so a centre is tested
         // against the few cells around it and not against every revealed cell.
         let rasterSize = max(revealed.map { max($0.bounds.width, $0.bounds.height) }.max() ?? 1, 1)
+        // Clamped: an imported map can hold coordinates no `Int` holds, and converting those
+        // traps. See CODE_AUDIT_23 §5.13.
         func rasterIndex(_ value: CGFloat) -> Int {
-            Int((value / rasterSize).rounded(.down))
+            let index = (value / rasterSize).rounded(.down)
+            guard index.isFinite else { return 0 }
+            return Int(min(max(index, -1_000_000_000), 1_000_000_000))
         }
         var raster: [RasterSquare: [Int]] = [:]
         for (index, cell) in revealed.enumerated() {

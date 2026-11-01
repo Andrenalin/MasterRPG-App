@@ -133,6 +133,7 @@ struct TableGenerationController: Sendable {
         occurrence.hiddenEntryIds = []
         occurrence.children = []
         occurrence.ignoredCycleNames = []
+        occurrence.truncatedLinkNames = []
         occurrence.lastRoll = nil
         clearPendingRoll(in: occurrence)
     }
@@ -141,7 +142,11 @@ struct TableGenerationController: Sendable {
     /// `donates` is off for `RollTableIntent`: the system already knows about its own runs.
     func autoRoll(model: TableGenerationModel, donates: Bool = true) {
         model.errorMessage = nil
-        autoRoll(occurrence: model.root, model: model)
+        // Each roll clears the message, so the first failure is kept here and shown at the end:
+        // a later successful sibling must not erase it. See CODE_AUDIT_23 §5.19.
+        var firstError: String?
+        autoRoll(occurrence: model.root, model: model, firstError: &firstError)
+        model.errorMessage = firstError
         if donates {
             rootManagerBox.donateRoll?(model.root.tableId)
         }
@@ -258,16 +263,21 @@ struct TableGenerationController: Sendable {
     @MainActor
     private func autoRoll(
         occurrence: TableGenerationOccurrence,
-        model: TableGenerationModel
+        model: TableGenerationModel,
+        firstError: inout String?
     ) {
         if !occurrence.isResolved {
-            guard roll(occurrence: occurrence, model: model) != nil else {
+            let rolled = roll(occurrence: occurrence, model: model)
+            if firstError == nil {
+                firstError = model.errorMessage
+            }
+            guard rolled != nil else {
                 return
             }
         }
 
         for child in occurrence.children {
-            autoRoll(occurrence: child, model: model)
+            autoRoll(occurrence: child, model: model, firstError: &firstError)
         }
     }
 
@@ -283,6 +293,7 @@ struct TableGenerationController: Sendable {
         let existingChildren = occurrence.children
         var newChildren: [TableGenerationOccurrence] = []
         occurrence.ignoredCycleNames = []
+        occurrence.truncatedLinkNames = []
 
         for entry in occurrence.selectedEntries {
             for link in entry.tableLinks {
@@ -305,7 +316,8 @@ struct TableGenerationController: Sendable {
                 let kept = model.root.occurrenceCount - occurrence.children.reduce(0) { $0 + $1.occurrenceCount }
                     + newChildren.reduce(0) { $0 + $1.occurrenceCount }
                 if kept >= Self.maxOccurrenceCount {
-                    occurrence.ignoredCycleNames.append(link.name)
+                    // Not a cycle: the generation reached its size limit. See CODE_AUDIT_23 §5.19.
+                    occurrence.truncatedLinkNames.append(link.name)
                     continue
                 }
                 if let child = makeOccurrence(

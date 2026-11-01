@@ -164,6 +164,7 @@ extension EditController {
 
     @MainActor private func repairGroupItemConstraints(itemId: UUID, valueIdOwners: [UUID: [UUID]]) {
         guard let groupItem = editModel(for: itemId) else { return }
+        let before = (groupItem.parentId, groupItem.groupId, groupItem.displayState)
         groupItem.parentId = nil // groups always on root level / no relationship to folders
 
         let owners = valueIdOwners[itemId]
@@ -180,10 +181,14 @@ extension EditController {
             // CODE_AUDIT_18 §9.6.
             groupItem.displayState = DisplayStateMask.fullVisible.rawValue
         }
-        save(
-            updated: groupItem,
-            message: String(localized: "Repairing group item", bundle: .module).localizedString
-        )
+        // Saved only when a field changed: every save moves the CRDT clocks and syncs through
+        // CloudKit. See CODE_AUDIT_23 §5.21.
+        if (groupItem.parentId, groupItem.groupId, groupItem.displayState) != before {
+            save(
+                updated: groupItem,
+                message: String(localized: "Repairing group item", bundle: .module).localizedString
+            )
+        }
         guard let owners, owners.count > 1 else { return }
         for ownerId in owners.dropFirst() {
             removeOld(groupItemId: itemId, valueId: ownerId)

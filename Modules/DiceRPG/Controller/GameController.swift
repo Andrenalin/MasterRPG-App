@@ -22,6 +22,10 @@ final class DiceGameModel {
     /// out-of-order widget updates. See CODE_AUDIT §3.3.
     @ObservationIgnored
     var diceUpdateWidgetTask: Task<Void, Never>?
+    /// The delayed roll each dice set waits on, so a second `rollDice` before it fires replaces
+    /// it instead of adding a second result to every die. See CODE_AUDIT_23 §5.14.
+    @ObservationIgnored
+    var pendingRollTasks: [UUID: Task<Void, Never>] = [:]
 
     func reset() {
         hiddenPlayers = []

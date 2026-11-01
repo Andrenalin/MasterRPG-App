@@ -83,6 +83,7 @@
 		59F410122FA0000000000001 /* RuleRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59F400022FA0000000000001 /* RuleRPG.framework */; };
 		59F410132FA0000000000001 /* RuleRPG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 59F400022FA0000000000001 /* RuleRPG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		59F410162FA0000000000001 /* RuleRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59F400022FA0000000000001 /* RuleRPG.framework */; };
+		59F4A0000000000000000A02 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 59F4A0000000000000000A01 /* PrivacyInfo.xcprivacy */; };
 		5DD922BB13C53D449C6A8EAA /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; };
 		605028CD9A906455286AEEDE /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; };
 		694330D0B3C340068ACE213D /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D51C5DBB55734865A8962E6F /* SnapshotTesting */; };
@@ -1785,6 +1786,7 @@
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		59F400022FA0000000000001 /* RuleRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RuleRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		59F401022FA0000000000001 /* RuleRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RuleRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		59F4A0000000000000000A01 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		68FC61BA0212A2876399734F /* PhotoRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhotoRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8BE629B5A15BC8261B6EFE51 /* SpaceRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpaceRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D8481ECA9871C27FF126EA6 /* WeatherRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WeatherRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2517,6 +2519,7 @@
 				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
 				8E5104E02BD20D9E00F10E87 /* ModuleChooserView.swift */,
 				8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */,
+				59F4A0000000000000000A01 /* PrivacyInfo.xcprivacy */,
 				8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */,
 				8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */,
 				8E5104E42BD23F5000F10E87 /* SharingHeader.swift */,
@@ -4548,6 +4551,7 @@
 			files = (
 				8E7093B93008B8F000BB7EED /* InfoPlist.xcstrings in Resources */,
 				59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */,
+				59F4A0000000000000000A02 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

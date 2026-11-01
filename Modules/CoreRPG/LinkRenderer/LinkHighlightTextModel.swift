@@ -160,22 +160,7 @@ extension LinkHighlightTextModel {
                     boldRange = nextIndex..<range.upperBound
                 }
 
-                let beginRanges = text.ranges(of: LinkExpandHighLightValues.begin.rawValue).filter { $0.lowerBound >= nextIndex }
-                var endRanges = text.ranges(of: LinkExpandHighLightValues.end.rawValue).filter { $0.lowerBound >= nextIndex }
-
-                var endRange = endRanges.first
-                endRanges.removeFirst()
-                for beginRange in beginRanges {
-                    if let endRange  {
-                        if beginRange.lowerBound > endRange.upperBound {
-                            break
-                        }
-                    } else {
-                        break
-                    }
-                    endRange = endRanges.first
-                    endRanges.removeFirst()
-                }
+                let endRange = matchingEndRange(in: text, after: nextIndex)
                 if let endRange {
                     result.append(HighlightedTextComponent(text: Text(Image(systemName: "arrowshape.right.fill"))
                             .customAttribute(LinkIconExpandedAttribute(isStart: true)), string: LinkExpandHighLightValues.begin.rawValue, range: index..<nextIndex))
@@ -193,8 +178,11 @@ extension LinkHighlightTextModel {
                     if boldRange != nil {
                         boldRange = nextIndex..<range.upperBound
                     }
+                    lastIndex = nextIndex
+                } else {
+                    // Unbalanced begin marker: keep it as plain text.
+                    lastIndex = index
                 }
-                lastIndex = nextIndex
             }
             
             // check for bold
@@ -253,6 +241,25 @@ extension LinkHighlightTextModel {
         return result
     }
     
+    /// The end marker that closes the begin marker just before `start`, honouring
+    /// nested begin/end pairs. `nil` when the text is unbalanced.
+    func matchingEndRange(in text: String, after start: String.Index) -> Range<String.Index>? {
+        let markers = (
+            begin: text.ranges(of: LinkExpandHighLightValues.begin.rawValue).filter { $0.lowerBound >= start },
+            end: text.ranges(of: LinkExpandHighLightValues.end.rawValue).filter { $0.lowerBound >= start }
+        )
+        var events: [(range: Range<String.Index>, isBegin: Bool)] = markers.begin.map { ($0, true) }
+        events.append(contentsOf: markers.end.map { ($0, false) })
+        events.sort { $0.range.lowerBound < $1.range.lowerBound }
+
+        var depth = 1
+        for event in events {
+            depth += event.isBegin ? 1 : -1
+            if depth == 0 { return event.range }
+        }
+        return nil
+    }
+
     private func highlight(text: String, range: Range<String.Index>, isBold: Bool, deep: Int, custom: [any TextAttribute] = []) -> [HighlightedTextComponent] {
         if let searchText = highlightedText {
             let restText = String(text[range])

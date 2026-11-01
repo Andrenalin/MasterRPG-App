@@ -103,7 +103,9 @@ extension MapEditController {
 extension MapEditController {
     /// Appends a link of each character to the room's content, unless the room already links
     /// that character. Links of other characters stay. Part of the caller's mutation: it
-    /// records no history entry itself.
+    /// records no history entry itself, and it changes the editor's working copy only. The
+    /// stored map is written when the editor commits, so the editor's undo and the external
+    /// merge stay in charge of it. See CODE_AUDIT_23 §5.11.
     @MainActor
     func appendCharacterLinks(
         _ characterIds: [UUID],
@@ -115,11 +117,8 @@ extension MapEditController {
               copy.entries.contains(where: { $0.id == entryId }) else { return }
         synchronizeWorkingCopy(editorModel: editorModel)
 
-        // The map sheet shows the stored model, whose content is the one the user edits there.
-        let storedMap = editController.itemController.itemSync(for: copy.id)?.copy()
-        let stored = storedMap?.entries.contains(where: { $0.id == entryId }) == true ? storedMap : nil
         var entry = copy[entryId]
-        let originalContent = stored?[entryId].content ?? entry.content
+        let originalContent = entry.content
         var content = originalContent.trimmingCharacters(in: .whitespaces)
         for characterId in characterIds {
             let isLinked = LinkReplaceController.links(for: content)
@@ -136,22 +135,6 @@ extension MapEditController {
         entry.content = content
         copy[entryId] = entry
         synchronizeRoomPresentation(from: copy, editorModel: editorModel)
-        reloadSheetEntry(entryId, content: content, stored: stored)
-    }
-
-    /// Writes the new content into the stored map and reloads the map sheet, which reads the
-    /// stored model and would otherwise show the old content until the editor commits.
-    @MainActor
-    private func reloadSheetEntry(_ entryId: UUID, content: String, stored: MapModel?) {
-        guard let stored else { return }
-        var storedEntry = stored[entryId]
-        storedEntry.content = content
-        stored[entryId] = storedEntry
-        editController.save(
-            updated: stored,
-            message: String(localized: "Add Link", bundle: .module).localizedString
-        )
-        editController.editorModel.sheetRootModel?.updateFromRoot()
     }
 }
 

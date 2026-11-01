@@ -43,7 +43,10 @@ struct HelpPageView: View {
                 .onAppear {
                     // `.label`/`.tertiaryLabel` are dynamic UIColors that resolve themselves
                     // per current trait collection, unlike the fixed `.black`/`.lightGray` this
-                    // replaced (invisible in dark mode). See CODE_AUDIT_Space §8.6.
+                    // replaced (invisible in dark mode). The page `TabView` has no SwiftUI way to
+                    // tint its dots, so this proxy change is process-wide: a deliberate exception,
+                    // set to the same system colours any other page control uses.
+                    // See CODE_AUDIT_Space §8.6, CODE_AUDIT_23 §4.3.
                     UIPageControl.appearance().currentPageIndicatorTintColor = .label
                     UIPageControl.appearance().pageIndicatorTintColor = .tertiaryLabel
                 }

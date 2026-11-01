@@ -35,6 +35,10 @@ final class MapEditorHistory {
         current = MapEditorSnapshot(map: map, activeEntryId: activeEntryId)
     }
 
+    /// Each checkpoint is a full map copy, so the oldest ones are dropped beyond this depth.
+    /// See CODE_AUDIT_23 §7.3.
+    static let maximumUndoDepth = 100
+
     private(set) var current: MapEditorSnapshot
     private var undoStack: [MapEditorSnapshot] = []
     private var redoStack: [MapEditorSnapshot] = []
@@ -59,6 +63,7 @@ final class MapEditorHistory {
         guard snapshot != current else { return false }
         undoStack.append(current)
         undoTitles.append(title)
+        trimUndoHistory()
         current = snapshot.copy()
         redoStack.removeAll(keepingCapacity: true)
         redoTitles.removeAll(keepingCapacity: true)
@@ -81,7 +86,15 @@ final class MapEditorHistory {
         if let title = redoTitles.popLast() {
             undoTitles.append(title)
         }
+        trimUndoHistory()
         current = next
         return next.copy()
+    }
+
+    private func trimUndoHistory() {
+        let overflow = undoStack.count - Self.maximumUndoDepth
+        guard overflow > 0 else { return }
+        undoStack.removeFirst(overflow)
+        undoTitles.removeFirst(min(overflow, undoTitles.count))
     }
 }

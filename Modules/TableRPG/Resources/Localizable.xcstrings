@@ -961,6 +961,22 @@
         }
       }
     },
+    "Not generated, size limit reached: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht erzeugt, Größenlimit erreicht: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่ได้สร้าง เกินขีดจำกัดขนาด: %@"
+          }
+        }
+      }
+    },
     "Skipped recursive link: %@" : {
       "localizations" : {
         "de" : {

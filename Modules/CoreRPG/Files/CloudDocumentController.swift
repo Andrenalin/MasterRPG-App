@@ -236,8 +236,6 @@ extension CloudDocumentController {
     }
     
     func suggestedFileName(for path: String, filename: String) async throws -> String {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.suggestedFileName(for:filename:)", file: "CloudDocumentController.swift")
-        
         let url = try destinationUrl(filePath: path + "/" + filename)
         let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
         if exists {

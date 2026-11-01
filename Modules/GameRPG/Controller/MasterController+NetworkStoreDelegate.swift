@@ -94,6 +94,25 @@ extension MasterController {
         }
     }
 
+    func mayRelay(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool {
+        if await messagePipeline.hasSeen(GameMessageEvent(model: model, origin: origin)) {
+            return false
+        }
+        if model.isDiceRollEvent {
+            guard root.gameModel.gameControl.features.dicePlayers else { return false }
+            if let reported = DiceResultModel.decodeData(of: model.data.data), !reported.isPlausibleReport {
+                Logger.networking.warning("MasterController: Dice roll from \(model.sender.id, privacy: .public) not relayed — implausible roll")
+                return false
+            }
+        }
+        if model.subType == .spaceTransform, model.data.type == .space {
+            guard root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
+                  root.spaceRoot.gameControllable.gameModel.currentItemId == model.data.id
+            else { return false }
+        }
+        return true
+    }
+
     func ready(for origin: GameMessageOrigin) async {
         Logger.networking.debug("MasterController: Participant ready")
         if let participantId = origin.sharePlayParticipantId {
@@ -194,6 +213,14 @@ extension MasterController {
 
     private func process(_ event: GameMessageEvent) async -> Bool {
         let receivedModel = event.model
+
+        // The connection may have been lost while this message waited in the queue. A processed
+        // message adds its sender to the roster, so one from a lost player would bring back an
+        // entry with no connection behind it. See CODE_AUDIT_23 §5.4.
+        guard store.model.playerRoutes.isBound(event.origin, to: receivedModel.sender.id) else {
+            Logger.networking.debug("MasterController: Dropped queued message from a lost connection \(receivedModel.counter, privacy: .public)")
+            return true
+        }
 
         // Before the roster add: a proxy client is a private mirror of the host
         // player and must never appear as a player of its own — not in the
