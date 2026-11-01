@@ -90,9 +90,78 @@ struct Die20: EntityEquipment {
     var initialState: DieState
     let representation: TossableRepresentation
 
+    /// Returns the orientation of the die entity that shows the given value face up.
+    ///
+    /// Called by TabletopKit itself (when it settles or syncs the die's state), not from our own
+    /// code, so it has no call site in this repository. It is what makes the 3D table show the
+    /// number that was rolled: do not delete it as unused. See CODE_AUDIT_23 §9.2.
+    func restingOrientation(state: DieState) -> Rotation3D {
+        // `0` is this table's own sentinel for a currently-unused pool slot
+        // (see `GameSetup.maxDicePerType` and `TableVisualState.Pose2D.parkedDicePose`)
+        // — the die is parked off-table whenever this holds, so its
+        // orientation is irrelevant. Handled before the face lookup so it doesn't trip the
+        // "invalid value" fallback below, which is for genuine sync issues.
+        guard state.value != TableDieValue.parked else { return .init() }
+        guard let normal = Self.faceNormals[TableDieValue.face(state.value)] else {
+            // `state.value` arrives via TabletopKit's synchronized `UpdateEquipmentAction<DieState>`,
+            // so a version skew or corrupted/delayed sync payload could plausibly deliver an
+            // out-of-range value here. Log and fall back to the identity orientation instead of
+            // crashing every SharePlay participant at once.
+            Logger.gameTable.error("Invalid D20 die value \(state.value, privacy: .public); using identity orientation as a fallback")
+            return .init()
+        }
+
+        let up = SIMD3<Float>(0, 1, 0)
+        let cosine = min(max(dot(normal, up), -1), 1)
+        let rotationAxis = cross(normal, up)
+        let axisLength = length(rotationAxis)
+        guard axisLength > 0.000_001 else {
+            return cosine > 0
+                ? .init()
+                : .init(angle: .init(degrees: 180), axis: .init(x: 1, y: 0, z: 0))
+        }
+
+        let axis = rotationAxis / axisLength
+        return .init(
+            angle: .init(radians: acos(Double(cosine))),
+            axis: .init(
+                x: Double(axis.x),
+                y: Double(axis.y),
+                z: Double(axis.z)
+            )
+        )
+    }
+
     /// Height (metres) the D20 presents on the table, whatever size its asset is authored at:
     /// `D20White.usdz` is an Object Capture scan at roughly real size (~35 mm).
     static let displayHeight: Float = 0.075
+
+    /// Outward face normals of `D20White.usdz`, keyed by the number printed on that face.
+    /// Measured from the scanned mesh (the numbers exist only in its baked texture) rather
+    /// than taken from an idealized D20, so opposite faces are only ~179° apart. The asset
+    /// rests with 1 on top (+y) and 20 underneath.
+    private static let faceNormals: [Int: SIMD3<Float>] = [
+        1:  .init(-0.02937186,  0.99942795, -0.01676517),
+        2:  .init(-0.57530483, -0.76594368,  0.28697496),
+        3:  .init( 0.46030532,  0.33109698, -0.82370735),
+        4:  .init( 0.27046883, -0.31043183,  0.91130604),
+        5:  .init(-0.67357019,  0.30542637,  0.67306607),
+        6:  .init( 0.95596970, -0.29325682, -0.01106242),
+        7:  .init(-0.54030937,  0.73680726, -0.40642447),
+        8:  .init( 0.11184998, -0.75054924, -0.65127983),
+        9:  .init( 0.90389291,  0.35227540,  0.24265129),
+        10: .init(-0.47162709, -0.34664314, -0.81080603),
+        11: .init( 0.48109705,  0.35400128,  0.80201541),
+        12: .init(-0.90312790, -0.35696853, -0.23860733),
+        13: .init(-0.11144258,  0.75399434,  0.64735855),
+        14: .init( 0.55942843, -0.72638569,  0.39925389),
+        15: .init(-0.95853365,  0.28476978,  0.01092795),
+        16: .init( 0.69070339, -0.29553462, -0.65999100),
+        17: .init(-0.25462721,  0.31287159, -0.91502806),
+        18: .init(-0.45607540, -0.35027610,  0.81810872),
+        19: .init( 0.59019689,  0.76037354, -0.27110831),
+        20: .init( 0.04128365, -0.99912692,  0.00640834)
+    ]
 
     @MainActor
     init(id: ID, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
@@ -150,8 +219,9 @@ struct Die20: EntityEquipment {
         // so a mismatch makes the die fly off the table or sink into it instead of settling.
         representation = .icosahedron(height: Self.displayHeight)
         // `value: 0` — this table's own sentinel meaning "not part of the
-        // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`).
-        // `pose: .parkedDicePose` — every slot
+        // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`);
+        // `restingOrientation` above treats it specially rather than as a
+        // corrupt/out-of-range value. `pose: .parkedDicePose` — every slot
         // starts off-table, not merely disabled; see that pose's own doc for
         // why a locally-disabled entity crashed a joining player instead of
         // just staying invisible.
@@ -208,6 +278,42 @@ struct Die: EntityEquipment {
     let audioPlaybackController: AudioPlaybackController?
     var initialState: DieState
     let representation: TossableRepresentation
+    
+    /// Returns the orientation of the die entity that shows the given value face up.
+    ///
+    /// Called by TabletopKit itself (when it settles or syncs the die's state), not from our own
+    /// code, so it has no call site in this repository. It is what makes the 3D table show the
+    /// number that was rolled: do not delete it as unused. See CODE_AUDIT_23 §9.2.
+    func restingOrientation(state: DieState) -> Rotation3D {
+        // The die asset's default orientation shows 6 on top (+y), 2 on the right (+x), and 3 on the front (+z).
+        switch TableDieValue.face(state.value) {
+            case 0:
+                // This table's own sentinel for a currently-unused pool slot
+                // (see `GameSetup.maxDicePerType`) — the die is hidden
+                // whenever this holds, so its orientation is irrelevant.
+                // Handled explicitly so it doesn't fall into (and log from)
+                // the genuine-sync-issue `default` case below.
+                return .init()
+            case 1: // Flip upside down.
+                return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
+            case 2: // Flip to the left once.
+                return .init(angle: .init(degrees: +90), axis: .init(x: 0, y: 0, z: 1))
+            case 3: // Flip to the back once.
+                return .init(angle: .init(degrees: -90), axis: .init(x: 1, y: 0, z: 0))
+            case 4: // Flip to the front once.
+                return .init(angle: .init(degrees: +90), axis: .init(x: 1, y: 0, z: 0))
+            case 5: // Flip to the right once.
+                return .init(angle: .init(degrees: -90), axis: .init(x: 0, y: 0, z: 1))
+            case 6: // Default orientation.
+                return .init()
+            default:
+                // Same out-of-range-value risk as `Die20.restingOrientation` above, reachable via
+                // TabletopKit's synchronized `DieState` — fall back instead of crashing every
+                // SharePlay participant at once.
+                Logger.gameTable.error("Invalid die value \(state.value, privacy: .public); using default orientation as a fallback")
+                return .init()
+        }
+    }
     
     @MainActor
     init(id: ID, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {

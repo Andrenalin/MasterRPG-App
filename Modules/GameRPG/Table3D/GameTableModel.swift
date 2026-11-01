@@ -162,6 +162,20 @@ final class GameTableModel: Sendable {
     /// without telling SwiftUI.
     var pinMenuSource: TablePinMenuSource?
 #endif
+    /// The pin whose photo popover is open on this table, and that pin's state. Local
+    /// presentation state, like the pin menu selection: a double tap opens it on this device
+    /// only, the game master's shared flag (`isZoom`) opens it on every device.
+    var photoPinId: UUID?
+    var photoPin: MapPinModel?
+    /// Pins whose photo the game master was showing at the last sync, so that only a change of
+    /// the flag opens or closes the popover. See `MapPinPhotoSharing`.
+    var sharedPhotoPinIds: Set<UUID> = []
+    /// Where the photo popover stands as a RealityKit attachment, on visionOS.
+    let pinPhotoPopover = TablePopoverAnchor(name: "PinPhotoAnchor")
+#if !os(visionOS)
+    /// The photo pin's frame in the table view, which the photo popover points at.
+    var pinPhotoSource: TablePinMenuSource?
+#endif
     /// Resolved once per drag gesture by `pinDragChanged(pinId:position:)` and cleared by
     /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns`.
     var cachedDragPawn: (pinId: UUID, pawn: PinPawn)?

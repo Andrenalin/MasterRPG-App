@@ -237,7 +237,7 @@ struct MapPinVisibilityTests {
         #expect(sut.toggleDeadPin(itemId: mapId, pinId: pinId))
         #expect(sut.resizePin(itemId: mapId, pinId: pinId))
         #expect(sut.toggleHighlightPin(itemId: mapId, pinId: pinId, isGameMaster: true))
-        #expect(sut.zoomPin(itemId: mapId, pinId: pinId))
+        #expect(sut.setPinPhotoShown(itemId: mapId, pinId: pinId, shown: true))
 
         // Then
         let itemPin = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == pinId })
@@ -253,7 +253,34 @@ struct MapPinVisibilityTests {
         #expect(!sut.toggleDeadPin(itemId: mapId, pinId: unknownPinId))
         #expect(!sut.resizePin(itemId: mapId, pinId: unknownPinId))
         #expect(!sut.toggleHighlightPin(itemId: mapId, pinId: unknownPinId, isGameMaster: true))
-        #expect(!sut.zoomPin(itemId: mapId, pinId: unknownPinId))
+        #expect(!sut.setPinPhotoShown(itemId: mapId, pinId: unknownPinId, shown: true))
+    }
+
+    @Test func showingOnePinPhotoClearsEveryOtherSharedPhoto() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let firstId = UUID()
+        let secondId = UUID()
+        let first = MapPinModel(id: firstId, name: "First", isShown: true, timeInterval: 1, isZoom: true)
+        let second = MapPinModel(id: secondId, name: "Second", isShown: true, timeInterval: 1)
+        let map = MapModel(id: mapId, name: "Dungeon", mapPins: [first, second])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        #expect(sut.setPinPhotoShown(itemId: mapId, pinId: secondId, shown: true))
+
+        let pins = sut.gameItem(for: mapId).mapPins
+        #expect(pins.first { $0.id == firstId }?.isZoom == false)
+        #expect(pins.first { $0.id == secondId }?.isZoom == true)
+        // Both changed pins are newer than before, so the players' merge cannot keep an old state.
+        #expect(pins.allSatisfy { $0.timeInterval > 1 })
+
+        // Showing it again changes nothing; hiding clears it.
+        #expect(!sut.setPinPhotoShown(itemId: mapId, pinId: secondId, shown: true))
+        #expect(sut.setPinPhotoShown(itemId: mapId, pinId: secondId, shown: false))
+        #expect(sut.gameItem(for: mapId).mapPins.allSatisfy { !$0.isZoom })
     }
 
     @Test func networkPinEncodesCurrentPinState() async throws {

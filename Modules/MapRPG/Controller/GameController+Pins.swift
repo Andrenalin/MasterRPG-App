@@ -323,12 +323,24 @@ extension GameController {
         }
     }
 
-    /// Toggles a pin's zoom state — visible to all participants via mapState.
+    /// Shows or hides a pin's photo to everyone, as the game master — carried in mapState by the
+    /// pin's `isZoom` flag, whose name predates the photo popover. Only one photo is shown at a
+    /// time: showing one turns the flag off on every other pin. Returns whether anything changed.
     @MainActor
-    func zoomPin(itemId: UUID, pinId: UUID) -> Bool {
-        updatePinState(itemId: itemId, pinId: pinId) { pin in
-            pin.isZoom.toggle()
+    @discardableResult
+    func setPinPhotoShown(itemId: UUID, pinId: UUID, shown: Bool) -> Bool {
+        let item = gameItem(for: itemId)
+        guard let pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
+        var changed = false
+        if shown {
+            for other in item.mapPins where other.id != pinId && other.isZoom {
+                changed = updatePinState(itemId: itemId, pinId: other.id) { $0.isZoom = false } || changed
+            }
         }
+        if pin.isZoom != shown {
+            changed = updatePinState(itemId: itemId, pinId: pinId) { $0.isZoom = shown } || changed
+        }
+        return changed
     }
 
     /// Toggles the persistent death marker as an authoritative game-master

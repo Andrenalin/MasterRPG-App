@@ -359,7 +359,6 @@ extension GameController {
             if incomingPin.isPlayer {
                 mergedPin.location = local.location
             }
-            mergedPin.isZoom = local.isZoom
             mergedPin.isHighlighted = local.isHighlighted
             mergedPin.timeInterval = local.timeInterval
             return mergedPin

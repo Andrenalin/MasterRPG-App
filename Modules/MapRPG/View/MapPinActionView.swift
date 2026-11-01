@@ -16,7 +16,7 @@ enum MapPinActionContext: Equatable {
         case .editor:
             [.remove, .copy, .photo, .character, .resize, .dead]
         case .gameMaster:
-            [.dead, .visibility, .resize, .zoom, .highlight, .battle]
+            [.dead, .visibility, .resize, .highlight, .battle]
         }
     }
 }
@@ -24,7 +24,7 @@ enum MapPinActionContext: Equatable {
 /// Public because GameRPG's 3D table performs the game master's actions itself; see
 /// `ViewController.gamePinActionPopover`.
 public enum MapPinButtonType: String, Hashable, Sendable {
-    case remove, copy, photo, character, resize, dead, visibility, zoom, highlight, battle
+    case remove, copy, photo, character, resize, dead, visibility, highlight, battle
 
     func systemImage(for pin: MapPinModel) -> String {
         switch self {
@@ -35,7 +35,6 @@ public enum MapPinButtonType: String, Hashable, Sendable {
         case .resize: return "square.resize"
         case .dead: return pin.isDead ? "heart.fill" : "xmark.circle"
         case .visibility: return pin.isShown ? "eye.slash" : "eye"
-        case .zoom: return pin.isZoom ? "minus.magnifyingglass" : "plus.magnifyingglass"
         case .highlight: return pin.isHighlighted ? "circle.fill" : "circle"
         case .battle: return "person.badge.plus"
         }
@@ -51,7 +50,6 @@ public enum MapPinButtonType: String, Hashable, Sendable {
         case .character: .mint
         case .resize: .teal
         case .visibility: .blue
-        case .zoom: .indigo
         case .dead: pin.isDead ? .green : .red
         case .highlight: .red
         case .battle: .orange
@@ -73,10 +71,6 @@ public enum MapPinButtonType: String, Hashable, Sendable {
             pin.isShown
                 ? LocalizedStringResource("Hide Pin", bundle: .module)
                 : LocalizedStringResource("Show Pin", bundle: .module)
-        case .zoom:
-            pin.isZoom
-                ? LocalizedStringResource("Reset Pin Zoom", bundle: .module)
-                : LocalizedStringResource("Zoom Pin", bundle: .module)
         case .highlight:
             pin.isHighlighted
                 ? LocalizedStringResource("Remove Pin Highlight", bundle: .module)
@@ -102,8 +96,7 @@ struct MapPinActionView: View {
     private var pin: MapPinModel { model.pin }
 
     private var pinSize: CGSize {
-        let zoomScale: CGFloat = pin.isZoom ? 4 : 1
-        return pin.size.size * pinScale * zoomScale
+        pin.size.size * pinScale
     }
 
     private var location: CGPoint {

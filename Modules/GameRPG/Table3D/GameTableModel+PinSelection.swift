@@ -51,8 +51,7 @@ extension GameTableModel {
         ))
     }
 
-    /// How far above a pin's base the popover's arrow ends: just clear of a zoomed token's
-    /// top, which is the tallest a token gets.
+    /// How far above a pin's base the popover's arrow ends: just clear of the token's top.
     static let pinMenuArrowTipHeight: Float = 0.03
 
 #if !os(visionOS)
@@ -182,22 +181,10 @@ extension GameTableModel {
         if selectedPinId == pinId {
             clearPinSelection()
         } else {
+            // The menu and the pin's photo popover would cover each other.
+            if photoPinId == pinId { clearPinPhoto() }
             selectedPinId = pinId
             updateSelectedPinState(mapModel: mapModel)
-        }
-    }
-
-    /// Double tap toggles shared zoom for both roles.
-    func pinDoubleTapped(pinId: UUID) {
-        guard let mapId = currentMapId,
-              pinId != currentMapModel()?.pointer.id,
-              setup.pinPawns.contains(where: { $0.pinId == pinId }),
-              mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: pinId) else { return }
-        syncPawnsWithMapPins()
-        if isGameMaster {
-            broadcastMapEdit(for: mapId)
-        } else {
-            sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
         }
     }
 
@@ -207,7 +194,6 @@ extension GameTableModel {
         case .dead: toggleSelectedPinDead()
         case .visibility: toggleSelectedPinVisibility()
         case .resize: resizeSelectedPin()
-        case .zoom: toggleSelectedPinZoom()
         case .highlight: toggleSelectedPinHighlight()
         case .battle: addSelectedPinToBattleRound()
         case .remove, .copy, .photo, .character:
@@ -258,13 +244,6 @@ extension GameTableModel {
     func resizeSelectedPin() {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.resizePin(itemId: mapId, pinId: selectedPinId) else { return }
-        syncPawnsWithMapPins()
-        broadcastMapEdit(for: mapId)
-    }
-
-    func toggleSelectedPinZoom() {
-        guard isGameMaster, let mapId = currentMapId, let selectedPinId,
-              mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: selectedPinId) else { return }
         syncPawnsWithMapPins()
         broadcastMapEdit(for: mapId)
     }

@@ -121,6 +121,10 @@ final class MapPinViewModel {
     private(set) var zoomedPinNodes: [MapPinNode]
     private(set) var pointerNode: MapPinNode
     private var expandedId: UUID?
+    /// The pin whose photo popover is open on this device. Local presentation state: a double
+    /// tap opens it for this device only, the game master's shared flag (`isZoom`) opens it
+    /// everywhere — see `MapPinPhotoSharing`.
+    private(set) var photoPinId: UUID?
 
     @ObservationIgnored private var interactionHandler: InteractionHandler?
 
@@ -159,10 +163,34 @@ final class MapPinViewModel {
             pointerNode.update(pin: updatedPin)
         } else if let node = pinNode(for: updatedPin.id) {
             let layerChanged = node.pin.isZoom != updatedPin.isZoom
+            let photoChange = MapPinPhotoSharing.change(wasShared: node.pin.isZoom, isShared: updatedPin.isZoom)
             node.update(pin: updatedPin)
             if layerChanged {
                 rebuildLayerNodes()
             }
+            applyPhotoChange(photoChange, pinId: updatedPin.id)
+        }
+    }
+
+    /// Opens or closes the local photo popover of a pin. Opening it closes the pin's action menu,
+    /// which would sit on the same spot.
+    func setPhotoPinId(_ id: UUID?) {
+        guard photoPinId != id else { return }
+        photoPinId = id
+        if let id, expandedId == id {
+            setExpanded(id: nil)
+        }
+    }
+
+    func togglePhoto(pinId: UUID) {
+        setPhotoPinId(photoPinId == pinId ? nil : pinId)
+    }
+
+    private func applyPhotoChange(_ change: MapPinPhotoSharing.Change?, pinId: UUID) {
+        switch change {
+        case .show: setPhotoPinId(pinId)
+        case .hide: if photoPinId == pinId { setPhotoPinId(nil) }
+        case nil: break
         }
     }
 
@@ -171,6 +199,7 @@ final class MapPinViewModel {
         mapPinNodes.remove(at: index)
         rebuildLayerNodes()
         if expandedId == id { setExpanded(id: nil) }
+        if photoPinId == id { photoPinId = nil }
     }
 
     func replacePhoto(pinId: UUID, itemId: UUID?) {
@@ -306,7 +335,7 @@ final class MapPinViewModel {
             resizePin(id: node.id)
         case (.editor, .dead):
             toggleDeadPin(id: node.id)
-        case (.editor, .visibility), (.editor, .zoom), (.editor, .highlight), (.editor, .battle),
+        case (.editor, .visibility), (.editor, .highlight), (.editor, .battle),
              (.gameMaster, _), (.none, _):
             break
         }
@@ -328,6 +357,8 @@ final class MapPinViewModel {
         expandedId = id
         if let id {
             pinNode(for: id)?.setExpanded(true)
+            // The menu and the photo would cover each other.
+            if photoPinId == id { photoPinId = nil }
         }
     }
 
@@ -338,9 +369,13 @@ final class MapPinViewModel {
         }
 
         var layerMembershipChanged = false
+        var photoChanges: [(pinId: UUID, change: MapPinPhotoSharing.Change)] = []
         let reconciled = pins.map { pin in
             if let node = existingNodes.removeValue(forKey: pin.id) {
                 layerMembershipChanged = layerMembershipChanged || node.pin.isZoom != pin.isZoom
+                if let change = MapPinPhotoSharing.change(wasShared: node.pin.isZoom, isShared: pin.isZoom) {
+                    photoChanges.append((pin.id, change))
+                }
                 node.update(pin: pin)
                 return node
             }
@@ -359,6 +394,12 @@ final class MapPinViewModel {
         }
         if let expandedId, !pins.contains(where: { $0.id == expandedId }) {
             setExpanded(id: nil)
+        }
+        for (pinId, change) in photoChanges {
+            applyPhotoChange(change, pinId: pinId)
+        }
+        if let photoPinId, !pins.contains(where: { $0.id == photoPinId }) {
+            self.photoPinId = nil
         }
     }
 

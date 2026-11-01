@@ -189,6 +189,9 @@ private struct GameTableRealityContent: View {
         .overlay(alignment: .topLeading) {
             GamePinActionMenu(game: game, viewport: viewport)
         }
+        .overlay(alignment: .topLeading) {
+            GamePinPhotoPopover(game: game, viewport: viewport)
+        }
         .onDisappear {
             roomActionCoordinator.cancel()
         }
@@ -320,7 +323,7 @@ private struct GameTableRealityContent: View {
     /// `tableMoveGesture`'s own doc for why it can't derive an exact one.
     private static let tableMoveScale: Float = 0.001
 
-    /// Double tap toggles zoom for both roles. Single tap toggles highlight
+    /// Double tap opens the pin's photo popover for both roles. Single tap toggles highlight
     /// for a player, but opens/closes the master's local action menu
     /// instead — long press is no longer used for pins.
     private var pinTapGesture: some Gesture {
@@ -374,6 +377,9 @@ private struct GameTableRealityContent: View {
         _ = content.subscribe(to: SceneEvents.Update.self) { [weak game, weak projector] _ in
             guard let game, let content = projector?.content else { return }
             game.updatePinMenuSource { position in
+                content.project(point: position, to: .local)
+            }
+            game.updatePinPhotoSource { position in
                 content.project(point: position, to: .local)
             }
         }

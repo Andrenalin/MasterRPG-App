@@ -72,7 +72,7 @@ struct MapEditorPlayerPinMessageFlowTests {
         #expect(fixture.updateSpy.pinIds == [playerId])
     }
 
-    @Test("Player highlight and zoom send visible pins but reject hidden pins")
+    @Test("Player highlight sends visible pins; the double tap opens a local photo for visible pins only")
     func playerSharedActionsRequireVisiblePins() throws {
         // Given
         let playerId = UUID()
@@ -105,11 +105,10 @@ struct MapEditorPlayerPinMessageFlowTests {
 
         // When
         visibleNode.handleTap(context: .none)
-        visibleNode.handleDoubleTap()
         hiddenNode.handleTap(context: .none)
-        hiddenNode.handleDoubleTap()
+        visibleNode.handleDoubleTap()
 
-        // Then
+        // Then: only the highlight went to the network; the photo is local presentation.
         let updatedVisible = try #require(
             fixture.liveMap.mapPins.first { $0.id == visibleId }
         )
@@ -117,17 +116,22 @@ struct MapEditorPlayerPinMessageFlowTests {
             fixture.liveMap.mapPins.first { $0.id == hiddenId }
         )
         #expect(updatedVisible.isHighlighted)
-        #expect(updatedVisible.isZoom)
+        #expect(!updatedVisible.isZoom)
         #expect(!unchangedHidden.isHighlighted)
         #expect(!unchangedHidden.isZoom)
-        #expect(fixture.updateSpy.pinIds == [visibleId, visibleId])
-
+        #expect(fixture.updateSpy.pinIds == [visibleId])
+        #expect(fixture.session.pins.photoPinId == visibleId)
         let highlightedPayload = try fixture.updateSpy.decodedPin(at: 0)
-        let zoomedPayload = try fixture.updateSpy.decodedPin(at: 1)
         #expect(highlightedPayload.isHighlighted)
         #expect(!highlightedPayload.isZoom)
-        #expect(zoomedPayload.isHighlighted)
-        #expect(zoomedPayload.isZoom)
+
+        // A hidden pin shows no photo to a player.
+        hiddenNode.handleDoubleTap()
+        #expect(fixture.session.pins.photoPinId == visibleId)
+
+        // The second double tap closes it again.
+        visibleNode.handleDoubleTap()
+        #expect(fixture.session.pins.photoPinId == nil)
     }
 
     @Test("Player pointer movement uses the map-pin route")

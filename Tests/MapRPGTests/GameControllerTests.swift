@@ -735,8 +735,7 @@ struct GameControllerTests {
         // When
         sut.updateMap(for: mapId, with: staleAuthoritativeState)
 
-        // Then: both highlights and zooms survive, but only a player-pin
-        // location is optimistic; every game-master field is authoritative.
+        // Then: highlights survive, but only a player-pin location is optimistic; every game-master field is authoritative.
         let mergedPlayer = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == playerId })
         #expect(mergedPlayer.name == authoritativePlayer.name)
         #expect(mergedPlayer.photoId == authoritativePlayer.photoId)
@@ -744,7 +743,7 @@ struct GameControllerTests {
         #expect(mergedPlayer.size == authoritativePlayer.size)
         #expect(mergedPlayer.isShown == authoritativePlayer.isShown)
         #expect(mergedPlayer.isDead == authoritativePlayer.isDead)
-        #expect(mergedPlayer.isZoom)
+        #expect(!mergedPlayer.isZoom)
         #expect(mergedPlayer.isHighlighted)
         #expect(mergedPlayer.timeInterval == optimisticPlayer.timeInterval)
 
@@ -754,7 +753,7 @@ struct GameControllerTests {
         #expect(mergedMonster.size == authoritativeMonster.size)
         #expect(mergedMonster.isShown == authoritativeMonster.isShown)
         #expect(mergedMonster.isDead == authoritativeMonster.isDead)
-        #expect(mergedMonster.isZoom)
+        #expect(!mergedMonster.isZoom)
         #expect(mergedMonster.isHighlighted)
         #expect(mergedMonster.timeInterval == optimisticMonster.timeInterval)
     }

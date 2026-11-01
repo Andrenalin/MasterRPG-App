@@ -1930,6 +1930,22 @@
         }
       }
     },
+    "Photo of %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto von %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปของ %@"
+          }
+        }
+      }
+    },
     "Pin Scale" : {
       "localizations" : {
         "de" : {
@@ -2192,22 +2208,6 @@
         }
       }
     },
-    "Reset Pin Zoom" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin-Zoom zurücksetzen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รีเซ็ตการซูมหมุด"
-          }
-        }
-      }
-    },
     "Resize hex grid" : {
       "localizations" : {
         "de" : {
@@ -2432,6 +2432,22 @@
         }
       }
     },
+    "Show Pin Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin-Foto zeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงรูปหมุด"
+          }
+        }
+      }
+    },
     "Show Toolbar" : {
       "localizations" : {
         "de" : {
@@ -2639,22 +2655,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สลับการมองเห็นพื้นที่แผนที่"
-          }
-        }
-      }
-    },
-    "Toggle Pin Zoom" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin-Zoom umschalten"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สลับการซูมหมุด"
           }
         }
       }
@@ -2967,22 +2967,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "X %1$@, Y %2$@"
-          }
-        }
-      }
-    },
-    "Zoom Pin" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin zoomen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซูมหมุด"
           }
         }
       }

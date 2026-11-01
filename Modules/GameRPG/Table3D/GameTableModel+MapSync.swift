@@ -82,6 +82,8 @@ extension GameTableModel {
             || photoMetadata?.degrees != currentMapDegrees
         if mapChanged {
             clearPinSelection()
+            clearPinPhoto()
+            sharedPhotoPinIds = []
             // The previous map's image must not survive under the new map's id: if this request is
             // cancelled while the photo loads, the next one has to reload rather than composite the
             // stale image with the new map's rooms.

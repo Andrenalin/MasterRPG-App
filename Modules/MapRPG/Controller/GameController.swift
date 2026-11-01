@@ -112,7 +112,7 @@ public protocol MapGameStorable: Sendable {
     @MainActor func networkPointer(itemId: UUID) -> NetworkCodableDataType?
     @MainActor func showPointerAtMapCenter(itemId: UUID) -> Bool
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
-    @MainActor func zoomPin(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func setPinPhotoShown(itemId: UUID, pinId: UUID, shown: Bool) -> Bool
     @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func resizePin(itemId: UUID, pinId: UUID) -> Bool
     /// `isGameMaster` is threaded straight through to `synchronizeBattleDefenders`

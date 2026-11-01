@@ -89,7 +89,7 @@ private struct MapPinLayerItem: View {
         if node.isPointer || mapMode == .edit {
             LocalizedStringResource("Toggle Player Visibility", bundle: .module)
         } else {
-            LocalizedStringResource("Toggle Pin Zoom", bundle: .module)
+            LocalizedStringResource("Show Pin Photo", bundle: .module)
         }
     }
 

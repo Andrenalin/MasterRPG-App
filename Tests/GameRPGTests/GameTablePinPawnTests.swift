@@ -69,8 +69,8 @@ struct GameTablePinPawnTests {
         #expect(!secondDeathBar.isEnabled)
     }
 
-    @Test("Zoom and size update an existing pawn")
-    func zoomAndSizeUpdateExistingPawn() throws {
+    @Test("Size update keeps an existing pawn and the shared photo flag does not scale it")
+    func sizeUpdatesExistingPawnWithoutZoomScale() throws {
         var pin = MapPinModel(id: UUID(), name: "Player")
         let pawn = PinPawn(pin: pin)
         let originalPhoto = try #require(pawn.entity.findEntity(named: "PinPhotoPlane"))
@@ -79,13 +79,13 @@ struct GameTablePinPawnTests {
         pin.isZoom = true
         pawn.update(pin: pin, position: SIMD3<Float>(0.1, 0.03, -0.1), hiddenForMaster: false)
 
-        #expect(pawn.entity.scale == SIMD3<Float>(repeating: 4))
+        #expect(pawn.entity.scale == SIMD3<Float>(repeating: 1))
         #expect(pawn.entity.position == SIMD3<Float>(0.1, 0.03, -0.1))
         #expect(pawn.entity.findEntity(named: "PinPhotoPlane") === originalPhoto)
         #expect(pawn.entity.components[AccessibilityComponent.self]?.value != nil)
     }
 
-    @Test("Game-master menu points at the selected pawn without inheriting pawn zoom")
+    @Test("Game-master menu points at the selected pawn; showing its photo swaps the popovers")
     func gameMasterMenuStaysOutsidePawnScaleHierarchy() async throws {
         // Given
         let pin = MapPinModel(id: PinPawnTestID.gameMasterPin, name: "Dragon")
@@ -113,15 +113,14 @@ struct GameTablePinPawnTests {
         #expect(anchor.parent === fixture.game.renderer.root)
         #expect(pawn.entity.parent === fixture.game.setup.pinContainer)
 
-        // When
-        fixture.game.toggleSelectedPinZoom()
+        // When: the game master double taps the pin, which shows its photo to everyone.
+        fixture.game.pinDoubleTapped(pinId: pin.id)
 
-        // Then
-        #expect(pawn.entity.scale == SIMD3<Float>(repeating: 4))
-        #expect(attachment.scale == SIMD3<Float>(repeating: 1))
-        #expect(anchor.scale == SIMD3<Float>(repeating: 1))
+        // Then: the token is not enlarged, the photo popover took the menu's place.
+        #expect(pawn.entity.scale == SIMD3<Float>(repeating: 1))
+        #expect(fixture.game.photoPinId == pin.id)
+        #expect(fixture.game.selectedPinId == nil)
         #expect(anchor.parent === fixture.game.renderer.root)
-        #expect(anchor.position == expectedAnchorPosition)
     }
 
     @Test("Player taps mutate the live pin and send targeted map-pin updates")
@@ -159,21 +158,22 @@ struct GameTablePinPawnTests {
         #expect(firstSentPin.isHighlighted)
         #expect(!firstSentPin.isZoom)
 
-        // When
+        // When: a double tap opens the photo on this device only.
+        fixture.game.pinDoubleTapped(pinId: pin.id)
+
+        // Then: nothing was mutated or sent, and the token is not enlarged.
+        let unchangedPin = try #require(fixture.liveMap.mapPins.first { $0.id == pin.id })
+        #expect(fixture.game.photoPinId == pin.id)
+        #expect(unchangedPin.isHighlighted)
+        #expect(!unchangedPin.isZoom)
+        #expect(pawn.entity.scale == SIMD3<Float>(repeating: 1))
+        #expect(fixture.networkSpy.calls.map(\.action) == [.mapPin])
+
+        // When: the second double tap closes it.
         fixture.game.pinDoubleTapped(pinId: pin.id)
 
         // Then
-        let zoomedPin = try #require(fixture.liveMap.mapPins.first { $0.id == pin.id })
-        let secondCall = try #require(fixture.networkSpy.calls.last)
-        let secondPayload = try #require(secondCall.data.data)
-        let secondSentPin = try JSONDecoder().decode(MapPinModel.self, from: secondPayload)
-        #expect(zoomedPin.isHighlighted)
-        #expect(zoomedPin.isZoom)
-        #expect(pawn.entity.scale == SIMD3<Float>(repeating: 4))
-        #expect(fixture.networkSpy.calls.map(\.action) == [.mapPin, .mapPin])
-        #expect(secondSentPin.id == pin.id)
-        #expect(secondSentPin.isHighlighted)
-        #expect(secondSentPin.isZoom)
+        #expect(fixture.game.photoPinId == nil)
     }
 
     @Test("Game-master tap highlights while long press and menu mutations stay independent")
@@ -185,20 +185,19 @@ struct GameTablePinPawnTests {
 
         // When
         fixture.game.pinTapped(pinId: pin.id)
-        fixture.game.pinDoubleTapped(pinId: pin.id)
         fixture.game.toggleSelectedPinDead()
         fixture.game.toggleSelectedPinVisibility()
         fixture.game.resizeSelectedPin()
-        fixture.game.toggleSelectedPinZoom()
+        fixture.game.pinDoubleTapped(pinId: pin.id)
 
         // Then
         let updatedPin = try #require(fixture.liveMap.mapPins.first { $0.id == pin.id })
-        #expect(!updatedPin.isZoom)
+        #expect(updatedPin.isZoom)
         #expect(updatedPin.isDead)
         #expect(updatedPin.isHighlighted)
         #expect(!updatedPin.isShown)
         #expect(updatedPin.size == .large)
-        #expect(fixture.networkSpy.calls.count == 6)
+        #expect(fixture.networkSpy.calls.count == 5)
         #expect(fixture.networkSpy.calls.allSatisfy { $0.action == .mapState })
         #expect(fixture.networkSpy.calls.allSatisfy { $0.data.id == fixture.liveMap.id })
         #expect(fixture.networkSpy.calls.allSatisfy { $0.data.type == .map })

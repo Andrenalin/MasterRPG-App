@@ -103,7 +103,6 @@ final class PinPawn {
     /// Everything `update(pin:...)` renders besides position, so an unchanged pin skips the
     /// material/component writes that would otherwise run on every map sync.
     private struct AppliedVisual: Equatable {
-        let isZoom: Bool
         let isDead: Bool
         let isHighlighted: Bool
         let isActiveAttacker: Bool
@@ -113,8 +112,6 @@ final class PinPawn {
         let isShown: Bool
     }
     private var appliedVisual: AppliedVisual?
-    /// Scale a zoomed pin is drawn at.
-    private static let zoomScale: Float = 4
 
     init(pin: MapPinModel, pointsToMeters: Float) {
         pinId = pin.id
@@ -200,7 +197,7 @@ final class PinPawn {
         accessibility.label = LocalizedStringResource("Map pin \(pin.name)", bundle: .module)
         accessibility.value = Self.accessibilityValue(for: pin)
         accessibility.systemActions = .activate
-        accessibility.customActions = [LocalizedStringResource("Toggle Pin Zoom", bundle: .module)]
+        accessibility.customActions = [LocalizedStringResource("Show Pin Photo", bundle: .module)]
         pinEntity.components.set(accessibility)
         entity = pinEntity
     }
@@ -251,7 +248,6 @@ final class PinPawn {
         pointsToMeters: Float
     ) {
         entity.position = position
-        entity.scale = SIMD3<Float>(repeating: pin.isZoom ? Self.zoomScale : 1)
         if pin.size != currentSize || pointsToMeters != currentPointsToMeters {
             currentSize = pin.size
             currentPointsToMeters = pointsToMeters
@@ -260,7 +256,6 @@ final class PinPawn {
         let healthColor = MapPinModel.healthBorderColor(for: healthPercent)
         let isActiveAttacker = pin.id == activeAttackerPinId
         let visual = AppliedVisual(
-            isZoom: pin.isZoom,
             isDead: pin.isDead,
             isHighlighted: pin.isHighlighted,
             isActiveAttacker: isActiveAttacker,

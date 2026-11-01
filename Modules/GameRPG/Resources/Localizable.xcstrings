@@ -5931,18 +5931,18 @@
         }
       }
     },
-    "Toggle Pin Zoom" : {
+    "Show Pin Photo" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pin-Zoom umschalten"
+            "value" : "Pin-Foto zeigen"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "สลับการซูมหมุด"
+            "value" : "แสดงรูปหมุด"
           }
         }
       }

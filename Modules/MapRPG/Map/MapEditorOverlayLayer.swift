@@ -35,6 +35,17 @@ struct MapViewportOverlayLayer: View {
                 onDismiss: { session.clearSelections() }
             )
 
+            MapPinPhotoViewportLayer(
+                pins: session.pins,
+                displayMode: session.displayMode,
+                pinScale: session.pinScale,
+                transform: transform,
+                geometry: session.viewport.geometry,
+                viewportRectangle: actionViewportRectangle,
+                containerSize: viewportRectangle.size,
+                onDismiss: { session.route(.dismissPinPhoto) }
+            )
+
             MapNeedleViewportMenuLayer(
                 session: session,
                 transform: transform,
@@ -89,21 +100,12 @@ private struct MapPinViewportMenuLayer: View {
         }
     }
 
-    /// The pin's on-screen frame, used as the popover source. Derived from the
-    /// displayed transform, so the popover follows the pin while panning.
     private func pinRectangle(for node: MapPinNode) -> CGRect? {
-        let center = geometry.viewportPoint(fromContent: node.pin.location, transform: transform)
-        let zoomScale: CGFloat = node.pin.isZoom ? 4 : 1
-        let size = node.pin.size.size * (pinScale * zoomScale * transform.scale)
-        guard center.x.isFinite, center.y.isFinite,
-              size.width.isFinite, size.height.isFinite else { return nil }
-        let width = max(1, size.width)
-        let height = max(1, size.height)
-        return CGRect(
-            x: center.x - width / 2,
-            y: center.y - height / 2,
-            width: width,
-            height: height
+        MapPinPopoverSource.rectangle(
+            for: node.pin,
+            pinScale: pinScale,
+            transform: transform,
+            geometry: geometry
         )
     }
 
@@ -117,6 +119,73 @@ private struct MapPinViewportMenuLayer: View {
         case .gameMaster: .gameMaster
         case .player, .viewer: .none
         }
+    }
+}
+
+/// The pin's on-screen frame, used as the source of its popovers. Derived from the displayed
+/// transform, so a popover follows the pin while the map pans or zooms.
+private enum MapPinPopoverSource {
+    static func rectangle(
+        for pin: MapPinModel,
+        pinScale: CGFloat,
+        transform: ViewportTransform,
+        geometry: ViewportGeometry
+    ) -> CGRect? {
+        let center = geometry.viewportPoint(fromContent: pin.location, transform: transform)
+        let size = pin.size.size * (pinScale * transform.scale)
+        guard center.x.isFinite, center.y.isFinite,
+              size.width.isFinite, size.height.isFinite else { return nil }
+        let width = max(1, size.width)
+        let height = max(1, size.height)
+        return CGRect(
+            x: center.x - width / 2,
+            y: center.y - height / 2,
+            width: width,
+            height: height
+        )
+    }
+}
+
+/// The photo popover of one pin. Like the action menu it stays open while the map pans or
+/// zooms and follows the pin; the same dismissals close it.
+private struct MapPinPhotoViewportLayer: View {
+    let pins: MapPinViewModel
+    let displayMode: MapDisplayMode
+    let pinScale: CGFloat
+    let transform: ViewportTransform
+    let geometry: ViewportGeometry
+    let viewportRectangle: CGRect
+    let containerSize: CGSize
+    let onDismiss: () -> Void
+
+    var body: some View {
+        if let node = photoNode,
+           displayMode != .player || node.pin.isShown,
+           let source = MapPinPopoverSource.rectangle(
+               for: node.pin,
+               pinScale: pinScale,
+               transform: transform,
+               geometry: geometry
+           ) {
+            MapPopover(
+                source: source,
+                viewportRectangle: viewportRectangle,
+                onDismiss: onDismiss
+            ) {
+                MapPinPhotoPopoverContent(pin: node.pin)
+            }
+            .frame(
+                width: containerSize.width,
+                height: containerSize.height,
+                alignment: .topLeading
+            )
+            .transition(.opacity)
+            .zIndex(10)
+        }
+    }
+
+    private var photoNode: MapPinNode? {
+        pins.photoPinId.flatMap(pins.pinNode(for:))
     }
 }
 

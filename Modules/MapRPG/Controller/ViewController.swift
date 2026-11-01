@@ -182,7 +182,43 @@ public extension ViewController {
         .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
     }
 
+    /// Cross-module entry point: the pin photo popover for a map surface other than the 2D
+    /// canvas, GameRPG's camera-based 3D table. Placed like `gamePinActionPopover`.
+    @MainActor
+    func gamePinPhotoPopover(
+        root: MapRootModel,
+        pin: MapPinModel,
+        source: CGRect,
+        viewportSize: CGSize,
+        safeAreaInsets: EdgeInsets,
+        onDismiss: @escaping @MainActor () -> Void
+    ) -> some View {
+        MapPopover(
+            source: source,
+            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
+            onDismiss: onDismiss
+        ) {
+            MapPinPhotoPopoverContent(pin: pin)
+        }
+        .environment(root)
+        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
+    }
+
 #if os(visionOS)
+    /// The pin photo popover as a RealityKit attachment for the table volume on visionOS,
+    /// standing above the pin like `gamePinActionAttachment`.
+    @MainActor
+    func gamePinPhotoAttachment(
+        root: MapRootModel,
+        pin: MapPinModel,
+        onDismiss: @escaping @MainActor () -> Void
+    ) -> some View {
+        MapPopoverAttachment(onDismiss: onDismiss) {
+            MapPinPhotoPopoverContent(pin: pin)
+        }
+        .environment(root)
+    }
+
     /// The same popover as a RealityKit attachment for the table volume on visionOS: a row
     /// above the pin, with the arrow's tip at the center of the view's bottom edge.
     @MainActor

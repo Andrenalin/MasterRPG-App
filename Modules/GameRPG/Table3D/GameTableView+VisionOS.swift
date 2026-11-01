@@ -83,6 +83,9 @@ public struct GameTableView: View {
                     if let pinMenu = attachments.entity(for: "pin-menu") {
                         loadedGame.registerPinMenuAttachment(pinMenu)
                     }
+                    if let pinPhoto = attachments.entity(for: "pin-photo") {
+                        loadedGame.registerPinPhotoAttachment(pinPhoto)
+                    }
                     for group in loadedGame.diceResultGroups {
                         if let diceResult = attachments.entity(for: GameDiceResultPopover.attachmentId(for: group)) {
                             loadedGame.registerDiceResultAttachment(diceResult, for: group)
@@ -94,9 +97,13 @@ public struct GameTableView: View {
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                     loadedGame.updatePinMenuAttachmentPosition()
+                    loadedGame.updatePinPhotoAttachmentPosition()
                 } attachments: {
                     Attachment(id: "pin-menu") {
                         GamePinActionMenu(game: loadedGame)
+                    }
+                    Attachment(id: "pin-photo") {
+                        GamePinPhotoPopover(game: loadedGame)
                     }
                     // One per dice group: every seat's dice, and every guest's at the guest
                     // seat, can show a result at the same time.
@@ -147,7 +154,7 @@ public struct GameTableView: View {
                             }
                         }
                 )
-                // Double tap toggles zoom for both roles. Single tap toggles
+                // Double tap opens the pin's photo popover for both roles. Single tap toggles
                 // highlight for a player, but opens/closes the master's
                 // local action menu instead — long press is no longer used
                 // for pins. Exclusivity prevents one physical interaction
@@ -311,6 +318,7 @@ public struct GameTableView: View {
             // `RealityView` mount's `content.add(renderer.root)` to walk back
             // over. See `GameTableModel.registerPinMenuAttachment(_:)`'s doc.
             game?.detachPinMenuAttachment()
+            game?.detachPinPhotoAttachment()
             game?.detachDiceResultAttachments()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()

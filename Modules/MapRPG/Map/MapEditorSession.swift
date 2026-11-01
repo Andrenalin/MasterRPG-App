@@ -260,6 +260,8 @@ final class MapEditorSession {
     func clearSelections() {
         selection.clear()
         pins.isExpandedId = nil
+        // Content changes land here too: the local popover closes, nothing is unshared.
+        pins.setPhotoPinId(nil)
         editEntries.selectNeedle(nil)
     }
 }

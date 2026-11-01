@@ -10,6 +10,8 @@ enum MapEditorEvent {
     case toggleHexGrid
     case canvasTap(CGPoint)
     case needleCoordinatesChanged(UUID)
+    /// The pin photo popover was dismissed by the user (Escape, canvas tap).
+    case dismissPinPhoto
 }
 
 @MainActor
@@ -61,10 +63,33 @@ final class MapEditorActionRouter {
             handleCanvasTap(at: location)
         case let .needleCoordinatesChanged(entryId):
             handleNeedleCoordinatesChanged(entryId: entryId)
+        case .dismissPinPhoto:
+            dismissPinPhoto()
         }
     }
 
+    /// Closes the photo popover. When the game master closes a photo they have shown to the
+    /// players, it closes for everyone: the shared flag is turned off and broadcast.
+    private func dismissPinPhoto() {
+        guard let pinId = session.pins.photoPinId else { return }
+        session.pins.setPhotoPinId(nil)
+        guard session.mapMode == .gameMaster,
+              session.pins.pinPointer(for: pinId)?.isZoom == true else { return }
+        setSharedPinPhoto(pinId: pinId, shown: false)
+    }
+
+    /// Sends the photo flag change as a map state: the flag is set on one pin and cleared on all
+    /// others, so every pin is synchronized back, not just this one. The players merge the state
+    /// and open or close their popover.
+    private func setSharedPinPhoto(pinId: UUID, shown: Bool) {
+        guard session.mapMode == .gameMaster,
+              root.gameController.setPinPhotoShown(itemId: session.mapId, pinId: pinId, shown: shown) else { return }
+        session.pins.mapPins = interactionMap.mapPins
+        session.broadcastMapEdit()
+    }
+
     private func handleCanvasTap(at location: CGPoint) {
+        dismissPinPhoto()
         session.clearSelections()
 
         if session.configuration.isTileEditor {
@@ -234,13 +259,18 @@ final class MapEditorActionRouter {
         case .edit:
             mapEditController.togglePinVisibility(pinId: pinId, editorModel: session)
         case .gameMaster:
-            performGameMasterMutation(pinId: pinId) {
-                root.gameController.zoomPin(itemId: session.mapId, pinId: pinId)
+            // The game master's photo is shown to everyone: the map state carries it, and
+            // clears the photo of any other pin. A hidden pin's photo stays on this device.
+            guard let pin = session.pins.pinPointer(for: pinId) else { return }
+            let show = session.pins.photoPinId != pinId
+            if pin.isShown || pin.isZoom {
+                setSharedPinPhoto(pinId: pinId, shown: show && pin.isShown)
             }
+            session.pins.setPhotoPinId(show ? pinId : nil)
         case .player:
-            performPlayerMutation(pinId: pinId) {
-                root.gameController.zoomPin(itemId: session.mapId, pinId: pinId)
-            }
+            // Players only see the photos of pins that are on the map for them.
+            guard session.pins.pinPointer(for: pinId)?.isShown == true else { return }
+            session.pins.togglePhoto(pinId: pinId)
         case .viewer:
             break
         }
@@ -308,10 +338,6 @@ final class MapEditorActionRouter {
         case .resize:
             performGameMasterMutation(pinId: pin.id) {
                 root.gameController.resizePin(itemId: session.mapId, pinId: pin.id)
-            }
-        case .zoom:
-            performGameMasterMutation(pinId: pin.id) {
-                root.gameController.zoomPin(itemId: session.mapId, pinId: pin.id)
             }
         case .highlight:
             performGameMasterMutation(pinId: pin.id) {
