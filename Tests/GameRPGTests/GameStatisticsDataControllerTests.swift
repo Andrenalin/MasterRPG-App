@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
-import CoreData
+@preconcurrency import CoreData
 import Foundation
 import Testing
 
@@ -119,8 +119,10 @@ struct GameStatisticsDataControllerTests {
             in: store.context,
             at: startedAt.addingTimeInterval(900 + GameStatisticsDataController.interruptedSessionIdleAge - 1)
         )
-        let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
-        let persisted = try await store.context.perform { try store.context.fetch(request) }
+        let persisted = try await store.context.perform {
+            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
+            return try store.context.fetch(request)
+        }
 
         // Then
         #expect(persisted.count == 1)

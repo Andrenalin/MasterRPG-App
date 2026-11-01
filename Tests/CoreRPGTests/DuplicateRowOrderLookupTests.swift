@@ -18,7 +18,7 @@ struct DuplicateRowOrderLookupTests {
         let folder = URL.temporaryDirectory.appending(path: "DuplicateRowOrderLookupTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
-        try coordinator.addPersistentStore(type: .sqlite, configuration: nil, at: folder.appending(path: "store.sqlite"), options: nil)
+        _ = try coordinator.addPersistentStore(type: .sqlite, configuration: nil, at: folder.appending(path: "store.sqlite"), options: nil)
         let context = NSManagedObjectContext(.mainQueue)
         context.persistentStoreCoordinator = coordinator
         return (context, folder)
