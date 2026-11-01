@@ -107,10 +107,6 @@ private struct OverlayGameMenuVisionProMenuView: View {
 
                 GameTableWindowButton(root: root, isMaster: isMaster)
                     .padding(.leading, 32)
-
-                if root.offersQuickDice(isMaster: isMaster) {
-                    GameQuickDiceToggleButton()
-                }
             }
         }
     }
@@ -162,9 +158,6 @@ private struct OverlayGameMenuTvMenuView: View {
         HStack {
             if isMaster || root.gameModel.gameType != .observer {
                 GameDiceToggleButton()
-            }
-            if root.offersQuickDice(isMaster: isMaster) {
-                GameQuickDiceToggleButton()
             }
             Spacer()
             // An observer has no adventure or character side view to show.

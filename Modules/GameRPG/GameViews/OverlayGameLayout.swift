@@ -83,9 +83,23 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #else
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(.horizontal, horizontalPadding)
+                    .padding(.bottom, GameScreenModel.quickDiceBottomInset)
 #endif
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                     .zIndex(15)
+            }
+
+            if offersQuickDice {
+                // Beside the overlay or sidebar at the trailing edge, not in the top menu.
+                QuickDiceToggleField()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(.trailing, quickDiceTogglePadding)
+                    .padding(.bottom, GameScreenModel.quickDiceBottomInset + valueFor(iOS: 0, macOS: 4, tvOS: 0, visionOS: 0))
+                    .animation(
+                        accessibilityReduceMotion ? nil : .bouncy,
+                        value: gameScreenModel.quickDiceToggleTrailingReservation
+                    )
+                    .zIndex(16)
             }
 
             if !hideDice && gameScreenModel.showDice {
@@ -128,6 +142,25 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     /// Applied per layer instead of to the whole stack, so the iOS side panel can reach
     /// the screen edge.
     private var horizontalPadding: CGFloat { GameScreenModel.chromeHorizontalPadding }
+
+    /// Trailing padding of the quick dice toggle button: the screen edge, or the leading edge of
+    /// the overlay or sidebar at the trailing edge, plus one spacing step.
+    private var quickDiceTogglePadding: CGFloat {
+        let reserved = gameScreenModel.quickDiceToggleTrailingReservation
+#if os(macOS)
+        guard reserved > 0 else { return horizontalPadding + 2 }
+#else
+        guard reserved > 0 else { return horizontalPadding }
+#endif
+#if os(iOS)
+        // The layer lies inside the trailing safe area; the overlay and sidebar reach the edge.
+        return max(0, reserved - gameScreenModel.chromeTrailingSafeAreaInset) + GameScreenModel.mapOverlaySpacing
+#elseif os(macOS)
+        return horizontalPadding + reserved + GameScreenModel.mapOverlaySpacing + 2
+#else
+        return horizontalPadding + reserved + GameScreenModel.mapOverlaySpacing
+#endif
+    }
 
 #if os(iOS)
     private var topContentInset: CGFloat {

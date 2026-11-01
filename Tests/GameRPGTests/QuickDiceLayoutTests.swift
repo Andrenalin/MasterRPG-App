@@ -30,6 +30,25 @@ struct QuickDiceLayoutTests {
         #expect(sut.quickDiceBottomReservation == 120 + 20 + GameScreenModel.mapOverlaySpacing)
     }
 
+#if !os(visionOS)
+    @Test("The toggle button sits beside the overlay, else beside the sidebar, else at the screen edge")
+    func toggleReservation() {
+        let sut = GameScreenModel()
+        #expect(sut.quickDiceToggleTrailingReservation == 0)
+
+        sut.updateInlineMainOverlayWidth(250)
+        sut.showSettingTab = .setting
+        #expect(sut.quickDiceToggleTrailingReservation == 250)
+
+        sut.showQuickDice = true
+        #expect(sut.quickDiceToggleTrailingReservation == sut.sideBarWidth)
+
+        sut.showQuickDice = false
+        sut.hideInlineSidebar()
+        #expect(sut.quickDiceToggleTrailingReservation == 0)
+    }
+#endif
+
     @Test("Invalid measurements count as zero")
     func invalidHeight() {
         let sut = GameScreenModel()

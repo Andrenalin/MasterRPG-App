@@ -7,6 +7,14 @@ final class GameScreenModel {
 
     static let mapOverlaySpacing: CGFloat = 8
     static let chromeHorizontalPadding: CGFloat = 4
+    /// Space below the quick dice overlay and its toggle button.
+    static let quickDiceBottomInset: CGFloat = {
+#if os(macOS)
+        4
+#else
+        0
+#endif
+    }()
 
     private enum WidthValues {
 #if os(macOS)
@@ -160,7 +168,21 @@ final class GameScreenModel {
         return 0
 #else
         guard showQuickDice, quickDiceOverlayHeight > 0 else { return 0 }
-        return quickDiceOverlayHeight + chromeBottomSafeAreaInset + Self.mapOverlaySpacing
+        return quickDiceOverlayHeight + chromeBottomSafeAreaInset + Self.quickDiceBottomInset + Self.mapOverlaySpacing
+#endif
+    }
+
+    /// How much of the trailing edge the quick dice toggle button leaves free, so it sits on the
+    /// bottom leading side of whatever is at the trailing edge: the quick dice overlay, else the
+    /// inline sidebar, else nothing (the button is at the trailing screen edge). On visionOS the
+    /// button lives in the same ornament as the overlay, so it reserves nothing.
+    var quickDiceToggleTrailingReservation: CGFloat {
+#if os(visionOS)
+        return 0
+#else
+        if showQuickDice { return sideBarWidth }
+        if isInlineSidebarVisible, inlineMainOverlayWidth > 0 { return inlineMainOverlayWidth }
+        return 0
 #endif
     }
 

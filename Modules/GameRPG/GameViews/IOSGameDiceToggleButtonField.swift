@@ -27,15 +27,6 @@ struct IOSGameDiceToggleButtonField: View {
     }
 }
 
-struct IOSGameQuickDiceToggleButtonField: View {
-    var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        IOSGameToggleButtonField {
-            GameQuickDiceToggleButton()
-        }
-    }
-}
-
 #Preview {
     IOSGameDiceToggleButtonField()
         .environment(GameScreenModel())
