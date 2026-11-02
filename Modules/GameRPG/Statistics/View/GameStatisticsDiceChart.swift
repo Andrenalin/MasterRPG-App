@@ -30,14 +30,22 @@ struct GameStatisticsDiceChart: View {
                 }
                 .chartAngleSelection(value: $selectedAngle)
                 .chartLegend(position: .bottom)
-                .chartBackground { _ in
-                    VStack {
-                        Text(selectedPoint?.title ?? String(localized: "Total", bundle: .module))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text((selectedPoint?.count ?? total).formatted())
-                            .font(.title2)
-                            .bold()
+                .chartBackground { proxy in
+                    // Centered in the plot area (the legend sits below it) and only once the
+                    // chart has one; without a plot frame Charts logs an invalid configuration.
+                    GeometryReader { geometry in
+                        if let plotFrame = proxy.plotFrame {
+                            let frame = geometry[plotFrame]
+                            VStack {
+                                Text(selectedPoint?.title ?? String(localized: "Total", bundle: .module))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text((selectedPoint?.count ?? total).formatted())
+                                    .font(.title2)
+                                    .bold()
+                            }
+                            .position(x: frame.midX, y: frame.midY)
+                        }
                     }
                 }
                 .frame(minHeight: 280, maxHeight: 420)
