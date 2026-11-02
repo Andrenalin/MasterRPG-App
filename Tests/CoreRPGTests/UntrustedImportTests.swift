@@ -280,6 +280,49 @@ struct UntrustedImportTests {
         #expect(!policy.admit(itemId: UUID(), existsLocally: false))
     }
 
+    @MainActor
+    @Test("A peer's folder is admitted only for items the peer brings, and keeps just those entries")
+    func peerFolderAdmission() {
+        let primary = UUID()
+        let newPhoto = UUID()
+        let ownedPhoto = UUID()
+        let outer = UUID()
+        let inner = UUID()
+        let policy = PeerImportPolicy(primaryItemId: primary)
+        // The master already owns `ownedPhoto`: rejected, so it is not part of the peer's path.
+        #expect(policy.admit(itemId: newPhoto, existsLocally: false))
+        #expect(!policy.admit(itemId: ownedPhoto, existsLocally: true))
+
+        let admitted = policy.admitFolders([
+            // Listed outer first: the outer folder passes once the inner one did.
+            .init(id: outer, childIds: [inner], existsLocally: false),
+            .init(id: inner, childIds: [ownedPhoto, newPhoto], existsLocally: false)
+        ])
+
+        #expect(admitted == [outer: [inner], inner: [newPhoto]])
+    }
+
+    @MainActor
+    @Test("A peer's folder with nothing of the peer in it, or that exists here, is not created")
+    func peerFolderRejection() {
+        let ownedPhoto = UUID()
+        let newPhoto = UUID()
+        let emptyPath = UUID()
+        let knownFolder = UUID()
+        let policy = PeerImportPolicy(primaryItemId: UUID())
+        #expect(!policy.admit(itemId: ownedPhoto, existsLocally: true))
+        #expect(policy.admit(itemId: newPhoto, existsLocally: false))
+
+        let admitted = policy.admitFolders([
+            .init(id: emptyPath, childIds: [ownedPhoto], existsLocally: false),
+            .init(id: knownFolder, childIds: [newPhoto], existsLocally: true)
+        ])
+
+        #expect(admitted.isEmpty)
+        #expect(!policy.introducedItemIds.contains(emptyPath))
+        #expect(!policy.introducedItemIds.contains(knownFolder))
+    }
+
     // MARK: - §5.3 clock
 
     @Test("Observing a far-future remote clock keeps later local writes ahead of it")

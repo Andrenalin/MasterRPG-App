@@ -81,6 +81,42 @@ public final class PeerImportPolicy {
         admittedItemIds.insert(itemId)
         return true
     }
+
+    /// A folder of a peer package, reduced to what the admission needs.
+    struct Folder {
+        let id: UUID
+        let childIds: [UUID]
+        let existsLocally: Bool
+    }
+
+    /// Decides the folders of a package after its other items were admitted. A peer's folders
+    /// describe the peer's own library: they are only the path of the items the peer brings
+    /// along. So a folder is admitted when it passes `admit` and, after its entries are reduced
+    /// to the items this peer introduced, still holds one (an admitted inner folder counts). An
+    /// entry for an item this device already owns is dropped: it would file that item a second
+    /// time in a folder that does not exist here. A folder left without any entry is not
+    /// created at all. Returns the entries to keep of each admitted folder.
+    func admitFolders(_ folders: [Folder]) -> [UUID: Set<UUID>] {
+        var admittedFolders: [UUID: Set<UUID>] = [:]
+        var decided: Set<UUID> = []
+        var changed = true
+        // An inner folder admitted in one round lets its parent folder pass in the next.
+        while changed {
+            changed = false
+            for folder in folders where !decided.contains(folder.id) {
+                let introduced = introducedItemIds
+                let keptChildIds = Set(folder.childIds.filter { introduced.contains($0) && $0 != folder.id })
+                guard !keptChildIds.isEmpty else { continue }
+                decided.insert(folder.id)
+                guard admit(itemId: folder.id, existsLocally: folder.existsLocally) else { continue }
+                admittedFolders[folder.id] = keptChildIds
+                changed = true
+            }
+        }
+        // What is left has nothing of this peer in it.
+        rejectedItemCount += folders.filter { !decided.contains($0.id) }.count
+        return admittedFolders
+    }
 }
 
 @MainActor @Observable
@@ -246,6 +282,8 @@ public extension ImportControllable {
         var importedIds: Set<UUID> = []
         var locallyReusedFileIds: Set<UUID> = []
         var deferredFolderItems: [(item: ModelType, id: UUID)] = []
+        // A peer's folders are decided after its other items. See `PeerImportPolicy.admitFolders`.
+        var peerFolderItems: [ModelType] = []
         // Folder entries are repaired once for the batch. See CODE_AUDIT_Folder §7.3.
         var folderRepairIds: Set<UUID> = []
 
@@ -274,6 +312,10 @@ public extension ImportControllable {
                             // (no `MainActor.run` wrapper needed); the wire format is unchanged.
                             let itemVersion = version
                             let newItem = try await itemControllable.decode(data: data, with: JSONCoding.decoder, version: itemVersion)
+                            if peerPolicy != nil, await itemControllable.isFolderImport(newItem) {
+                                peerFolderItems.append(newItem)
+                                continue
+                            }
                             guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !policy.isUntrustedSource, peerPolicy: peerPolicy) else {
                                 continue
                             }
@@ -321,6 +363,12 @@ public extension ImportControllable {
             }
 
             try Task.checkCancellation()
+            if let peerPolicy, !peerFolderItems.isEmpty {
+                for folder in await admitPeerFolders(peerFolderItems, policy: peerPolicy) {
+                    deferredFolderItems.append(folder)
+                    importedIds.insert(folder.id)
+                }
+            }
             for deferredFolderItem in deferredFolderItems {
                 let applied = await applyImportedItem(
                     deferredFolderItem.item,
@@ -492,6 +540,21 @@ private extension ImportControllable {
             return false
         }
         return true
+    }
+
+    /// The folders of a peer package that may be written, each reduced to the entries of items
+    /// the peer introduced. See `PeerImportPolicy.admitFolders`.
+    @MainActor
+    private func admitPeerFolders(_ folders: [ModelType], policy: PeerImportPolicy) -> [(item: ModelType, id: UUID)] {
+        let itemController = itemControllable
+        let candidates = folders.compactMap { itemController.peerFolder($0) }
+        let keptChildIds = policy.admitFolders(candidates)
+        return candidates.compactMap { candidate in
+            guard let kept = keptChildIds[candidate.id],
+                  let item = folders.first(where: { itemController.peerFolder($0)?.id == candidate.id })
+            else { return nil }
+            return (itemController.keepingEntries(of: item, childIds: kept), candidate.id)
+        }
     }
 
     /// Captures, once per module stream, where its items go. Reading `isGameMode` separately at
@@ -927,6 +990,29 @@ private extension ImportControllable {
 }
 
 private extension ItemControllable {
+    @MainActor
+    func isFolderImport(_ item: ModelType) -> Bool {
+        (item as? Model)?.category == .folder
+    }
+
+    @MainActor
+    func peerFolder(_ item: ModelType) -> PeerImportPolicy.Folder? {
+        guard let folder = item as? Model else { return nil }
+        return PeerImportPolicy.Folder(
+            id: folder.id,
+            childIds: folder.entries.map(\.childId),
+            existsLocally: itemSync(for: folder.id, noGame: true) != nil
+        )
+    }
+
+    /// A copy of the folder with only the entries of `childIds`.
+    @MainActor
+    func keepingEntries(of item: ModelType, childIds: Set<UUID>) -> ModelType {
+        guard let folder = (item as? Model)?.copy() else { return item }
+        folder.entries.removeAll { !childIds.contains($0.childId) }
+        return folder
+    }
+
     @MainActor
     func shouldDeferGameModeFolderImport(_ item: ModelType, writesGameMemory: Bool) -> Bool {
         guard writesGameMemory, let imported = item as? Model else { return false }
