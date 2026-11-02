@@ -62,7 +62,7 @@ struct QuickDiceSlotView: View {
                 }
             }
         }
-#if os(iOS) || os(tvOS)
+#if os(iOS)
         .sheet(isPresented: $isPickerShown) {
             root.diceRoot.viewController.quickDicePickerView(root: root.diceRoot, selectionModel: pickerSelection)
         }
