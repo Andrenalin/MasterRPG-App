@@ -17,8 +17,11 @@ public extension View {
         modifier(AppActionEnvironmentSetUpViewModifier(appModel: appModel))
     }
     
-    func appSettingsSetUp(_ appModel: AppModel) -> some View {
-        modifier(AppSettingSetUpViewModifier(appModel: appModel))
+    /// - Parameter handlesExternalEvents: Whether this view's scene receives continued activities
+    ///   (Handoff, Spotlight taps). `false` for scenes that are not windows, such as the macOS
+    ///   `MenuBarExtra`: SwiftUI logs an "Invalid Configuration" fault for `onContinueUserActivity` there.
+    func appSettingsSetUp(_ appModel: AppModel, handlesExternalEvents: Bool = true) -> some View {
+        modifier(AppSettingSetUpViewModifier(appModel: appModel, handlesExternalEvents: handlesExternalEvents))
     }
 }
 
@@ -87,6 +90,7 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
 
 struct AppSettingSetUpViewModifier: ViewModifier {
     let appModel: AppModel
+    var handlesExternalEvents = true
 
     #if !os(tvOS)
     @Environment(\.openWindow) var openWindow
@@ -129,6 +133,19 @@ struct AppSettingSetUpViewModifier: ViewModifier {
                     )
                 }
 #endif
+                .modifier(ExternalEventModifier(appModel: appModel, isEnabled: handlesExternalEvents))
+    }
+}
+
+/// Routes continued activities (own Handoff activity, Spotlight taps) into the app, unless disabled.
+private struct ExternalEventModifier: ViewModifier {
+    let appModel: AppModel
+    let isEnabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
                 .onContinueUserActivity(UserActivity.bundleIdentifierType) { userActivity in
                     appModel.continueActivity(userActivity)
                 }
@@ -137,5 +154,8 @@ struct AppSettingSetUpViewModifier: ViewModifier {
                     appModel.continueActivity(userActivity)
                 }
 #endif
+        } else {
+            content
+        }
     }
 }

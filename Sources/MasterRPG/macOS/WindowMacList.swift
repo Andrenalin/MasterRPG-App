@@ -16,7 +16,7 @@ struct WindowMacList: Scene {
             MenuBarView(appModel: appModel)
                 .environmentSetUp(appModel)
                 .environmentActionSetUp(appModel)
-                .appSettingsSetUp(appModel)
+                .appSettingsSetUp(appModel, handlesExternalEvents: false)
         } label: {
             Label {
                 Text(verbatim: "MasterRPG")
