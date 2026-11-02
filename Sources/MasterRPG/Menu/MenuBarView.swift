@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+#if os(macOS)
 import AudioRPG
 import RolePlayGameKit
 import SwiftUI
@@ -11,12 +12,13 @@ struct MenuBarView: View {
         DataBaseAppStoreAvailable(appModel: appModel) { appModel in
             VStack {
                 Text("Music in MasterRPG", bundle: .main)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .accessibilityAddTraits(.isHeader)
-                
+
                 Divider()
-                
-                appModel.audioRoot.viewController.viewAudioPlayer(root: appModel.audioRoot, with: nil)
-                
+
+                appModel.audioRoot.viewController.viewMenuBarAudioPlayer(root: appModel.audioRoot)
             }
             .padding()
             .environment(appModel.audioRoot)
@@ -28,3 +30,4 @@ struct MenuBarView: View {
 #Preview {
     MenuBarView(appModel: .preview)
 }
+#endif

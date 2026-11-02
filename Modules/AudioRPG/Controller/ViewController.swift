@@ -50,19 +50,13 @@ public extension ViewController {
 // MARK: - Others
 
 public extension ViewController {
-    @MainActor func viewAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
-        // play(id:shouldPlay:) is async throws — fire-and-forget from this
-        // synchronous view builder, same as before. See CODE_AUDIT_Game §4.2.
-        Task {
-            do {
-                try await root.gameController.play(id: id, shouldPlay: true)
-            } catch {
-                Logger.gameController.error("ViewController: Failed to start audio playback for \(id?.uuidString ?? "current", privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-            }
-        }
-        return AudioPlayerView()
+#if os(macOS)
+    /// The music controls for the macOS menu bar extra (`.window` style).
+    @MainActor func viewMenuBarAudioPlayer(root: AudioRootModel) -> some View {
+        MenuBarAudioPlayerView()
             .environment(root)
     }
+#endif
 
     @MainActor func viewVolume(root: AudioRootModel, alignment: Alignment) -> some View {
         PlayerVolumeView(root: root, alignment: alignment)

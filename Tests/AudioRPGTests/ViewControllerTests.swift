@@ -25,7 +25,6 @@ struct ViewControllerTests {
         _ = sut.linkListView(type: .inspector, itemSelectionModel: selectionModel)
         _ = sut.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: true), dismissAction: {})
         _ = sut.gameView(root: root)
-        _ = sut.viewAudioPlayer(root: root, with: itemId)
         _ = sut.viewVolume(root: root, alignment: .bottomTrailing)
 
         try await root.gameController.play(id: nil, shouldPlay: true)

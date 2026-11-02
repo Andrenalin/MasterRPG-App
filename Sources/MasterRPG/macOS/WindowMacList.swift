@@ -24,7 +24,7 @@ struct WindowMacList: Scene {
                 Image(systemName: "music.note.list")
             }
         }
-        .menuBarExtraStyle(.menu)
+        .menuBarExtraStyle(.window)
 
         Settings {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
