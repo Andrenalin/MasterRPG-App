@@ -231,20 +231,30 @@ private struct GameStatisticsDashboardLifecycleModifier: ViewModifier {
     @Bindable var gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
 
+    private var authenticationRequest: Binding<GameCenterAuthenticationRequest?> {
+        Binding(
+            get: { gameCenterModel.authenticationRequest },
+            set: { request in
+                if request == nil {
+                    gameCenterModel.dismissAuthentication()
+                }
+            }
+        )
+    }
+
     func body(content: Content) -> some View {
         content
-            .sheet(
-                item: Binding(
-                    get: { gameCenterModel.authenticationRequest },
-                    set: { request in
-                        if request == nil {
-                            gameCenterModel.dismissAuthentication()
-                        }
-                    }
-                )
-            ) { request in
+#if os(tvOS)
+            // The Game Center sign-in is a full screen on the TV (code entry / QR).
+            .fullScreenCover(item: authenticationRequest) { request in
+                GameCenterAuthenticationView(request: request)
+                    .ignoresSafeArea()
+            }
+#else
+            .sheet(item: authenticationRequest) { request in
                 GameCenterAuthenticationView(request: request)
             }
+#endif
             .onAppear {
                 gameCenterController.setAccessPoint(active: true)
             }

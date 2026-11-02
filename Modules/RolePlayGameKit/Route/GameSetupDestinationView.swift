@@ -23,8 +23,9 @@ struct GameSetupDestinationView: View {
     private func openStatistics() {
 #if os(macOS) || os(visionOS)
         scenesManager.openWindow(.gameStatistics)
-#elseif os(iOS)
-        navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
+#elseif os(tvOS)
+        // The dashboard needs the whole screen on the TV; the Menu button dismisses the cover.
+        navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedCover)
 #else
         navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
 #endif

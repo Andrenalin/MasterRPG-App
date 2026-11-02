@@ -20,7 +20,14 @@ struct MasterTVApp: App {
 
     var body: some Scene {
         WindowGroup("Game", id: SceneId.game.rawValue) {
+            // The same navigation setup as the Game window of MasterRPGApp: without the root
+            // navigator, `navigator.navigate(to:method: .sheet / .managedSheet)` (Game Statistics,
+            // supporter options) has nothing that presents, and the buttons do nothing.
             appModel.appNavigationModel.initialRouteType
+                .onNavigationRoute(WindowRouter(appModel: appModel, role: .game))
+                .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .game))
+                .navigationRoot(appModel.gameNavigator)
+                .sceneTracker(for: SceneId.game)
                 .environmentSetUp(appModel)
                 .appSettingsSetUp(appModel)
         }
