@@ -3,12 +3,17 @@
 import SwiftUI
 
 public struct QuickEditorButtonView<Value: Numeric & Comparable>: View {
-    public init(number: Binding<Value>, value: Value, title: String, isAddition: Bool) {
+    /// - Parameter isThemed: Draws the button with the app theme's panel and foreground colors on
+    ///   every platform (see `ThemedQuickStepButtonStyle`), for editors on a themed panel.
+    public init(number: Binding<Value>, value: Value, title: String, isAddition: Bool, isThemed: Bool = false) {
         _number = number
         self.value = value
         self.title = title
         self.isAddition = isAddition
+        self.isThemed = isThemed
     }
+
+    private let isThemed: Bool
     
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -39,14 +44,64 @@ public struct QuickEditorButtonView<Value: Numeric & Comparable>: View {
         } label: {
             Text(verbatim: "\(isAddition ? "+" : "-")\(title)")
         }
-#if os(iOS)
-        .fixedSize()
-        .buttonStyle(.quickAdd)
-#elseif os(visionOS)
-        .fixedSize()
-        .borderLessTVButtonStyle()
-#endif
+        .modifier(QuickEditorButtonStyleModifier(isThemed: isThemed))
         .contentShape(Rectangle())
+    }
+}
+
+private struct QuickEditorButtonStyleModifier: ViewModifier {
+    let isThemed: Bool
+
+    func body(content: Content) -> some View {
+        if isThemed {
+            content.buttonStyle(ThemedQuickStepButtonStyle())
+        } else {
+#if os(iOS)
+            content
+                .fixedSize()
+                .buttonStyle(.quickAdd)
+#elseif os(visionOS)
+            content
+                .fixedSize()
+                .borderLessTVButtonStyle()
+#else
+            content
+#endif
+        }
+    }
+}
+
+/// A capsule step button in the app theme: foreground text on a tinted panel fill, inverted
+/// (panel text on a foreground fill) while focused or pressed, so the label keeps the contrast
+/// the theme guarantees between its panel and foreground on every platform and appearance.
+public struct ThemedQuickStepButtonStyle: ButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        StepLabel(configuration: configuration)
+    }
+
+    private struct StepLabel: View {
+        let configuration: Configuration
+
+        @Environment(\.appTheme) private var theme
+        @Environment(\.isFocused) private var isFocused
+
+        var body: some View {
+            let isHighlighted = isFocused || configuration.isPressed
+            configuration.label
+                .font(.callout.monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .foregroundStyle(isHighlighted ? theme.panelColor : theme.foregroundColor)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(isHighlighted ? theme.foregroundColor : theme.foregroundColor.opacity(0.14), in: .capsule)
+                .overlay {
+                    Capsule().strokeBorder(theme.foregroundColor.opacity(0.35), lineWidth: 1)
+                }
+        }
     }
 }
 

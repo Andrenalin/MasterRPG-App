@@ -17,6 +17,7 @@ struct DiceQuickEditor: View {
     let action: (Int) async -> Void
 
     @Environment(DiceRootModel.self) private var root
+    @Environment(\.appTheme) private var theme
 
     @State private var value: String = ""
     @FocusState private var isFocused: Bool
@@ -41,7 +42,7 @@ struct DiceQuickEditor: View {
                 DiceQuickEditorRowButtonsView(numberBinding: valueIntBinding, values: [10, 5, 2, 1], isAddition: false)
                 DiceQuickEditorRowButtonsView(numberBinding: valueIntBinding, values: [1, 2, 5, 10], isAddition: true)
             }
-            .rowEditColor()
+            .themedWell()
 
             HStack {
                 TextField(text: $value) {
@@ -74,14 +75,22 @@ struct DiceQuickEditor: View {
                     }
                     .labelStyle(.iconOnly)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(ThemedQuickStepButtonStyle())
+                .fixedSize()
                 .disabled(compareValue == nil)
-                .frame(minWidth: 44, minHeight: 44)
+                .opacity(compareValue == nil ? 0.5 : 1)
             }
-            .rowEditColor()
+            .themedWell()
         }
-        .rowEditColor(backgroundColor: .blue)
-        .frame(width: valueFor(iOS: 265, macOS: 265, tvOS: 265, visionOS: 325))
+        .padding(6)
+        .foregroundStyle(theme.foregroundColor)
+        .tint(theme.accentColor)
+        .background(theme.panelColor, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: ResolvedAppTheme.panelCornerRadius)
+                .strokeBorder(theme.accentColor, lineWidth: 2)
+        }
+        .frame(width: valueFor(iOS: 300, macOS: 300, tvOS: 420, visionOS: 325))
         .onChange(of: root.gameController.gameItem(for: itemId).compareValue, initial: true) {
             value = String("\(root.gameController.gameItem(for: itemId).compareValue.saturatingInt)")
         }
@@ -105,8 +114,27 @@ private struct DiceQuickEditorRowButtonsView: View {
     var body: some View {
         HStack {
             ForEach(values, id: \.self) { value in
-                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: isAddition)
+                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: isAddition, isThemed: true)
             }
         }
+    }
+}
+
+/// The inset well inside the editor panel: the theme canvas under the theme foreground.
+private extension View {
+    func themedWell() -> some View {
+        modifier(DiceQuickEditorWellModifier())
+    }
+}
+
+private struct DiceQuickEditorWellModifier: ViewModifier {
+    @Environment(\.appTheme) private var theme
+
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(theme.foregroundColor)
+            .padding(6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.canvas.color, in: .rect(cornerRadius: ResolvedAppTheme.elementCornerRadius))
     }
 }
