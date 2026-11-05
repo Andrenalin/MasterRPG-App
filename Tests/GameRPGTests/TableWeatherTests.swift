@@ -96,7 +96,10 @@ struct TableWeatherTests {
 
     // MARK: - Message flow
 
-    @Test("Showing a weather puts it on the table before its reveal; a player draws it once it arrives")
+    @Test(
+        "Showing a weather puts it on the table before its reveal; a player draws it once it arrives",
+        .enabled(if: MasterController.isTableWeatherEnabled, "Table weather is not sent for now")
+    )
     func showFlow() async throws {
         let fixture = try await Self.fixture()
         let env = fixture.environment
@@ -126,7 +129,10 @@ struct TableWeatherTests {
         #expect(env.player1.gameModel.tableWeather.visibleWeatherId == fixture.weatherId)
     }
 
-    @Test("The game master clears the weather from every table; a player cannot set one")
+    @Test(
+        "The game master clears the weather from every table; a player cannot set one",
+        .enabled(if: MasterController.isTableWeatherEnabled, "Table weather is not sent for now")
+    )
     func clearAndSender() async throws {
         let fixture = try await Self.fixture()
         let env = fixture.environment
@@ -168,7 +174,10 @@ struct TableWeatherTests {
         #expect(try await env.master.handleWeather(forged) == nil)
     }
 
-    @Test("A peer that joins late gets the weather's package and then the table weather")
+    @Test(
+        "A peer that joins late gets the weather's package and then the table weather",
+        .enabled(if: MasterController.isTableWeatherEnabled, "Table weather is not sent for now")
+    )
     func replay() async throws {
         let fixture = try await Self.fixture()
         let env = fixture.environment
