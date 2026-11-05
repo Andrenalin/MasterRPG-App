@@ -218,8 +218,14 @@ private extension PlayerPhotoFolderPlacementTests {
         }
     }
 
-    /// Creates the nested folders `names` and moves `itemId` into the innermost one.
+    /// Creates the nested folders `names` and files `itemId` in the innermost one.
     /// Returns the folder ids, outermost first.
+    ///
+    /// The photo is filed in the database only. `EditController.addItem` also moves the photo's
+    /// file to the new folder path, and every test root shares one file container: the photo
+    /// tests running in parallel (`MultiConnectionPhotoTests`, `SimpleFileFlowTests`,
+    /// `PhotoMessageFlowTests`, `PlayerShareReportTests`) then found the shared file gone. The
+    /// folders themselves have no file, so they still go through `addItem`.
     static func file(_ itemId: UUID, in names: [String], of root: GameRoot) async -> [UUID] {
         let photoRoot = root.photoRoot
         var folderIds: [UUID] = []
@@ -231,8 +237,27 @@ private extension PlayerPhotoFolderPlacementTests {
             }
             folderIds.append(folderId)
         }
-        photoRoot.editController.addItem(itemId: itemId, parentId: folderIds.last)
+        if let folderId = folderIds.last {
+            fileWithoutMovingFile(itemId, into: folderId, of: photoRoot.itemController)
+        }
         return folderIds
+    }
+
+    /// Makes `folderId` the only folder of `itemId`, like `addItem`, without touching its file.
+    static func fileWithoutMovingFile(_ itemId: UUID, into folderId: UUID, of library: PhotoRPG.ItemController) {
+        guard let item = library.itemSync(for: itemId, noGame: true)?.copy() else { return }
+        if let oldParentId = item.parentId, oldParentId != folderId,
+           let oldParent = library.itemSync(for: oldParentId, noGame: true)?.copy() {
+            oldParent.entries.removeAll { $0.childId == itemId }
+            library.replace(model: oldParent, isInsert: false)
+        }
+        guard let folder = library.itemSync(for: folderId, noGame: true)?.copy() else { return }
+        if !folder.entries.contains(where: { $0.childId == itemId }) {
+            folder.entries.append(.newChild(id: itemId))
+        }
+        item.parentId = folderId
+        library.replace(model: folder, isInsert: false)
+        library.replace(model: item, isInsert: false)
     }
 
     /// The names of the folders above `itemId` in the library, outermost first.
