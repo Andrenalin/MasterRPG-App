@@ -89,5 +89,42 @@ struct TablePlayerResolverTests {
         #expect(result[1].characterId == mageId)
         #expect(result[1].isEnabled)
     }
+
+    @Test func companionsFollowTheirPlayersAndComeBeforeTableCharacters() {
+        let wolf = TablePlayerModel(characterId: heroId)
+        let sleeping = TablePlayerModel(characterId: mageId, isEnabled: false)
+        let anna = PlayerGameModel(id: UUID(), type: .player, name: "Anna", characterId: UUID(), companions: [wolf, sleeping])
+        let observer = PlayerGameModel(id: UUID(), type: .observer, name: "Observer", companions: [TablePlayerModel(characterId: mageId)])
+        let tableHero = TablePlayerModel(characterId: heroId)
+        let tableMage = TablePlayerModel(characterId: mageId)
+
+        let result = TablePlayerResolver.pinPlayers(roster: [anna, observer], tablePlayers: [tableHero, tableMage], name: name)
+
+        // The disabled companion and the observer's list give no pin; the hero is the companion's.
+        #expect(result.map(\.id) == [anna.id, wolf.id, tableMage.id])
+        #expect(result[1] == PlayerGameModel(id: wolf.id, type: .player, name: "Hero", characterId: heroId))
+        #expect(TablePlayerResolver.status(of: tableHero, roster: [anna, observer], characterExists: true) == .claimed(by: "Anna"))
+        #expect(TablePlayerResolver.status(of: wolf, roster: [anna, observer], characterExists: true) == .active)
+        #expect(TablePlayerResolver.status(of: sleeping, roster: [anna, observer], characterExists: true) == .disabled)
+        #expect(TablePlayerResolver.companionOwners(roster: [anna, observer]) == [wolf.id: anna.id, sleeping.id: anna.id])
+    }
+
+    @Test func aCharacterPlayedOrBroughtFirstKeepsItsPin() {
+        let annasWolf = TablePlayerModel(characterId: heroId)
+        let bobsWolf = TablePlayerModel(characterId: heroId)
+        let anna = PlayerGameModel(id: UUID(), type: .player, name: "Anna", characterId: UUID(), companions: [annasWolf])
+        let bob = PlayerGameModel(id: UUID(), type: .player, name: "Bob", characterId: mageId, companions: [bobsWolf, TablePlayerModel(characterId: mageId)])
+
+        let result = TablePlayerResolver.pinPlayers(roster: [anna, bob], tablePlayers: [], name: name)
+
+        #expect(result.map(\.id) == [anna.id, bob.id, annasWolf.id])
+        #expect(TablePlayerResolver.status(of: bobsWolf, roster: [anna, bob], characterExists: true) == .claimed(by: "Anna"))
+    }
+
+    @Test func aPlayerCannotAddTheirOwnCharacterAsCompanion() {
+        let ownId = UUID()
+        let result = TablePlayerResolver.adding(characterIds: [ownId, heroId], to: [], excluding: [ownId])
+        #expect(result.map(\.characterId) == [heroId])
+    }
 }
 #endif

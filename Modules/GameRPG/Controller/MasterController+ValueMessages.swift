@@ -41,6 +41,14 @@ extension MasterController {
             return nil
         }
 
+        // A player's companion Character, announced and sent like its own Character.
+        if model.type == .update,
+           model.subType == .store,
+           model.senderType == .player,
+           let companionId = companionCharacterId(of: model) {
+            return try await handleCompanionStore(model, characterId: companionId)
+        }
+
         // Character/Value messages have one normal-game purpose: synchronize
         // the selected Character when a player joins. Presentation, loot,
         // result, acknowledgement, and live-update variants are intentionally
@@ -112,6 +120,41 @@ extension MasterController {
             characterId: characterId
         )
         await publishCurrentMapAfterPlayerPinChange()
+        return nil
+    }
+
+    /// The Character of a `.store` message when it is one of the sender's companions (its
+    /// roster entry, refreshed from this very message) and nobody plays it as their own.
+    private func companionCharacterId(of model: GameNetworkModel) -> UUID? {
+        let characterId = model.data.id
+        guard model.data.type == .value,
+              characterId != model.sender.characterId,
+              let player = root.gameModel.gameRoster.players.first(where: { $0.id == model.sender.id }),
+              player.companions.contains(where: { $0.characterId == characterId }),
+              !root.gameModel.gameRoster.players.contains(where: { $0.characterId == characterId }),
+              !gameModel.isCharacterBound(characterId)
+        else { return nil }
+        return characterId
+    }
+
+    /// The companion handshake: a reference is answered only when this device lacks that
+    /// version; a package is imported like a player's Character (the companion is its primary
+    /// item) and then gets its pin. Live value updates are not taken for companions.
+    private func handleCompanionStore(_ model: GameNetworkModel, characterId: UUID) async throws -> NetworkCodableDataType? {
+        guard model.data.data != nil else {
+            let localVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
+            return localVersion == model.data.version ? nil : model.data
+        }
+        do {
+            let policy = root.gameModel.peerImportPolicy(senderId: model.sender.id, primaryItemId: characterId)
+            try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data, policy: policy)
+            root.gameModel.recordPeerImport(policy, senderId: model.sender.id)
+        } catch {
+            Logger.networking.error("MasterController: Failed to import companion package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            return nil
+        }
+        // The pin waited for the Character to exist here.
+        await resetPlayers()
         return nil
     }
 

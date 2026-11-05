@@ -95,6 +95,8 @@ final class GameRootModel: Sendable {
     /// message) and persisted per statistics event. See CODE_AUDIT_17 §6.9.
     static let maxPlayerNameLength = GameSenderModel.maxNameLength
 
+    /// Adds or refreshes the roster entry of `playerId` from one of its messages. Returns
+    /// whether the player pins have to be reset: the player is new, or its companions changed.
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
         // A claimed player model whose id doesn't match the sender is a failed
         // roster lookup (PlayerGameModel.empty carries a random id) — writing it
@@ -105,9 +107,17 @@ final class GameRootModel: Sendable {
         if playerModel.name.count > Self.maxPlayerNameLength {
             playerModel.name = String(playerModel.name.prefix(Self.maxPlayerNameLength))
         }
+        // Only a player brings companions; never its own Character.
+        if playerModel.type == .player {
+            playerModel.companions.removeAll { $0.characterId == playerModel.characterId || $0.id == playerId }
+        } else {
+            playerModel.companions = []
+        }
 
         let isNewPlayer: Bool
+        var companionsChanged = false
         if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
+            companionsChanged = gameRoster.players[index].companions != playerModel.companions
             // `characterId` travels on every message as sender-declared,
             // otherwise-untrusted input — this runs for every inbound
             // message, not just the join handshake, so overwriting it here
@@ -134,7 +144,7 @@ final class GameRootModel: Sendable {
         } else {
             gameControl.controls.append(model)
         }
-        return isNewPlayer
+        return isNewPlayer || companionsChanged
     }
 
     func add(playerId: UUID, sharingModel: SharingControlModel) {
@@ -193,6 +203,9 @@ final class GameRootModel: Sendable {
             // The local entitlement is authoritative for this device. An older
             // master can legitimately send a roster entry without supporter data.
             updatedPlayers[localIndex].supporterTier = localPlayer.supporterTier
+            // So are this player's companions: the master only echoes the list it last heard,
+            // which is older than a change made here meanwhile.
+            updatedPlayers[localIndex].companions = localPlayer.companions
         } else if localPlayer.id == gameConfig.id {
             // Keep the local player in the roster, but never append the `.empty`
             // fallback — its random id would poison every later lookup.
@@ -241,7 +254,8 @@ final class GameRootModel: Sendable {
                     role: player.type,
                     name: player.name,
                     characterId: player.characterId,
-                    supporterTier: player.supporterTier
+                    supporterTier: player.supporterTier,
+                    companions: player.companions
                 )
             } else {
                 sender = GameSenderModel(id: gameConfig.id, role: .notSet, name: gameName, characterId: nil)

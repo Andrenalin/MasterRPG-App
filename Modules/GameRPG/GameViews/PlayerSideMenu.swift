@@ -23,6 +23,16 @@ struct PlayerSideMenu: View {
                         sceneId: SceneId.sceneId(for: module)
                     )
                 }
+#if os(visionOS)
+                // macOS has the button in the toolbar.
+                if root.gameModel.gameType == .player {
+                    TablePlayersButton(root: root)
+                        .imageScale(.large)
+                        .padding(8)
+                        .contentShape(.circle)
+                        .modifier(GameWindowButtonAppearance(module: .value, isWindowPresented: false))
+                }
+#endif
             }
         }
 #if os(macOS)

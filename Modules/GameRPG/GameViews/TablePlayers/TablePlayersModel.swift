@@ -4,20 +4,29 @@ import CoreRPG
 import Foundation
 import Observation
 
-/// The game master's list of Characters at the table: adds, enables, disables and removes them.
-/// The list itself lives in `GameRootModel.tablePlayers`; every change goes through `update`.
+/// A list of Characters with a player pin each — the game master's Characters at the table, or
+/// a player's companions: adds, enables, disables and removes them. The list itself lives
+/// elsewhere (`GameRootModel.tablePlayers`, or the player's roster entry); every change goes
+/// through `update`.
 @MainActor @Observable
 final class TablePlayersModel {
     init(
         tablePlayers: @escaping @MainActor () -> [TablePlayerModel],
-        update: @escaping @MainActor ([TablePlayerModel]) -> Void
+        update: @escaping @MainActor ([TablePlayerModel]) -> Void,
+        excludedCharacterIds: @escaping @MainActor () -> Set<UUID> = { [] }
     ) {
         self.tablePlayers = tablePlayers
         self.update = update
+        self.excludedCharacterIds = excludedCharacterIds
     }
 
     @ObservationIgnored private let tablePlayers: @MainActor () -> [TablePlayerModel]
     @ObservationIgnored private let update: @MainActor ([TablePlayerModel]) -> Void
+    /// Characters that cannot be added: a player's own Character is no companion.
+    @ObservationIgnored private let excludedCharacterIds: @MainActor () -> Set<UUID>
+
+    /// Most entries the list takes (a player's companions are capped).
+    var maximumCount = Int.max
 
     /// The Characters picked while `isPicking`.
     let selectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: false)
@@ -39,7 +48,11 @@ final class TablePlayersModel {
         isPicking = false
         selectionModel.resetSelection(selectionIds: [])
         let current = tablePlayers()
-        let updated = TablePlayerResolver.adding(characterIds: characterIds, to: current)
+        let updated = Array(TablePlayerResolver.adding(
+            characterIds: characterIds,
+            to: current,
+            excluding: excludedCharacterIds()
+        ).prefix(maximumCount))
         guard updated != current else { return }
         update(updated)
     }

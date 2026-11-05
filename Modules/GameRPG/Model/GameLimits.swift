@@ -63,4 +63,6 @@ enum GameStorageKeys {
     static let lastAdventureUUID = "lastAdventureUUID"
     static let lastGameMasterUUID = "lastGameMasterUUID"
     static let lastPlayerUUID = "lastPlayerUUID"
+    /// A player's companions, per own Character: [Character UUID string: JSON of [TablePlayerModel]].
+    static let playerCompanions = "playerCompanions"
 }

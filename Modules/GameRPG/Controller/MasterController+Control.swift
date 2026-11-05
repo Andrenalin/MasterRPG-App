@@ -102,6 +102,12 @@ extension MasterController {
                 name: { valueGameControllable.playerPinName(for: $0) }
             )
             root.mapRoot.mapGameControllable.resetPlayerPins(for: pinPlayers)
+            // A companion is moved by the player who brought it until the game master decides
+            // otherwise; an emptied list stays empty.
+            for (companionId, ownerId) in TablePlayerResolver.companionOwners(roster: gameRoster.players)
+            where root.gameModel.pinControllers[companionId] == nil {
+                root.gameModel.pinControllers[companionId] = [ownerId]
+            }
             // Who else may move each pin: the connected devices the game master chose.
             let connectedIds = Set(gameRoster.players.map(\.id))
             root.mapRoot.mapGameControllable.setPlayerPinControllers(

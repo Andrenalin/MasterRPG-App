@@ -12,6 +12,9 @@ struct GameSenderModel: Equatable, Codable, Sendable {
     var name: String
     var characterId: UUID?
     var supporterTier: SupporterTier = .none
+    /// The player's companions (see `PlayerGameModel.companions`); every message carries the
+    /// current list, so the master always has the latest one.
+    var companions: [TablePlayerModel] = []
 
     var isMaster: Bool { role == .master }
 
@@ -31,7 +34,8 @@ struct GameSenderModel: Equatable, Codable, Sendable {
             type: role,
             name: name,
             characterId: characterId,
-            supporterTier: supporterTier
+            supporterTier: supporterTier,
+            companions: companions
         )
     }
 }
@@ -43,6 +47,7 @@ extension GameSenderModel {
         case name
         case characterId
         case supporterTier
+        case companions
     }
 
     init(from decoder: Decoder) throws {
@@ -55,6 +60,8 @@ extension GameSenderModel {
             SupporterTier.self,
             forKey: .supporterTier
         ) ?? .none
+        companions = Array((try container.decodeIfPresent([TablePlayerModel].self, forKey: .companions) ?? [])
+            .prefix(PlayerGameModel.maximumCompanions))
     }
 
     func encode(to encoder: Encoder) throws {
@@ -64,6 +71,9 @@ extension GameSenderModel {
         try container.encode(name, forKey: .name)
         try container.encodeIfPresent(characterId, forKey: .characterId)
         try container.encode(supporterTier, forKey: .supporterTier)
+        if !companions.isEmpty {
+            try container.encode(companions, forKey: .companions)
+        }
     }
 }
 

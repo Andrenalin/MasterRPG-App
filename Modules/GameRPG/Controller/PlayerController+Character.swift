@@ -58,6 +58,7 @@ extension PlayerController {
                 updated: reference,
                 relayToProxyClients: false
             )
+            try await sendCompanionReferences()
             let lostMaster = gameModel.lostMaster
             guard !Task.isCancelled, !lostMaster else { return }
             gameModel.reset(sendPlayer: true)
@@ -66,6 +67,31 @@ extension PlayerController {
         } catch {
             // characterId can identify a specific player's Character — private. See CODE_AUDIT_Game §6.3.
             Logger.networking.error("PlayerController: Failed to send character \(characterId, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        }
+    }
+
+    /// The companions changed: announce the Character and the companions again. Every message
+    /// carries the companion list, so the Character's announcement also tells the master about
+    /// a removed companion.
+    func announceCompanions() async {
+        gameModel.reset(sendPlayer: false)
+        await scheduleSendCharacter()
+    }
+
+    /// Advertises each enabled companion like the Character: id and version only, the master
+    /// asks for the package when its copy differs (see `handleValue`).
+    private func sendCompanionReferences() async throws {
+        for companion in root.gameModel.gamePlayer.companions where companion.isEnabled {
+            try Task.checkCancellation()
+            guard root.characterRoot.valueGameControllable.playerPinName(for: companion.characterId) != nil else { continue }
+            let reference = await root.characterRoot.gameControllable.share(id: companion.characterId)
+            try Task.checkCancellation()
+            await send(
+                type: .update,
+                subType: .store,
+                updated: reference,
+                relayToProxyClients: false
+            )
         }
     }
 }

@@ -42,16 +42,18 @@ extension PlayerController {
         // A normal player accepts only the master's targeted response to the
         // join announcement. No Value reveal, result, loot, or live update is
         // processed during the game.
+        // The same for one of this player's companions.
+        let player = root.gameModel.gamePlayer
         guard model.sender.isMaster,
               model.type == .update,
               model.subType == .store,
               model.data.data == nil,
-              let characterId = root.gameModel.gamePlayer.characterId,
-              characterId == model.data.id
+              let characterId = player.characterId,
+              characterId == model.data.id || player.companions.contains(where: { $0.characterId == model.data.id })
         else { return nil }
 
         try Task.checkCancellation()
-        let package = try await root.characterRoot.gameControllable.createGameData(for: characterId)
+        let package = try await root.characterRoot.gameControllable.createGameData(for: model.data.id)
         try Task.checkCancellation()
         // Character packages can be large, but only the game master consumes
         // them. Keep them off the SharePlay Journal and away from local proxy

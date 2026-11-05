@@ -453,7 +453,8 @@ extension GameRoot {
             type: mode,
             name: name(for: mode),
             characterId: gameModel.selectedCharacter,
-            supporterTier: supporterTier
+            supporterTier: supporterTier,
+            companions: mode == .player ? Self.storedCompanions(for: gameModel.selectedCharacter) : []
         )
         gameModel.gameRoster = GameRosterModel(players: [playerGameModel])
         gameModel.gameControl = .empty
@@ -507,6 +508,7 @@ extension GameRoot {
         var newConfig = gameModel.gameConfig
         newConfig.state = .started
         gameModel.gameConfig = newConfig
+        let companions = type == .player ? Self.storedCompanions(for: gameModel.selectedCharacter) : []
         // Update the local player by id, not by index: a master broadcast
         // processed during connect can already have replaced the roster, and
         // index 0 may then be another player's entry.
@@ -515,6 +517,7 @@ extension GameRoot {
             gameModel.gameRoster.players[index].name = name(for: type)
             gameModel.gameRoster.players[index].characterId = gameModel.selectedCharacter
             gameModel.gameRoster.players[index].supporterTier = supporterTier
+            gameModel.gameRoster.players[index].companions = companions
         } else {
             gameModel.gameRoster.players.append(
                 PlayerGameModel(
@@ -522,7 +525,8 @@ extension GameRoot {
                     type: type,
                     name: name(for: type),
                     characterId: gameModel.selectedCharacter,
-                    supporterTier: supporterTier
+                    supporterTier: supporterTier,
+                    companions: companions
                 )
             )
         }

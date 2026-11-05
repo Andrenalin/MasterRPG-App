@@ -44,13 +44,15 @@ public struct PlayerGameModel: Equatable, Identifiable, Codable, Sendable {
         type: GameType,
         name: String,
         characterId: UUID? = nil,
-        supporterTier: SupporterTier = .none
+        supporterTier: SupporterTier = .none,
+        companions: [TablePlayerModel] = []
     ) {
         self.id = id
         self.type = type
         self.name = name
         self.characterId = characterId
         self.supporterTier = supporterTier
+        self.companions = Array(companions.prefix(Self.maximumCompanions))
     }
     
     public var id: UUID
@@ -58,6 +60,12 @@ public struct PlayerGameModel: Equatable, Identifiable, Codable, Sendable {
     public var name: String
     public var characterId: UUID?
     public var supporterTier: SupporterTier
+    /// Characters this player brings along: each enabled one gets a player pin of its own, which
+    /// the player moves by default. Sent by the player itself, so capped.
+    public var companions: [TablePlayerModel]
+
+    /// Most companions a player may bring; a peer's longer list is cut at decoding.
+    public static let maximumCompanions = 8
 
     public static let empty = PlayerGameModel(id: UUID(), type: .notSet, name: "")
 }
@@ -102,6 +110,7 @@ extension PlayerGameModel {
         case name
         case characterId
         case supporterTier
+        case companions
     }
 
     public init(from decoder: Decoder) throws {
@@ -111,7 +120,8 @@ extension PlayerGameModel {
             type: try container.decode(GameType.self, forKey: .type),
             name: try container.decode(String.self, forKey: .name),
             characterId: try container.decodeIfPresent(UUID.self, forKey: .characterId),
-            supporterTier: try container.decodeIfPresent(SupporterTier.self, forKey: .supporterTier) ?? .none
+            supporterTier: try container.decodeIfPresent(SupporterTier.self, forKey: .supporterTier) ?? .none,
+            companions: try container.decodeIfPresent([TablePlayerModel].self, forKey: .companions) ?? []
         )
     }
 
@@ -122,5 +132,9 @@ extension PlayerGameModel {
         try container.encode(name, forKey: .name)
         try container.encodeIfPresent(characterId, forKey: .characterId)
         try container.encode(supporterTier, forKey: .supporterTier)
+        // Left out when empty: the roster travels in every master message.
+        if !companions.isEmpty {
+            try container.encode(companions, forKey: .companions)
+        }
     }
 }

@@ -115,6 +115,12 @@ final class MasterControllerModel {
         return true
     }
 
+    /// Whether a sender plays `characterId` as its own Character. A companion package may
+    /// never write such a Character.
+    func isCharacterBound(_ characterId: UUID) -> Bool {
+        characterOwnership.values.contains(characterId)
+    }
+
     /// Read-only enforcement for every `.value` message after the join
     /// handshake — never creates a binding itself.
     func isCharacterOwnershipAuthorized(senderId: UUID, characterId: UUID) -> Bool {

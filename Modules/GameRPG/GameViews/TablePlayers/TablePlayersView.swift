@@ -5,16 +5,20 @@ import CharacterRPG
 import CoreRPG
 import SwiftUI
 
-/// The game master's player list: the connected devices, and the Characters the game master
-/// puts at the table as players. Those get a player pin on every shown map.
+/// The game master's player list: the connected devices, their companions, and the Characters
+/// the game master puts at the table as players. For a player it lists only the companions it
+/// brings along. Each of those gets a player pin on every shown map.
 struct TablePlayersView: View {
     let root: GameRoot
 
     @State private var model: TablePlayersModel
+    private let isMaster: Bool
 
     init(root: GameRoot) {
         self.root = root
-        _model = State(initialValue: root.makeTablePlayersModel())
+        let isMaster = root.gameModel.gameConfig.isMaster
+        self.isMaster = isMaster
+        _model = State(initialValue: isMaster ? root.makeTablePlayersModel() : root.makeCompanionsModel())
     }
 
     var body: some View {
@@ -22,15 +26,17 @@ struct TablePlayersView: View {
         // No NavigationStack toolbar: a popover does not show one on macOS (and not reliably
         // elsewhere), which left the panel without a way to add Characters.
         VStack(spacing: 0) {
-            TablePlayersHeader(model: model)
+            TablePlayersHeader(model: model, isMaster: isMaster)
             Divider()
             if model.isPicking {
                 root.characterRoot.viewController.linkListView(
                     type: .selectionInline,
                     itemSelectionModel: model.selectionModel
                 )
-            } else {
+            } else if isMaster {
                 TablePlayersList(root: root, model: model)
+            } else {
+                CompanionsList(root: root, model: model)
             }
         }
         .themedSurface()
@@ -40,6 +46,7 @@ struct TablePlayersView: View {
 /// The panel's title; while picking Characters also Cancel and Add.
 private struct TablePlayersHeader: View {
     let model: TablePlayersModel
+    let isMaster: Bool
 
     var body: some View {
         HStack {
@@ -54,8 +61,10 @@ private struct TablePlayersHeader: View {
             Group {
                 if model.isPicking {
                     Text("Add Characters", bundle: .module)
-                } else {
+                } else if isMaster {
                     Text("Players", bundle: .module)
+                } else {
+                    Text("Companions", bundle: .module)
                 }
             }
             .font(.headline)
@@ -101,6 +110,21 @@ private struct TablePlayersList: View {
                 }
             } header: {
                 Text("Connected", bundle: .module)
+            }
+
+            let companions = connected.filter { $0.type == .player }.flatMap { player in
+                player.companions.map { CompanionEntry(owner: player, companion: $0) }
+            }
+            if !companions.isEmpty {
+                Section {
+                    ForEach(companions) { entry in
+                        MasterCompanionRow(root: root, owner: entry.owner, companion: entry.companion, roster: connected)
+                    }
+                } header: {
+                    Text("Companions", bundle: .module)
+                } footer: {
+                    Text("Characters the players bring along. Each is moved by its player unless you choose otherwise.", bundle: .module)
+                }
             }
 
             Section {
@@ -229,11 +253,7 @@ private struct TablePlayerRow: View {
             )
 
             VStack(alignment: .leading) {
-                if let name {
-                    Text(verbatim: name)
-                } else {
-                    Text("Unknown Character", bundle: .module)
-                }
+                CharacterNameText(name: name)
                 TablePlayerStatusText(status: status)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -259,21 +279,183 @@ private struct TablePlayerRow: View {
             .labelsHidden()
             .disabled(status == .missing)
 
-#if os(macOS) || os(visionOS)
-            Button(role: .destructive) {
-                model.remove(id: tablePlayer.id)
-            } label: {
-                Label {
-                    Text("Remove", bundle: .module)
-                } icon: {
-                    Image(systemName: "trash")
-                }
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-#endif
+            TablePlayerRemoveButton(model: model, id: tablePlayer.id)
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+private struct CompanionEntry: Identifiable {
+    let owner: PlayerGameModel
+    let companion: TablePlayerModel
+
+    var id: UUID { companion.id }
+}
+
+/// A player's own list: the companions it brings along. Each enabled one gets a player pin
+/// that this player moves, unless the game master hands it to someone else.
+private struct CompanionsList: View {
+    let root: GameRoot
+    let model: TablePlayersModel
+
+    var body: some View {
+        let player = root.gameModel.gamePlayer
+        let roster = root.gameModel.gameRoster.players
+
+        List {
+            Section {
+                if player.companions.isEmpty {
+                    Text("No companions", bundle: .module)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(player.companions) { companion in
+                        CompanionRow(root: root, model: model, companion: companion, roster: roster)
+                    }
+                    .onDelete(perform: model.remove(atOffsets:))
+                }
+
+                if player.companions.count < PlayerGameModel.maximumCompanions {
+                    Button(action: model.startPicking) {
+                        Label {
+                            Text("Add Companions", bundle: .module)
+                        } icon: {
+                            Image(systemName: "person.badge.plus")
+                        }
+                    }
+                }
+            } header: {
+                Text("Companions at the Table", bundle: .module)
+            } footer: {
+                Text("Each enabled companion gets a player pin on every shown map, which you move. The game master can let others move it.", bundle: .module)
+            }
+        }
+        .listStyle(.inset)
+        .themedListSurface()
+    }
+}
+
+/// A companion in the player's own list: like a Character at the table, without the
+/// game master's controller menu.
+private struct CompanionRow: View {
+    let root: GameRoot
+    let model: TablePlayersModel
+    let companion: TablePlayerModel
+    let roster: [PlayerGameModel]
+
+    var body: some View {
+        let name = root.characterRoot.valueGameControllable.playerPinName(for: companion.characterId)
+        let status = TablePlayerResolver.status(of: companion, roster: roster, characterExists: name != nil)
+
+        HStack {
+            root.characterRoot.viewController.playerAvatar(
+                for: companion.characterId,
+                placeholderSystemImage: "person"
+            )
+
+            VStack(alignment: .leading) {
+                CharacterNameText(name: name)
+                TablePlayerStatusText(status: status)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+
+            Toggle(isOn: Binding {
+                companion.isEnabled
+            } set: { isEnabled in
+                model.setEnabled(isEnabled, id: companion.id)
+            }) {
+                Text("Player Pin", bundle: .module)
+            }
+            .labelsHidden()
+            .disabled(status == .missing)
+
+            TablePlayerRemoveButton(model: model, id: companion.id)
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// A companion of a connected player in the game master's list. The player adds, switches and
+/// removes it; the game master decides who moves its pin.
+private struct MasterCompanionRow: View {
+    let root: GameRoot
+    let owner: PlayerGameModel
+    let companion: TablePlayerModel
+    let roster: [PlayerGameModel]
+
+    var body: some View {
+        let name = root.characterRoot.valueGameControllable.playerPinName(for: companion.characterId)
+        let status = TablePlayerResolver.status(of: companion, roster: roster, characterExists: name != nil)
+
+        HStack {
+            root.characterRoot.viewController.playerAvatar(
+                for: companion.characterId,
+                placeholderSystemImage: "person"
+            )
+
+            VStack(alignment: .leading) {
+                CharacterNameText(name: name)
+                Group {
+                    Text("Companion of \(owner.name)", bundle: .module)
+                    if status == .missing {
+                        // The player's package has not arrived yet.
+                        Text("Waiting for the Character", bundle: .module)
+                    } else if status != .active {
+                        TablePlayerStatusText(status: status)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                if status == .active {
+                    PinControllersCaption(root: root, pinId: companion.id)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            if status == .active {
+                PinControllersMenu(root: root, pinId: companion.id)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// A Character's name, or "Unknown Character" when it does not exist on this device.
+private struct CharacterNameText: View {
+    let name: String?
+
+    var body: some View {
+        if let name {
+            Text(verbatim: name)
+        } else {
+            Text("Unknown Character", bundle: .module)
+        }
+    }
+}
+
+/// Swipe-to-delete has no pointer equivalent: macOS and visionOS get a trash button.
+private struct TablePlayerRemoveButton: View {
+    let model: TablePlayersModel
+    let id: UUID
+
+    var body: some View {
+#if os(macOS) || os(visionOS)
+        Button(role: .destructive) {
+            model.remove(id: id)
+        } label: {
+            Label {
+                Text("Remove", bundle: .module)
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+#endif
     }
 }
 
@@ -355,7 +537,7 @@ private struct TablePlayerStatusText: View {
     }
 }
 
-/// Opens `TablePlayersView`. Master only.
+/// Opens `TablePlayersView`: the game master's players, or a player's companions.
 struct TablePlayersButton: View {
     let root: GameRoot
 
@@ -363,18 +545,25 @@ struct TablePlayersButton: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
+        let isMaster = root.gameModel.gameConfig.isMaster
         Button {
             isPresented.toggle()
         } label: {
             Label {
-                Text("Players", bundle: .module)
+                if isMaster {
+                    Text("Players", bundle: .module)
+                } else {
+                    Text("Companions", bundle: .module)
+                }
             } icon: {
-                Image(systemName: "person.3")
+                Image(systemName: isMaster ? "person.3" : "person.2")
             }
             .labelStyle(.iconOnly)
         }
-        .help(Text("Players", bundle: .module))
-        .accessibilityHint(Text("Shows the players and the Characters at the table", bundle: .module))
+        .help(isMaster ? Text("Players", bundle: .module) : Text("Companions", bundle: .module))
+        .accessibilityHint(isMaster
+            ? Text("Shows the players and the Characters at the table", bundle: .module)
+            : Text("Shows the companions you bring to the table", bundle: .module))
         .popover(isPresented: $isPresented) {
             ManagedPresentationView {
                 TablePlayersView(root: root)
