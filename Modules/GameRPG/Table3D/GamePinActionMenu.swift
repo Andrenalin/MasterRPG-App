@@ -172,7 +172,7 @@ struct GameMapPhotoPopover: View {
     /// The photo the popover shows: already projected into the table view.
     private var presentedPhoto: MapPhotoPopoverItem? {
         guard let photo = game.mapPhoto,
-              game.mapPhotoSource?.pinId == photo.photoId else { return nil }
+              game.mapPhotoSource?.pinId == photo.itemId else { return nil }
         return photo
     }
 
@@ -189,7 +189,7 @@ struct GameMapPhotoPopover: View {
                 .transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : .default, value: presentedPhoto?.photoId)
+        .animation(reduceMotion ? nil : .default, value: presentedPhoto?.itemId)
     }
 }
 

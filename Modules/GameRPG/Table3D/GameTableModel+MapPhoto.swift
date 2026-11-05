@@ -94,7 +94,7 @@ extension GameTableModel {
             return
         }
         let source = TablePinMenuSource(
-            pinId: photo.photoId,
+            pinId: photo.itemId,
             frame: CGRect(x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1)
         )
         if source.differsVisibly(from: mapPhotoSource) {

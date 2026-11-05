@@ -10,6 +10,7 @@ import Testing
 @testable import GameRPG
 @testable import MapRPG
 @testable import PhotoRPG
+@testable import WeatherRPG
 import AdventureRPG
 
 @Suite("Photo shown over the map")
@@ -18,14 +19,16 @@ struct MapPhotoPresentationTests {
     private static let sessionId = UUID()
 
     private static func presentation(
-        photoId: UUID = UUID(),
+        itemId: UUID = UUID(),
+        module: NetworkModules = .photo,
         mapId: UUID = UUID(),
         mode: MapPhotoMode = .popover,
         sequence: Int,
         sessionId: UUID = sessionId
     ) -> MapPhotoPresentation {
         MapPhotoPresentation(
-            photoId: photoId,
+            itemId: itemId,
+            module: module,
             mapId: mapId,
             anchor: CGPoint(x: 10, y: 20),
             mode: mode,
@@ -125,7 +128,7 @@ struct MapPhotoPresentationTests {
     func payloadRoundTrip() throws {
         let photo = Self.presentation(mode: .fullScreen, sequence: 3)
         let data = photo.networkData
-        #expect(data.id == photo.photoId)
+        #expect(data.id == photo.itemId)
         #expect(data.type == .photo)
         #expect(try #require(MapPhotoPresentation.decodeData(of: data.data)) == photo)
     }
@@ -199,12 +202,12 @@ struct MapPhotoPresentationTests {
         let fixture = try await Self.playerFixture()
         let player = fixture.env.playerController
         let popover = fixture.env.root.mapRoot.photoPopover
-        let shown = Self.presentation(photoId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
+        let shown = Self.presentation(itemId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
 
         try await Self.send(shown, counter: 1, to: fixture)
         try await Self.reveal(counter: 2, to: fixture)
         #expect(player.gameModel.gameUpdateType == .map)
-        #expect(popover.photo == MapPhotoPopoverItem(photoId: fixture.photoId, mapId: fixture.mapId, anchor: shown.anchor))
+        #expect(popover.photo == MapPhotoPopoverItem(itemId: fixture.photoId, mapId: fixture.mapId, anchor: shown.anchor))
 
         try await Self.send(shown.changed(to: .fullScreen, sequence: 2), counter: 3, to: fixture)
         #expect(player.gameModel.gameUpdateType == .photo)
@@ -221,7 +224,7 @@ struct MapPhotoPresentationTests {
         let fixture = try await Self.playerFixture()
         let player = fixture.env.playerController
         let popover = fixture.env.root.mapRoot.photoPopover
-        let shown = Self.presentation(photoId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
+        let shown = Self.presentation(itemId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
         try await Self.send(shown, counter: 1, to: fixture)
         try await Self.reveal(counter: 2, to: fixture)
 
@@ -246,7 +249,7 @@ struct MapPhotoPresentationTests {
         #expect(fixture.env.playerController.gameModel.gameUpdateType == .photo)
         #expect(fixture.env.root.mapRoot.photoPopover.photo == nil)
 
-        let otherMap = Self.presentation(photoId: fixture.photoId, mapId: UUID(), sequence: 1)
+        let otherMap = Self.presentation(itemId: fixture.photoId, mapId: UUID(), sequence: 1)
         fixture.env.playerController.gameModel.setGameUpdateType(.map)
         try await Self.send(otherMap, counter: 2, to: fixture)
         try await Self.reveal(counter: 3, to: fixture)
@@ -259,13 +262,15 @@ struct MapPhotoPresentationTests {
     func otherPresentationClosesMapPhoto() async throws {
         let fixture = try await Self.playerFixture()
         let player = fixture.env.playerController
-        let shown = Self.presentation(photoId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
+        let shown = Self.presentation(itemId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
         try await Self.send(shown, counter: 1, to: fixture)
         try await Self.reveal(counter: 2, to: fixture)
 
         player.noteMasterPresentation(type: .update, module: .map, itemId: fixture.mapId)
         #expect(fixture.env.root.mapRoot.photoPopover.photo != nil)
         player.noteMasterPresentation(type: .update, module: .photo, itemId: UUID())
+        #expect(fixture.env.root.mapRoot.photoPopover.photo != nil)
+        player.noteMasterPresentation(type: .update, module: .weather, itemId: UUID())
         #expect(fixture.env.root.mapRoot.photoPopover.photo != nil)
 
         player.noteMasterPresentation(type: .reveal, module: .pdf, itemId: UUID())
@@ -280,7 +285,7 @@ struct MapPhotoPresentationTests {
         let popover = fixture.env.root.mapRoot.photoPopover
         let sentBefore = fixture.env.playerNetworkSpy.requestHistory.count
         let pin = MapPhotoPopoverItem(
-            photoId: fixture.photoId,
+            itemId: fixture.photoId,
             mapId: fixture.mapId,
             anchor: CGPoint(x: 30, y: 40),
             title: "Goblin"
@@ -299,6 +304,94 @@ struct MapPhotoPresentationTests {
         #expect(fixture.env.playerNetworkSpy.requestHistory.count == sentBefore)
     }
 
+    // MARK: - Weather
+
+    private static func weatherData(in fixture: PlayerFixture, name: String) async throws -> NetworkCodableDataType {
+        let weatherRoot = fixture.env.root.weatherRoot
+        let weatherId = await weatherRoot.itemController.addNew(type: .scenario)
+        weatherRoot.editController.reset(name: name, itemId: weatherId)
+        return try await weatherRoot.weatherGameControllable.createWeatherGameData(for: weatherId)
+    }
+
+    @Test("A weather the game master shows over the map opens in the popover with its name; full screen shows the weather")
+    func playerWeatherOnMap() async throws {
+        let fixture = try await Self.playerFixture()
+        let player = fixture.env.playerController
+        let popover = fixture.env.root.mapRoot.photoPopover
+        let weather = try await Self.weatherData(in: fixture, name: "Storm front")
+        let shown = Self.presentation(itemId: weather.id, module: .weather, mapId: fixture.mapId, sequence: 1)
+        var titled = shown
+        titled.title = "Storm front"
+
+        try await Self.send(titled, counter: 1, to: fixture)
+        _ = try await player.handle(GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            gameConfig: fixture.masterConfig,
+            data: weather
+        ))
+        #expect(player.gameModel.gameUpdateType == .map)
+        #expect(popover.photo == MapPhotoPopoverItem(
+            itemId: weather.id,
+            module: .weather,
+            mapId: fixture.mapId,
+            anchor: titled.anchor,
+            title: "Storm front"
+        ))
+
+        let windowRequests = player.gameModel.weatherWindowRequest
+        try await Self.send(titled.changed(to: .fullScreen, sequence: 2), counter: 3, to: fixture)
+        #expect(player.gameModel.gameUpdateType == .weather)
+        #expect(popover.photo == nil)
+        // visionOS opens the weather window for it.
+        #expect(player.gameModel.weatherWindowRequest == windowRequests + 1)
+
+        // A player's own Show on Map stays on this device.
+        player.requestMapPhotoMode(.popover)
+        #expect(player.gameModel.gameUpdateType == .map)
+        #expect(popover.photo?.module == .weather)
+
+        try await Self.send(titled.changed(to: .closed, sequence: 3), counter: 4, to: fixture)
+        #expect(player.gameModel.gameUpdateType == .map)
+        #expect(popover.photo == nil)
+    }
+
+    @Test("Without a presentation a weather is shown full screen as before")
+    func weatherWithoutMapPresentation() async throws {
+        let fixture = try await Self.playerFixture()
+        let weather = try await Self.weatherData(in: fixture, name: "Fog")
+        _ = try await fixture.env.playerController.handle(GameNetworkModel(
+            counter: 1,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            gameConfig: fixture.masterConfig,
+            data: weather
+        ))
+        #expect(fixture.env.playerController.gameModel.gameUpdateType == .weather)
+        #expect(fixture.env.playerController.gameModel.weatherWindowRequest == 1)
+        #expect(fixture.env.root.mapRoot.photoPopover.photo == nil)
+    }
+
+    @Test("The game master presents a weather on the map with the weather's name")
+    func masterPresentsWeatherOverMap() async throws {
+        let fixture = try await Self.playerFixture()
+        let root = fixture.env.root
+        root.gameModel.playerController = fixture.env.playerController
+        let master = MasterController(root: root, asProxy: false)
+        let weather = try await Self.weatherData(in: fixture, name: "Storm front")
+
+        let presentation = try #require(master.newMapPhotoPresentation(for: .weather, itemId: weather.id))
+        #expect(presentation.module == .weather)
+        #expect(presentation.title == "Storm front")
+        #expect(presentation.mode == .popover)
+        #expect(presentation.networkData.type == .weather)
+        // Other modules are never shown on the map.
+        #expect(master.newMapPhotoPresentation(for: .pdf, itemId: UUID()) == nil)
+    }
+
     // MARK: - Master
 
     @Test("The game master presents a photo on the map only while the map is on screen")
@@ -308,16 +401,16 @@ struct MapPhotoPresentationTests {
         root.gameModel.playerController = fixture.env.playerController
         let master = MasterController(root: root, asProxy: false)
 
-        let presentation = try #require(master.newMapPhotoPresentation(for: fixture.photoId))
+        let presentation = try #require(master.newMapPhotoPresentation(for: .photo, itemId: fixture.photoId))
         #expect(presentation.mapId == fixture.mapId)
         #expect(presentation.mode == .popover)
         // No room opened: the map's center (1200 × 800 by default).
         #expect(presentation.anchor == CGPoint(x: 600, y: 400))
-        let next = try #require(master.newMapPhotoPresentation(for: fixture.photoId))
+        let next = try #require(master.newMapPhotoPresentation(for: .photo, itemId: fixture.photoId))
         #expect(next.sequence > presentation.sequence)
 
         fixture.env.playerController.gameModel.setGameUpdateType(.pdf)
-        #expect(master.newMapPhotoPresentation(for: fixture.photoId) == nil)
+        #expect(master.newMapPhotoPresentation(for: .photo, itemId: fixture.photoId) == nil)
     }
 
     @Test("The game master's pin photo goes full screen for everyone only for a pin the players see")
@@ -330,7 +423,7 @@ struct MapPhotoPresentationTests {
         root.gameModel.playerController = masterPlayer
         root.gameModel.masterController = MasterController(root: root, asProxy: false)
         masterPlayer.gameModel.setGameUpdateType(.map)
-        let pin = MapPhotoPopoverItem(photoId: fixture.photoId, mapId: fixture.mapId, anchor: .zero, title: "Goblin")
+        let pin = MapPhotoPopoverItem(itemId: fixture.photoId, mapId: fixture.mapId, anchor: .zero, title: "Goblin")
 
         // A hidden pin: only on the game master's device, and its changes stay there.
         root.mapRoot.photoPopover.actions?.showPhotoFullScreen(pin, false)
@@ -396,7 +489,7 @@ struct MapPhotoPresentationTests {
             type: .update,
             subType: .photoPresentation,
             gameConfig: playerConfig,
-            data: Self.presentation(photoId: fixture.photoId, sequence: 1).networkData
+            data: Self.presentation(itemId: fixture.photoId, sequence: 1).networkData
         ))
         #expect(result == nil)
     }

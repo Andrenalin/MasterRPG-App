@@ -11,6 +11,7 @@ import Testing
 @testable import GameRPG
 @testable import MapRPG
 @testable import PhotoRPG
+@testable import WeatherRPG
 
 @Suite("Map master message flow", .serialized)
 @MainActor
@@ -972,7 +973,7 @@ struct MapMasterMessageFlowTests {
         let photoReference = await fixture.root.photoRoot.gameControllable.share(id: backgroundPhotoId)
         await fixture.master.show(for: photoReference)
         #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
-        #expect(fixture.root.mapRoot.photoPopover.photo?.photoId == backgroundPhotoId)
+        #expect(fixture.root.mapRoot.photoPopover.photo?.itemId == backgroundPhotoId)
         localMasterPlayer.requestMapPhotoMode(.fullScreen)
         #expect(localMasterPlayer.gameModel.gameUpdateType == .photo)
 
@@ -989,6 +990,24 @@ struct MapMasterMessageFlowTests {
         // Showing the Map again closes the photo on it.
         #expect(fixture.root.mapRoot.photoPopover.photo == nil)
         #expect(localMasterPlayer.gameModel.mapPhoto.presentation == nil)
+    }
+
+    @Test("A weather the game master shows without a map is shown full screen on the master's own screen")
+    func weatherWithoutMapOnLocalMaster() async throws {
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let localMasterPlayer = PlayerController(root: fixture.root, asGameMaster: true)
+        fixture.root.gameModel.playerController = localMasterPlayer
+        let photoId = try #require(fixture.root.mapRoot.gameController.gameItem(for: fixture.currentMapId).photoId)
+        let weatherId = await fixture.root.weatherRoot.itemController.addNew(type: .scenario)
+        fixture.root.weatherRoot.editController.reset(name: "Storm front", itemId: weatherId)
+        fixture.root.weatherRoot.editController.add(photoId: photoId, itemId: weatherId)
+
+        let reference = await fixture.root.weatherRoot.weatherGameControllable.shareWeather(id: weatherId)
+        await fixture.master.show(for: reference)
+
+        #expect(localMasterPlayer.gameModel.gameUpdateType == .weather)
+        #expect(fixture.root.weatherRoot.gameControllable.gameModel.currentItemId == weatherId)
+        #expect(fixture.root.mapRoot.photoPopover.photo == nil)
     }
 
     private static func insertCharacter(id: UUID, photoId: UUID, into root: GameRoot) {

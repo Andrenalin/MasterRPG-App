@@ -105,11 +105,21 @@ struct GameRootViewer: View {
         // A photo over the map that goes full screen: the presented photo may be the same as
         // before, so the switch itself opens the viewer.
         .onChange(of: playerController.gameModel.mapPhoto.fullScreenRequest) {
-            guard let photoId = playerController.gameModel.mapPhoto.presentation?.photoId,
+            guard let presentation = playerController.gameModel.mapPhoto.presentation,
+                  presentation.module == .photo,
                   playerController.gameModel.mapPhoto.mode == .fullScreen
             else { return }
-            root.photoRoot.imagePresentationModel.selectedItemId = photoId
+            root.photoRoot.imagePresentationModel.selectedItemId = presentation.itemId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
+        }
+        // A weather shown full screen also opens in the weather window: its photo in spatial
+        // 3D with the weather in front of it.
+        .onChange(of: playerController.gameModel.weatherWindowRequest) {
+            guard playerController.gameModel.gameUpdateType == .weather,
+                  let weatherId = root.weatherRoot.gameControllable.gameModel.currentItemId
+            else { return }
+            root.weatherRoot.showSpatialWeather(itemId: weatherId)
+            scenesManager.openWindow(SceneId.weatherSpaceViewer)
         }
         // Goes straight to the immersive space instead of routing through the
         // `otherViews` reveal panel (see the `.space` case below): that panel
@@ -198,16 +208,6 @@ struct GameRootViewer: View {
                         root: root.photoRoot,
                         trailingViewportReservation: mapTrailingViewportReservation
                     )
-                    .overlay(alignment: .bottom) {
-                        if playerController.gameModel.mapPhoto.mode == .fullScreen {
-                            MapPhotoFullScreenControls(
-                                onShowOnMap: { playerController.requestMapPhotoMode(.popover) },
-                                onClose: { playerController.requestMapPhotoMode(.closed) }
-                            )
-                            .padding()
-                            .padding(.trailing, mapTrailingViewportReservation)
-                        }
-                    }
                 case .space:
                     // visionOS opens the immersive space directly from the
                     // `.onChange` above instead of rendering anything here —
@@ -228,6 +228,24 @@ struct GameRootViewer: View {
             }
         }
         .id(currentViewId)
+        .overlay(alignment: .bottom) {
+            // A photo or weather the game master showed while the map was on screen, now full
+            // screen: back onto the map, or closed.
+            if showsMapItemControls {
+                MapPhotoFullScreenControls(
+                    onShowOnMap: { playerController.requestMapPhotoMode(.popover) },
+                    onClose: { playerController.requestMapPhotoMode(.closed) }
+                )
+                .padding()
+                .padding(.trailing, mapTrailingViewportReservation)
+            }
+        }
+    }
+
+    private var showsMapItemControls: Bool {
+        let mapPhoto = playerController.gameModel.mapPhoto
+        return mapPhoto.mode == .fullScreen
+            && mapPhoto.presentation?.module == playerController.gameModel.gameUpdateType
     }
     
     private static let defaultViewId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!

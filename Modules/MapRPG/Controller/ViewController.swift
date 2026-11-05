@@ -223,8 +223,7 @@ public extension ViewController {
             onDismiss: { popover.close() }
         ) {
             MapPhotoPopoverContent(
-                photoId: photo.photoId,
-                title: photo.title,
+                item: photo,
                 onShowFullScreen: { popover.showFullScreen() },
                 onClose: { popover.close() }
             )
@@ -249,8 +248,7 @@ public extension ViewController {
         let popover = root.photoPopover
         return MapPopoverAttachment(onDismiss: { popover.close() }) {
             MapPhotoPopoverContent(
-                photoId: photo.photoId,
-                title: photo.title,
+                item: photo,
                 onShowFullScreen: { popover.showFullScreen() },
                 onClose: { popover.close() }
             )

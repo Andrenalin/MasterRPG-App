@@ -5,49 +5,61 @@ import Foundation
 import MapRPG
 import os.log
 import PhotoRPG
+import SwiftUI
+import WeatherRPG
 
-// A photo the game master shows while a map is on screen: on the map in the pin photo popover,
-// full screen, or closed. The game master's `.update/.photoPresentation` names the photo, the
-// map, the anchor and the mode before the photo's reveal. Every viewer can switch the mode on
-// their own device; each change of the game master goes to everyone and wins.
+// A photo or a weather the game master shows while a map is on screen: on the map in the pin
+// photo popover, full screen, or closed. The game master's `.update/.photoPresentation` names the
+// item, the map, the anchor and the mode before the item's reveal. Every viewer can switch the
+// mode on their own device; each change of the game master goes to everyone and wins.
 //
 // | Mode       | `gameUpdateType` | `MapPhotoPopoverModel.photo` |
 // |------------|------------------|------------------------------|
 // | popover    | `.map`           | set                          |
-// | fullScreen | `.photo`         | nil                          |
+// | fullScreen | `.photo`/`.weather` | nil                        |
 // | closed     | `.map`           | nil                          |
 
 extension PlayerController {
-    /// Installs what the photo popovers' buttons do for the length of this game.
+    /// Installs what the photo popovers' buttons do, and how a weather is drawn in one, for the
+    /// length of this game.
     func installMapPhotoActions() {
-        root.mapRoot.photoPopover.actions = MapPhotoPopoverActions(
+        let popover = root.mapRoot.photoPopover
+        popover.actions = MapPhotoPopoverActions(
             showFullScreen: { [weak self] in self?.requestMapPhotoMode(.fullScreen) },
             close: { [weak self] in self?.requestMapPhotoMode(.closed) },
             showPhotoFullScreen: { [weak self] photo, isShared in
                 self?.showPhotoFullScreen(photo, isShared: isShared)
             }
         )
+        let weatherRoot = root.weatherRoot
+        popover.itemPicture = { item in
+            AnyView(weatherRoot.viewController.gamePopoverViewer(root: weatherRoot, itemId: item.itemId))
+        }
     }
 
     /// Removes the popover and its actions when the game ends.
     func uninstallMapPhotoActions() {
         root.mapRoot.photoPopover.actions = nil
+        root.mapRoot.photoPopover.itemPicture = nil
         root.mapRoot.photoPopover.photo = nil
         gameModel.mapPhoto.reset()
     }
 
-    /// The game master's `.update/.photoPresentation`. Applied at once when this device holds
-    /// the photo; a photo it does not hold yet waits for its reveal (see `presentPhoto(itemId:)`).
+    /// The game master's `.update/.photoPresentation`, for a photo or a weather. Applied at once
+    /// when this device holds the item; one it does not hold yet waits for its reveal (see
+    /// `presentOnMap(_:itemId:)`).
     func handleMapPhotoPresentation(_ model: GameNetworkModel) async {
         guard let presentation = MapPhotoPresentation.decodeData(of: model.data.data),
-              presentation.photoId == model.data.id
+              presentation.itemId == model.data.id,
+              presentation.module == model.data.type,
+              Self.mapItemModules.contains(presentation.module)
         else {
             Logger.networking.error("PlayerController: Invalid map photo presentation \(model.data.id, privacy: .public)")
             return
         }
         guard gameModel.mapPhoto.applyMaster(presentation) else { return }
-        if presentation.mode != .closed, !isCurrentPhoto(presentation.photoId) {
-            guard await root.photoRoot.gameControllable.setCurrent(itemId: presentation.photoId),
+        if presentation.mode != .closed, !isCurrent(presentation) {
+            guard await makeCurrent(presentation),
                   gameModel.mapPhoto.presentation == presentation
             else { return }
         }
@@ -59,7 +71,8 @@ extension PlayerController {
     func showPhotoFullScreen(_ photo: MapPhotoPopoverItem, isShared: Bool) {
         if isShared, gameModel.asGameMaster, let masterController = root.gameModel.masterController {
             let presentation = MapPhotoPresentation(
-                photoId: photo.photoId,
+                itemId: photo.itemId,
+                module: photo.module,
                 mapId: photo.mapId,
                 anchor: photo.anchor,
                 title: photo.title,
@@ -72,7 +85,8 @@ extension PlayerController {
             root.scheduleMapPhotoBroadcast(presentation)
         } else {
             gameModel.mapPhoto.presentLocal(MapPhotoPresentation(
-                photoId: photo.photoId,
+                itemId: photo.itemId,
+                module: photo.module,
                 mapId: photo.mapId,
                 anchor: photo.anchor,
                 title: photo.title,
@@ -85,7 +99,7 @@ extension PlayerController {
     }
 
     /// A viewer's change from the popover or the full-screen controls. On the game master's
-    /// device it goes to every player, unless the photo is one only the game master sees; on a
+    /// device it goes to every player, unless the item is one only the game master sees; on a
     /// player's or observer's device it stays local.
     func requestMapPhotoMode(_ mode: MapPhotoMode) {
         let state = gameModel.mapPhoto
@@ -116,25 +130,26 @@ extension PlayerController {
         case .popover:
             gameModel.setGameUpdateType(.map)
             root.mapRoot.photoPopover.photo = MapPhotoPopoverItem(
-                photoId: presentation.photoId,
+                itemId: presentation.itemId,
+                module: presentation.module,
                 mapId: presentation.mapId,
                 anchor: presentation.anchor,
                 title: presentation.title
             )
         case .fullScreen:
             root.mapRoot.photoPopover.photo = nil
-            if isCurrentPhoto(presentation.photoId) {
-                showFullScreen(photoId: presentation.photoId)
+            if isCurrent(presentation) {
+                showFullScreen(presentation)
             } else {
-                // The full-screen viewer shows the photo module's current photo: a pin's photo
+                // The full-screen viewer shows its module's current item: a pin's photo
                 // becomes current first.
                 Task { [weak self] in
                     guard let self,
-                          await root.photoRoot.gameControllable.setCurrent(itemId: presentation.photoId),
+                          await makeCurrent(presentation),
                           gameModel.mapPhoto.presentation == presentation,
                           gameModel.mapPhoto.mode == .fullScreen
                     else { return }
-                    showFullScreen(photoId: presentation.photoId)
+                    showFullScreen(presentation)
                 }
             }
         case .closed:
@@ -143,16 +158,20 @@ extension PlayerController {
         }
     }
 
-    private func showFullScreen(photoId: UUID) {
-        gameModel.setGameUpdateType(.photo)
-        root.photoRoot.photoGameControllable.presentPhoto(itemId: photoId)
+    private func showFullScreen(_ presentation: MapPhotoPresentation) {
+        if presentation.module == .weather {
+            gameModel.showWeather()
+        } else {
+            gameModel.setGameUpdateType(presentation.module)
+            root.photoRoot.photoGameControllable.presentPhoto(itemId: presentation.itemId)
+        }
     }
 
-    /// A photo revealed while its presentation waits shows the way the game master chose, as
+    /// An item revealed while its presentation waits shows the way the game master chose, as
     /// long as the map it belongs to is loaded. Returns `false` when there is none, and the
-    /// photo is shown full screen as before.
-    func presentPhotoOnMap(itemId: UUID) -> Bool {
-        guard let presentation = gameModel.mapPhoto.pending(for: itemId),
+    /// item is shown full screen as before.
+    func presentOnMap(_ module: NetworkModules, itemId: UUID) -> Bool {
+        guard let presentation = gameModel.mapPhoto.pending(for: module, itemId: itemId),
               root.mapRoot.gameControllable.gameModel.currentItemId == presentation.mapId
         else {
             clearMapPhoto()
@@ -162,19 +181,23 @@ extension PlayerController {
         return true
     }
 
-    /// Showing anything else closes the photo on the map: another module's item or a map, also
-    /// the same one again. Only a live map state of its map keeps it.
+    /// Showing anything else closes the item on the map: another module's item or a map, also
+    /// the same map again. A live map state of its map keeps it. A photo or a weather decides on
+    /// its reveal: `presentOnMap(_:itemId:)` keeps the presentation waiting for it and closes any
+    /// other.
     func noteMasterPresentation(type: RPGMessageType, module: NetworkModules, itemId: UUID) {
         guard let presentation = gameModel.mapPhoto.presentation else { return }
-        switch module {
-        case .photo:
+        if Self.mapItemModules.contains(module) {
             return
-        case .map where type == .update && itemId == presentation.mapId:
-            return
-        default:
-            clearMapPhoto()
         }
+        if module == .map, type == .update, itemId == presentation.mapId {
+            return
+        }
+        clearMapPhoto()
     }
+
+    /// The modules a presentation over the map can show.
+    static let mapItemModules: Set<NetworkModules> = [.photo, .weather]
 
     private func clearMapPhoto() {
         guard gameModel.mapPhoto.presentation != nil else { return }
@@ -182,7 +205,15 @@ extension PlayerController {
         root.mapRoot.photoPopover.photo = nil
     }
 
-    private func isCurrentPhoto(_ photoId: UUID) -> Bool {
-        root.photoRoot.gameControllable.gameModel.currentItemId == photoId
+    private func gameControllable(for module: NetworkModules) -> any GameControllable {
+        module == .weather ? root.weatherRoot.gameControllable : root.photoRoot.gameControllable
+    }
+
+    private func isCurrent(_ presentation: MapPhotoPresentation) -> Bool {
+        gameControllable(for: presentation.module).gameModel.currentItemId == presentation.itemId
+    }
+
+    private func makeCurrent(_ presentation: MapPhotoPresentation) async -> Bool {
+        await gameControllable(for: presentation.module).setCurrent(itemId: presentation.itemId)
     }
 }

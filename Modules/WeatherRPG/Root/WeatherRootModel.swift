@@ -140,6 +140,10 @@ public final class WeatherRootModel {
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
+#if os(visionOS)
+    /// The weather the visionOS weather window shows.
+    @ObservationIgnored public let weatherSpaceModel = WeatherSpaceModel()
+#endif
 }
 
 @MainActor

@@ -3,12 +3,12 @@
 import CoreRPG
 import Foundation
 
-// A photo shown while a map is on screen opens on the map, in the pin photo popover, pointing at
-// the room the game master opened last (or the map's center). From there every viewer can switch
+// A photo or a weather shown while a map is on screen opens on the map, in the pin photo popover,
+// pointing at the room the game master opened last (or the map's center). From there every viewer can switch
 // it to full screen or close it on their own device. Each change the game master makes is sent
 // to everyone and wins over what a player or observer chose locally.
 
-/// How a photo shown over a map is presented.
+/// How a photo or a weather shown over a map is presented.
 enum MapPhotoMode: Int, Codable, Sendable, CaseIterable {
     /// In a popover on the map, pointing at `MapPhotoPresentation.anchor`.
     case popover
@@ -18,14 +18,17 @@ enum MapPhotoMode: Int, Codable, Sendable, CaseIterable {
     case closed
 }
 
-/// The game master's presentation of a photo over a map: the payload of
-/// `.update/.photoPresentation`.
+/// The game master's presentation of a photo or a weather over a map: the payload of
+/// `.update/.photoPresentation` (the wire name predates weather).
 struct MapPhotoPresentation: Codable, Sendable, Equatable, MessageMapper {
-    let photoId: UUID
+    /// The photo's or the weather's id.
+    let itemId: UUID
+    /// `.photo` or `.weather`.
+    var module: NetworkModules = .photo
     let mapId: UUID
     /// Where the popover points, in the map's canvas coordinates.
     let anchor: CGPoint
-    /// The caption, such as a pin's name. `nil` uses the photo's name.
+    /// The caption, such as a pin's or the weather's name. `nil` uses the photo's name.
     var title: String? = nil
     var mode: MapPhotoMode
     /// Orders the game master's changes. Only a newer one applies.
@@ -43,7 +46,7 @@ struct MapPhotoPresentation: Codable, Sendable, Equatable, MessageMapper {
 
     /// The `.photoPresentation` message's data.
     var networkData: NetworkCodableDataType {
-        NetworkCodableDataType(id: photoId, type: .photo, version: 0, data: encodeData())
+        NetworkCodableDataType(id: itemId, type: module, version: 0, data: encodeData())
     }
 }
 
@@ -113,11 +116,16 @@ struct MapPhotoPresentationState: Equatable, Sendable {
         return true
     }
 
-    /// The presentation waiting for its photo: the game master's message names the photo before
+    /// The presentation waiting for its item: the game master's message names the item before
     /// its reveal arrives.
-    func pending(for photoId: UUID) -> MapPhotoPresentation? {
-        guard let presentation, presentation.photoId == photoId else { return nil }
+    func pending(for module: NetworkModules, itemId: UUID) -> MapPhotoPresentation? {
+        guard let presentation, presentation.module == module, presentation.itemId == itemId else { return nil }
         return presentation
+    }
+
+    /// Whether the presentation shows this item.
+    func presents(_ module: NetworkModules, itemId: UUID) -> Bool {
+        pending(for: module, itemId: itemId) != nil
     }
 
     /// Closes the presentation: a photo shown without a map, or another item shown. Keeps the

@@ -98,7 +98,7 @@ struct MapPhotoAnchorTests {
     func popoverBelongsToItsMap() {
         let model = MapPhotoPopoverModel()
         let mapId = UUID()
-        let photo = MapPhotoPopoverItem(photoId: UUID(), mapId: mapId, anchor: .zero)
+        let photo = MapPhotoPopoverItem(itemId: UUID(), mapId: mapId, anchor: .zero)
         model.photo = photo
         #expect(model.photo(on: mapId) == photo)
         #expect(model.photo(on: UUID()) == nil)

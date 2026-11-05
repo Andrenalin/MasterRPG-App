@@ -305,6 +305,16 @@ final class PlayerControllerModel {
         gameUpdateType = type
     }
 
+    /// Counts every time a weather is shown full screen. visionOS opens the weather window on
+    /// each, also for the same weather again.
+    private(set) var weatherWindowRequest = 0
+
+    /// Shows the current weather full screen.
+    func showWeather() {
+        gameUpdateType = .weather
+        weatherWindowRequest &+= 1
+    }
+
     /// A live update of a map (its state or battle round) brings it to the front, unless a photo
     /// over that map is full screen: the photo's own buttons decide when the map returns. A
     /// reveal of a map is not a live update and closes the photo instead.

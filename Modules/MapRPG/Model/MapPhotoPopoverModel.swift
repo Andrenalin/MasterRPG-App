@@ -1,19 +1,25 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Observation
+import SwiftUI
 
-/// A photo shown on the game map, in the photo popover.
+/// A photo or a weather shown on the game map, in the photo popover.
 public struct MapPhotoPopoverItem: Equatable, Sendable {
-    public let photoId: UUID
+    /// The photo's or the weather's id.
+    public let itemId: UUID
+    /// `.photo` or `.weather`.
+    public let module: NetworkModules
     public let mapId: UUID
     /// Where the popover points, in the map's canvas coordinates.
     public let anchor: CGPoint
-    /// The caption, such as a pin's name. `nil` uses the photo's name.
+    /// The caption, such as a pin's or the weather's name. `nil` uses the photo's name.
     public let title: String?
 
-    public init(photoId: UUID, mapId: UUID, anchor: CGPoint, title: String? = nil) {
-        self.photoId = photoId
+    public init(itemId: UUID, module: NetworkModules = .photo, mapId: UUID, anchor: CGPoint, title: String? = nil) {
+        self.itemId = itemId
+        self.module = module
         self.mapId = mapId
         self.anchor = anchor
         self.title = title
@@ -51,6 +57,9 @@ public final class MapPhotoPopoverModel {
     public var photo: MapPhotoPopoverItem?
     /// Installed by GameRPG for the length of a game. Holds no view.
     @ObservationIgnored public var actions: MapPhotoPopoverActions?
+    /// Draws the picture of an item MapRPG cannot draw itself, such as a weather. Installed by
+    /// GameRPG, which knows the module; type-erased because MapRPG does not depend on it.
+    @ObservationIgnored public var itemPicture: (@MainActor (MapPhotoPopoverItem) -> AnyView)?
 
     public init() {}
 
@@ -82,7 +91,8 @@ public final class MapPhotoPopoverModel {
         guard let photoId = pin.photoId else { return }
         actions?.showPhotoFullScreen(
             MapPhotoPopoverItem(
-                photoId: photoId,
+                itemId: photoId,
+                module: .photo,
                 mapId: mapId,
                 anchor: pin.location,
                 title: pin.name.isEmpty ? nil : pin.name

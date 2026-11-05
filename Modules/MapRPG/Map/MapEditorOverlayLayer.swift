@@ -251,8 +251,7 @@ private struct MapPhotoViewportLayer: View {
                 onDismiss: { popover.close() }
             ) {
                 MapPhotoPopoverContent(
-                    photoId: photo.photoId,
-                    title: photo.title,
+                    item: photo,
                     onShowFullScreen: { popover.showFullScreen() },
                     onClose: { popover.close() }
                 )
@@ -262,7 +261,7 @@ private struct MapPhotoViewportLayer: View {
                 height: containerSize.height,
                 alignment: .topLeading
             )
-            .id(photo.photoId)
+            .id(photo.itemId)
             .transition(.opacity)
             .zIndex(11)
         }

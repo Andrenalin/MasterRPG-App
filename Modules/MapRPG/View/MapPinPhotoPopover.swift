@@ -49,56 +49,63 @@ struct MapPinPhotoPopoverContent: View {
     var onShowFullScreen: (() -> Void)?
     let onClose: () -> Void
 
+    @Environment(MapRootModel.self) private var root
+
     var body: some View {
         MapPhotoPanel(
-            photoId: pin.photoId,
-            color: pin.color,
             title: pin.name,
-            accessibilityLabel: Text("Photo of \(pin.name)", bundle: .module),
             onShowFullScreen: pin.photoId == nil ? nil : onShowFullScreen,
             onClose: onClose
-        )
+        ) {
+            MapPhotoPanelImage(
+                root: root,
+                photoId: pin.photoId,
+                color: pin.color,
+                accessibilityLabel: Text("Photo of \(pin.name)", bundle: .module)
+            )
+        }
     }
 }
 
-/// A photo the game master shows on the map, in the photo popover: the photo with its name,
-/// Close and Full Screen.
+/// A photo or a weather the game master shows on the map, in the photo popover: the picture
+/// with its name, Close and Full Screen.
 struct MapPhotoPopoverContent: View {
-    let photoId: UUID
-    /// The caption, such as a pin's name. `nil` uses the photo's name.
-    var title: String?
+    let item: MapPhotoPopoverItem
     let onShowFullScreen: () -> Void
     let onClose: () -> Void
 
     @Environment(MapRootModel.self) private var root
 
     var body: some View {
-        let name = title ?? root.photoRoot.itemControllable.nameSync(itemId: photoId)
-        MapPhotoPanel(
-            photoId: photoId,
-            color: .accentColor,
-            title: name,
-            accessibilityLabel: name.isEmpty
-                ? Text("Photo", bundle: .module)
-                : Text("Photo of \(name)", bundle: .module),
-            onShowFullScreen: onShowFullScreen,
-            onClose: onClose
-        )
+        let name = item.title ?? (item.module == .photo
+            ? root.photoRoot.itemControllable.nameSync(itemId: item.itemId)
+            : "")
+        MapPhotoPanel(title: name, onShowFullScreen: onShowFullScreen, onClose: onClose) {
+            if item.module == .photo {
+                MapPhotoPanelImage(
+                    root: root,
+                    photoId: item.itemId,
+                    color: .accentColor,
+                    accessibilityLabel: name.isEmpty
+                        ? Text("Photo", bundle: .module)
+                        : Text("Photo of \(name)", bundle: .module)
+                )
+            } else if let picture = root.photoPopover.itemPicture {
+                picture(item)
+                    .accessibilityLabel(Text(verbatim: name))
+            } else {
+                Color.secondary
+            }
+        }
     }
 }
 
-/// A big picture of a photo in a popover panel. Its controls stand on the picture: Close at the
-/// bottom leading corner, the name at the bottom center, Full Screen at the bottom trailing
-/// corner.
-struct MapPhotoPanel: View {
+/// A photo as the picture of a popover panel.
+struct MapPhotoPanelImage: View {
+    let root: MapRootModel
     let photoId: UUID?
     let color: Color
-    let title: String
     let accessibilityLabel: Text
-    let onShowFullScreen: (() -> Void)?
-    let onClose: () -> Void
-
-    @Environment(MapRootModel.self) private var root
 
     var body: some View {
         // `AsyncThumbnail` switches to the full-size photo cache for a presentation this
@@ -110,21 +117,35 @@ struct MapPhotoPanel: View {
             size: CGSize(width: MapPinPhotoSharing.photoSide, height: MapPinPhotoSharing.photoSide),
             color: color
         )
-        .frame(
-            width: MapPinPhotoSharing.photoSide,
-            height: MapPinPhotoSharing.photoSide,
-            alignment: .top
-        )
         .accessibilityLabel(accessibilityLabel)
-        .overlay(alignment: .bottom) {
-            MapPhotoPanelControls(
-                title: title,
-                onShowFullScreen: onShowFullScreen,
-                onClose: onClose
+    }
+}
+
+/// A big square picture in a popover panel. Its controls stand on the picture: Close at the
+/// bottom leading corner, the name at the bottom center, Full Screen at the bottom trailing
+/// corner.
+struct MapPhotoPanel<Picture: View>: View {
+    let title: String
+    let onShowFullScreen: (() -> Void)?
+    let onClose: () -> Void
+    @ViewBuilder let picture: Picture
+
+    var body: some View {
+        picture
+            .frame(
+                width: MapPinPhotoSharing.photoSide,
+                height: MapPinPhotoSharing.photoSide,
+                alignment: .top
             )
-        }
-        .clipShape(.rect(cornerRadius: MapPopoverGeometry.cornerRadius - MapPopoverLayout.contentInset))
-        .padding(MapPopoverLayout.contentInset)
+            .overlay(alignment: .bottom) {
+                MapPhotoPanelControls(
+                    title: title,
+                    onShowFullScreen: onShowFullScreen,
+                    onClose: onClose
+                )
+            }
+            .clipShape(.rect(cornerRadius: MapPopoverGeometry.cornerRadius - MapPopoverLayout.contentInset))
+            .padding(MapPopoverLayout.contentInset)
     }
 }
 
@@ -270,7 +291,11 @@ private struct MapPhotoGlass<S: Shape>: ViewModifier {
 }
 
 #Preview("Map Photo Popover", traits: .mockData) {
-    MapPhotoPopoverContent(photoId: UUID(), title: "Throne Room", onShowFullScreen: {}, onClose: {})
+    MapPhotoPopoverContent(
+        item: MapPhotoPopoverItem(itemId: UUID(), mapId: UUID(), anchor: .zero, title: "Throne Room"),
+        onShowFullScreen: {},
+        onClose: {}
+    )
         .background(.regularMaterial, in: .rect(cornerRadius: MapPopoverGeometry.cornerRadius))
         .padding()
         .background(Color.blue.gradient)

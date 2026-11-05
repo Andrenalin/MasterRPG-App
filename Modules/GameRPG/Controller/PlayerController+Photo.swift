@@ -76,7 +76,7 @@ extension PlayerController {
     /// the map was on screen opens on the map instead (see `PlayerController+MapPhoto.swift`).
     /// A `.store` only caches its photo and never comes here.
     func presentPhoto(itemId: UUID) {
-        guard !presentPhotoOnMap(itemId: itemId) else { return }
+        guard !presentOnMap(.photo, itemId: itemId) else { return }
         gameModel.setGameUpdateType(.photo)
         root.photoRoot.photoGameControllable.presentPhoto(itemId: itemId)
     }

@@ -46,7 +46,7 @@ extension MasterController {
         }
         recordMasterVersion(of: reference)
 
-        if reference.type == .photo, let presentation = newMapPhotoPresentation(for: reference.id) {
+        if let presentation = newMapPhotoPresentation(for: reference.type, itemId: reference.id) {
             // Before the reveal: a player shows the photo on the map as soon as it arrives.
             await broadcastMapPhoto(presentation)
         }
