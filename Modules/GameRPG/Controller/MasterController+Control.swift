@@ -54,6 +54,7 @@ extension MasterController {
         await root.adventureRoot.adventureGameControllable.resetGame()
         root.gameModel.gameRoster.players = []
         root.gameModel.gameControl.controls = []
+        root.gameModel.tablePlayers = []
     }
 
     /// Serializing entry point — see `resetPlayersTask`'s doc comment. Every
@@ -91,7 +92,19 @@ extension MasterController {
         }
         root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
         if !asProxy {
-            root.mapRoot.mapGameControllable.resetPlayerPins(for: gameRoster.players.filter { $0.type != .observer })
+            // The connected players plus the game master's table players; a table player whose
+            // Character a connected player plays waits until that player leaves.
+            let valueGameControllable = root.characterRoot.valueGameControllable
+            let pinPlayers = TablePlayerResolver.pinPlayers(
+                roster: gameRoster.players,
+                tablePlayers: root.gameModel.tablePlayers,
+                name: { valueGameControllable.playerPinName(for: $0) }
+            )
+            root.mapRoot.mapGameControllable.resetPlayerPins(for: pinPlayers)
+            if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
+                // A pin added while a map is shown stands in its first room, not at (0, 0).
+                root.mapRoot.mapGameControllable.synchronizePlayerPins(for: mapId)
+            }
             #if !os(tvOS)
             root.gameModel.gameTableModel?.syncPawnsWithMapPins()
             #endif

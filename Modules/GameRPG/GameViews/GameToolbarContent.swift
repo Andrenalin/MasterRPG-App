@@ -50,6 +50,10 @@ struct GameToolbarContent: ToolbarContent {
                 .allowsHitTesting(false)
             }
 
+            if role == .master {
+                TablePlayersButton(root: root)
+            }
+
             if role == .player {
                 PlayerBattleRoundToolbarStatus(
                     model: root.mapRoot.mapGameControllable.battleRoundModel

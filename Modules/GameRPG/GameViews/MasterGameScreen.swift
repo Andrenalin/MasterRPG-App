@@ -109,7 +109,7 @@ struct MasterGameScreen: View {
             playerController: nil,
             isMaster: true
         ) {
-            MasterSideMenu(adventureId: adventureId)
+            MasterSideMenu(root: root, adventureId: adventureId)
         }
 #endif
     }

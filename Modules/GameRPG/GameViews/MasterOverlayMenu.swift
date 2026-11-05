@@ -24,7 +24,7 @@ struct MasterOverlayMenu: View {
         } moduleMenuOverlay: {
 #if os(macOS)
             if gameScreenModel.isSideMenuVisible {
-                MasterSideMenu(adventureId: adventureId)
+                MasterSideMenu(root: root, adventureId: adventureId)
                     .offset(x: gameScreenModel.isInlineSidebarVisible ? -gameScreenModel.inlineMainOverlayWidth : 0)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                     .animation(.default, value: gameScreenModel.inlineMainOverlayWidth)

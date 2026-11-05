@@ -30,7 +30,8 @@ extension DataController: CoreDataSnapshotPersistable {
             diceId: model.diceId,
             entries: CRDTDataUpdate(wrappedValue: map(model.entriesModel), update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
             parentId: model.parentId,
-            groupId: model.groupId
+            groupId: model.groupId,
+            tablePlayers: model.tablePlayers.map { CRDT(string: $0, defaultValue: []) } ?? AdventureModel.noTablePlayers
         )
     }
 
@@ -56,6 +57,9 @@ extension DataController: CoreDataSnapshotPersistable {
         }
         model.parentId <=> snapshot.parentId
         model.groupId <=> snapshot.groupId
+        // An adventure without table players keeps the attribute nil, as before the field existed.
+        let tablePlayers: String? = snapshot.tablePlayers.wrappedValue.isEmpty && model.tablePlayers == nil ? nil : snapshot.tablePlayers.rawValue
+        model.tablePlayers <=> tablePlayers
     }
 
 

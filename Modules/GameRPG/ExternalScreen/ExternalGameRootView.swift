@@ -1,10 +1,13 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 import MapRPG
 
 public struct ExternalGameRootView: View {
     let root: GameRoot
+
+    @Environment(\.appTheme) private var theme
 
     public init(root: GameRoot) {
         self.root = root
@@ -18,7 +21,7 @@ public struct ExternalGameRootView: View {
                     .statusBarHidden()
                 #endif
             } else {
-                Color.blue
+                theme.backgroundGradient
                     .overlay {
                         Text("Game is not running", bundle: .module)
                             .foregroundStyle(.white)

@@ -120,6 +120,14 @@ extension LinkController: LinkControllable {
             }
         }
 
+        let validTablePlayers = replacedItem.tablePlayers.filter {
+            resolvedRootManager.characterRoot.linkControllable.validateLink(itemId: $0.characterId)
+        }
+        if validTablePlayers.count != replacedItem.tablePlayers.count {
+            Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .private) --> \(replacedItem.tablePlayers.count - validTablePlayers.count, privacy: .public) table player Characters are gone. Removed, no recovery possible.")
+            replacedItem.tablePlayers = validTablePlayers
+        }
+
         for entry in inspectedItem.entries {
             var validatedEntry = entry
 

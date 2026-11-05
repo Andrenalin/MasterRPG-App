@@ -36,8 +36,8 @@ struct IOSGameOverlayControlField: View {
             )
 
             if isMaster {
-                ControlSharingView(alignment: .bottom, embeddedInGlass: true) {}
-                    .zIndex(1)
+                // Also holds the per-player "send updates" switches the share button had.
+                TablePlayersButton(root: root)
             }
 
             GameJoinCodeRevealButton(

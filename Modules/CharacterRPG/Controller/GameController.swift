@@ -48,6 +48,8 @@ public protocol ValueGameStorable: Sendable {
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func imageIds(for id: UUID) -> [UUID]
     @MainActor func playerPinPhoto(for characterId: UUID) -> UUID?
+    /// The Character's name for a player pin, or `nil` when the Character no longer exists.
+    @MainActor func playerPinName(for characterId: UUID) -> String?
     /// Creates an independent, memory-only Character instance for one battle
     /// combatant. Reusing a monster template therefore never aliases the values
     /// of another monster placed from the same template.
@@ -198,6 +200,13 @@ extension GameController: ValueGameStorable {
     public func playerPinPhoto(for characterId: UUID) -> UUID? {
         guard let itemId = root.linkController.validate(id: characterId) else { return nil }
         return itemController.itemOrEmpty(for: itemId).photoId
+    }
+
+    @MainActor
+    public func playerPinName(for characterId: UUID) -> String? {
+        guard let itemId = root.linkController.validate(id: characterId),
+              let item = itemController.itemSync(for: itemId) else { return nil }
+        return item.name
     }
 
     @MainActor

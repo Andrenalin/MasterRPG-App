@@ -120,6 +120,36 @@ struct DataControllerTests {
         #expect(model.entries.count == 1)
         #expect(model.entries.first?.content == "photo://one, photo://two")
     }
+
+    @Test func tablePlayersPersistThroughCoreData() async throws {
+        let store = try PersistentTestStore(bundles: [
+            CoreRPG.Resources.bundle,
+            AdventureRPG.Resources.bundle
+        ])
+        let sut = DataController(context: store.context, token: NetworkModules.adventure.token)
+        let tablePlayers = [TablePlayerModel(characterId: UUID()), TablePlayerModel(characterId: UUID(), isEnabled: false)]
+        let without = AdventureModel(id: UUID(), name: "Journey")
+        let with = AdventureModel(id: UUID(), name: "Journey", tablePlayers: tablePlayers)
+
+        try sut.replaceSync(id: without.id, with: without)
+        try sut.replaceSync(id: with.id, with: with)
+        try await sut.save()
+
+        let fetchedWithout = try #require(try await sut.fetch(id: without.id) as? AdventureModel)
+        #expect(fetchedWithout.tablePlayers.isEmpty)
+        let fetchedWith = try #require(try await sut.fetch(id: with.id) as? AdventureModel)
+        #expect(fetchedWith.tablePlayers == tablePlayers)
+
+        let emptied = fetchedWith.copy()
+        emptied.tablePlayers = []
+        try await sut.replace(id: with.id, with: emptied)
+        try await sut.save()
+
+        let fetchedEmptied = try #require(try await sut.fetch(id: with.id) as? AdventureModel)
+        #expect(fetchedEmptied.tablePlayers.isEmpty)
+        // The emptied list keeps its clock, so it wins over the copy it replaced.
+        #expect(fetchedWith.merge(fetchedEmptied).tablePlayers.isEmpty)
+    }
 }
 
 private struct PersistentTestStore {

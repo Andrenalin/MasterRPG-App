@@ -389,6 +389,7 @@ extension GameRoot {
         guard generation == stopGeneration else { return }
         gameModel.playerController = PlayerController(root: self, asGameMaster: true)
         gameModel.masterController = MasterController(root: self, asProxy: false)
+        gameModel.tablePlayers = adventureRoot.adventureGameControllable.tablePlayers(for: id)
 
         gameModel.gameConfig.state = .started
         adventureRoot.startGame()
@@ -396,6 +397,10 @@ extension GameRoot {
         await beginStatisticsSession(for: .master, at: gameModel.startGameTime)
 
         await gameModel.masterController?.start()
+        if !gameModel.tablePlayers.isEmpty {
+            // The table players' pins wait for the first shown map like a joined player's.
+            await gameModel.masterController?.resetPlayers()
+        }
         await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: id))
         guard generation == stopGeneration else { return }
 #if !os(tvOS)

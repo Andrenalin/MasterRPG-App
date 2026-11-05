@@ -9,7 +9,7 @@ import Observation
 // the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
 @MainActor @Observable
 public final class AdventureModel: nonisolated Identifiable {
-    nonisolated init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, diceId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil, groupId: UUID? = nil) {
+    nonisolated init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .adventure, displayState: Int = 0, photoId: UUID? = nil, diceId: UUID? = nil, entries: [AdventureEntryModel] = [], parentId: UUID? = nil, groupId: UUID? = nil, tablePlayers: [TablePlayerModel] = []) {
         self.id = id
         _name_ = CRDT(wrappedValue: name)
         _description_ = CRDT(wrappedValue: description)
@@ -21,9 +21,10 @@ public final class AdventureModel: nonisolated Identifiable {
         _entries_ = CRDTDataUpdate(wrappedValue: entries)
         self._parentId = parentId
         self._groupId = groupId
+        _tablePlayers_ = tablePlayers.isEmpty ? Self.noTablePlayers : CRDT(wrappedValue: tablePlayers)
     }
 
-    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, diceId: UUID?, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?, groupId: UUID? = nil) {
+    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int = 0, photoId: CRDT<UUID?>, diceId: UUID?, entries: CRDTDataUpdate<[AdventureEntryModel]>, parentId: UUID?, groupId: UUID? = nil, tablePlayers: CRDT<[TablePlayerModel]> = AdventureModel.noTablePlayers) {
         self.id = id
         _name_ = name
         _description_ = description
@@ -35,6 +36,7 @@ public final class AdventureModel: nonisolated Identifiable {
         _entries_ = entries
         self._parentId = parentId
         self._groupId = groupId
+        _tablePlayers_ = tablePlayers
     }
 
     nonisolated public init(from decoder: Decoder) throws {
@@ -51,6 +53,8 @@ public final class AdventureModel: nonisolated Identifiable {
         self._entries_ = try container.decode(CRDTDataUpdate<[AdventureEntryModel]>.self, forKey: AdventureModel.CodingKeys._entries_)
         self._parentId = try container.decodeIfPresent(UUID.self, forKey: AdventureModel.CodingKeys._parentId)
         self._groupId = try container.decodeIfPresent(UUID.self, forKey: AdventureModel.CodingKeys._groupId)
+        // Absent in files written before table players existed.
+        self._tablePlayers_ = try container.decodeIfPresent(CRDT<[TablePlayerModel]>.self, forKey: AdventureModel.CodingKeys._tablePlayers_) ?? Self.noTablePlayers
     }
 
     // `let`: nonisolated access (Identifiable, hashing) per SE-0434.
@@ -98,6 +102,20 @@ public final class AdventureModel: nonisolated Identifiable {
     
     public var parentId: UUID? = nil
     public var groupId: UUID?
+
+    /// The Characters the game master puts at the table as players when a game for this
+    /// adventure runs. See `TablePlayerModel`.
+    public var tablePlayers: [TablePlayerModel] {
+        get { tablePlayers_.wrappedValue }
+        set { tablePlayers_.wrappedValue = newValue }
+    }
+    var tablePlayers_: CRDT<[TablePlayerModel]>
+
+    /// No table players, stamped at the epoch: a list that was never set (an older file, an
+    /// adventure saved before the field existed) must never win a merge over a real one.
+    nonisolated public static var noTablePlayers: CRDT<[TablePlayerModel]> {
+        CRDT(crdtValue: LWWRegister([], actorID: UUID().uuidString, timestamp: 0))
+    }
 }
 
 extension AdventureModel: nonisolated ItemLinkRegistrable {
@@ -116,6 +134,18 @@ extension AdventureModel: nonisolated ItemLinkRegistrable {
             }
             if let oldPhotoId = oldValue.photoId {
                 removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldPhotoId, typeId: .photo)))
+            }
+        }
+
+        if oldValue.tablePlayers.map(\.characterId) != tablePlayers.map(\.characterId) {
+            let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
+            let newCharacterIds = Set(tablePlayers.map(\.characterId))
+            let oldCharacterIds = Set(oldValue.tablePlayers.map(\.characterId))
+            for characterId in newCharacterIds.subtracting(oldCharacterIds) {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: characterId, typeId: .value)))
+            }
+            for characterId in oldCharacterIds.subtracting(newCharacterIds) {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: characterId, typeId: .value)))
             }
         }
 
@@ -174,7 +204,8 @@ extension AdventureModel: nonisolated ItemDiffComparable {
                 diceId: other.diceId,
                 entries: FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId),
                 parentId: other.parentId,
-                groupId: other.groupId
+                groupId: other.groupId,
+                tablePlayers: tablePlayers_.merged(other: other.tablePlayers_)
             )
 
         }
@@ -191,6 +222,7 @@ extension AdventureModel: nonisolated ItemDiffComparable {
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
             groupId == other.groupId &&
+            tablePlayers == other.tablePlayers &&
             // sanity checks
             entries.count == other.entries.count &&
             entries.enumerated().allSatisfy { index, entry in
@@ -217,14 +249,14 @@ extension AdventureModel: nonisolated ItemDuplicatable {
         return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             // Carries `diceId` too. See CODE_AUDIT_Folder §5.27.
-            return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil)
+            return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil, tablePlayers: tablePlayers)
     
         }
     }
 
     nonisolated func duplicateWithoutCopy() -> AdventureModel {
         return assumeMainActorIsolated {
-            AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId)
+            AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId, tablePlayers: tablePlayers)
         }
     }
 }
@@ -243,7 +275,7 @@ extension AdventureModel: nonisolated ItemDataAccessible {
     nonisolated public static let typeId: NetworkModules = .adventure
 
     public func copy() -> AdventureModel {
-        AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, diceId: diceId, entries: entries_, parentId: parentId, groupId: groupId)
+        AdventureModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, photoId: photoId_, diceId: diceId, entries: entries_, parentId: parentId, groupId: groupId, tablePlayers: tablePlayers_)
     }
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
@@ -282,6 +314,7 @@ extension AdventureModel: nonisolated ItemDataAccessible {
         entries_ <=> model.entries_
         parentId <=> model.parentId
         groupId <=> model.groupId
+        tablePlayers_ <=> model.tablePlayers_
         return true
     }
 
@@ -324,6 +357,7 @@ extension AdventureModel: nonisolated Codable {
         case _entries_
         case _parentId
         case _groupId
+        case _tablePlayers_
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
@@ -341,6 +375,7 @@ extension AdventureModel: nonisolated Codable {
             try container.encode(self._entries_, forKey: AdventureModel.CodingKeys._entries_)
             try container.encodeIfPresent(self._parentId, forKey: AdventureModel.CodingKeys._parentId)
             try container.encodeIfPresent(self._groupId, forKey: AdventureModel.CodingKeys._groupId)
+            try container.encode(self._tablePlayers_, forKey: AdventureModel.CodingKeys._tablePlayers_)
     
         }
     }

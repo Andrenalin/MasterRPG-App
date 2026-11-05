@@ -37,6 +37,11 @@ final class GameRootModel: Sendable {
     /// The names the dice overlay lists the guests' rolls under.
     var tableGuestNames: Set<String> { Set(tableGuests.values) }
 
+    /// The Characters the game master put at the table as players, loaded from the adventure
+    /// when the game starts. Master-only: they get player pins but are not in `gameRoster`, so
+    /// they never get dice, sharing controls or audio deliveries. See `TablePlayerResolver`.
+    var tablePlayers: [TablePlayerModel] = []
+
     var startGameTime = Date()
 
     var selectedCharacter: UUID?

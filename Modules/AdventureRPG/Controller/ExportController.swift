@@ -69,6 +69,12 @@ extension ExportController: ExportControllable {
                 photoIds.insert(photoId)
             }
 
+            // The Characters the game master puts at the table travel with the adventure.
+            for tablePlayer in item.tablePlayers
+            where resolvedRootManager.characterRoot.linkControllable.validateLink(itemId: tablePlayer.characterId) {
+                valueIds.insert(tablePlayer.characterId)
+            }
+
             if item.specialCategory {
                 return item.entries.compactMap { entryId in
                     itemController.itemSync(for: entryId.childId) != nil ? entryId.childId : nil

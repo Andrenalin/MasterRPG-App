@@ -19,6 +19,10 @@ public protocol AdventureStoreGameable: Sendable {
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func resetGame() async
     @MainActor func saveGame() -> ItemModuleIds
+    /// The Characters the game master put at the table for this adventure, from the library.
+    @MainActor func tablePlayers(for adventureId: UUID) -> [TablePlayerModel]
+    /// Saves the table players to the library, also while a game runs.
+    @MainActor func saveTablePlayers(_ tablePlayers: [TablePlayerModel], for adventureId: UUID)
 }
 
 struct GameController: Sendable {
@@ -87,5 +91,28 @@ extension GameController: AdventureStoreGameable {
     func saveGame() -> ItemModuleIds {
         // save only the map state, later we could save more states
         root.mapRoot.mapGameControllable.saveAll()
+    }
+
+    @MainActor
+    func tablePlayers(for adventureId: UUID) -> [TablePlayerModel] {
+        itemController.itemSync(for: adventureId, noGame: true)?.tablePlayers ?? []
+    }
+
+    /// Writes only the table players to the library and mirrors them into a loaded game copy:
+    /// a full save during the game would copy the library over the game copy's session changes.
+    @MainActor
+    func saveTablePlayers(_ tablePlayers: [TablePlayerModel], for adventureId: UUID) {
+        guard let library = itemController.itemSync(for: adventureId, noGame: true),
+              library.tablePlayers != tablePlayers else { return }
+        let updated = library.copy()
+        updated.tablePlayers = tablePlayers
+        let (added, removed) = updated.changedLinkRegisterModels(oldValue: library)
+        itemController.linkRegisterController.deregister(links: removed)
+        itemController.linkRegisterController.register(links: added)
+        itemController.replace(model: updated, isInsert: false, forceSave: true, syncGameMemory: false)
+        if let gameItem = itemController.itemDataModel.gameItemData[adventureId] as? AdventureModel,
+           gameItem.tablePlayers != tablePlayers {
+            gameItem.tablePlayers_ = updated.tablePlayers_
+        }
     }
 }

@@ -301,7 +301,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("MasterSideMenu")
     func snapshotMasterSideMenu() async throws {
         try await assertPreviewSnapshot("MasterSideMenu") {
-            GameRPG.MasterSideMenu(adventureId: GamePreviewData.adventureID)
+            GameRPG.MasterSideMenu(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
                 .environment(GameScreenModel())
         }
     }

@@ -74,7 +74,7 @@ public final class ListDisplayModel {
         }
     }
     
-    var imageHeight: CGFloat {
+    public var imageHeight: CGFloat {
         switch displayMode {
         case .compact: 64
         case .medium: 80
