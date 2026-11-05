@@ -299,8 +299,8 @@ public struct GameTableView: View {
             guard let game else { return }
             applyCurrentFocusedDiceRoll(to: game)
         }
-        // The players without a table have no dice of their own here: their shared rolls are
-        // shown at the guest seat. See `GameTableModel.applyGuestRolls(_:)`.
+        // The players without a table — the game master too, when not on Vision Pro — have no
+        // dice of their own here: their shared rolls are shown at the guest seat. See `GameTableModel.applyGuestRolls(_:)`.
         .onChange(of: guestRolls, initial: false) { _, rolls in
             game?.applyGuestRolls(rolls)
         }
@@ -468,10 +468,11 @@ public struct GameTableView: View {
         }
     }
 
-    /// The last shared roll of every player who is not on Vision Pro, as the dice overlay has
-    /// it, reduced to the dice the table has: d20 and d6.
+    /// The last shared roll of every player who is not on Vision Pro, the game master's
+    /// included, as the dice overlay has it, reduced to the dice the table has: d20 and d6.
     private var guestRolls: [TableGuestRoll] {
         let guestNames = root.gameModel.tableGuestNames
+        let masterName = root.gameModel.tableGuestMasterName
         return root.diceRoot.diceGameControllable.sharedPlayerDice
             .filter { guestNames.contains($0.name) }
             .map { dice in
@@ -481,7 +482,8 @@ public struct GameTableView: View {
                         guard let isD20 = TableSeatDice.isD20(sides: die.die.max),
                               let value = die.result.last else { return nil }
                         return .init(isD20: isD20, value: value)
-                    }
+                    },
+                    isGameMaster: dice.name == masterName
                 )
             }
     }

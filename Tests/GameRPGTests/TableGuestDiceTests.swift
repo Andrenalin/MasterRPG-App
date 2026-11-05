@@ -53,6 +53,21 @@ struct TableGuestDiceTests {
         ])
     }
 
+    @Test("The game master's roll keeps its mark on its group")
+    func masterGroup() {
+        let groups = TableGuestDice.groups(
+            for: [
+                TableGuestRoll(name: "Master", dice: [.init(isD20: true, value: 9)], isGameMaster: true),
+                TableGuestRoll(name: "Anna", dice: [.init(isD20: true, value: 12)])
+            ],
+            poolSize: 6
+        )
+
+        #expect(groups.map(\.name) == ["Anna", "Master"])
+        #expect(groups.map(\.isGameMaster) == [false, true])
+        #expect(groups[1].dice == [.init(isD20: true, slot: 1, value: 9)])
+    }
+
     @Test("Dice beyond the pool are left out, and so is a guest without any die on the table")
     func poolLimit() {
         let groups = TableGuestDice.groups(
@@ -128,7 +143,7 @@ struct TableGuestDiceTests {
     }
 
     @MainActor
-    @Test("A roll from any device but Vision Pro makes its player a table guest; the master never is one")
+    @Test("A roll from any device but Vision Pro makes its player a table guest, the master's too")
     func guestNames() throws {
         let model = GameRootModel()
         var ids: [String: UUID] = [:]
@@ -146,8 +161,19 @@ struct TableGuestDiceTests {
         model.noteDiceRollSender(of: roll("Anna", platform: .iOS))
         model.noteDiceRollSender(of: roll("Ben", platform: nil))
         model.noteDiceRollSender(of: roll("Vera", platform: .visionOS))
-        model.noteDiceRollSender(of: roll("Master", role: .master, platform: .macOS))
         #expect(model.tableGuestNames == ["Anna", "Ben"])
+        #expect(model.tableGuestMasterName == nil)
+
+        // A master without a Vision Pro has no seat at a player's table: their dice lie at the
+        // guest seat like a player's.
+        model.noteDiceRollSender(of: roll("Master", role: .master, platform: .macOS))
+        #expect(model.tableGuestNames == ["Anna", "Ben", "Master"])
+        #expect(model.tableGuestMasterName == "Master")
+
+        // On a Vision Pro the master rolls at seat 0 again.
+        model.noteDiceRollSender(of: roll("Master", role: .master, platform: .visionOS))
+        #expect(model.tableGuestNames == ["Anna", "Ben"])
+        #expect(model.tableGuestMasterName == nil)
 
         // Anna moves to a Vision Pro.
         model.noteDiceRollSender(of: roll("Anna", platform: .visionOS))

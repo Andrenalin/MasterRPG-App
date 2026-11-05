@@ -46,7 +46,8 @@ struct GameDiceResultPopover: View {
             // Several players can share a seat; the overlay lists one result per player.
             playerNames = game.seatPlayerNames[seat] ?? []
         case .guest(let index):
-            guard isVisible(isMasterSeat: false), game.guestGroups.indices.contains(index) else { return nil }
+            guard game.guestGroups.indices.contains(index),
+                  isVisible(isMasterSeat: game.guestGroups[index].isGameMaster) else { return nil }
             playerNames = [game.guestGroups[index].name]
         }
         return playerNames.lazy

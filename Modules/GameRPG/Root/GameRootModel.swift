@@ -34,8 +34,15 @@ final class GameRootModel: Sendable {
     /// flag on every roll. See CODE_AUDIT_21 §5.12.
     var tableGuests: [UUID: String] = [:]
 
+    /// The game master's sender id while the master rolls from a device without the 3D table,
+    /// so their dice lie at the guest seat too.
+    var tableGuestMasterId: UUID?
+
     /// The names the dice overlay lists the guests' rolls under.
     var tableGuestNames: Set<String> { Set(tableGuests.values) }
+
+    /// The name the dice overlay lists the game master's roll under, while the master is a guest.
+    var tableGuestMasterName: String? { tableGuestMasterId.flatMap { tableGuests[$0] } }
 
     /// The Characters the game master put at the table as players, loaded from the adventure
     /// when the game starts. Master-only: they get player pins but are not in `gameRoster`, so
@@ -355,19 +362,26 @@ final class GameRootModel: Sendable {
 }
 
 extension GameRootModel {
-    /// Notes whether the player behind a shared dice roll sits at the 3D table. The game
-    /// master has a seat of their own and is never a guest.
+    /// Notes whether the player behind a shared dice roll sits at the 3D table. The game master
+    /// is no different: on a Vision Pro the master has seat 0, on any other device their dice
+    /// lie at the guest seat like a player's.
     func noteDiceRollSender(of message: GameNetworkModel) {
-        guard !message.sender.isMaster, !message.senderName.isEmpty else { return }
+        guard !message.senderName.isEmpty else { return }
         if message.senderPlatform == .visionOS {
             tableGuests[message.sender.id] = nil
         } else {
             tableGuests[message.sender.id] = message.senderName
+        }
+        if message.sender.isMaster {
+            tableGuestMasterId = tableGuests[message.sender.id] == nil ? nil : message.sender.id
         }
     }
 
     /// A player who left is no guest at the table any more. See CODE_AUDIT_21 §5.12.
     func removeTableGuest(_ playerId: UUID) {
         tableGuests[playerId] = nil
+        if tableGuestMasterId == playerId {
+            tableGuestMasterId = nil
+        }
     }
 }

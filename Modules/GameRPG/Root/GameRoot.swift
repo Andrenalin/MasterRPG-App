@@ -579,6 +579,7 @@ extension GameRoot {
         gameModel.gameConfig = .empty
         // Guests of the 3D table belong to the game that ends here. See CODE_AUDIT_21 §5.12.
         gameModel.tableGuests = [:]
+        gameModel.tableGuestMasterId = nil
         await gameModel.masterController?.stop()
         gameModel.masterController = nil
         await gameModel.playerController?.stop()

@@ -3,8 +3,8 @@
 #if os(iOS) || os(macOS) || os(visionOS)
 import Foundation
 
-// The dice of the players without a table of their own (anyone not on Vision Pro), shown at the
-// table's guest seat, opposite the game master. Pure, so it is unit-tested on iOS: every device
+// The dice of the players without a table of their own (anyone not on Vision Pro, the game
+// master included), shown at the table's guest seat, opposite the game master's seat. Pure, so it is unit-tested on iOS: every device
 // derives the same groups from the same shared rolls, which lets one device place the dice and
 // every device label them.
 
@@ -19,6 +19,8 @@ struct TableGuestRoll: Equatable {
     let name: String
     /// In the order of the dice set, which is the order its result reads in.
     let dice: [Die]
+    /// The game master's roll, whose result follows the master's dice sharing option.
+    var isGameMaster = false
 }
 
 enum TableGuestDice {
@@ -33,6 +35,7 @@ enum TableGuestDice {
     struct Group: Equatable {
         let name: String
         let dice: [Die]
+        var isGameMaster = false
     }
 
     /// Hands the guest seat's dice pool out to the guests, in the order of their names so the
@@ -55,7 +58,7 @@ enum TableGuestDice {
                         nextD6 += 1
                     }
                 }
-                return dice.isEmpty ? nil : Group(name: roll.name, dice: dice)
+                return dice.isEmpty ? nil : Group(name: roll.name, dice: dice, isGameMaster: roll.isGameMaster)
             }
     }
 
