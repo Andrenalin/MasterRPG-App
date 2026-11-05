@@ -385,19 +385,25 @@ extension RPGSharePlayController {
         // Calling join() establishes the ordering guarantee documented by
         // GroupActivities: synchronization requested after this call is queued
         // until the session reaches .joined.
-        // `GroupSession` is not `Sendable`: joining it from a detached task raced the
-        // main-actor tasks above that read its `$state`/`activeParticipants` (hidden by
-        // `@preconcurrency`). It is joined on the main actor instead, in a deferred turn
-        // (as the TabletopKit coordination does), after this setup has finished; `reset()`
-        // runs on the main actor too, so a cancelled join can no longer race the join
-        // itself. See CODE_AUDIT_18 §3.8.
-        let sessionToJoin = groupSession
+        // The join is requested from the main actor, in a deferred turn (as the TabletopKit
+        // coordination does), after this setup has finished, and only for the current session.
+        // `join()` itself runs off the main actor: it sets up the call's audio session and
+        // blocks while it does, which hangs the UI when the app's own audio session is active
+        // (AVAudioSession hang risk). The session's state is still only read on the main
+        // actor. `reset()` may leave the session while `join()` runs, so a join that comes back
+        // for a session that is no longer current leaves it again. See CODE_AUDIT_18 §3.8.
+        let sessionId = groupSession.id
+        let sessionToJoin = OffMainGroupSession(session: groupSession)
         let sessionJoinTask = Task { @MainActor [weak self] in
             guard !Task.isCancelled,
                   let self,
-                  self.sessionLifecycle.isCurrent(sessionId: sessionToJoin.id)
+                  self.sessionLifecycle.isCurrent(sessionId: sessionId)
             else { return }
-            sessionToJoin.join()
+            await sessionToJoin.join()
+            if !self.sessionLifecycle.isCurrent(sessionId: sessionId) {
+                Logger.sharePlay.debug("Leaving session \(sessionId, privacy: .public) reset while it was joining")
+                await sessionToJoin.leave()
+            }
         }
         // reset() now owns cancellation of a delayed join for this session.
         tasks[UUID()] = sessionJoinTask
@@ -483,5 +489,23 @@ extension RPGSharePlayController {
 #if os(visionOS)
         refreshSeatPlayerNames()
 #endif
+    }
+}
+
+/// A `GroupSession`, to call `join()` and `leave()` off the main actor. `GroupSession` is not
+/// `Sendable`, but those calls go to the system's SharePlay service, which serializes them;
+/// everything that reads the session's state stays on the main actor. `join()` blocks while it
+/// sets up the call's audio session, which the main thread must not wait for.
+private struct OffMainGroupSession: @unchecked Sendable {
+    let session: GroupSession<RPGActivity>
+
+    @concurrent
+    func join() async {
+        session.join()
+    }
+
+    @concurrent
+    func leave() async {
+        session.leave()
     }
 }

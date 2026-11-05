@@ -55,14 +55,25 @@ public extension URL {
     }
 }
 
-/// Runs `work` in a child task at `.medium` (Default QoS) instead of the caller's priority.
-/// ImageIO's decode hands its work to Default-QoS threads and blocks until they finish, so
-/// a decode inherited from a User-initiated caller (a view's `.task`) is reported as a
-/// priority inversion. The child task is structured: cancellation of the caller reaches it.
+/// Runs `work` at `.medium` (Default QoS) instead of the caller's priority. ImageIO's decode
+/// hands its work to Default-QoS threads and blocks until they finish, so a decode inherited
+/// from a User-initiated caller (a view's `.task`) is reported as a priority inversion.
+///
+/// A child task does not help: a parent waiting on its child escalates the child to the
+/// parent's priority, which put the decode back at User-initiated. `work` runs in a detached
+/// task instead, and the caller waits for its result through a continuation, which escalates
+/// nothing. The caller's cancellation is passed on to that task.
 public func runAtDefaultPriority<T: Sendable>(_ work: @escaping @Sendable () async -> T) async -> T {
-    await withTaskGroup(of: T.self) { group in
-        group.addTask(priority: .medium) { await work() }
-        return await group.next()!
+    let task = Task.detached(priority: .medium) { await work() }
+    return await withTaskCancellationHandler {
+        await withCheckedContinuation { continuation in
+            // Waits at `.medium` itself, so `task` is not escalated by its waiter either.
+            Task.detached(priority: .medium) {
+                continuation.resume(returning: await task.value)
+            }
+        }
+    } onCancel: {
+        task.cancel()
     }
 }
 

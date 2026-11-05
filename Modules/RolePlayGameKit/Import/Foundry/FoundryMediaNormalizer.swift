@@ -35,7 +35,10 @@ struct FoundryMediaNormalizationPlan: Equatable, Sendable {
         try Task.checkCancellation()
         switch kind {
         case .image:
-            return try FoundryMediaNormalizer.makeJPEG(from: data)
+            // At Default priority, where ImageIO's own workers run (`runAtDefaultPriority`).
+            return try await runAtDefaultPriority {
+                Result { try FoundryMediaNormalizer.makeJPEG(from: data) }
+            }.get()
         case .audio:
             return try await FoundryMediaNormalizer.makeMPEG4Audio(
                 from: data,

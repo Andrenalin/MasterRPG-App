@@ -83,10 +83,13 @@ extension EditController {
         return true
     }
 
+    /// At Default priority, where ImageIO's own workers run (`runAtDefaultPriority`).
     @concurrent
     private static func importedJPEG(from data: Data) async -> Data? {
-        AKImage.decodedImage(from: data)?
-            .jpegData(compressionQuality: JPEGQuality.export)
+        await runAtDefaultPriority {
+            AKImage.decodedImage(from: data)?
+                .jpegData(compressionQuality: JPEGQuality.export)
+        }
     }
 
 #if !os(macOS)
