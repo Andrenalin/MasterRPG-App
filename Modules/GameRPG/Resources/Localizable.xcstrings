@@ -1315,6 +1315,22 @@
         }
       }
     },
+    "Clear Weather" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wetter entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล้างสภาพอากาศ"
+          }
+        }
+      }
+    },
     "code" : {
       "localizations" : {
         "de" : {

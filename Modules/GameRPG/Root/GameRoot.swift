@@ -280,6 +280,14 @@ public final class GameRoot {
         }
     }
 
+    /// Clears the weather from every 3D table, in order with the game master's other changes.
+    func scheduleTableWeatherClear() {
+        guard let store = gameModel.masterController else { return }
+        scheduleNetworkAction {
+            await store.clearTableWeather()
+        }
+    }
+
     private func scheduleNetworkAction(_ operation: @escaping @MainActor @Sendable () async -> Void) {
         let id = UUID()
         let previous = networkActionTail

@@ -13,6 +13,12 @@ extension PlayerController {
             await handleMapPhotoPresentation(model)
             return nil
         }
+        if model.type == .update, model.subType == .tableWeather {
+            // The weather on the 3D table; only the game master sends it.
+            guard model.sender.isMaster else { return nil }
+            handleTableWeather(model)
+            return nil
+        }
 
         switch model.type {
         case .reveal:
@@ -21,6 +27,7 @@ extension PlayerController {
                 if !presentOnMap(.weather, itemId: model.data.id) {
                     gameModel.showWeather()
                 }
+                tableWeatherArrived(model.data.id)
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -33,6 +40,7 @@ extension PlayerController {
                 itemId: model.data.id,
                 version: model.data.version
             )
+            tableWeatherArrived(model.data.id)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             // Weather is immutable during a game. Presentation and repair use

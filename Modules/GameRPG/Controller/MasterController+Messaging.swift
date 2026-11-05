@@ -50,6 +50,10 @@ extension MasterController {
             // Before the reveal: a player shows the photo on the map as soon as it arrives.
             await broadcastMapPhoto(presentation)
         }
+        if reference.type == .weather {
+            // A shown weather also covers the 3D table, once a player holds it.
+            await showTableWeather(reference.id)
+        }
 
         let message = outgoingMessage(type: .reveal, subtype: .show, updated: reference)
         await root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))

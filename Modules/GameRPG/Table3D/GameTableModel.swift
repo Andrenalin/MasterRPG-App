@@ -7,6 +7,7 @@ import MapRPG
 import PhotoRPG
 import RealityKit
 import SwiftUI
+import WeatherRPG
 import os.log
 
 #if os(visionOS)
@@ -102,6 +103,10 @@ final class GameTableModel: Sendable {
     /// SwiftUI view value holds `@State` storage that holds this model — a retain cycle).
     var applyFocusedDiceRollForLocalSeat: (() -> Void)?
 #endif
+
+    /// The game master's weather in 3D over the map. See `GameTableModel+Weather.swift`.
+    @ObservationIgnored
+    let weatherEffect = WeatherTableEffect()
 
     // References to root models for accessing game controllers.
     let mapRoot: MapRootModel
@@ -236,6 +241,7 @@ final class GameTableModel: Sendable {
 #endif
 
         renderer.game = self
+        attachWeather()
         resetGame()
     }
 

@@ -26,6 +26,11 @@ struct GameTableToolbar: View {
             // a map is loaded onto the table.
             GameTableWindowButton(root: root, isMaster: game.isGameMaster)
 
+            if game.isGameMaster,
+               root.gameModel.playerController?.gameModel.tableWeather.shownWeatherId != nil {
+                GameTableClearWeatherButton(root: root)
+            }
+
             // The shared map toolbar's actions (fog, pointer, room
             // visibility) are meaningless before a map is on the table.
             if game.currentMapId != nil {
@@ -36,6 +41,29 @@ struct GameTableToolbar: View {
                 )
             }
         }
+    }
+}
+
+/// Takes the game master's weather off every table.
+@MainActor
+private struct GameTableClearWeatherButton: View {
+    let root: GameRoot
+
+    var body: some View {
+        Button {
+            root.scheduleTableWeatherClear()
+        } label: {
+            Label {
+                Text("Clear Weather", bundle: .module)
+            } icon: {
+                Image(systemName: "cloud.slash")
+            }
+        }
+        .selectedRoundButton(
+            title: String(localized: "Clear Weather", bundle: .module),
+            module: .weather,
+            isSelected: false
+        )
     }
 }
 

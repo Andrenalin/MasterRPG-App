@@ -42,6 +42,8 @@ final class MasterControllerModel {
     /// Orders the game master's map photo changes. The presentation itself lives in the game
     /// master's own screen state. See `MasterController+MapPhoto.swift`.
     private var mapPhotoSequence = 0
+    /// Orders the game master's table weather changes. See `MasterController+TableWeather.swift`.
+    private var tableWeatherSequence = 0
     private var lastAudioListCounters: [UUID: Int] = [:]
     private var lastPhotoListCounters: [UUID: Int] = [:]
     private var lastPdfListCounters: [UUID: Int] = [:]
@@ -133,6 +135,12 @@ final class MasterControllerModel {
     func resetCharacterOwnership() {
         characterOwnership.removeAll()
         pendingValueUpdatesAwaitingOwnership.removeAll()
+    }
+
+    /// The sequence of the game master's next table weather change.
+    func nextTableWeatherSequence() -> Int {
+        tableWeatherSequence += 1
+        return tableWeatherSequence
     }
 
     /// The sequence of the game master's next map photo change.

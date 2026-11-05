@@ -295,6 +295,8 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
+        // The game master's weather, in 3D over the map.
+        .modifier(GameTableWeatherSync(root: root, game: game))
         // Mirrors the currently focused character-sheet dice set onto this
         // player's own seat dice — both its shape (count and type per die,
         // so switching focus without rolling still updates the table) and

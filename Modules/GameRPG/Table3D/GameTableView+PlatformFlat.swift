@@ -58,6 +58,8 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
+        // The game master's weather, in 3D over the map.
+        .modifier(GameTableWeatherSync(root: root, game: game))
         .onDisappear {
             accessibilitySubscriptions.removeAll()
             // A view that replaced this one may already have registered its own model; the

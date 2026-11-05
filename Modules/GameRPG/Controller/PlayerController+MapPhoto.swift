@@ -43,6 +43,8 @@ extension PlayerController {
         root.mapRoot.photoPopover.itemPicture = nil
         root.mapRoot.photoPopover.photo = nil
         gameModel.mapPhoto.reset()
+        // The table's weather ends with the game, too.
+        gameModel.tableWeather.reset()
     }
 
     /// The game master's `.update/.photoPresentation`, for a photo or a weather. Applied at once

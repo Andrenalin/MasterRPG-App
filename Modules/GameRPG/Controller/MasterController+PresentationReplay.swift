@@ -22,6 +22,8 @@ extension MasterController {
     /// `readyProxy(for:)` both call this directly, from two different files.
     func replayCurrentPresentation(to origin: GameMessageOrigin) async {
         guard let presentation = root.gameModel.playerController?.gameModel.gameUpdateType else { return }
+        // First, so a weather revealed below is already held and needs no request.
+        await replayTableWeather(to: origin)
         // A photo over the map needs the map, the photo and how it is shown.
         guard await !replayMapPhoto(to: origin) else { return }
 

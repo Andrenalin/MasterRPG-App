@@ -199,3 +199,11 @@ public extension WeatherRootModel {
         await linkController.validateLinks(reportModel: reportModel)
     }
 }
+
+public extension WeatherRootModel {
+    /// A weather of the running game, such as the one shown on the game table: from game
+    /// memory, else the library.
+    func gameWeather(itemId: UUID) -> WeatherModel {
+        gameController.gameItem(for: itemId)
+    }
+}
