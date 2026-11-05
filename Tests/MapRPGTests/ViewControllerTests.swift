@@ -25,6 +25,9 @@ struct ViewControllerTests {
         let map = MapModel(
             id: itemId,
             name: "Viewer Map",
+            entries: [MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: [
+                CGPoint(x: 100, y: 100), CGPoint(x: 300, y: 100), CGPoint(x: 300, y: 200), CGPoint(x: 100, y: 200)
+            ])],
             mapPins: [MapPinModel(id: playerId, name: "Old Player", location: CGPoint(x: 1, y: 1), timeInterval: 1)]
         )
         root.itemController.replace(model: map, isInsert: true)
@@ -60,8 +63,10 @@ struct ViewControllerTests {
         #expect(!gameMap.mapPins.contains { $0.id == newPlayerId })
 
         #expect(root.gameController.synchronizePlayerPins(for: itemId))
-        #expect(gameMap.mapPins.contains { $0.id == playerId && $0.location == CGPoint(x: 4, y: 4) })
-        #expect(gameMap.mapPins.first { $0.id == newPlayerId }?.location == .zero)
+        // Neither pin was positioned on this map, so both stand in its first room.
+        #expect(gameMap.mapPins.first { $0.id == playerId }?.location == CGPoint(x: 150, y: 150))
+        #expect(gameMap.mapPins.first { $0.id == playerId }?.name == "Player")
+        #expect(gameMap.mapPins.first { $0.id == newPlayerId }?.location == CGPoint(x: 199, y: 199))
         #expect(!root.gameController.synchronizePlayerPins(for: itemId))
         #expect(sut.sharingViewType == .share)
         #expect(sut.thumbnailRowViewType == .custom)

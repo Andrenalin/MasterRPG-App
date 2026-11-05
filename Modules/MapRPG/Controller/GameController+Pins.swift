@@ -76,23 +76,64 @@ extension GameController {
             indices[reconciled[index].id] = index
         }
 
-        let resetTimestamp = Date.now.timeIntervalSince1970
+        let now = Date.now.timeIntervalSince1970
         for playerPin in mapGameModel.playerPins {
             if let index = indices[playerPin.id] {
                 guard playerPin.timeInterval > reconciled[index].timeInterval else { continue }
-                reconciled[index] = playerPin
+                var updatedPin = playerPin
+                // The shared copy carries the position of the map it was last moved on; it only
+                // brings the position along for this map.
+                if playerPin.mapId != itemId {
+                    updatedPin.location = reconciled[index].location
+                    updatedPin.mapId = reconciled[index].mapId
+                }
+                reconciled[index] = updatedPin
             } else {
                 var resetPin = playerPin
                 resetPin.location = .zero
-                resetPin.timeInterval = resetTimestamp
+                resetPin.mapId = nil
+                resetPin.timeInterval = now
                 indices[resetPin.id] = reconciled.endIndex
                 reconciled.append(resetPin)
             }
         }
 
+        placePlayerPinsInFirstRoom(&reconciled, indices: indices, on: map)
+
         guard reconciled != map.mapPins else { return false }
         map.mapPins = reconciled
         return true
+    }
+
+    /// Moves the session's player pins that do not stand on `map` yet to the first room: a pin at
+    /// (0, 0) never had a position, and a pin whose `mapId` is another map (or none) carries the
+    /// position of that other map. A pin positioned on this map keeps it. The pins are placed
+    /// like the display cascade does, so players who show the same pins as unpositioned see them
+    /// where the game master has them now.
+    @MainActor
+    private func placePlayerPinsInFirstRoom(_ pins: inout [MapPinModel], indices: [UUID: Int], on map: MapModel) {
+        let toPlace = mapGameModel.playerPins.compactMap { indices[$0.id] }.filter {
+            pins[$0].location == .zero || pins[$0].mapId != map.id
+        }
+        guard !toPlace.isEmpty else { return }
+        var placed = toPlace.map { index -> MapPinModel in
+            var pin = pins[index]
+            pin.location = .zero
+            return pin
+        }
+        // A room with an area wins over a hex cell or a text-only room.
+        let room = map.entries.first { !$0.isHexGrid && !$0.coordinates.isEmpty }
+            ?? map.entries.first { !$0.coordinates.isEmpty }
+        if let room {
+            placed = MapPinPlacement.cascade(pins: placed, in: room, pinScale: map.pinScale)
+        }
+        for (index, pin) in zip(toPlace, placed) {
+            var updatedPin = pin
+            updatedPin.mapId = map.id
+            guard updatedPin != pins[index] else { continue }
+            updatedPin.timeInterval = Self.bumpedTimeInterval(from: pins[index].timeInterval)
+            pins[index] = updatedPin
+        }
     }
 
     /// Largest pin coordinate magnitude accepted from a peer.
@@ -144,6 +185,7 @@ extension GameController {
         var authorizedPin = currentPin
         if isOwnedPlayerPin {
             authorizedPin.location = incomingPin.location
+            authorizedPin.mapId = itemId
         }
         // Zoom and highlight are the only shared interactions permitted on a
         // visible foreign pin. All metadata and game-master state stay intact.

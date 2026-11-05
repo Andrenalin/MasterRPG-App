@@ -408,7 +408,12 @@ extension GameController {
     ) -> MapPinModel? {
         let item = gameItem(for: itemId)
         guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return nil }
+        let previousLocation = pin.location
         mutation(&pin)
+        // A moved pin now stands on this map, whichever map its previous position came from.
+        if pin.location != previousLocation {
+            pin.mapId = itemId
+        }
         pin.timeInterval = Self.bumpedTimeInterval(from: pin.timeInterval)
         item[MapPinId.id, pinId] = pin
         if pin.isPlayer,

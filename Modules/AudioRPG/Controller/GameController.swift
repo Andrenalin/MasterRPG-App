@@ -215,7 +215,12 @@ extension GameController: AudioGameStorable {
         // A newer playlist replaced this one while it loaded: its first track is not in the
         // playlist, and selecting it would clear the current item. See CODE_AUDIT_21 §3.4.
         guard await audioController.add(audio: list, replace: true) else { return }
-        audioController.togglePlay(id: list.first?.id, triggerPlay: true)
+        guard let firstId = list.first?.id else { return }
+        // `add(replace:)` empties the playlist and the player but keeps `currentItem`. Starting
+        // the song that was just stopped found `firstId == currentId`, so `togglePlay` only
+        // resumed an empty player and nothing played. Select the new copy explicitly.
+        audioController.model.set(currentId: firstId)
+        await audioController.preparePlay(id: firstId, triggerPlay: true)
     }
 
     @MainActor
@@ -223,6 +228,7 @@ extension GameController: AudioGameStorable {
         let list = fetchPlaylist(id: id)
         guard await audioController.add(audio: list, replace: true) else { return }
         if let firstId = list.first?.id {
+            audioController.model.set(currentId: firstId)
             await audioController.preparePlay(id: firstId, triggerPlay: false)
         }
     }

@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false, healthPercent: Double? = nil) {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false, healthPercent: Double? = nil, mapId: UUID? = nil) {
         self.id = id
         self.name = name
         self.color = color
@@ -20,6 +20,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
         self.isDead = isDead
         self.isHighlighted = isHighlighted
         self.healthPercent = healthPercent
+        self.mapId = mapId
     }
     
     public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable, Sendable {
@@ -101,6 +102,11 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     /// entry. `nil` means no entry is linked (or the battle never computed
     /// one yet), which the border renders as neutral grey.
     public var healthPercent: Double?
+    /// The map this pin was last positioned on. Memory only: it is in neither `CodingKeys`
+    /// (network, export) nor the Core Data model, so a restart or a received pin has none. The
+    /// game master uses it to tell a pin that already stands on the shown map from one that carries
+    /// the position of another map. See `GameController.synchronizePlayerPins(for:)`.
+    public var mapId: UUID?
 }
 
 extension MapPinModel: Codable {
