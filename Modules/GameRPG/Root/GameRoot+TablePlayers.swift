@@ -19,6 +19,20 @@ extension GameRoot {
         }
     }
 
+    /// Lets the connected device `deviceId` (a player or an observer) move the player pin
+    /// `pinId`, or takes that away. The pin's own player always moves it.
+    func setPinController(_ deviceId: UUID, for pinId: UUID, isEnabled: Bool) {
+        guard gameModel.gameConfig.isMaster, deviceId != pinId else { return }
+        var controllers = gameModel.pinControllers[pinId] ?? []
+        let changed = isEnabled ? controllers.insert(deviceId).inserted : controllers.remove(deviceId) != nil
+        guard changed else { return }
+        gameModel.pinControllers[pinId] = controllers.isEmpty ? nil : controllers
+        let masterController = gameModel.masterController
+        Task {
+            await masterController?.resetPlayers()
+        }
+    }
+
     /// The panel's model; its closures hold the root weakly, never a view.
     func makeTablePlayersModel() -> TablePlayersModel {
         TablePlayersModel { [weak self] in

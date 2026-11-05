@@ -55,6 +55,7 @@ extension MasterController {
         root.gameModel.gameRoster.players = []
         root.gameModel.gameControl.controls = []
         root.gameModel.tablePlayers = []
+        root.gameModel.pinControllers = [:]
     }
 
     /// Serializing entry point — see `resetPlayersTask`'s doc comment. Every
@@ -101,6 +102,11 @@ extension MasterController {
                 name: { valueGameControllable.playerPinName(for: $0) }
             )
             root.mapRoot.mapGameControllable.resetPlayerPins(for: pinPlayers)
+            // Who else may move each pin: the connected devices the game master chose.
+            let connectedIds = Set(gameRoster.players.map(\.id))
+            root.mapRoot.mapGameControllable.setPlayerPinControllers(
+                root.gameModel.pinControllers.mapValues { Array($0.intersection(connectedIds)) }
+            )
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 // A pin added while a map is shown stands in its first room, not at (0, 0).
                 root.mapRoot.mapGameControllable.synchronizePlayerPins(for: mapId)

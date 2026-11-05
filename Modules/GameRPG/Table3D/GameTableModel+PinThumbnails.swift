@@ -72,15 +72,17 @@ extension GameTableModel {
         pendingThumbnailTasks[pinId] = task
     }
 
-    /// The master moves every pin. A player moves its own pin and may move the
-    /// shared pointer while the game master has made that pointer visible,
-    /// matching the existing 2D game-map contract.
+    /// The master moves every pin. A player moves its own pin and the player pins the game
+    /// master gave this device (`MapPinModel.isControlled(by:)`, observers included), and may
+    /// move the shared pointer while the game master has made that pointer visible, matching
+    /// the existing 2D game-map contract.
     func canMovePin(_ pinId: UUID) -> Bool {
         guard let mapModel = currentMapModel() else { return false }
         if pinId == mapModel.pointer.id {
             return isGameMaster || mapModel.pointer.isShown
         }
-        return isGameMaster || pinId == playerPinId
+        return isGameMaster
+            || mapModel.mapPins.first(where: { $0.id == pinId })?.isControlled(by: playerPinId) == true
     }
 
     /// Registers the SwiftUI attachment used for the game-master pin menu. See

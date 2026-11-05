@@ -170,9 +170,17 @@ private struct ConnectedPlayerRow: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+                if hasPin {
+                    PinControllersCaption(root: root, pinId: player.id)
+                }
             }
 
             Spacer(minLength: 0)
+
+            if hasPin {
+                PinControllersMenu(root: root, pinId: player.id)
+            }
 
             Toggle(isOn: Binding {
                 isSharing
@@ -184,6 +192,11 @@ private struct ConnectedPlayerRow: View {
             .labelsHidden()
         }
         .accessibilityElement(children: .contain)
+    }
+
+    /// Only a player with a Character gets a pin; an observer never has one.
+    private var hasPin: Bool {
+        player.type == .player && player.characterId != nil
     }
 
     /// The same path as the old share button: `resetPlayers()` then applies the change.
@@ -224,9 +237,17 @@ private struct TablePlayerRow: View {
                 TablePlayerStatusText(status: status)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if status == .active || status == .disabled {
+                    PinControllersCaption(root: root, pinId: tablePlayer.id)
+                }
             }
 
             Spacer(minLength: 0)
+
+            if status == .active || status == .disabled {
+                PinControllersMenu(root: root, pinId: tablePlayer.id)
+            }
 
             Toggle(isOn: Binding {
                 tablePlayer.isEnabled
@@ -253,6 +274,67 @@ private struct TablePlayerRow: View {
 #endif
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// Picks the connected devices (players and observers) that may move the player pin `pinId`
+/// besides its own player. The pin's own player is not listed: it always moves its pin.
+private struct PinControllersMenu: View {
+    let root: GameRoot
+    let pinId: UUID
+
+    var body: some View {
+        let devices = root.gameModel.gameRoster.players.filter { $0.id != pinId }
+        let controllers = root.gameModel.pinControllers[pinId] ?? []
+
+        Menu {
+            Section {
+                ForEach(devices) { device in
+                    Toggle(isOn: Binding {
+                        controllers.contains(device.id)
+                    } set: { isEnabled in
+                        root.setPinController(device.id, for: pinId, isEnabled: isEnabled)
+                    }) {
+                        Label {
+                            Text(verbatim: device.name)
+                        } icon: {
+                            Image(systemName: device.type == .observer ? "eye" : "person")
+                        }
+                    }
+                }
+            } header: {
+                Text("Who else may move this pin", bundle: .module)
+            }
+        } label: {
+            Label {
+                Text("Moved By", bundle: .module)
+            } icon: {
+                Image(systemName: controllers.isEmpty ? "hand.point.up.left" : "hand.point.up.left.fill")
+            }
+            .labelStyle(.iconOnly)
+        }
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(devices.isEmpty)
+        .help(Text("Who else may move this pin", bundle: .module))
+    }
+}
+
+/// "Also moved by …" under a pin's row, for the connected devices the game master chose.
+private struct PinControllersCaption: View {
+    let root: GameRoot
+    let pinId: UUID
+
+    var body: some View {
+        let controllers = root.gameModel.pinControllers[pinId] ?? []
+        let names = root.gameModel.gameRoster.players
+            .filter { controllers.contains($0.id) }
+            .map(\.name)
+        if !names.isEmpty {
+            Text("Also moved by \(names.formatted(.list(type: .and)))", bundle: .module)
+                .font(.caption)
+                .foregroundStyle(.tint)
+        }
     }
 }
 

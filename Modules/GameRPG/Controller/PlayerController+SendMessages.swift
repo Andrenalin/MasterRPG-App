@@ -29,7 +29,13 @@ extension PlayerController {
     }
 
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
-        guard root.gameModel.gameType != .observer else { return }
+        if root.gameModel.gameType == .observer {
+            // An observer only moves the player pins the game master gave it; the master
+            // checks that before applying the move.
+            guard message.type == .map, actionType == .mapPin else { return }
+            await send(type: .update, subType: .mapPin, updated: message)
+            return
+        }
         // Players cannot publish Weather and Weather has no live updates yet.
         guard message.type != .table, message.type != .weather else { return }
         if message.type == .value {

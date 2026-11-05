@@ -63,6 +63,11 @@ extension MasterController {
             return nil
         }
 
+        if model.sender.role == .observer {
+            await applyObserverPinMove(model)
+            return nil
+        }
+
         guard model.type == .update,
               model.subType == .mapPin,
               model.isPlayerGroupEvent
@@ -113,6 +118,39 @@ extension MasterController {
             }
         }
         return nil
+    }
+
+    /// An observer moved a player pin the game master gave it. Unlike a player's move it is no
+    /// group event (nobody relays it), so the master applies it and sends the map state to
+    /// everyone. An observer may only move such a pin: no pointer, no other pin.
+    private func applyObserverPinMove(_ model: GameNetworkModel) async {
+        guard model.type == .update,
+              model.subType == .mapPin,
+              model.data.type == .map,
+              let incoming = MapPinModel.decodeData(of: model.data.data),
+              let map = root.mapRoot.gameControllable.gameModel.itemData[model.data.id] as? MapModel,
+              map.mapPins.first(where: { $0.id == incoming.id })?.isControlled(by: model.sender.id) == true,
+              root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
+                  itemId: model.data.id,
+                  data: model.data,
+                  playerId: model.sender.id
+              )
+        else { return }
+
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
+            itemId: model.data.id,
+            isGameMaster: true
+        )
+        #if !os(tvOS)
+        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        #endif
+        guard mayShareMapState(for: model.data.id) else { return }
+        await send(
+            type: .update,
+            subtype: .mapState,
+            updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id),
+            authoritativeMaster: true
+        )
     }
 
     /// Whether the map's content and live state (room visibility, focus, pins) may go out now.

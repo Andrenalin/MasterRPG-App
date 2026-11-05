@@ -18,7 +18,10 @@ extension GameController {
             mapGameModel.playerPins[index].photoId = photoId
             mapGameModel.playerPins[index].characterId = characterId
             mapGameModel.playerPins[index].isPlayer = true
-            mapGameModel.playerPins[index].players = [playerId]
+            // Keeps the devices the game master gave control of this pin;
+            // `setPlayerPinControllers` is the only writer of that list.
+            let controllers = mapGameModel.playerPins[index].players.filter { $0 != playerId }
+            mapGameModel.playerPins[index].players = [playerId] + controllers
         } else {
             let pin = MapPinModel(id: playerId, name: name, color: Color.random, photoId: photoId, characterId: characterId, size: .normal, isPlayer: true, players: [playerId])
             mapGameModel.playerPins.append(pin)
@@ -59,6 +62,42 @@ extension GameController {
                 }
             }
         }
+    }
+
+    /// Lists who may move each player pin, besides its own player: `controllers` maps a pin id
+    /// to device ids (players or observers). Written to the session cache and every live map;
+    /// the next map state carries it to every device. Returns whether any pin changed.
+    @MainActor
+    @discardableResult
+    func setPlayerPinControllers(_ controllers: [UUID: [UUID]]) -> Bool {
+        func players(for pinId: UUID) -> [UUID] {
+            let extra = Set(controllers[pinId] ?? []).subtracting([pinId])
+            return [pinId] + extra.sorted { $0.uuidString < $1.uuidString }
+        }
+        var changed = false
+        for index in mapGameModel.playerPins.indices {
+            let updated = players(for: mapGameModel.playerPins[index].id)
+            guard mapGameModel.playerPins[index].players != updated else { continue }
+            mapGameModel.playerPins[index].players = updated
+            changed = true
+        }
+        let playerPinIds = Set(mapGameModel.playerPins.map(\.id))
+        for itemId in gameModel.items {
+            let map = gameItem(for: itemId)
+            var pins = map.mapPins
+            var mapChanged = false
+            for index in pins.indices where pins[index].isPlayer && playerPinIds.contains(pins[index].id) {
+                let updated = players(for: pins[index].id)
+                guard pins[index].players != updated else { continue }
+                pins[index].players = updated
+                mapChanged = true
+            }
+            if mapChanged {
+                map.mapPins = pins
+                changed = true
+            }
+        }
+        return changed
     }
 
     /// Reconciles the session roster into one live map as a single observable
@@ -179,11 +218,12 @@ extension GameController {
         let currentPin = item.mapPins[pinIndex]
         guard incomingPin.timeInterval > currentPin.timeInterval else { return false }
 
-        let isOwnedPlayerPin = currentPin.isPlayer && currentPin.id == playerId
-        guard isOwnedPlayerPin || currentPin.isShown else { return false }
+        // The pin's own player, or a device the game master gave control of it.
+        let isControlledPlayerPin = currentPin.isControlled(by: playerId)
+        guard isControlledPlayerPin || currentPin.isShown else { return false }
 
         var authorizedPin = currentPin
-        if isOwnedPlayerPin {
+        if isControlledPlayerPin {
             authorizedPin.location = incomingPin.location
             authorizedPin.mapId = itemId
         }

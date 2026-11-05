@@ -42,6 +42,12 @@ final class GameRootModel: Sendable {
     /// they never get dice, sharing controls or audio deliveries. See `TablePlayerResolver`.
     var tablePlayers: [TablePlayerModel] = []
 
+    /// Who may move a player pin besides its own player, by pin id (a connected player's id or a
+    /// table player's id): device ids of connected players or observers. Session-only, because
+    /// device ids are new each game. Only connected devices are written onto the pins, so a
+    /// device that reconnects in the same session gets its pins back.
+    var pinControllers: [UUID: Set<UUID>] = [:]
+
     var startGameTime = Date()
 
     var selectedCharacter: UUID?

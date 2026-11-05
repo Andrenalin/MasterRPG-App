@@ -231,6 +231,91 @@ struct MapMasterMessageFlowTests {
         #expect(fixture.directMasterSpy.sendResponseHistory.isEmpty)
     }
 
+    @Test("A player pin moves for the devices the game master gave it, observers included")
+    func delegatedPinControl() async throws {
+        // Given: a table player's pin that the connected player and an observer may move.
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let map = fixture.root.mapRoot.gameController.gameItem(for: mapId)
+        let tablePinId = UUID()
+        let observerId = UUID()
+        let strangerId = UUID()
+        let tablePin = MapPinModel(id: tablePinId, name: "Hero", location: .zero, isPlayer: true, players: [tablePinId], timeInterval: 1)
+        map.mapPins.append(tablePin)
+        fixture.root.mapRoot.gameController.mapGameModel.playerPins.append(tablePin)
+        fixture.root.mapRoot.gameController.setPlayerPinControllers([tablePinId: [fixture.playerId, observerId]])
+        #expect(map.mapPins.first { $0.id == tablePinId }?.players
+            == [tablePinId] + [fixture.playerId, observerId].sorted { $0.uuidString < $1.uuidString })
+
+        let reference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        let contentVersion = try #require(reference.contentVersion)
+        let assetVersion = try #require(reference.assetVersion)
+        func move(
+            by id: UUID,
+            role: GameType,
+            to location: CGPoint,
+            at time: TimeInterval,
+            versions: (content: Int?, asset: Int?)? = nil
+        ) -> GameNetworkModel {
+            var pin = tablePin
+            pin.location = location
+            pin.timeInterval = time
+            return GameNetworkModel(
+                counter: Int(time) * 10,
+                proxyCounter: 0,
+                type: .update,
+                subType: .mapPin,
+                masterId: fixture.masterId,
+                sender: GameSenderModel(id: id, role: role, name: "Device", characterId: nil),
+                data: NetworkCodableDataType(
+                    id: mapId,
+                    type: .map,
+                    version: map.version,
+                    data: pin.encodeData(),
+                    assetVersion: versions?.asset ?? assetVersion,
+                    contentVersion: versions?.content ?? contentVersion
+                )
+            )
+        }
+        func location() -> CGPoint? { map.mapPins.first { $0.id == tablePinId }?.location }
+
+        // When/Then: a player and an observer that were not given the pin cannot move it.
+        _ = try await fixture.master.handleMap(move(by: strangerId, role: .player, to: CGPoint(x: 1, y: 1), at: 2))
+        let strangerObserver = move(by: strangerId, role: .observer, to: CGPoint(x: 2, y: 2), at: 3)
+        if let normalized = fixture.master.normalizedObserverMessage(strangerObserver) {
+            _ = try await fixture.master.handleMap(normalized)
+        }
+        #expect(location() == .zero)
+
+        // When/Then: the delegated player moves it (a relayed group event).
+        _ = try await fixture.master.handleMap(move(by: fixture.playerId, role: .player, to: CGPoint(x: 10, y: 12), at: 4))
+        #expect(location() == CGPoint(x: 10, y: 12))
+
+        // When/Then: the delegated observer moves it; the master sends the map state.
+        let broadcastsBefore = fixture.directMasterSpy.calledSendResponseAll
+        let observerMove = try #require(fixture.master.normalizedObserverMessage(
+            move(by: observerId, role: .observer, to: CGPoint(x: 20, y: 22), at: 5)
+        ))
+        _ = try await fixture.master.handleMap(observerMove)
+        #expect(location() == CGPoint(x: 20, y: 22))
+        #expect(fixture.directMasterSpy.calledSendResponseAll > broadcastsBefore)
+
+        // When/Then: taking the observer off the list stops it.
+        fixture.root.mapRoot.gameController.setPlayerPinControllers([tablePinId: [fixture.playerId]])
+        let updated = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        let lateMove = move(
+            by: observerId,
+            role: .observer,
+            to: CGPoint(x: 30, y: 32),
+            at: 6,
+            versions: (updated.contentVersion, updated.assetVersion)
+        )
+        if let normalized = fixture.master.normalizedObserverMessage(lateMove) {
+            _ = try await fixture.master.handleMap(normalized)
+        }
+        #expect(location() == CGPoint(x: 20, y: 22))
+    }
+
     @Test("A player reuses the accepted Map generation for pin updates")
     func playerPinUsesAuthoritativeImportedGeneration() async throws {
         // Given: the master exports one complete generation containing the

@@ -59,6 +59,35 @@ struct TablePlayersTests {
         #expect(root.adventureRoot.adventureGameControllable.tablePlayers(for: adventure.id) == [disabled])
     }
 
+    @Test("The game master's pin controllers reach the pins, for connected devices only")
+    func pinControllersReachThePins() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        let root = env.masterRoot
+        root.gameModel.masterController = env.master
+        let heroId = UUID()
+        root.characterRoot.itemController.replace(model: ValueModel(id: heroId, name: "Hero"), isInsert: true)
+        let observer = PlayerGameModel(id: UUID(), type: .observer, name: "Observer")
+        root.gameModel.gameRoster.players = [observer]
+        root.gameModel.tablePlayers = [TablePlayerModel(characterId: heroId)]
+        let tablePinId = try #require(root.gameModel.tablePlayers.first?.id)
+        let reconnectingId = UUID()
+
+        root.setPinController(observer.id, for: tablePinId, isEnabled: true)
+        root.setPinController(reconnectingId, for: tablePinId, isEnabled: true)
+        await env.master.resetPlayers()
+
+        var pin = try #require(root.mapRoot.gameController.mapGameModel.playerPins.first { $0.id == tablePinId })
+        #expect(pin.players == [tablePinId, observer.id])
+        #expect(pin.isControlled(by: observer.id))
+        // Kept for the session, so the device gets the pin back when it reconnects.
+        #expect(root.gameModel.pinControllers[tablePinId] == [observer.id, reconnectingId])
+
+        root.setPinController(observer.id, for: tablePinId, isEnabled: false)
+        await env.master.resetPlayers()
+        pin = try #require(root.mapRoot.gameController.mapGameModel.playerPins.first { $0.id == tablePinId })
+        #expect(pin.players == [tablePinId])
+    }
+
     @Test("The panel adds, enables and removes table players")
     func panelEdits() {
         let store = TablePlayersStore()

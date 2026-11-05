@@ -94,6 +94,8 @@ public protocol MapGameStorable: Sendable {
 
     @MainActor func setPlayerPin(for playerId: UUID, name: String, characterId: UUID)
     @MainActor func resetPlayerPins(for players: [PlayerGameModel])
+    /// Who may move each player pin besides its own player (pin id to device ids).
+    @MainActor @discardableResult func setPlayerPinControllers(_ controllers: [UUID: [UUID]]) -> Bool
     @MainActor @discardableResult func synchronizePlayerPins(for itemId: UUID) -> Bool
     @MainActor func updatePin(itemId: UUID, data: Data?, playerId: UUID) -> Bool
     @MainActor func updatePinIfCurrentGeneration(

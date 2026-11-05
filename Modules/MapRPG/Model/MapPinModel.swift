@@ -109,6 +109,15 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public var mapId: UUID?
 }
 
+public extension MapPinModel {
+    /// Whether the device `deviceId` may move this pin: a player pin moves for its own player
+    /// and for every device the game master listed in `players` (other players, observers).
+    func isControlled(by deviceId: UUID?) -> Bool {
+        guard isPlayer, let deviceId else { return false }
+        return id == deviceId || players.contains(deviceId)
+    }
+}
+
 extension MapPinModel: Codable {
     enum CodingKeys: String, CodingKey {
         case id

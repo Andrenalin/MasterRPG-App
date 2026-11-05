@@ -718,6 +718,23 @@
         }
       }
     },
+    "Also moved by %@" : {
+      "comment" : "Caption under a player pin's row. The argument is a list of player or observer names.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auch bewegt von %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย้ายได้โดย %@ ด้วย"
+          }
+        }
+      }
+    },
     "Ascending" : {
       "localizations" : {
         "de" : {
@@ -3787,6 +3804,23 @@
         }
       }
     },
+    "Moved By" : {
+      "comment" : "The label of the menu that picks the devices that may move a player pin.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewegt von"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย้ายโดย"
+          }
+        }
+      }
+    },
     "New Code" : {
       "localizations" : {
         "de" : {
@@ -6569,6 +6603,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "คุณต้องการเข้าร่วมกับเกมมาสเตอร์คนใด?"
+          }
+        }
+      }
+    },
+    "Who else may move this pin" : {
+      "comment" : "Header and help of the menu that picks the devices that may move a player pin.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wer darf diesen Pin noch bewegen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ใครอื่นที่ย้ายหมุดนี้ได้"
           }
         }
       }

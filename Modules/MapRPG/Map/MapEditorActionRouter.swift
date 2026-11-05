@@ -293,7 +293,8 @@ final class MapEditorActionRouter {
                     location: pin.location
                 )
             }
-        } else if session.mapMode == .player, pin.id == session.playerPinId {
+        } else if session.mapMode == .player,
+                  interactionMap.mapPins.first(where: { $0.id == pin.id })?.isControlled(by: session.playerPinId) == true {
             performPlayerMutation(pinId: pin.id) {
                 root.gameController.movePin(
                     itemId: session.mapId,

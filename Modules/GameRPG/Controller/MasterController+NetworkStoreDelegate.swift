@@ -316,6 +316,11 @@ extension MasterController {
              (.store, .screen, .game):
             guard model.data.data != nil else { return nil }
             return model
+        case (.update, .mapPin, .map):
+            // Moving a player pin the game master gave this observer; `handleMap` admits it
+            // only for such a pin. See `MapPinModel.isControlled(by:)`.
+            guard model.data.data != nil else { return nil }
+            return model
         default:
             break
         }

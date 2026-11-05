@@ -73,7 +73,8 @@ private struct MapPinLayerItem: View {
     private var canDrag: Bool {
         mapMode == .edit
             || mapMode == .gameMaster
-            || (mapMode == .player && (node.id == playerPinId || node.isPointer))
+            // `playerPinId` is this device's id: its own pin, and pins the game master gave it.
+            || (mapMode == .player && (node.isPointer || node.pin.isControlled(by: playerPinId)))
     }
 
     private var actionContext: MapPinActionContext {
