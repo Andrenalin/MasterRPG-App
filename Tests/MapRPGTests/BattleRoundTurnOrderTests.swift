@@ -239,6 +239,40 @@ struct BattleRoundTurnOrderTests {
         #expect(!sut.addCombatant(late))
     }
 
+    @Test("The pin action adds a pin in round 1 too, without moving the active turn")
+    func joiningWorksInAnyRound() {
+        let sut = BattleRoundModel()
+        let hero = combatant(name: "Hero", initiative: 12, isPlayer: true)
+        let goblin = combatant(name: "Goblin", initiative: 8)
+        let late = combatant(name: "Late", initiative: 10)
+        let mapId = UUID()
+        sut.begin(mapId: mapId, players: [hero], roomCombatants: [goblin], initiativeOrder: .descending)
+        #expect(sut.nextRound())
+        #expect(sut.roundCounter == 1)
+        let activeBefore = sut.activeAttackerId
+
+        // The tap path stays closed, the action is open — on the battle's map only.
+        #expect(!sut.canAddCombatant(pinId: late.pinId))
+        #expect(sut.canJoinBattle(pinId: late.pinId, on: mapId))
+        #expect(!sut.canJoinBattle(pinId: late.pinId, on: UUID()))
+        #expect(!sut.addCombatant(late))
+
+        #expect(sut.joinCombatant(late))
+        #expect(order(sut) == [hero.id, late.id, goblin.id])
+        #expect(sut.activeAttackerId == activeBefore)
+        #expect(sut.roundCounter == 1)
+        #expect(!sut.canJoinBattle(pinId: late.pinId, on: mapId))
+        #expect(!sut.joinCombatant(late))
+    }
+
+    @Test("No pin can join a battle that is not running")
+    func joiningNeedsARunningBattle() {
+        let sut = BattleRoundModel()
+        let late = combatant(name: "Late")
+        #expect(!sut.canJoinBattle(pinId: late.pinId, on: nil))
+        #expect(!sut.joinCombatant(late))
+    }
+
     @Test("Synchronizing pins updates every changed combatant and both lookups")
     func synchronizeUpdatesEveryChangedCombatant() {
         let sut = BattleRoundModel()

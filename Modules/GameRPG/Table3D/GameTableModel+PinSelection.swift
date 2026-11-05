@@ -214,14 +214,14 @@ extension GameTableModel {
               let selectedPinId else {
             return false
         }
-        // A pin that was highlighted first is on the roster as a target
-        // without a turn; it can still be added.
-        return mapRoot.mapGameControllable.battleRoundModel.canAddCombatant(pinId: selectedPinId)
+        // Any round of the running battle; a pin that was highlighted first is on the roster as
+        // a target without a turn and can still be added.
+        return mapRoot.mapGameControllable.battleRoundModel.canJoinBattle(pinId: selectedPinId, on: currentMapId)
     }
 
     func addSelectedPinToBattleRound() {
         guard let selectedPinId else { return }
-        _ = addPinToBattleRound(pinId: selectedPinId)
+        _ = addPinToBattleRound(pinId: selectedPinId, inAnyRound: true)
     }
 
     func toggleSelectedPinVisibility() {
@@ -249,15 +249,14 @@ extension GameTableModel {
     }
 
     @discardableResult
-    private func addPinToBattleRound(pinId: UUID) -> Bool {
+    private func addPinToBattleRound(pinId: UUID, inAnyRound: Bool = false) -> Bool {
         guard isGameMaster,
-              let mapId = currentMapId,
-              mapRoot.mapGameControllable.addBattleCombatant(
-                  itemId: mapId,
-                  pinId: pinId
-              ) else {
-            return false
-        }
+              let mapId = currentMapId else { return false }
+        // A tap adds only while the surprise round is prepared; the menu action in any round.
+        let added = inAnyRound
+            ? mapRoot.mapGameControllable.joinBattle(itemId: mapId, pinId: pinId)
+            : mapRoot.mapGameControllable.addBattleCombatant(itemId: mapId, pinId: pinId)
+        guard added else { return false }
         syncPawnsWithMapPins()
         broadcastMapEdit(for: mapId)
         broadcastBattleRoundState(for: mapId)

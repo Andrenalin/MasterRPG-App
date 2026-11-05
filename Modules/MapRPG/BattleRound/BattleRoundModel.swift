@@ -160,7 +160,19 @@ public final class BattleRoundModel: Sendable {
     /// Whether the pin can still get its own turn: only while the surprise
     /// round is being prepared, and only if it does not have one already.
     public func canAddCombatant(pinId: UUID) -> Bool {
-        guard isPreparingSurprise else { return false }
+        isPreparingSurprise && lacksTurn(pinId: pinId)
+    }
+
+    /// Whether the "Add Pin to Battle Round" action can give the pin its own turn on `mapId`: in
+    /// any round of the running battle (surprise or 1, 2, ...), as long as it has no turn yet.
+    /// A tap adds a pin only while the surprise round is prepared (`canAddCombatant`), because
+    /// afterwards a tap opens the pin menu.
+    public func canJoinBattle(pinId: UUID, on mapId: UUID?) -> Bool {
+        isRunning && self.mapId == mapId && lacksTurn(pinId: pinId)
+    }
+
+    /// `true` for a pin that is not on the roster yet, or only as a target without its own turn.
+    func lacksTurn(pinId: UUID) -> Bool {
         guard let existing = combatant(pinId: pinId) else { return true }
         return !hasTurn(existing.id)
     }

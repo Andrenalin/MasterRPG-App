@@ -161,6 +161,8 @@ public protocol MapGameStorable: Sendable {
     @MainActor func nextBattleAttacker(itemId: UUID) -> Bool
     @MainActor func nextBattleRound(itemId: UUID) -> Bool
     @MainActor func addBattleCombatant(itemId: UUID, pinId: UUID) -> Bool
+    /// The pin action "Add Pin to Battle Round": `addBattleCombatant` in any round of the battle.
+    @MainActor func joinBattle(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func removeBattleCombatant(itemId: UUID, combatantId: UUID) -> Bool
     @MainActor func addBattleRoll(
         itemId: UUID,

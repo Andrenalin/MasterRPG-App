@@ -148,6 +148,40 @@ struct BattleRoundControllerRuleTests {
         #expect(!sut.addBattleCombatant(itemId: fixture.mapId, pinId: fixture.outsidePinId))
     }
 
+    @Test("The pin action adds a pin to the battle in round 1")
+    func outsiderCanJoinInRoundOne() async throws {
+        // Given: the surprise round is over, we are in round 1 and the dragon has no turn.
+        let fixture = try await Fixture.make()
+        let sut = fixture.controller
+        #expect(sut.startBattle(itemId: fixture.mapId))
+        #expect(sut.nextBattleRound(itemId: fixture.mapId))
+        #expect(sut.battleRoundModel.roundCounter == 1)
+        #expect(!sut.addBattleCombatant(itemId: fixture.mapId, pinId: fixture.outsidePinId))
+        #expect(sut.battleRoundModel.canJoinBattle(pinId: fixture.outsidePinId, on: fixture.mapId))
+        let activeBefore = sut.battleRoundModel.activeAttackerId
+
+        // When / Then: the action adds it with its own turn; the round goes on unchanged.
+        #expect(sut.joinBattle(itemId: fixture.mapId, pinId: fixture.outsidePinId))
+        let joined = try #require(sut.battleRoundModel.combatant(pinId: fixture.outsidePinId))
+        #expect(sut.battleRoundModel.hasTurn(joined.id))
+        #expect(sut.battleRoundModel.roundCounter == 1)
+        #expect(sut.battleRoundModel.activeAttackerId == activeBefore)
+        #expect(!sut.battleRoundModel.canJoinBattle(pinId: fixture.outsidePinId, on: fixture.mapId))
+        #expect(!sut.joinBattle(itemId: fixture.mapId, pinId: fixture.outsidePinId))
+    }
+
+    @Test("The pin action also adds a pin during the surprise round, and not on another map")
+    func outsiderCanJoinInSurpriseRound() async throws {
+        let fixture = try await Fixture.make()
+        let sut = fixture.controller
+        #expect(!sut.joinBattle(itemId: fixture.mapId, pinId: fixture.outsidePinId))
+        #expect(sut.startBattle(itemId: fixture.mapId))
+        #expect(!sut.joinBattle(itemId: UUID(), pinId: fixture.outsidePinId))
+        #expect(sut.joinBattle(itemId: fixture.mapId, pinId: fixture.outsidePinId))
+        let joined = try #require(sut.battleRoundModel.combatant(pinId: fixture.outsidePinId))
+        #expect(sut.battleRoundModel.hasTurn(joined.id))
+    }
+
     // MARK: - Character assignment
 
     @Test("Assigning a Character uses the chosen one when the pin's own can no longer be copied")

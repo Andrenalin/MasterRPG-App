@@ -240,6 +240,20 @@ extension GameController {
         return true
     }
 
+    /// The "Add Pin to Battle Round" action: like `addBattleCombatant`, but in any round of the
+    /// running battle, not only while the surprise round is prepared.
+    @MainActor
+    func joinBattle(itemId: UUID, pinId: UUID) -> Bool {
+        guard battleRoundModel.canJoinBattle(pinId: pinId, on: itemId),
+              let combatant = battleRoundModel.combatant(pinId: pinId)
+                ?? makeBattleCombatant(itemId: itemId, pinId: pinId),
+              battleRoundModel.joinCombatant(combatant) else {
+            return false
+        }
+        resolveBattleConfiguredValues(for: combatant.id)
+        return true
+    }
+
     /// Drops a combatant from the battle roster entirely, distinct from
     /// `setBattleCombatantDead` which only flags it. The map pin itself is
     /// untouched, so highlighting it again re-adds a fresh combatant.

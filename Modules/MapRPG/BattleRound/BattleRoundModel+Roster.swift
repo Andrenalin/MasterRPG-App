@@ -12,6 +12,19 @@ extension BattleRoundModel {
     @discardableResult
     func addCombatant(_ combatant: BattleCombatant) -> Bool {
         guard canAddCombatant(pinId: combatant.pinId) else { return false }
+        return insertTurn(for: combatant)
+    }
+
+    /// `addCombatant(_:)` for the "Add Pin to Battle Round" action, which works in any round of
+    /// the running battle. The new turn goes where its initiative puts it; the active attacker
+    /// and the round counter stay as they are.
+    @discardableResult
+    func joinCombatant(_ combatant: BattleCombatant) -> Bool {
+        guard isRunning, lacksTurn(pinId: combatant.pinId) else { return false }
+        return insertTurn(for: combatant)
+    }
+
+    private func insertTurn(for combatant: BattleCombatant) -> Bool {
         let combatantId: UUID
         if let existing = self.combatant(pinId: combatant.pinId) {
             combatantId = existing.id

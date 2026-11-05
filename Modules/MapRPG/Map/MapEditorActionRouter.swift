@@ -345,7 +345,7 @@ final class MapEditorActionRouter {
             }
         case .battle:
             performGameMasterMutation(pinId: pin.id) {
-                root.gameController.addBattleCombatant(
+                root.gameController.joinBattle(
                     itemId: session.mapId,
                     pinId: pin.id
                 )

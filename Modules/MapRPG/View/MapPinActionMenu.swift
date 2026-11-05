@@ -15,14 +15,26 @@ struct MapPinActionMenuStack: View {
     let model: MapPinNode
     let context: MapPinActionContext
 
+    @Environment(MapRootModel.self) private var root
     @Namespace private var photoSpace
+
+    /// The context's actions; "Add Pin to Battle Round" only while a battle runs on this map and
+    /// the pin has no turn yet.
+    private var actions: [MapPinButtonType] {
+        let battleRound = root.mapGameControllable.battleRoundModel
+        let canJoinBattle = battleRound.canJoinBattle(
+            pinId: model.pin.id,
+            on: root.gameController.gameModel.currentItemId
+        )
+        return context.actions.filter { $0 != .battle || canJoinBattle }
+    }
 
     var body: some View {
         // No glass container: the panel is glass already and the buttons are flat (no glass inside
         // glass), so a container around them had no glass children and did nothing.
         // See CODE_AUDIT_21 §8.4.
         VStack(spacing: MapPopoverLayout.contentInset) {
-            ForEach(context.actions, id: \.self) { type in
+            ForEach(actions, id: \.self) { type in
                 MapPinActionMenuButton(pin: model.pin, type: type) {
                     model.perform(type, context: context)
                 }
