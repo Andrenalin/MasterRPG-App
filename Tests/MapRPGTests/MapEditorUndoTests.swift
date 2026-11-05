@@ -280,6 +280,36 @@ struct MapEditorUndoTests {
         #expect(context.session.workingCopy?[entry.id].coordinates.map(\.x).max() == 200)
     }
 
+    @Test("Room bounds scaling moves the cover tile with the rooms and undoes with them")
+    func boundaryScaleMovesCoverTile() throws {
+        // Given
+        let entry = MapEntryModel(
+            id: UUID(),
+            name: "Oversized",
+            content: "",
+            coordinates: [CGPoint(x: 200, y: 100), CGPoint(x: 200, y: 200), CGPoint(x: 100, y: 200)]
+        )
+        let tile = [
+            CGPoint(x: 100, y: 40),
+            CGPoint(x: 200, y: 40),
+            CGPoint(x: 200, y: 80),
+            CGPoint(x: 100, y: 80)
+        ]
+        let map = makeMap(entries: [entry], tileCoordinates: tile, width: 100, height: 100)
+        let context = makeContext(map: map, activeEntryId: entry.id)
+
+        // When
+        context.controller.updateMaxWidth(0.5, editorModel: context.session)
+        context.controller.commitBoundaryScale(editorModel: context.session)
+
+        // Then — x halves like the rooms (200 -> 50 is a factor of 0.25), y stays
+        let scaled = try #require(context.session.workingCopy?.displayConfig.tileCoordinates)
+        #expect(scaled.map(\.x) == [25, 50, 50, 25])
+        #expect(scaled.map(\.y) == [40, 40, 80, 80])
+        #expect(context.controller.undo(editorModel: context.session))
+        #expect(context.session.workingCopy?.displayConfig.tileCoordinates == tile)
+    }
+
     @Test("Adding a room restores its selection on redo")
     func addingEntryIsUndoable() throws {
         // Given

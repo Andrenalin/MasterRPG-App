@@ -33,14 +33,23 @@ struct GameJoinCodeSetupButton: View {
                     .fontDesign(.monospaced)
                     .speechSpellsOutCharacters()
             }
+#if !os(visionOS)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
+#endif
         }
+#if os(visionOS)
+        // The system style keeps the standard control height next to the
+        // neighbouring buttons; a plain, hand-outlined capsule collapsed.
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+#else
         .buttonStyle(.plain)
         .overlay {
             Capsule().stroke(Color.secondary.opacity(0.35), lineWidth: 1)
         }
         .contentShape(.capsule)
+#endif
         .accessibilityLabel(Text(title, bundle: .module))
         .accessibilityValue(Text(code).speechSpellsOutCharacters())
 #if os(tvOS)

@@ -37,6 +37,10 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID
 
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
+    /// Whether `entry` has an image for its thumbnail slot. An entry with nothing to show (a map
+    /// room without coordinates) gets a placeholder of the same size instead, so the row layout
+    /// stays the same. Defaults to `true`.
+    func hasThumbnailImage(for entry: any EntryDataAccessible) -> Bool
     var additionalEntryViewType: AdditionalEntryViewType { get }
     
     @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView
@@ -139,6 +143,7 @@ public extension EntryDataEditable {
     }
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
+    func hasThumbnailImage(for entry: any EntryDataAccessible) -> Bool { true }
     var additionalEntryViewType: AdditionalEntryViewType { .none }
     
     @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }

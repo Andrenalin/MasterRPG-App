@@ -109,6 +109,13 @@ extension EditController: EntryDataEditable {
     }
     
     public var thumbnailEntryViewType: ThumbnailEntryViewType { .photo }
+
+    /// A room without coordinates has no map area to crop; its thumbnail would be the map's
+    /// top-left corner scaled up, so the row shows a placeholder.
+    public func hasThumbnailImage(for entry: any EntryDataAccessible) -> Bool {
+        guard let entry = entry as? MapEntryModel else { return true }
+        return !entry.coordinates.isEmpty
+    }
     public var additionalEntryViewType: AdditionalEntryViewType { .custom }
 
     @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView {
@@ -394,6 +401,14 @@ extension EditController {
             return scaledWall
         }
         model.pointer.location[keyPath: axis] *= factor
+        // The cover tile is a piece of the map image too; left alone it would show another area.
+        var scaledDisplayConfig = model.displayConfig
+        scaledDisplayConfig.tileCoordinates = scaledDisplayConfig.tileCoordinates.map { point in
+            var scaledPoint = point
+            scaledPoint[keyPath: axis] *= factor
+            return scaledPoint
+        }
+        model.displayConfig = scaledDisplayConfig
     }
 }
 

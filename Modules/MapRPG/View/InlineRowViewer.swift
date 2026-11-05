@@ -24,7 +24,11 @@ struct InlineRowViewer: View, Equatable {
             GameShareView(root: root.rootController, itemId: model.id) {
                 HStack {
                     VStack {
-                        ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.listDisplayModel, entryId: source.entryId)
+                        if root.editController.hasThumbnailImage(for: entry) {
+                            ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.listDisplayModel, entryId: source.entryId)
+                        } else {
+                            ThumbnailRowEmptyView(listDisplayModel: root.listDisplayModel)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     AdditionalEntryRow(source: source, entry: entry, resolvedModel: model)

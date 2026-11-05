@@ -35,6 +35,8 @@ extension CacheController: ImageCacheControllable {
         ) else { return }
         guard !Task.isCancelled else { return }
         let entry = item[itemId]
+        // No coordinates, no area: the crop would be the map's top-left corner.
+        guard !entry.coordinates.isEmpty else { return }
         let scaledRect = entry.thumbnailRect.applying(CGAffineTransform(scaleX: source.scale, y: source.scale))
         // Room rects live on the map canvas, which shows the photo rotated by its degrees.
         guard let canvasImage = source.image.rotated(byDegrees: source.degrees) else { return }
