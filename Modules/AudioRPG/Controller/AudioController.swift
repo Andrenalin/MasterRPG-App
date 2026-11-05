@@ -387,6 +387,17 @@ private extension AudioController {
             for await _ in statusChanges.values {
                 guard let self else { return }
                 self.model.isPlaying = player.timeControlStatus == .playing
+                Self.logPlaybackStatus(of: player)
+            }
+        }
+        // A track that cannot be played never changes `timeControlStatus`; only its item says why.
+        let itemStatusChanges = player.publisher(for: \.currentItem?.status)
+            .removeDuplicates()
+            .buffer(size: 8, prefetch: .keepFull, whenFull: .dropOldest)
+        let itemStatusTask = Task { @MainActor in
+            for await status in itemStatusChanges.values where status == .failed {
+                let error = player.currentItem?.error
+                Logger.audioController.error("🎧 Track failed to load: \(error?.logIdentifier ?? "unknown", privacy: .public) \(error?.localizedDescription ?? "", privacy: .private)")
             }
         }
         let endOfItemTask = Task { @MainActor [weak self] in
@@ -400,9 +411,29 @@ private extension AudioController {
                 self.resetPlaylist(complete: true)
             }
         }
-        model.add(subscriptions: [AnyCancellable { statusTask.cancel() }, AnyCancellable { endOfItemTask.cancel() }])
+        model.add(subscriptions: [
+            AnyCancellable { statusTask.cancel() },
+            AnyCancellable { itemStatusTask.cancel() },
+            AnyCancellable { endOfItemTask.cancel() }
+        ])
 
         addTimeObserver()
+    }
+
+    /// Why the player is not playing, if it waits: a SharePlay participant waits for the others
+    /// (`waitingForCoordinatedPlayback`) or for its own buffering.
+    @MainActor private static func logPlaybackStatus(of player: AVPlayer) {
+        switch player.timeControlStatus {
+        case .playing:
+            Logger.audioController.debug("🎧 Playing at rate \(player.rate, privacy: .public)")
+        case .paused:
+            Logger.audioController.debug("🎧 Paused")
+        case .waitingToPlayAtSpecifiedRate:
+            let reason = player.reasonForWaitingToPlay?.rawValue ?? "unknown"
+            Logger.audioController.debug("🎧 Waiting to play: \(reason, privacy: .public)")
+        @unknown default:
+            break
+        }
     }
 
     @MainActor private func addTimeObserver() {
