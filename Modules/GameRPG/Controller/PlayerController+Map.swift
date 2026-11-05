@@ -160,7 +160,7 @@ extension PlayerController {
         guard root.mapRoot.mapGameControllable.updateMap(for: itemId, with: model.data) else { return nil }
         gameModel.markMapStateApplied(itemId: itemId, counter: model.counter)
         retryDeferredBattleRoundUpdate(itemId: itemId)
-        gameModel.setGameUpdateType(.map)
+        gameModel.showMapForLiveUpdate(of: itemId)
         await refreshMapVisuals(itemId: itemId)
         return nil
     }
@@ -183,7 +183,7 @@ extension PlayerController {
             switch model.subType {
             case .mapState:
                 retryDeferredBattleRoundUpdate(itemId: model.data.id)
-                gameModel.setGameUpdateType(.map)
+                gameModel.showMapForLiveUpdate(of: model.data.id)
                 await refreshMapVisuals(itemId: model.data.id)
             case .battleRound:
                 setMapUpdateTypeAndSyncPawns()

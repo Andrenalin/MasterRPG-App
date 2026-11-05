@@ -102,6 +102,15 @@ struct GameRootViewer: View {
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
+        // A photo over the map that goes full screen: the presented photo may be the same as
+        // before, so the switch itself opens the viewer.
+        .onChange(of: playerController.gameModel.mapPhoto.fullScreenRequest) {
+            guard let photoId = playerController.gameModel.mapPhoto.presentation?.photoId,
+                  playerController.gameModel.mapPhoto.mode == .fullScreen
+            else { return }
+            root.photoRoot.imagePresentationModel.selectedItemId = photoId
+            scenesManager.openWindow(SceneId.imageSpaceViewer)
+        }
         // Goes straight to the immersive space instead of routing through the
         // `otherViews` reveal panel (see the `.space` case below): that panel
         // is a full-window 2D overlay meant for bounded content (pdf/photo/
@@ -189,6 +198,16 @@ struct GameRootViewer: View {
                         root: root.photoRoot,
                         trailingViewportReservation: mapTrailingViewportReservation
                     )
+                    .overlay(alignment: .bottom) {
+                        if playerController.gameModel.mapPhoto.mode == .fullScreen {
+                            MapPhotoFullScreenControls(
+                                onShowOnMap: { playerController.requestMapPhotoMode(.popover) },
+                                onClose: { playerController.requestMapPhotoMode(.closed) }
+                            )
+                            .padding()
+                            .padding(.trailing, mapTrailingViewportReservation)
+                        }
+                    }
                 case .space:
                     // visionOS opens the immersive space directly from the
                     // `.onChange` above instead of rendering anything here —

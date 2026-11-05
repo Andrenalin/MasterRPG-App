@@ -176,6 +176,15 @@ final class GameTableModel: Sendable {
     /// The photo pin's frame in the table view, which the photo popover points at.
     var pinPhotoSource: TablePinMenuSource?
 #endif
+    /// Where the photo the game master shows on the map points, in the pin container's space.
+    /// See `GameTableModel+MapPhoto.swift`.
+    var mapPhotoPosition: SIMD3<Float>?
+    /// Where the map photo popover stands as a RealityKit attachment, on visionOS.
+    let mapPhotoPopover = TablePopoverAnchor(name: "MapPhotoAnchor")
+#if !os(visionOS)
+    /// The map photo's anchor in the table view, which its popover points at.
+    var mapPhotoSource: TablePinMenuSource?
+#endif
     /// Resolved once per drag gesture by `pinDragChanged(pinId:position:)` and cleared by
     /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns`.
     var cachedDragPawn: (pinId: UUID, pawn: PinPawn)?

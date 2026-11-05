@@ -271,6 +271,15 @@ public final class GameRoot {
         String(localized: "GameMaster", bundle: .module).localizedString
     }
 
+    /// Sends the game master's change of a photo shown over the map, in order with the other
+    /// network actions.
+    func scheduleMapPhotoBroadcast(_ presentation: MapPhotoPresentation) {
+        guard let store = gameModel.masterController else { return }
+        scheduleNetworkAction {
+            await store.broadcastMapPhoto(presentation)
+        }
+    }
+
     private func scheduleNetworkAction(_ operation: @escaping @MainActor @Sendable () async -> Void) {
         let id = UUID()
         let previous = networkActionTail
@@ -582,6 +591,7 @@ extension GameRoot {
         await gameModel.masterController?.stop()
         gameModel.masterController = nil
         await gameModel.playerController?.stop()
+        gameModel.playerController?.uninstallMapPhotoActions()
         gameModel.playerController = nil
         await adventureRoot.adventureGameControllable.resetGame()
         // Bytes peers sent for files not downloaded here are only for the running game.

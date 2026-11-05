@@ -192,6 +192,12 @@ private struct GameTableRealityContent: View {
         .overlay(alignment: .topLeading) {
             GamePinPhotoPopover(game: game, viewport: viewport)
         }
+        .overlay(alignment: .topLeading) {
+            GameMapPhotoPopover(game: game, viewport: viewport)
+        }
+        .onChange(of: root.mapRoot.photoPopover.photo) {
+            game.updateMapPhotoAnchor()
+        }
         .onDisappear {
             roomActionCoordinator.cancel()
         }
@@ -380,6 +386,9 @@ private struct GameTableRealityContent: View {
                 content.project(point: position, to: .local)
             }
             game.updatePinPhotoSource { position in
+                content.project(point: position, to: .local)
+            }
+            game.updateMapPhotoSource { position in
                 content.project(point: position, to: .local)
             }
         }

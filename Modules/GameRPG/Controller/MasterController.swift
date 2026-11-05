@@ -39,6 +39,9 @@ final class MasterControllerModel {
     /// content version is preceded by the content: revealing a room changes what the players
     /// may read of it, and only the content update carries that text.
     var sentMapContentVersions: [UUID: Int] = [:]
+    /// Orders the game master's map photo changes. The presentation itself lives in the game
+    /// master's own screen state. See `MasterController+MapPhoto.swift`.
+    private var mapPhotoSequence = 0
     private var lastAudioListCounters: [UUID: Int] = [:]
     private var lastPhotoListCounters: [UUID: Int] = [:]
     private var lastPdfListCounters: [UUID: Int] = [:]
@@ -130,6 +133,12 @@ final class MasterControllerModel {
     func resetCharacterOwnership() {
         characterOwnership.removeAll()
         pendingValueUpdatesAwaitingOwnership.removeAll()
+    }
+
+    /// The sequence of the game master's next map photo change.
+    func nextMapPhotoSequence() -> Int {
+        mapPhotoSequence += 1
+        return mapPhotoSequence
     }
 
     /// Reserves the next counter atomically. Reading and incrementing in separate

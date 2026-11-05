@@ -22,6 +22,11 @@ public enum RPGMessageActionType: Int, Codable, Hashable, Sendable {
     /// `TableGenerationRootView.send(to:)` (sender) and
     /// `PlayerController+Value.handleAddItem(_:)` (receiver).
     case addItem = 16
+    /// How a photo shown while a map is on screen is presented: as a popover on the map, full
+    /// screen or closed. Only the game master sends it; its payload is GameRPG's
+    /// `MapPhotoPresentation`. See `MasterController+MapPhoto.swift` (sender) and
+    /// `PlayerController+MapPhoto.swift` (receiver).
+    case photoPresentation = 17
 
     case mapState = 3
     case mapPin = 4
@@ -51,6 +56,8 @@ extension RPGMessageActionType: CustomDebugStringConvertible {
             return "ValueUpdate"
         case .addItem:
             return "AddItem"
+        case .photoPresentation:
+            return "PhotoPresentation"
         case .playAudio:
             return "PlayAudio"
         case .screen:

@@ -42,45 +42,235 @@ public enum MapPinPhotoSharing {
     }
 }
 
-/// The popover's content: the pin's photo and its name.
+/// The popover's content: the pin's photo with its name, Close and, during a game, Full Screen.
 struct MapPinPhotoPopoverContent: View {
     let pin: MapPinModel
+    /// `nil` hides the Full Screen button: outside a game, or a pin without a photo.
+    var onShowFullScreen: (() -> Void)?
+    let onClose: () -> Void
+
+    var body: some View {
+        MapPhotoPanel(
+            photoId: pin.photoId,
+            color: pin.color,
+            title: pin.name,
+            accessibilityLabel: Text("Photo of \(pin.name)", bundle: .module),
+            onShowFullScreen: pin.photoId == nil ? nil : onShowFullScreen,
+            onClose: onClose
+        )
+    }
+}
+
+/// A photo the game master shows on the map, in the photo popover: the photo with its name,
+/// Close and Full Screen.
+struct MapPhotoPopoverContent: View {
+    let photoId: UUID
+    /// The caption, such as a pin's name. `nil` uses the photo's name.
+    var title: String?
+    let onShowFullScreen: () -> Void
+    let onClose: () -> Void
 
     @Environment(MapRootModel.self) private var root
 
     var body: some View {
-        VStack(spacing: MapPopoverLayout.contentInset) {
-            // `AsyncThumbnail` switches to the full-size photo cache for a presentation this
-            // large. The source photo is rarely square: anchor the `.fill` overflow to the top,
-            // like the pin token does, so a portrait keeps its head in view.
-            root.photoRoot.viewController.mapImage(
-                root: root.photoRoot,
-                for: pin.photoId,
-                size: CGSize(width: MapPinPhotoSharing.photoSide, height: MapPinPhotoSharing.photoSide),
-                color: pin.color
-            )
-            .frame(
-                width: MapPinPhotoSharing.photoSide,
-                height: MapPinPhotoSharing.photoSide,
-                alignment: .top
-            )
-            .clipShape(.rect(cornerRadius: MapPopoverGeometry.cornerRadius - MapPopoverLayout.contentInset))
-            .accessibilityLabel(Text("Photo of \(pin.name)", bundle: .module))
+        let name = title ?? root.photoRoot.itemControllable.nameSync(itemId: photoId)
+        MapPhotoPanel(
+            photoId: photoId,
+            color: .accentColor,
+            title: name,
+            accessibilityLabel: name.isEmpty
+                ? Text("Photo", bundle: .module)
+                : Text("Photo of \(name)", bundle: .module),
+            onShowFullScreen: onShowFullScreen,
+            onClose: onClose
+        )
+    }
+}
 
-            if !pin.name.isEmpty {
-                Text(verbatim: pin.name)
+/// A big picture of a photo in a popover panel. Its controls stand on the picture: Close at the
+/// bottom leading corner, the name at the bottom center, Full Screen at the bottom trailing
+/// corner.
+struct MapPhotoPanel: View {
+    let photoId: UUID?
+    let color: Color
+    let title: String
+    let accessibilityLabel: Text
+    let onShowFullScreen: (() -> Void)?
+    let onClose: () -> Void
+
+    @Environment(MapRootModel.self) private var root
+
+    var body: some View {
+        // `AsyncThumbnail` switches to the full-size photo cache for a presentation this
+        // large. The source photo is rarely square: anchor the `.fill` overflow to the top,
+        // like the pin token does, so a portrait keeps its head in view.
+        root.photoRoot.viewController.mapImage(
+            root: root.photoRoot,
+            for: photoId,
+            size: CGSize(width: MapPinPhotoSharing.photoSide, height: MapPinPhotoSharing.photoSide),
+            color: color
+        )
+        .frame(
+            width: MapPinPhotoSharing.photoSide,
+            height: MapPinPhotoSharing.photoSide,
+            alignment: .top
+        )
+        .accessibilityLabel(accessibilityLabel)
+        .overlay(alignment: .bottom) {
+            MapPhotoPanelControls(
+                title: title,
+                onShowFullScreen: onShowFullScreen,
+                onClose: onClose
+            )
+        }
+        .clipShape(.rect(cornerRadius: MapPopoverGeometry.cornerRadius - MapPopoverLayout.contentInset))
+        .padding(MapPopoverLayout.contentInset)
+    }
+}
+
+/// The row on the bottom edge of the picture: Close, the name and Full Screen.
+private struct MapPhotoPanelControls: View {
+    let title: String
+    let onShowFullScreen: (() -> Void)?
+    let onClose: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: MapPhotoPanelLayout.padding) {
+            MapPhotoOverlayButton(
+                title: Text("Close", bundle: .module),
+                systemImage: "xmark",
+                action: onClose
+            )
+            Spacer(minLength: 0)
+            if !title.isEmpty {
+                Text(verbatim: title)
                     .font(.headline)
                     .lineLimit(1)
-                    .padding(.bottom, MapPopoverLayout.contentInset / 2)
+                    .truncationMode(.tail)
+                    .padding(.horizontal)
+                    .padding(.vertical, MapPhotoPanelLayout.padding)
+                    .modifier(MapPhotoGlass(shape: .capsule))
+                    .accessibilityHidden(true)
+            }
+            Spacer(minLength: 0)
+            if let onShowFullScreen {
+                MapPhotoOverlayButton(
+                    title: Text("Full Screen", bundle: .module),
+                    systemImage: "arrow.up.left.and.arrow.down.right",
+                    action: onShowFullScreen
+                )
+            } else {
+                // Keeps the name centered on the picture.
+                MapPhotoOverlayButton.placeholder
             }
         }
-        .padding(MapPopoverLayout.contentInset)
-        .frame(maxWidth: MapPinPhotoSharing.photoSide + MapPopoverLayout.contentInset * 2)
+        .padding(MapPhotoPanelLayout.padding)
+    }
+}
+
+enum MapPhotoPanelLayout {
+    /// The space between the picture's edge and its controls.
+    static let padding: CGFloat = 8
+}
+
+/// A round button on the picture: Liquid Glass, a material on visionOS, where Liquid Glass is
+/// unavailable.
+private struct MapPhotoOverlayButton: View {
+    let title: Text
+    let systemImage: String
+    let action: () -> Void
+
+    @ScaledMetric(relativeTo: .body) private var diameter = MapPhotoOverlayButton.baseDiameter
+
+#if os(macOS)
+    static let baseDiameter: CGFloat = 32
+#else
+    static let baseDiameter: CGFloat = 44
+#endif
+
+    /// An invisible button-sized spacer.
+    static var placeholder: some View {
+        MapPhotoOverlayButtonPlaceholder()
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Label {
+                title
+            } icon: {
+                Image(systemName: systemImage)
+            }
+            .labelStyle(.iconOnly)
+#if os(tvOS) || os(visionOS)
+            .padding(MapPhotoPanelLayout.padding)
+#else
+            .frame(width: diameter, height: diameter)
+#endif
+            .contentShape(.circle)
+        }
+        .modifier(MapPhotoOverlayButtonStyle())
+        .help(title)
+    }
+}
+
+private struct MapPhotoOverlayButtonPlaceholder: View {
+    @ScaledMetric(relativeTo: .body) private var diameter = MapPhotoOverlayButton.baseDiameter
+
+    var body: some View {
+        Color.clear
+            .frame(width: diameter, height: diameter)
+            .accessibilityHidden(true)
+    }
+}
+
+/// tvOS uses the glass button style, whose focus effect the remote needs; visionOS the bordered
+/// style; iOS and macOS a plain button on Liquid Glass. A glass button style next to the map's
+/// drag gestures made AppKit stop delivering clicks (see `BattleRoundHeaderActions`).
+private struct MapPhotoOverlayButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+#if os(tvOS)
+        content
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+#elseif os(visionOS)
+        content
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+#elseif os(iOS)
+        content
+            .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .circle)
+#else
+        content
+            .buttonStyle(.plain)
+            .glassEffect(.regular, in: .circle)
+#endif
+    }
+}
+
+/// Liquid Glass behind a control on the picture, a material on visionOS.
+private struct MapPhotoGlass<S: Shape>: ViewModifier {
+    let shape: S
+
+    func body(content: Content) -> some View {
+#if os(visionOS)
+        content.background(.regularMaterial, in: shape)
+#else
+        content.glassEffect(.regular, in: shape)
+#endif
     }
 }
 
 #Preview("Pin Photo Popover", traits: .mockData) {
-    MapPinPhotoPopoverContent(pin: .empty(MapModel.previewId))
+    MapPinPhotoPopoverContent(pin: .empty(MapModel.previewId), onShowFullScreen: {}, onClose: {})
+        .background(.regularMaterial, in: .rect(cornerRadius: MapPopoverGeometry.cornerRadius))
+        .padding()
+        .background(Color.blue.gradient)
+        .environment(MapRootModel.preview)
+}
+
+#Preview("Map Photo Popover", traits: .mockData) {
+    MapPhotoPopoverContent(photoId: UUID(), title: "Throne Room", onShowFullScreen: {}, onClose: {})
         .background(.regularMaterial, in: .rect(cornerRadius: MapPopoverGeometry.cornerRadius))
         .padding()
         .background(Color.blue.gradient)

@@ -191,6 +191,7 @@ public extension ViewController {
         source: CGRect,
         viewportSize: CGSize,
         safeAreaInsets: EdgeInsets,
+        onShowFullScreen: (@MainActor () -> Void)?,
         onDismiss: @escaping @MainActor () -> Void
     ) -> some View {
         MapPopover(
@@ -198,23 +199,76 @@ public extension ViewController {
             viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
             onDismiss: onDismiss
         ) {
-            MapPinPhotoPopoverContent(pin: pin)
+            MapPinPhotoPopoverContent(pin: pin, onShowFullScreen: onShowFullScreen, onClose: onDismiss)
         }
         .environment(root)
         .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
     }
 
+    /// Cross-module entry point: the photo the game master shows on the map (see
+    /// `MapPhotoPopoverModel`), for GameRPG's camera-based 3D table. `source` is the projected
+    /// anchor inside a viewport of `viewportSize`. Placed like `gamePinPhotoPopover`.
+    @MainActor
+    func gameMapPhotoPopover(
+        root: MapRootModel,
+        photo: MapPhotoPopoverItem,
+        source: CGRect,
+        viewportSize: CGSize,
+        safeAreaInsets: EdgeInsets
+    ) -> some View {
+        let popover = root.photoPopover
+        return MapPopover(
+            source: source,
+            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
+            onDismiss: { popover.close() }
+        ) {
+            MapPhotoPopoverContent(
+                photoId: photo.photoId,
+                title: photo.title,
+                onShowFullScreen: { popover.showFullScreen() },
+                onClose: { popover.close() }
+            )
+        }
+        .environment(root)
+        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
+    }
+
+    /// Cross-module entry point: shows a pin's photo full screen during a game, from a map
+    /// surface other than the 2D canvas. `isShared` when the game master shows a pin the players
+    /// see. The caller closes the pin's popover first.
+    @MainActor
+    func showPinPhotoFullScreen(root: MapRootModel, pin: MapPinModel, mapId: UUID, isShared: Bool) {
+        root.photoPopover.showFullScreen(pin: pin, mapId: mapId, isShared: isShared)
+    }
+
 #if os(visionOS)
+    /// The photo the game master shows on the map as a RealityKit attachment for the table
+    /// volume on visionOS, standing above its anchor like `gamePinPhotoAttachment`.
+    @MainActor
+    func gameMapPhotoAttachment(root: MapRootModel, photo: MapPhotoPopoverItem) -> some View {
+        let popover = root.photoPopover
+        return MapPopoverAttachment(onDismiss: { popover.close() }) {
+            MapPhotoPopoverContent(
+                photoId: photo.photoId,
+                title: photo.title,
+                onShowFullScreen: { popover.showFullScreen() },
+                onClose: { popover.close() }
+            )
+        }
+        .environment(root)
+    }
+
     /// The pin photo popover as a RealityKit attachment for the table volume on visionOS,
     /// standing above the pin like `gamePinActionAttachment`.
     @MainActor
     func gamePinPhotoAttachment(
         root: MapRootModel,
         pin: MapPinModel,
+        onShowFullScreen: (@MainActor () -> Void)?,
         onDismiss: @escaping @MainActor () -> Void
     ) -> some View {
         MapPopoverAttachment(onDismiss: onDismiss) {
-            MapPinPhotoPopoverContent(pin: pin)
+            MapPinPhotoPopoverContent(pin: pin, onShowFullScreen: onShowFullScreen, onClose: onDismiss)
         }
         .environment(root)
     }

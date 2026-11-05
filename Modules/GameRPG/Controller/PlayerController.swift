@@ -53,6 +53,7 @@ final class PlayerController {
         }
         root.networkStore.model.setPlayerDelegate(self)
         root.networkProxyStore.model.setProxyPlayerDelegate(self)
+        installMapPhotoActions()
         Logger.networking.debug("PlayerController: Init")
     }
 

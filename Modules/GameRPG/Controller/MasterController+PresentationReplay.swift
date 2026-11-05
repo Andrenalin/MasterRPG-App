@@ -22,6 +22,8 @@ extension MasterController {
     /// `readyProxy(for:)` both call this directly, from two different files.
     func replayCurrentPresentation(to origin: GameMessageOrigin) async {
         guard let presentation = root.gameModel.playerController?.gameModel.gameUpdateType else { return }
+        // A photo over the map needs the map, the photo and how it is shown.
+        guard await !replayMapPhoto(to: origin) else { return }
 
         let reference: NetworkCodableDataType?
         switch presentation {

@@ -100,8 +100,9 @@ extension MapEntryModel {
         return CGSize(width: w, height: h)
     }
 
+    /// The middle of the room's bounding box, in canvas coordinates.
     var center: CGPoint {
-        CGPoint(x: xOffset - size.width / 2, y: yOffset - size.height / 2)
+        CGPoint(x: xOffset + size.width / 2, y: yOffset + size.height / 2)
     }
 
     var rect: CGRect {

@@ -967,9 +967,13 @@ struct MapMasterMessageFlowTests {
         #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
         #expect(fixture.root.mapRoot.gameControllable.gameModel.currentItemId == mapId)
 
-        // When - the master shows a Photo, covering the Map.
+        // When - the master shows a Photo. With the Map on screen it opens on the Map; full
+        // screen it covers the Map.
         let photoReference = await fixture.root.photoRoot.gameControllable.share(id: backgroundPhotoId)
         await fixture.master.show(for: photoReference)
+        #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
+        #expect(fixture.root.mapRoot.photoPopover.photo?.photoId == backgroundPhotoId)
+        localMasterPlayer.requestMapPhotoMode(.fullScreen)
         #expect(localMasterPlayer.gameModel.gameUpdateType == .photo)
 
         // When - the master re-shows the same Map. It was already sent in
@@ -982,6 +986,9 @@ struct MapMasterMessageFlowTests {
         // without falling back to an unnecessary repair round trip.
         #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
         #expect(fixture.root.mapRoot.gameControllable.gameModel.currentItemId == mapId)
+        // Showing the Map again closes the photo on it.
+        #expect(fixture.root.mapRoot.photoPopover.photo == nil)
+        #expect(localMasterPlayer.gameModel.mapPhoto.presentation == nil)
     }
 
     private static func insertCharacter(id: UUID, photoId: UUID, into root: GameRoot) {

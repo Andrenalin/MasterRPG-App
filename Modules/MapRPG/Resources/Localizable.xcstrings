@@ -716,6 +716,22 @@
         }
       }
     },
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
+          }
+        }
+      }
+    },
     "Color Picker not available" : {
       "localizations" : {
         "de" : {
@@ -1230,6 +1246,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "โฟกัสพื้นที่แผนที่"
+          }
+        }
+      }
+    },
+    "Full Screen" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vollbild"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เต็มจอ"
           }
         }
       }
