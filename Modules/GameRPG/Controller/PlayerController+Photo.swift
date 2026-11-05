@@ -9,6 +9,11 @@ extension PlayerController {
     func handlePhoto(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         // Photos come from the game master only; a player shows one through the master.
         guard !model.isAcknowledgement, model.sender.isMaster else { return nil }
+        if model.type == .update, model.subType == .photoPresentation {
+            // Names no photo version: only how a photo over the map is shown.
+            await handleMapPhotoPresentation(model)
+            return nil
+        }
 
         let masterId = model.masterId
         let localPlayerId = root.gameModel.gameConfig.id
@@ -67,9 +72,11 @@ extension PlayerController {
     }
 
     /// A show-photo event: switches the game screen to the photo and names it as the presented
-    /// photo, which the visionOS 3D image viewer follows. A `.store` only caches its photo and
-    /// never comes here.
+    /// photo, which the visionOS 3D image viewer follows. A photo the game master showed while
+    /// the map was on screen opens on the map instead (see `PlayerController+MapPhoto.swift`).
+    /// A `.store` only caches its photo and never comes here.
     func presentPhoto(itemId: UUID) {
+        guard !presentOnMap(.photo, itemId: itemId) else { return }
         gameModel.setGameUpdateType(.photo)
         root.photoRoot.photoGameControllable.presentPhoto(itemId: itemId)
     }

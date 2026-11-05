@@ -6,6 +6,7 @@ import GameRPG
 import RolePlayGameKit
 import PhotoRPG
 import SpaceRPG
+import WeatherRPG
 import SwiftUI
 import GroupActivities
 
@@ -92,6 +93,24 @@ struct WindowVisionList: Scene {
                     // as a black gradient whenever the spatial photo didn't
                     // fully cover the window.
                     .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .photo, appliesBackground: false))
+            }
+            .environment(appModel.scenesManager)
+            .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.plain)
+        .restorationBehavior(.disabled)
+        .defaultWindowPlacementAll(imageSpaceViewerPlacement)
+
+        // A weather's photo in spatial 3D with the weather in front of it, opened like the
+        // spatial photo window above when the game shows a weather full screen.
+        WindowGroup(id: SceneId.weatherSpaceViewer.rawValue) {
+            DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                appModel.weatherRoot.viewController.weatherSpaceView(root: appModel.weatherRoot)
+                    .sceneTracker(for: SceneId.weatherSpaceViewer)
+                    // No themed background, as for the spatial photo window: the RealityView
+                    // composites against passthrough itself.
+                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .weather, appliesBackground: false))
             }
             .environment(appModel.scenesManager)
             .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)

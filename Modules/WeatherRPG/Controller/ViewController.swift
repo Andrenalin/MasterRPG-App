@@ -53,7 +53,28 @@ public extension ViewController {
     @MainActor func gameViewer(root: WeatherRootModel) -> some View {
         ViewerRootView(model: root.gameController.currentItem(), configuration: ViewerConfiguration(isGame: true))
     }
+
+    /// Cross-module entry point: a weather of the running game in a popover on the game map
+    /// (GameRPG hands it to MapRPG). Brings its own environment: a visionOS table attachment
+    /// does not inherit the app's, and the weather's photo is drawn by PhotoRPG.
+    @MainActor func gamePopoverViewer(root: WeatherRootModel, itemId: UUID) -> some View {
+        WeatherPopoverViewer(model: root.gameController.gameItem(for: itemId))
+            .environment(root)
+            .environment(root.editController.cacheItemListModel)
+            .environment(root.photoRoot)
+    }
     
+#if os(visionOS)
+    /// The visionOS weather window's content: the shown weather's photo in spatial 3D with the
+    /// weather in front of it.
+    @MainActor func weatherSpaceView(root: WeatherRootModel) -> some View {
+        WeatherSpaceView()
+            .environment(root)
+            .environment(root.editController.cacheItemListModel)
+            .environment(root.photoRoot)
+    }
+#endif
+
     @MainActor func viewer(root: WeatherRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
         ViewerRootView(model: root.itemController.itemOrEmpty(for: itemId), configuration: ViewerConfiguration(closeButton: dismissAction != nil), dismissAction: dismissAction)
     }

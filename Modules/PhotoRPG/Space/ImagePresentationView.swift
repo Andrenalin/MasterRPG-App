@@ -8,8 +8,12 @@ import CoreRPG
 import UIKit
 import os.log
 
-struct ImagePresentationView: View {
+struct ImagePresentationView<Foreground: View>: View {
     let model: ImagePresentationModel
+    /// Drawn in front of the photo over its whole area, such as a weather. A RealityView
+    /// attachment, placed in front of the photo's nearest point: a SwiftUI overlay sits on the
+    /// window's plane, and the spatial photo's depth covers it there.
+    let foreground: Foreground
 
     @Environment(PhotoRootModel.self) private var root
     @Environment(AppNavigationModel.self) private var navigationModel
@@ -51,12 +55,17 @@ struct ImagePresentationView: View {
 
     var body: some View {
         GeometryReader3D { geometry in
-            RealityView { content in
+            RealityView { content, attachments in
                 // Scale the entity to fit in the bounds.
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
                 scaleImagePresentationToFit(in: availableBounds)
                 cacheAvailableBounds(availableBounds)
                 content.add(model.contentEntity)
+                if let foregroundEntity = attachments.entity(for: Self.foregroundAttachmentId) {
+                    content.add(foregroundEntity)
+                    model.foregroundEntity = foregroundEntity
+                    placeForeground(in: availableBounds)
+                }
                 // `SceneEvents.Update` isn't MainActor-isolated, and
                 // `model.contentEntity` lives on `model`'s `@MainActor`
                 // isolation — hop through the coalescing stream above before
@@ -72,10 +81,17 @@ struct ImagePresentationView: View {
                 sceneUpdateSubscription = content.subscribe(to: SceneEvents.Update.self) { _ in
                     continuation.yield()
                 }
-            } update: { content in
+            } update: { content, _ in
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
                 syncPresentation(boundsInMeters: availableBounds)
                 cacheAvailableBounds(availableBounds)
+            } attachments: {
+                Attachment(id: Self.foregroundAttachmentId) {
+                    // The window's size: the photo fills it, fitted to its aspect ratio.
+                    foreground
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .allowsHitTesting(false)
+                }
             }
             .task(id: model.selectedItemId) {
                 await model.createAndShowSpatial3DImage(root: root)
@@ -95,6 +111,7 @@ struct ImagePresentationView: View {
                 sceneUpdateSubscription = nil
                 frameSyncContinuation?.finish()
                 frameSyncTask?.cancel()
+                model.foregroundEntity = nil
             }
             .onChange(of: model.imageAspectRatio) { _, newAspectRatio in
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {
@@ -129,6 +146,11 @@ struct ImagePresentationView: View {
     /// per-frame subscription (which has no fresh value of its own) omits it
     /// and falls back to the cached `lastAvailableBounds`.
     func syncPresentation(boundsInMeters: BoundingBox? = nil) {
+        // The foreground follows the photo also while it loads or converts: its depth grows
+        // as the conversion runs.
+        if let bounds = boundsInMeters ?? lastAvailableBounds {
+            placeForeground(in: bounds)
+        }
         guard let presentationScreenSize = model
             .contentEntity
             .observable
@@ -162,6 +184,30 @@ struct ImagePresentationView: View {
         }
     }
 
+    /// Places the foreground over the photo, just in front of the photo's nearest point and
+    /// never behind the window's plane.
+    func placeForeground(in boundsInMeters: BoundingBox) {
+        guard let foregroundEntity = model.foregroundEntity else { return }
+        let photoBounds = model.contentEntity.visualBounds(relativeTo: nil)
+        let photoFront = photoBounds.isEmpty || !photoBounds.max.z.isFinite ? 0 : photoBounds.max.z
+        let center = boundsInMeters.center
+        guard center.x.isFinite, center.y.isFinite else { return }
+        // Never behind the window's plane, and never further out than `foregroundMaximumDepth`,
+        // should the photo's bounds report more depth than it shows.
+        let front = min(max(photoFront, boundsInMeters.min.z), boundsInMeters.min.z + Self.foregroundMaximumDepth)
+        let position = SIMD3<Float>(center.x, center.y, front + Self.foregroundClearance)
+        // Runs on every frame: only a real move touches the entity.
+        if simd_distance(foregroundEntity.position(relativeTo: nil), position) > 0.0005 {
+            foregroundEntity.setPosition(position, relativeTo: nil)
+        }
+    }
+
+    private static var foregroundAttachmentId: String { "ImagePresentationForeground" }
+    /// The gap between the photo's nearest point and the foreground, in meters.
+    private static var foregroundClearance: Float { 0.01 }
+    /// How far the photo's front may push the foreground out of the window, in meters.
+    private static var foregroundMaximumDepth: Float { 0.15 }
+
     /// Fit the image presentation inside a bounding box by scaling the content entity.
     func scaleImagePresentationToFit(in boundsInMeters: BoundingBox) {
         guard let imagePresentationComponent = model.contentEntity.components[ImagePresentationComponent.self] else {
@@ -183,6 +229,12 @@ struct ImagePresentationView: View {
         }
 
         model.contentEntity.scale = SIMD3<Float>(scale, scale, 1.0)
+    }
+}
+
+extension ImagePresentationView where Foreground == EmptyView {
+    init(model: ImagePresentationModel) {
+        self.init(model: model, foreground: EmptyView())
     }
 }
 

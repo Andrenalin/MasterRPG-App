@@ -10,6 +10,8 @@ struct MapViewportOverlayLayer: View {
     let transform: ViewportTransform
     let safeAreaInsets: EdgeInsets
 
+    @Environment(MapRootModel.self) private var root
+
     private var viewportRectangle: CGRect {
         CGRect(origin: .zero, size: session.viewport.configuration.containerSize)
     }
@@ -43,7 +45,17 @@ struct MapViewportOverlayLayer: View {
                 geometry: session.viewport.geometry,
                 viewportRectangle: actionViewportRectangle,
                 containerSize: viewportRectangle.size,
+                onShowFullScreen: pinPhotoFullScreenAction,
                 onDismiss: { session.route(.dismissPinPhoto) }
+            )
+
+            MapPhotoViewportLayer(
+                mapId: session.mapId,
+                mode: session.mapMode,
+                transform: transform,
+                geometry: session.viewport.geometry,
+                viewportRectangle: actionViewportRectangle,
+                containerSize: viewportRectangle.size
             )
 
             MapNeedleViewportMenuLayer(
@@ -68,6 +80,22 @@ struct MapViewportOverlayLayer: View {
             height: viewportRectangle.height,
             alignment: .topLeading
         )
+    }
+
+    /// A pin photo goes full screen during a game: its popover closes (for every player when
+    /// the game master shows it) and the photo opens full screen, for every player when the game
+    /// master shows a pin they see.
+    private var pinPhotoFullScreenAction: ((MapPinModel) -> Void)? {
+        guard session.mapMode == .gameMaster || session.mapMode == .player,
+              root.photoPopover.canShowFullScreen else { return nil }
+        let popover = root.photoPopover
+        let mapId = session.mapId
+        let isGameMaster = session.mapMode == .gameMaster
+        return { [session] pin in
+            let isShared = isGameMaster && pin.isShown
+            session.route(.dismissPinPhoto)
+            popover.showFullScreen(pin: pin, mapId: mapId, isShared: isShared)
+        }
     }
 }
 
@@ -156,6 +184,7 @@ private struct MapPinPhotoViewportLayer: View {
     let geometry: ViewportGeometry
     let viewportRectangle: CGRect
     let containerSize: CGSize
+    let onShowFullScreen: ((MapPinModel) -> Void)?
     let onDismiss: () -> Void
 
     var body: some View {
@@ -172,7 +201,11 @@ private struct MapPinPhotoViewportLayer: View {
                 viewportRectangle: viewportRectangle,
                 onDismiss: onDismiss
             ) {
-                MapPinPhotoPopoverContent(pin: node.pin)
+                MapPinPhotoPopoverContent(
+                    pin: node.pin,
+                    onShowFullScreen: onShowFullScreen.map { action in { action(node.pin) } },
+                    onClose: onDismiss
+                )
             }
             .frame(
                 width: containerSize.width,
@@ -186,6 +219,65 @@ private struct MapPinPhotoViewportLayer: View {
 
     private var photoNode: MapPinNode? {
         pins.photoPinId.flatMap(pins.pinNode(for:))
+    }
+}
+
+/// A photo the game master shows on the game map, in the pin photo popover pointing at the room
+/// it belongs to. It follows the map while it pans or zooms. A tap on the map does not close it:
+/// on the game master's device that would close it for every player. Its own Close button and
+/// Escape do.
+private struct MapPhotoViewportLayer: View {
+    let mapId: UUID
+    let mode: MapMode
+    let transform: ViewportTransform
+    let geometry: ViewportGeometry
+    let viewportRectangle: CGRect
+    let containerSize: CGSize
+
+    @Environment(MapRootModel.self) private var root
+
+    var body: some View {
+        let popover = root.photoPopover
+        if mode == .gameMaster || mode == .player,
+           let photo = popover.photo(on: mapId),
+           let source = MapPhotoPopoverSource.rectangle(
+               for: photo.anchor,
+               transform: transform,
+               geometry: geometry
+           ) {
+            MapPopover(
+                source: source,
+                viewportRectangle: viewportRectangle,
+                onDismiss: { popover.close() }
+            ) {
+                MapPhotoPopoverContent(
+                    item: photo,
+                    onShowFullScreen: { popover.showFullScreen() },
+                    onClose: { popover.close() }
+                )
+            }
+            .frame(
+                width: containerSize.width,
+                height: containerSize.height,
+                alignment: .topLeading
+            )
+            .id(photo.itemId)
+            .transition(.opacity)
+            .zIndex(11)
+        }
+    }
+}
+
+/// A point on the map as a popover source: a one-point rectangle in viewport coordinates.
+enum MapPhotoPopoverSource {
+    static func rectangle(
+        for anchor: CGPoint,
+        transform: ViewportTransform,
+        geometry: ViewportGeometry
+    ) -> CGRect? {
+        let center = geometry.viewportPoint(fromContent: anchor, transform: transform)
+        guard center.x.isFinite, center.y.isFinite else { return nil }
+        return CGRect(x: center.x - 0.5, y: center.y - 0.5, width: 1, height: 1)
     }
 }
 

@@ -58,6 +58,8 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
+        // The game master's weather, in 3D over the map.
+        .modifier(GameTableWeatherSync(root: root, game: game))
         .onDisappear {
             accessibilitySubscriptions.removeAll()
             // A view that replaced this one may already have registered its own model; the
@@ -191,6 +193,12 @@ private struct GameTableRealityContent: View {
         }
         .overlay(alignment: .topLeading) {
             GamePinPhotoPopover(game: game, viewport: viewport)
+        }
+        .overlay(alignment: .topLeading) {
+            GameMapPhotoPopover(game: game, viewport: viewport)
+        }
+        .onChange(of: root.mapRoot.photoPopover.photo) {
+            game.updateMapPhotoAnchor()
         }
         .onDisappear {
             roomActionCoordinator.cancel()
@@ -380,6 +388,9 @@ private struct GameTableRealityContent: View {
                 content.project(point: position, to: .local)
             }
             game.updatePinPhotoSource { position in
+                content.project(point: position, to: .local)
+            }
+            game.updateMapPhotoSource { position in
                 content.project(point: position, to: .local)
             }
         }

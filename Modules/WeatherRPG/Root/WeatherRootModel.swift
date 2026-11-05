@@ -140,6 +140,10 @@ public final class WeatherRootModel {
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
+#if os(visionOS)
+    /// The weather the visionOS weather window shows.
+    @ObservationIgnored public let weatherSpaceModel = WeatherSpaceModel()
+#endif
 }
 
 @MainActor
@@ -193,5 +197,13 @@ public extension WeatherRootModel {
 
     func validateLinks(reportModel: ValidateRepairModel) async {
         await linkController.validateLinks(reportModel: reportModel)
+    }
+}
+
+public extension WeatherRootModel {
+    /// A weather of the running game, such as the one shown on the game table: from game
+    /// memory, else the library.
+    func gameWeather(itemId: UUID) -> WeatherModel {
+        gameController.gameItem(for: itemId)
     }
 }

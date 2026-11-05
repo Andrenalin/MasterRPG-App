@@ -107,5 +107,28 @@ public extension ViewController {
     func imageSpaceView() -> some View {
         ImageSpaceView()
     }
+
+    /// Cross-module entry point: the photo `model` selects, converted to spatial 3D and fitted
+    /// into its window, as the photo window shows it.
+    @MainActor func spatialPhotoView(root: PhotoRootModel, model: ImagePresentationModel) -> some View {
+        ImagePresentationView(model: model)
+            .environment(root)
+    }
+
+    /// The spatial photo with `foreground` in front of it, over the photo's whole area, such as
+    /// a weather. It stays in front of the photo's depth as the conversion runs.
+    @MainActor func spatialPhotoView<Foreground: View>(
+        root: PhotoRootModel,
+        model: ImagePresentationModel,
+        @ViewBuilder foreground: () -> Foreground
+    ) -> some View {
+        ImagePresentationView(model: model, foreground: foreground())
+            .environment(root)
+    }
+
+    /// The photo window's ornament for `model`: switches between 2D and 3D.
+    @MainActor func spatialPhotoOrnament(model: ImagePresentationModel) -> some View {
+        OrnamentsView(model: model)
+    }
     #endif
 }

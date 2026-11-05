@@ -30,6 +30,10 @@ final class MapGameModel {
     private(set) var battleCharacterCopyIds: Set<UUID> = []
     private var authoritativeGenerations: [UUID: AuthoritativeGeneration] = [:]
     private var lastActivatedRoomIds: [UUID: UUID] = [:]
+    /// The room the game master last revealed or focused, per map. A photo shown while the map
+    /// is on screen opens next to it. Unlike `lastActivatedRoomIds`, closing a room does not
+    /// record it.
+    private var lastOpenedRoomIds: [UUID: UUID] = [:]
 
     func recordAuthoritativeGeneration(_ data: NetworkCodableDataType) {
         guard data.type == .map else { return }
@@ -57,6 +61,14 @@ final class MapGameModel {
         lastActivatedRoomIds[mapId]
     }
 
+    func recordOpenedRoom(_ roomId: UUID, for mapId: UUID) {
+        lastOpenedRoomIds[mapId] = roomId
+    }
+
+    func lastOpenedRoomId(for mapId: UUID) -> UUID? {
+        lastOpenedRoomIds[mapId]
+    }
+
     func registerBattleCharacterCopy(_ id: UUID) {
         battleCharacterCopyIds.insert(id)
     }
@@ -69,6 +81,7 @@ final class MapGameModel {
         playerPins = []
         authoritativeGenerations = [:]
         lastActivatedRoomIds = [:]
+        lastOpenedRoomIds = [:]
         battleCharacterCopyIds = []
         battleRoundModel.reset()
     }
@@ -113,6 +126,9 @@ public protocol MapGameStorable: Sendable {
     @MainActor func togglePointer(itemId: UUID) -> Bool
     @MainActor func networkPointer(itemId: UUID) -> NetworkCodableDataType?
     @MainActor func showPointerAtMapCenter(itemId: UUID) -> Bool
+    /// Where a photo shown on the map points, in canvas coordinates: the center of the room the
+    /// game master last opened while it is still open, otherwise the map's center.
+    @MainActor func photoAnchor(for itemId: UUID) -> CGPoint
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func setPinPhotoShown(itemId: UUID, pinId: UUID, shown: Bool) -> Bool
     @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool

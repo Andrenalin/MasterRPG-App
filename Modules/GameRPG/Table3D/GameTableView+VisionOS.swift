@@ -86,6 +86,9 @@ public struct GameTableView: View {
                     if let pinPhoto = attachments.entity(for: "pin-photo") {
                         loadedGame.registerPinPhotoAttachment(pinPhoto)
                     }
+                    if let mapPhoto = attachments.entity(for: "map-photo") {
+                        loadedGame.registerMapPhotoAttachment(mapPhoto)
+                    }
                     for group in loadedGame.diceResultGroups {
                         if let diceResult = attachments.entity(for: GameDiceResultPopover.attachmentId(for: group)) {
                             loadedGame.registerDiceResultAttachment(diceResult, for: group)
@@ -98,12 +101,16 @@ public struct GameTableView: View {
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                     loadedGame.updatePinMenuAttachmentPosition()
                     loadedGame.updatePinPhotoAttachmentPosition()
+                    loadedGame.updateMapPhotoAttachmentPosition()
                 } attachments: {
                     Attachment(id: "pin-menu") {
                         GamePinActionMenu(game: loadedGame)
                     }
                     Attachment(id: "pin-photo") {
                         GamePinPhotoPopover(game: loadedGame)
+                    }
+                    Attachment(id: "map-photo") {
+                        GameMapPhotoPopover(game: loadedGame)
                     }
                     // One per dice group: every seat's dice, and every guest's at the guest
                     // seat, can show a result at the same time.
@@ -288,6 +295,8 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
+        // The game master's weather, in 3D over the map.
+        .modifier(GameTableWeatherSync(root: root, game: game))
         // Mirrors the currently focused character-sheet dice set onto this
         // player's own seat dice — both its shape (count and type per die,
         // so switching focus without rolling still updates the table) and
@@ -304,6 +313,10 @@ public struct GameTableView: View {
         .onChange(of: guestRolls, initial: false) { _, rolls in
             game?.applyGuestRolls(rolls)
         }
+        // The photo the game master shows on the map stands at its anchor on the table.
+        .onChange(of: root.mapRoot.photoPopover.photo) {
+            game?.updateMapPhotoAnchor()
+        }
         .task {
             await scaleController.start()
         }
@@ -319,6 +332,7 @@ public struct GameTableView: View {
             // over. See `GameTableModel.registerPinMenuAttachment(_:)`'s doc.
             game?.detachPinMenuAttachment()
             game?.detachPinPhotoAttachment()
+            game?.detachMapPhotoAttachment()
             game?.detachDiceResultAttachments()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()

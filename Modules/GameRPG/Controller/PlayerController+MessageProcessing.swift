@@ -209,6 +209,7 @@ extension PlayerController {
         if model.isPresentation {
             if gameModel.isCurrentPresentation(counter: model.counter, module: model.data.type, itemId: model.data.id) {
                 gameModel.markPresentation(counter: model.counter, module: model.data.type, itemId: model.data.id)
+                noteMasterPresentation(type: model.type, module: model.data.type, itemId: model.data.id)
             } else if model.type == .reveal, model.data.data != nil {
                 applied.type = .store
                 applied.subType = .store

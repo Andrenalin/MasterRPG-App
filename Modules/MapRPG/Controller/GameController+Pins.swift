@@ -323,6 +323,9 @@ extension GameController {
         guard item.entries.contains(where: { $0.id == roomId }) else { return false }
         item.toggle(roomId)
         mapGameModel.recordActivatedRoom(roomId, for: itemId)
+        if item.entries.first(where: { $0.id == roomId })?.isShown == true {
+            mapGameModel.recordOpenedRoom(roomId, for: itemId)
+        }
         return true
     }
 
@@ -336,6 +339,7 @@ extension GameController {
         item.focused(room)
         if item.entries.first(where: { $0.id == roomId })?.focused == true {
             mapGameModel.recordActivatedRoom(roomId, for: itemId)
+            mapGameModel.recordOpenedRoom(roomId, for: itemId)
         }
         return true
     }
@@ -352,6 +356,9 @@ extension GameController {
                   room.isShown != isShown else { continue }
             item.toggle(roomId)
             didChange = true
+            if isShown {
+                mapGameModel.recordOpenedRoom(roomId, for: itemId)
+            }
         }
         return didChange
     }
@@ -394,6 +401,18 @@ extension GameController {
         let moved = movePointer(itemId: itemId, location: center)
         let revealed = item.pointer.isShown ? false : togglePointer(itemId: itemId)
         return moved || revealed
+    }
+
+    @MainActor
+    func photoAnchor(for itemId: UUID) -> CGPoint {
+        let item = gameItem(for: itemId)
+        if let roomId = mapGameModel.lastOpenedRoomId(for: itemId),
+           let room = item.entries.first(where: { $0.id == roomId }),
+           room.isShown,
+           room.coordinates.bounds != nil {
+            return room.center
+        }
+        return CGPoint(x: item.width / 2, y: item.height / 2)
     }
 
     /// Toggles a pin's visibility as the game master — the 3D-table

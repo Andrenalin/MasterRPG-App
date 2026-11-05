@@ -65,11 +65,6 @@ struct WeatherViewer: View {
         .clear, .clear, .white, .white,
     ])
 
-    var starOpacity: Double {
-        let color = Self.starStops.interpolated(amount: model.time)
-        return color.getComponents().alpha
-    }
-
     var body: some View {
         ZStack {
             if let photoId = model.photoId {
@@ -79,25 +74,7 @@ struct WeatherViewer: View {
             }
 
             if isAnimating || useGame {
-                StarsView()
-                    .opacity(starOpacity)
-                
-                CloudsView(
-                    thickness: model.cloudThickness,
-                    topTint: Self.cloudTopStops.interpolated(amount: model.time),
-                    bottomTint: Self.cloudBottomStops.interpolated(amount: model.time)
-                )
-                
-                LightningView(
-                    frequency: model.lightningFrequency,
-                    maximumBolts: WeatherLimits.count(model.lightningMaxBolts, in: WeatherLimits.lightningMaxBolts),
-                    forkProbability: WeatherLimits.count(model.lightningForkProbability, in: WeatherLimits.lightningForkProbability),
-                    trigger: lightningTrigger
-                )
-                
-                if model.stormType != .none {
-                    StormView(type: model.stormType, direction: .degrees(model.rainAngle), strength: WeatherLimits.count(model.rainIntensity, in: WeatherLimits.rainIntensity))
-                }
+                WeatherEffectLayers(model: model, lightningTrigger: lightningTrigger)
             }
         }
         .frame(width: containerSize.width, height: containerSize.height)

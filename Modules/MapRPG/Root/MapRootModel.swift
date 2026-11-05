@@ -162,6 +162,9 @@ public final class MapRootModel {
     let characterRoot: CharacterRootModel
 
     public let rootModel: RootModel
+    /// A photo the game master shows on the game map. GameRPG sets it; the 2D map and the 3D
+    /// table draw it.
+    public let photoPopover = MapPhotoPopoverModel()
 
     public let config: ModuleConfiguration
     @MainActor public var navigationModel: ModuleNavigationModel

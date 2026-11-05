@@ -81,7 +81,7 @@ extension PlayerController {
     /// it lives on the controller rather than either model — one @MainActor call
     /// keeps both updates atomic. See CODE_AUDIT §3.1.
     func setMapUpdateTypeAndSyncPawns() {
-        gameModel.setGameUpdateType(.map)
+        gameModel.showMapForLiveUpdate(of: root.mapRoot.gameControllable.gameModel.currentItemId)
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif

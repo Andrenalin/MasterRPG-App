@@ -17,10 +17,21 @@ enum Spatial3DImageState {
 }
 
 @MainActor @Observable public final class ImagePresentationModel {
+    /// The photo shown. Each window showing a spatial photo needs its own model: its
+    /// `contentEntity` can be in only one `RealityView`.
     public var selectedItemId: UUID?
+
+    public init() {}
+
+    /// Whether the photo is being converted to spatial 3D. The ornament is hidden meanwhile.
+    public var isGeneratingSpatial3DImage: Bool {
+        spatial3DImageState == .generating
+    }
 
     var imageAspectRatio: CGFloat = 1.0
     var contentEntity: Entity = Entity()
+    /// The view's foreground attachment, in front of the photo. Set by `ImagePresentationView`.
+    @ObservationIgnored var foregroundEntity: Entity?
     var spatial3DImageState: Spatial3DImageState = .notGenerated
     var spatial3DImage: ImagePresentationComponent.Spatial3DImage? = nil
 

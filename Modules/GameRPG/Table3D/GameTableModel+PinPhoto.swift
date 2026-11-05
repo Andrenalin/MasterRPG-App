@@ -74,6 +74,22 @@ extension GameTableModel {
         setSharedPinPhoto(pinId: pinId, shown: false)
     }
 
+    /// The pin photo popover's Full Screen button, `nil` outside a game.
+    var pinPhotoFullScreenAction: (@MainActor () -> Void)? {
+        guard mapRoot.photoPopover.actions != nil else { return nil }
+        return { [weak self] in self?.showPinPhotoFullScreen() }
+    }
+
+    /// The popover's Full Screen button: closes the popover (for everyone when the game master
+    /// shows it) and opens the photo full screen, for every player when the game master shows a
+    /// pin they see.
+    func showPinPhotoFullScreen() {
+        guard let pin = photoPin, let mapId = currentMapId else { return }
+        let isShared = isGameMaster && pin.isShown
+        dismissPinPhoto()
+        mapRoot.viewController.showPinPhotoFullScreen(root: mapRoot, pin: pin, mapId: mapId, isShared: isShared)
+    }
+
     /// Follows the map after a sync: applies a change of a pin's shared photo flag, and closes
     /// the popover of a pin that is gone or, for a player, hidden. Refreshes the pin's state
     /// for the popover.

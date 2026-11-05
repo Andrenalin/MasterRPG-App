@@ -281,6 +281,7 @@ extension GameTableModel {
         )
         updateSelectedPinState(mapModel: mapModel)
         updatePinPhotoState(mapModel: mapModel)
+        updateMapPhotoAnchor()
         // Bookkeeping of a pin that is gone must not outlive it. See CODE_AUDIT_23 §5.24.
         let keptIds = Set(setup.pinPawns.map(\.pinId))
         for removedId in pendingThumbnailTasks.keys where !keptIds.contains(removedId) {

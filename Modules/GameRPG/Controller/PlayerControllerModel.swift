@@ -28,6 +28,11 @@ final class PlayerControllerModel {
     }
 
     var gameUpdateType: NetworkModules = .none
+    /// A photo the game master shows while a map is on screen: on the map, full screen or
+    /// closed. See `PlayerController+MapPhoto.swift`.
+    var mapPhoto = MapPhotoPresentationState()
+    /// The weather the game master shows on the 3D table. See `PlayerController+TableWeather.swift`.
+    var tableWeather = TableWeatherState()
     var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
     private var lastMasterStateCounters: [UUID: Int] = [:]
@@ -302,6 +307,28 @@ final class PlayerControllerModel {
         gameUpdateType = type
     }
 
+    /// Counts every time a weather is shown full screen. visionOS opens the weather window on
+    /// each, also for the same weather again.
+    private(set) var weatherWindowRequest = 0
+
+    /// Shows the current weather full screen.
+    func showWeather() {
+        gameUpdateType = .weather
+        weatherWindowRequest &+= 1
+    }
+
+    /// A live update of a map (its state or battle round) brings it to the front, unless a photo
+    /// over that map is full screen: the photo's own buttons decide when the map returns. A
+    /// reveal of a map is not a live update and closes the photo instead.
+    func showMapForLiveUpdate(of mapId: UUID?) {
+        if mapPhoto.mode == .fullScreen,
+           let presentation = mapPhoto.presentation,
+           presentation.mapId == mapId {
+            return
+        }
+        gameUpdateType = .map
+    }
+
     /// Reads both gate flags in one @MainActor property so a concurrent
     /// writer can't be observed between them. See CODE_AUDIT §3.1.
     var canSendCharacter: Bool {
@@ -384,6 +411,8 @@ final class PlayerControllerModel {
         lastSpaceListCounters.removeAll()
         // A restarted game master counts from one again.
         lastPresentation = nil
+        mapPhoto.reset()
+        tableWeather.reset()
         pendingMapContentUpdates.removeAll()
         pendingMapStates.removeAll()
         pendingBattleRoundUpdates.removeAll()

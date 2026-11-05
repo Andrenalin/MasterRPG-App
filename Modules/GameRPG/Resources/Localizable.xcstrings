@@ -1315,6 +1315,22 @@
         }
       }
     },
+    "Clear Weather" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wetter entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล้างสภาพอากาศ"
+          }
+        }
+      }
+    },
     "code" : {
       "localizations" : {
         "de" : {
@@ -6835,6 +6851,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dein Spielercode"
+          }
+        }
+      }
+    },
+    "Show on Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf der Karte zeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงบนแผนที่"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
           }
         }
       }

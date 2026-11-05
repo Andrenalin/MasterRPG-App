@@ -26,6 +26,8 @@ extension SceneId {
     public static var tableGenerator: Self { .init(rawValue: "tableGenerator") }
     public static var valueViewer: Self { .init(rawValue: "valueViewer") }
     public static var weatherViewer: Self { .init(rawValue: "weatherViewer") }
+    /// visionOS: a weather's photo in spatial 3D with the weather in front of it.
+    public static var weatherSpaceViewer: Self { .init(rawValue: "weatherSpaceViewer") }
     
     
     public static func sceneId(for networkModule: NetworkModules) -> SceneId {
