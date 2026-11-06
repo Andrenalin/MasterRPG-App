@@ -21,7 +21,9 @@ extension MasterController {
     /// `ready(for:)` and `MasterController+ProxyDelegate.swift`'s
     /// `readyProxy(for:)` both call this directly, from two different files.
     func replayCurrentPresentation(to origin: GameMessageOrigin) async {
-        guard let presentation = root.gameModel.playerController?.gameModel.gameUpdateType else { return }
+        // `sharedUpdateType`, not `gameUpdateType`: a photo the game master opened privately from
+        // a hidden pin must not be replayed to a joining or reconnecting player.
+        guard let presentation = root.gameModel.playerController?.gameModel.sharedUpdateType else { return }
         // First, so a weather revealed below is already held and needs no request.
         await replayTableWeather(to: origin)
         // A photo over the map needs the map, the photo and how it is shown.

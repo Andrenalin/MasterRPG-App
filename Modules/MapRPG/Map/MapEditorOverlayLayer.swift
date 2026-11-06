@@ -235,10 +235,12 @@ private struct MapPhotoViewportLayer: View {
     let containerSize: CGSize
 
     @Environment(MapRootModel.self) private var root
+    @Environment(\.isSharedDisplay) private var isSharedDisplay
 
     var body: some View {
         let popover = root.photoPopover
         if mode == .gameMaster || mode == .player,
+           !(isSharedDisplay && popover.isPrivate),
            let photo = popover.photo(on: mapId),
            let source = MapPhotoPopoverSource.rectangle(
                for: photo.anchor,

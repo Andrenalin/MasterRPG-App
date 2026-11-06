@@ -26,6 +26,12 @@ public struct MapPhotoPopoverItem: Equatable, Sendable {
     }
 }
 
+public extension EnvironmentValues {
+    /// Set on a display everyone at the table sees, such as an external screen. It leaves out
+    /// anything only the game master's device opened.
+    @Entry var isSharedDisplay = false
+}
+
 /// What the photo popovers' buttons do. GameRPG decides whether a change stays on this device or
 /// goes to every player.
 public struct MapPhotoPopoverActions {
@@ -55,6 +61,9 @@ public struct MapPhotoPopoverActions {
 public final class MapPhotoPopoverModel {
     /// The photo in the popover, `nil` when none is shown.
     public var photo: MapPhotoPopoverItem?
+    /// Whether the photo in the popover is one only this device opened, such as the game
+    /// master's hidden pin. A shared display (`\.isSharedDisplay`) does not draw it.
+    public var isPrivate = false
     /// Installed by GameRPG for the length of a game. Holds no view.
     @ObservationIgnored public var actions: MapPhotoPopoverActions?
     /// Draws the picture of an item MapRPG cannot draw itself, such as a weather. Installed by

@@ -131,6 +131,7 @@ extension PlayerController {
         switch state.mode {
         case .popover:
             gameModel.setGameUpdateType(.map)
+            root.mapRoot.photoPopover.isPrivate = state.isLocal
             root.mapRoot.photoPopover.photo = MapPhotoPopoverItem(
                 itemId: presentation.itemId,
                 module: presentation.module,

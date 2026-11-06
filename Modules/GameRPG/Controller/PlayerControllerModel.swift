@@ -303,6 +303,13 @@ final class PlayerControllerModel {
         self.hasSendPlayer = sendPlayer
     }
 
+    /// The screen the players share. Differs from `gameUpdateType` while the game master looks at
+    /// something only this device opened, such as a hidden pin's photo: the map stays the shared
+    /// screen. The late-joiner replay and an external display read this, never `gameUpdateType`.
+    var sharedUpdateType: NetworkModules {
+        mapPhoto.isLocal && mapPhoto.presentation != nil ? .map : gameUpdateType
+    }
+
     func setGameUpdateType(_ type: NetworkModules) {
         gameUpdateType = type
     }

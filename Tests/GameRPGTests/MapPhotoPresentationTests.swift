@@ -428,8 +428,15 @@ struct MapPhotoPresentationTests {
         // A hidden pin: only on the game master's device, and its changes stay there.
         root.mapRoot.photoPopover.actions?.showPhotoFullScreen(pin, false)
         #expect(masterPlayer.gameModel.mapPhoto.isLocal)
+        // The shared screen (late-joiner replay, external display) stays the map, never the
+        // private photo.
+        #expect(masterPlayer.gameModel.sharedUpdateType == .map)
+        masterPlayer.requestMapPhotoMode(.popover)
+        #expect(root.mapRoot.photoPopover.isPrivate)
+        #expect(masterPlayer.gameModel.sharedUpdateType == .map)
         masterPlayer.requestMapPhotoMode(.closed)
         #expect(masterPlayer.gameModel.mapPhoto.isLocal)
+        #expect(masterPlayer.gameModel.sharedUpdateType == .map)
         #expect(await root.gameModel.masterController?.replayMapPhoto(to: .local) == false)
 
         // A pin the players see: a master presentation, so the replay carries it.

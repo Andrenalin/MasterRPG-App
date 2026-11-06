@@ -70,7 +70,7 @@ struct GameRootViewer: View {
                         joinCode: contentType == .externalPlayer ? nil : root.ownJoinCode(isMaster: contentType == .master)
                     )
                 }
-            } else if playerController.gameModel.gameUpdateType != .map {
+            } else if visibleUpdateType != .map {
                 ZStack {
                     GameSetupBackdrop()
                     otherViews { EmptyView() }
@@ -200,7 +200,7 @@ struct GameRootViewer: View {
     @MainActor @ViewBuilder
     private func otherViews<Content: View>(@ViewBuilder defaultContentView: () -> Content) -> some View {
         Group {
-            switch playerController.gameModel.gameUpdateType {
+            switch visibleUpdateType {
                 case .pdf:
                     root.pdfRoot.viewController.gamePdfView(root: root.pdfRoot)
                 case .photo:
@@ -242,6 +242,14 @@ struct GameRootViewer: View {
         }
     }
 
+    /// What this surface shows. A shared display never shows a presentation only the game master
+    /// opened (a hidden pin's photo): it stays on the map. See `PlayerControllerModel.sharedUpdateType`.
+    private var visibleUpdateType: NetworkModules {
+        contentType == .externalPlayer
+            ? playerController.gameModel.sharedUpdateType
+            : playerController.gameModel.gameUpdateType
+    }
+
     private var showsMapItemControls: Bool {
         let mapPhoto = playerController.gameModel.mapPhoto
         return mapPhoto.mode == .fullScreen
@@ -251,7 +259,7 @@ struct GameRootViewer: View {
     private static let defaultViewId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
 
     private var currentViewId: UUID {
-        switch playerController.gameModel.gameUpdateType {
+        switch visibleUpdateType {
             case .pdf:
                 return root.pdfRoot.gameControllable.gameModel.currentItemId ?? Self.defaultViewId
             case .photo:

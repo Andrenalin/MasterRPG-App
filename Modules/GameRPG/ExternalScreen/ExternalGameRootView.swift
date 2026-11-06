@@ -32,6 +32,7 @@ public struct ExternalGameRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
+        .environment(\.isSharedDisplay, true)
     }
 }
 
