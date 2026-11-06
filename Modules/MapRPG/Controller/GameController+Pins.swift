@@ -34,13 +34,22 @@ extension GameController {
         guard let playerPin = mapGameModel.playerPins.first(where: { $0.id == playerId }) else { return }
         for itemId in gameModel.items {
             let map = gameItem(for: itemId)
-            guard let index = map.mapPins.firstIndex(where: { $0.id == playerId }) else { continue }
+            // Only a pin that already is a player pin: a map's own pin with the same id (a
+            // player-chosen companion id) is not turned into one. See CODE_AUDIT_24 §6.3.
+            guard let index = map.mapPins.firstIndex(where: { $0.id == playerId && $0.isPlayer }) else { continue }
             Self.applyPlayerMetadata(from: playerPin, to: &map.mapPins[index])
         }
     }
 
     @MainActor
     func resetPlayerPins(for players: [PlayerGameModel]) {
+        // A player pin never takes the id of a pin the map owns (a monster, a marker): a
+        // companion's id is chosen by its player's device. See CODE_AUDIT_24 §6.3.
+        var foreignPinIds = Set<UUID>()
+        for itemId in gameModel.items {
+            foreignPinIds.formUnion(gameItem(for: itemId).mapPins.lazy.filter { !$0.isPlayer }.map(\.id))
+        }
+        let players = players.filter { !foreignPinIds.contains($0.id) }
         let playerIds = Set(players.map(\.id))
         let handovers = pinHandovers(for: players)
         mapGameModel.playerPins.removeAll { !playerIds.contains($0.id) }

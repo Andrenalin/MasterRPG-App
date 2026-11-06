@@ -126,7 +126,19 @@ final class GameRootModel: Sendable {
         }
         // Only a player brings companions; never its own Character.
         if playerModel.type == .player {
-            playerModel.companions.removeAll { $0.characterId == playerModel.characterId || $0.id == playerId }
+            // A companion id becomes a pin id: none may be one the game master or another
+            // player already uses. See CODE_AUDIT_24 §6.3.
+            var takenIds = Set(tablePlayers.map(\.id))
+            for other in gameRoster.players where other.id != playerId {
+                takenIds.insert(other.id)
+                takenIds.formUnion(other.companions.map(\.id))
+            }
+            playerModel.companions = TablePlayerResolver.acceptedCompanions(
+                playerModel.companions,
+                ownerId: playerId,
+                ownCharacterId: playerModel.characterId,
+                takenIds: takenIds
+            )
         } else {
             playerModel.companions = []
         }

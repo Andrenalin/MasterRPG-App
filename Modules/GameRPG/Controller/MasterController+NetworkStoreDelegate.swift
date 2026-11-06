@@ -321,7 +321,13 @@ extension MasterController {
         case (.update, .mapPin, .map):
             // Moving a player pin the game master gave this observer; `handleMap` admits it
             // only for such a pin. See `MapPinModel.isControlled(by:)`.
-            guard model.data.data != nil else { return nil }
+            // Like a player's pin move, which is a group event: the same size cap and clock
+            // check, because this one is decoded on the main actor and relayed to nobody else.
+            // See CODE_AUDIT_24 §6.6.
+            guard let payload = model.data.data,
+                  payload.count <= GameLimits.maximumGroupEventPayloadBytes,
+                  GameNetworkModel.acceptsEventTimestamp(model.timestamp)
+            else { return nil }
             return model
         default:
             break

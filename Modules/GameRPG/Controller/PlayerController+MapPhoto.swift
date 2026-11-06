@@ -65,7 +65,10 @@ extension PlayerController {
     /// A pin's photo goes full screen from its popover. Shared by the game master for a pin the
     /// players see: then everyone follows. Otherwise it stays on this device.
     func showPhotoFullScreen(_ photo: MapPhotoPopoverItem, isShared: Bool) {
-        if isShared, gameModel.asGameMaster, let masterController = root.gameModel.masterController {
+        // Also a backstop for every caller: nothing goes out while "Share Map" is paused.
+        // See CODE_AUDIT_24 §6.2.
+        if isShared, gameModel.asGameMaster, root.mapRoot.rootModel.isMapStreaming,
+           let masterController = root.gameModel.masterController {
             let presentation = MapPhotoPresentation(
                 itemId: photo.itemId,
                 module: photo.module,

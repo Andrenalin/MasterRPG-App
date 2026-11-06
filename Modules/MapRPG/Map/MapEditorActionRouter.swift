@@ -264,7 +264,8 @@ final class MapEditorActionRouter {
             guard let pin = session.pins.pinPointer(for: pinId) else { return }
             let show = session.pins.photoPinId != pinId
             if pin.isShown || pin.isZoom {
-                setSharedPinPhoto(pinId: pinId, shown: show && pin.isShown)
+                // Not for a pin inside an unrevealed room. See CODE_AUDIT_24 §6.2.
+                setSharedPinPhoto(pinId: pinId, shown: show && interactionMap.isPinVisibleToPlayers(pin))
             }
             session.pins.setPhotoPinId(show ? pinId : nil)
         case .player:

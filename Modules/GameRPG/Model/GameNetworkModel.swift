@@ -60,8 +60,7 @@ extension GameSenderModel {
             SupporterTier.self,
             forKey: .supporterTier
         ) ?? .none
-        companions = Array((try container.decodeIfPresent([TablePlayerModel].self, forKey: .companions) ?? [])
-            .prefix(PlayerGameModel.maximumCompanions))
+        companions = try container.decodeCompanions(forKey: .companions)
     }
 
     func encode(to encoder: Encoder) throws {

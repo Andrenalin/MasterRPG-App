@@ -66,6 +66,22 @@ public enum TablePlayerResolver {
         return result
     }
 
+    /// The companions of a player the game master accepts. A companion's id becomes the id of its
+    /// pin and is chosen by the player's device, so one that is the player's own id, repeats in
+    /// the list, or is in `takenIds` (other players, their companions, table players) is
+    /// dropped, as is the player's own Character. See CODE_AUDIT_24 §6.3.
+    public static func acceptedCompanions(
+        _ companions: [TablePlayerModel],
+        ownerId: UUID,
+        ownCharacterId: UUID?,
+        takenIds: Set<UUID>
+    ) -> [TablePlayerModel] {
+        var seen = takenIds.union([ownerId])
+        return companions.filter { companion in
+            companion.characterId != ownCharacterId && seen.insert(companion.id).inserted
+        }
+    }
+
     /// The owner of every companion pin: companion id → the id of the player who brought it.
     public static func companionOwners(roster: [PlayerGameModel]) -> [UUID: UUID] {
         var owners: [UUID: UUID] = [:]
@@ -118,5 +134,27 @@ public enum TablePlayerResolver {
             result.append(TablePlayerModel(characterId: characterId))
         }
         return result
+    }
+}
+
+public extension KeyedDecodingContainer {
+    /// The companions a peer sent. A list longer than `PlayerGameModel.maximumCompanions` is
+    /// refused before any element is decoded: no honest device sends one, and the roster entry
+    /// travels in every message. See CODE_AUDIT_24 §6.6.
+    func decodeCompanions(forKey key: Key) throws -> [TablePlayerModel] {
+        guard contains(key), try !decodeNil(forKey: key) else { return [] }
+        var list = try nestedUnkeyedContainer(forKey: key)
+        if let count = list.count, count > PlayerGameModel.maximumCompanions {
+            throw DecodingError.dataCorruptedError(
+                forKey: key,
+                in: self,
+                debugDescription: "More than \(PlayerGameModel.maximumCompanions) companions"
+            )
+        }
+        var companions: [TablePlayerModel] = []
+        while !list.isAtEnd {
+            companions.append(try list.decode(TablePlayerModel.self))
+        }
+        return companions
     }
 }

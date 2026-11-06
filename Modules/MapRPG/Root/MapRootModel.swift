@@ -271,6 +271,18 @@ extension MapRootModel {
     }
 }
 
+// MARK: - Pin photo sharing
+
+extension MapRootModel {
+    /// Whether the game master's full-screen photo of `pin` on map `mapId` goes to the players.
+    /// See `MapModel.mayShareFullScreenPhoto(of:isStreaming:)`.
+    @MainActor
+    public func mayShareFullScreenPhoto(of pin: MapPinModel, on mapId: UUID) -> Bool {
+        gameController.gameItem(for: mapId)
+            .mayShareFullScreenPhoto(of: pin, isStreaming: rootModel.isMapStreaming)
+    }
+}
+
 // MARK: - Actions
 
 extension MapRootModel {

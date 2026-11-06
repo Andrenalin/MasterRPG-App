@@ -70,6 +70,34 @@ struct PlayerCompanionsTests {
         #expect(model.gameRoster.players.first { $0.id == observerId }?.companions == [])
     }
 
+    @Test("A companion id that is already a pin id, a player, a table player or repeated is refused (§6.3)")
+    func companionIdCollisionsAreRefused() {
+        let model = GameRootModel()
+        let tableId = UUID()
+        model.tablePlayers = [TablePlayerModel(id: tableId, characterId: UUID())]
+        let annaId = UUID()
+        let bobId = UUID()
+        let annasWolf = TablePlayerModel(characterId: UUID())
+        let anna = PlayerGameModel(id: annaId, type: .player, name: "Anna", characterId: UUID(), companions: [annasWolf])
+        _ = model.add(playerId: annaId, playerModel: anna, sharingModel: SharingControlModel(id: annaId, name: "Anna", show: true))
+
+        let fine = TablePlayerModel(characterId: UUID())
+        let bob = PlayerGameModel(
+            id: bobId, type: .player, name: "Bob", characterId: UUID(),
+            companions: [
+                TablePlayerModel(id: tableId, characterId: UUID()),
+                TablePlayerModel(id: annaId, characterId: UUID()),
+                TablePlayerModel(id: annasWolf.id, characterId: UUID()),
+                fine,
+                TablePlayerModel(id: fine.id, characterId: UUID())
+            ]
+        )
+        _ = model.add(playerId: bobId, playerModel: bob, sharingModel: SharingControlModel(id: bobId, name: "Bob", show: true))
+
+        #expect(model.gameRoster.players.first { $0.id == bobId }?.companions == [fine])
+        #expect(model.gameRoster.players.first { $0.id == annaId }?.companions == [annasWolf], "the first owner keeps its companion")
+    }
+
     @Test("A master broadcast does not undo the player's newer companion list")
     func localCompanionsSurviveMasterBroadcast() {
         let model = GameRootModel()
@@ -256,17 +284,99 @@ struct PlayerCompanionsTests {
         #expect(!env.player.gameModel.hasSendPlayer)
     }
 
-    @Test("The sender carries at most the allowed companions, and nothing when there are none")
+    @Test("A companion package merges into a Character the master already has, it does not replace it (§6.4)")
+    func companionPackageMergesIntoExistingCharacter() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        let root = env.masterRoot
+        root.gameModel.masterController = env.master
+        let wolfId = UUID()
+        let masterEntry = ValueEntryModel(id: UUID(), name: "Fur", type: .text, value: "Grey")
+        // Both devices start from the same Character; each then changes a different field.
+        let base = ValueModel(id: wolfId, name: "Wolf")
+        let masterWolf = base.copy()
+        let playerWolf = base.copy()
+        playerWolf.name = "Alpha"
+        try await Task.sleep(for: .milliseconds(20))
+        masterWolf.entries = [masterEntry]
+        root.characterRoot.itemController.replace(model: masterWolf, isInsert: true)
+        env.playerRoot.characterRoot.itemController.replace(model: playerWolf, isInsert: true)
+        let package = try await env.playerRoot.characterRoot.gameControllable.createGameData(for: wolfId)
+
+        let annaId = UUID()
+        let wolf = TablePlayerModel(characterId: wolfId)
+        let anna = PlayerGameModel(id: annaId, type: .player, name: "Anna", characterId: UUID(), companions: [wolf])
+        root.gameModel.gameRoster.players = [anna]
+        let message = GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .update,
+            subType: .store,
+            masterId: env.masterGameConfig.master.id,
+            sender: GameSenderModel(id: annaId, role: .player, name: "Anna", characterId: anna.characterId, companions: [wolf]),
+            data: package
+        )
+
+        #expect(try await env.master.handleValue(message) == nil)
+
+        let merged = try #require(root.characterRoot.itemController.itemSync(for: wolfId, noGame: true) as? ValueModel)
+        #expect(merged.entries.map(\.id) == [masterEntry.id], "the master's newer change is not replaced by the player's older copy")
+        #expect(merged.name == "Alpha", "what the player changed comes along")
+    }
+
+    @Test("The sender carries the allowed companions, and nothing when there are none")
     func senderCoding() throws {
-        let companions = (0..<12).map { _ in TablePlayerModel(characterId: UUID()) }
+        let companions = (0..<PlayerGameModel.maximumCompanions).map { _ in TablePlayerModel(characterId: UUID()) }
         let sender = GameSenderModel(id: UUID(), role: .player, name: "Anna", characterId: nil, companions: companions)
 
         let decoded = try JSONDecoder().decode(GameSenderModel.self, from: JSONEncoder().encode(sender))
-        #expect(decoded.companions == Array(companions.prefix(PlayerGameModel.maximumCompanions)))
+        #expect(decoded.companions == companions)
 
         let plain = GameSenderModel(id: UUID(), role: .player, name: "Bob", characterId: nil)
         let json = try #require(String(data: JSONEncoder().encode(plain), encoding: .utf8))
         #expect(!json.contains("companions"))
+    }
+
+    @Test("A companion list over the limit is refused before it is decoded, in a sender and in a roster entry (§6.6)")
+    func oversizedCompanionListIsRefused() throws {
+        let tooMany = (0...PlayerGameModel.maximumCompanions).map { _ in TablePlayerModel(characterId: UUID()) }
+        let sender = GameSenderModel(id: UUID(), role: .player, name: "Anna", characterId: nil, companions: tooMany)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(GameSenderModel.self, from: JSONEncoder().encode(sender))
+        }
+
+        // The roster entry: built by hand, because its initializer already caps the list.
+        let entry = PlayerGameModel(id: UUID(), type: .player, name: "Anna")
+        var json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(entry)) as? [String: Any])
+        json["companions"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(tooMany))
+        let data = try JSONSerialization.data(withJSONObject: json)
+        #expect(throws: DecodingError.self) { try JSONDecoder().decode(PlayerGameModel.self, from: data) }
+
+        // The limit itself is fine, and garbage elements do not hide behind it.
+        json["companions"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(Array(tooMany.prefix(PlayerGameModel.maximumCompanions))))
+        let fine = try JSONDecoder().decode(PlayerGameModel.self, from: JSONSerialization.data(withJSONObject: json))
+        #expect(fine.companions.count == PlayerGameModel.maximumCompanions)
+    }
+
+    @Test("An observer's pin move has the size cap and clock check of a player's group event (§6.6)")
+    func observerPinMoveIsBounded() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        func move(payloadBytes: Int, timestamp: TimeInterval = Date.now.timeIntervalSince1970) -> GameNetworkModel {
+            GameNetworkModel(
+                timestamp: timestamp,
+                counter: 1,
+                proxyCounter: 0,
+                type: .update,
+                subType: .mapPin,
+                masterId: env.masterGameConfig.master.id,
+                sender: GameSenderModel(id: UUID(), role: .observer, name: "Eye", characterId: nil),
+                data: NetworkCodableDataType(id: UUID(), type: .map, version: 1, data: Data(count: payloadBytes))
+            )
+        }
+
+        #expect(env.master.normalizedObserverMessage(move(payloadBytes: 100)) != nil)
+        #expect(env.master.normalizedObserverMessage(move(payloadBytes: GameLimits.maximumGroupEventPayloadBytes + 1)) == nil)
+        #expect(env.master.normalizedObserverMessage(move(payloadBytes: 100, timestamp: Date.now.timeIntervalSince1970 + 10 * 365 * 24 * 3600)) == nil)
+        #expect(env.master.normalizedObserverMessage(move(payloadBytes: 100, timestamp: .infinity)) == nil)
     }
 
     @Test("The companion panel skips the player's own Character and stops at the limit")

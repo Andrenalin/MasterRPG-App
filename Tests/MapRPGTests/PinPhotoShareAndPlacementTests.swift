@@ -50,6 +50,56 @@ struct PinPhotoShareAndPlacementTests {
         ))
     }
 
+    // MARK: - §6.2 A shared full-screen photo follows the fog predicate and "Share Map"
+
+    @Test("A pin photo goes to the players only for a pin they see, and only while the map is shared")
+    func fullScreenPhotoSharingFollowsVisibility() async throws {
+        let fogged = room(origin: CGPoint(x: 100, y: 100), isShown: false)
+        let fixture = try await makeFixture(playerCount: 0, rooms: [fogged])
+        let map = fixture.map
+        let inFog = MapPinModel(id: UUID(), name: "Ogre", location: CGPoint(x: 150, y: 150), isShown: true)
+        let outside = MapPinModel(id: UUID(), name: "Goblin", location: CGPoint(x: 900, y: 900), isShown: true)
+        let hidden = MapPinModel(id: UUID(), name: "Trap", location: CGPoint(x: 900, y: 900), isShown: false)
+        map.mapPins = [inFog, outside, hidden]
+
+        #expect(!map.mayShareFullScreenPhoto(of: inFog, isStreaming: true), "a shown monster in an unrevealed room")
+        #expect(map.mayShareFullScreenPhoto(of: outside, isStreaming: true))
+        #expect(!map.mayShareFullScreenPhoto(of: hidden, isStreaming: true))
+        #expect(!map.mayShareFullScreenPhoto(of: outside, isStreaming: false), "Share Map is paused")
+
+        // The live pin decides, not the copy a menu still holds: the room is revealed meanwhile.
+        map.entries[0].isShown = true
+        #expect(map.mayShareFullScreenPhoto(of: inFog, isStreaming: true))
+        var moved = inFog
+        moved.location = CGPoint(x: 900, y: 900)
+        map.mapPins[0].location = CGPoint(x: 150, y: 150)
+        map.entries[0].isShown = false
+        #expect(!map.mayShareFullScreenPhoto(of: moved, isStreaming: true), "the stale copy's position does not count")
+    }
+
+    // MARK: - §6.3 A player-chosen pin id never takes over a pin the map owns
+
+    @Test("A companion with a monster's pin id neither turns the monster into a player pin nor removes it later")
+    func companionIdCannotTakeOverMonsterPin() async throws {
+        let fixture = try await makeFixture(playerCount: 0)
+        let monster = MapPinModel(id: UUID(), name: "Ogre", location: CGPoint(x: 150, y: 150), isShown: true, timeInterval: 1)
+        fixture.map.mapPins = [monster]
+        let hostile = PlayerGameModel(id: monster.id, type: .player, name: "Hero", characterId: UUID())
+
+        fixture.sut.setPlayerPin(for: monster.id, name: "Hero", characterId: hostile.characterId ?? UUID())
+        #expect(fixture.pin(monster.id)?.isPlayer == false, "metadata only reaches pins that are player pins")
+        #expect(fixture.pin(monster.id)?.name == "Ogre")
+
+        fixture.sut.mapGameModel.playerPins = []
+        fixture.sut.resetPlayerPins(for: [hostile])
+        #expect(fixture.sut.mapGameModel.playerPins.isEmpty, "no player pin is made for the clashing id")
+        #expect(fixture.pin(monster.id) == monster)
+
+        // The companion goes away again: the monster is still on the map.
+        fixture.sut.resetPlayerPins(for: [])
+        #expect(fixture.pin(monster.id) == monster)
+    }
+
     // MARK: - §5.4 A shared photo ends with the map or the pin
 
     @Test("Hiding a pin ends its shared photo")

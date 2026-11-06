@@ -512,6 +512,29 @@ struct MapPhotoPresentationTests {
         #expect(masterPlayer.gameModel.gameUpdateType == .map)
     }
 
+    @Test("A paused \"Share Map\" keeps the game master's pin photo on their device (§6.2)")
+    func pausedSharingKeepsPinPhotoLocal() async throws {
+        let fixture = try await Self.playerFixture()
+        let root = fixture.env.root
+        root.gameModel.reset(gameConfig: Self.masterConfig(), gameRoster: GameRosterModel(players: []))
+        let masterPlayer = PlayerController(root: root, asGameMaster: true)
+        root.gameModel.playerController = masterPlayer
+        root.gameModel.masterController = MasterController(root: root, asProxy: false)
+        masterPlayer.gameModel.setGameUpdateType(.map)
+        let pin = MapPhotoPopoverItem(itemId: fixture.photoId, mapId: fixture.mapId, anchor: CGPoint(x: 5, y: 6), title: "Goblin")
+
+        root.mapRoot.rootModel.isMapStreaming = false
+        root.mapRoot.photoPopover.actions?.showPhotoFullScreen(pin, true)
+
+        #expect(masterPlayer.gameModel.mapPhoto.isLocal, "nothing with the pin's name and position goes out")
+        #expect(masterPlayer.gameModel.sharedUpdateType == .map)
+        #expect(await root.gameModel.masterController?.replayMapPhoto(to: .local) == false)
+
+        root.mapRoot.rootModel.isMapStreaming = true
+        root.mapRoot.photoPopover.actions?.showPhotoFullScreen(pin, true)
+        #expect(!masterPlayer.gameModel.mapPhoto.isLocal)
+    }
+
     @Test("A live map update keeps a full-screen photo over that map; another map's update does not")
     func liveMapUpdateKeepsFullScreenPhoto() {
         let model = PlayerControllerModel()

@@ -64,7 +64,7 @@ public struct PlayerGameModel: Equatable, Identifiable, Codable, Sendable {
     /// the player moves by default. Sent by the player itself, so capped.
     public var companions: [TablePlayerModel]
 
-    /// Most companions a player may bring; a peer's longer list is cut at decoding.
+    /// Most companions a player may bring; a peer's longer list is refused at decoding.
     public static let maximumCompanions = 8
 
     public static let empty = PlayerGameModel(id: UUID(), type: .notSet, name: "")
@@ -121,7 +121,7 @@ extension PlayerGameModel {
             name: try container.decode(String.self, forKey: .name),
             characterId: try container.decodeIfPresent(UUID.self, forKey: .characterId),
             supporterTier: try container.decodeIfPresent(SupporterTier.self, forKey: .supporterTier) ?? .none,
-            companions: try container.decodeIfPresent([TablePlayerModel].self, forKey: .companions) ?? []
+            companions: try container.decodeCompanions(forKey: .companions)
         )
     }
 

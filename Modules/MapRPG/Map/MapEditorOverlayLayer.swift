@@ -91,8 +91,11 @@ struct MapViewportOverlayLayer: View {
         let popover = root.photoPopover
         let mapId = session.mapId
         let isGameMaster = session.mapMode == .gameMaster
+        let root = root
         return { [session] pin in
-            let isShared = isGameMaster && pin.isShown
+            // A pin the players cannot see (hidden, in fog) or a paused "Share Map" keeps the
+            // photo on this device. See CODE_AUDIT_24 §6.2.
+            let isShared = isGameMaster && root.mayShareFullScreenPhoto(of: pin, on: mapId)
             session.route(.dismissPinPhoto)
             popover.showFullScreen(pin: pin, mapId: mapId, isShared: isShared)
         }

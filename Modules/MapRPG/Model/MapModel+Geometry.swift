@@ -32,6 +32,19 @@ public extension MapModel {
     }
 }
 
+public extension MapModel {
+    /// Whether the game master's full-screen photo of `pin` may go to the players. The
+    /// presentation carries the pin's name and position, so the same rule as for the pin itself
+    /// applies (shown, not in an unrevealed room), and nothing is shared while "Share Map" is
+    /// paused. Otherwise the photo opens on the game master's device only.
+    /// See CODE_AUDIT_24 §6.2.
+    func mayShareFullScreenPhoto(of pin: MapPinModel, isStreaming: Bool) -> Bool {
+        guard isStreaming else { return false }
+        // The live pin decides: the copy a menu holds can be older than a reveal or a move.
+        return isPinVisibleToPlayers(mapPins.first { $0.id == pin.id } ?? pin)
+    }
+}
+
 public extension MapPinModel {
     /// `isShown` and, for a non-player pin, not covered by an unrevealed room in `entries`.
     func isVisibleToPlayers(hiddenBy entries: [MapEntryModel]) -> Bool {

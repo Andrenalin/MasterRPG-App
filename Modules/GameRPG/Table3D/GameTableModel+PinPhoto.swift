@@ -23,7 +23,8 @@ extension GameTableModel {
               setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
         let show = photoPinId != pinId
         if isGameMaster, pin.isShown || pin.isZoom {
-            setSharedPinPhoto(pinId: pinId, shown: show && pin.isShown)
+            // Not for a pin inside an unrevealed room. See CODE_AUDIT_24 §6.2.
+            setSharedPinPhoto(pinId: pinId, shown: show && mapModel.isPinVisibleToPlayers(pin))
         }
         // Read again: the sync above may have changed the pin's state.
         let current = currentMapModel()?.mapPins.first(where: { $0.id == pinId }) ?? pin
@@ -85,7 +86,7 @@ extension GameTableModel {
     /// pin they see.
     func showPinPhotoFullScreen() {
         guard let pin = photoPin, let mapId = currentMapId else { return }
-        let isShared = isGameMaster && pin.isShown
+        let isShared = isGameMaster && mapRoot.mayShareFullScreenPhoto(of: pin, on: mapId)
         dismissPinPhoto()
         mapRoot.viewController.showPinPhotoFullScreen(root: mapRoot, pin: pin, mapId: mapId, isShared: isShared)
     }

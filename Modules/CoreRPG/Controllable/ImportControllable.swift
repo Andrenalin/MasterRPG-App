@@ -313,6 +313,9 @@ public extension ImportControllable {
                             let itemVersion = version
                             let newItem = try await itemControllable.decode(data: data, with: JSONCoding.decoder, version: itemVersion)
                             if peerPolicy != nil, await itemControllable.isFolderImport(newItem) {
+                                // A folder skips `prepareDecodedItem`, but its file description
+                                // came out of the same bytes. See CODE_AUDIT_24 §6.5.
+                                await sanitizeImportedFileUrl(of: newItem, allowsPrivateRemoteHosts: !policy.isUntrustedSource)
                                 peerFolderItems.append(newItem)
                                 continue
                             }
@@ -523,16 +526,23 @@ private extension ImportControllable {
 
     // MARK: - Item Application
 
+    /// Replaces the file description of a decoded item by its sanitised form (no `..` segments,
+    /// private storage, checked remote hosts). See CODE_AUDIT_15 §5.1.
+    @MainActor
+    private func sanitizeImportedFileUrl(of item: any ItemDataAccessible, allowsPrivateRemoteHosts: Bool) {
+        var item = item
+        if let importedFileUrl = item.fileUrl {
+            item.fileUrl = importedFileUrl.sanitizedForImport(allowsPrivateRemoteHosts: allowsPrivateRemoteHosts)
+        }
+    }
+
     /// Makes a freshly decoded item safe to apply: its file description came out of the imported
     /// bytes and is never resolved as-is (CODE_AUDIT_15 §5.1), and a peer's package may only
     /// write what its `PeerImportPolicy` admits (§5.2). Returns `false` when the item must be
     /// skipped.
     @MainActor
     private func prepareDecodedItem(_ item: any ItemDataAccessible, allowsPrivateRemoteHosts: Bool, peerPolicy: PeerImportPolicy?) -> Bool {
-        var item = item
-        if let importedFileUrl = item.fileUrl {
-            item.fileUrl = importedFileUrl.sanitizedForImport(allowsPrivateRemoteHosts: allowsPrivateRemoteHosts)
-        }
+        sanitizeImportedFileUrl(of: item, allowsPrivateRemoteHosts: allowsPrivateRemoteHosts)
         guard let peerPolicy else { return true }
         let existsLocally = itemControllable.itemSync(for: item.id, noGame: true) != nil
         guard peerPolicy.admit(itemId: item.id, existsLocally: existsLocally) else {
