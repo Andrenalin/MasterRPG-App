@@ -103,10 +103,16 @@ private struct OverlayGameMenuVisionProMenuView: View {
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
 
-                OverlayGameMenuWifiView(root: root, isMaster: isMaster, playerController: playerController, marginWidth: marginWidth)
+                // The players (game master) or companions (player) follow the volume.
+                if root.offersTablePlayers(isMaster: isMaster) {
+                    // The same button look and size as the volume and join code buttons next
+                    // to it, so their bottoms line up.
+                    TablePlayersButton(root: root)
+                        .imageScale(.small)
+                        .padding(.leading, marginWidth)
+                }
 
-                GameTableWindowButton(root: root, isMaster: isMaster)
-                    .padding(.leading, 32)
+                OverlayGameMenuWifiView(root: root, isMaster: isMaster, playerController: playerController, marginWidth: marginWidth)
             }
         }
     }
@@ -248,25 +254,16 @@ private struct OverlayGameMenuEnlargerView: View {
 
 private struct OverlayGameMenuSecondOptionView: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         Button {
-#if os(macOS) || os(visionOS)
-            scenesManager.openWindow(SceneId.logs)
-#else
             withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.resetToSettingsTab() }
-#endif
         } label: {
             Image(systemName: NetworkModules.setting.icon)
         }
         .selectedBorderedStype(isSelected: gameScreenModel.showSettingTab != .none)
-#if os(macOS) || os(visionOS)
-        .accessibilityLabel(Text("Logs", bundle: .module))
-#else
         .accessibilityLabel(Text(NetworkModules.setting.localizedTitle))
-#endif
     }
 }
 

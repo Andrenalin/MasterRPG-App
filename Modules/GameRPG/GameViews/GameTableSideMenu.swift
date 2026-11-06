@@ -42,12 +42,6 @@ struct GameTableSideMenu: View {
             ForEach(Self.masterModules, id: \.self) { module in
                 MasterModuleWindowButtonView(valueType: module)
             }
-            GameWindowButtonView(
-                title: String(localized: "Logs", bundle: .module),
-                systemImage: "doc.text.magnifyingglass",
-                module: .game,
-                sceneId: .logs
-            )
         } else {
             ForEach(Self.playerModules, id: \.self) { module in
                 GameWindowButtonView(

@@ -24,11 +24,8 @@ struct PlayerSideMenu: View {
                     )
                 }
 #if os(visionOS)
-                // macOS has the button in the toolbar.
-                if root.offersTablePlayers(isMaster: false) {
-                    TablePlayersButton(root: root)
-                        .roundGameControl(module: .value)
-                }
+                // The companions button is in the top ornament's menu; this one is the last window button.
+                GameTableWindowButton(root: root, isMaster: false)
 #endif
             }
         }

@@ -14,11 +14,8 @@ struct MasterSideMenu: View {
         VStack {
             MasterModuleWindowMenu(adventureId: adventureId)
 
-            // macOS has the button in the toolbar, iOS in the overlay's control field.
-            if root.offersTablePlayers(isMaster: true) {
-                TablePlayersButton(root: root)
-                    .roundGameControl(module: .value)
-            }
+            // The players button is in the top ornament's menu; this one is the last window button.
+            GameTableWindowButton(root: root, isMaster: true)
         }
 #else
         MasterModuleWindowMenu(adventureId: adventureId)

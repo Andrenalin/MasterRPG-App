@@ -18,6 +18,9 @@ public struct GameWindowButtonAppearance: ViewModifier {
 #if os(visionOS)
         content
             .buttonStyle(.bordered)
+            // `.bordered` defaults to a capsule border and hover shape; these buttons are round.
+            .buttonBorderShape(.circle)
+            .contentShape(.hoverEffect, .circle)
             .tint(isWindowPresented ? tint : .accentColor)
             .background(
                 isWindowPresented ? tint.opacity(0.35) : Color.clear,

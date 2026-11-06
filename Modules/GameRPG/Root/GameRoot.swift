@@ -95,7 +95,6 @@ public final class GameRoot {
         self.gameCenterModel = gameCenterModel
         self.gameCenterController = gameCenterController
         
-        _viewController = ViewController(root: self)
         _logGameController = LogGameController(root: self, gameModel: gameModel)
 
         statisticsModel.setAchievementReporter { [weak gameCenterController] summary in
@@ -110,11 +109,6 @@ public final class GameRoot {
     // crash log if a future refactor (deferred/lazy construction, a new
     // failable init path) ever leaves one `nil` — `.unsafelyUnwrapped` would
     // instead be undefined behavior in a Release build. See CODE_AUDIT §5.2.
-    private(set) var _viewController: ViewController?
-    public var viewController: ViewController {
-        _viewController!
-    }
-
     private(set) var _logGameController: LogGameController?
     var logGameController: LogGameController {
         _logGameController!

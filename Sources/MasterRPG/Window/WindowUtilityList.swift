@@ -93,19 +93,6 @@ struct WindowUtilityList: Scene {
             .restorationBehaviorAll(.disabled)
 
 
-            BaseWindow("Logs", id: SceneId.logs.rawValue) {
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    appModel.gameRoot.viewController.logWindow()
-                        .sceneTracker(for: SceneId.logs)
-                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .game))
-                }
-                .environment(appModel.scenesManager)
-                .environment(appModel)
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.above(SceneId.game.rawValue))
-            .restorationBehaviorAll(.disabled)
-
             BaseWindow("Battle Round", id: SceneId.battleRound.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                     GameFactory.battleRoundView(root: appModel.gameRoot)

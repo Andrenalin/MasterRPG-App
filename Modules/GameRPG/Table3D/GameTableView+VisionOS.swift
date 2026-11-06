@@ -265,6 +265,10 @@ public struct GameTableView: View {
                             WindowOpenButton(root: root)
 
                             GameTableSideMenu(root: root, isMaster: root.gameModel.gameConfig.isMaster)
+
+                            // The last button of row 1, after the dice. The map toolbar (and
+                            // the game master's extra map buttons) stay in row 2.
+                            GameTableWindowButton(root: root, isMaster: root.gameModel.gameConfig.isMaster)
                         }
                     }
                     .environment(gameScreenModel)

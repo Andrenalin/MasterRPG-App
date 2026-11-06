@@ -36,16 +36,11 @@ extension View {
                 VStack(alignment: .leading) {
                     sideMenu()
                         .environment(gameScreenModel)
-                    // Below the side menu, in the same ornament, so they never overlap. The
-                    // toggle button is at the overlay's bottom leading edge.
-                    if root.offersQuickDice(isMaster: isMaster) {
-                        HStack(alignment: .bottom) {
-                            QuickDiceToggleField()
-                            if gameScreenModel.showQuickDice {
-                                QuickDiceOverlay(root: root)
-                            }
-                        }
-                        .environment(gameScreenModel)
+                    // Below the side menu, in the same ornament, so they never overlap. Its
+                    // toggle button is in the bottom trailing ornament, after the dice result.
+                    if root.offersQuickDice(isMaster: isMaster), gameScreenModel.showQuickDice {
+                        QuickDiceOverlay(root: root)
+                            .environment(gameScreenModel)
                     }
                 }
                 .padding(12)
@@ -61,9 +56,16 @@ extension View {
                     .environment(diceShowOptionModel)
             }
             .ornament(attachmentAnchor: .scene(.bottomTrailing), contentAlignment: .topTrailing) {
-                root.diceRoot.viewController.diceResultView(root: root.diceRoot)
-                    .padding(.top, 12)
-                    .environment(diceShowOptionModel)
+                HStack(alignment: .top) {
+                    root.diceRoot.viewController.diceResultView(root: root.diceRoot)
+                        .environment(diceShowOptionModel)
+
+                    if root.offersQuickDice(isMaster: isMaster) {
+                        QuickDiceToggleField()
+                            .environment(gameScreenModel)
+                    }
+                }
+                .padding(.top, 12)
             }
     }
 }

@@ -136,6 +136,10 @@ private struct DiceInlineLabel: View {
         .background {
             Color.accentColor.clipShape(.rect(cornerRadius: 8))
         }
+#if os(visionOS)
+        // The hover highlight must follow the drawn shape, not the style's default rounded rect.
+        .contentShape(.hoverEffect, .rect(cornerRadius: 8))
+#endif
     }
     
     var die: DieModel {

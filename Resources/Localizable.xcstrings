@@ -240,6 +240,7 @@
       }
     },
     "Logs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -529,6 +530,23 @@
         }
       }
     },
+    "Roll Dice Expression" : {
+      "comment" : "Short title of the shortcut that rolls dice notation such as 3d6+2.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfelausdruck würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยลูกเต๋าตามสูตร"
+          }
+        }
+      }
+    },
     "Rule" : {
       "comment" : "The App Intents type name of a RuleRPG item, shown by Shortcuts and Siri. Kept here as well as in the module: the entity declares the name without a bundle, which resolves to the app.",
       "extractionState" : "manual",
@@ -663,23 +681,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สภาพอากาศ"
-          }
-        }
-      }
-    },
-    "Roll Dice Expression" : {
-      "comment" : "Short title of the shortcut that rolls dice notation such as 3d6+2.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Würfelausdruck würfeln"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ทอยลูกเต๋าตามสูตร"
           }
         }
       }

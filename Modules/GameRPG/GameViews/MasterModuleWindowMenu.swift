@@ -18,13 +18,6 @@ struct MasterModuleWindowMenu: View {
                         MasterModuleWindowButtonView(valueType: module)
                     }
                 }
-
-                GameWindowButtonView(
-                    title: String(localized: "Logs", bundle: .module),
-                    systemImage: "doc.text.magnifyingglass",
-                    module: .game,
-                    sceneId: .logs
-                )
             }
         }
 #if os(macOS)

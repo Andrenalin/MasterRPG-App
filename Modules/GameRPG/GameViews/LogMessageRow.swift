@@ -22,6 +22,21 @@ struct LogMessageRow: View, Equatable {
     }
 }
 
+extension LogMessageDeliveryState {
+    var rowBackground: Color {
+        switch self {
+        case .notTracked:
+            return .blue
+        case .missingPlayers:
+            return .red.opacity(0.7)
+        case .partialPlayers:
+            return .yellow
+        case .allPlayers:
+            return .green
+        }
+    }
+}
+
 #Preview {
     LogMessageRow(
         row: LogMessageRowModel(

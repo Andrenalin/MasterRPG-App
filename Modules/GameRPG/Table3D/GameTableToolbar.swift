@@ -21,10 +21,13 @@ struct GameTableToolbar: View {
 
     var body: some View {
         HStack {
+#if !os(visionOS)
             // Always visible: this is the switch between the 2D map window
             // and this 3D game table, so it must stay reachable even before
-            // a map is loaded onto the table.
+            // a map is loaded onto the table. On visionOS it ends the window
+            // buttons' row above this one (`GameTableView`'s front ornament).
             GameTableWindowButton(root: root, isMaster: game.isGameMaster)
+#endif
 
             if game.isGameMaster,
                root.gameModel.playerController?.gameModel.tableWeather.shownWeatherId != nil {

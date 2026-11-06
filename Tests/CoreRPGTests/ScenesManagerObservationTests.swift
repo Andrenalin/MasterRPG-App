@@ -17,21 +17,21 @@ struct ScenesManagerObservationTests {
         #expect(sut.getSceneState(for: .battleRound) == .closed)
         sut.setSceneState(.opened, for: .battleRound)
         #expect(sut.getSceneState(for: .battleRound) == .opened)
-        #expect(sut.getSceneState(for: .logs) == .closed)
+        #expect(sut.getSceneState(for: .mapEditor) == .closed)
     }
 
     @Test("A scene's state change reaches only that scene's observers")
     func observationIsPerScene() {
         let sut = ScenesManager()
         // `onChange` runs synchronously inside the mutation that triggers it.
-        let logsInvalidated = OSAllocatedUnfairLock(initialState: false)
+        let editorInvalidated = OSAllocatedUnfairLock(initialState: false)
         let battleInvalidated = OSAllocatedUnfairLock(initialState: false)
 
-        // A view that shows the Logs window's state, and one for Battle Round.
+        // A view that shows the Map Editor window's state, and one for Battle Round.
         withObservationTracking {
-            _ = sut.getSceneState(for: .logs)
+            _ = sut.getSceneState(for: .mapEditor)
         } onChange: {
-            logsInvalidated.withLock { $0 = true }
+            editorInvalidated.withLock { $0 = true }
         }
         withObservationTracking {
             _ = sut.getSceneState(for: .battleRound)
@@ -42,7 +42,7 @@ struct ScenesManagerObservationTests {
         sut.setSceneState(.opened, for: .battleRound)
 
         #expect(battleInvalidated.withLock { $0 })
-        #expect(!logsInvalidated.withLock { $0 })
+        #expect(!editorInvalidated.withLock { $0 })
     }
 
     @Test("Setting the state a scene already has notifies nobody")

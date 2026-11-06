@@ -1331,6 +1331,22 @@
         }
       }
     },
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
+          }
+        }
+      }
+    },
     "code" : {
       "localizations" : {
         "de" : {
@@ -3625,6 +3641,7 @@
       }
     },
     "Logs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4016,6 +4033,7 @@
       }
     },
     "No Active Game" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5830,6 +5848,38 @@
         }
       }
     },
+    "Show on Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf der Karte zeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงบนแผนที่"
+          }
+        }
+      }
+    },
+    "Show Pin Photo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin-Foto zeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงรูปหมุด"
+          }
+        }
+      }
+    },
     "Show Quick Dice" : {
       "localizations" : {
         "de" : {
@@ -6389,22 +6439,6 @@
         }
       }
     },
-    "Show Pin Photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pin-Foto zeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงรูปหมุด"
-          }
-        }
-      }
-    },
     "Toggle Room Focus" : {
       "localizations" : {
         "de" : {
@@ -6851,38 +6885,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dein Spielercode"
-          }
-        }
-      }
-    },
-    "Show on Map" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auf der Karte zeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงบนแผนที่"
-          }
-        }
-      }
-    },
-    "Close" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schließen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ปิด"
           }
         }
       }

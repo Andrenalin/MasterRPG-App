@@ -63,6 +63,9 @@ struct QuickDiceFavoriteMenu: View {
 #endif
             .buttonStyle(.borderless)
             .frame(minWidth: 44, minHeight: 44)
+#if os(visionOS)
+            .contentShape(.hoverEffect, .circle)
+#endif
             .help(Text("Add to Quick Dice", bundle: .module))
         }
     }

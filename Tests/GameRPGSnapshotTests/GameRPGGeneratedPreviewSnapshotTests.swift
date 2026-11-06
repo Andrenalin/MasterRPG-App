@@ -173,15 +173,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::LogMessageList
-    @Test("LogMessageList")
-    func snapshotLogMessageList() async throws {
-        try await assertPreviewSnapshot("LogMessageList") {
-            GameRPG.LogMessageList(logController: .preview)
-                .environment(\.locale, .init(identifier: "de"))
-        }
-    }
-
     // snapshot-root: GameRPG::LogMessagePlayersView
     @Test("LogMessagePlayersView")
     func snapshotLogMessagePlayersView() async throws {
