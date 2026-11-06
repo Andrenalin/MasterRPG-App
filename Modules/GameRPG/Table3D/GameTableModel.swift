@@ -186,8 +186,12 @@ final class GameTableModel: Sendable {
     var currentPhotoVersion: Int?
     /// The photo each pin is currently loading a thumbnail for.
     var pendingPinPhotoIds: [UUID: UUID] = [:]
-    /// The photo whose thumbnail load last failed for a pin; not retried until the pin's photo changes.
-    var failedPinPhotoIds: [UUID: UUID] = [:]
+    /// The photo, and the state of its item, whose thumbnail load last failed for a pin. Not retried
+    /// until the pin's photo or that item's state changes (e.g. the file reaches a player later).
+    var failedPinPhotos: [UUID: PinPhotoLoadAttempt] = [:]
+    /// One observation watcher per pin whose photo failed to load; re-syncs the pins once the
+    /// photo item changes so the load is retried without a mode switch.
+    var pinPhotoRetryTasks: [UUID: Task<Void, Never>] = [:]
     /// Tracks the `Task` spawned per pin by `syncPawnsWithMapPins()` so a pin whose photo load is
     /// superseded (or the whole model torn down) can have its in-flight load cancelled.
     var pendingThumbnailTasks: [UUID: Task<Void?, Never>] = [:]

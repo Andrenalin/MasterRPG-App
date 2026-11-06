@@ -255,7 +255,8 @@ extension GameController {
         return true
     }
 
-    /// Moves the session's player pins that do not stand on `map` yet to the first room: a pin at
+    /// Moves the session's player pins that do not stand on `map` yet to the first room (the center
+    /// of the image when the map has none): a pin at
     /// (0, 0) never had a position, and a pin whose `mapId` is another map (or none) carries the
     /// position of that other map. A pin positioned on this map keeps it. The pins are placed
     /// like the display cascade does, so players who show the same pins as unpositioned see them
@@ -278,12 +279,20 @@ extension GameController {
             ?? map.entries.first { $0.isShown && !$0.coordinates.isEmpty }
             ?? map.entries.first { !$0.isHexGrid && !$0.coordinates.isEmpty }
             ?? map.entries.first { !$0.coordinates.isEmpty }
+        // Pins that already stand somewhere keep their spot: new ones go around them.
+        let occupied = pins.enumerated()
+            .filter { !placing.contains($0.offset) && $0.element.location != .zero }
+            .map(\.element.location)
         if let room {
-            // Pins that already stand somewhere keep their spot: new ones go around them.
-            let occupied = pins.enumerated()
-                .filter { !placing.contains($0.offset) && $0.element.location != .zero }
-                .map(\.element.location)
             placed = MapPinPlacement.cascade(pins: placed, in: room, pinScale: map.pinScale, occupied: occupied)
+        } else {
+            // A map without a room: the center of the image.
+            placed = MapPinPlacement.centered(
+                pins: placed,
+                in: CGSize(width: map.width, height: map.height),
+                pinScale: map.pinScale,
+                occupied: occupied
+            )
         }
         for (index, pin) in zip(toPlace, placed) {
             var updatedPin = pin

@@ -94,6 +94,39 @@ enum MapPinPlacement {
         }
     }
 
+    /// Places unpositioned pins (`location == .zero`) as a diagonal group around the center of a
+    /// canvas, for a map without a room to put them in. Pins that already stand somewhere pass
+    /// through unchanged; a spot another pin occupies is skipped like in `cascade`.
+    static func centered(
+        pins: [MapPinModel],
+        in canvas: CGSize,
+        pinScale: CGFloat,
+        occupied: [CGPoint] = []
+    ) -> [MapPinModel] {
+        let center = CGPoint(x: canvas.width / 2, y: canvas.height / 2)
+        let unpositioned = pins.filter { $0.location == .zero }
+        guard !unpositioned.isEmpty else { return pins }
+        let steps = unpositioned.map { $0.size.size.width * pinScale + interPinGap }
+        // The group is centered by its total diagonal extent.
+        let extent = steps.dropLast().reduce(0, +)
+        var cursor = CGPoint(x: center.x - extent / 2, y: center.y - extent / 2)
+        var taken = occupied
+        return pins.map { pin in
+            var updated = pin
+            guard updated.location == .zero else { return updated }
+            let step = updated.size.size.width * pinScale + interPinGap
+            var attempts = 0
+            while attempts < maximumPlacementAttempts, isOccupied(cursor, by: taken, step: step) {
+                attempts += 1
+                cursor = CGPoint(x: cursor.x + step, y: cursor.y + step)
+            }
+            updated.location = cursor
+            taken.append(cursor)
+            cursor = CGPoint(x: cursor.x + step, y: cursor.y + step)
+            return updated
+        }
+    }
+
     private static let maximumPlacementAttempts = 400
 
     private static func isOccupied(_ point: CGPoint, by taken: [CGPoint], step: CGFloat) -> Bool {

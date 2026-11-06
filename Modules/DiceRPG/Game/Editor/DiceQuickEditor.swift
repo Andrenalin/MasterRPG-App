@@ -62,6 +62,13 @@ struct DiceQuickEditor: View {
                 .labelsHidden()
                 .accessibilityLabel(Text("Compare Value", bundle: .module))
                 .padding(4)
+#if os(visionOS)
+                // A plain field has no shape under the eyes; give it one to look at and pinch.
+                .padding(.horizontal, 8)
+                .frame(minHeight: 60)
+                .contentShape(.hoverEffect, .capsule)
+                .hoverEffect(.highlight)
+#endif
                 .focused($isFocused)
                 .submitLabel(.done)
                 .onSubmit {

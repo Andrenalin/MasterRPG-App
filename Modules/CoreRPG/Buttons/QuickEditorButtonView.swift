@@ -96,11 +96,31 @@ public struct ThemedQuickStepButtonStyle: ButtonStyle {
                 .foregroundStyle(isHighlighted ? theme.panelColor : theme.foregroundColor)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(minWidth: Self.minimumTarget, maxWidth: .infinity, minHeight: Self.minimumTarget)
                 .background(isHighlighted ? theme.foregroundColor : theme.controlFillColor, in: .capsule)
                 .overlay {
                     Capsule().strokeBorder(theme.controlBorderColor, lineWidth: 1)
                 }
+                // The whole capsule takes the tap, however narrow its label is.
+                .contentShape(.interaction, .capsule)
+#if os(visionOS)
+                // Without a hover shape and effect a custom style never lights up under the
+                // eyes, and look-and-pinch has nothing to land on.
+                .contentShape(.hoverEffect, .capsule)
+                .hoverEffect(.highlight)
+                .hoverEffect { effect, isActive, _ in
+                    effect.scaleEffect(isActive ? 1.05 : 1)
+                }
+#endif
+        }
+
+        /// 60 pt on visionOS (HIG minimum for an eye-and-pinch target), 44 pt elsewhere.
+        private static var minimumTarget: CGFloat {
+#if os(visionOS)
+            60
+#else
+            44
+#endif
         }
     }
 }

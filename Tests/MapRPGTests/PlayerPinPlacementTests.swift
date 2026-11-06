@@ -55,6 +55,27 @@ struct PlayerPinPlacementTests {
         #expect(pin(fixture.playerId, on: fixture.mapA, in: fixture.sut)?.location == CGPoint(x: 200, y: 120))
     }
 
+    @Test("On a map without a room the pins go to the center of the image")
+    func pinsOnMapWithoutRoomGoToCenter() async throws {
+        let fixture = try await makeFixture()
+        let secondId = UUID()
+        fixture.sut.mapGameModel.playerPins.append(MapPinModel(id: secondId, name: "Mate", isPlayer: true, players: [secondId]))
+        let map = MapModel(id: UUID(), name: "Empty", width: 1000, height: 600)
+        fixture.sut.setGame(item: map, itemId: map.id)
+
+        #expect(fixture.sut.synchronizePlayerPins(for: map.id))
+        let first = try #require(pin(fixture.playerId, on: map, in: fixture.sut))
+        let second = try #require(pin(secondId, on: map, in: fixture.sut))
+        #expect(first.mapId == map.id)
+        #expect(first.location != second.location)
+        // The group is centered on the image.
+        #expect(abs((first.location.x + second.location.x) / 2 - 500) < 0.5)
+        #expect(abs((first.location.y + second.location.y) / 2 - 300) < 0.5)
+
+        // Placed pins stay where they are when the map is shown again.
+        #expect(!fixture.sut.synchronizePlayerPins(for: map.id))
+    }
+
     @Test("The map id is memory only: it is neither encoded nor decoded")
     func mapIdIsNotSerialized() throws {
         let pin = MapPinModel(id: UUID(), name: "Hero", isPlayer: true, mapId: UUID())
