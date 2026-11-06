@@ -26,7 +26,7 @@ struct ForegroundPlacementGateTests {
     @Test("The first frame places the foreground, frames with the same inputs do not")
     func settledPhotoIsPlacedOnce() {
         var gate = ForegroundPlacementGate()
-        var placed = gate.needsPlacement(for: inputs())
+        let placed = gate.needsPlacement(for: inputs())
         #expect(placed)
         for _ in 0..<100 {
             let placed = gate.needsPlacement(for: inputs())
@@ -69,7 +69,7 @@ struct ForegroundPlacementGateTests {
         var gate = ForegroundPlacementGate()
         _ = gate.needsPlacement(for: inputs())
         gate.reset()
-        var placed = gate.needsPlacement(for: inputs())
+        let placed = gate.needsPlacement(for: inputs())
         #expect(placed)
     }
 }

@@ -354,21 +354,23 @@ private extension AudioController {
         let session = AudioPlayerSession(delegate: self)
         session.initSession()
         model.audioSession = session
-
+        
         model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
         // Re-observe here (not in observePlayback, which early-returns on re-init):
         // after a media-services reset the coordinator is a new instance and the
         // old observation task would keep following the stale one.
         observeSharedAudio()
-
+        
         MediaPlayerCoordinator.handleRemoteCommands(using: self)
-
+        
         observePlayback()
         model.player.volume = Float(model.volume)
         model.isInitialized = true
     }
+}
 
-    @MainActor internal func resetPlaylist(complete: Bool) {
+extension AudioController {
+    @MainActor func resetPlaylist(complete: Bool) {
         guard let currentIndex = model.currentIndex else { return }
         if currentIndex < model.playList.count - 1 {
             togglePlay(id: model.playList[currentIndex + 1].id)

@@ -318,7 +318,7 @@ struct PlayerCompanionsTests {
 
         #expect(try await env.master.handleValue(message) == nil)
 
-        let merged = try #require(root.characterRoot.itemController.itemSync(for: wolfId, noGame: true) as? ValueModel)
+        let merged = try #require(root.characterRoot.itemController.itemSync(for: wolfId, noGame: true))
         #expect(merged.entries.map(\.id) == [masterEntry.id], "the master's newer change is not replaced by the player's older copy")
         #expect(merged.name == "Alpha", "what the player changed comes along")
     }

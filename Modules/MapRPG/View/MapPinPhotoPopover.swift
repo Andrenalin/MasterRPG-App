@@ -50,7 +50,7 @@ struct MapPhotoPopoverContent: View {
 
     /// What VoiceOver says for a weather: its name, or the word "Weather" when it has none (or
     /// the name did not arrive). See CODE_AUDIT_24 §8.3.
-    static func weatherAccessibilityName(title: String?) -> String {
+    nonisolated static func weatherAccessibilityName(title: String?) -> String {
         guard let title, !title.isEmpty else { return String(localized: "Weather", bundle: .module) }
         return title
     }
