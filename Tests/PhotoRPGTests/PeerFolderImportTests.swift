@@ -48,5 +48,39 @@ struct PeerFolderImportTests {
             #expect(!fileUrl.rawUrl.pathComponents.contains(".."))
         }
     }
+
+    @Test("Many peer folders are each admitted with their own introduced children (§7.2)")
+    func manyPeerFoldersKeepTheirOwnEntries() async throws {
+        let source = PhotoRootModel.testRoot()
+        var ids: Set<UUID> = []
+        var childOfFolder: [UUID: UUID] = [:]
+        for index in 0..<40 {
+            let folderId = await source.itemController.addNew(type: .folder)
+            let childId = await source.itemController.addNew(type: .item)
+            source.editController.reset(name: "Folder \(index)", itemId: folderId)
+            source.editController.reset(name: "Child \(index)", itemId: childId)
+            source.editController.addItem(itemId: childId, parentId: folderId)
+            ids.formUnion([folderId, childId])
+            childOfFolder[folderId] = childId
+        }
+        let exportIds = source.exportController.exporting(itemIds: ItemModuleIds(ids: ids, module: .photo))
+        let output = OutputStream.toMemory()
+        output.open()
+        _ = try await source.exportController.export(itemIds: exportIds, into: output)
+        output.close()
+        let data = try #require(output.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
+
+        let destination = PhotoRootModel.testRoot()
+        let input = InputStream(data: data)
+        input.open()
+        defer { input.close() }
+        let model = ItemDataImportModel(importMode: .overwrite, peerPolicy: PeerImportPolicy(primaryItemId: UUID(), maximumItems: 200))
+        try await destination.importController.importStream(from: input, forceSave: true, importModel: model)
+
+        for (folderId, childId) in childOfFolder {
+            let folder = try #require(destination.itemController.itemSync(for: folderId, noGame: true), "every folder arrived")
+            #expect(folder.entries.map(\.childId) == [childId])
+        }
+    }
 }
 #endif

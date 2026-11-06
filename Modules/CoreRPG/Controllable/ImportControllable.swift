@@ -557,13 +557,21 @@ private extension ImportControllable {
     @MainActor
     private func admitPeerFolders(_ folders: [ModelType], policy: PeerImportPolicy) -> [(item: ModelType, id: UUID)] {
         let itemController = itemControllable
-        let candidates = folders.compactMap { itemController.peerFolder($0) }
-        let keptChildIds = policy.admitFolders(candidates)
-        return candidates.compactMap { candidate in
-            guard let kept = keptChildIds[candidate.id],
-                  let item = folders.first(where: { itemController.peerFolder($0)?.id == candidate.id })
+        // Each folder is described once (a library lookup); the admitted ones are then found
+        // by id instead of by describing every folder again. See CODE_AUDIT_24 §7.2.
+        let pairs: [(item: ModelType, folder: PeerImportPolicy.Folder)] = folders.compactMap { item in
+            itemController.peerFolder(item).map { (item, $0) }
+        }
+        let keptChildIds = policy.admitFolders(pairs.map(\.folder))
+        var itemsById: [UUID: ModelType] = [:]
+        for pair in pairs where itemsById[pair.folder.id] == nil {
+            itemsById[pair.folder.id] = pair.item
+        }
+        return pairs.compactMap { pair in
+            guard let kept = keptChildIds[pair.folder.id],
+                  let item = itemsById[pair.folder.id]
             else { return nil }
-            return (itemController.keepingEntries(of: item, childIds: kept), candidate.id)
+            return (itemController.keepingEntries(of: item, childIds: kept), pair.folder.id)
         }
     }
 

@@ -14,6 +14,19 @@ struct ImagePresentationView<Foreground: View>: View {
     /// attachment, placed in front of the photo's nearest point: a SwiftUI overlay sits on the
     /// window's plane, and the spatial photo's depth covers it there.
     let foreground: Foreground
+    /// `false` for the plain photo window: it then has no attachment and nothing to place.
+    /// See CODE_AUDIT_24 §7.1.
+    private let hasForeground: Bool
+
+    init(model: ImagePresentationModel, foreground: Foreground) {
+        self.init(model: model, foreground: foreground, hasForeground: true)
+    }
+
+    fileprivate init(model: ImagePresentationModel, foreground: Foreground, hasForeground: Bool) {
+        self.model = model
+        self.foreground = foreground
+        self.hasForeground = hasForeground
+    }
 
     @Environment(PhotoRootModel.self) private var root
     @Environment(AppNavigationModel.self) private var navigationModel
@@ -61,7 +74,8 @@ struct ImagePresentationView<Foreground: View>: View {
                 scaleImagePresentationToFit(in: availableBounds)
                 cacheAvailableBounds(availableBounds)
                 content.add(model.contentEntity)
-                if let foregroundEntity = attachments.entity(for: Self.foregroundAttachmentId) {
+                model.foregroundPlacementGate.reset()
+                if hasForeground, let foregroundEntity = attachments.entity(for: Self.foregroundAttachmentId) {
                     content.add(foregroundEntity)
                     model.foregroundEntity = foregroundEntity
                     placeForeground(in: availableBounds)
@@ -86,11 +100,13 @@ struct ImagePresentationView<Foreground: View>: View {
                 syncPresentation(boundsInMeters: availableBounds)
                 cacheAvailableBounds(availableBounds)
             } attachments: {
-                Attachment(id: Self.foregroundAttachmentId) {
-                    // The window's size: the photo fills it, fitted to its aspect ratio.
-                    foreground
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .allowsHitTesting(false)
+                if hasForeground {
+                    Attachment(id: Self.foregroundAttachmentId) {
+                        // The window's size: the photo fills it, fitted to its aspect ratio.
+                        foreground
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .allowsHitTesting(false)
+                    }
                 }
             }
             .task(id: model.selectedItemId) {
@@ -112,6 +128,7 @@ struct ImagePresentationView<Foreground: View>: View {
                 frameSyncContinuation?.finish()
                 frameSyncTask?.cancel()
                 model.foregroundEntity = nil
+                model.foregroundPlacementGate.reset()
             }
             .onChange(of: model.imageAspectRatio) { _, newAspectRatio in
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {
@@ -148,7 +165,7 @@ struct ImagePresentationView<Foreground: View>: View {
     func syncPresentation(boundsInMeters: BoundingBox? = nil) {
         // The foreground follows the photo also while it loads or converts: its depth grows
         // as the conversion runs.
-        if let bounds = boundsInMeters ?? lastAvailableBounds {
+        if hasForeground, let bounds = boundsInMeters ?? lastAvailableBounds {
             placeForeground(in: bounds)
         }
         guard let presentationScreenSize = model
@@ -187,7 +204,17 @@ struct ImagePresentationView<Foreground: View>: View {
     /// Places the foreground over the photo, just in front of the photo's nearest point and
     /// never behind the window's plane.
     func placeForeground(in boundsInMeters: BoundingBox) {
-        guard let foregroundEntity = model.foregroundEntity else { return }
+        guard hasForeground, let foregroundEntity = model.foregroundEntity else { return }
+        // The bounds traversal below only runs when something that moves the foreground changed.
+        let inputs = ForegroundPlacementGate.Inputs(
+            windowCenter: boundsInMeters.center,
+            windowExtents: boundsInMeters.extents,
+            photoScale: model.contentEntity.scale,
+            photoScreenSize: model.contentEntity.components[ImagePresentationComponent.self]?
+                .presentationScreenSize ?? .zero,
+            isPhotoChanging: model.spatial3DImageState != .generated
+        )
+        guard model.foregroundPlacementGate.needsPlacement(for: inputs) else { return }
         let photoBounds = model.contentEntity.visualBounds(relativeTo: nil)
         let photoFront = photoBounds.isEmpty || !photoBounds.max.z.isFinite ? 0 : photoBounds.max.z
         let center = boundsInMeters.center
@@ -234,7 +261,7 @@ struct ImagePresentationView<Foreground: View>: View {
 
 extension ImagePresentationView where Foreground == EmptyView {
     init(model: ImagePresentationModel) {
-        self.init(model: model, foreground: EmptyView())
+        self.init(model: model, foreground: EmptyView(), hasForeground: false)
     }
 }
 

@@ -32,6 +32,8 @@ enum Spatial3DImageState {
     var contentEntity: Entity = Entity()
     /// The view's foreground attachment, in front of the photo. Set by `ImagePresentationView`.
     @ObservationIgnored var foregroundEntity: Entity?
+    /// Keeps the foreground from being placed again on frames where nothing moved it.
+    @ObservationIgnored var foregroundPlacementGate = ForegroundPlacementGate()
     var spatial3DImageState: Spatial3DImageState = .notGenerated
     var spatial3DImage: ImagePresentationComponent.Spatial3DImage? = nil
 
