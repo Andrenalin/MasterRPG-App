@@ -390,20 +390,18 @@ extension RPGSharePlayController {
         // `join()` itself runs off the main actor: it sets up the call's audio session and
         // blocks while it does, which hangs the UI when the app's own audio session is active
         // (AVAudioSession hang risk). The session's state is still only read on the main
-        // actor. `reset()` may leave the session while `join()` runs, so a join that comes back
-        // for a session that is no longer current leaves it again. See CODE_AUDIT_18 §3.8.
+        // actor. Every `join()` and `leave()` of this session goes through one
+        // `GroupSessionCommandQueue`, so a `reset()` during a join leaves the session only after
+        // the join returned, never at the same time. See CODE_AUDIT_18 §3.8, CODE_AUDIT_24 §3.1.
         let sessionId = groupSession.id
-        let sessionToJoin = OffMainGroupSession(session: groupSession)
+        let commands = GroupSessionCommandQueue(session: groupSession)
+        sessionCommands = commands
         let sessionJoinTask = Task { @MainActor [weak self] in
             guard !Task.isCancelled,
                   let self,
                   self.sessionLifecycle.isCurrent(sessionId: sessionId)
             else { return }
-            await sessionToJoin.join()
-            if !self.sessionLifecycle.isCurrent(sessionId: sessionId) {
-                Logger.sharePlay.debug("Leaving session \(sessionId, privacy: .public) reset while it was joining")
-                await sessionToJoin.leave()
-            }
+            commands.join()
         }
         // reset() now owns cancellation of a delayed join for this session.
         tasks[UUID()] = sessionJoinTask
@@ -492,20 +490,53 @@ extension RPGSharePlayController {
     }
 }
 
-/// A `GroupSession`, to call `join()` and `leave()` off the main actor. `GroupSession` is not
-/// `Sendable`, but those calls go to the system's SharePlay service, which serializes them;
-/// everything that reads the session's state stays on the main actor. `join()` blocks while it
-/// sets up the call's audio session, which the main thread must not wait for.
-private struct OffMainGroupSession: @unchecked Sendable {
-    let session: GroupSession<RPGActivity>
-
-    @concurrent
-    func join() async {
-        session.join()
+/// Runs the `join()` and `leave()` of one `GroupSession` strictly one after the other, off the
+/// main actor. Commands are queued from the main actor in call order and one task executes them,
+/// so a `leave()` never overlaps a `join()` that is still running; `join()` blocks while it sets
+/// up the call's audio session, which the main thread must not wait for. After `leave()` the
+/// queue is finished: a later `join()` or `leave()` does nothing.
+///
+/// `GroupSession` is not `Sendable`. The box below only hands it to the one task that calls these
+/// two methods; everything that reads the session's state stays on the main actor.
+final class GroupSessionCommandQueue: Sendable {
+    private enum Command {
+        case join
+        case leave
     }
 
-    @concurrent
-    func leave() async {
-        session.leave()
+    private struct SessionBox: @unchecked Sendable {
+        let session: GroupSession<RPGActivity>
+    }
+
+    private let continuation: AsyncStream<Command>.Continuation
+
+    init(session: GroupSession<RPGActivity>) {
+        let box = SessionBox(session: session)
+        let (stream, continuation) = AsyncStream.makeStream(of: Command.self)
+        self.continuation = continuation
+        Task.detached(priority: .userInitiated) {
+            for await command in stream {
+                switch command {
+                case .join:
+                    box.session.join()
+                case .leave:
+                    box.session.leave()
+                    return
+                }
+            }
+        }
+    }
+
+    deinit {
+        continuation.finish()
+    }
+
+    func join() {
+        continuation.yield(.join)
+    }
+
+    func leave() {
+        continuation.yield(.leave)
+        continuation.finish()
     }
 }

@@ -616,9 +616,10 @@ extension RPGSharePlayController {
         inboundByteBudget.reset()
         gameModel?.attachments = [:]
         if groupSession != nil {
-            groupSession?.leave()
+            leaveGroupSession()
             groupSession = nil
         }
+        sessionCommands = nil
         #if os(visionOS)
         tabletopGame?.detachNetworkCoordinator()
         systemCoordinator = nil
@@ -626,5 +627,14 @@ extension RPGSharePlayController {
         gameModel?.shareState.isSharePlayActive = false
         gameModel?.shareState.groupImmersionActive = false
         #endif
+    }
+
+    /// Leaves the current session after a join that is still running. See `GroupSessionCommandQueue`.
+    func leaveGroupSession() {
+        if let sessionCommands {
+            sessionCommands.leave()
+        } else {
+            groupSession?.leave()
+        }
     }
 }

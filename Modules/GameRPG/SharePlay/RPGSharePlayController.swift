@@ -421,6 +421,9 @@ final class RPGSharePlayController {
     }
 
     var groupSession: GroupSession<RPGActivity>?
+    /// Orders the current session's `join()` and `leave()`. Leave the session through
+    /// `leaveGroupSession()`, never `groupSession?.leave()`.
+    var sessionCommands: GroupSessionCommandQueue?
     var isActive: Bool = false
     var connectionState: SharePlayConnectionState = .inactive
     var canActivateSharePlay: Bool = false

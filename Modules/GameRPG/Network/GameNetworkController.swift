@@ -147,7 +147,7 @@ extension GameNetworkController {
             if !proxy { sharePlayStore.reset() }
         } else {
             await model.playerStore?.stop()
-            if !proxy { sharePlayStore.groupSession?.leave() }
+            if !proxy { sharePlayStore.leaveGroupSession() }
         }
         if !proxy {
             sharePlayStore.stopJoin()
