@@ -34,6 +34,15 @@ public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root:
     }
 }
 
+enum ItemStateRestoration {
+    /// The item to select once the restore delay is over: the stored one, and only while nothing is
+    /// selected. Restoring blindly cleared a selection made during the delay (first selection after
+    /// choosing a module, when nothing is stored), so the detail appeared and disappeared again.
+    static func itemToRestore(stored: UUID?, current: UUID?) -> UUID? {
+        current == nil ? stored : nil
+    }
+}
+
 private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, Root: ItemRootControllable>: ViewModifier {
     init(root: Root, keyPrefix: String) {
         self.root = root
@@ -118,7 +127,14 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
                 }
                 guard !Task.isCancelled else { return }
 
-                root.navigationModel.selectedItemId <=> restoredItemId
+                // The user may have chosen an item during the delay (a module opened for the first
+                // time has nothing stored): that choice is kept, never replaced by the old one.
+                if let itemId = ItemStateRestoration.itemToRestore(
+                    stored: restoredItemId,
+                    current: root.navigationModel.selectedItemId
+                ) {
+                    root.navigationModel.selectedItemId = itemId
+                }
             }
     }
 }
