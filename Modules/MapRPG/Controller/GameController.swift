@@ -28,6 +28,9 @@ final class MapGameModel {
     let battleRoundModel: BattleRoundModel
     let battleRoundSettings: BattleRoundSettingsModel
     private(set) var battleCharacterCopyIds: Set<UUID> = []
+    /// The library Character each battle clone was made from. A pin that points at the clone is
+    /// session-only: the clone is gone when the game ends.
+    private(set) var battleCopySources: [UUID: UUID] = [:]
     private var authoritativeGenerations: [UUID: AuthoritativeGeneration] = [:]
     private var lastActivatedRoomIds: [UUID: UUID] = [:]
     /// The room the game master last revealed or focused, per map. A photo shown while the map
@@ -69,12 +72,14 @@ final class MapGameModel {
         lastOpenedRoomIds[mapId]
     }
 
-    func registerBattleCharacterCopy(_ id: UUID) {
+    func registerBattleCharacterCopy(_ id: UUID, source: UUID) {
         battleCharacterCopyIds.insert(id)
+        battleCopySources[id] = source
     }
 
     func clearBattleCharacterCopies() {
         battleCharacterCopyIds = []
+        battleCopySources = [:]
     }
     
     func reset() {
@@ -83,6 +88,7 @@ final class MapGameModel {
         lastActivatedRoomIds = [:]
         lastOpenedRoomIds = [:]
         battleCharacterCopyIds = []
+        battleCopySources = [:]
         battleRoundModel.reset()
     }
 }
@@ -279,6 +285,7 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable { exportController as ExportControllable }
 
     @MainActor func resetGameState() {
+        scrubLibraryMapsOfSessionContent()
         releaseBattleCharacters()
         mapGameModel.reset()
     }

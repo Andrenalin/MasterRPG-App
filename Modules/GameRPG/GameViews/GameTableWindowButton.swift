@@ -16,6 +16,10 @@ struct GameTableWindowButton: View {
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.pushWindow) private var pushWindow
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    /// True from the tap that opens the table until the table window is requested, so a second
+    /// tap in between cannot push the game window twice.
+    @State private var isOpeningTable = false
 #endif
     @Environment(AppSettingsModel.self) private var appSettingsModel
 
@@ -61,12 +65,14 @@ struct GameTableWindowButton: View {
     }
 
     private func toggleTable() {
+#if os(visionOS)
+        guard !isOpeningTable else { return }
+#endif
         let shouldShow = !isPresented
         appSettingsModel.showGameTableVolume = shouldShow
 #if os(visionOS)
         if shouldShow {
             
-            scenesManager.openWindow(SceneId.gameTable)
             // Keep the table and the main "Game" window (`SceneId.game` —
             // the app's primary navigation window, distinct from both the
             // table and the floating adventure/character window below)
@@ -75,6 +81,15 @@ struct GameTableWindowButton: View {
             // windows there, so leaving the game window open behind the
             // table would just be redundant clutter.
             pushWindow(id: SceneId.gameRecover.rawValue)
+            // The table opens only once the recover window stands where the game window was:
+            // the system opens a new window in front of the app's existing windows, so the table
+            // now lands in front of the recover window instead of in front of a game window that
+            // is about to be pushed away.
+            isOpeningTable = true
+            Task {
+                await openTableOnceRecoverWindowStands()
+                isOpeningTable = false
+            }
             // Also close the floating adventure/character window
             // (`GameWindowMenuButtonView`'s own window) the same way opening
             // the table already implies closing the game window it lives in.
@@ -104,6 +119,20 @@ struct GameTableWindowButton: View {
 #endif
     }
 }
+
+#if os(visionOS)
+private extension GameTableWindowButton {
+    /// Waits (at most about a second) until the pushed-in recover window is on screen, then opens
+    /// the table. Opens it anyway on a timeout, so the table can never be left unreachable.
+    func openTableOnceRecoverWindowStands() async {
+        for _ in 0..<20 {
+            if scenesManager.getSceneState(for: SceneId.gameRecover) == .opened { break }
+            guard (try? await Task.sleep(for: .milliseconds(50))) != nil else { break }
+        }
+        scenesManager.openWindow(SceneId.gameTable)
+    }
+}
+#endif
 
 #Preview(traits: .mockData) {
     GameTableWindowButton(root: .preview, isMaster: true)

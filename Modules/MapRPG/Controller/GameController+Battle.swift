@@ -104,7 +104,7 @@ extension GameController {
         } else if let sourceCharacterId,
                   let copyId = root.characterRoot.valueGameControllable
                     .createBattleCharacterCopy(for: sourceCharacterId) {
-            mapGameModel.registerBattleCharacterCopy(copyId)
+            mapGameModel.registerBattleCharacterCopy(copyId, source: sourceCharacterId)
             // Routed through the shared mutate-bump-write-sync helper instead
             // of hand-rolling the timestamp bump.
             guard let updatedPin = mutatedPinState(
@@ -391,7 +391,7 @@ extension GameController {
                 .createBattleCharacterCopy(for: characterId) else {
                 return false
             }
-            mapGameModel.registerBattleCharacterCopy(copyId)
+            mapGameModel.registerBattleCharacterCopy(copyId, source: characterId)
             sourceCharacterId = characterId
             gameCharacterId = copyId
         }

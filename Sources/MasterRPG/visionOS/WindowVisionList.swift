@@ -74,6 +74,9 @@ struct WindowVisionList: Scene {
 
         WindowGroup(id: SceneId.gameRecover.rawValue) {
             Text("Recover", bundle: .main)
+                // Tells `GameTableWindowButton` when this window stands where the game window
+                // was, so the table can open in front of it.
+                .sceneTracker(for: SceneId.gameRecover)
                 .environment(appModel.scenesManager)
         }
         .windowResizability(.contentSize)

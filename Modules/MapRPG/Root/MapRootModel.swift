@@ -135,6 +135,10 @@ public final class MapRootModel {
 
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
+        itemController.itemDataModel.libraryWriteFilter = { [gameController] model in
+            guard let map = model as? MapModel else { return nil }
+            return gameController.libraryCopy(of: map)
+        }
 
         exportController.hubControllable = adventureRootControllable
         editController.editorModel.sheetRootModel = SheetRootModel(

@@ -26,6 +26,12 @@ public final class ItemDataModel: Sendable {
     @ObservationIgnored public var dataController: (any DataPersistenceControllable)?
     @ObservationIgnored public var linkRegisterController: LinkRegisterController?
     @ObservationIgnored public var contentWidgetPublisher: (@MainActor @Sendable () -> Void)?
+    /// Set by a module whose game copy carries session-only content (the Map module's player and
+    /// companion pins, and battle clones' Character ids). Returns a cleaned copy of the model
+    /// about to be written to the library, or `nil` when nothing in it is session-only. The
+    /// game copy itself is never touched. A whole-model write from the item editor during a game
+    /// otherwise stores that content in the library, where it outlives the game.
+    @ObservationIgnored public var libraryWriteFilter: (@MainActor (ModelType) -> ModelType?)?
 
     /// Set whenever `ItemControllable.save()`/`flushPendingOperations()`/`resetData()`'s batch
     /// delete fails. `nil` once a following save succeeds (a flush alone doesn't clear it).

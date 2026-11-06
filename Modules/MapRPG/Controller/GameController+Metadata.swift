@@ -294,6 +294,41 @@ extension GameController {
         return Int(value)
     }
 
+    /// The map as the library may keep it, or `nil` when it holds nothing session-only. Player,
+    /// companion and table-player pins exist for the running game only, and a pin of a battle
+    /// monster points at a clone Character that is released when the game ends; the pin goes
+    /// back to the library Character the clone was made from. The game's own map is not changed.
+    @MainActor
+    func libraryCopy(of map: MapModel) -> MapModel? {
+        let sources = mapGameModel.battleCopySources
+        guard map.mapPins.contains(where: { $0.isPlayer || $0.characterId.map { sources[$0] != nil } == true }) else {
+            return nil
+        }
+        let copy = map.copy()
+        copy.mapPins = Self.libraryPins(of: map.mapPins, sources: sources)
+        return copy
+    }
+
+    static func libraryPins(of pins: [MapPinModel], sources: [UUID: UUID]) -> [MapPinModel] {
+        pins.filter { !$0.isPlayer }.map { pin in
+            guard let characterId = pin.characterId, let source = sources[characterId] else { return pin }
+            var restored = pin
+            restored.characterId = source
+            return restored
+        }
+    }
+
+    /// At game end: library maps whose in-memory instance took session-only pins (the game and the
+    /// library shared the instance, or an editor write carried them) lose them with the game.
+    @MainActor
+    func scrubLibraryMapsOfSessionContent() {
+        let sources = mapGameModel.battleCopySources
+        for case let map as MapModel in itemController.itemDataModel.itemData.values {
+            guard map.mapPins.contains(where: { $0.isPlayer || $0.characterId.map { sources[$0] != nil } == true }) else { continue }
+            map.mapPins = Self.libraryPins(of: map.mapPins, sources: sources)
+        }
+    }
+
     @MainActor
     func releaseBattleCharacters() {
         let ids = mapGameModel.battleCharacterCopyIds

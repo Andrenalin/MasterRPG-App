@@ -234,12 +234,17 @@ public extension ItemControllable {
     ///   mirrors only the fields it changed. Copying the whole library state into it would drop
     ///   that copy's session-only changes. See CODE_AUDIT_Folder §5.21, §5.23.
     @MainActor func replace(model: ModelType?, isInsert: Bool, forceSave: Bool, syncGameMemory: Bool) {
-        guard let model = model as? Model else { return }
+        guard let sessionModel = model as? Model else { return }
         if itemDataModel.isGameMode == true && forceSave == false {
-            replaceInGameMemory(model: model)
+            replaceInGameMemory(model: sessionModel)
             return
         }
         
+        // What the library keeps: the model without the game's session-only content. The game
+        // copy is mirrored from the unfiltered model below.
+        let sanitized = itemDataModel.isGameMode ? itemDataModel.libraryWriteFilter?(sessionModel) as? Model : nil
+        let model = sanitized ?? sessionModel
+
         if let original = self.itemSync(for: model.id, noGame: true) {
             let resort = original.name != model.name
             if original.replace(with: model) {
@@ -255,7 +260,7 @@ public extension ItemControllable {
                 itemDataModel.publishContentWidgetSnapshot()
             }
             if syncGameMemory {
-                syncGameMemoryIfLoaded(with: original)
+                syncGameMemoryIfLoaded(with: sanitized == nil ? original : sessionModel)
             }
         } else {
             // Also when the caller did not ask for an insert: an id that is not in the library
@@ -269,7 +274,7 @@ public extension ItemControllable {
             }
             resetModel(with: model)
             if syncGameMemory {
-                syncGameMemoryIfLoaded(with: model)
+                syncGameMemoryIfLoaded(with: sessionModel)
             }
         }
     }
