@@ -90,6 +90,16 @@ public struct ResolvedAppTheme: Hashable, Sendable {
         accent.color.opacity(0.4)
     }
 
+    /// The fill of a control's resting state inside a panel, in the theme's foreground.
+    public var controlFillColor: Color {
+        foreground.color.opacity(0.14)
+    }
+
+    /// The outline of a control inside a panel, in the theme's foreground.
+    public var controlBorderColor: Color {
+        foreground.color.opacity(0.35)
+    }
+
     public var backgroundGradient: LinearGradient {
         LinearGradient(
             colors: [canvas.color, canvasEnd.color],

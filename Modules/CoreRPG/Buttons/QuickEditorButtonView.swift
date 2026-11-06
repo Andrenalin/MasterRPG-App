@@ -45,7 +45,7 @@ public struct QuickEditorButtonView<Value: Numeric & Comparable>: View {
             Text(verbatim: "\(isAddition ? "+" : "-")\(title)")
         }
         .modifier(QuickEditorButtonStyleModifier(isThemed: isThemed))
-        .contentShape(Rectangle())
+        .contentShape(.rect)
     }
 }
 
@@ -97,9 +97,9 @@ public struct ThemedQuickStepButtonStyle: ButtonStyle {
                 .padding(.horizontal, 4)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(isHighlighted ? theme.foregroundColor : theme.foregroundColor.opacity(0.14), in: .capsule)
+                .background(isHighlighted ? theme.foregroundColor : theme.controlFillColor, in: .capsule)
                 .overlay {
-                    Capsule().strokeBorder(theme.foregroundColor.opacity(0.35), lineWidth: 1)
+                    Capsule().strokeBorder(theme.controlBorderColor, lineWidth: 1)
                 }
         }
     }

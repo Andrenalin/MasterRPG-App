@@ -94,7 +94,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 QuickDiceToggleField()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(.trailing, quickDiceTogglePadding)
-                    .padding(.bottom, GameScreenModel.quickDiceBottomInset + valueFor(iOS: 0, macOS: 4, tvOS: 0, visionOS: 0))
+                    .padding(.bottom, GameScreenModel.quickDiceBottomInset)
                     .animation(
                         accessibilityReduceMotion ? nil : .bouncy,
                         value: gameScreenModel.quickDiceToggleTrailingReservation
@@ -147,18 +147,13 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     /// the overlay or sidebar at the trailing edge, plus one spacing step.
     private var quickDiceTogglePadding: CGFloat {
         let reserved = gameScreenModel.quickDiceToggleTrailingReservation
-#if os(macOS)
-        guard reserved > 0 else { return horizontalPadding + 2 }
-#else
-        guard reserved > 0 else { return horizontalPadding }
-#endif
+        let nudge = GameScreenModel.quickDiceToggleTrailingInset
+        guard reserved > 0 else { return horizontalPadding + nudge }
 #if os(iOS)
         // The layer lies inside the trailing safe area; the overlay and sidebar reach the edge.
         return max(0, reserved - gameScreenModel.chromeTrailingSafeAreaInset) + GameScreenModel.mapOverlaySpacing
-#elseif os(macOS)
-        return horizontalPadding + reserved + GameScreenModel.mapOverlaySpacing + 2
 #else
-        return horizontalPadding + reserved + GameScreenModel.mapOverlaySpacing
+        return horizontalPadding + reserved + GameScreenModel.mapOverlaySpacing + nudge
 #endif
     }
 

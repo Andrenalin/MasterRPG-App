@@ -9,6 +9,7 @@ import GeneratorRPG
 #endif
 import PdfRPG
 import PhotoRPG
+import WeatherRPG
 import TableRPG
 import CharacterRPG
 import SwiftUI
@@ -71,7 +72,7 @@ public final class RootModel: Sendable {
 public final class MapRootModel {
 
     @MainActor
-    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel? = nil, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {
+    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel? = nil, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         let config = ModuleConfiguration()
         self.config = config
 
@@ -94,6 +95,7 @@ public final class MapRootModel {
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
         self.characterRoot = characterRoot
+        self.weatherRoot = weatherRoot
         self.rootModel = RootModel()
 
 
@@ -160,6 +162,8 @@ public final class MapRootModel {
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
     let characterRoot: CharacterRootModel
+    /// Draws a weather in the game map's photo popover (`MapPhotoPopoverContent`).
+    let weatherRoot: WeatherRootModel
 
     public let rootModel: RootModel
     /// A photo the game master shows on the game map. GameRPG sets it; the 2D map and the 3D

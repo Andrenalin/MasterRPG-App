@@ -66,9 +66,6 @@ public final class MapPhotoPopoverModel {
     public var isPrivate = false
     /// Installed by GameRPG for the length of a game. Holds no view.
     @ObservationIgnored public var actions: MapPhotoPopoverActions?
-    /// Draws the picture of an item MapRPG cannot draw itself, such as a weather. Installed by
-    /// GameRPG, which knows the module; type-erased because MapRPG does not depend on it.
-    @ObservationIgnored public var itemPicture: (@MainActor (MapPhotoPopoverItem) -> AnyView)?
 
     public init() {}
 

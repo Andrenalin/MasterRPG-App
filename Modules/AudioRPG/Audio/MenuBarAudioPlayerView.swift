@@ -11,6 +11,8 @@ import SwiftUI
 /// windows): previous / play-pause / next, repeat, seeking, volume and the playlist. In a running
 /// game the transport buttons and playlist rows go through `networkActions` like there.
 struct MenuBarAudioPlayerView: View {
+    @ScaledMetric(relativeTo: .body) private var width = 320
+
     var body: some View {
         VStack(spacing: 12) {
             MenuBarAudioTitleView()
@@ -19,7 +21,7 @@ struct MenuBarAudioPlayerView: View {
             MenuBarAudioVolumeView()
             MenuBarAudioPlayListView()
         }
-        .frame(width: 320)
+        .frame(width: width)
     }
 }
 
@@ -55,6 +57,8 @@ private struct MenuBarAudioTransportView: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .title3) private var sideButtonSide = 32
+    @ScaledMetric(relativeTo: .largeTitle) private var playButtonSide = 44
 
     var body: some View {
         let model = root.audioController.model
@@ -71,7 +75,7 @@ private struct MenuBarAudioTransportView: View {
                 }
                 .labelStyle(.iconOnly)
                 .font(.title3)
-                .frame(width: 32, height: 32)
+                .frame(width: sideButtonSide, height: sideButtonSide)
                 .contentShape(.rect)
             }
             .disabled(!model.hasPrev)
@@ -95,7 +99,7 @@ private struct MenuBarAudioTransportView: View {
                 }
                 .labelStyle(.iconOnly)
                 .font(.largeTitle)
-                .frame(width: 44, height: 44)
+                .frame(width: playButtonSide, height: playButtonSide)
                 .contentShape(.rect)
             }
             .disabled(model.currentId == nil)
@@ -112,7 +116,7 @@ private struct MenuBarAudioTransportView: View {
                 }
                 .labelStyle(.iconOnly)
                 .font(.title3)
-                .frame(width: 32, height: 32)
+                .frame(width: sideButtonSide, height: sideButtonSide)
                 .contentShape(.rect)
             }
             .disabled(!model.hasNext)
@@ -128,7 +132,7 @@ private struct MenuBarAudioTransportView: View {
                 .labelStyle(.iconOnly)
                 .font(.title3)
                 .foregroundStyle(model.repeatPlayList ? Color.accentColor : .secondary)
-                .frame(width: 32, height: 32)
+                .frame(width: sideButtonSide, height: sideButtonSide)
                 .contentShape(.rect)
             }
             .accessibilityValue(
@@ -170,6 +174,7 @@ private struct MenuBarAudioVolumeView: View {
 
 private struct MenuBarAudioPlayListView: View {
     @Environment(AudioRootModel.self) private var root
+    @ScaledMetric(relativeTo: .body) private var maximumHeight = 180
 
     var body: some View {
         let model = root.audioController.model
@@ -184,7 +189,7 @@ private struct MenuBarAudioPlayListView: View {
                 }
             }
             .scrollIndicators(.hidden)
-            .frame(maxHeight: 180)
+            .frame(maxHeight: maximumHeight)
         }
     }
 }

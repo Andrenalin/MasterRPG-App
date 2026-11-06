@@ -5,7 +5,6 @@ import Foundation
 import MapRPG
 import os.log
 import PhotoRPG
-import SwiftUI
 import WeatherRPG
 
 // A photo or a weather the game master shows while a map is on screen: on the map in the pin
@@ -20,8 +19,7 @@ import WeatherRPG
 // | closed     | `.map`           | nil                          |
 
 extension PlayerController {
-    /// Installs what the photo popovers' buttons do, and how a weather is drawn in one, for the
-    /// length of this game.
+    /// Installs what the photo popovers' buttons do for the length of this game.
     func installMapPhotoActions() {
         let popover = root.mapRoot.photoPopover
         popover.actions = MapPhotoPopoverActions(
@@ -31,16 +29,11 @@ extension PlayerController {
                 self?.showPhotoFullScreen(photo, isShared: isShared)
             }
         )
-        let weatherRoot = root.weatherRoot
-        popover.itemPicture = { item in
-            AnyView(weatherRoot.viewController.gamePopoverViewer(root: weatherRoot, itemId: item.itemId))
-        }
     }
 
     /// Removes the popover and its actions when the game ends.
     func uninstallMapPhotoActions() {
         root.mapRoot.photoPopover.actions = nil
-        root.mapRoot.photoPopover.itemPicture = nil
         root.mapRoot.photoPopover.photo = nil
         cancelMapPhotoMakeCurrent()
         gameModel.mapPhoto.reset()

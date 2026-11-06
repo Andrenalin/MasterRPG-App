@@ -15,6 +15,15 @@ final class GameScreenModel {
         0
 #endif
     }()
+    /// The quick dice toggle sits this far further from the trailing edge than the overlay
+    /// does on macOS, so its glass circle lines up with the overlay's own padding.
+    static let quickDiceToggleTrailingInset: CGFloat = {
+#if os(macOS)
+        2
+#else
+        0
+#endif
+    }()
 
     private enum WidthValues {
 #if os(macOS)

@@ -14,6 +14,7 @@ import RPGResourcesDebug
 @testable import CharacterRPG
 
 import Testing
+@testable import WeatherRPG
 
 struct MockRoot {
     static func importTestData(_ name: String = ResourcesDebug.mapTestData, itemCounter: Int = 1) async throws -> MapRootModel {
@@ -22,8 +23,9 @@ struct MockRoot {
         let pdfRoot = await PdfRootModel.testRoot()
         let photoRoot = await PhotoRootModel.testRoot()
         let tableRoot = await TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let weatherRoot = await WeatherRootModel.testRoot(photoRoot: photoRoot)
         let characterRoot = await CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let root = await MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
+        let root = await MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
 
         await root.itemController.resetData()
 

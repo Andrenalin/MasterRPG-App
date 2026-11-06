@@ -2,6 +2,7 @@
 
 import CoreRPG
 import PhotoRPG
+import WeatherRPG
 import SwiftUI
 
 // The pin photo popover: a big picture of a pin's photo in the same glass panel as the pin
@@ -30,7 +31,8 @@ public enum MapPinPhotoSharing {
         return isShared ? .show : .hide
     }
 
-    /// Edge length of the photo, large enough to recognize a face across the table.
+    /// Edge length of the photo at the default text size, large enough to recognize a face
+    /// across the table. The popover's views scale it with Dynamic Type.
     public static var photoSide: CGFloat {
 #if os(tvOS)
         480
@@ -90,11 +92,9 @@ struct MapPhotoPopoverContent: View {
                         ? Text("Photo", bundle: .module)
                         : Text("Photo of \(name)", bundle: .module)
                 )
-            } else if let picture = root.photoPopover.itemPicture {
-                picture(item)
-                    .accessibilityLabel(Text(verbatim: name))
             } else {
-                Color.secondary
+                root.weatherRoot.viewController.gamePopoverViewer(root: root.weatherRoot, itemId: item.itemId)
+                    .accessibilityLabel(Text(verbatim: name))
             }
         }
     }
@@ -107,6 +107,8 @@ struct MapPhotoPanelImage: View {
     let color: Color
     let accessibilityLabel: Text
 
+    @ScaledMetric(relativeTo: .body) private var photoSide = MapPinPhotoSharing.photoSide
+
     var body: some View {
         // `AsyncThumbnail` switches to the full-size photo cache for a presentation this
         // large. The source photo is rarely square: anchor the `.fill` overflow to the top,
@@ -114,7 +116,7 @@ struct MapPhotoPanelImage: View {
         root.photoRoot.viewController.mapImage(
             root: root.photoRoot,
             for: photoId,
-            size: CGSize(width: MapPinPhotoSharing.photoSide, height: MapPinPhotoSharing.photoSide),
+            size: CGSize(width: photoSide, height: photoSide),
             color: color
         )
         .accessibilityLabel(accessibilityLabel)
@@ -130,11 +132,13 @@ struct MapPhotoPanel<Picture: View>: View {
     let onClose: () -> Void
     @ViewBuilder let picture: Picture
 
+    @ScaledMetric(relativeTo: .body) private var photoSide = MapPinPhotoSharing.photoSide
+
     var body: some View {
         picture
             .frame(
-                width: MapPinPhotoSharing.photoSide,
-                height: MapPinPhotoSharing.photoSide,
+                width: photoSide,
+                height: photoSide,
                 alignment: .top
             )
             .overlay(alignment: .bottom) {

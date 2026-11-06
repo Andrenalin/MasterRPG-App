@@ -12,6 +12,7 @@ import Testing
 @testable import PdfRPG
 @testable import PhotoRPG
 @testable import TableRPG
+@testable import WeatherRPG
 
 @MainActor
 struct ConcreteFolderListControllerTests {
@@ -21,8 +22,9 @@ struct ConcreteFolderListControllerTests {
         let pdfRoot = PdfRootModel.testRoot()
         let photoRoot = PhotoRootModel.testRoot()
         let tableRoot = TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        let weatherRoot = WeatherRootModel.testRoot(photoRoot: photoRoot)
         let characterRoot = CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let root = MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
+        let root = MapRootModel.testRoot(audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         let sut = root.folderListController
         let itemId = UUID()
 

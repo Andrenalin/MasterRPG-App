@@ -21,6 +21,15 @@ struct DiceQuickEditor: View {
 
     @State private var value: String = ""
     @FocusState private var isFocused: Bool
+    @ScaledMetric(relativeTo: .body) private var width: CGFloat = {
+#if os(tvOS)
+        420
+#elseif os(visionOS)
+        325
+#else
+        300
+#endif
+    }()
 
     /// The typed value, or `nil` while it is not one a dice takes (empty, 0 or less), so Apply
     /// stays disabled instead of closing with no change. See CODE_AUDIT_Since_3.0.1 §5.12.
@@ -90,7 +99,7 @@ struct DiceQuickEditor: View {
             RoundedRectangle(cornerRadius: ResolvedAppTheme.panelCornerRadius)
                 .strokeBorder(theme.accentColor, lineWidth: 2)
         }
-        .frame(width: valueFor(iOS: 300, macOS: 300, tvOS: 420, visionOS: 325))
+        .frame(width: width)
         .onChange(of: root.gameController.gameItem(for: itemId).compareValue, initial: true) {
             value = String("\(root.gameController.gameItem(for: itemId).compareValue.saturatingInt)")
         }
