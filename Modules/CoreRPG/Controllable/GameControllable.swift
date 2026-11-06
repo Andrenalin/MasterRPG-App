@@ -203,7 +203,10 @@ public extension GameControllable {
             return true
         }
 
-        guard let item = await itemControllable.item(for: itemId) else { return false }
+        guard let item = await itemControllable.item(for: itemId),
+              // A caller that was superseded while the item loaded must not change the game.
+              !Task.isCancelled
+        else { return false }
         await gameModel.insert(itemId: item.id, item: item)
         return true
     }

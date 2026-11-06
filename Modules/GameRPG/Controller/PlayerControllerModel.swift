@@ -31,6 +31,9 @@ final class PlayerControllerModel {
     /// A photo the game master shows while a map is on screen: on the map, full screen or
     /// closed. See `PlayerController+MapPhoto.swift`.
     var mapPhoto = MapPhotoPresentationState()
+    /// Makes the photo of a full-screen presentation the photo module's current item. One at a
+    /// time: a newer presentation, a reset or the end of the game cancels it.
+    @ObservationIgnored var mapPhotoMakeCurrentTask: Task<Void, Never>?
     /// The weather the game master shows on the 3D table. See `PlayerController+TableWeather.swift`.
     var tableWeather = TableWeatherState()
     var messageCounter: Int = 0
@@ -418,6 +421,8 @@ final class PlayerControllerModel {
         lastSpaceListCounters.removeAll()
         // A restarted game master counts from one again.
         lastPresentation = nil
+        mapPhotoMakeCurrentTask?.cancel()
+        mapPhotoMakeCurrentTask = nil
         mapPhoto.reset()
         tableWeather.reset()
         pendingMapContentUpdates.removeAll()

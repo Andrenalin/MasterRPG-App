@@ -25,6 +25,8 @@ public final class WeatherTableEffect {
     private(set) var configuration: WeatherSceneConfiguration?
     private(set) var volume: WeatherVolume?
     private var lightningTask: Task<Void, Never>?
+    /// Waits for the particle textures of a weather that is not built yet, then builds it.
+    private var buildTask: Task<Void, Never>?
 
     public init() {
         entity = Entity()
@@ -33,6 +35,7 @@ public final class WeatherTableEffect {
 
     isolated deinit {
         lightningTask?.cancel()
+        buildTask?.cancel()
     }
 
     /// Whether a weather is shown.
@@ -71,6 +74,29 @@ public final class WeatherTableEffect {
         self.configuration = configuration
         self.volume = volume
 
+        // The textures decode off the main actor the first time they are needed; the weather
+        // is built once they are in, unless it was removed or replaced meanwhile.
+        let textureNames = Self.textureNames(for: configuration)
+        if WeatherTextures.hasLoaded(textureNames) {
+            build(configuration, in: volume)
+        } else {
+            buildTask = Task { [weak self] in
+                await WeatherTextures.load(textureNames)
+                guard !Task.isCancelled, let self,
+                      self.configuration == configuration, self.volume == volume
+                else { return }
+                self.buildTask = nil
+                self.build(configuration, in: volume)
+            }
+        }
+    }
+
+    /// Returns once a weather that waited for its textures is built.
+    func waitForBuild() async {
+        await buildTask?.value
+    }
+
+    private func build(_ configuration: WeatherSceneConfiguration, in volume: WeatherVolume) {
         if configuration.starOpacity >= WeatherSceneConfiguration.visibleOpacity {
             entity.addChild(Self.stars(configuration, in: volume))
         }
@@ -85,7 +111,21 @@ public final class WeatherTableEffect {
         }
     }
 
+    /// The particle textures a weather's emitters use.
+    static func textureNames(for configuration: WeatherSceneConfiguration) -> [String] {
+        var names: [String] = []
+        if configuration.cloudCount > 0 {
+            names.append(cloudTextureName(for: configuration.cloudCount))
+        }
+        if configuration.precipitationCount > 0 {
+            names.append(configuration.precipitation == .snow ? "snow" : "rain")
+        }
+        return names
+    }
+
     private func removeWeather() {
+        buildTask?.cancel()
+        buildTask = nil
         lightningTask?.cancel()
         lightningTask = nil
         entity.children.removeAll()
@@ -191,7 +231,7 @@ public final class WeatherTableEffect {
         particle.color = .constant(.single(.init(white: 1, alpha: isSnow ? 0.95 : 0.7)))
         particle.isLightingEnabled = false
         particle.blendMode = .alpha
-        if let texture = WeatherTextures.texture(named: isSnow ? "snow" : "rain") {
+        if let texture = WeatherTextures.cached(named: isSnow ? "snow" : "rain") {
             particle.image = texture
         }
         emitter.mainEmitter = particle
@@ -238,7 +278,7 @@ public final class WeatherTableEffect {
         )))
         particle.isLightingEnabled = false
         particle.blendMode = .alpha
-        if let texture = WeatherTextures.texture(named: cloudTextureName(for: configuration.cloudCount)) {
+        if let texture = WeatherTextures.cached(named: cloudTextureName(for: configuration.cloudCount)) {
             particle.image = texture
         }
         emitter.mainEmitter = particle
@@ -308,30 +348,49 @@ public final class WeatherTableEffect {
     private static let boltMesh = MeshResource.generateBox(size: 1)
 }
 
-/// The 2D weather's images as particle textures, loaded once.
+/// The 2D weather's images as particle textures, loaded once. `load(_:)` decodes them off the
+/// main actor and uploads them with the async `TextureResource` initializer; the emitters only
+/// read the cache.
 @MainActor
 enum WeatherTextures {
     private static var cache: [String: TextureResource] = [:]
+    /// Names whose load failed, so a missing image is logged once and not awaited again.
+    private static var failed: Set<String> = []
 
-    static func texture(named name: String) -> TextureResource? {
-        if let texture = cache[name] {
-            return texture
-        }
-        guard let image = Image.loadImage(name: name), let cgImage = cgImage(from: image) else {
-            Logger.weather3D.error("Missing weather texture \(name, privacy: .public)")
-            return nil
-        }
-        do {
-            let texture = try TextureResource(image: cgImage, withName: "weather-\(name)", options: .init(semantic: .color))
-            cache[name] = texture
-            return texture
-        } catch {
-            Logger.weather3D.error("Weather texture \(name, privacy: .public) failed: \(error.localizedDescription, privacy: .private)")
-            return nil
+    static func cached(named name: String) -> TextureResource? {
+        cache[name]
+    }
+
+    /// Whether every name is loaded or known to be unavailable.
+    static func hasLoaded(_ names: [String]) -> Bool {
+        names.allSatisfy { cache[$0] != nil || failed.contains($0) }
+    }
+
+    static func load(_ names: [String]) async {
+        for name in names where cache[name] == nil && !failed.contains(name) {
+            guard let cgImage = await decodedImage(named: name) else {
+                Logger.weather3D.error("Missing weather texture \(name, privacy: .public)")
+                failed.insert(name)
+                continue
+            }
+            // Another load may have finished the same texture while this one decoded.
+            guard cache[name] == nil else { continue }
+            do {
+                cache[name] = try await TextureResource(image: cgImage, withName: "weather-\(name)", options: .init(semantic: .color))
+            } catch {
+                Logger.weather3D.error("Weather texture \(name, privacy: .public) failed: \(error.localizedDescription, privacy: .private)")
+                failed.insert(name)
+            }
         }
     }
 
-    private static func cgImage(from image: AKImage) -> CGImage? {
+    @concurrent
+    private static func decodedImage(named name: String) async -> CGImage? {
+        guard let image = Image.loadImage(name: name) else { return nil }
+        return cgImage(from: image)
+    }
+
+    private nonisolated static func cgImage(from image: AKImage) -> CGImage? {
 #if os(macOS)
         image.cgImage(forProposedRect: nil, context: nil, hints: nil)
 #else

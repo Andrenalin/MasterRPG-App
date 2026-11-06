@@ -170,15 +170,17 @@ public extension LinkRegisterController {
     /// source item ID: delete the persisted rows, then insert the current in-memory state, through the context.
     /// Call from the periodic `save()` on `AdventureRootModel`.
     @MainActor func savePendingLinks() async throws {
-        let affectedIds = model.pendingAffectedSourceIds
-        guard !affectedIds.isEmpty, let context = model.context else { return }
+        guard !model.pendingAffectedSourceIds.isEmpty, let context = model.context else { return }
         // An empty register that stands for an unread table would delete the stored rows of every
         // affected source. Retry the fetch; the changes wait until it succeeds.
         if model.hydrationFailed {
             await setup(context: context)?.value
             guard !model.hydrationFailed else { return }
         }
-        model.pendingAffectedSourceIds.removeAll()
+        // Read after the retry's await: a link edited while it ran is saved now, not cleared
+        // unsaved. Nothing suspends between this read and the removal.
+        let affectedIds = model.pendingAffectedSourceIds
+        model.pendingAffectedSourceIds.subtract(affectedIds)
 
         // From the index by source: filtering every link of the register scanned all of them on
         // the main actor for each save. See CODE_AUDIT_21 §7.4.

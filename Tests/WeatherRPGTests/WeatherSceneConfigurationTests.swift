@@ -127,10 +127,12 @@ struct WeatherSceneConfigurationTests {
     // MARK: - Entities
 
     @Test("A night storm shows rain, clouds, stars and lightning; the same weather again keeps them")
-    func effectBuildsAndKeeps() throws {
+    func effectBuildsAndKeeps() async throws {
         let effect = WeatherTableEffect()
         let storm = Self.configuration(time: Self.midnight, lightning: 10)
         effect.show(storm, in: Self.volume)
+        // The particle textures load off the main actor the first time.
+        await effect.waitForBuild()
 
         let names = Set(effect.entity.children.map(\.name))
         #expect(names == [
@@ -156,9 +158,10 @@ struct WeatherSceneConfigurationTests {
     }
 
     @Test("A clear day shows only its clouds; a table without room for clouds shows none")
-    func effectLeavesOutWhatIsNotThere() {
+    func effectLeavesOutWhatIsNotThere() async {
         let effect = WeatherTableEffect()
         effect.show(Self.configuration(time: Self.noon, storm: .none), in: Self.volume)
+        await effect.waitForBuild()
         #expect(effect.entity.children.map(\.name) == [WeatherTableEffect.cloudsName])
 
         effect.show(
@@ -167,6 +170,16 @@ struct WeatherSceneConfigurationTests {
         )
         #expect(effect.entity.children.isEmpty)
         #expect(effect.isShowing)
+    }
+
+    @Test("A weather removed while its textures load is never built")
+    func effectRemovedWhileLoading() async {
+        let effect = WeatherTableEffect()
+        effect.show(Self.configuration(time: Self.noon, storm: .none), in: Self.volume)
+        effect.hide()
+        await effect.waitForBuild()
+        #expect(effect.entity.children.isEmpty)
+        #expect(!effect.isShowing)
     }
 
     @Test("The weather's model and the viewer's settings build the same configuration")

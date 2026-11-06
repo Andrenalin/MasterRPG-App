@@ -13,9 +13,8 @@ extension GameRoot {
         if let adventureId = gameModel.gameConfig.master.adventureId {
             adventureRoot.adventureGameControllable.saveTablePlayers(tablePlayers, for: adventureId)
         }
-        let masterController = gameModel.masterController
-        Task {
-            await masterController?.resetPlayers()
+        scheduleNetworkAction { [weak self] in
+            await self?.gameModel.masterController?.resetPlayers()
         }
     }
 
@@ -28,9 +27,8 @@ extension GameRoot {
         guard changed else { return }
         // Kept when empty: a companion without an entry falls back to its owner.
         gameModel.pinControllers[pinId] = controllers
-        let masterController = gameModel.masterController
-        Task {
-            await masterController?.resetPlayers()
+        scheduleNetworkAction { [weak self] in
+            await self?.gameModel.masterController?.resetPlayers()
         }
     }
 
@@ -73,9 +71,8 @@ extension GameRoot {
         if let characterId = gameModel.selectedCharacter {
             Self.storeCompanions(companions, for: characterId, defaults: defaults)
         }
-        let playerController = gameModel.playerController
-        Task {
-            await playerController?.announceCompanions()
+        scheduleNetworkAction { [weak self] in
+            await self?.gameModel.playerController?.announceCompanions()
         }
     }
 

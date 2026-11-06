@@ -146,6 +146,11 @@ actor GameMessagePipeline {
     private var recentKeys: [GameMessageKey] = []
     private var recentKeySet: Set<GameMessageKey> = []
     private var pendingKeySet: Set<GameMessageKey> = []
+    /// Keys of events the game master has already decided to relay. `enqueue` records a key only
+    /// after the relay's own awaits, so two copies handled at the same time would both pass
+    /// `hasSeen`; `reserveRelay` closes that gap. Bounded like `recentKeys`.
+    private var relayedKeys: [GameMessageKey] = []
+    private var relayedKeySet: Set<GameMessageKey> = []
     private var currentKey: GameMessageKey?
     /// The full event `next()` most recently dequeued, retained only so a
     /// cancelled drain (`requeueCurrentOnCancellation()`) can restore it
@@ -180,6 +185,22 @@ actor GameMessagePipeline {
     func hasSeen(_ event: GameMessageEvent) -> Bool {
         guard let key = event.deduplicationKey else { return false }
         return recentKeySet.contains(key) || pendingKeySet.contains(key)
+    }
+
+    /// Decides in one step, with no await in between, whether `event` may be relayed, and
+    /// reserves it: a repeat of one that is queued, was processed or is already being relayed
+    /// answers `false`. An event without a deduplication key is always relayed.
+    func reserveRelay(_ event: GameMessageEvent) -> Bool {
+        guard let key = event.deduplicationKey else { return true }
+        guard !recentKeySet.contains(key), !pendingKeySet.contains(key), !relayedKeySet.contains(key) else {
+            return false
+        }
+        relayedKeySet.insert(key)
+        relayedKeys.append(key)
+        if relayedKeys.count > recentLimit {
+            relayedKeySet.remove(relayedKeys.removeFirst())
+        }
+        return true
     }
 
     /// Lets a drain loop that bailed out on cancellation (see
@@ -243,6 +264,8 @@ actor GameMessagePipeline {
         recentKeys.removeAll()
         recentKeySet.removeAll()
         pendingKeySet.removeAll()
+        relayedKeys.removeAll()
+        relayedKeySet.removeAll()
         currentKey = nil
         currentEvent = nil
     }
@@ -254,6 +277,8 @@ actor GameMessagePipeline {
         recentKeys.removeAll()
         recentKeySet.removeAll()
         pendingKeySet.removeAll()
+        relayedKeys.removeAll()
+        relayedKeySet.removeAll()
         currentKey = nil
         currentEvent = nil
     }

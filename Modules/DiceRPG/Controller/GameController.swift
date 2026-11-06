@@ -28,6 +28,9 @@ final class DiceGameModel {
     var pendingRollTasks: [UUID: Task<Void, Never>] = [:]
 
     func reset() {
+        // A roll still waiting out its delay must not fire into the next game.
+        pendingRollTasks.values.forEach { $0.cancel() }
+        pendingRollTasks = [:]
         hiddenPlayers = []
         playerDice = []
         playerSupporterTiers = [:]

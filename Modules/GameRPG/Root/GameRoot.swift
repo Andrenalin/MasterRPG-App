@@ -288,7 +288,8 @@ public final class GameRoot {
         }
     }
 
-    private func scheduleNetworkAction(_ operation: @escaping @MainActor @Sendable () async -> Void) {
+    /// Runs `operation` after the network actions scheduled before it, and cancels it with the game.
+    func scheduleNetworkAction(_ operation: @escaping @MainActor @Sendable () async -> Void) {
         let id = UUID()
         let previous = networkActionTail
         let task = Task { @MainActor [weak self] in

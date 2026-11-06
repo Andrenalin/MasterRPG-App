@@ -110,7 +110,9 @@ extension MasterController {
                   root.spaceRoot.gameControllable.gameModel.currentItemId == model.data.id
             else { return false }
         }
-        return true
+        // Last, in one step: a copy that is handled at the same time passes the checks above
+        // too, and only one of them may relay.
+        return await messagePipeline.reserveRelay(GameMessageEvent(model: model, origin: origin))
     }
 
     func ready(for origin: GameMessageOrigin) async {

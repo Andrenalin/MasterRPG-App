@@ -42,6 +42,7 @@ extension PlayerController {
         root.mapRoot.photoPopover.actions = nil
         root.mapRoot.photoPopover.itemPicture = nil
         root.mapRoot.photoPopover.photo = nil
+        cancelMapPhotoMakeCurrent()
         gameModel.mapPhoto.reset()
         // The table's weather ends with the game, too.
         gameModel.tableWeather.reset()
@@ -130,6 +131,7 @@ extension PlayerController {
         }
         switch state.mode {
         case .popover:
+            cancelMapPhotoMakeCurrent()
             gameModel.setGameUpdateType(.map)
             root.mapRoot.photoPopover.isPrivate = state.isLocal
             root.mapRoot.photoPopover.photo = MapPhotoPopoverItem(
@@ -141,14 +143,17 @@ extension PlayerController {
             )
         case .fullScreen:
             root.mapRoot.photoPopover.photo = nil
+            cancelMapPhotoMakeCurrent()
             if isCurrent(presentation) {
                 showFullScreen(presentation)
             } else {
                 // The full-screen viewer shows its module's current item: a pin's photo
-                // becomes current first.
-                Task { [weak self] in
+                // becomes current first. Only the newest presentation may do that, or an older
+                // fetch that finishes last would leave its item in front.
+                gameModel.mapPhotoMakeCurrentTask = Task { [weak self] in
                     guard let self,
                           await makeCurrent(presentation),
+                          !Task.isCancelled,
                           gameModel.mapPhoto.presentation == presentation,
                           gameModel.mapPhoto.mode == .fullScreen
                     else { return }
@@ -156,9 +161,15 @@ extension PlayerController {
                 }
             }
         case .closed:
+            cancelMapPhotoMakeCurrent()
             root.mapRoot.photoPopover.photo = nil
             gameModel.setGameUpdateType(.map)
         }
+    }
+
+    private func cancelMapPhotoMakeCurrent() {
+        gameModel.mapPhotoMakeCurrentTask?.cancel()
+        gameModel.mapPhotoMakeCurrentTask = nil
     }
 
     private func showFullScreen(_ presentation: MapPhotoPresentation) {
