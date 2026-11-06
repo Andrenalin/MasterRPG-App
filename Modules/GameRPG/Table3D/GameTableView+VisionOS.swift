@@ -485,21 +485,22 @@ public struct GameTableView: View {
     /// The last shared roll of every player who is not on Vision Pro, the game master's
     /// included, as the dice overlay has it, reduced to the dice the table has: d20 and d6.
     private var guestRolls: [TableGuestRoll] {
-        let guestNames = root.gameModel.tableGuestNames
-        let masterName = root.gameModel.tableGuestMasterName
-        return root.diceRoot.diceGameControllable.sharedPlayerDice
-            .filter { guestNames.contains($0.name) }
-            .map { dice in
-                TableGuestRoll(
-                    name: dice.name,
-                    dice: dice.dice.compactMap { die in
-                        guard let isD20 = TableSeatDice.isD20(sides: die.die.max),
-                              let value = die.result.last else { return nil }
-                        return .init(isD20: isD20, value: value)
-                    },
-                    isGameMaster: dice.name == masterName
-                )
-            }
+        let diceRoot = root.diceRoot.diceGameControllable
+        // By the sender's id, not the display name: a player named like the game master is no
+        // game master, and two guests with one name keep their own dice.
+        return diceRoot.sharedPlayerDice.compactMap { dice -> TableGuestRoll? in
+            guard let senderId = diceRoot.playerDiceSenderId(for: dice.id),
+                  root.gameModel.isTableGuest(senderId: senderId) else { return nil }
+            return TableGuestRoll(
+                name: dice.name,
+                dice: dice.dice.compactMap { die in
+                    guard let isD20 = TableSeatDice.isD20(sides: die.die.max),
+                          let value = die.result.last else { return nil }
+                    return .init(isD20: isD20, value: value)
+                },
+                isGameMaster: root.gameModel.isTableGuestMaster(senderId: senderId)
+            )
+        }
     }
 
     /// Everything about the currently-focused character-sheet dice set that

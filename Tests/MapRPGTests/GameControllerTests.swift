@@ -548,7 +548,8 @@ struct GameControllerTests {
         )
         #expect(sut.updatePin(itemId: mapId, data: ownerRequest.encodeData(), playerId: ownerId))
 
-        // Then: only owned location plus shared zoom/highlight are accepted.
+        // Then: only the owned location and the shared highlight are accepted; the shared photo
+        // flag (`isZoom`) is the game master's alone. See CODE_AUDIT_24 §5.3.
         let updatedOwner = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == ownerId })
         #expect(updatedOwner.name == owner.name)
         #expect(updatedOwner.photoId == ownerPhotoId)
@@ -558,7 +559,7 @@ struct GameControllerTests {
         #expect(updatedOwner.isPlayer)
         #expect(updatedOwner.players == owner.players)
         #expect(updatedOwner.isDead == owner.isDead)
-        #expect(updatedOwner.isZoom)
+        #expect(!updatedOwner.isZoom)
         #expect(updatedOwner.isHighlighted)
         #expect(updatedOwner.timeInterval == ownerRequest.timeInterval)
         #expect(sut.mapGameModel.playerPins.first { $0.id == ownerId } == updatedOwner)
@@ -607,7 +608,7 @@ struct GameControllerTests {
         #expect(updatedForeign.size == foreignPlayer.size)
         #expect(updatedForeign.isShown)
         #expect(!updatedForeign.isDead)
-        #expect(updatedForeign.isZoom)
+        #expect(!updatedForeign.isZoom)
         #expect(updatedForeign.isHighlighted)
         #expect(sut.mapGameModel.playerPins.first { $0.id == foreignPlayerId } == updatedForeign)
 
@@ -616,7 +617,7 @@ struct GameControllerTests {
         #expect(updatedMonster.size == monster.size)
         #expect(updatedMonster.isShown)
         #expect(!updatedMonster.isDead)
-        #expect(updatedMonster.isZoom)
+        #expect(!updatedMonster.isZoom)
         #expect(updatedMonster.isHighlighted)
         #expect(!sut.mapGameModel.playerPins.map(\.id).contains(monsterId))
 

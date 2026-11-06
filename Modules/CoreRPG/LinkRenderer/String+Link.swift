@@ -27,27 +27,35 @@ extension String {
         return updatedText
     }
     
+    /// The range from the begin marker at `afterRange.lowerBound` to the end marker that closes
+    /// it, `nil` when the text there does not start with a begin marker. Pairs the markers like
+    /// the renderer (`matchingLinkEnd(after:)`); a text whose markers do not balance, such as an
+    /// expansion that holds a lone begin marker, closes at the first end marker instead, so
+    /// the link can still be collapsed.
     private func findEndRange(afterRange: Range<String.Index>) -> Range<String.Index>? {
         guard afterRange.lowerBound != endIndex && self[afterRange.lowerBound] == Character(LinkExpandHighLightValues.begin.rawValue) else { return nil }
-        let beginRanges = ranges(of: LinkExpandHighLightValues.begin.rawValue).filter { $0.lowerBound >= afterRange.lowerBound }
-        guard let startRange = beginRanges.first else { return nil }
+        let beginUpper = index(after: afterRange.lowerBound)
+        if let end = matchingLinkEnd(after: beginUpper) {
+            return afterRange.lowerBound..<end.upperBound
+        }
+        guard let firstEnd = range(of: String(LinkExpandHighLightValues.end.rawValue), range: beginUpper..<endIndex) else { return nil }
+        return afterRange.lowerBound..<firstEnd.upperBound
+    }
 
-        var endRange = range(of: String(LinkExpandHighLightValues.end.rawValue), range: startRange.upperBound..<afterRange.upperBound)
-        for beginRange in beginRanges.dropFirst() {
-            if let testEndRange = endRange {
-                if beginRange.lowerBound < testEndRange.upperBound {
-                    endRange = range(of: String(LinkExpandHighLightValues.end.rawValue), range: testEndRange.upperBound..<endIndex)
-                } else {
-                    // found
-                    break
-                }
-            } else {
-                return nil
-            }
+    /// The end marker that closes the begin marker just before `start`, honouring nested
+    /// begin/end pairs. `nil` when the markers after `start` do not balance.
+    func matchingLinkEnd(after start: String.Index) -> Range<String.Index>? {
+        let begins = ranges(of: LinkExpandHighLightValues.begin.rawValue).filter { $0.lowerBound >= start }
+        let ends = ranges(of: LinkExpandHighLightValues.end.rawValue).filter { $0.lowerBound >= start }
+        var events: [(range: Range<String.Index>, isBegin: Bool)] = begins.map { ($0, true) }
+        events.append(contentsOf: ends.map { ($0, false) })
+        events.sort { $0.range.lowerBound < $1.range.lowerBound }
+
+        var depth = 1
+        for event in events {
+            depth += event.isBegin ? 1 : -1
+            if depth == 0 { return event.range }
         }
-        if let endRange {
-            return startRange.lowerBound..<endRange.upperBound
-        }
-        return endRange
+        return nil
     }
 }

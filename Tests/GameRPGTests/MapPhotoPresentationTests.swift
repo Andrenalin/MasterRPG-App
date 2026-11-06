@@ -90,9 +90,13 @@ struct MapPhotoPresentationTests {
         let photo = Self.presentation(sequence: 1)
         state.applyMaster(photo)
         #expect(state.fullScreenRequest == 0)
+        // The mode alone counts nothing: the photo window opens when the item is current.
         state.setLocal(.fullScreen)
         state.setLocal(.popover)
         state.setLocal(.fullScreen)
+        #expect(state.fullScreenRequest == 0)
+        state.noteFullScreenShown()
+        state.noteFullScreenShown()
         #expect(state.fullScreenRequest == 2)
         // A local change needs a presentation of the game master.
         state.reset()
@@ -240,6 +244,51 @@ struct MapPhotoPresentationTests {
         // The game master shows it full screen: everyone follows.
         try await Self.send(shown.changed(to: .fullScreen, sequence: 2), counter: 3, to: fixture)
         #expect(player.gameModel.gameUpdateType == .photo)
+    }
+
+    @Test("The photo window request counts only once the photo is current, never for a photo the player lacks")
+    func fullScreenRequestFollowsCurrentItem() async throws {
+        let fixture = try await Self.playerFixture()
+        let player = fixture.env.playerController
+
+        // A photo this player does not hold cannot become current: nothing opens.
+        let unknown = Self.presentation(itemId: UUID(), mapId: fixture.mapId, mode: .fullScreen, sequence: 1)
+        try await Self.send(unknown, counter: 1, to: fixture)
+        #expect(player.gameModel.mapPhoto.mode == .fullScreen)
+        #expect(player.gameModel.mapPhoto.fullScreenRequest == 0)
+        #expect(player.gameModel.gameUpdateType == .map)
+
+        // A held photo is made current first, then counted once.
+        let known = Self.presentation(itemId: fixture.photoId, mapId: fixture.mapId, mode: .fullScreen, sequence: 2)
+        try await Self.send(known, counter: 2, to: fixture)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(player.gameModel.gameUpdateType == .photo)
+        #expect(player.gameModel.mapPhoto.fullScreenRequest == 1)
+
+        // A photo that arrives for no waiting presentation changes nothing.
+        player.applyWaitingMapPhoto(itemId: UUID())
+        #expect(player.gameModel.mapPhoto.fullScreenRequest == 1)
+    }
+
+    @Test("After a lost connection the popover is gone, and Close removes a stale one")
+    func lostConnectionClearsPopover() async throws {
+        let fixture = try await Self.playerFixture()
+        let player = fixture.env.playerController
+        let popover = fixture.env.root.mapRoot.photoPopover
+        let shown = Self.presentation(itemId: fixture.photoId, mapId: fixture.mapId, sequence: 1)
+        try await Self.send(shown, counter: 1, to: fixture)
+        try await Self.reveal(counter: 2, to: fixture)
+        #expect(popover.photo != nil)
+
+        await player.lostConnection()
+
+        #expect(player.gameModel.mapPhoto.presentation == nil)
+        #expect(popover.photo == nil)
+
+        // A popover that outlived its presentation anyway closes with the Close button.
+        popover.photo = MapPhotoPopoverItem(itemId: fixture.photoId, mapId: fixture.mapId, anchor: .zero)
+        player.requestMapPhotoMode(.closed)
+        #expect(popover.photo == nil)
     }
 
     @Test("Without a presentation, or for another map, a photo is shown full screen as before")

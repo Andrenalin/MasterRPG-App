@@ -22,6 +22,17 @@ public struct CRDT<T: Codable> {
         _crdtValue = crdtValue
     }
 
+    /// The register stored in `string`, `nil` when `string` is not a serialized register of this
+    /// type. Unlike `init(string:defaultValue:)` it never invents a fresh register stamped now,
+    /// which would win a merge over the real one: the caller decides what an unreadable value means.
+    public init?(validating string: String) {
+        guard let data = string.data(using: .utf8),
+              let value = try? JSONCoding.decoder.decode(LWWRegister<String, T>.self, from: data) else {
+            return nil
+        }
+        _crdtValue = value
+    }
+
     public var wrappedValue: T {
         get { _crdtValue.value }
         set { _crdtValue.value = newValue }

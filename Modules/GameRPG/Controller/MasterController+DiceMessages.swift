@@ -54,7 +54,8 @@ extension MasterController {
                 data: model.data,
                 name: model.senderName,
                 supporterTier: model.sender.supporterTier,
-                isGameMaster: model.sender.isMaster
+                isGameMaster: model.sender.isMaster,
+                senderId: model.sender.id
             )
             if let diceResult = DiceResultModel.decodeData(of: model.data.data),
                let resultCategory {

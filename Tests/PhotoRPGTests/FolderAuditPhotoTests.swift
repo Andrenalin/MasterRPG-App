@@ -99,6 +99,34 @@ struct FolderAuditPhotoTests {
         #expect(root.itemController.itemSync(for: keepId, noGame: true) != nil)
     }
 
+    @Test("Sync is refused when a game starts while it is already running")
+    func cloudFolderScanApplyStopsWhenGameStartsMidway() async throws {
+        let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])
+        let root = PhotoRootModel.persistentTestRoot(context: store.context)
+        let files = try #require(root.itemController.fileUrlDataController)
+        let top = "ScanTest-\(UUID().uuidString)"
+        let topUrl = files.cloudDocumentController.moduleUrl.appending(path: top, directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: topUrl) }
+        try FileManager.default.createDirectory(at: topUrl, withIntermediateDirectories: true)
+        try Data("x".utf8).write(to: topUrl.appending(path: "Late.png"))
+        let controller = CloudScanController(itemController: root.itemController, editController: root.editController)
+        var plan = try await scannedPlan(controller)
+        plan.items.removeAll { $0.file.components.first != top }
+        plan.folders.removeAll { $0.path.first != top }
+        #expect(plan.items.count == 1)
+
+        // The sync runs until its first suspension (hash read, scan); the game starts there.
+        let sync = Task { @MainActor in await controller.apply(plan) }
+        await Task.yield()
+        root.itemController.itemDataModel.isGameMode = true
+        let outcome = await sync.value
+
+        #expect(outcome == .busy)
+        let lateId = CloudFolderScan.derivedId(module: NetworkModules.photo.token, path: [top, "Late.png"], isFolder: false)
+        root.itemController.itemDataModel.isGameMode = false
+        #expect(root.itemController.itemSync(for: lateId, noGame: true) == nil, "nothing reached the library")
+    }
+
     @Test("The iCloud folder scan adds items for files without one, in the folder structure of their path")
     func cloudFolderScanAddsMissingItems() async throws {
         let store = try InMemoryStore(bundles: [CoreRPG.Resources.bundle, PhotoRPG.Resources.bundle])

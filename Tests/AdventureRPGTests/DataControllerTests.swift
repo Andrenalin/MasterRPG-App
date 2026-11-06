@@ -150,6 +150,46 @@ struct DataControllerTests {
         // The emptied list keeps its clock, so it wins over the copy it replaced.
         #expect(fetchedWith.merge(fetchedEmptied).tablePlayers.isEmpty)
     }
+
+    @Test("Table players this build cannot read become 'never set', and a save keeps the stored text")
+    func unreadableTablePlayersStayUnreadableAndNeverWinAMerge() async throws {
+        let store = try PersistentTestStore(bundles: [
+            CoreRPG.Resources.bundle,
+            AdventureRPG.Resources.bundle
+        ])
+        let sut = DataController(context: store.context, token: NetworkModules.adventure.token)
+        let tablePlayers = [TablePlayerModel(characterId: UUID())]
+        let adventure = AdventureModel(id: UUID(), name: "Journey", tablePlayers: tablePlayers)
+        try sut.replaceSync(id: adventure.id, with: adventure)
+        try await sut.save()
+
+        // A newer build wrote a shape this one cannot decode.
+        let unreadable = #"{"future":"shape"}"#
+        let context = store.context
+        try await context.perform {
+            let request: NSFetchRequest<RPGAdventure> = RPGAdventure.fetchRequest()
+            let stored = try #require(try context.fetch(request).first)
+            stored.tablePlayers = unreadable
+            try context.save()
+        }
+
+        let fetched = try #require(try await sut.fetch(id: adventure.id) as? AdventureModel)
+        #expect(fetched.tablePlayers.isEmpty)
+        // It was never set here, so any real list wins over it, whichever side merges.
+        #expect(fetched.merge(adventure).tablePlayers == tablePlayers)
+        #expect(adventure.merge(fetched).tablePlayers == tablePlayers)
+
+        // Saving the adventure again (for any other edit) leaves the stored text alone.
+        let renamed = fetched.copy()
+        renamed.name = "Renamed"
+        try await sut.replace(id: adventure.id, with: renamed)
+        try await sut.save()
+        let rawAfter: String? = try await context.perform {
+            let request: NSFetchRequest<RPGAdventure> = RPGAdventure.fetchRequest()
+            return try context.fetch(request).first?.tablePlayers
+        }
+        #expect(rawAfter == unreadable)
+    }
 }
 
 private struct PersistentTestStore {

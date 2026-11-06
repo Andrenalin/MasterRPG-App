@@ -62,6 +62,27 @@ struct StringLinkTests {
         #expect(result == testCase.expected)
     }
 
+    @Test("An expansion that holds a lone begin marker can still be collapsed")
+    func collapseWithLoneMarker() {
+        let url = "[Name](RPG://TABLES/0/558DA4B8-54110398CBF3)"
+        let expanded = "Hi \(url)➡️a ➡️ b⬅️ rest"
+
+        let collapsed = expanded.toggleLink(url: url, with: "ignored")
+
+        #expect(collapsed == "Hi \(url) rest")
+    }
+
+    @Test("Nested expansions pair by depth, like the renderer")
+    func nestedPairing() {
+        let text = "x➡️a➡️b⬅️c⬅️y"
+        let start = text.index(after: text.startIndex)
+        let afterBegin = text.index(after: start)
+
+        let end = text.matchingLinkEnd(after: afterBegin)
+
+        #expect(end.map { text[$0.upperBound...] } == "y")
+    }
+
     @Test("Toggle link with three existing links")
     func handle3Links() {
         // Arrange

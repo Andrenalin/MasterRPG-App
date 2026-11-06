@@ -22,7 +22,13 @@ extension PlayerController {
         let taskId = UUID()
         gameModel.sendCharacterTaskId = taskId
         gameModel.sendCharacterTask = Task { [weak self] in
-            await self?.sendCharacter()
+            // Companions edited while a send runs make it announce an old list; it then leaves
+            // `hasSendPlayer` open and this runs it again. See CODE_AUDIT_24 §5.5.
+            while let self {
+                let generation = self.gameModel.companionGeneration
+                await self.sendCharacter()
+                guard !Task.isCancelled, generation != self.gameModel.companionGeneration else { break }
+            }
             self?.clearSendCharacterTask(if: taskId)
         }
     }
@@ -38,35 +44,43 @@ extension PlayerController {
         let canSend = gameModel.canSendCharacter
         // A proxy device never announces a character: it mirrors the host
         // player and receives the host's character on readyProxy instead.
-        guard canSend, gameType != .observer, gameType != .proxy,
-              let characterId = root.gameModel.gamePlayer.characterId
-        else { return }
+        guard canSend, gameType != .observer, gameType != .proxy else { return }
+        let characterId = root.gameModel.gamePlayer.characterId
+        let generation = gameModel.companionGeneration
 
         do {
             try Task.checkCancellation()
-            let reference = await root.characterRoot.gameControllable.share(id: characterId)
-            try Task.checkCancellation()
-            // A version the master already rejected several times is not announced again.
-            // See CODE_AUDIT_21 §5.5.
-            guard gameModel.mayAnnounceCharacter(version: reference.version) else { return }
-            // First advertise only the Character ID and deterministic version.
-            // The master requests the full package only when its local version
-            // differs. Value messages never use the SharePlay Journal.
-            await send(
-                type: .update,
-                subType: .store,
-                updated: reference,
-                relayToProxyClients: false
-            )
+            var isOwnAnnounced = true
+            // A player without a Character still brings its companions along.
+            if let characterId {
+                let reference = await root.characterRoot.gameControllable.share(id: characterId)
+                try Task.checkCancellation()
+                // A version the master already rejected several times is not announced again;
+                // the companions are. See CODE_AUDIT_21 §5.5.
+                if gameModel.mayAnnounceCharacter(version: reference.version) {
+                    // First advertise only the Character ID and deterministic version.
+                    // The master requests the full package only when its local version
+                    // differs. Value messages never use the SharePlay Journal.
+                    await send(
+                        type: .update,
+                        subType: .store,
+                        updated: reference,
+                        relayToProxyClients: false
+                    )
+                } else {
+                    isOwnAnnounced = false
+                }
+            }
             try await sendCompanionReferences()
             let lostMaster = gameModel.lostMaster
-            guard !Task.isCancelled, !lostMaster else { return }
-            gameModel.reset(sendPlayer: true)
+            guard !Task.isCancelled, !lostMaster, isOwnAnnounced else { return }
+            // Companions that changed meanwhile were not part of this announcement.
+            gameModel.reset(sendPlayer: generation == gameModel.companionGeneration)
         } catch is CancellationError {
             return
         } catch {
             // characterId can identify a specific player's Character — private. See CODE_AUDIT_Game §6.3.
-            Logger.networking.error("PlayerController: Failed to send character \(characterId, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            Logger.networking.error("PlayerController: Failed to send character \(characterId?.uuidString ?? "none", privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -74,6 +88,7 @@ extension PlayerController {
     /// carries the companion list, so the Character's announcement also tells the master about
     /// a removed companion.
     func announceCompanions() async {
+        gameModel.noteCompanionsChanged()
         gameModel.reset(sendPlayer: false)
         await scheduleSendCharacter()
     }

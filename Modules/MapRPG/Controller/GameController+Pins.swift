@@ -42,6 +42,7 @@ extension GameController {
     @MainActor
     func resetPlayerPins(for players: [PlayerGameModel]) {
         let playerIds = Set(players.map(\.id))
+        let handovers = pinHandovers(for: players)
         mapGameModel.playerPins.removeAll { !playerIds.contains($0.id) }
         // The roster is authoritative. Scan every live map as well as the
         // central cache because an older snapshot may hold a player pin that
@@ -62,6 +63,107 @@ extension GameController {
                 }
             }
         }
+        applyPinHandovers(handovers)
+        keepBattleRosterInStepWithPlayerPins(handovers)
+    }
+
+    /// The pin of a Character that changes hands: a table player's pin leaves when a connected
+    /// player joins with that Character (and the other way round), a companion's pin when its owner
+    /// goes. Both pins stand for the same Character, so the new one takes over the old one's place
+    /// and state instead of starting in the first room. See CODE_AUDIT_24 §5.1.
+    private struct PinHandover {
+        let oldPin: MapPinModel
+        let newPinId: UUID
+        /// The old pin as each live map holds it.
+        let mapPins: [UUID: MapPinModel]
+    }
+
+    @MainActor
+    private func pinHandovers(for players: [PlayerGameModel]) -> [PinHandover] {
+        let playerIds = Set(players.map(\.id))
+        var known = Set(mapGameModel.playerPins.map(\.id))
+        for itemId in gameModel.items {
+            known.formUnion(gameItem(for: itemId).mapPins.map(\.id))
+        }
+        var successors: [UUID: [UUID]] = [:]
+        for player in players where !known.contains(player.id) {
+            guard let characterId = player.characterId else { continue }
+            successors[characterId, default: []].append(player.id)
+        }
+        guard !successors.isEmpty else { return [] }
+
+        var oldPins: [UUID: MapPinModel] = [:]
+        for pin in mapGameModel.playerPins where !playerIds.contains(pin.id) {
+            oldPins[pin.id] = pin
+        }
+        for itemId in gameModel.items {
+            for pin in gameItem(for: itemId).mapPins where pin.isPlayer && !playerIds.contains(pin.id) {
+                oldPins[pin.id] = oldPins[pin.id] ?? pin
+            }
+        }
+        var handovers: [PinHandover] = []
+        for oldPin in oldPins.values.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
+            guard let characterId = oldPin.characterId,
+                  var candidates = successors[characterId], !candidates.isEmpty else { continue }
+            let newPinId = candidates.removeFirst()
+            successors[characterId] = candidates
+            var onMaps: [UUID: MapPinModel] = [:]
+            for itemId in gameModel.items {
+                if let pin = gameItem(for: itemId).mapPins.first(where: { $0.id == oldPin.id }) {
+                    onMaps[itemId] = pin
+                }
+            }
+            handovers.append(PinHandover(oldPin: oldPin, newPinId: newPinId, mapPins: onMaps))
+        }
+        return handovers
+    }
+
+    /// Copies where the old pin stood, and its flags, onto the new pin of every map and the
+    /// session cache. What the new pin owns itself (identity, name, photo, controllers) stays.
+    @MainActor
+    private func applyPinHandovers(_ handovers: [PinHandover]) {
+        guard !handovers.isEmpty else { return }
+        let now = Date.now.timeIntervalSince1970
+        func carry(from old: MapPinModel, to pin: inout MapPinModel) {
+            pin.location = old.location
+            pin.mapId = old.mapId
+            pin.size = old.size
+            pin.isShown = old.isShown
+            pin.isDead = old.isDead
+            pin.isHighlighted = old.isHighlighted
+            pin.healthPercent = old.healthPercent
+            pin.timeInterval = now
+        }
+        for handover in handovers {
+            if let index = mapGameModel.playerPins.firstIndex(where: { $0.id == handover.newPinId }) {
+                carry(from: handover.oldPin, to: &mapGameModel.playerPins[index])
+            }
+            for (itemId, oldPin) in handover.mapPins {
+                let map = gameItem(for: itemId)
+                guard let index = map.mapPins.firstIndex(where: { $0.id == handover.newPinId }) else { continue }
+                var pins = map.mapPins
+                carry(from: oldPin, to: &pins[index])
+                map.mapPins = pins
+            }
+        }
+    }
+
+    /// A running battle follows the pin handover (combatant, turn entry and defender links keep
+    /// their ids; only the pin behind them changes) and drops a player combatant whose pin is gone
+    /// without a successor, so no turn points to a missing pin.
+    @MainActor
+    private func keepBattleRosterInStepWithPlayerPins(_ handovers: [PinHandover]) {
+        guard battleRoundModel.isRunning else { return }
+        for handover in handovers {
+            guard let pin = mapGameModel.playerPins.first(where: { $0.id == handover.newPinId }) else { continue }
+            var carried = pin
+            if let mapId = battleRoundModel.mapId, let onMap = gameModel.itemData[mapId] as? MapModel,
+               let current = onMap.mapPins.first(where: { $0.id == handover.newPinId }) {
+                carried = current
+            }
+            battleRoundModel.rekeyPin(from: handover.oldPin.id, to: carried)
+        }
+        battleRoundModel.dropPlayerCombatants(withoutPinIn: Set(mapGameModel.playerPins.map(\.id)))
     }
 
     /// Lists who may move each player pin, besides its own player: `controllers` maps a pin id
@@ -160,11 +262,19 @@ extension GameController {
             pin.location = .zero
             return pin
         }
-        // A room with an area wins over a hex cell or a text-only room.
-        let room = map.entries.first { !$0.isHexGrid && !$0.coordinates.isEmpty }
+        // A room the players can see wins, then a room with an area over a hex cell or a
+        // text-only room.
+        let placing = Set(toPlace)
+        let room = map.entries.first { $0.isShown && !$0.isHexGrid && !$0.coordinates.isEmpty }
+            ?? map.entries.first { $0.isShown && !$0.coordinates.isEmpty }
+            ?? map.entries.first { !$0.isHexGrid && !$0.coordinates.isEmpty }
             ?? map.entries.first { !$0.coordinates.isEmpty }
         if let room {
-            placed = MapPinPlacement.cascade(pins: placed, in: room, pinScale: map.pinScale)
+            // Pins that already stand somewhere keep their spot: new ones go around them.
+            let occupied = pins.enumerated()
+                .filter { !placing.contains($0.offset) && $0.element.location != .zero }
+                .map(\.element.location)
+            placed = MapPinPlacement.cascade(pins: placed, in: room, pinScale: map.pinScale, occupied: occupied)
         }
         for (index, pin) in zip(toPlace, placed) {
             var updatedPin = pin
@@ -227,13 +337,12 @@ extension GameController {
             authorizedPin.location = incomingPin.location
             authorizedPin.mapId = itemId
         }
-        // Zoom and highlight are the only shared interactions permitted on a
-        // visible foreign pin. All metadata and game-master state stay intact.
-        authorizedPin.isZoom = incomingPin.isZoom
+        // Highlight is the only shared interaction permitted on a visible foreign pin. All
+        // metadata and game-master state stay intact, `isZoom` included: it means "the game
+        // master shows this pin's photo to everyone" and only `setPinPhotoShown` writes it.
         authorizedPin.isHighlighted = incomingPin.isHighlighted
 
         guard authorizedPin.location != currentPin.location
-                || authorizedPin.isZoom != currentPin.isZoom
                 || authorizedPin.isHighlighted != currentPin.isHighlighted else {
             return false
         }
@@ -421,7 +530,29 @@ extension GameController {
     func togglePin(itemId: UUID, pinId: UUID) -> Bool {
         updatePinState(itemId: itemId, pinId: pinId) { pin in
             pin.isShown.toggle()
+            // A hidden pin shows no photo: the shared flag would stay behind and the next share
+            // of this pin would change nothing.
+            if !pin.isShown {
+                pin.isZoom = false
+            }
         }
+    }
+
+    /// Ends every shared pin photo of the game: on all live maps and the session's player
+    /// pins. Called when another map is shown, so a flag left behind never counts as "already
+    /// shared" the next time the game master shares that pin, and never pops up on a table
+    /// that loads the map. Returns whether any pin changed.
+    @MainActor
+    @discardableResult
+    func clearSharedPinPhotos() -> Bool {
+        var changed = false
+        for itemId in gameModel.items {
+            let map = gameItem(for: itemId)
+            for pin in map.mapPins where pin.isZoom {
+                changed = updatePinState(itemId: itemId, pinId: pin.id) { $0.isZoom = false } || changed
+            }
+        }
+        return changed
     }
 
     /// Shows or hides a pin's photo to everyone, as the game master — carried in mapState by the

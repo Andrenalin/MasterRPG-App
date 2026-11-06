@@ -53,6 +53,8 @@ extension PlayerController {
                 for: [localPlayerId],
                 masterId: masterId
             )
+            // The game master may already show this photo full screen from a pin.
+            applyWaitingMapPhoto(itemId: model.data.id)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {

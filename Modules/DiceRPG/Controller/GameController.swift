@@ -15,6 +15,8 @@ final class DiceGameModel {
     let audioPlayer: AVPlayer = AVPlayer()
     var hiddenPlayers: [String] = []
     var playerDice: [DiceModel] = []
+    /// The device that shared each of `playerDice` (dice id to sender id).
+    var playerDiceSenders: [UUID: UUID] = [:]
     var playerSupporterTiers: [UUID: SupporterTier] = [:]
     var masterDiceName: String?
 
@@ -33,18 +35,37 @@ final class DiceGameModel {
         pendingRollTasks = [:]
         hiddenPlayers = []
         playerDice = []
+        playerDiceSenders = [:]
         playerSupporterTiers = [:]
         masterDiceName = nil
     }
 }
 
-public protocol DiceGameStorable: Sendable {
-    @MainActor func addGameDiceResult(
+public extension DiceGameStorable {
+    @discardableResult @MainActor
+    func addGameDiceResult(
         data: NetworkCodableDataType,
         name: String,
         supporterTier: SupporterTier,
         isGameMaster: Bool
+    ) -> (String?, ResultCategory?) {
+        addGameDiceResult(data: data, name: name, supporterTier: supporterTier, isGameMaster: isGameMaster, senderId: nil)
+    }
+}
+
+public protocol DiceGameStorable: Sendable {
+    /// Keeps the roll as the dice its player last shared. `senderId` names the player's device:
+    /// two players with the same display name then keep their own dice, and a table can tell
+    /// them apart. Without it (a proxy's own rolls) the player is known by `name` alone.
+    @MainActor func addGameDiceResult(
+        data: NetworkCodableDataType,
+        name: String,
+        supporterTier: SupporterTier,
+        isGameMaster: Bool,
+        senderId: UUID?
     ) -> (String?, ResultCategory?)
+    /// The device that shared the dice `diceId`, `nil` when it is not known.
+    @MainActor func playerDiceSenderId(for diceId: UUID) -> UUID?
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType
     func createVirtualGameData(
         numberOfSides: Int,
@@ -110,22 +131,34 @@ extension GameController: DiceGameStorable {
         data: NetworkCodableDataType,
         name: String,
         supporterTier: SupporterTier,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        senderId: UUID?
     ) -> (String?, ResultCategory?) {
         guard let diceResult = DiceResultModel.decodeData(of: data.data) else { return (nil, nil) }
         let dice = diceResult.diceModel.makeModel(withId: UUID())
         dice.name = name
         dice.applyResult(text: diceResult.values)
         
-        if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || $0.name == name }) {
+        // A device keeps one set of dice: matched by its id when it is known, else by the name.
+        func isSamePlayer(_ other: DiceModel) -> Bool {
+            if let senderId {
+                return diceGameModel.playerDiceSenders[other.id] == senderId
+            }
+            return other.name == name
+        }
+        if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || isSamePlayer($0) }) {
             let replacedId = diceGameModel.playerDice[index].id
             diceGameModel.playerSupporterTiers[replacedId] = nil
+            diceGameModel.playerDiceSenders[replacedId] = nil
             diceGameModel.playerDice[index] = dice
         } else {
             diceGameModel.playerDice.insert(dice, at: 0)
         }
         diceGameModel.playerSupporterTiers[dice.id] = supporterTier
-        if let index = gameModel.items.firstIndex(where: { $0 == dice.id || (gameModel.itemData[$0] as? DiceModel)?.name == name }) {
+        diceGameModel.playerDiceSenders[dice.id] = senderId
+        if let index = gameModel.items.firstIndex(where: { id in
+            id == dice.id || (gameModel.itemData[id] as? DiceModel).map(isSamePlayer) == true
+        }) {
             gameModel.items.remove(at: index)
         }
         gameModel.items.insert(dice.id, at: 0)
@@ -260,6 +293,9 @@ extension GameController: DiceGameStorable {
         }
         let activeDiceIDs = Set(diceGameModel.playerDice.map(\.id))
         diceGameModel.playerSupporterTiers = diceGameModel.playerSupporterTiers.filter {
+            activeDiceIDs.contains($0.key)
+        }
+        diceGameModel.playerDiceSenders = diceGameModel.playerDiceSenders.filter {
             activeDiceIDs.contains($0.key)
         }
     }

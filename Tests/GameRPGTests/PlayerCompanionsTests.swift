@@ -150,6 +150,112 @@ struct PlayerCompanionsTests {
         #expect(pin.players == [wolf.id, annaId])
     }
 
+    // MARK: - CODE_AUDIT_24 §5.5
+
+    @Test("A player without a Character of its own still announces and delivers its companions")
+    func playerWithoutCharacterDeliversCompanions() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        let wolfId = UUID()
+        env.playerRoot.characterRoot.itemController.replace(model: ValueModel(id: wolfId, name: "Wolf"), isInsert: true)
+        let playerId = env.playerGameConfig.id
+        let wolf = TablePlayerModel(characterId: wolfId)
+        env.playerRoot.gameModel.gameRoster.players = [PlayerGameModel(id: playerId, type: .player, name: "Anna", companions: [wolf])]
+        env.player.gameModel.reset(lostMaster: false)
+
+        await env.player.sendCharacter()
+
+        let announced = try #require(env.playerNetworkSpy.requestHistory.compactMap { $0 as? GameNetworkModel }.last)
+        #expect(announced.data.id == wolfId)
+        #expect(announced.data.data == nil)
+        #expect(announced.sender.companions == [wolf])
+        #expect(env.player.gameModel.hasSendPlayer)
+
+        // The master asks for the package; the player answers although it has no Character.
+        let request = env.playerRoot.gameModel.outgoingMessage(
+            counter: 5, type: .update, subType: .store, asMaster: true,
+            data: NetworkCodableDataType(id: wolfId, type: .value, version: 1, data: nil)
+        )
+        let before = env.playerNetworkSpy.requestHistory.count
+        #expect(try await env.player.handleValue(request) == nil)
+        #expect(env.playerNetworkSpy.requestHistory.count == before + 1)
+        let package = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(package.data.id == wolfId)
+        #expect(package.data.data != nil)
+    }
+
+    @Test("A companion list that changes while a send runs is announced again")
+    func companionsEditedDuringSendAreAnnouncedAgain() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        let wolfId = UUID()
+        let bearId = UUID()
+        for (id, name) in [(wolfId, "Wolf"), (bearId, "Bear")] {
+            env.playerRoot.characterRoot.itemController.replace(model: ValueModel(id: id, name: name), isInsert: true)
+        }
+        let playerId = env.playerGameConfig.id
+        let wolf = TablePlayerModel(characterId: wolfId)
+        let bear = TablePlayerModel(characterId: bearId)
+        env.playerRoot.gameModel.gameRoster.players = [PlayerGameModel(id: playerId, type: .player, name: "Anna", companions: [wolf])]
+        env.player.gameModel.reset(lostMaster: false)
+
+        // The player adds a bear while the first announcement is on its way: right after the
+        // first message went out, the edit `announceCompanions` starts with happens.
+        nonisolated(unsafe) var didEdit = false
+        let player = env.player
+        let playerRoot = env.playerRoot
+        env.playerNetworkSpy.onRequest = {
+            guard !didEdit else { return }
+            didEdit = true
+            MainActor.assumeIsolated {
+                playerRoot.gameModel.gameRoster.players[0].companions = [wolf, bear]
+                player.gameModel.noteCompanionsChanged()
+                player.gameModel.reset(sendPlayer: false)
+            }
+        }
+
+        await env.player.scheduleSendCharacter()
+        await env.player.gameModel.sendCharacterTask?.value
+        env.playerNetworkSpy.onRequest = nil
+
+        let announced = env.playerNetworkSpy.requestHistory.compactMap { ($0 as? GameNetworkModel)?.data.id }
+        #expect(announced == [wolfId, wolfId, bearId], "the first, stale announcement and the complete second one")
+        #expect(env.player.gameModel.hasSendPlayer, "and the final send is the one that latches")
+    }
+
+    @Test("The master tells the player when a companion package cannot be imported, and the player retries")
+    func failedCompanionImportIsReported() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        let root = env.masterRoot
+        let annaId = UUID()
+        let wolf = TablePlayerModel(characterId: UUID())
+        let anna = PlayerGameModel(id: annaId, type: .player, name: "Anna", companions: [wolf])
+        root.gameModel.gameRoster.players = [anna]
+        let broken = GameNetworkModel(
+            counter: 2,
+            proxyCounter: 0,
+            type: .update,
+            subType: .store,
+            masterId: env.masterGameConfig.master.id,
+            sender: GameSenderModel(id: annaId, role: .player, name: "Anna", characterId: nil, companions: [wolf]),
+            data: NetworkCodableDataType(id: wolf.characterId, type: .value, version: 3, data: Data([1, 2, 3]))
+        )
+
+        #expect(try await env.master.handleValue(broken) == nil)
+
+        let failure = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(failure.subType == .failed)
+        #expect(failure.data.id == wolf.characterId)
+
+        // The player takes the failure like one for its Character: the send is opened again.
+        env.playerRoot.gameModel.gameRoster.players = [PlayerGameModel(id: env.playerGameConfig.id, type: .player, name: "Anna", companions: [wolf])]
+        env.player.gameModel.reset(sendPlayer: true)
+        let answer = env.playerRoot.gameModel.outgoingMessage(
+            counter: 6, type: .update, subType: .failed, asMaster: true,
+            data: NetworkCodableDataType(id: wolf.characterId, type: .value, version: 3, data: nil)
+        )
+        #expect(try await env.player.handleValue(answer) == nil)
+        #expect(!env.player.gameModel.hasSendPlayer)
+    }
+
     @Test("The sender carries at most the allowed companions, and nothing when there are none")
     func senderCoding() throws {
         let companions = (0..<12).map { _ in TablePlayerModel(characterId: UUID()) }

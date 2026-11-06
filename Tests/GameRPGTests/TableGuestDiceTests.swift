@@ -188,5 +188,30 @@ struct TableGuestDiceTests {
         _ = model.remove(playerId: try #require(ids["Ben"]))
         #expect(model.tableGuestNames.isEmpty)
     }
+
+    @MainActor
+    @Test("CODE_AUDIT_24 §5.10: guests and the game master are told apart by sender id, not by name")
+    func guestsByIdNotName() throws {
+        let model = GameRootModel()
+        let masterId = UUID()
+        let namesakeId = UUID()
+        func roll(id: UUID, name: String, role: GameType) -> GameNetworkModel {
+            GameNetworkModel(
+                counter: 1, proxyCounter: 0, type: .update, subType: .generic, masterId: UUID(),
+                sender: GameSenderModel(id: id, role: role, name: name, characterId: nil),
+                senderPlatform: .iOS,
+                data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0)
+            )
+        }
+        model.noteDiceRollSender(of: roll(id: masterId, name: "Alex", role: .master))
+        // A player who happens to carry the master's display name.
+        model.noteDiceRollSender(of: roll(id: namesakeId, name: "Alex", role: .player))
+
+        #expect(model.isTableGuest(senderId: masterId))
+        #expect(model.isTableGuest(senderId: namesakeId))
+        #expect(model.isTableGuestMaster(senderId: masterId))
+        #expect(!model.isTableGuestMaster(senderId: namesakeId))
+        #expect(!model.isTableGuest(senderId: UUID()))
+    }
 }
 #endif

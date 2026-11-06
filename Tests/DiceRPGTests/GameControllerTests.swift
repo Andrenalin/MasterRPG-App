@@ -113,6 +113,36 @@ struct GameControllerTests {
 
     }
 
+    @Test("Two players with the same display name keep their own dice when they are told apart by sender id")
+    func namesakesKeepTheirOwnDice() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        dice.dice = GameControllerTests.diceResult(values: [[2], [3], [4]])
+        let data = await sut.createDiceResult(for: dice.id, resultCategory: nil)
+        let first = UUID()
+        let second = UUID()
+
+        _ = sut.addGameDiceResult(data: data, name: "Alex", supporterTier: .none, isGameMaster: false, senderId: first)
+        _ = sut.addGameDiceResult(data: data, name: "Alex", supporterTier: .none, isGameMaster: false, senderId: second)
+
+        #expect(sut.diceGameModel.playerDice.count == 2)
+        let senders = Set(sut.sharedPlayerDice.compactMap { sut.playerDiceSenderId(for: $0.id) })
+        #expect(senders == [first, second])
+
+        // The same device rolling again replaces its own dice only.
+        _ = sut.addGameDiceResult(data: data, name: "Alex", supporterTier: .none, isGameMaster: false, senderId: first)
+        #expect(sut.diceGameModel.playerDice.count == 2)
+        #expect(Set(sut.sharedPlayerDice.compactMap { sut.playerDiceSenderId(for: $0.id) }) == [first, second])
+
+        // Without a sender (a proxy's own rolls) the name still identifies the player.
+        _ = sut.addGameDiceResult(data: data, name: "Host", supporterTier: .none, isGameMaster: false)
+        _ = sut.addGameDiceResult(data: data, name: "Host", supporterTier: .none, isGameMaster: false)
+        #expect(sut.diceGameModel.playerDice.filter { $0.name == "Host" }.count == 1)
+
+        sut.diceGameModel.reset()
+        #expect(sut.diceGameModel.playerDiceSenders.isEmpty)
+    }
+
     @Test func gameNetworkResultPayloads() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController

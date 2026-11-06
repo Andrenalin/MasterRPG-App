@@ -65,6 +65,13 @@ final class PlayerControllerModel {
     /// How often a rejected Character is looked at again for a changed version.
     static let rejectedCharacterProbeInterval: Duration = .seconds(60)
     var asGameMaster = false
+    /// Counts the changes of the companion list. A send that ran while it changed has announced
+    /// an old list, so it does not latch `hasSendPlayer` and runs again.
+    /// See CODE_AUDIT_24 §5.5.
+    private(set) var companionGeneration = 0
+    func noteCompanionsChanged() {
+        companionGeneration &+= 1
+    }
     var sendCharacterTask: Task<Void, Never>?
     var sendCharacterTaskId: UUID?
     var proxyFocusTask: Task<Void, Never>?

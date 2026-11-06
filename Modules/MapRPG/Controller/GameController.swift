@@ -130,6 +130,8 @@ public protocol MapGameStorable: Sendable {
     /// game master last opened while it is still open, otherwise the map's center.
     @MainActor func photoAnchor(for itemId: UUID) -> CGPoint
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
+    /// Ends every shared pin photo, on all live maps. See `GameController.clearSharedPinPhotos()`.
+    @MainActor @discardableResult func clearSharedPinPhotos() -> Bool
     @MainActor func setPinPhotoShown(itemId: UUID, pinId: UUID, shown: Bool) -> Bool
     @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func resizePin(itemId: UUID, pinId: UUID) -> Bool

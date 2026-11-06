@@ -152,6 +152,11 @@ extension GameController {
         diceGameModel.playerDice
     }
 
+    @MainActor
+    func playerDiceSenderId(for diceId: UUID) -> UUID? {
+        diceGameModel.playerDiceSenders[diceId]
+    }
+
     /// The 9 single-die roll-sound variants, indexed 0-8. Kept as one array
     /// (raw values, not the `Resources.Dice` cases themselves — the enum
     /// isn't `Sendable`) so the sound count and the selection range

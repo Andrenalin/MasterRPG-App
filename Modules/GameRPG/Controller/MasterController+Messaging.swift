@@ -32,6 +32,11 @@ extension MasterController {
         // is no general Character/Value presentation protocol during a game.
         guard idType.type != .value else { return }
 
+        if idType.type == .map {
+            // Another map (or this one again) is shown: a pin photo shared earlier is over.
+            root.mapRoot.mapGameControllable.clearSharedPinPhotos()
+        }
+
         let reference: NetworkCodableDataType
         switch idType.type {
         case .map where idType.assetVersion == nil:

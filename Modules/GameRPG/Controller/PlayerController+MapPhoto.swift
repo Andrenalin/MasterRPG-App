@@ -99,7 +99,11 @@ extension PlayerController {
     /// player's or observer's device it stays local.
     func requestMapPhotoMode(_ mode: MapPhotoMode) {
         let state = gameModel.mapPhoto
-        guard let presentation = state.presentation else { return }
+        guard let presentation = state.presentation else {
+            // Nothing is presented, so a popover still on screen is stale: Close removes it.
+            applyMapPhotoMode()
+            return
+        }
         if gameModel.asGameMaster, !state.isLocal, let masterController = root.gameModel.masterController {
             let changed = presentation.changed(
                 to: mode,
@@ -171,7 +175,22 @@ extension PlayerController {
         } else {
             gameModel.setGameUpdateType(presentation.module)
             root.photoRoot.photoGameControllable.presentPhoto(itemId: presentation.itemId)
+            // After the photo is current: visionOS opens its photo window on this.
+            gameModel.mapPhoto.noteFullScreenShown()
         }
+    }
+
+    /// A photo that arrives while the game master's full-screen presentation of it waits (the
+    /// player did not hold it when the presentation came) is shown now.
+    func applyWaitingMapPhoto(itemId: UUID) {
+        let state = gameModel.mapPhoto
+        guard state.mode == .fullScreen,
+              let presentation = state.presentation,
+              presentation.module == .photo,
+              presentation.itemId == itemId,
+              gameModel.gameUpdateType != .photo || !isCurrent(presentation)
+        else { return }
+        applyMapPhotoMode()
     }
 
     /// An item revealed while its presentation waits shows the way the game master chose, as

@@ -151,6 +151,14 @@ extension MasterController {
             root.gameModel.recordPeerImport(policy, senderId: model.sender.id)
         } catch {
             Logger.networking.error("MasterController: Failed to import companion package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            // Like a failed Character: the player learns it and retries instead of waiting for
+            // a pin that never comes. See CODE_AUDIT_24 §5.5.
+            await send(
+                type: .update,
+                subtype: .failed,
+                updated: NetworkCodableDataType(id: characterId, type: .value, version: model.data.version, data: nil),
+                playerId: model.sender.id
+            )
             return nil
         }
         // The pin waited for the Character to exist here.

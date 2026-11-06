@@ -65,8 +65,9 @@ struct MapPhotoPresentationState: Equatable, Sendable {
     private(set) var isLocal = false
     /// The mode this device shows: the game master's, until the viewer changes it locally.
     private(set) var mode: MapPhotoMode = .closed
-    /// Counts every switch to full screen. visionOS opens the photo window on each, also when
-    /// the photo is the same as before.
+    /// Counts every time the photo is really shown full screen: `noteFullScreenShown()` runs
+    /// once the item is current, not when the mode changes. visionOS opens the photo window on
+    /// each, also when the photo is the same as before, and never for a photo it does not hold.
     private(set) var fullScreenRequest = 0
     /// The game master's last applied change. Kept when the photo closes, so a late copy of an
     /// older change does not open it again.
@@ -142,10 +143,12 @@ struct MapPhotoPresentationState: Equatable, Sendable {
         lastMaster = nil
     }
 
+    /// The presentation's item is current and the full-screen viewer shows it.
+    mutating func noteFullScreenShown() {
+        fullScreenRequest &+= 1
+    }
+
     private mutating func setMode(_ newMode: MapPhotoMode) {
-        if newMode == .fullScreen {
-            fullScreenRequest &+= 1
-        }
         mode = newMode
     }
 }

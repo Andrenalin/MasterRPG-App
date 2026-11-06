@@ -156,12 +156,12 @@ extension LinkHighlightTextModel {
                     result.append(contentsOf: highlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
                 }
                 var nextIndex = text.index(after: index)
-                if boldRange != nil {
-                    boldRange = nextIndex..<range.upperBound
-                }
 
                 let endRange = matchingEndRange(in: text, after: nextIndex)
                 if let endRange {
+                    if boldRange != nil {
+                        boldRange = nextIndex..<range.upperBound
+                    }
                     result.append(HighlightedTextComponent(text: Text(Image(systemName: "arrowshape.right.fill"))
                             .customAttribute(LinkIconExpandedAttribute(isStart: true)), string: LinkExpandHighLightValues.begin.rawValue, range: index..<nextIndex))
                     result.append(
@@ -180,8 +180,12 @@ extension LinkHighlightTextModel {
                     }
                     lastIndex = nextIndex
                 } else {
-                    // Unbalanced begin marker: keep it as plain text.
+                    // Unbalanced begin marker: keep it as plain text. Text before it was
+                    // flushed above, so a bold run continues from the marker, not after it.
                     lastIndex = index
+                    if boldRange != nil {
+                        boldRange = index..<range.upperBound
+                    }
                 }
             }
             
@@ -242,22 +246,9 @@ extension LinkHighlightTextModel {
     }
     
     /// The end marker that closes the begin marker just before `start`, honouring
-    /// nested begin/end pairs. `nil` when the text is unbalanced.
+    /// nested begin/end pairs. `nil` when the text is unbalanced. See `String.matchingLinkEnd(after:)`.
     func matchingEndRange(in text: String, after start: String.Index) -> Range<String.Index>? {
-        let markers = (
-            begin: text.ranges(of: LinkExpandHighLightValues.begin.rawValue).filter { $0.lowerBound >= start },
-            end: text.ranges(of: LinkExpandHighLightValues.end.rawValue).filter { $0.lowerBound >= start }
-        )
-        var events: [(range: Range<String.Index>, isBegin: Bool)] = markers.begin.map { ($0, true) }
-        events.append(contentsOf: markers.end.map { ($0, false) })
-        events.sort { $0.range.lowerBound < $1.range.lowerBound }
-
-        var depth = 1
-        for event in events {
-            depth += event.isBegin ? 1 : -1
-            if depth == 0 { return event.range }
-        }
-        return nil
+        text.matchingLinkEnd(after: start)
     }
 
     private func highlight(text: String, range: Range<String.Index>, isBold: Bool, deep: Int, custom: [any TextAttribute] = []) -> [HighlightedTextComponent] {

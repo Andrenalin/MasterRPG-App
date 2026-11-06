@@ -69,6 +69,9 @@ struct CloudScanController: Sendable {
         // The picture the removals are checked against is taken under the lock, so an item the
         // user re-pointed meanwhile is not trashed from an older one. See CODE_AUDIT_23 §3.6.
         let current = await scan()
+        // A game may have started during the suspensions above (hash read, scan); the sync would
+        // then change the library half-way. See CODE_AUDIT_24 §5.11.
+        guard !itemController.itemDataModel.isGameMode else { return .busy }
 
         // Without a fresh plan nothing is applied: it cannot be told whether the old picture still
         // holds, and the user is told so instead of seeing a sync of zero.

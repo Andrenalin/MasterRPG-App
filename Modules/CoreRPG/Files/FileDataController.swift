@@ -110,6 +110,13 @@ public extension FileDataController {
     func read(id: UUID) async -> Datatype? {
         await model.data.first(where: { $0.id == id })
     }
+
+    /// Whether the store holds an entry with this id that this build could not decode. `read`
+    /// returns `nil` for it as well, so a caller that saves must tell the two apart.
+    /// See CODE_AUDIT_24 §5.12.
+    func isUndecodable(id: UUID) async -> Bool {
+        await model.undecodable.contains { $0.id == id }
+    }
 }
 
 // MARK: - Modify data

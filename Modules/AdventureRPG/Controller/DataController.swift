@@ -31,7 +31,9 @@ extension DataController: CoreDataSnapshotPersistable {
             entries: CRDTDataUpdate(wrappedValue: map(model.entriesModel), update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
             parentId: model.parentId,
             groupId: model.groupId,
-            tablePlayers: model.tablePlayers.map { CRDT(string: $0, defaultValue: []) } ?? AdventureModel.noTablePlayers
+            // Stored text this build cannot read (damaged, or a newer `TablePlayerModel`) is "no
+            // table players, never set", not an empty list stamped now: that would win every merge.
+            tablePlayers: model.tablePlayers.flatMap { CRDT<[TablePlayerModel]>(validating: $0) } ?? AdventureModel.noTablePlayers
         )
     }
 
@@ -58,6 +60,13 @@ extension DataController: CoreDataSnapshotPersistable {
         model.parentId <=> snapshot.parentId
         model.groupId <=> snapshot.groupId
         // An adventure without table players keeps the attribute nil, as before the field existed.
+        // Text this build cannot read stays as it is until the game master edits the list: the
+        // snapshot only holds the placeholder for it, and saving that would destroy the stored list.
+        if let stored = model.tablePlayers,
+           CRDT<[TablePlayerModel]>(validating: stored) == nil,
+           snapshot.tablePlayers.wrappedValue.isEmpty {
+            return
+        }
         let tablePlayers: String? = snapshot.tablePlayers.wrappedValue.isEmpty && model.tablePlayers == nil ? nil : snapshot.tablePlayers.rawValue
         model.tablePlayers <=> tablePlayers
     }

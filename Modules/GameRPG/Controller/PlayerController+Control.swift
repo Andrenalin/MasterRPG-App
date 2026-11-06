@@ -58,6 +58,7 @@ extension PlayerController {
         await root.adventureRoot.adventureGameControllable.resetGame()
         gameModel.hasSendPlayer = false
         gameModel.resetForLostConnection(preservingSharePlayRebind: false)
+        root.mapRoot.photoPopover.photo = nil
     }
 
     /// Combines `GameRootModel.applyMasterBroadcast` with `resetPlayers()` in one

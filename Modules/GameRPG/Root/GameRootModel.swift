@@ -41,6 +41,16 @@ final class GameRootModel: Sendable {
     /// The names the dice overlay lists the guests' rolls under.
     var tableGuestNames: Set<String> { Set(tableGuests.values) }
 
+    /// Whether the device `senderId` shares its dice from a guest seat (it is not on Vision Pro).
+    func isTableGuest(senderId: UUID) -> Bool {
+        tableGuests[senderId] != nil
+    }
+
+    /// Whether `senderId` is the game master rolling as a guest.
+    func isTableGuestMaster(senderId: UUID) -> Bool {
+        tableGuestMasterId == senderId
+    }
+
     /// The name the dice overlay lists the game master's roll under, while the master is a guest.
     var tableGuestMasterName: String? { tableGuestMasterId.flatMap { tableGuests[$0] } }
 

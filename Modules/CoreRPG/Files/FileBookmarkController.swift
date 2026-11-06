@@ -12,8 +12,8 @@ actor FileBookmarkModel {
         }
     }
 
-    private static let deviceId = UUID(uuidString: "F4AC90DF-36F2-4151-B283-F0CF9D0BAC33")!
-    private static let folderId = UUID(uuidString: "8393e8f6-f6d2-11ed-b67e-0242ac120002")!
+    static let deviceId = UUID(uuidString: "F4AC90DF-36F2-4151-B283-F0CF9D0BAC33")!
+    static let folderId = UUID(uuidString: "8393e8f6-f6d2-11ed-b67e-0242ac120002")!
 
     private var fileBookmarks: [UUID: Data] = [:]
     private var folderBookmarks: [UUID: Data] = [:]
@@ -77,6 +77,15 @@ actor FileBookmarkModel {
         }
         guard !didFetch else { return true }
         guard isFetched else { return false }
+        // An entry that is stored but cannot be decoded (a changed `Bookmarks` shape) reads as
+        // "no bookmarks"; the next save would write a fresh row over it. It counts as a failed
+        // read instead: nothing is marked fetched or saved, and the changes stay in memory.
+        // See CODE_AUDIT_24 §5.12.
+        guard await !itemController.isUndecodable(id: Self.deviceId),
+              await !itemController.isUndecodable(id: Self.folderId) else {
+            Logger.bookmarkStore.error("The stored bookmarks cannot be decoded and are left untouched")
+            return false
+        }
         let fileData = await itemController.read(id: Self.deviceId)?.bookmarks ?? [:]
         let folderData = await itemController.read(id: Self.folderId)?.bookmarks ?? [:]
 

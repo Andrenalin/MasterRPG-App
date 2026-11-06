@@ -38,8 +38,11 @@ final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Se
 
     var requestData: MessageMapper?
     var requestHistory: [MessageMapper] = []
+    /// Runs on every request, on the caller's actor (the main actor in the game controllers).
+    var onRequest: (@Sendable () -> Void)?
     func request(with data: MessageMapper?) {
         calledRequest += 1
+        defer { onRequest?() }
         requestData = data
         if let data {
             requestHistory.append(data)

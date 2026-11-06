@@ -6,6 +6,13 @@ import Foundation
 import os.log
 
 extension PlayerController {
+    /// Whether `characterId` is this player's Character or one of its companions; the master
+    /// answers for either, also for a player without a Character of its own. See CODE_AUDIT_24 §5.5.
+    private func isOwnOrCompanionCharacter(_ characterId: UUID) -> Bool {
+        let player = root.gameModel.gamePlayer
+        return player.characterId == characterId || player.companions.contains { $0.characterId == characterId }
+    }
+
     func handleValue(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
         guard root.gameModel.gameType != .proxy else { return try await handleProxyValue(model) }
         if model.subType == .addItem {
@@ -15,8 +22,8 @@ extension PlayerController {
            model.type == .update,
            model.subType == .failed,
            model.data.type == .value,
-           let characterId = root.gameModel.gamePlayer.characterId,
-           characterId == model.data.id {
+           isOwnOrCompanionCharacter(model.data.id) {
+            let characterId = model.data.id
             // The master failed to import this player's Character package
             // (see MasterController+ValueMessages.swift). `hasSendPlayer` was
             // already latched true when the original reference went out;
@@ -43,13 +50,11 @@ extension PlayerController {
         // join announcement. No Value reveal, result, loot, or live update is
         // processed during the game.
         // The same for one of this player's companions.
-        let player = root.gameModel.gamePlayer
         guard model.sender.isMaster,
               model.type == .update,
               model.subType == .store,
               model.data.data == nil,
-              let characterId = player.characterId,
-              characterId == model.data.id || player.companions.contains(where: { $0.characterId == model.data.id })
+              isOwnOrCompanionCharacter(model.data.id)
         else { return nil }
 
         try Task.checkCancellation()

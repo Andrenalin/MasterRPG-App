@@ -45,7 +45,7 @@ extension BattleRoundModel {
     /// flagging it dead. The map pin itself is untouched, so highlighting it
     /// again re-adds it as a fresh combatant.
     @discardableResult
-    func removeCombatant(_ combatantId: UUID) -> Bool {
+    func removeCombatant(_ combatantId: UUID, forgettingPlayer: Bool = true) -> Bool {
         guard let combatant = combatant(id: combatantId) else { return false }
         // The active attacker leaves: its turn passes on to the next living
         // attacker, as "Next Turn" would. Clearing the turn instead sent the
@@ -66,12 +66,48 @@ extension BattleRoundModel {
         if rollRecipientCombatantId == combatantId {
             rollRecipientCombatantId = activeAttackerId
         }
-        if combatant.isPlayer {
+        if combatant.isPlayer, forgettingPlayer {
             retainedPlayerCombatants.removeValue(forKey: combatant.pinId)
             retainedPlayerInitiatives.removeValue(forKey: retentionKey(for: combatant))
         }
         bumpNetworkSequence()
         return true
+    }
+
+    /// The pin behind a combatant changed its id: the Character is now played through another
+    /// pin (a table player's pin and a joining player's pin, a companion changing hands). The
+    /// combatant keeps its id, so its turn entry, defender links and the active attacker stay.
+    /// See CODE_AUDIT_24 §5.1.
+    @discardableResult
+    func rekeyPin(from oldPinId: UUID, to pin: MapPinModel) -> Bool {
+        guard oldPinId != pin.id,
+              let index = combatants.firstIndex(where: { $0.pinId == oldPinId }),
+              combatant(pinId: pin.id) == nil else { return false }
+        combatants[index].pin = pin
+        if var retained = retainedPlayerCombatants.removeValue(forKey: oldPinId) {
+            retained.pin = pin
+            retainedPlayerCombatants[pin.id] = retained
+        }
+        if presentedActivePinId == oldPinId {
+            presentedActivePinId = pin.id
+        }
+        bumpNetworkSequence()
+        return true
+    }
+
+    /// Drops the player combatants of a running battle whose pin is gone. The player's initiative
+    /// is kept for a later battle. See CODE_AUDIT_24 §5.1.
+    @discardableResult
+    func dropPlayerCombatants(withoutPinIn pinIds: Set<UUID>) -> Bool {
+        guard isRunning else { return false }
+        let gone = combatants.filter { $0.isPlayer && !pinIds.contains($0.pinId) }
+        for combatant in gone {
+            if let initiative = combatant.initiative {
+                retainedPlayerInitiatives[retentionKey(for: combatant)] = initiative
+            }
+            removeCombatant(combatant.id, forgettingPlayer: false)
+        }
+        return !gone.isEmpty
     }
 }
 

@@ -38,6 +38,9 @@ extension PlayerController {
     ) async {
         Logger.networking.debug("PlayerController: Lost Connection - Reset State")
         gameModel.resetForLostConnection(preservingSharePlayRebind: preservingSharePlayRebind)
+        // The model forgot the photo, so the popover that shows it must go too: its Close button
+        // has nothing left to close.
+        root.mapRoot.photoPopover.photo = nil
         root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
         // The master may restart its own battle-round sequence lower than
         // what this device last saw; clear the gate so the next authoritative

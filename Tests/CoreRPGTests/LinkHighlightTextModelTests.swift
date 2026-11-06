@@ -115,6 +115,19 @@ struct LinkHighlightTextModelTests {
         #expect(result[10].string == " Der Dolch ist schnell und leicht. Eine Ideale Waffen für den Dieb, aber macht auch nicht so viele Schadenspunkte.")
     }
 
+    @Test("A lone expand marker inside bold text stays in the rendered text")
+    @MainActor
+    func loneMarkerInsideBoldIsKept() {
+        let sut = LinkHighlightTextModel(
+            linkControllable: FakeLinkController.fake,
+            text: "**a ➡️ b**"
+        )
+
+        let rendered = sut.displayText.map(\.string).joined()
+
+        #expect(rendered == "a ➡️ b")
+    }
+
     @Test
     func highlightAndBold() async throws {
         let text = "**Zauber**"
