@@ -122,11 +122,20 @@ import SwiftUI
 
         // Debounce updates to avoid excessive AttributedString recalculation
         updateTask = delayedTask(.settleDelay) { [self] in
-            guard linkRegisterController != nil else { return }
-
-            resetText()
-            resetAttributedText()
+            settleLinks()
         }
+    }
+
+    /// Parses the links again when the words changed. A selection change, or an attribute-only
+    /// write by the editor (it hands the text back with the colors it applied), leaves the words
+    /// as they were. Rebuilding then replaces the editor's text with an unstyled copy that is
+    /// styled again, which flickers the links.
+    func settleLinks() {
+        guard linkRegisterController != nil else { return }
+        guard lastProcessedText != text || plainText(from: attributedText, links: links) != text else { return }
+
+        resetText()
+        resetAttributedText()
     }
 
     private func attributedText(from value: String) -> (text: AttributedString, links: [LinkRegisterModel]) {
