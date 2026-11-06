@@ -14,13 +14,23 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     @State private var isSaving: Bool = false
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    /// Optional: the editor is also shown where no window size is set; links can be dropped there.
+    @Environment(AppWindowSizeModel.self) private var appSizeModel: AppWindowSizeModel?
+
+    /// Links are dragged from another pane, which a compact window (iPhone) does not show next
+    /// to the editor, so the drop area is hidden there.
+    private var offersLinkDrop: Bool { appSizeModel?.mode != .compact }
     
     var body: some View {
         GlassEffectContainerAll {
             HStack(spacing: 12) {
                 EntryEditorHeaderDismissButtonView(editorModel: editorModel)
 
-                EntryEditorHeaderDropLinkAreaView(linkTypes: linkTypes, dropBackgroundColor: dropBackgroundColor, dropStrokeColor: dropStrokeColor, isDropTargeted: $isDropTargeted, handleDrop: handleDrop)
+                if offersLinkDrop {
+                    EntryEditorHeaderDropLinkAreaView(linkTypes: linkTypes, dropBackgroundColor: dropBackgroundColor, dropStrokeColor: dropStrokeColor, isDropTargeted: $isDropTargeted, handleDrop: handleDrop)
+                } else {
+                    Spacer(minLength: 0)
+                }
 
                 EntryEditorHeaderSaveButtonView(isSaving: isSaving, save: save)
             }
