@@ -80,14 +80,10 @@ public struct GameTableView: View {
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
 
-                    if let pinMenu = attachments.entity(for: "pin-menu") {
-                        loadedGame.registerPinMenuAttachment(pinMenu)
-                    }
-                    if let pinPhoto = attachments.entity(for: "pin-photo") {
-                        loadedGame.registerPinPhotoAttachment(pinPhoto)
-                    }
-                    if let mapPhoto = attachments.entity(for: "map-photo") {
-                        loadedGame.registerMapPhotoAttachment(mapPhoto)
+                    for kind in TablePopoverKind.allCases {
+                        if let popover = attachments.entity(for: kind.attachmentId) {
+                            loadedGame.registerAttachment(popover, for: kind)
+                        }
                     }
                     for group in loadedGame.diceResultGroups {
                         if let diceResult = attachments.entity(for: GameDiceResultPopover.attachmentId(for: group)) {
@@ -99,17 +95,15 @@ public struct GameTableView: View {
                     // Re-anchor to the volume floor when the user resizes the volume.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
-                    loadedGame.updatePinMenuAttachmentPosition()
-                    loadedGame.updatePinPhotoAttachmentPosition()
-                    loadedGame.updateMapPhotoAttachmentPosition()
+                    loadedGame.updateAttachmentPositions()
                 } attachments: {
-                    Attachment(id: "pin-menu") {
+                    Attachment(id: TablePopoverKind.pinMenu.attachmentId) {
                         GamePinActionMenu(game: loadedGame)
                     }
-                    Attachment(id: "pin-photo") {
+                    Attachment(id: TablePopoverKind.pinPhoto.attachmentId) {
                         GamePinPhotoPopover(game: loadedGame)
                     }
-                    Attachment(id: "map-photo") {
+                    Attachment(id: TablePopoverKind.mapPhoto.attachmentId) {
                         GameMapPhotoPopover(game: loadedGame)
                     }
                     // One per dice group: every seat's dice, and every guest's at the guest
@@ -329,10 +323,8 @@ public struct GameTableView: View {
             // not — detach it now rather than leaving it parented under
             // `renderer.root` as a stale, mid-teardown entity for the next
             // `RealityView` mount's `content.add(renderer.root)` to walk back
-            // over. See `GameTableModel.registerPinMenuAttachment(_:)`'s doc.
-            game?.detachPinMenuAttachment()
-            game?.detachPinPhotoAttachment()
-            game?.detachMapPhotoAttachment()
+            // over. See `TablePopoverAnchor.register(_:in:)`'s doc.
+            game?.detachAttachments()
             game?.detachDiceResultAttachments()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()

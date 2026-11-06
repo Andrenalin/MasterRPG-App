@@ -24,10 +24,10 @@ extension GameTableModel {
         if mapPhotoPosition != position {
             mapPhotoPosition = position
         }
-        updateMapPhotoAttachmentPosition()
+        updateAttachmentPosition(for: .mapPhoto)
 #if !os(visionOS)
-        if position == nil, mapPhotoSource != nil {
-            mapPhotoSource = nil
+        if position == nil {
+            clearPopoverSource(for: .mapPhoto)
         }
 #endif
     }
@@ -52,56 +52,6 @@ extension GameTableModel {
         )
         return projection.tablePosition(for: photo.anchor)
     }
-
-    func updateMapPhotoAttachmentPosition() {
-        guard let position = mapPhotoPosition else {
-            mapPhotoPopover.hide()
-            return
-        }
-        mapPhotoPopover.show(at: SIMD3<Float>(
-            position.x,
-            position.y + Self.pinMenuArrowTipHeight,
-            position.z
-        ))
-    }
-
-    /// Registers the SwiftUI attachment used for the map photo popover.
-    func registerMapPhotoAttachment(_ attachment: Entity) {
-        mapPhotoPopover.register(attachment, in: renderer.root)
-        updateMapPhotoAttachmentPosition()
-    }
-
-    func mapPhotoAttachmentHeightChanged(_ height: Float) {
-        mapPhotoPopover.attachmentHeightChanged(height)
-    }
-
-    func detachMapPhotoAttachment() {
-        mapPhotoPopover.detach()
-    }
-
-#if !os(visionOS)
-    /// Projects the photo's anchor into the table view for the popover. Runs every rendered
-    /// frame next to `updatePinPhotoSource(project:)`.
-    func updateMapPhotoSource(project: (SIMD3<Float>) -> CGPoint?) {
-        guard let photo = mapPhoto,
-              let position = mapPhotoPosition,
-              let point = project(setup.pinContainer.convert(position: position, to: nil)),
-              point.x.isFinite, point.y.isFinite
-        else {
-            if mapPhotoSource != nil {
-                mapPhotoSource = nil
-            }
-            return
-        }
-        let source = TablePinMenuSource(
-            pinId: photo.itemId,
-            frame: CGRect(x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1)
-        )
-        if source.differsVisibly(from: mapPhotoSource) {
-            mapPhotoSource = source
-        }
-    }
-#endif
 }
 
 #endif

@@ -157,7 +157,7 @@ struct GameControllerTests {
         sut.gameItem(for: firstMapId).mapPins[firstIndex].location = CGPoint(x: 40, y: 50)
         sut.gameItem(for: firstMapId).mapPins[firstIndex].size = .huge
         sut.gameItem(for: firstMapId).mapPins[firstIndex].isShown = false
-        sut.gameItem(for: firstMapId).mapPins[firstIndex].isZoom = true
+        sut.gameItem(for: firstMapId).mapPins[firstIndex].isPhotoShared = true
         sut.gameItem(for: firstMapId).mapPins[firstIndex].isDead = true
         sut.gameItem(for: firstMapId).mapPins[firstIndex].isHighlighted = true
         sut.gameItem(for: firstMapId).mapPins[firstIndex].timeInterval = 99
@@ -168,7 +168,7 @@ struct GameControllerTests {
         sut.gameItem(for: secondMapId).mapPins[secondIndex].location = CGPoint(x: 70, y: 80)
         sut.gameItem(for: secondMapId).mapPins[secondIndex].size = .colossal
         sut.gameItem(for: secondMapId).mapPins[secondIndex].isShown = true
-        sut.gameItem(for: secondMapId).mapPins[secondIndex].isZoom = false
+        sut.gameItem(for: secondMapId).mapPins[secondIndex].isPhotoShared = false
         sut.gameItem(for: secondMapId).mapPins[secondIndex].isDead = false
         sut.gameItem(for: secondMapId).mapPins[secondIndex].isHighlighted = false
         sut.gameItem(for: secondMapId).mapPins[secondIndex].timeInterval = 123
@@ -211,7 +211,7 @@ struct GameControllerTests {
         #expect(firstMapPin.location == CGPoint(x: 40, y: 50))
         #expect(firstMapPin.size == .huge)
         #expect(!firstMapPin.isShown)
-        #expect(firstMapPin.isZoom)
+        #expect(firstMapPin.isPhotoShared)
         #expect(firstMapPin.isDead)
         #expect(firstMapPin.isHighlighted)
         #expect(firstMapPin.timeInterval == 99)
@@ -228,7 +228,7 @@ struct GameControllerTests {
         #expect(secondMapPin.location == CGPoint(x: 70, y: 80))
         #expect(secondMapPin.size == .colossal)
         #expect(secondMapPin.isShown)
-        #expect(!secondMapPin.isZoom)
+        #expect(!secondMapPin.isPhotoShared)
         #expect(!secondMapPin.isDead)
         #expect(!secondMapPin.isHighlighted)
         #expect(secondMapPin.timeInterval == 123)
@@ -351,7 +351,7 @@ struct GameControllerTests {
         )
         gameMap.mapPins[0].location = CGPoint(x: 30, y: 40)
         gameMap.mapPins[0].isShown.toggle()
-        gameMap.mapPins[0].isZoom.toggle()
+        gameMap.mapPins[0].isPhotoShared.toggle()
         gameMap.mapPins[0].isHighlighted.toggle()
         gameMap.mapPins[0].timeInterval = 30
         let volatileStateVersion = try #require(
@@ -437,7 +437,7 @@ struct GameControllerTests {
             isShown: false,
             isPlayer: true,
             timeInterval: 100,
-            isZoom: true,
+            isPhotoShared: true,
             isDead: true,
             isHighlighted: true
         )
@@ -470,7 +470,7 @@ struct GameControllerTests {
         #expect(appliedPin.players == [pinId])
         #expect(appliedPin.location == newerLocalPin.location)
         #expect(appliedPin.isShown == newerLocalPin.isShown)
-        #expect(appliedPin.isZoom == newerLocalPin.isZoom)
+        #expect(appliedPin.isPhotoShared == newerLocalPin.isPhotoShared)
         #expect(appliedPin.isDead == newerLocalPin.isDead)
         #expect(appliedPin.isHighlighted == newerLocalPin.isHighlighted)
         #expect(appliedPin.timeInterval == newerLocalPin.timeInterval)
@@ -542,14 +542,14 @@ struct GameControllerTests {
             isPlayer: false,
             players: [],
             timeInterval: 20,
-            isZoom: true,
+            isPhotoShared: true,
             isDead: false,
             isHighlighted: true
         )
         #expect(sut.updatePin(itemId: mapId, data: ownerRequest.encodeData(), playerId: ownerId))
 
         // Then: only the owned location and the shared highlight are accepted; the shared photo
-        // flag (`isZoom`) is the game master's alone. See CODE_AUDIT_24 §5.3.
+        // flag (`isPhotoShared`) is the game master's alone. See CODE_AUDIT_24 §5.3.
         let updatedOwner = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == ownerId })
         #expect(updatedOwner.name == owner.name)
         #expect(updatedOwner.photoId == ownerPhotoId)
@@ -559,7 +559,7 @@ struct GameControllerTests {
         #expect(updatedOwner.isPlayer)
         #expect(updatedOwner.players == owner.players)
         #expect(updatedOwner.isDead == owner.isDead)
-        #expect(!updatedOwner.isZoom)
+        #expect(!updatedOwner.isPhotoShared)
         #expect(updatedOwner.isHighlighted)
         #expect(updatedOwner.timeInterval == ownerRequest.timeInterval)
         #expect(sut.mapGameModel.playerPins.first { $0.id == ownerId } == updatedOwner)
@@ -586,7 +586,7 @@ struct GameControllerTests {
         foreignRequest.location = CGPoint(x: 100, y: 101)
         foreignRequest.size = .colossal
         foreignRequest.isShown = false
-        foreignRequest.isZoom = true
+        foreignRequest.isPhotoShared = true
         foreignRequest.isDead = true
         foreignRequest.isHighlighted = true
         foreignRequest.timeInterval = 20
@@ -596,7 +596,7 @@ struct GameControllerTests {
         monsterRequest.location = CGPoint(x: 200, y: 201)
         monsterRequest.size = .colossal
         monsterRequest.isShown = false
-        monsterRequest.isZoom = true
+        monsterRequest.isPhotoShared = true
         monsterRequest.isDead = true
         monsterRequest.isHighlighted = true
         monsterRequest.timeInterval = 20
@@ -608,7 +608,7 @@ struct GameControllerTests {
         #expect(updatedForeign.size == foreignPlayer.size)
         #expect(updatedForeign.isShown)
         #expect(!updatedForeign.isDead)
-        #expect(!updatedForeign.isZoom)
+        #expect(!updatedForeign.isPhotoShared)
         #expect(updatedForeign.isHighlighted)
         #expect(sut.mapGameModel.playerPins.first { $0.id == foreignPlayerId } == updatedForeign)
 
@@ -617,13 +617,13 @@ struct GameControllerTests {
         #expect(updatedMonster.size == monster.size)
         #expect(updatedMonster.isShown)
         #expect(!updatedMonster.isDead)
-        #expect(!updatedMonster.isZoom)
+        #expect(!updatedMonster.isPhotoShared)
         #expect(updatedMonster.isHighlighted)
         #expect(!sut.mapGameModel.playerPins.map(\.id).contains(monsterId))
 
         // Hidden foreign and unknown pins are rejected and never inserted.
         var hiddenRequest = hiddenMonster
-        hiddenRequest.isZoom = true
+        hiddenRequest.isPhotoShared = true
         hiddenRequest.isHighlighted = true
         hiddenRequest.timeInterval = 20
         #expect(!sut.updatePin(itemId: mapId, data: hiddenRequest.encodeData(), playerId: ownerId))
@@ -632,7 +632,7 @@ struct GameControllerTests {
             name: "Unknown",
             isPlayer: true,
             timeInterval: 20,
-            isZoom: true,
+            isPhotoShared: true,
             isHighlighted: true
         )
         #expect(!sut.updatePin(itemId: mapId, data: unknownRequest.encodeData(), playerId: ownerId))
@@ -660,7 +660,7 @@ struct GameControllerTests {
 
         var request = pin
         request.location = CGPoint(x: 40, y: 50)
-        request.isZoom = true
+        request.isPhotoShared = true
         request.isHighlighted = true
         request.timeInterval = 2
 
@@ -717,7 +717,7 @@ struct GameControllerTests {
         optimisticPlayer.location = CGPoint(x: 50, y: 60)
         optimisticPlayer.size = .tiny
         optimisticPlayer.isShown = false
-        optimisticPlayer.isZoom = true
+        optimisticPlayer.isPhotoShared = true
         optimisticPlayer.isDead = false
         optimisticPlayer.isHighlighted = true
         optimisticPlayer.timeInterval = 100
@@ -727,7 +727,7 @@ struct GameControllerTests {
         optimisticMonster.location = CGPoint(x: 70, y: 80)
         optimisticMonster.size = .tiny
         optimisticMonster.isShown = false
-        optimisticMonster.isZoom = true
+        optimisticMonster.isPhotoShared = true
         optimisticMonster.isDead = false
         optimisticMonster.isHighlighted = true
         optimisticMonster.timeInterval = 100
@@ -744,7 +744,7 @@ struct GameControllerTests {
         #expect(mergedPlayer.size == authoritativePlayer.size)
         #expect(mergedPlayer.isShown == authoritativePlayer.isShown)
         #expect(mergedPlayer.isDead == authoritativePlayer.isDead)
-        #expect(!mergedPlayer.isZoom)
+        #expect(!mergedPlayer.isPhotoShared)
         #expect(mergedPlayer.isHighlighted)
         #expect(mergedPlayer.timeInterval == optimisticPlayer.timeInterval)
 
@@ -754,7 +754,7 @@ struct GameControllerTests {
         #expect(mergedMonster.size == authoritativeMonster.size)
         #expect(mergedMonster.isShown == authoritativeMonster.isShown)
         #expect(mergedMonster.isDead == authoritativeMonster.isDead)
-        #expect(!mergedMonster.isZoom)
+        #expect(!mergedMonster.isPhotoShared)
         #expect(mergedMonster.isHighlighted)
         #expect(mergedMonster.timeInterval == optimisticMonster.timeInterval)
     }

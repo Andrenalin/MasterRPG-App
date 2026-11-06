@@ -112,7 +112,7 @@ extension MapSnapshot {
             updatedPin.location = localPin.location
             updatedPin.isShown = localPin.isShown
             updatedPin.size = localPin.size
-            updatedPin.isZoom = localPin.isZoom
+            updatedPin.isPhotoShared = localPin.isPhotoShared
             updatedPin.isDead = localPin.isDead
             updatedPin.isHighlighted = localPin.isHighlighted
             updatedPin.timeInterval = localPin.timeInterval

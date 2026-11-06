@@ -430,13 +430,13 @@ extension GameController {
     @MainActor
     func saveAll() -> ItemModuleIds {
         for itemId in gameModel.items {
-            // `isZoom` is a session-only share (the game master's open pin photo), like the
+            // `isPhotoShared` is a session-only share (the game master's open pin photo), like the
             // player pins: a saved game must not reopen it.
             gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins
                 .filter { !$0.isPlayer }
                 .map { pin in
                     var pin = pin
-                    pin.isZoom = false
+                    pin.isPhotoShared = false
                     return pin
                 }
         }

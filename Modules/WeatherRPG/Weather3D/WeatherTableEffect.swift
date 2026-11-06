@@ -38,11 +38,6 @@ public final class WeatherTableEffect {
         buildTask?.cancel()
     }
 
-    /// Whether a weather is shown.
-    public var isShowing: Bool {
-        configuration != nil
-    }
-
     /// Shows `model` inside `volume`, or nothing for `nil`. Runs on every map sync, so an
     /// unchanged weather and volume leave the running particles alone.
     public func show(
@@ -180,9 +175,9 @@ public final class WeatherTableEffect {
             let flash = Entity()
             flash.position = origin
             flash.components.set(PointLightComponent(
-                cgColor: CGColor(red: 0.85, green: 0.9, blue: 1, alpha: 1),
+                cgColor: Self.flashColor,
                 intensity: flashIntensity,
-                attenuationRadius: max(volume.width, volume.depth) * 1.5
+                attenuationRadius: max(volume.width, volume.depth) * Self.flashReach
             ))
             strike.addChild(flash)
         }
@@ -206,7 +201,7 @@ public final class WeatherTableEffect {
         emitter.emitterShapeSize = [volume.width, 0, volume.depth]
         emitter.emissionDirection = direction
         emitter.speed = configuration.fallSpeed
-        emitter.speedVariation = configuration.fallSpeed * 0.15
+        emitter.speedVariation = configuration.fallSpeed * Self.fallSpeedVariation
         emitter.particlesInheritTransform = true
         emitter.spawnedEmitter = nil
         // Already falling when the weather appears.
@@ -220,15 +215,15 @@ public final class WeatherTableEffect {
         particle.acceleration = .zero
         particle.dampingFactor = 0
         particle.spreadingAngle = 0
-        particle.noiseStrength = isSnow ? 0.04 : 0
-        particle.noiseScale = 1
-        particle.noiseAnimationSpeed = isSnow ? 0.3 : 0
-        particle.size = isSnow ? 0.006 : 0.0025
-        particle.sizeVariation = particle.size * 0.3
+        particle.noiseStrength = isSnow ? Self.snowNoiseStrength : 0
+        particle.noiseScale = Self.snowNoiseScale
+        particle.noiseAnimationSpeed = isSnow ? Self.snowNoiseSpeed : 0
+        particle.size = isSnow ? Self.snowSize : Self.rainSize
+        particle.sizeVariation = particle.size * Self.sizeVariation
         particle.billboardMode = isSnow ? .billboard : .billboardYAligned
-        particle.stretchFactor = isSnow ? 0 : 3
+        particle.stretchFactor = isSnow ? 0 : Self.rainStretch
         particle.opacityCurve = .quickFadeInOut
-        particle.color = .constant(.single(.init(white: 1, alpha: isSnow ? 0.95 : 0.7)))
+        particle.color = .constant(.single(.init(white: 1, alpha: isSnow ? Self.snowAlpha : Self.rainAlpha)))
         particle.isLightingEnabled = false
         particle.blendMode = .alpha
         if let texture = WeatherTextures.cached(named: isSnow ? "snow" : "rain") {
@@ -250,23 +245,23 @@ public final class WeatherTableEffect {
         emitter.emitterShape = .box
         emitter.birthLocation = .volume
         emitter.birthDirection = .local
-        emitter.emitterShapeSize = [volume.width, volume.height * 0.08, volume.depth]
-        emitter.emissionDirection = simd_normalize(SIMD3<Float>(1, 0, 0.2))
+        emitter.emitterShapeSize = [volume.width, volume.height * Self.cloudLayerThickness, volume.depth]
+        emitter.emissionDirection = Self.cloudDrift
         // Reduce Motion: the clouds stay where they appear.
         emitter.speed = configuration.isAnimated ? cloudSpeed : 0
-        emitter.speedVariation = configuration.isAnimated ? cloudSpeed * 0.3 : 0
+        emitter.speedVariation = configuration.isAnimated ? cloudSpeed * Self.cloudSpeedVariation : 0
         emitter.particlesInheritTransform = true
         emitter.timing = .repeating(warmUp: lifeSpan, emit: .init(duration: emitDuration))
 
         var particle = emitter.mainEmitter
         particle.lifeSpan = lifeSpan
-        particle.lifeSpanVariation = lifeSpan * 0.2
+        particle.lifeSpanVariation = lifeSpan * Self.cloudLifeSpanVariation
         particle.birthRate = Float(Double(configuration.cloudCount) / lifeSpan)
         particle.birthRateVariation = 0
         particle.acceleration = .zero
         particle.noiseStrength = 0
-        particle.size = min(volume.width, volume.depth) * 0.35
-        particle.sizeVariation = particle.size * 0.3
+        particle.size = min(volume.width, volume.depth) * Self.cloudSize
+        particle.sizeVariation = particle.size * Self.sizeVariation
         particle.billboardMode = .billboard
         particle.opacityCurve = .gradualFadeInOut
         let tint = configuration.cloudTint
@@ -293,10 +288,10 @@ public final class WeatherTableEffect {
     static func stars(_ configuration: WeatherSceneConfiguration, in volume: WeatherVolume) -> Entity {
         var emitter = ParticleEmitterComponent()
         // Twinkling is motion: with Reduce Motion the stars just stay.
-        let lifeSpan = configuration.isAnimated ? starTwinkle : cloudLifeSpan * 2
+        let lifeSpan = configuration.isAnimated ? starTwinkle : cloudLifeSpan * Self.motionlessStarLifeSpanFactor
         emitter.emitterShape = .plane
         emitter.birthLocation = .surface
-        emitter.emitterShapeSize = [volume.width * 1.1, 0, volume.depth * 1.1]
+        emitter.emitterShapeSize = [volume.width * Self.starSpread, 0, volume.depth * Self.starSpread]
         emitter.speed = 0
         emitter.speedVariation = 0
         emitter.particlesInheritTransform = true
@@ -304,11 +299,11 @@ public final class WeatherTableEffect {
 
         var particle = emitter.mainEmitter
         particle.lifeSpan = lifeSpan
-        particle.lifeSpanVariation = lifeSpan * 0.4
+        particle.lifeSpanVariation = lifeSpan * Self.starLifeSpanVariation
         particle.birthRate = Float(Double(starCount) / lifeSpan)
         particle.acceleration = .zero
-        particle.size = 0.003
-        particle.sizeVariation = 0.0015
+        particle.size = Self.starSize
+        particle.sizeVariation = Self.starSize * Self.starSizeVariation
         particle.billboardMode = .billboard
         particle.opacityCurve = configuration.isAnimated ? .quickFadeInOut : .constant
         particle.color = .constant(.single(.init(white: 1, alpha: CGFloat(configuration.starOpacity))))
@@ -346,6 +341,42 @@ public final class WeatherTableEffect {
     private static let flashIntensity: Float = 12_000
     private static let strikeDuration: Duration = .milliseconds(150)
     private static let boltMesh = MeshResource.generateBox(size: 1)
+    /// The flash's tint and how far it reaches, in volume widths.
+    private static let flashColor = CGColor(red: 0.85, green: 0.9, blue: 1, alpha: 1)
+    private static let flashReach: Float = 1.5
+
+    // Precipitation
+    /// The spread of a drop's speed, relative to the fall speed.
+    private static let fallSpeedVariation: Float = 0.15
+    private static let snowNoiseStrength: Float = 0.04
+    private static let snowNoiseScale: Float = 1
+    private static let snowNoiseSpeed: Float = 0.3
+    private static let snowSize: Float = 0.006
+    private static let rainSize: Float = 0.0025
+    private static let rainStretch: Float = 3
+    private static let snowAlpha: CGFloat = 0.95
+    private static let rainAlpha: CGFloat = 0.7
+    /// The spread of every particle's size, relative to the size.
+    private static let sizeVariation: Float = 0.3
+
+    // Clouds
+    /// The clouds' layer height, relative to the volume's height.
+    private static let cloudLayerThickness: Float = 0.08
+    private static let cloudDrift = simd_normalize(SIMD3<Float>(1, 0, 0.2))
+    private static let cloudSpeedVariation: Float = 0.3
+    private static let cloudLifeSpanVariation: TimeInterval = 0.2
+    /// A cloud's size, relative to the smaller side of the volume.
+    private static let cloudSize: Float = 0.35
+
+    // Stars
+    /// The stars' field, relative to the volume's width and depth.
+    private static let starSpread: Float = 1.1
+    private static let starLifeSpanVariation: TimeInterval = 0.4
+    private static let starSize: Float = 0.003
+    /// The spread of a star's size, relative to its size.
+    private static let starSizeVariation: Float = 0.5
+    /// Without twinkling a star lives this many cloud lifetimes.
+    private static let motionlessStarLifeSpanFactor: TimeInterval = 2
 }
 
 /// The 2D weather's images as particle textures, loaded once. `load(_:)` decodes them off the

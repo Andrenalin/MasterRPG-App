@@ -23,11 +23,7 @@ struct PlayListView: View {
             ForEach(model.playList) { audio in
                 HStack {
                     Button {
-                        if appGameStateModel.isGameRunning {
-                            networkActions?.game(root.gameController.requestPlay(id: audio.id), .playAudio, nil)
-                        } else {
-                            root.audioController.togglePlay(id: audio.id)
-                        }
+                        root.playOrRequest(id: audio.id, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                     } label: {
                         HStack {
                             Text(verbatim: audio.title)
@@ -35,7 +31,7 @@ struct PlayListView: View {
 
                             Spacer()
 
-                            Text(verbatim: PlayerTime(elapsedTime: audio.duration.seconds, remainingTime: 0).elapsedText)
+                            Text(verbatim: PlayerTime.formatted(time: audio.duration.seconds))
                                 .font(.caption)
                                 .bold()
                                 .monospaced()
@@ -45,11 +41,8 @@ struct PlayListView: View {
                     .borderLessTVButtonStyle()
 
                     Button(role: .destructive) {
-                        if appGameStateModel.isGameRunning && root.audioController.model.isPlaying && root.audioController.model.currentId == audio.id {
-                            networkActions?.game(root.gameController.requestPlay(id: audio.id), .playAudio, nil)
-                        }
                         withAnimation(reduceMotion ? nil : .default) {
-                            root.audioController.removeAudio(id: audio.id)
+                            root.remove(id: audio.id, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                         }
                     } label: {
                         Label {

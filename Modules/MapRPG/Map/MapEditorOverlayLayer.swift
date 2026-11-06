@@ -273,16 +273,22 @@ private struct MapPhotoViewportLayer: View {
     }
 }
 
-/// A point on the map as a popover source: a one-point rectangle in viewport coordinates.
-enum MapPhotoPopoverSource {
+/// A point as a popover source: a one-point rectangle in viewport coordinates.
+public enum MapPhotoPopoverSource {
+    /// The one-point rectangle around a point already in viewport coordinates; `nil` when the
+    /// point is not finite. Used by the camera-based 3D table, which projects its own points.
+    public static func rectangle(atViewportPoint point: CGPoint) -> CGRect? {
+        guard point.x.isFinite, point.y.isFinite else { return nil }
+        return CGRect(x: point.x - 0.5, y: point.y - 0.5, width: 1, height: 1)
+    }
+
+    /// The same for a point of the map's content.
     static func rectangle(
         for anchor: CGPoint,
         transform: ViewportTransform,
         geometry: ViewportGeometry
     ) -> CGRect? {
-        let center = geometry.viewportPoint(fromContent: anchor, transform: transform)
-        guard center.x.isFinite, center.y.isFinite else { return nil }
-        return CGRect(x: center.x - 0.5, y: center.y - 0.5, width: 1, height: 1)
+        rectangle(atViewportPoint: geometry.viewportPoint(fromContent: anchor, transform: transform))
     }
 }
 

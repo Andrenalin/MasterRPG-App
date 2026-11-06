@@ -373,7 +373,7 @@ struct MapEditorInteractionModelTests {
             isPlayer: true,
             players: [playerId],
             timeInterval: 123,
-            isZoom: true,
+            isPhotoShared: true,
             isDead: true,
             isHighlighted: true
         )

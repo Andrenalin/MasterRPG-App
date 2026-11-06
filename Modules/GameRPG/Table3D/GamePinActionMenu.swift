@@ -10,12 +10,27 @@ import SwiftUI
 // view over the pin's projection; the visionOS volume shows it as an attachment above the pin.
 
 #if os(visionOS)
+/// Reports an attachment's own height to the model, which raises the attachment by half of it
+/// so the arrow's tip, at the bottom of the view, ends at the target.
+private struct ReportsAttachmentHeight: ViewModifier {
+    let game: GameTableModel
+    let kind: TablePopoverKind
+
+    @Environment(\.physicalMetrics) private var physicalMetrics
+
+    func body(content: Content) -> some View {
+        content.onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { height in
+            game.attachmentHeightChanged(Float(physicalMetrics.convert(height, to: .meters)), for: kind)
+        }
+    }
+}
+
 /// The pin action popover as the table volume's "pin-menu" attachment.
 @MainActor
 struct GamePinActionMenu: View {
     let game: GameTableModel
-
-    @Environment(\.physicalMetrics) private var physicalMetrics
 
     var body: some View {
         if let pin = game.selectedPin, game.isGameMaster {
@@ -25,15 +40,7 @@ struct GamePinActionMenu: View {
                 onDismiss: { game.clearPinSelection() },
                 perform: { game.performSelectedPinAction($0) }
             )
-            // The model raises the attachment by half its height, so the arrow's tip, at the
-            // bottom of this view, ends at the pin.
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.size.height
-            } action: { height in
-                game.pinMenuAttachmentHeightChanged(
-                    Float(physicalMetrics.convert(height, to: .meters))
-                )
-            }
+            .modifier(ReportsAttachmentHeight(game: game, kind: .pinMenu))
         }
     }
 }
@@ -43,8 +50,6 @@ struct GamePinActionMenu: View {
 struct GamePinPhotoPopover: View {
     let game: GameTableModel
 
-    @Environment(\.physicalMetrics) private var physicalMetrics
-
     var body: some View {
         if let pin = game.photoPin {
             game.mapRoot.viewController.gamePinPhotoAttachment(
@@ -53,14 +58,7 @@ struct GamePinPhotoPopover: View {
                 onShowFullScreen: game.pinPhotoFullScreenAction,
                 onDismiss: { game.dismissPinPhoto() }
             )
-            // Raised by half its height, like the pin menu, so the arrow's tip ends at the pin.
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.size.height
-            } action: { height in
-                game.pinPhotoAttachmentHeightChanged(
-                    Float(physicalMetrics.convert(height, to: .meters))
-                )
-            }
+            .modifier(ReportsAttachmentHeight(game: game, kind: .pinPhoto))
         }
     }
 }
@@ -70,59 +68,62 @@ struct GamePinPhotoPopover: View {
 struct GameMapPhotoPopover: View {
     let game: GameTableModel
 
-    @Environment(\.physicalMetrics) private var physicalMetrics
-
     var body: some View {
         if let photo = game.mapPhoto, game.mapPhotoPosition != nil {
             game.mapRoot.viewController.gameMapPhotoAttachment(root: game.mapRoot, photo: photo)
-                // Raised by half its height, like the pin photo, so the arrow's tip ends at
-                // the anchor.
-                .onGeometryChange(for: CGFloat.self) { proxy in
-                    proxy.size.height
-                } action: { height in
-                    game.mapPhotoAttachmentHeightChanged(
-                        Float(physicalMetrics.convert(height, to: .meters))
-                    )
-                }
+                .modifier(ReportsAttachmentHeight(game: game, kind: .mapPhoto))
         }
     }
 }
 #else
-/// The pin action popover over the camera-based table. Fills the table view, whose coordinate
-/// space `GameTableModel.pinMenuSource` is in.
+/// A popover over the camera-based table. Fills the table view, whose coordinate space the
+/// popover's source is in. Shown once its target is projected into the table view, and faded in
+/// and out; following the target stays immediate. No fade with Reduce Motion. See
+/// CODE_AUDIT_21 §8.4.
+@MainActor
+private struct TablePopoverHost<Content: View>: View {
+    let game: GameTableModel
+    let kind: TablePopoverKind
+    /// What the popover belongs to when it is open: a pin's or the photo's id.
+    let itemId: UUID?
+    @ViewBuilder let content: (CGRect) -> Content
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let source = game.popoverSources[kind]
+        let presentedId = itemId == source?.id ? itemId : nil
+
+        ZStack(alignment: .topLeading) {
+            if presentedId != nil, let source {
+                content(source.frame)
+                    .transition(.opacity)
+            }
+        }
+        .animation(reduceMotion ? nil : .default, value: presentedId)
+    }
+}
+
+/// The game master's pin action popover over the camera-based table.
 @MainActor
 struct GamePinActionMenu: View {
     let game: GameTableModel
     let viewport: GameTableViewport
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// The pin the popover is open on: selected, and already projected into the table view.
-    private var presentedPin: MapPinModel? {
-        guard game.isGameMaster,
-              let pin = game.selectedPin,
-              game.pinMenuSource?.pinId == pin.id else { return nil }
-        return pin
-    }
-
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            if let pin = presentedPin, let source = game.pinMenuSource {
+        TablePopoverHost(game: game, kind: .pinMenu, itemId: game.popoverPinId(for: .pinMenu)) { frame in
+            if let pin = game.selectedPin {
                 game.mapRoot.viewController.gamePinActionPopover(
                     pin: pin,
-                    source: source.frame,
+                    source: frame,
                     viewportSize: viewport.size,
                     safeAreaInsets: viewport.safeAreaInsets,
                     showsBattleAction: game.canAddSelectedPinToBattleRound,
                     onDismiss: { game.clearPinSelection() },
                     perform: { game.performSelectedPinAction($0) }
                 )
-                .transition(.opacity)
             }
         }
-        // Fades the popover in and out; following the pin stays immediate. No fade with
-        // Reduce Motion. See CODE_AUDIT_21 §8.4.
-        .animation(reduceMotion ? nil : .default, value: presentedPin?.id)
     }
 }
 
@@ -132,31 +133,20 @@ struct GamePinPhotoPopover: View {
     let game: GameTableModel
     let viewport: GameTableViewport
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// The pin the popover is open on: already projected into the table view.
-    private var presentedPin: MapPinModel? {
-        guard let pin = game.photoPin,
-              game.pinPhotoSource?.pinId == pin.id else { return nil }
-        return pin
-    }
-
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            if let pin = presentedPin, let source = game.pinPhotoSource {
+        TablePopoverHost(game: game, kind: .pinPhoto, itemId: game.popoverPinId(for: .pinPhoto)) { frame in
+            if let pin = game.photoPin {
                 game.mapRoot.viewController.gamePinPhotoPopover(
                     root: game.mapRoot,
                     pin: pin,
-                    source: source.frame,
+                    source: frame,
                     viewportSize: viewport.size,
                     safeAreaInsets: viewport.safeAreaInsets,
                     onShowFullScreen: game.pinPhotoFullScreenAction,
                     onDismiss: { game.dismissPinPhoto() }
                 )
-                .transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : .default, value: presentedPin?.id)
     }
 }
 
@@ -167,29 +157,19 @@ struct GameMapPhotoPopover: View {
     let game: GameTableModel
     let viewport: GameTableViewport
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// The photo the popover shows: already projected into the table view.
-    private var presentedPhoto: MapPhotoPopoverItem? {
-        guard let photo = game.mapPhoto,
-              game.mapPhotoSource?.pinId == photo.itemId else { return nil }
-        return photo
-    }
-
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            if let photo = presentedPhoto, let source = game.mapPhotoSource {
+        let photo = game.mapPhoto
+        TablePopoverHost(game: game, kind: .mapPhoto, itemId: photo?.itemId) { frame in
+            if let photo {
                 game.mapRoot.viewController.gameMapPhotoPopover(
                     root: game.mapRoot,
                     photo: photo,
-                    source: source.frame,
+                    source: frame,
                     viewportSize: viewport.size,
                     safeAreaInsets: viewport.safeAreaInsets
                 )
-                .transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : .default, value: presentedPhoto?.itemId)
     }
 }
 

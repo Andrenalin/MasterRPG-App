@@ -8,10 +8,10 @@ import Testing
 @testable import GameRPG
 
 @Suite("Pin action popover source on the 3D table")
-struct TablePinMenuSourceTests {
+struct TablePopoverSourceTests {
     @Test("A box has eight distinct corners spanning its bounds")
     func boxCorners() {
-        let corners = TablePinMenuSource.corners(
+        let corners = TablePopoverSource.corners(
             min: SIMD3<Float>(-1, 0, 2),
             max: SIMD3<Float>(1, 0.5, 4)
         )
@@ -26,7 +26,7 @@ struct TablePinMenuSourceTests {
 
     @Test("The frame encloses every projected corner")
     func frameEnclosesProjectedCorners() {
-        let frame = TablePinMenuSource.frame(enclosing: [
+        let frame = TablePopoverSource.frame(enclosing: [
             CGPoint(x: 120, y: 80),
             CGPoint(x: 160, y: 95),
             CGPoint(x: 135, y: 60),
@@ -38,29 +38,29 @@ struct TablePinMenuSourceTests {
 
     @Test("A pin behind the camera or without a finite projection has no frame")
     func unprojectablePinHasNoFrame() {
-        #expect(TablePinMenuSource.frame(enclosing: []) == nil)
-        #expect(TablePinMenuSource.frame(enclosing: [CGPoint(x: 10, y: 10), nil]) == nil)
-        #expect(TablePinMenuSource.frame(enclosing: [CGPoint(x: 10, y: CGFloat.infinity)]) == nil)
-        #expect(TablePinMenuSource.frame(enclosing: [CGPoint(x: CGFloat.nan, y: 10)]) == nil)
+        #expect(TablePopoverSource.frame(enclosing: []) == nil)
+        #expect(TablePopoverSource.frame(enclosing: [CGPoint(x: 10, y: 10), nil]) == nil)
+        #expect(TablePopoverSource.frame(enclosing: [CGPoint(x: 10, y: CGFloat.infinity)]) == nil)
+        #expect(TablePopoverSource.frame(enclosing: [CGPoint(x: CGFloat.nan, y: 10)]) == nil)
     }
 
     @Test("Sub-point projection noise is not a visible change; movement and another pin are")
     func visibleChange() {
         let pinId = UUID()
-        let source = TablePinMenuSource(pinId: pinId, frame: CGRect(x: 100, y: 100, width: 40, height: 20))
+        let source = TablePopoverSource(id: pinId, frame: CGRect(x: 100, y: 100, width: 40, height: 20))
 
         #expect(source.differsVisibly(from: nil))
         #expect(!source.differsVisibly(from: source))
         #expect(!source.differsVisibly(
-            from: TablePinMenuSource(pinId: pinId, frame: CGRect(x: 100.2, y: 99.9, width: 40, height: 20))
+            from: TablePopoverSource(id: pinId, frame: CGRect(x: 100.2, y: 99.9, width: 40, height: 20))
         ))
         #expect(source.differsVisibly(
-            from: TablePinMenuSource(pinId: pinId, frame: CGRect(x: 101, y: 100, width: 40, height: 20))
+            from: TablePopoverSource(id: pinId, frame: CGRect(x: 101, y: 100, width: 40, height: 20))
         ))
         #expect(source.differsVisibly(
-            from: TablePinMenuSource(pinId: pinId, frame: CGRect(x: 100, y: 100, width: 42, height: 20))
+            from: TablePopoverSource(id: pinId, frame: CGRect(x: 100, y: 100, width: 42, height: 20))
         ))
-        #expect(source.differsVisibly(from: TablePinMenuSource(pinId: UUID(), frame: source.frame)))
+        #expect(source.differsVisibly(from: TablePopoverSource(id: UUID(), frame: source.frame)))
     }
 }
 #endif

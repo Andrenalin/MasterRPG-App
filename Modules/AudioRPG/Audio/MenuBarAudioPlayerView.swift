@@ -81,11 +81,7 @@ private struct MenuBarAudioTransportView: View {
             .disabled(!model.hasPrev)
 
             Button {
-                if let currentId = model.currentId, appGameStateModel.isGameRunning {
-                    networkActions?.game(root.gameController.requestPlay(id: currentId), .playAudio, nil)
-                } else {
-                    root.audioController.toggle()
-                }
+                root.togglePlayback(isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
             } label: {
                 Label {
                     if model.isPlaying {
@@ -206,11 +202,7 @@ private struct MenuBarAudioPlayListRow: View {
     var body: some View {
         HStack {
             Button {
-                if appGameStateModel.isGameRunning {
-                    networkActions?.game(root.gameController.requestPlay(id: audio.id), .playAudio, nil)
-                } else {
-                    root.audioController.togglePlay(id: audio.id)
-                }
+                root.playOrRequest(id: audio.id, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
             } label: {
                 HStack {
                     Image(systemName: "waveform")
@@ -232,11 +224,8 @@ private struct MenuBarAudioPlayListRow: View {
             .buttonStyle(.plain)
 
             Button(role: .destructive) {
-                if appGameStateModel.isGameRunning && root.audioController.model.isPlaying && isCurrent {
-                    networkActions?.game(root.gameController.requestPlay(id: audio.id), .playAudio, nil)
-                }
                 withAnimation(.default.reduced(if: reduceMotion)) {
-                    root.audioController.removeAudio(id: audio.id)
+                    root.remove(id: audio.id, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                 }
             } label: {
                 Label {

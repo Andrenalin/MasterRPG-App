@@ -8,23 +8,8 @@ import SwiftUI
 struct QuickDiceToggleField: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-#if os(tvOS)
         GameQuickDiceToggleButton()
-#elseif os(visionOS)
-        GameQuickDiceToggleButton()
-            .buttonStyle(.plain)
-            .imageScale(.large)
-            .padding(8)
-            .contentShape(.circle)
-            .glassBackgroundEffect(in: .circle)
-#else
-        GameQuickDiceToggleButton()
-            .buttonStyle(.plain)
-            .imageScale(.large)
-            .padding(8)
-            .contentShape(.circle)
-            .glassEffect(.regular.interactive(), in: .circle)
-#endif
+            .roundGameControl()
     }
 }
 

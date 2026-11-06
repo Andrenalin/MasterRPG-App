@@ -35,7 +35,7 @@ struct IOSGameOverlayControlField: View {
                 indicator: presentation.battleRoundIndicator
             )
 
-            if isMaster || root.gameModel.gameType == .player {
+            if root.offersTablePlayers(isMaster: isMaster) {
                 // The game master's players (also the per-player "send updates" switches the
                 // share button had), or a player's companions.
                 TablePlayersButton(root: root)

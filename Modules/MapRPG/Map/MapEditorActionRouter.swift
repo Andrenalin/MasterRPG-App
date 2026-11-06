@@ -73,8 +73,10 @@ final class MapEditorActionRouter {
     private func dismissPinPhoto() {
         guard let pinId = session.pins.photoPinId else { return }
         session.pins.setPhotoPinId(nil)
-        guard session.mapMode == .gameMaster,
-              session.pins.pinPointer(for: pinId)?.isZoom == true else { return }
+        guard MapPinPhotoSharing.dismissEndsSharing(
+            of: session.pins.pinPointer(for: pinId),
+            isGameMaster: session.mapMode == .gameMaster
+        ) else { return }
         setSharedPinPhoto(pinId: pinId, shown: false)
     }
 
@@ -261,20 +263,28 @@ final class MapEditorActionRouter {
         case .gameMaster:
             // The game master's photo is shown to everyone: the map state carries it, and
             // clears the photo of any other pin. A hidden pin's photo stays on this device.
-            guard let pin = session.pins.pinPointer(for: pinId) else { return }
-            let show = session.pins.photoPinId != pinId
-            if pin.isShown || pin.isZoom {
-                // Not for a pin inside an unrevealed room. See CODE_AUDIT_24 §6.2.
-                setSharedPinPhoto(pinId: pinId, shown: show && interactionMap.isPinVisibleToPlayers(pin))
-            }
-            session.pins.setPhotoPinId(show ? pinId : nil)
+            handlePinPhotoDoubleTap(pinId: pinId, isGameMaster: true)
         case .player:
             // Players only see the photos of pins that are on the map for them.
-            guard session.pins.pinPointer(for: pinId)?.isShown == true else { return }
-            session.pins.togglePhoto(pinId: pinId)
+            handlePinPhotoDoubleTap(pinId: pinId, isGameMaster: false)
         case .viewer:
             break
         }
+    }
+
+    /// A double tap on a pin opens or closes its photo; the rules are `MapPinPhotoSharing.doubleTap`.
+    private func handlePinPhotoDoubleTap(pinId: UUID, isGameMaster: Bool) {
+        guard let pin = session.pins.pinPointer(for: pinId),
+              let tap = MapPinPhotoSharing.doubleTap(
+                  on: pin,
+                  isGameMaster: isGameMaster,
+                  isPopoverOpen: session.pins.photoPinId == pinId,
+                  isVisibleToPlayers: interactionMap.isPinVisibleToPlayers(pin)
+              ) else { return }
+        if let shared = tap.sharedFlag {
+            setSharedPinPhoto(pinId: pinId, shown: shared)
+        }
+        session.pins.setPhotoPinId(tap.showsPopover ? pinId : nil)
     }
 
     private func handlePinMove(_ pin: MapPinModel, isPointer: Bool) {

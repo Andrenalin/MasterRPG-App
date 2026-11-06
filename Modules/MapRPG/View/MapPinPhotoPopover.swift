@@ -11,38 +11,8 @@ import SwiftUI
 //
 // Two ways to open it:
 // - local: a double tap on the pin, on this device only;
-// - shared: the game master's "Show Pin Photo" action sets the pin's `isZoom` flag (the field
+// - shared: the game master's "Show Pin Photo" action sets the pin's `isPhotoShared` flag (the field
 //   keeps its wire name), and every device that receives the change opens the popover.
-
-/// What a change of a pin's shared photo flag means for the popover on this device.
-public enum MapPinPhotoSharing {
-    public enum Change: Equatable, Sendable {
-        /// The game master started showing the photo: open the popover.
-        case show
-        /// The game master stopped showing it: close the popover.
-        case hide
-    }
-
-    /// The reaction to a pin's shared flag going from `wasShared` to `isShared`, `nil` when it
-    /// did not change. Only a change counts, so a pin that is already shared when a map opens
-    /// (a stale flag from an earlier session) does not pop up by itself.
-    public static func change(wasShared: Bool, isShared: Bool) -> Change? {
-        guard wasShared != isShared else { return nil }
-        return isShared ? .show : .hide
-    }
-
-    /// Edge length of the photo at the default text size, large enough to recognize a face
-    /// across the table. The popover's views scale it with Dynamic Type.
-    public static var photoSide: CGFloat {
-#if os(tvOS)
-        480
-#elseif os(macOS)
-        360
-#else
-        280
-#endif
-    }
-}
 
 /// The popover's content: the pin's photo with its name, Close and, during a game, Full Screen.
 struct MapPinPhotoPopoverContent: View {
@@ -114,7 +84,7 @@ struct MapPhotoPanelImage: View {
     let color: Color
     let accessibilityLabel: Text
 
-    @ScaledMetric(relativeTo: .body) private var photoSide = MapPinPhotoSharing.photoSide
+    @ScaledMetric(relativeTo: .body) private var photoSide = MapPhotoPanelLayout.photoSide
 
     var body: some View {
         // `AsyncThumbnail` switches to the full-size photo cache for a presentation this
@@ -139,7 +109,7 @@ struct MapPhotoPanel<Picture: View>: View {
     let onClose: () -> Void
     @ViewBuilder let picture: Picture
 
-    @ScaledMetric(relativeTo: .body) private var photoSide = MapPinPhotoSharing.photoSide
+    @ScaledMetric(relativeTo: .body) private var photoSide = MapPhotoPanelLayout.photoSide
 
     var body: some View {
         picture
@@ -200,9 +170,22 @@ private struct MapPhotoPanelControls: View {
     }
 }
 
+/// Sizes of the photo popover's panel.
 enum MapPhotoPanelLayout {
     /// The space between the picture's edge and its controls.
     static let padding: CGFloat = 8
+
+    /// Edge length of the photo at the default text size, large enough to recognize a face
+    /// across the table. The popover's views scale it with Dynamic Type.
+    static var photoSide: CGFloat {
+#if os(tvOS)
+        480
+#elseif os(macOS)
+        360
+#else
+        280
+#endif
+    }
 }
 
 /// A round button on the picture: Liquid Glass, a material on visionOS, where Liquid Glass is

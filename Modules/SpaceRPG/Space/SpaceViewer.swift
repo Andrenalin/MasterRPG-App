@@ -799,7 +799,7 @@ private extension SpaceViewer {
     /// `RealityView` scene (the previous approach) — means the button is
     /// governed by the *same* RealityKit scene graph as the model and tracks
     /// automatically as the anchor is re-parented (`applySharedPlacementIfNeeded`)
-    /// or the model is dragged, matching `GameTableModel.registerPinMenuAttachment`'s
+    /// or the model is dragged, matching `GameTableModel.registerAttachment(_:for:)`'s
     /// convention of parenting UI to a stable ancestor rather than the entity
     /// it labels, so drag/rotate/scale manipulation never distorts the button.
     ///

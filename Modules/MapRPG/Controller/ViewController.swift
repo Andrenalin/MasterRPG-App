@@ -153,10 +153,31 @@ public extension ViewController {
             .environment(root)
     }
 
-    /// Cross-module entry point: the game master's pin action popover for a map surface
-    /// other than the 2D canvas, GameRPG's camera-based 3D table. `source` is the pin's
-    /// frame inside a viewport of `viewportSize`; the returned view fills that viewport,
-    /// like the 2D canvas' own overlay layer. The caller performs the actions.
+    /// The one popover placement every cross-module popover shares, for a map surface other than
+    /// the 2D canvas, GameRPG's camera-based 3D table: `source` is the anchor's frame inside a
+    /// viewport of `viewportSize`; the returned view fills that viewport, like the 2D canvas'
+    /// own overlay layer. `root` is the environment the content reads, when it reads any.
+    @MainActor
+    private func gamePopover<Content: View>(
+        root: MapRootModel?,
+        source: CGRect,
+        viewportSize: CGSize,
+        safeAreaInsets: EdgeInsets,
+        onDismiss: @escaping @MainActor () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        MapPopover(
+            source: source,
+            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
+            onDismiss: onDismiss,
+            content: content
+        )
+        .environment(root)
+        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
+    }
+
+    /// Cross-module entry point: the game master's pin action popover. The caller performs the
+    /// actions.
     @MainActor
     func gamePinActionPopover(
         pin: MapPinModel,
@@ -167,11 +188,7 @@ public extension ViewController {
         onDismiss: @escaping @MainActor () -> Void,
         perform: @escaping @MainActor (MapPinButtonType) -> Void
     ) -> some View {
-        MapPopover(
-            source: source,
-            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
-            onDismiss: onDismiss
-        ) {
+        gamePopover(root: nil, source: source, viewportSize: viewportSize, safeAreaInsets: safeAreaInsets, onDismiss: onDismiss) {
             MapPinGameActionMenu(
                 pin: pin,
                 actions: Self.gamePinActions(showsBattleAction: showsBattleAction),
@@ -179,11 +196,9 @@ public extension ViewController {
                 perform: perform
             )
         }
-        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
     }
 
-    /// Cross-module entry point: the pin photo popover for a map surface other than the 2D
-    /// canvas, GameRPG's camera-based 3D table. Placed like `gamePinActionPopover`.
+    /// Cross-module entry point: the pin photo popover. Placed like `gamePinActionPopover`.
     @MainActor
     func gamePinPhotoPopover(
         root: MapRootModel,
@@ -194,20 +209,14 @@ public extension ViewController {
         onShowFullScreen: (@MainActor () -> Void)?,
         onDismiss: @escaping @MainActor () -> Void
     ) -> some View {
-        MapPopover(
-            source: source,
-            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
-            onDismiss: onDismiss
-        ) {
+        gamePopover(root: root, source: source, viewportSize: viewportSize, safeAreaInsets: safeAreaInsets, onDismiss: onDismiss) {
             MapPinPhotoPopoverContent(pin: pin, onShowFullScreen: onShowFullScreen, onClose: onDismiss)
         }
-        .environment(root)
-        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
     }
 
     /// Cross-module entry point: the photo the game master shows on the map (see
-    /// `MapPhotoPopoverModel`), for GameRPG's camera-based 3D table. `source` is the projected
-    /// anchor inside a viewport of `viewportSize`. Placed like `gamePinPhotoPopover`.
+    /// `MapPhotoPopoverModel`). `source` is the projected anchor
+    /// (`MapPhotoPopoverSource.rectangle(atViewportPoint:)`). Placed like `gamePinPhotoPopover`.
     @MainActor
     func gameMapPhotoPopover(
         root: MapRootModel,
@@ -217,19 +226,13 @@ public extension ViewController {
         safeAreaInsets: EdgeInsets
     ) -> some View {
         let popover = root.photoPopover
-        return MapPopover(
-            source: source,
-            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
-            onDismiss: { popover.close() }
-        ) {
+        return gamePopover(root: root, source: source, viewportSize: viewportSize, safeAreaInsets: safeAreaInsets, onDismiss: { popover.close() }) {
             MapPhotoPopoverContent(
                 item: photo,
                 onShowFullScreen: { popover.showFullScreen() },
                 onClose: { popover.close() }
             )
         }
-        .environment(root)
-        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
     }
 
     /// Cross-module entry point: shows a pin's photo full screen during a game, from a map
@@ -241,23 +244,33 @@ public extension ViewController {
     }
 
 #if os(visionOS)
-    /// The photo the game master shows on the map as a RealityKit attachment for the table
-    /// volume on visionOS, standing above its anchor like `gamePinPhotoAttachment`.
+    /// The one attachment every cross-module popover shares: the panel standing above its anchor
+    /// in the table volume, with the arrow's tip at the center of the view's bottom edge.
+    @MainActor
+    private func gameAttachment<Content: View>(
+        root: MapRootModel?,
+        onDismiss: @escaping @MainActor () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        MapPopoverAttachment(onDismiss: onDismiss, content: content)
+            .environment(root)
+    }
+
+    /// The photo the game master shows on the map as an attachment, like `gamePinPhotoAttachment`.
     @MainActor
     func gameMapPhotoAttachment(root: MapRootModel, photo: MapPhotoPopoverItem) -> some View {
         let popover = root.photoPopover
-        return MapPopoverAttachment(onDismiss: { popover.close() }) {
+        return gameAttachment(root: root, onDismiss: { popover.close() }) {
             MapPhotoPopoverContent(
                 item: photo,
                 onShowFullScreen: { popover.showFullScreen() },
                 onClose: { popover.close() }
             )
         }
-        .environment(root)
     }
 
-    /// The pin photo popover as a RealityKit attachment for the table volume on visionOS,
-    /// standing above the pin like `gamePinActionAttachment`.
+    /// The pin photo popover as an attachment, standing above the pin like
+    /// `gamePinActionAttachment`.
     @MainActor
     func gamePinPhotoAttachment(
         root: MapRootModel,
@@ -265,14 +278,12 @@ public extension ViewController {
         onShowFullScreen: (@MainActor () -> Void)?,
         onDismiss: @escaping @MainActor () -> Void
     ) -> some View {
-        MapPopoverAttachment(onDismiss: onDismiss) {
+        gameAttachment(root: root, onDismiss: onDismiss) {
             MapPinPhotoPopoverContent(pin: pin, onShowFullScreen: onShowFullScreen, onClose: onDismiss)
         }
-        .environment(root)
     }
 
-    /// The same popover as a RealityKit attachment for the table volume on visionOS: a row
-    /// above the pin, with the arrow's tip at the center of the view's bottom edge.
+    /// The pin action popover as an attachment: a row above the pin.
     @MainActor
     func gamePinActionAttachment(
         pin: MapPinModel,
@@ -280,7 +291,7 @@ public extension ViewController {
         onDismiss: @escaping @MainActor () -> Void,
         perform: @escaping @MainActor (MapPinButtonType) -> Void
     ) -> some View {
-        MapPopoverAttachment(onDismiss: onDismiss) {
+        gameAttachment(root: nil, onDismiss: onDismiss) {
             MapPinGameActionMenu(
                 pin: pin,
                 actions: Self.gamePinActions(showsBattleAction: showsBattleAction),

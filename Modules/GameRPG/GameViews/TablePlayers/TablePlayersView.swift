@@ -95,10 +95,8 @@ private struct TablePlayersList: View {
     let root: GameRoot
     let model: TablePlayersModel
 
-    @State private var showAttachments = true
-
     var body: some View {
-        @Bindable var gameModel = root.gameModel
+        let gameModel = root.gameModel
         let connected = gameModel.gameRoster.players
         let tablePlayers = gameModel.tablePlayers
 
@@ -155,9 +153,7 @@ private struct TablePlayersList: View {
                 Text("Each enabled Character gets a player pin on every shown map, like a joined player. A player who joins with the same Character takes over its pin.", bundle: .module)
             }
 
-            SharingOptionsSection(features: $gameModel.gameControl.features)
-            AttachmentSection(logController: root.logGameController, isExpanded: $showAttachments)
-            LogRowsSection(logController: root.logGameController)
+            LogSections(logController: root.logGameController)
         }
         .listStyle(.inset)
         .themedListSurface()
@@ -177,69 +173,42 @@ private struct ConnectedPlayerRow: View {
         }
         let isSharing = root.gameModel.gameControl.controls.first { $0.id == player.id }?.show ?? true
 
-        HStack {
-            root.characterRoot.viewController.playerAvatar(
-                for: isObserver ? nil : player.characterId,
-                placeholderSystemImage: isObserver ? "eye" : "person"
-            )
-
-            VStack(alignment: .leading) {
-                Text(verbatim: player.name)
-                Group {
-                    if !isSharing {
-                        Text("Updates paused", bundle: .module)
-                    } else if isObserver {
-                        Text("Observer", bundle: .module)
-                    } else if let characterName {
-                        Text("Player: \(characterName)", bundle: .module)
-                    } else {
-                        Text("Player", bundle: .module)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-                if hasPin {
-                    PinControllersCaption(root: root, pinId: player.id)
-                }
+        PlayerRowLayout(
+            root: root,
+            avatarCharacterId: isObserver ? nil : player.characterId,
+            placeholderSystemImage: isObserver ? "eye" : "person",
+            pinId: hasPin ? player.id : nil
+        ) {
+            Text(verbatim: player.name)
+        } status: {
+            if !isSharing {
+                Text("Updates paused", bundle: .module)
+            } else if isObserver {
+                Text("Observer", bundle: .module)
+            } else if let characterName {
+                Text("Player: \(characterName)", bundle: .module)
+            } else {
+                Text("Player", bundle: .module)
             }
-
-            Spacer(minLength: 0)
-
-            if hasPin {
-                PinControllersMenu(root: root, pinId: player.id)
-            }
-
+        } trailing: {
             Toggle(isOn: Binding {
                 isSharing
             } set: { show in
-                setSharing(show)
+                root.setSharing(show, for: player)
             }) {
                 Text("Send Updates", bundle: .module)
             }
             .labelsHidden()
         }
-        .accessibilityElement(children: .contain)
     }
 
     /// Only a player with a Character gets a pin; an observer never has one.
     private var hasPin: Bool {
         player.type == .player && player.characterId != nil
     }
-
-    /// The same path as the old share button: `resetPlayers()` then applies the change.
-    private func setSharing(_ show: Bool) {
-        var controls = root.gameModel.gameControl.controls
-        if let index = controls.firstIndex(where: { $0.id == player.id }) {
-            guard controls[index].show != show else { return }
-            controls[index].show = show
-        } else {
-            controls.append(SharingControlModel(id: player.id, name: player.name, show: show))
-        }
-        root.sharingControlActions.update?(controls)
-    }
 }
 
+/// A Character at the table, in the game master's list: its pin switch and its removal.
 private struct TablePlayerRow: View {
     let root: GameRoot
     let model: TablePlayersModel
@@ -250,42 +219,19 @@ private struct TablePlayerRow: View {
         let name = root.characterRoot.valueGameControllable.playerPinName(for: tablePlayer.characterId)
         let status = TablePlayerResolver.status(of: tablePlayer, roster: roster, characterExists: name != nil)
 
-        HStack {
-            root.characterRoot.viewController.playerAvatar(
-                for: tablePlayer.characterId,
-                placeholderSystemImage: "person"
-            )
-
-            VStack(alignment: .leading) {
-                CharacterNameText(name: name)
-                TablePlayerStatusText(status: status)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if status == .active || status == .disabled {
-                    PinControllersCaption(root: root, pinId: tablePlayer.id)
-                }
-            }
-
-            Spacer(minLength: 0)
-
-            if status == .active || status == .disabled {
-                PinControllersMenu(root: root, pinId: tablePlayer.id)
-            }
-
-            Toggle(isOn: Binding {
-                tablePlayer.isEnabled
-            } set: { isEnabled in
-                model.setEnabled(isEnabled, id: tablePlayer.id)
-            }) {
-                Text("Player Pin", bundle: .module)
-            }
-            .labelsHidden()
-            .disabled(status == .missing)
-
+        PlayerRowLayout(
+            root: root,
+            avatarCharacterId: tablePlayer.characterId,
+            placeholderSystemImage: "person",
+            pinId: status == .active || status == .disabled ? tablePlayer.id : nil
+        ) {
+            CharacterNameText(name: name)
+        } status: {
+            TablePlayerStatusText(status: status)
+        } trailing: {
+            TablePlayerPinToggle(model: model, player: tablePlayer, status: status)
             TablePlayerRemoveButton(model: model, id: tablePlayer.id)
         }
-        .accessibilityElement(children: .contain)
     }
 }
 
@@ -350,34 +296,19 @@ private struct CompanionRow: View {
         let name = root.characterRoot.valueGameControllable.playerPinName(for: companion.characterId)
         let status = TablePlayerResolver.status(of: companion, roster: roster, characterExists: name != nil)
 
-        HStack {
-            root.characterRoot.viewController.playerAvatar(
-                for: companion.characterId,
-                placeholderSystemImage: "person"
-            )
-
-            VStack(alignment: .leading) {
-                CharacterNameText(name: name)
-                TablePlayerStatusText(status: status)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-
-            Toggle(isOn: Binding {
-                companion.isEnabled
-            } set: { isEnabled in
-                model.setEnabled(isEnabled, id: companion.id)
-            }) {
-                Text("Player Pin", bundle: .module)
-            }
-            .labelsHidden()
-            .disabled(status == .missing)
-
+        PlayerRowLayout(
+            root: root,
+            avatarCharacterId: companion.characterId,
+            placeholderSystemImage: "person",
+            pinId: nil
+        ) {
+            CharacterNameText(name: name)
+        } status: {
+            TablePlayerStatusText(status: status)
+        } trailing: {
+            TablePlayerPinToggle(model: model, player: companion, status: status)
             TablePlayerRemoveButton(model: model, id: companion.id)
         }
-        .accessibilityElement(children: .contain)
     }
 }
 
@@ -393,38 +324,88 @@ private struct MasterCompanionRow: View {
         let name = root.characterRoot.valueGameControllable.playerPinName(for: companion.characterId)
         let status = TablePlayerResolver.status(of: companion, roster: roster, characterExists: name != nil)
 
+        PlayerRowLayout(
+            root: root,
+            avatarCharacterId: companion.characterId,
+            placeholderSystemImage: "person",
+            pinId: status == .active ? companion.id : nil
+        ) {
+            CharacterNameText(name: name)
+        } status: {
+            Text("Companion of \(owner.name)", bundle: .module)
+            if status == .missing {
+                // The player's package has not arrived yet.
+                Text("Waiting for the Character", bundle: .module)
+            } else if status != .active {
+                TablePlayerStatusText(status: status)
+            }
+        } trailing: {
+            EmptyView()
+        }
+    }
+}
+
+/// The row every list at the table shares: avatar, name, status lines, and, when the player
+/// has a pin on the map, who controls it. The kinds differ in their name, their status text and
+/// what sits at the trailing edge.
+private struct PlayerRowLayout<Name: View, Status: View, Trailing: View>: View {
+    let root: GameRoot
+    let avatarCharacterId: UUID?
+    let placeholderSystemImage: String
+    /// The pin's id when the player has one: shows its controllers.
+    let pinId: UUID?
+    @ViewBuilder let name: Name
+    @ViewBuilder let status: Status
+    @ViewBuilder let trailing: Trailing
+
+    var body: some View {
         HStack {
             root.characterRoot.viewController.playerAvatar(
-                for: companion.characterId,
-                placeholderSystemImage: "person"
+                for: avatarCharacterId,
+                placeholderSystemImage: placeholderSystemImage
             )
 
             VStack(alignment: .leading) {
-                CharacterNameText(name: name)
+                name
                 Group {
-                    Text("Companion of \(owner.name)", bundle: .module)
-                    if status == .missing {
-                        // The player's package has not arrived yet.
-                        Text("Waiting for the Character", bundle: .module)
-                    } else if status != .active {
-                        TablePlayerStatusText(status: status)
-                    }
+                    status
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                if status == .active {
-                    PinControllersCaption(root: root, pinId: companion.id)
+                if let pinId {
+                    PinControllersCaption(root: root, pinId: pinId)
                 }
             }
 
             Spacer(minLength: 0)
 
-            if status == .active {
-                PinControllersMenu(root: root, pinId: companion.id)
+            if let pinId {
+                PinControllersMenu(root: root, pinId: pinId)
             }
+
+            trailing
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// The "Player Pin" switch of a Character at the table or a companion.
+private struct TablePlayerPinToggle: View {
+    let model: TablePlayersModel
+    let player: TablePlayerModel
+    let status: TablePlayerStatus
+
+    var body: some View {
+        Toggle(isOn: Binding {
+            player.isEnabled
+        } set: { isEnabled in
+            model.setEnabled(isEnabled, id: player.id)
+        }) {
+            Text("Player Pin", bundle: .module)
+        }
+        .labelsHidden()
+        .disabled(status == .missing)
     }
 }
 

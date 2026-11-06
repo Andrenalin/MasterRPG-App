@@ -92,7 +92,7 @@ private struct CanonicalMapContent: Codable, Sendable {
                 canonicalPin.isShown = false
                 canonicalPin.size = .normal
                 canonicalPin.timeInterval = 0
-                canonicalPin.isZoom = false
+                canonicalPin.isPhotoShared = false
                 canonicalPin.isDead = false
                 canonicalPin.isHighlighted = false
                 // healthPercent is session-only battle-round state, recomputed

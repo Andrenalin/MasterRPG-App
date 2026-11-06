@@ -5,6 +5,12 @@ import CoreRPG
 import Foundation
 
 extension GameRoot {
+    /// Whether a screen offers the Players panel: the game master's player list, or a player's
+    /// companions. Observers and proxies have none. See CODE_AUDIT_24 §9.13.
+    func offersTablePlayers(isMaster: Bool) -> Bool {
+        isMaster || gameModel.gameType == .player
+    }
+
     /// Replaces the game master's table players: saves them to the adventure and gives the
     /// enabled ones player pins (or takes the pins of the others away) on every game map.
     func updateTablePlayers(_ tablePlayers: [TablePlayerModel]) {

@@ -58,15 +58,7 @@ extension PlayerController {
                 // A version the master already rejected several times is not announced again;
                 // the companions are. See CODE_AUDIT_21 §5.5.
                 if gameModel.mayAnnounceCharacter(version: reference.version) {
-                    // First advertise only the Character ID and deterministic version.
-                    // The master requests the full package only when its local version
-                    // differs. Value messages never use the SharePlay Journal.
-                    await send(
-                        type: .update,
-                        subType: .store,
-                        updated: reference,
-                        relayToProxyClients: false
-                    )
+                    await announce(reference)
                 } else {
                     isOwnAnnounced = false
                 }
@@ -101,12 +93,19 @@ extension PlayerController {
             guard root.characterRoot.valueGameControllable.playerPinName(for: companion.characterId) != nil else { continue }
             let reference = await root.characterRoot.gameControllable.share(id: companion.characterId)
             try Task.checkCancellation()
-            await send(
-                type: .update,
-                subType: .store,
-                updated: reference,
-                relayToProxyClients: false
-            )
+            await announce(reference)
         }
+    }
+
+    /// First advertises only the Character id and its deterministic version. The master requests
+    /// the full package only when its local version differs. Value messages never use the
+    /// SharePlay Journal.
+    private func announce(_ reference: NetworkCodableDataType) async {
+        await send(
+            type: .update,
+            subType: .store,
+            updated: reference,
+            relayToProxyClients: false
+        )
     }
 }

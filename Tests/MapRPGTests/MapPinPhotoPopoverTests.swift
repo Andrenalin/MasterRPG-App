@@ -29,7 +29,7 @@ struct MapPinPhotoPopoverTests {
 
         model.togglePhoto(pinId: pin.id)
         #expect(model.photoPinId == nil)
-        #expect(try #require(model.pinNode(for: pin.id)).pin.isZoom == false)
+        #expect(try #require(model.pinNode(for: pin.id)).pin.isPhotoShared == false)
     }
 
     @Test("The master's shared flag opens and closes the popover")
@@ -38,7 +38,7 @@ struct MapPinPhotoPopoverTests {
         let model = MapPinViewModel(mapPins: [pin], pointer: .empty)
 
         var shared = pin
-        shared.isZoom = true
+        shared.isPhotoShared = true
         model.setPinPointer(updatedPin: shared)
         #expect(model.photoPinId == pin.id)
 
@@ -49,7 +49,7 @@ struct MapPinPhotoPopoverTests {
     @Test("A full map sync opens the popover only for a changed flag")
     func reconcileOpensPopoverOnChangeOnly() {
         var staleShared = MapPinModel(id: UUID(), name: "Stale")
-        staleShared.isZoom = true
+        staleShared.isPhotoShared = true
         let other = MapPinModel(id: UUID(), name: "Other")
         let model = MapPinViewModel(mapPins: [staleShared, other], pointer: .empty)
         #expect(model.photoPinId == nil)
@@ -59,7 +59,7 @@ struct MapPinPhotoPopoverTests {
         #expect(model.photoPinId == nil)
 
         var nowShared = other
-        nowShared.isZoom = true
+        nowShared.isPhotoShared = true
         model.mapPins = [staleShared, nowShared]
         #expect(model.photoPinId == other.id)
 
@@ -72,7 +72,7 @@ struct MapPinPhotoPopoverTests {
         let pin = MapPinModel(id: UUID(), name: "Goblin")
         let model = MapPinViewModel(mapPins: [pin], pointer: .empty)
         var shared = pin
-        shared.isZoom = true
+        shared.isPhotoShared = true
         model.mapPins = [shared]
         #expect(model.photoPinId == pin.id)
 

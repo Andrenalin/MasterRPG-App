@@ -255,6 +255,19 @@ public final class GameRoot {
         }
     }
 
+    /// Pauses or resumes the updates the game master sends one device. Takes the same path as
+    /// the sharing controls: `resetPlayers()` then applies the change.
+    func setSharing(_ show: Bool, for player: PlayerGameModel) {
+        var controls = gameModel.gameControl.controls
+        if let index = controls.firstIndex(where: { $0.id == player.id }) {
+            guard controls[index].show != show else { return }
+            controls[index].show = show
+        } else {
+            controls.append(SharingControlModel(id: player.id, name: player.name, show: show))
+        }
+        sharingControlActions.update?(controls)
+    }
+
     public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions(id: .object(ObjectIdentifier(self))) { [weak self] in
         self?.gameModel.gameControl.features ?? GameFeatureModel()
     }

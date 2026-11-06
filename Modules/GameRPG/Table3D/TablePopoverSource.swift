@@ -5,10 +5,12 @@ import CoreGraphics
 import Foundation
 import simd
 
-/// Where the game master's pin action popover points on the camera-based table: the selected
-/// pin's frame in the table view's coordinate space. Pure, so it is unit-tested without RealityKit.
-struct TablePinMenuSource: Equatable {
-    let pinId: UUID
+/// Where a popover points on the camera-based table: the frame of what it belongs to (a pin,
+/// or the anchor of the map photo) in the table view's coordinate space. Pure, so it is
+/// unit-tested without RealityKit.
+struct TablePopoverSource: Equatable {
+    /// What the popover belongs to: a pin's id, or the shown photo's item id.
+    let id: UUID
     let frame: CGRect
 
     /// The eight corners of a box.
@@ -36,8 +38,8 @@ struct TablePinMenuSource: Equatable {
     /// Whether `other` is far enough from this source to be worth a view update. The source is
     /// recomputed every rendered frame; a resting camera must not invalidate the popover on
     /// sub-point projection noise.
-    func differsVisibly(from other: TablePinMenuSource?) -> Bool {
-        guard let other, other.pinId == pinId else { return true }
+    func differsVisibly(from other: TablePopoverSource?) -> Bool {
+        guard let other, other.id == id else { return true }
         return abs(frame.minX - other.frame.minX) >= Self.visibleChange
             || abs(frame.minY - other.frame.minY) >= Self.visibleChange
             || abs(frame.maxX - other.frame.maxX) >= Self.visibleChange

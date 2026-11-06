@@ -347,7 +347,7 @@ extension GameController {
             authorizedPin.mapId = itemId
         }
         // Highlight is the only shared interaction permitted on a visible foreign pin. All
-        // metadata and game-master state stay intact, `isZoom` included: it means "the game
+        // metadata and game-master state stay intact, `isPhotoShared` included: it means "the game
         // master shows this pin's photo to everyone" and only `setPinPhotoShown` writes it.
         authorizedPin.isHighlighted = incomingPin.isHighlighted
 
@@ -542,7 +542,7 @@ extension GameController {
             // A hidden pin shows no photo: the shared flag would stay behind and the next share
             // of this pin would change nothing.
             if !pin.isShown {
-                pin.isZoom = false
+                pin.isPhotoShared = false
             }
         }
     }
@@ -557,15 +557,15 @@ extension GameController {
         var changed = false
         for itemId in gameModel.items {
             let map = gameItem(for: itemId)
-            for pin in map.mapPins where pin.isZoom {
-                changed = updatePinState(itemId: itemId, pinId: pin.id) { $0.isZoom = false } || changed
+            for pin in map.mapPins where pin.isPhotoShared {
+                changed = updatePinState(itemId: itemId, pinId: pin.id) { $0.isPhotoShared = false } || changed
             }
         }
         return changed
     }
 
     /// Shows or hides a pin's photo to everyone, as the game master — carried in mapState by the
-    /// pin's `isZoom` flag, whose name predates the photo popover. Only one photo is shown at a
+    /// pin's `isPhotoShared` flag, whose name predates the photo popover. Only one photo is shown at a
     /// time: showing one turns the flag off on every other pin. Returns whether anything changed.
     @MainActor
     @discardableResult
@@ -574,12 +574,12 @@ extension GameController {
         guard let pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
         var changed = false
         if shown {
-            for other in item.mapPins where other.id != pinId && other.isZoom {
-                changed = updatePinState(itemId: itemId, pinId: other.id) { $0.isZoom = false } || changed
+            for other in item.mapPins where other.id != pinId && other.isPhotoShared {
+                changed = updatePinState(itemId: itemId, pinId: other.id) { $0.isPhotoShared = false } || changed
             }
         }
-        if pin.isZoom != shown {
-            changed = updatePinState(itemId: itemId, pinId: pinId) { $0.isZoom = shown } || changed
+        if pin.isPhotoShared != shown {
+            changed = updatePinState(itemId: itemId, pinId: pinId) { $0.isPhotoShared = shown } || changed
         }
         return changed
     }

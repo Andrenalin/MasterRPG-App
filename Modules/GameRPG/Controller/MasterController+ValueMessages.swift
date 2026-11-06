@@ -71,11 +71,9 @@ extension MasterController {
         }
 
         if model.data.data == nil {
-            let localVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
-            // Exact versions mean the master already owns this Character
-            // package. Silence is the successful response; only a mismatch
-            // asks the originating player for its potentially large package.
-            guard localVersion != model.data.version else {
+            // Silence is the successful response; only a version mismatch asks the originating
+            // player for its potentially large package.
+            guard await isCharacterOutOfDate(model, characterId: characterId) else {
                 root.mapRoot.mapGameControllable.setPlayerPin(
                     for: model.sender.id,
                     name: model.senderName,
@@ -87,33 +85,10 @@ extension MasterController {
             return model.data
         }
 
-        do {
-            // INTENDED (CODE_AUDIT_17 §6.1, won't fix): a player may overwrite its own existing
-            // Character on the master to update values; connections are already gated (PIN /
-            // GM-approved / SharePlay call), so do not restrict the primary id here.
-            // The package comes from a player: it may write that player's Character and
-            // items it introduces, never another item this device already owns.
-            // See CODE_AUDIT_15 §5.2. The policy's known gaps are accepted, see
-            // `PeerImportPolicy` (CODE_AUDIT_Folder §6.2, won't fix).
-            let policy = root.gameModel.peerImportPolicy(senderId: model.sender.id, primaryItemId: characterId)
-            try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data, policy: policy)
-            root.gameModel.recordPeerImport(policy, senderId: model.sender.id)
-        } catch {
-            // Previously this throw only reached the generic catch-all in
-            // `process(_:)`, which logs and sends nothing back — the player
-            // was left waiting with `hasSendPlayer` already latched true and
-            // no way to learn the import failed. Tell the player explicitly
-            // so it can clear that flag and retry `sendCharacter()`. See
-            // CODE_AUDIT_Network §5.24.
-            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-            await send(
-                type: .update,
-                subtype: .failed,
-                updated: NetworkCodableDataType(id: characterId, type: .value, version: model.data.version, data: nil),
-                playerId: model.sender.id
-            )
-            return nil
-        }
+        // INTENDED (CODE_AUDIT_17 §6.1, won't fix): a player may overwrite its own existing
+        // Character on the master to update values; connections are already gated (PIN /
+        // GM-approved / SharePlay call), so do not restrict the primary id here.
+        guard await importPeerCharacter(model, characterId: characterId) else { return nil }
         root.mapRoot.mapGameControllable.setPlayerPin(
             for: model.sender.id,
             name: model.senderName,
@@ -142,28 +117,44 @@ extension MasterController {
     /// item) and then gets its pin. Live value updates are not taken for companions.
     private func handleCompanionStore(_ model: GameNetworkModel, characterId: UUID) async throws -> NetworkCodableDataType? {
         guard model.data.data != nil else {
-            let localVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
-            return localVersion == model.data.version ? nil : model.data
+            return await isCharacterOutOfDate(model, characterId: characterId) ? model.data : nil
         }
+        guard await importPeerCharacter(model, characterId: characterId) else { return nil }
+        // The pin waited for the Character to exist here.
+        await resetPlayers()
+        return nil
+    }
+
+    /// Whether the sender's Character reference names another version than this device holds.
+    /// Exact versions mean the master already owns the package.
+    private func isCharacterOutOfDate(_ model: GameNetworkModel, characterId: UUID) async -> Bool {
+        let localVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
+        return localVersion != model.data.version
+    }
+
+    /// Imports a Character package from a player (its own Character or a companion): the sender
+    /// may write that Character and the items it introduces, never another item this device
+    /// already owns (CODE_AUDIT_15 §5.2; the policy's known gaps are accepted, see
+    /// `PeerImportPolicy`, CODE_AUDIT_Folder §6.2, won't fix). On failure the player is told
+    /// (`.failed`) so it can clear its "sent" flag and retry instead of waiting for a pin that
+    /// never comes (CODE_AUDIT_Network §5.24, CODE_AUDIT_24 §5.5): player Characters and
+    /// companions alike. Returns whether the import succeeded.
+    private func importPeerCharacter(_ model: GameNetworkModel, characterId: UUID) async -> Bool {
         do {
             let policy = root.gameModel.peerImportPolicy(senderId: model.sender.id, primaryItemId: characterId)
             try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data, policy: policy)
             root.gameModel.recordPeerImport(policy, senderId: model.sender.id)
+            return true
         } catch {
-            Logger.networking.error("MasterController: Failed to import companion package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-            // Like a failed Character: the player learns it and retries instead of waiting for
-            // a pin that never comes. See CODE_AUDIT_24 §5.5.
+            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             await send(
                 type: .update,
                 subtype: .failed,
                 updated: NetworkCodableDataType(id: characterId, type: .value, version: model.data.version, data: nil),
                 playerId: model.sender.id
             )
-            return nil
+            return false
         }
-        // The pin waited for the Character to exist here.
-        await resetPlayers()
-        return nil
     }
 
     /// Decodes, version-checks, and applies a `.valueUpdate` payload from a

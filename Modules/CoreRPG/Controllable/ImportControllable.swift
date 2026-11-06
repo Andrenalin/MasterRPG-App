@@ -41,8 +41,9 @@ struct ImportApplyPolicy: Sendable {
 /// See CODE_AUDIT_15 §5.2.
 ///
 /// Known gaps, accepted by design and never to be fixed (CODE_AUDIT_Folder §6.2): ids are not
-/// keyed by module, the cap is per package rather than per session, and a new folder's entries
-/// pointing at existing items are stripped only in game memory. Each needs a deliberately crafted
+/// keyed by module and the cap is per package rather than per session. (A new folder's entries
+/// pointing at items this device already owns are stripped everywhere, in the library as well
+/// as in game memory: see `admitFolders`.) Each gap needs a deliberately crafted
 /// package, and only players the game master knows can connect: SharePlay runs among FaceTime
 /// friends, a local-network game is played by people at the same table, and a public
 /// local-network game needs its join code.
@@ -571,7 +572,7 @@ private extension ImportControllable {
             guard let kept = keptChildIds[pair.folder.id],
                   let item = itemsById[pair.folder.id]
             else { return nil }
-            return (itemController.keepingEntries(of: item, childIds: kept), pair.folder.id)
+            return (itemController.folder(item, keepingChildIds: { kept.contains($0) }), pair.folder.id)
         }
     }
 
@@ -1008,6 +1009,7 @@ private extension ImportControllable {
 }
 
 private extension ItemControllable {
+    /// Whether the imported item is a folder.
     @MainActor
     func isFolderImport(_ item: ModelType) -> Bool {
         (item as? Model)?.category == .folder
@@ -1023,18 +1025,25 @@ private extension ItemControllable {
         )
     }
 
-    /// A copy of the folder with only the entries of `childIds`.
+    /// A copy of the folder with only the entries whose child passes `keep`. The one place a
+    /// folder's entries are filtered by child id, for peer admission and game-mode import alike.
     @MainActor
-    func keepingEntries(of item: ModelType, childIds: Set<UUID>) -> ModelType {
-        guard let folder = (item as? Model)?.copy() else { return item }
-        folder.entries.removeAll { !childIds.contains($0.childId) }
-        return folder
+    func folder(_ folder: Model, keepingChildIds keep: (UUID) -> Bool) -> Model {
+        let reduced = folder.copy()
+        reduced.entries.removeAll { !keep($0.childId) }
+        return reduced
+    }
+
+    /// The same for a decoded item of unknown type: anything but a folder is returned as is.
+    @MainActor
+    func folder(_ item: ModelType, keepingChildIds keep: (UUID) -> Bool) -> ModelType {
+        guard let folder = item as? Model else { return item }
+        return self.folder(folder, keepingChildIds: keep)
     }
 
     @MainActor
     func shouldDeferGameModeFolderImport(_ item: ModelType, writesGameMemory: Bool) -> Bool {
-        guard writesGameMemory, let imported = item as? Model else { return false }
-        return imported.category == .folder
+        writesGameMemory && isFolderImport(item)
     }
 
     @MainActor
@@ -1054,8 +1063,8 @@ private extension ItemControllable {
         }
 
         guard imported.category == .folder, !locallyReusedFileIds.isEmpty else { return imported }
-        imported.entries.removeAll { locallyReusedFileIds.contains($0.childId) }
-        return imported.entries.isEmpty ? nil : imported
+        let reduced = folder(imported, keepingChildIds: { !locallyReusedFileIds.contains($0) })
+        return reduced.entries.isEmpty ? nil : reduced
     }
 
     @MainActor

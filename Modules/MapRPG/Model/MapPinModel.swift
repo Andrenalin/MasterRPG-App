@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false, healthPercent: Double? = nil, mapId: UUID? = nil) {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isPhotoShared: Bool = false, isDead: Bool = false, isHighlighted: Bool = false, healthPercent: Double? = nil, mapId: UUID? = nil) {
         self.id = id
         self.name = name
         self.color = color
@@ -16,7 +16,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
         self.isPlayer = isPlayer
         self.players = players
         self.timeInterval = timeInterval
-        self.isZoom = isZoom
+        self.isPhotoShared = isPhotoShared
         self.isDead = isDead
         self.isHighlighted = isHighlighted
         self.healthPercent = healthPercent
@@ -95,7 +95,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public var isPlayer: Bool = false
     public var players: [UUID] = []
     public var timeInterval: TimeInterval = 0
-    public var isZoom: Bool = false
+    public var isPhotoShared: Bool = false
     public var isDead: Bool = false
     public var isHighlighted: Bool = false
     /// 0...100 health reading derived from the combatant's linked hit-points
@@ -131,7 +131,9 @@ extension MapPinModel: Codable {
         case isPlayer
         case players
         case timeInterval
-        case isZoom
+        /// Still `isZoom` on the wire and in saved data: the property was renamed when the zoom
+        /// feature became the shared pin photo. See CODE_AUDIT_24 §9.15.
+        case isPhotoShared = "isZoom"
         case isDead
         case isHighlighted
         case healthPercent
@@ -150,7 +152,7 @@ extension MapPinModel: Codable {
         try container.encode(isPlayer, forKey: .isPlayer)
         try container.encode(players, forKey: .players)
         try container.encode(timeInterval, forKey: .timeInterval)
-        try container.encode(isZoom, forKey: .isZoom)
+        try container.encode(isPhotoShared, forKey: .isPhotoShared)
         try container.encode(isDead, forKey: .isDead)
         try container.encode(isHighlighted, forKey: .isHighlighted)
         try container.encodeIfPresent(healthPercent, forKey: .healthPercent)
@@ -170,7 +172,7 @@ extension MapPinModel: Codable {
         isPlayer = try values.decodeIfPresent(Bool.self, forKey: .isPlayer) ?? false
         players = try values.decode([UUID].self, forKey: .players)
         timeInterval = try values.decode(TimeInterval.self, forKey: .timeInterval)
-        isZoom = try values.decodeIfPresent(Bool.self, forKey: .isZoom) ?? false
+        isPhotoShared = try values.decodeIfPresent(Bool.self, forKey: .isPhotoShared) ?? false
         isDead = try values.decodeIfPresent(Bool.self, forKey: .isDead) ?? false
         isHighlighted = try values.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
         healthPercent = try values.decodeIfPresent(Double.self, forKey: .healthPercent)

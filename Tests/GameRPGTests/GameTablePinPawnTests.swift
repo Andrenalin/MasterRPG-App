@@ -76,7 +76,7 @@ struct GameTablePinPawnTests {
         let originalPhoto = try #require(pawn.entity.findEntity(named: "PinPhotoPlane"))
 
         pin.size = .colossal
-        pin.isZoom = true
+        pin.isPhotoShared = true
         pawn.update(pin: pin, position: SIMD3<Float>(0.1, 0.03, -0.1), hiddenForMaster: false)
 
         #expect(pawn.entity.scale == SIMD3<Float>(repeating: 1))
@@ -92,15 +92,15 @@ struct GameTablePinPawnTests {
         let fixture = try await makeFixture(pin: pin, isGameMaster: true)
         let pawn = try #require(fixture.game.setup.pinPawns.first { $0.pinId == pin.id })
         let attachment = Entity()
-        fixture.game.registerPinMenuAttachment(attachment)
-        fixture.game.pinMenuAttachmentHeightChanged(0.06)
+        fixture.game.registerAttachment(attachment, for: .pinMenu)
+        fixture.game.attachmentHeightChanged(0.06, for: .pinMenu)
 
         // When
         fixture.game.pinTapped(pinId: pin.id)
 
         // Then: the anchor, at the arrow's tip, sits above the pawn; the attachment hangs
         // above it by half its own height.
-        let anchor = fixture.game.pinMenuPopover.entity
+        let anchor = fixture.game.popoverAnchors[.pinMenu].entity
         let expectedAnchorPosition = SIMD3<Float>(
             pawn.entity.position.x,
             pawn.entity.position.y + GameTableModel.pinMenuArrowTipHeight,
@@ -156,7 +156,7 @@ struct GameTablePinPawnTests {
         #expect(firstCall.data.id == fixture.liveMap.id)
         #expect(firstSentPin.id == pin.id)
         #expect(firstSentPin.isHighlighted)
-        #expect(!firstSentPin.isZoom)
+        #expect(!firstSentPin.isPhotoShared)
 
         // When: a double tap opens the photo on this device only.
         fixture.game.pinDoubleTapped(pinId: pin.id)
@@ -165,7 +165,7 @@ struct GameTablePinPawnTests {
         let unchangedPin = try #require(fixture.liveMap.mapPins.first { $0.id == pin.id })
         #expect(fixture.game.photoPinId == pin.id)
         #expect(unchangedPin.isHighlighted)
-        #expect(!unchangedPin.isZoom)
+        #expect(!unchangedPin.isPhotoShared)
         #expect(pawn.entity.scale == SIMD3<Float>(repeating: 1))
         #expect(fixture.networkSpy.calls.map(\.action) == [.mapPin])
 
@@ -192,7 +192,7 @@ struct GameTablePinPawnTests {
 
         // Then
         let updatedPin = try #require(fixture.liveMap.mapPins.first { $0.id == pin.id })
-        #expect(updatedPin.isZoom)
+        #expect(updatedPin.isPhotoShared)
         #expect(updatedPin.isDead)
         #expect(updatedPin.isHighlighted)
         #expect(!updatedPin.isShown)

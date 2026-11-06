@@ -8,7 +8,7 @@ import SwiftUI
 enum MapPinLayerKind {
     case ordinary
     case pointer
-    case zoomed
+    case photoShared
 }
 
 struct MapPinLayer: View {
@@ -42,8 +42,8 @@ struct MapPinLayer: View {
                 pinScale: pinScale,
                 viewportScale: viewportScale
             )
-        case .zoomed:
-            ForEach(pins.zoomedPinNodes) { node in
+        case .photoShared:
+            ForEach(pins.photoSharedPinNodes) { node in
                 MapPinLayerItem(
                     node: node,
                     displayMode: displayMode,

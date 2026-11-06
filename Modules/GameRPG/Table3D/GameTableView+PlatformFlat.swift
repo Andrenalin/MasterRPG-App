@@ -375,7 +375,7 @@ private struct GameTableRealityContent: View {
             }
     }
 
-    /// Keeps `GameTableModel.pinMenuSource` on the selected pin. The system's camera controls
+    /// Keeps `GameTableModel.popoverSources` on their targets (the selected pin, the photo pin, the map photo). The system's camera controls
     /// orbit and zoom without telling SwiftUI, so the pin is projected again on every rendered
     /// frame; the model publishes only a visible change.
     private func installPinMenuTracking(in content: RealityViewCameraContent) {
@@ -384,13 +384,7 @@ private struct GameTableRealityContent: View {
         // this view value, nor the content it renders into.
         _ = content.subscribe(to: SceneEvents.Update.self) { [weak game, weak projector] _ in
             guard let game, let content = projector?.content else { return }
-            game.updatePinMenuSource { position in
-                content.project(point: position, to: .local)
-            }
-            game.updatePinPhotoSource { position in
-                content.project(point: position, to: .local)
-            }
-            game.updateMapPhotoSource { position in
+            game.updatePopoverSources { position in
                 content.project(point: position, to: .local)
             }
         }

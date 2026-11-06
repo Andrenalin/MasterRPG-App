@@ -83,7 +83,7 @@ struct MapEditorCanvas: View {
             .overlay(alignment: .topLeading) {
                 // The player's fog-of-war. Sits above ordinary pins (hiding
                 // them when their room is unrevealed) but below the pointer
-                // and zoomed pins layered in next, matching the original
+                // and photo-shared pins layered in next, matching the original
                 // single-ZStack ordering.
                 MapRoomOverlayCanvas(
                     session: session,
@@ -96,7 +96,7 @@ struct MapEditorCanvas: View {
                 )
             }
             .overlay(alignment: .topLeading) {
-                MapLogicalCanvasPointerAndZoomedPins(
+                MapLogicalCanvasPointerAndPhotoSharedPins(
                     session: session,
                     viewportScale: displayedTransform.scale
                 )

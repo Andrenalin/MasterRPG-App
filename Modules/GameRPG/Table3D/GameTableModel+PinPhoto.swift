@@ -19,16 +19,19 @@ extension GameTableModel {
         guard let mapModel = currentMapModel(),
               pinId != mapModel.pointer.id,
               let pin = mapModel.mapPins.first(where: { $0.id == pinId }),
-              isGameMaster || pin.isShown,
-              setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
-        let show = photoPinId != pinId
-        if isGameMaster, pin.isShown || pin.isZoom {
-            // Not for a pin inside an unrevealed room. See CODE_AUDIT_24 §6.2.
-            setSharedPinPhoto(pinId: pinId, shown: show && mapModel.isPinVisibleToPlayers(pin))
+              setup.pinPawns.contains(where: { $0.pinId == pinId }),
+              let tap = MapPinPhotoSharing.doubleTap(
+                  on: pin,
+                  isGameMaster: isGameMaster,
+                  isPopoverOpen: photoPinId == pinId,
+                  isVisibleToPlayers: mapModel.isPinVisibleToPlayers(pin)
+              ) else { return }
+        if let shared = tap.sharedFlag {
+            setSharedPinPhoto(pinId: pinId, shown: shared)
         }
         // Read again: the sync above may have changed the pin's state.
         let current = currentMapModel()?.mapPins.first(where: { $0.id == pinId }) ?? pin
-        setPinPhoto(show ? current : nil)
+        setPinPhoto(tap.showsPopover ? current : nil)
     }
 
     /// Sets the shared photo flag of one pin (clearing it on all others when showing) and
@@ -53,10 +56,10 @@ extension GameTableModel {
         if let pin, selectedPinId == pin.id {
             clearPinSelection()
         }
-        updatePinPhotoAttachmentPosition()
+        updateAttachmentPosition(for: .pinPhoto)
 #if !os(visionOS)
-        if pin == nil, pinPhotoSource != nil {
-            pinPhotoSource = nil
+        if pin == nil {
+            clearPopoverSource(for: .pinPhoto)
         }
 #endif
     }
@@ -70,8 +73,10 @@ extension GameTableModel {
     func dismissPinPhoto() {
         guard let pinId = photoPinId else { return }
         clearPinPhoto()
-        guard isGameMaster,
-              currentMapModel()?.mapPins.first(where: { $0.id == pinId })?.isZoom == true else { return }
+        guard MapPinPhotoSharing.dismissEndsSharing(
+            of: currentMapModel()?.mapPins.first(where: { $0.id == pinId }),
+            isGameMaster: isGameMaster
+        ) else { return }
         setSharedPinPhoto(pinId: pinId, shown: false)
     }
 
@@ -97,7 +102,7 @@ extension GameTableModel {
     func updatePinPhotoState(mapModel: MapModel?) {
         let pins = mapModel?.mapPins ?? []
         var sharedNow = Set<UUID>()
-        for pin in pins where pin.isZoom {
+        for pin in pins where pin.isPhotoShared {
             sharedNow.insert(pin.id)
         }
         let previouslyShared = sharedPhotoPinIds
@@ -129,64 +134,8 @@ extension GameTableModel {
             return
         }
         photoPin = pin
-        updatePinPhotoAttachmentPosition()
+        updateAttachmentPosition(for: .pinPhoto)
     }
-
-    func updatePinPhotoAttachmentPosition(cachedPawn: PinPawn? = nil) {
-        guard photoPin != nil,
-              let photoPinId,
-              let pawn = cachedPawn ?? setup.pinPawns.first(where: { $0.pinId == photoPinId }) else {
-            pinPhotoPopover.hide()
-            return
-        }
-        let pinPosition = pawn.entity.position
-        pinPhotoPopover.show(at: SIMD3<Float>(
-            pinPosition.x,
-            pinPosition.y + Self.pinMenuArrowTipHeight,
-            pinPosition.z
-        ))
-    }
-
-    /// Registers the SwiftUI attachment used for the pin photo popover.
-    func registerPinPhotoAttachment(_ attachment: Entity) {
-        pinPhotoPopover.register(attachment, in: renderer.root)
-        updatePinPhotoAttachmentPosition()
-    }
-
-    func pinPhotoAttachmentHeightChanged(_ height: Float) {
-        pinPhotoPopover.attachmentHeightChanged(height)
-    }
-
-    func detachPinPhotoAttachment() {
-        pinPhotoPopover.detach()
-    }
-
-#if !os(visionOS)
-    /// Projects the photo pin into the table view for the photo popover. Runs every rendered
-    /// frame next to `updatePinMenuSource(project:)`.
-    func updatePinPhotoSource(project: (SIMD3<Float>) -> CGPoint?) {
-        guard photoPin != nil,
-              let photoPinId,
-              let pawn = setup.pinPawns.first(where: { $0.pinId == photoPinId }) else {
-            if pinPhotoSource != nil {
-                pinPhotoSource = nil
-            }
-            return
-        }
-        let bounds = pawn.entity.visualBounds(relativeTo: nil)
-        let corners = TablePinMenuSource.corners(min: bounds.min, max: bounds.max)
-        guard let frame = TablePinMenuSource.frame(enclosing: corners.map(project)) else {
-            if pinPhotoSource != nil {
-                pinPhotoSource = nil
-            }
-            return
-        }
-        let source = TablePinMenuSource(pinId: photoPinId, frame: frame)
-        if source.differsVisibly(from: pinPhotoSource) {
-            pinPhotoSource = source
-        }
-    }
-#endif
 }
 
 #endif

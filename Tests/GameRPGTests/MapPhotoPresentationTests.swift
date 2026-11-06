@@ -51,7 +51,7 @@ struct MapPhotoPresentationTests {
         let result1 = state.applyMaster(first)
         #expect(result1)
         #expect(state.mode == .popover)
-        #expect(state.popover == first)
+        #expect(state.presentation == first)
 
         let result2 = state.setLocal(.closed)
         #expect(result2)
@@ -65,7 +65,6 @@ struct MapPhotoPresentationTests {
         let result4 = state.applyMaster(first.changed(to: .fullScreen, sequence: 2))
         #expect(result4)
         #expect(state.mode == .fullScreen)
-        #expect(state.popover == nil)
     }
 
     @Test("An older master change is ignored; a restarted game counts again")

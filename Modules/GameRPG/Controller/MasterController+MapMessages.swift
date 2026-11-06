@@ -79,7 +79,7 @@ extension MasterController {
             playerId: model.sender.id
         ) {
             // `updatePinIfCurrentGeneration` never copies the sender's
-            // `healthPercent` (only location/isZoom/isHighlighted) —
+            // `healthPercent` (only location/isPhotoShared/isHighlighted) —
             // the master is the sole authority for it. Recomputing it
             // here (e.g. a player highlighting a new target) only
             // updates the master's own authoritative copy; without

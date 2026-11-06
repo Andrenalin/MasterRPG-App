@@ -50,7 +50,7 @@ struct GameToolbarContent: ToolbarContent {
                 .allowsHitTesting(false)
             }
 
-            if role == .master || root.gameModel.gameType == .player {
+            if root.offersTablePlayers(isMaster: role == .master) {
                 TablePlayersButton(root: root)
             }
 

@@ -105,8 +105,8 @@ final class MapPinViewModel {
     init(mapPins: [MapPinModel], pointer: MapPinModel) {
         let nodes = mapPins.map { MapPinNode(pin: $0) }
         mapPinNodes = nodes
-        ordinaryPinNodes = nodes.filter { !$0.pin.isZoom }
-        zoomedPinNodes = nodes.filter { $0.pin.isZoom }
+        ordinaryPinNodes = nodes.filter { !$0.pin.isPhotoShared }
+        photoSharedPinNodes = nodes.filter { $0.pin.isPhotoShared }
         pointerNode = MapPinNode(pin: pointer, isPointer: true)
         attachNodes()
     }
@@ -118,11 +118,11 @@ final class MapPinViewModel {
     /// A drag can therefore update one node without making the parent layer
     /// observe and filter every sibling pin.
     private(set) var ordinaryPinNodes: [MapPinNode]
-    private(set) var zoomedPinNodes: [MapPinNode]
+    private(set) var photoSharedPinNodes: [MapPinNode]
     private(set) var pointerNode: MapPinNode
     private var expandedId: UUID?
     /// The pin whose photo popover is open on this device. Local presentation state: a double
-    /// tap opens it for this device only, the game master's shared flag (`isZoom`) opens it
+    /// tap opens it for this device only, the game master's shared flag (`isPhotoShared`) opens it
     /// everywhere — see `MapPinPhotoSharing`.
     private(set) var photoPinId: UUID?
 
@@ -162,8 +162,8 @@ final class MapPinViewModel {
         if pointerNode.id == updatedPin.id {
             pointerNode.update(pin: updatedPin)
         } else if let node = pinNode(for: updatedPin.id) {
-            let layerChanged = node.pin.isZoom != updatedPin.isZoom
-            let photoChange = MapPinPhotoSharing.change(wasShared: node.pin.isZoom, isShared: updatedPin.isZoom)
+            let layerChanged = node.pin.isPhotoShared != updatedPin.isPhotoShared
+            let photoChange = MapPinPhotoSharing.change(wasShared: node.pin.isPhotoShared, isShared: updatedPin.isPhotoShared)
             node.update(pin: updatedPin)
             if layerChanged {
                 rebuildLayerNodes()
@@ -372,8 +372,8 @@ final class MapPinViewModel {
         var photoChanges: [(pinId: UUID, change: MapPinPhotoSharing.Change)] = []
         let reconciled = pins.map { pin in
             if let node = existingNodes.removeValue(forKey: pin.id) {
-                layerMembershipChanged = layerMembershipChanged || node.pin.isZoom != pin.isZoom
-                if let change = MapPinPhotoSharing.change(wasShared: node.pin.isZoom, isShared: pin.isZoom) {
+                layerMembershipChanged = layerMembershipChanged || node.pin.isPhotoShared != pin.isPhotoShared
+                if let change = MapPinPhotoSharing.change(wasShared: node.pin.isPhotoShared, isShared: pin.isPhotoShared) {
                     photoChanges.append((pin.id, change))
                 }
                 node.update(pin: pin)
@@ -418,13 +418,13 @@ final class MapPinViewModel {
     }
 
     private func rebuildLayerNodes() {
-        let ordinary = mapPinNodes.filter { !$0.pin.isZoom }
-        let zoomed = mapPinNodes.filter { $0.pin.isZoom }
+        let ordinary = mapPinNodes.filter { !$0.pin.isPhotoShared }
+        let photoShared = mapPinNodes.filter { $0.pin.isPhotoShared }
         if ordinary.map(\.id) != ordinaryPinNodes.map(\.id) {
             ordinaryPinNodes = ordinary
         }
-        if zoomed.map(\.id) != zoomedPinNodes.map(\.id) {
-            zoomedPinNodes = zoomed
+        if photoShared.map(\.id) != photoSharedPinNodes.map(\.id) {
+            photoSharedPinNodes = photoShared
         }
     }
 }

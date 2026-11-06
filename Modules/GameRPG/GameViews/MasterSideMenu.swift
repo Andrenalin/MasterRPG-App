@@ -15,11 +15,10 @@ struct MasterSideMenu: View {
             MasterModuleWindowMenu(adventureId: adventureId)
 
             // macOS has the button in the toolbar, iOS in the overlay's control field.
-            TablePlayersButton(root: root)
-                .imageScale(.large)
-                .padding(8)
-                .contentShape(.circle)
-                .modifier(GameWindowButtonAppearance(module: .value, isWindowPresented: false))
+            if root.offersTablePlayers(isMaster: true) {
+                TablePlayersButton(root: root)
+                    .roundGameControl(module: .value)
+            }
         }
 #else
         MasterModuleWindowMenu(adventureId: adventureId)

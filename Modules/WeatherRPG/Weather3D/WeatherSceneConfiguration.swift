@@ -122,11 +122,6 @@ struct WeatherSceneConfiguration: Equatable, Sendable {
         }
     }
 
-    /// Whether the configuration shows anything at all.
-    var isEmpty: Bool {
-        precipitationCount == 0 && cloudCount == 0 && starOpacity < Self.visibleOpacity && lightning == nil
-    }
-
     /// The 2D storm draws up to 1000 drops over a screen; the table's smaller volume needs fewer.
     static let precipitationScale = 0.6
     static let rainFallSpeed: Float = 1.6
@@ -137,26 +132,14 @@ struct WeatherSceneConfiguration: Equatable, Sendable {
     /// Below this the stars are not drawn.
     static let visibleOpacity: Float = 0.02
 
+    /// Clouds at once and their opacity come from the per-thickness table shared with 2D,
+    /// `Cloud.Thickness.look`.
     static func cloudsAtOnce(for thickness: Cloud.Thickness) -> Int {
-        switch thickness {
-        case .none: 0
-        case .thin: 2
-        case .light: 4
-        case .regular: 6
-        case .thick: 9
-        case .ultra: 12
-        }
+        thickness.look.tableCount
     }
 
     static func cloudAlpha(for thickness: Cloud.Thickness) -> Float {
-        switch thickness {
-        case .none: 0
-        case .thin: 0.35
-        case .light: 0.5
-        case .regular: 0.65
-        case .thick: 0.8
-        case .ultra: 0.9
-        }
+        thickness.look.tableOpacity
     }
 }
 

@@ -9,7 +9,7 @@ import Foundation
 // to everyone and wins over what a player or observer chose locally.
 
 /// How a photo or a weather shown over a map is presented.
-enum MapPhotoMode: Int, Codable, Sendable, CaseIterable {
+enum MapPhotoMode: Int, Codable, Sendable {
     /// In a popover on the map, pointing at `MapPhotoPresentation.anchor`.
     case popover
     /// In the full-screen photo viewer above the map.
@@ -53,11 +53,6 @@ struct MapPhotoPresentation: Codable, Sendable, Equatable, MessageMapper {
 /// What a device shows of a photo over a map: the presentation (the game master's, or one this
 /// device opened on its own from a pin) and the mode this device chose for it.
 struct MapPhotoPresentationState: Equatable, Sendable {
-    private struct MasterOrder: Equatable, Sendable {
-        let sessionId: UUID
-        let sequence: Int
-    }
-
     /// The presentation shown, `nil` when no photo is shown over a map.
     private(set) var presentation: MapPhotoPresentation?
     /// Whether this device opened the presentation on its own: a player's full-screen pin photo,
@@ -71,17 +66,11 @@ struct MapPhotoPresentationState: Equatable, Sendable {
     private(set) var fullScreenRequest = 0
     /// The game master's last applied change. Kept when the photo closes, so a late copy of an
     /// older change does not open it again.
-    private var lastMaster: MasterOrder?
+    private var masterGate = MasterSequenceGate()
 
     /// Whether a photo is shown over the map, in the popover or full screen.
     var isActive: Bool {
         presentation != nil && mode != .closed
-    }
-
-    /// The photo this device shows in the map popover, if any.
-    var popover: MapPhotoPresentation? {
-        guard mode == .popover else { return nil }
-        return presentation
     }
 
     /// Applies a presentation from the game master. Returns `false` for one that is not newer
@@ -89,12 +78,7 @@ struct MapPhotoPresentationState: Equatable, Sendable {
     /// local choice alone.
     @discardableResult
     mutating func applyMaster(_ newPresentation: MapPhotoPresentation) -> Bool {
-        if let lastMaster,
-           lastMaster.sessionId == newPresentation.sessionId,
-           newPresentation.sequence <= lastMaster.sequence {
-            return false
-        }
-        lastMaster = MasterOrder(sessionId: newPresentation.sessionId, sequence: newPresentation.sequence)
+        guard masterGate.accept(sessionId: newPresentation.sessionId, sequence: newPresentation.sequence) else { return false }
         presentation = newPresentation
         isLocal = false
         setMode(newPresentation.mode)
@@ -124,11 +108,6 @@ struct MapPhotoPresentationState: Equatable, Sendable {
         return presentation
     }
 
-    /// Whether the presentation shows this item.
-    func presents(_ module: NetworkModules, itemId: UUID) -> Bool {
-        pending(for: module, itemId: itemId) != nil
-    }
-
     /// Closes the presentation: a photo shown without a map, or another item shown. Keeps the
     /// game master's order.
     mutating func clear() {
@@ -140,7 +119,7 @@ struct MapPhotoPresentationState: Equatable, Sendable {
     /// Forgets everything: a lost connection or the end of the game.
     mutating func reset() {
         clear()
-        lastMaster = nil
+        masterGate.reset()
     }
 
     /// The presentation's item is current and the full-screen viewer shows it.

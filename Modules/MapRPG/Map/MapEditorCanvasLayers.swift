@@ -73,9 +73,9 @@ struct MapLogicalCanvasHitAndOrdinaryPins: View {
     }
 }
 
-/// The pointer and zoomed pins — sit above the fog-of-war overlay so they
+/// The pointer and the pins whose photo is shared — sit above the fog-of-war overlay so they
 /// stay visible even in an unrevealed room.
-struct MapLogicalCanvasPointerAndZoomedPins: View {
+struct MapLogicalCanvasPointerAndPhotoSharedPins: View {
     let session: MapEditorSession
     let viewportScale: CGFloat
 
@@ -96,7 +96,7 @@ struct MapLogicalCanvasPointerAndZoomedPins: View {
 
                 MapPinLayer(
                     pins: session.pins,
-                    kind: .zoomed,
+                    kind: .photoShared,
                     displayMode: session.displayMode,
                     mapMode: session.mapMode,
                     playerPinId: session.playerPinId,

@@ -39,11 +39,10 @@ final class MasterControllerModel {
     /// content version is preceded by the content: revealing a room changes what the players
     /// may read of it, and only the content update carries that text.
     var sentMapContentVersions: [UUID: Int] = [:]
-    /// Orders the game master's map photo changes. The presentation itself lives in the game
-    /// master's own screen state. See `MasterController+MapPhoto.swift`.
-    private var mapPhotoSequence = 0
-    /// Orders the game master's table weather changes. See `MasterController+TableWeather.swift`.
-    private var tableWeatherSequence = 0
+    /// Orders the game master's map photo changes (the presentation itself lives in the game
+    /// master's own screen state, see `MasterController+MapPhoto.swift`) and table weather
+    /// changes (see `MasterController+TableWeather.swift`).
+    private var sequences = MasterSequenceSource()
     private var lastAudioListCounters: [UUID: Int] = [:]
     private var lastPhotoListCounters: [UUID: Int] = [:]
     private var lastPdfListCounters: [UUID: Int] = [:]
@@ -139,14 +138,12 @@ final class MasterControllerModel {
 
     /// The sequence of the game master's next table weather change.
     func nextTableWeatherSequence() -> Int {
-        tableWeatherSequence += 1
-        return tableWeatherSequence
+        sequences.next(.tableWeather)
     }
 
     /// The sequence of the game master's next map photo change.
     func nextMapPhotoSequence() -> Int {
-        mapPhotoSequence += 1
-        return mapPhotoSequence
+        sequences.next(.mapPhoto)
     }
 
     /// Reserves the next counter atomically. Reading and incrementing in separate

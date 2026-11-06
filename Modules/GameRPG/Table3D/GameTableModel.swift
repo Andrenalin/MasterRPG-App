@@ -159,37 +159,26 @@ final class GameTableModel: Sendable {
     /// not represented here because multiple shared pins may be highlighted.
     var selectedPinId: UUID?
     var selectedPin: MapPinModel?
-    /// Where the pin action popover stands as a RealityKit attachment, on visionOS.
-    let pinMenuPopover = TablePopoverAnchor(name: "PinMenuAnchor")
+    /// Where each popover (pin menu, pin photo, map photo) stands as a RealityKit attachment,
+    /// on visionOS. See `GameTableModel+Popovers.swift`.
+    let popoverAnchors = TablePopoverAnchors()
 #if !os(visionOS)
-    /// The selected pin's frame in the table view, which the pin action popover points at.
-    /// Recomputed every rendered frame, because the system's camera controls move the camera
-    /// without telling SwiftUI.
-    var pinMenuSource: TablePinMenuSource?
+    /// Where each open popover points: its target's frame in the table view. Recomputed every
+    /// rendered frame, because the system's camera controls move the camera without telling
+    /// SwiftUI.
+    var popoverSources: [TablePopoverKind: TablePopoverSource] = [:]
 #endif
     /// The pin whose photo popover is open on this table, and that pin's state. Local
     /// presentation state, like the pin menu selection: a double tap opens it on this device
-    /// only, the game master's shared flag (`isZoom`) opens it on every device.
+    /// only, the game master's shared flag (`isPhotoShared`) opens it on every device.
     var photoPinId: UUID?
     var photoPin: MapPinModel?
     /// Pins whose photo the game master was showing at the last sync, so that only a change of
     /// the flag opens or closes the popover. See `MapPinPhotoSharing`.
     var sharedPhotoPinIds: Set<UUID> = []
-    /// Where the photo popover stands as a RealityKit attachment, on visionOS.
-    let pinPhotoPopover = TablePopoverAnchor(name: "PinPhotoAnchor")
-#if !os(visionOS)
-    /// The photo pin's frame in the table view, which the photo popover points at.
-    var pinPhotoSource: TablePinMenuSource?
-#endif
     /// Where the photo the game master shows on the map points, in the pin container's space.
     /// See `GameTableModel+MapPhoto.swift`.
     var mapPhotoPosition: SIMD3<Float>?
-    /// Where the map photo popover stands as a RealityKit attachment, on visionOS.
-    let mapPhotoPopover = TablePopoverAnchor(name: "MapPhotoAnchor")
-#if !os(visionOS)
-    /// The map photo's anchor in the table view, which its popover points at.
-    var mapPhotoSource: TablePinMenuSource?
-#endif
     /// Resolved once per drag gesture by `pinDragChanged(pinId:position:)` and cleared by
     /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns`.
     var cachedDragPawn: (pinId: UUID, pawn: PinPawn)?

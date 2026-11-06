@@ -9,31 +9,6 @@ import Testing
 @MainActor
 @Suite(.serialized, .snapshots, .tags(.snapshot))
 struct CoreRPGDynamicPreviewSnapshotTests {
-    // snapshot-root: CoreRPG::ControlSharingView
-    @Test("ControlSharingView")
-    func controlSharingView() {
-        let controls = [
-            SharingControlModel(id: .fixture1, name: "Mega", show: true)
-        ]
-
-        assertCoreSnapshot("ControlSharingView") {
-            NavigationStack {
-                Color.blue
-                    .toolbar {
-                        ControlSharingView(alignment: .bottomTrailing, action: {})
-                            .environment(
-                                \.sharingControlActions,
-                                SharingControlActions(
-                                    control: { controls },
-                                    update: { _ in }
-                                )
-                            )
-                    }
-            }
-            .environment(AppGameStateModel())
-        }
-    }
-
     // snapshot-root: CoreRPG::QuickEditorButtonView
     @Test("QuickEditorButtonView")
     func quickEditorButtonView() {

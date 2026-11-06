@@ -154,7 +154,7 @@ struct WeatherSceneConfigurationTests {
 
         effect.hide()
         #expect(effect.entity.children.isEmpty)
-        #expect(!effect.isShowing)
+        #expect(effect.configuration == nil)
     }
 
     @Test("A clear day shows only its clouds; a table without room for clouds shows none")
@@ -169,7 +169,7 @@ struct WeatherSceneConfigurationTests {
             in: WeatherVolume(width: 1, depth: 1.5, floorY: 0, height: 0.5, cloudOpacityLimit: 0)
         )
         #expect(effect.entity.children.isEmpty)
-        #expect(effect.isShowing)
+        #expect(effect.configuration != nil)
     }
 
     @Test("A weather removed while its textures load is never built")
@@ -179,7 +179,7 @@ struct WeatherSceneConfigurationTests {
         effect.hide()
         await effect.waitForBuild()
         #expect(effect.entity.children.isEmpty)
-        #expect(!effect.isShowing)
+        #expect(effect.configuration == nil)
     }
 
     @Test("The weather's model and the viewer's settings build the same configuration")

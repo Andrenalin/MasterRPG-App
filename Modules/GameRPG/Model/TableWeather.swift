@@ -27,16 +27,11 @@ struct TableWeatherPresentation: Codable, Sendable, Equatable, MessageMapper {
 /// What a device draws on its 3D table: the game master's last table weather, once this device
 /// holds that weather. The game master names it before its reveal arrives.
 struct TableWeatherState: Equatable, Sendable {
-    private struct MasterOrder: Equatable, Sendable {
-        let sessionId: UUID
-        let sequence: Int
-    }
-
     /// The game master's last applied change, `nil` before the first.
     private(set) var presentation: TableWeatherPresentation?
     /// The weather the table draws: the shown one, as soon as this device holds it.
     private(set) var visibleWeatherId: UUID?
-    private var lastMaster: MasterOrder?
+    private var masterGate = MasterSequenceGate()
 
     /// The weather the game master shows on the table, also while it is still on its way.
     var shownWeatherId: UUID? {
@@ -49,12 +44,7 @@ struct TableWeatherState: Equatable, Sendable {
     /// - Parameter isHeld: whether this device already holds the weather.
     @discardableResult
     mutating func applyMaster(_ newPresentation: TableWeatherPresentation, isHeld: Bool) -> Bool {
-        if let lastMaster,
-           lastMaster.sessionId == newPresentation.sessionId,
-           newPresentation.sequence <= lastMaster.sequence {
-            return false
-        }
-        lastMaster = MasterOrder(sessionId: newPresentation.sessionId, sequence: newPresentation.sequence)
+        guard masterGate.accept(sessionId: newPresentation.sessionId, sequence: newPresentation.sequence) else { return false }
         presentation = newPresentation
         visibleWeatherId = newPresentation.isShown && isHeld ? newPresentation.weatherId : nil
         return true
@@ -70,6 +60,6 @@ struct TableWeatherState: Equatable, Sendable {
     mutating func reset() {
         presentation = nil
         visibleWeatherId = nil
-        lastMaster = nil
+        masterGate.reset()
     }
 }

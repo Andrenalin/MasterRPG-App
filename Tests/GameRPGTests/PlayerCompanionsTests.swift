@@ -323,6 +323,20 @@ struct PlayerCompanionsTests {
         #expect(merged.name == "Alpha", "what the player changed comes along")
     }
 
+    @Test("Only the game master and players are offered the Players panel (§9.13)")
+    func playersPanelIsOfferedByRole() async throws {
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        let root = env.playerRoot
+        let id = env.playerGameConfig.id
+
+        #expect(root.offersTablePlayers(isMaster: true))
+        #expect(root.offersTablePlayers(isMaster: false), "the roster entry is a player")
+        root.gameModel.gameRoster.players = [PlayerGameModel(id: id, type: .observer, name: "Eye")]
+        #expect(!root.offersTablePlayers(isMaster: false))
+        root.gameModel.gameRoster.players = [PlayerGameModel(id: id, type: .proxy, name: "Mirror")]
+        #expect(!root.offersTablePlayers(isMaster: false))
+    }
+
     @Test("The sender carries the allowed companions, and nothing when there are none")
     func senderCoding() throws {
         let companions = (0..<PlayerGameModel.maximumCompanions).map { _ in TablePlayerModel(characterId: UUID()) }

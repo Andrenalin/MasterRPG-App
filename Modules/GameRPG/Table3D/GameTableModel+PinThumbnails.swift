@@ -84,25 +84,6 @@ extension GameTableModel {
         return isGameMaster
             || mapModel.mapPins.first(where: { $0.id == pinId })?.isControlled(by: playerPinId) == true
     }
-
-    /// Registers the SwiftUI attachment used for the game-master pin menu. See
-    /// `TablePopoverAnchor` for how it stands on the table and why a stale attachment is
-    /// discarded first.
-    func registerPinMenuAttachment(_ attachment: Entity) {
-        pinMenuPopover.register(attachment, in: renderer.root)
-        updatePinMenuAttachmentPosition()
-    }
-
-    /// The attachment view reports its own height, in meters, whenever its layout changes.
-    func pinMenuAttachmentHeightChanged(_ height: Float) {
-        pinMenuPopover.attachmentHeightChanged(height)
-    }
-
-    /// Detaches the pin-menu SwiftUI attachment from the persisted table root before its owning
-    /// `RealityView`/window tears down — see `TablePopoverAnchor.detach()`.
-    func detachPinMenuAttachment() {
-        pinMenuPopover.detach()
-    }
 }
 
 #endif

@@ -14,7 +14,7 @@ import Testing
 struct PinPhotoShareAndPlacementTests {
     // MARK: - §5.3 A player's pin move cannot change the shared photo flag
 
-    @Test("A player pin move never changes isZoom, neither turning it off nor on")
+    @Test("A player pin move never changes isPhotoShared, neither turning it off nor on")
     func playerMoveKeepsIsZoom() async throws {
         let fixture = try await makeFixture(playerCount: 2)
         let mover = fixture.playerIds[0]
@@ -25,27 +25,27 @@ struct PinPhotoShareAndPlacementTests {
         // A stale `false` with a newer timestamp moves the pin but leaves the shared photo open.
         #expect(fixture.sut.updatePin(
             itemId: fixture.map.id,
-            data: move(mover, to: CGPoint(x: 300, y: 200), isZoom: false),
+            data: move(mover, to: CGPoint(x: 300, y: 200), isPhotoShared: false),
             playerId: mover
         ))
         var pin = try #require(fixture.pin(mover))
         #expect(pin.location == CGPoint(x: 300, y: 200))
-        #expect(pin.isZoom)
+        #expect(pin.isPhotoShared)
 
         // A `true` from a player cannot open a photo on a pin the game master did not share.
         #expect(fixture.sut.updatePin(
             itemId: fixture.map.id,
-            data: move(other, to: CGPoint(x: 310, y: 210), isZoom: true),
+            data: move(other, to: CGPoint(x: 310, y: 210), isPhotoShared: true),
             playerId: other
         ))
         pin = try #require(fixture.pin(other))
         #expect(pin.location == CGPoint(x: 310, y: 210))
-        #expect(!pin.isZoom)
+        #expect(!pin.isPhotoShared)
 
         // A message that only carries the flag changes nothing at all.
         #expect(!fixture.sut.updatePin(
             itemId: fixture.map.id,
-            data: move(other, to: CGPoint(x: 310, y: 210), isZoom: true, offset: 5),
+            data: move(other, to: CGPoint(x: 310, y: 210), isPhotoShared: true, offset: 5),
             playerId: other
         ))
     }
@@ -100,6 +100,22 @@ struct PinPhotoShareAndPlacementTests {
         #expect(fixture.pin(monster.id) == monster)
     }
 
+    // MARK: - §9.15 The renamed flag keeps its wire name
+
+    @Test("isPhotoShared is still written and read as isZoom")
+    func photoSharedFlagKeepsItsWireName() throws {
+        var pin = MapPinModel(id: UUID(), name: "Ogre")
+        pin.isPhotoShared = true
+        let json = try #require(String(data: JSONEncoder().encode(pin), encoding: .utf8))
+        #expect(json.contains("\"isZoom\":true"))
+        #expect(!json.contains("isPhotoShared"))
+
+        // A pin saved or sent by a build before the rename.
+        let legacy = try #require(json.replacingOccurrences(of: "\"isZoom\":true", with: "\"isZoom\":false").data(using: .utf8))
+        #expect(try JSONDecoder().decode(MapPinModel.self, from: legacy).isPhotoShared == false)
+        #expect(try JSONDecoder().decode(MapPinModel.self, from: JSONEncoder().encode(pin)).isPhotoShared)
+    }
+
     // MARK: - §5.4 A shared photo ends with the map or the pin
 
     @Test("Hiding a pin ends its shared photo")
@@ -113,7 +129,7 @@ struct PinPhotoShareAndPlacementTests {
 
         let pin = try #require(fixture.pin(pinId))
         #expect(!pin.isShown)
-        #expect(!pin.isZoom)
+        #expect(!pin.isPhotoShared)
         // Shown again, the next share is a change and goes out.
         #expect(fixture.sut.togglePin(itemId: fixture.map.id, pinId: pinId))
         #expect(fixture.sut.setPinPhotoShown(itemId: fixture.map.id, pinId: pinId, shown: true))
@@ -130,8 +146,8 @@ struct PinPhotoShareAndPlacementTests {
 
         #expect(fixture.sut.clearSharedPinPhotos())
 
-        #expect(fixture.sut.gameItem(for: fixture.map.id).mapPins.allSatisfy { !$0.isZoom })
-        #expect(fixture.sut.gameItem(for: fixture.otherMap.id).mapPins.allSatisfy { !$0.isZoom })
+        #expect(fixture.sut.gameItem(for: fixture.map.id).mapPins.allSatisfy { !$0.isPhotoShared })
+        #expect(fixture.sut.gameItem(for: fixture.otherMap.id).mapPins.allSatisfy { !$0.isPhotoShared })
         #expect(!fixture.sut.clearSharedPinPhotos())
         // The share after the clear is a real change again.
         #expect(fixture.sut.setPinPhotoShown(itemId: fixture.map.id, pinId: pinId, shown: true))
@@ -140,12 +156,12 @@ struct PinPhotoShareAndPlacementTests {
     @Test("Save Game does not export a shared pin photo")
     func saveAllStripsIsZoom() async throws {
         let fixture = try await makeFixture(playerCount: 0)
-        let monster = MapPinModel(id: UUID(), name: "Goblin", location: CGPoint(x: 120, y: 120), isShown: true, isZoom: true)
+        let monster = MapPinModel(id: UUID(), name: "Goblin", location: CGPoint(x: 120, y: 120), isShown: true, isPhotoShared: true)
         fixture.map.mapPins = [monster]
 
         _ = fixture.sut.saveAll()
 
-        #expect(fixture.sut.gameItem(for: fixture.map.id).mapPins.allSatisfy { !$0.isZoom })
+        #expect(fixture.sut.gameItem(for: fixture.map.id).mapPins.allSatisfy { !$0.isPhotoShared })
     }
 
     // MARK: - §5.8 Placement
@@ -247,7 +263,7 @@ private extension PinPhotoShareAndPlacementTests {
         )
     }
 
-    func move(_ pinId: UUID, to location: CGPoint, isZoom: Bool, offset: TimeInterval = 1) -> Data? {
+    func move(_ pinId: UUID, to location: CGPoint, isPhotoShared: Bool, offset: TimeInterval = 1) -> Data? {
         MapPinModel(
             id: pinId,
             name: "Hero",
@@ -255,7 +271,7 @@ private extension PinPhotoShareAndPlacementTests {
             isPlayer: true,
             players: [pinId],
             timeInterval: Date.now.timeIntervalSince1970 + offset,
-            isZoom: isZoom
+            isPhotoShared: isPhotoShared
         ).encodeData()
     }
 }

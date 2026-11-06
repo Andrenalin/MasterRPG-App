@@ -116,14 +116,14 @@ struct MapEditorPlayerPinMessageFlowTests {
             fixture.liveMap.mapPins.first { $0.id == hiddenId }
         )
         #expect(updatedVisible.isHighlighted)
-        #expect(!updatedVisible.isZoom)
+        #expect(!updatedVisible.isPhotoShared)
         #expect(!unchangedHidden.isHighlighted)
-        #expect(!unchangedHidden.isZoom)
+        #expect(!unchangedHidden.isPhotoShared)
         #expect(fixture.updateSpy.pinIds == [visibleId])
         #expect(fixture.session.pins.photoPinId == visibleId)
         let highlightedPayload = try fixture.updateSpy.decodedPin(at: 0)
         #expect(highlightedPayload.isHighlighted)
-        #expect(!highlightedPayload.isZoom)
+        #expect(!highlightedPayload.isPhotoShared)
 
         // A hidden pin shows no photo to a player.
         hiddenNode.handleDoubleTap()

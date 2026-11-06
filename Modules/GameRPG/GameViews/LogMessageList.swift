@@ -6,8 +6,6 @@ import SwiftUI
 struct LogMessageList: View {
     let logController: LogGameController
     
-    @State private var showAttachments = true
-    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var gameModel = logController.gameModel
@@ -16,9 +14,7 @@ struct LogMessageList: View {
                 .padding()
             
             List {
-                SharingOptionsSection(features: $gameModel.gameControl.features)
-                AttachmentSection(logController: logController, isExpanded: $showAttachments)
-                LogRowsSection(logController: logController)
+                LogSections(logController: logController)
             }
             .themedListSurface()
 #if os(tvOS)

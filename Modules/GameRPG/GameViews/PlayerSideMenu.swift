@@ -25,12 +25,9 @@ struct PlayerSideMenu: View {
                 }
 #if os(visionOS)
                 // macOS has the button in the toolbar.
-                if root.gameModel.gameType == .player {
+                if root.offersTablePlayers(isMaster: false) {
                     TablePlayersButton(root: root)
-                        .imageScale(.large)
-                        .padding(8)
-                        .contentShape(.circle)
-                        .modifier(GameWindowButtonAppearance(module: .value, isWindowPresented: false))
+                        .roundGameControl(module: .value)
                 }
 #endif
             }

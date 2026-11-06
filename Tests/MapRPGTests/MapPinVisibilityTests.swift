@@ -245,7 +245,7 @@ struct MapPinVisibilityTests {
         #expect(itemPin.isDead)
         #expect(itemPin.size == .large)
         #expect(itemPin.isHighlighted)
-        #expect(itemPin.isZoom)
+        #expect(itemPin.isPhotoShared)
         #expect(itemPin.timeInterval > 1)
         #expect(sessionPin == itemPin)
 
@@ -263,7 +263,7 @@ struct MapPinVisibilityTests {
         let mapId = UUID()
         let firstId = UUID()
         let secondId = UUID()
-        let first = MapPinModel(id: firstId, name: "First", isShown: true, timeInterval: 1, isZoom: true)
+        let first = MapPinModel(id: firstId, name: "First", isShown: true, timeInterval: 1, isPhotoShared: true)
         let second = MapPinModel(id: secondId, name: "Second", isShown: true, timeInterval: 1)
         let map = MapModel(id: mapId, name: "Dungeon", mapPins: [first, second])
         root.itemController.replace(model: map, isInsert: true)
@@ -272,15 +272,15 @@ struct MapPinVisibilityTests {
         #expect(sut.setPinPhotoShown(itemId: mapId, pinId: secondId, shown: true))
 
         let pins = sut.gameItem(for: mapId).mapPins
-        #expect(pins.first { $0.id == firstId }?.isZoom == false)
-        #expect(pins.first { $0.id == secondId }?.isZoom == true)
+        #expect(pins.first { $0.id == firstId }?.isPhotoShared == false)
+        #expect(pins.first { $0.id == secondId }?.isPhotoShared == true)
         // Both changed pins are newer than before, so the players' merge cannot keep an old state.
         #expect(pins.allSatisfy { $0.timeInterval > 1 })
 
         // Showing it again changes nothing; hiding clears it.
         #expect(!sut.setPinPhotoShown(itemId: mapId, pinId: secondId, shown: true))
         #expect(sut.setPinPhotoShown(itemId: mapId, pinId: secondId, shown: false))
-        #expect(sut.gameItem(for: mapId).mapPins.allSatisfy { !$0.isZoom })
+        #expect(sut.gameItem(for: mapId).mapPins.allSatisfy { !$0.isPhotoShared })
     }
 
     @Test func networkPinEncodesCurrentPinState() async throws {

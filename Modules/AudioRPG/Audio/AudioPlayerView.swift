@@ -127,11 +127,7 @@ private struct AudioPlayerViewPlaySkipControlView: View {
             .frame(minWidth: 44, minHeight: 44)
 
             Button {
-                if let currentId = root.audioController.model.currentId, appGameStateModel.isGameRunning {
-                    networkActions?.game(root.gameController.requestPlay(id: currentId), .playAudio, nil)
-                } else {
-                    root.audioController.toggle()
-                }
+                root.togglePlayback(isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
             } label: {
                 Label {
                     if root.audioController.model.isPlaying {
