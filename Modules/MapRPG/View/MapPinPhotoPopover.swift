@@ -78,6 +78,13 @@ struct MapPhotoPopoverContent: View {
 
     @Environment(MapRootModel.self) private var root
 
+    /// What VoiceOver says for a weather: its name, or the word "Weather" when it has none (or
+    /// the name did not arrive). See CODE_AUDIT_24 §8.3.
+    static func weatherAccessibilityName(title: String?) -> String {
+        guard let title, !title.isEmpty else { return String(localized: "Weather", bundle: .module) }
+        return title
+    }
+
     var body: some View {
         let name = item.title ?? (item.module == .photo
             ? root.photoRoot.itemControllable.nameSync(itemId: item.itemId)
@@ -94,7 +101,7 @@ struct MapPhotoPopoverContent: View {
                 )
             } else {
                 root.weatherRoot.viewController.gamePopoverViewer(root: root.weatherRoot, itemId: item.itemId)
-                    .accessibilityLabel(Text(verbatim: name))
+                    .accessibilityLabel(Text(verbatim: Self.weatherAccessibilityName(title: item.title)))
             }
         }
     }

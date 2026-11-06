@@ -1959,6 +1959,12 @@
             "state" : "translated",
             "value" : "Foto"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปภาพ"
+          }
         }
       }
     },
@@ -2905,6 +2911,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wände"
+          }
+        }
+      }
+    },
+    "Weather" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wetter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สภาพอากาศ"
           }
         }
       }

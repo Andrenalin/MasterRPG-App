@@ -15,13 +15,7 @@ struct PlayerAvatarView: View {
         if let characterId, root.itemController.itemSync(for: characterId)?.photoId != nil {
             ThumbnailPhotoRow(itemId: characterId)
         } else {
-            let size = root.listDisplayModel.imageHeight
-            Image(systemName: placeholderSystemImage)
-                .font(.title)
-                .foregroundStyle(.secondary)
-                .frame(width: size, height: size)
-                .background(.fill.tertiary, in: .rect(cornerRadius: 12, style: .continuous))
-                .accessibilityHidden(true)
+            ThumbnailRowEmptyView(listDisplayModel: root.listDisplayModel, systemImage: placeholderSystemImage)
         }
     }
 }

@@ -8,6 +8,10 @@ import SwiftUI
 /// The game master's player list: the connected devices, their companions, and the Characters
 /// the game master puts at the table as players. For a player it lists only the companions it
 /// brings along. Each of those gets a player pin on every shown map.
+///
+/// The role and the list model are read from `root` once, when the view is created. A role that
+/// changes later needs a new view: the call site keys it with `.id(isMaster)`.
+/// See CODE_AUDIT_24 §8.1.
 struct TablePlayersView: View {
     let root: GameRoot
 
@@ -567,6 +571,7 @@ struct TablePlayersButton: View {
         .popover(isPresented: $isPresented) {
             ManagedPresentationView {
                 TablePlayersView(root: root)
+                    .id(isMaster)
             }
             .frame(minWidth: 340, idealWidth: 400, minHeight: 480, idealHeight: 620)
         }
