@@ -56,6 +56,9 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async
     func receivedSharePlayFile(_ model: GameNetworkModel) async
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async
+    /// Whether this device already holds the file `model` names, in that version, so the
+    /// Journal's copy of it need not be downloaded.
+    func sharePlayHoldsFile(_ model: GameNetworkModel) async -> Bool
     /// Whether this SharePlay participant is the one the game master's messages come from. The
     /// 3D table ranks seats without the master, and the master relays its local-network players
     /// into SharePlay under its own participant.
@@ -74,6 +77,8 @@ extension PlayerNetworkStoreDelegate {
     }
 
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {}
+
+    func sharePlayHoldsFile(_ model: GameNetworkModel) async -> Bool { false }
 
     func isSharePlayMasterParticipant(id: UUID) async -> Bool { false }
 

@@ -24,6 +24,10 @@ protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) async -> Void
     func handleFileUpdate(_ model: GameNetworkModel) async -> Void
     func handleFileLoadFailure(_ model: GameNetworkModel) async -> Void
+    /// Whether the Journal attachment of `model` is worth downloading. A device that already holds
+    /// the file the attachment carries answers `false`: the Journal hands every participant every
+    /// attachment, and the download of a large file is the slowest step of the game.
+    func shouldLoadFile(_ model: GameNetworkModel) async -> Bool
     func sharePlayLostPlayer(id: UUID) async
     /// Called when the local SharePlay session is invalidated so the player
     /// controller can reset `hasSentPlayer` and mark the master as lost.
@@ -43,6 +47,7 @@ protocol SharePlayControllerDelegate: AnyObject {
 
 extension SharePlayControllerDelegate {
     func pinnedMasterParticipantId(among participantIds: [UUID]) async -> UUID? { nil }
+    func shouldLoadFile(_ model: GameNetworkModel) async -> Bool { true }
 }
 
 // MARK: - Session / activation / tracking support types
@@ -499,6 +504,12 @@ final class RPGSharePlayController {
     var journalMetadataCache: [UUID: GameNetworkModel] = [:]
     var currentJournalAttachmentIds: Set<UUID> = []
     var journalDrainTask: Task<Void, Never>?
+    /// The Journal load that runs for each item, so a newer publication of the item waits for the
+    /// older one. Loads of different items run side by side.
+    var journalLoadTasks: [UUID: (token: UUID, task: Task<Void, Never>)] = [:]
+    /// Whether the first snapshot with something to load (a late joiner's) was handled: it loads
+    /// in message order, every later one concurrently.
+    var journalJoinBatchHandled = false
     // Normal Messenger sends are admitted before encoding, then processed in
     // invocation order. This prevents a burst from spawning unbounded parallel
     // Base64 encodes before the package sender can apply its own bounds.

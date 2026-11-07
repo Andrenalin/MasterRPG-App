@@ -382,6 +382,33 @@ struct SimpleFileFlowTests {
         #expect(env.master.gameModel.pendingAudioPlays[audioId] == nil)
     }
 
+    @Test("A player that holds an audio skips the Journal copy, one that lacks it loads it")
+    func journalCopyIsSkippedOnlyWhereTheFileIsHeld() async throws {
+        // Given: one player imported the audio, the other did not.
+        let env = try await LinkedGameEnvironment.create()
+        try await env.importData(named: ResourcesDebug.audioTestData, into: env.masterRoot)
+        env.masterRoot.adventureRoot.startGame()
+        let holder = try await env.addPlayer(named: "Holder")
+        try await env.importData(named: ResourcesDebug.audioTestData, into: holder.root)
+        holder.root.adventureRoot.startGame()
+        let missing = try await env.addPlayer(named: "Missing")
+        missing.root.adventureRoot.startGame()
+        await env.ready(holder)
+        await env.ready(missing)
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        let reference = await env.masterRoot.audioRoot.gameControllable.share(id: audioId)
+        let message = env.master.outgoingMessage(type: .store, subtype: .show, updated: reference)
+
+        // Then: the holder skips the download, the player without the file loads it.
+        #expect(await holder.controller.sharePlayHoldsFile(message))
+        #expect(await !missing.controller.sharePlayHoldsFile(message))
+
+        // And a message that is not the game master's is never skipped.
+        var fromPlayer = message
+        fromPlayer.sender.role = .player
+        #expect(await !holder.controller.sharePlayHoldsFile(fromPlayer))
+    }
+
     // MARK: - Map
 
     @Test("A player without the map asks for it and gets the package with the live state")

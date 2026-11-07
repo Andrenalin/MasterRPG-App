@@ -28,6 +28,13 @@ extension GameNetworkController: SharePlayControllerDelegate {
         await model.playerDelegate?.sharePlayFileLoadFailed(message)
     }
 
+    func shouldLoadFile(_ message: GameNetworkModel) async -> Bool {
+        // Only the game master's files are for a player; a player's contribution is for the
+        // game master, which has nothing to compare it with here.
+        guard message.sender.isMaster, !model.hasLocalPlayer else { return true }
+        return await model.playerDelegate?.sharePlayHoldsFile(message) != true
+    }
+
     func sharePlayLostPlayer(id: UUID) async {
         sharePlayStore.unbindPlayer(participantId: id)
         await model.masterDelegate?.lostPlayer(for: id)

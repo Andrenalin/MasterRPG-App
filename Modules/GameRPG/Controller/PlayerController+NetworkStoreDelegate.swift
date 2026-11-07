@@ -1,9 +1,12 @@
 // @copyright André Trettin
 
+import AudioRPG
 import CoreRPG
 import Foundation
 import os.log
 import MapRPG
+import PdfRPG
+import PhotoRPG
 import SpaceRPG
 #if os(macOS)
 #else
@@ -97,6 +100,21 @@ extension PlayerController {
         gameModel.isSharePlayMasterParticipant(id: id)
     }
 
+    /// The file of an audio, photo, PDF or 3D object the game master published is already here
+    /// (the reference was handled before this attachment was looked at).
+    func sharePlayHoldsFile(_ model: GameNetworkModel) async -> Bool {
+        guard model.sender.isMaster, !root.gameModel.gameConfig.isMaster else { return false }
+        let controllable: any GameControllable
+        switch model.data.type {
+        case .audio: controllable = root.audioRoot.gameControllable
+        case .photo: controllable = root.photoRoot.gameControllable
+        case .pdf: controllable = root.pdfRoot.gameControllable
+        case .space: controllable = root.spaceRoot.gameControllable
+        default: return false
+        }
+        return await holdsFile(of: model.data, in: controllable)
+    }
+
     /// The Journal named a file of the game master but its bytes did not load. The message is
     /// handled like its reference: an item this device already holds is shown, anything else
     /// is asked for with the same counter. (An audio is reported as failed instead.) The game master does not upload a file again for
@@ -110,7 +128,13 @@ extension PlayerController {
             // The reference of this show was handled when it arrived, so the pipeline would drop
             // this message as a repeat of it. The game master's play waits for this player's
             // file: it must learn that the file did not arrive, to send it again a bounded
-            // number of times and then go on without this player.
+            // number of times and then go on without this player. A player that already holds
+            // the file answered Ok when the reference arrived; the Journal copy it could not
+            // load is redundant for it, and a failure would make the master send it again.
+            if await holdsFile(of: model.data, in: root.audioRoot.gameControllable) {
+                Logger.networking.debug("PlayerController: SharePlay file-load-failure for \(model.data.id, privacy: .public) not reported, the file is already here")
+                return
+            }
             let failure = await response(for: model, isSuccess: false, requestData: false)
             await sendUpstream(model: failure)
             return

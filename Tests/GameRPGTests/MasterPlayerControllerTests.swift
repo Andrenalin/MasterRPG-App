@@ -687,7 +687,9 @@ final class MasterPlayerControllerTests {
             let request = try #require(playerStoreAbstractionMock.requestData as? GameNetworkModel)
             #expect(request.counter == failureMetadata.counter)
             #expect(request.type == .store)
-            #expect(request.subType == .store)
+            // An audio is reported as failed, so the game master can send it again a bounded
+            // number of times; the other modules ask for the bytes.
+            #expect(request.subType == (module == .audio ? .failed : .store))
             #expect(request.data.id == itemId)
             #expect(request.data.type == module)
             #expect(request.data.version == version)

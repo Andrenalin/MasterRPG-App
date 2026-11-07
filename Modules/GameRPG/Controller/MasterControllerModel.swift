@@ -26,8 +26,11 @@ final class MasterControllerModel {
     /// How often a player failed to import an audio package, per item. See
     /// `recordAudioDeliveryFailure`.
     private var audioDeliveryFailures: [AudioDeliveryKey: Int] = [:]
-    /// Times the master sends an audio package again to a player that failed to import it.
-    static let maximumAudioDeliveryRetries = 3
+    /// Times the master sends an audio package again to a player that failed to import it. None:
+    /// a package a player could not load through the Journal (it stayed suspended until the
+    /// deadline) stalled again when sent again, and held up the player's other downloads. The
+    /// play goes on without that player.
+    static let maximumAudioDeliveryRetries = 0
 
     private struct AudioDeliveryKey: Hashable, Sendable {
         let itemId: UUID

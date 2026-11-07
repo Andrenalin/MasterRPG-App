@@ -68,6 +68,8 @@ extension RPGSharePlayController {
         journalLedger.willUpload(module: moduleKey, isPlaylist: slot.isPlaylist, itemId: itemId, version: version, counter: counter, now: now)
 
         let metadata = Self.journalMetadata(for: model)
+        let enqueuedAt = ContinuousClock.now
+        Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) queued \(slot.token, privacy: .public) \(itemId, privacy: .public) v\(version, privacy: .public), \(attachmentSize, privacy: .public), participants \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public)")
         let publication = journalPublicationQueue.enqueue(
             for: slot,
             byteCount: attachmentData.count,
@@ -77,7 +79,9 @@ extension RPGSharePlayController {
             guard let self else { return nil }
             guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
             self.recordJournalTransport(state: .pending, byteCount: attachmentData.count, for: model)
-            Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(model.debugDescription, privacy: .private)")
+            let addStartedAt = ContinuousClock.now
+            let queueWait = Self.formattedDuration(enqueuedAt.duration(to: addStartedAt))
+            Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) attachment \(attachmentSize, privacy: .public), waited \(queueWait, privacy: .public) in the queue, adding now. model: \(model.debugDescription, privacy: .private)")
             let outcome = await self.journalAddLimiter.run(
                 for: moduleKey,
                 scope: sessionId,
@@ -95,8 +99,10 @@ extension RPGSharePlayController {
                 )
             }
 
+            let addDuration = Self.formattedDuration(addStartedAt.duration(to: .now))
             switch outcome {
             case .succeeded(let result):
+                Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) add of \(attachmentSize, privacy: .public) returned attachment \(result.id, privacy: .public) after \(addDuration, privacy: .public), participants \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public)")
                 guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else {
                     _ = await self.removeJournalAttachment(
                         result,
@@ -109,9 +115,9 @@ extension RPGSharePlayController {
                 }
                 return result
             case .failed(let errorDescription):
-                Logger.sharePlay.error("Journal ✕: message \(counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(moduleKey.token, privacy: .public) and id: \(itemId, privacy: .public) error: \(errorDescription, privacy: .private)")
+                Logger.sharePlay.error("Journal ✕: message \(counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(moduleKey.token, privacy: .public) and id: \(itemId, privacy: .public) after \(addDuration, privacy: .public), error: \(errorDescription, privacy: .private)")
             case .timedOut:
-                Logger.sharePlay.error("Journal ⌛: message \(counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment; module is degraded to Messenger until the add returns")
+                Logger.sharePlay.error("Journal ⌛: message \(counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment after \(addDuration, privacy: .public); module is degraded to Messenger until the add returns")
             case .unavailable:
                 Logger.sharePlay.warning("Journal bypass: \(moduleKey.token, privacy: .public) still has a quarantined add; using Messenger for message \(counter, privacy: .public)")
             case .cancelled:
@@ -136,7 +142,8 @@ extension RPGSharePlayController {
                 attachmentId: result.id
             )
             self.recordJournalTransport(state: .succeeded, byteCount: attachmentData.count, for: model)
-            Logger.sharePlay.debug("Journal ✓: message \(counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public)")
+            let total = Self.formattedDuration(enqueuedAt.duration(to: .now))
+            Logger.sharePlay.debug("Journal ✓: message \(counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public), \(slot.token, privacy: .public) \(itemId, privacy: .public), \(total, privacy: .public) since queued")
         } remove: { [weak self] oldAttachment in
             guard let self else { return false }
             return await self.removeJournalAttachment(
@@ -585,6 +592,12 @@ extension RPGSharePlayController {
         log.sharePlayTransport = transport
     }
 
+    /// Seconds with one decimal, for the transfer logs.
+    nonisolated static func formattedDuration(_ duration: Duration) -> String {
+        let seconds = Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+        return seconds.formatted(.number.precision(.fractionLength(1))) + " s"
+    }
+
     nonisolated static func formattedByteCount(_ byteCount: Int) -> String {
         Int64(byteCount).formatted(.byteCount(style: .file))
     }
@@ -609,6 +622,9 @@ extension RPGSharePlayController {
         pendingJournalSnapshot = nil
         currentJournalAttachmentIds = []
         journalDrainTask = nil
+        journalLoadTasks.values.forEach { $0.task.cancel() }
+        journalLoadTasks = [:]
+        journalJoinBatchHandled = false
         sessionLifecycle.reset()
         participantTracker.reset()
         journalLedger.reset()
