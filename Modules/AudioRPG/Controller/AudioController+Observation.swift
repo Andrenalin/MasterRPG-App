@@ -51,7 +51,7 @@ extension AudioController {
                       let endedItem = notification.object as? AVPlayerItem,
                       let current = self.model.player.currentItem,
                       current === endedItem else { continue }
-                self.resetPlaylist(complete: true)
+                self.advanceAfterTrackEnd(complete: true)
             }
         }
         model.add(subscriptions: [
@@ -91,7 +91,7 @@ extension AudioController {
         }
     }
 
-    @MainActor private func updateCurrentTime(time: CMTime) {
+    @MainActor func updateCurrentTime(time: CMTime) {
         guard let duration = model.player.currentItem?.duration else { return }
         // An item whose duration is not known yet (or a stream) reports NaN or infinity; neither
         // may reach the progress bar or the now-playing info. See CODE_AUDIT_23 §5.22.
@@ -108,27 +108,5 @@ extension AudioController {
         guard let timeObserver = model.timeObserver else { return }
         model.player.removeTimeObserver(timeObserver)
         model.timeObserver = nil
-    }
-
-    @MainActor
-    func observeSharedAudio() {
-        guard let coordinator = model.coordinator else { return }
-        model.sharedAudioTask?.cancel()
-        // Observations delivers every change for the lifetime of the task — unlike
-        // withObservationTracking, which fires once and silently died whenever an
-        // early exit skipped the re-arm.
-        model.sharedAudioTask = Task { @MainActor [weak self] in
-            for await audioId in Observations({ coordinator.sharedAudioId }) {
-                guard let self else { return }
-                await self.handleSharedAudio(audioId)
-            }
-        }
-    }
-
-    @MainActor
-    private func handleSharedAudio(_ audioId: UUID?) async {
-        guard let audioId, audioId != model.currentItem?.id else { return }
-        guard let item = itemController.itemSync(for: audioId) else { return }
-        await add(audio: [item], replace: true)
     }
 }

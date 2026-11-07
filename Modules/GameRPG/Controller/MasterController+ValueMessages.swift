@@ -1,18 +1,10 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
 import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
+import MapRPG
 
 // MARK: - Value Messages
 
@@ -57,11 +49,22 @@ extension MasterController {
               model.subType == .store,
               model.senderType == .player,
               let characterId = model.sender.characterId,
-              characterId == model.data.id,
-              // The join handshake — binds this sender to characterId (or
-              // confirms an existing binding). See CODE_AUDIT_Game §6.1.
-              gameModel.bindCharacterOwnership(senderId: model.sender.id, characterId: characterId)
+              characterId == model.data.id
         else { return nil }
+        // The join handshake — binds this sender to characterId (or
+        // confirms an existing binding). See CODE_AUDIT_Game §6.1.
+        guard gameModel.bindCharacterOwnership(senderId: model.sender.id, characterId: characterId) else {
+            // Another sender plays this Character. The player is told, so it can clear its
+            // "sent" flag instead of waiting for a pin that never comes. See
+            // CODE_AUDIT_Audio2 §5.2.
+            await send(
+                type: .update,
+                subtype: .failed,
+                updated: NetworkCodableDataType(id: characterId, type: .value, version: model.data.version, data: nil),
+                playerId: model.sender.id
+            )
+            return nil
+        }
 
         // The binding just landed — replay any `.valueUpdate` this same
         // sender sent before it, which was held rather than dropped. See
@@ -146,7 +149,7 @@ extension MasterController {
             root.gameModel.recordPeerImport(policy, senderId: model.sender.id)
             return true
         } catch {
-            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             await send(
                 type: .update,
                 subtype: .failed,

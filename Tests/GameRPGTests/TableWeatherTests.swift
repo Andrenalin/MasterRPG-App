@@ -166,7 +166,7 @@ struct TableWeatherTests {
             data: Self.presentation(
                 weatherId: fixture.weatherId,
                 sequence: 99,
-                sessionId: env.master.gameModel.deliverySessionID
+                sessionId: env.master.gameModel.deliverySessionId
             ).networkData
         )
         _ = try await env.player1.handleWeather(forged)

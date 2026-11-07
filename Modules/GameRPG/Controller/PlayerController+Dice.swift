@@ -1,9 +1,18 @@
 // @copyright André Trettin
 
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
+import AdventureRPG
+import AudioRPG
+import CharacterRPG
+import DiceRPG
+import MapRPG
+import PdfRPG
+import PhotoRPG
+import SpaceRPG
+import TableRPG
+import WeatherRPG
 
 extension PlayerController {
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {

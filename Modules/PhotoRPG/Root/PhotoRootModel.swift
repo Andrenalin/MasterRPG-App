@@ -102,7 +102,7 @@ public final class PhotoRootModel {
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
-            let controller = SyncDataController(context: context, dataControllable: dataControllable, itemController: itemController)
+            let controller = EntitySyncDataController(context: context, dataControllable: dataControllable, itemController: itemController, entity: RPGPhoto.entity())
             syncDataController = controller
             syncTask = controller.start()
         }
@@ -140,7 +140,7 @@ public final class PhotoRootModel {
     @ObservationIgnored let folderListController: FolderListController
     @ObservationIgnored let folderLinkController: FolderListController
 
-    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncDataController: EntitySyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel

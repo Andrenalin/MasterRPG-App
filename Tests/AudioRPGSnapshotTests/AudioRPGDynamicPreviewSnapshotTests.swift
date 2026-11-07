@@ -45,15 +45,6 @@ struct AudioRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: AudioRPG::PlayListView
-    @Test("PlayListView")
-    func playListView() async throws {
-        try await assertPreviewSnapshot("PlayListView") { root in
-            PlayListView(root: root)
-                .padding()
-        }
-    }
-
     // snapshot-root: AudioRPG::DetailRootView
     @Test("DetailRootView")
     func detailRootView() async throws {

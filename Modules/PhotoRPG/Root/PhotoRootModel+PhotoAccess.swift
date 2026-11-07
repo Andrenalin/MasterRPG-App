@@ -66,21 +66,4 @@ public extension PhotoRootModel {
         return (image.size, degrees)
     }
 
-    func itemDataCleanup() async throws {
-        for itemId in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: itemId) else { continue }
-            if model.displayState == DisplayStateMask.totalHidden.rawValue {
-                await editController.delete(itemId: model.id)
-            }
-        }
-    }
-
-    func checkFolders(reportModel: ValidateRepairModel) async {
-        let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.repairHiddenAndFolders(reportModel: reportModel)
-    }
-
-    func validateLinks(reportModel: ValidateRepairModel) async {
-        await linkController.validateLinks(reportModel: reportModel)
-    }
 }

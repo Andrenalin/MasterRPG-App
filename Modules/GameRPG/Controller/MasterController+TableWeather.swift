@@ -22,7 +22,7 @@ extension MasterController {
             weatherId: weatherId,
             isShown: true,
             sequence: gameModel.nextTableWeatherSequence(),
-            sessionId: gameModel.deliverySessionID
+            sessionId: gameModel.deliverySessionId
         ))
     }
 
@@ -36,7 +36,7 @@ extension MasterController {
             weatherId: weatherId,
             isShown: false,
             sequence: gameModel.nextTableWeatherSequence(),
-            sessionId: gameModel.deliverySessionID
+            sessionId: gameModel.deliverySessionId
         ))
     }
 

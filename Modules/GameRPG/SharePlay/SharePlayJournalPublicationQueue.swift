@@ -3,6 +3,27 @@
 import CoreRPG
 import Foundation
 
+// MARK: - Slot
+
+/// One place in the Journal: the slot of a module, or the slot of the audio playlists.
+///
+/// The Journal holds one attachment per slot, and a new publication replaces the one before it.
+/// An audio playlist is shown together with its first track, which would replace it before every
+/// player has loaded it: a playlist has a slot of its own.
+struct SharePlayJournalSlot: Hashable, Sendable {
+    let module: NetworkModules
+    let isPlaylist: Bool
+
+    init(_ module: NetworkModules, isPlaylist: Bool = false) {
+        self.module = module
+        self.isPlaylist = isPlaylist
+    }
+
+    var token: String {
+        isPlaylist ? "\(module.token) PLAYLIST" : module.token
+    }
+}
+
 // MARK: - Publication policy & admission
 
 enum SharePlayJournalPublicationPolicy: Equatable, Sendable {
@@ -112,15 +133,15 @@ where Attachment.ID == UUID {
     private let maxOutstandingPublications: Int
     private let maxOutstandingBytes: Int
     private let maxOutstandingCleanups: Int
-    private var pendingPublications: [NetworkModules: [PublicationOperation]] = [:]
-    private var activePublications: [NetworkModules: PublicationOperation] = [:]
-    private var publicationWorkers: [NetworkModules: (id: UUID, task: Task<Void, Never>)] = [:]
+    private var pendingPublications: [SharePlayJournalSlot: [PublicationOperation]] = [:]
+    private var activePublications: [SharePlayJournalSlot: PublicationOperation] = [:]
+    private var publicationWorkers: [SharePlayJournalSlot: (id: UUID, task: Task<Void, Never>)] = [:]
     private var cleanupTasks: [UUID: Task<Void, Never>] = [:]
-    private var emergencyCleanupTasks: [NetworkModules: Task<Void, Never>] = [:]
-    private var currentAttachments: [NetworkModules: Attachment] = [:]
+    private var emergencyCleanupTasks: [SharePlayJournalSlot: Task<Void, Never>] = [:]
+    private var currentAttachments: [SharePlayJournalSlot: Attachment] = [:]
     private var cleanupReservationCount = 0
     private var transferredCleanupReservationOperationIds: Set<UUID> = []
-    private var presentationGenerations: [NetworkModules: UInt64] = [:]
+    private var presentationGenerations: [SharePlayJournalSlot: UInt64] = [:]
     private var generation: UInt = 0
     private(set) var outstandingPublicationCount = 0
     private(set) var outstandingPublicationByteCount = 0
@@ -131,7 +152,7 @@ where Attachment.ID == UUID {
 
     @discardableResult
     func enqueue(
-        for module: NetworkModules,
+        for module: SharePlayJournalSlot,
         byteCount: Int = 0,
         policy: SharePlayJournalPublicationPolicy = .fifo,
         priority: TaskPriority? = nil,
@@ -229,7 +250,32 @@ where Attachment.ID == UUID {
         )
     }
 
+    @discardableResult
+    func enqueue(
+        for module: NetworkModules,
+        byteCount: Int = 0,
+        policy: SharePlayJournalPublicationPolicy = .fifo,
+        priority: TaskPriority? = nil,
+        publish: @escaping @MainActor () async -> Attachment?,
+        commit: @escaping @MainActor (Attachment) -> Void = { _ in },
+        remove: @escaping @MainActor (Attachment) async -> Bool
+    ) -> SharePlayJournalPublicationEnqueueResult {
+        enqueue(
+            for: SharePlayJournalSlot(module),
+            byteCount: byteCount,
+            policy: policy,
+            priority: priority,
+            publish: publish,
+            commit: commit,
+            remove: remove
+        )
+    }
+
     func currentAttachment(for module: NetworkModules) -> Attachment? {
+        currentAttachments[SharePlayJournalSlot(module)]
+    }
+
+    func currentAttachment(for module: SharePlayJournalSlot) -> Attachment? {
         currentAttachments[module]
     }
 
@@ -237,6 +283,10 @@ where Attachment.ID == UUID {
     /// been safely admitted to Messenger. Rejected fallbacks do not advance the
     /// generation, so the last deliverable presentation is preserved.
     func supersedePresentation(for module: NetworkModules) {
+        supersedePresentation(for: SharePlayJournalSlot(module))
+    }
+
+    func supersedePresentation(for module: SharePlayJournalSlot) {
         _ = nextPresentationGeneration(for: module)
     }
 
@@ -247,6 +297,15 @@ where Attachment.ID == UUID {
     @discardableResult
     func retireCurrentAttachment(
         for module: NetworkModules,
+        priority: TaskPriority? = nil,
+        remove: @escaping @MainActor (Attachment) async -> Bool
+    ) -> Bool {
+        retireCurrentAttachment(for: SharePlayJournalSlot(module), priority: priority, remove: remove)
+    }
+
+    @discardableResult
+    func retireCurrentAttachment(
+        for module: SharePlayJournalSlot,
         priority: TaskPriority? = nil,
         remove: @escaping @MainActor (Attachment) async -> Bool
     ) -> Bool {
@@ -301,7 +360,7 @@ where Attachment.ID == UUID {
     }
 
     private func startPublicationWorkerIfNeeded(
-        for module: NetworkModules,
+        for module: SharePlayJournalSlot,
         priority: TaskPriority?
     ) {
         guard publicationWorkers[module] == nil else { return }
@@ -323,7 +382,7 @@ where Attachment.ID == UUID {
     }
 
     private func drainPublications(
-        for module: NetworkModules,
+        for module: SharePlayJournalSlot,
         workerId: UUID,
         generation operationGeneration: UInt,
         priority: TaskPriority?
@@ -398,7 +457,7 @@ where Attachment.ID == UUID {
         )
     }
 
-    private func nextPresentationGeneration(for module: NetworkModules) -> UInt64 {
+    private func nextPresentationGeneration(for module: SharePlayJournalSlot) -> UInt64 {
         let nextGeneration = (presentationGenerations[module] ?? 0) &+ 1
         presentationGenerations[module] = nextGeneration
         return nextGeneration
@@ -406,7 +465,7 @@ where Attachment.ID == UUID {
 
     private func isSupersededPresentation(
         _ operation: PublicationOperation,
-        for module: NetworkModules
+        for module: SharePlayJournalSlot
     ) -> Bool {
         guard let operationGeneration = operation.presentationGeneration else { return false }
         return presentationGenerations[module] != operationGeneration
@@ -418,7 +477,7 @@ where Attachment.ID == UUID {
     private func scheduleSupersededCleanup(
         _ attachment: Attachment,
         operation: PublicationOperation,
-        module: NetworkModules,
+        module: SharePlayJournalSlot,
         priority: TaskPriority?
     ) {
         if operation.reservesCleanup,
@@ -486,7 +545,7 @@ where Attachment.ID == UUID {
     /// until its retirement returns and uses Messenger in the meantime.
     private func scheduleEmergencyCleanup(
         _ attachment: Attachment,
-        for module: NetworkModules,
+        for module: SharePlayJournalSlot,
         priority: TaskPriority?,
         remove: @escaping @MainActor (Attachment) async -> Bool
     ) {
@@ -500,7 +559,7 @@ where Attachment.ID == UUID {
         emergencyCleanupTasks[module] = task
     }
 
-    private func finishEmergencyCleanup(for module: NetworkModules) {
+    private func finishEmergencyCleanup(for module: SharePlayJournalSlot) {
         emergencyCleanupTasks[module] = nil
     }
 
@@ -511,7 +570,7 @@ where Attachment.ID == UUID {
     /// cannot create an untracked retry loop.
     private func scheduleObsoleteCleanup(
         _ attachment: Attachment,
-        for module: NetworkModules,
+        for module: SharePlayJournalSlot,
         priority: TaskPriority?,
         remove: @escaping @MainActor (Attachment) async -> Bool
     ) {
@@ -529,7 +588,7 @@ where Attachment.ID == UUID {
 
     private func finishPublication(
         _ operation: PublicationOperation,
-        module: NetworkModules
+        module: SharePlayJournalSlot
     ) {
         guard activePublications[module]?.id == operation.id else { return }
         activePublications[module] = nil
@@ -543,7 +602,7 @@ where Attachment.ID == UUID {
     }
 
     private func finishWorkerIfCurrent(
-        for module: NetworkModules,
+        for module: SharePlayJournalSlot,
         workerId: UUID,
         generation operationGeneration: UInt
     ) {

@@ -1,22 +1,10 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
 #if os(macOS)
-import AppKit
 #else
-import UIKit
 #endif
 
 // The incoming-message pipeline, split out of PlayerController+NetworkStoreDelegate.swift —
@@ -35,19 +23,8 @@ extension PlayerController {
             Logger.networking.debug("PlayerController: Message rejected because its sender does not belong to this game session")
             return
         }
-        switch await messagePipeline.enqueue(GameMessageEvent(model: model, origin: origin)) {
-        case .enqueued:
+        if await messagePipeline.enqueueAndLog(GameMessageEvent(model: model, origin: origin), prefix: "PlayerController") {
             await processMessages()
-        case .duplicate:
-            Logger.networking.debug("PlayerController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-        case .queueFull:
-            // Distinct from an ordinary duplicate: a genuinely new message
-            // was discarded only because the pipeline is momentarily
-            // saturated, not because it was already seen. See
-            // CODE_AUDIT_Network §5.14.
-            Logger.networking.error("PlayerController: Message queue full, message lost \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-        case .pipelineStopped:
-            Logger.networking.debug("PlayerController: Message pipeline stopped, ignoring \(model.counter, privacy: .public)")
         }
     }
 
@@ -244,6 +221,12 @@ extension PlayerController {
         await scheduleSendCharacter()
     }
 
+    private func handOffBacklog() async {
+        await messagePipeline.handOffBacklog { [weak self] in
+            await self?.processMessages()
+        }
+    }
+
     func processMessages() async {
         while let event = await messagePipeline.next() {
             // Bail out before any processing is attempted, so the one
@@ -256,17 +239,9 @@ extension PlayerController {
             // See CODE_AUDIT_Network §5.15.
             guard !Task.isCancelled else {
                 await messagePipeline.requeueCurrentOnCancellation()
-                // This loop is the only caller of `processMessages()`; without this, a
-                // message requeued here would strand until an unrelated future message
-                // happens to re-trigger `.enqueued`. If the ambient Task was cancelled by
-                // a genuine teardown, `messagePipeline` was also `cancelAll()`'d/`reset()`,
-                // so `next()` on this fresh Task will simply see no work and return. See
-                // CODE_AUDIT.md §3.4.
-                if await messagePipeline.hasQueuedMessages {
-                    Task { [weak self] in
-                        await self?.processMessages()
-                    }
-                }
+                // Without the hand-off a message requeued here would strand until an unrelated
+                // future message happens to re-trigger `.enqueued`. See CODE_AUDIT.md §3.4.
+                await handOffBacklog()
                 return
             }
             let model: GameNetworkModel
@@ -290,11 +265,6 @@ extension PlayerController {
                 try Task.checkCancellation()
                 if let response, event.origin != .local {
                     await sendUpstream(model: response)
-                    if response.subType == .ok {
-                        gameModel.increaseMessageCounter()
-                    }
-                } else {
-                    gameModel.increaseMessageCounter()
                 }
                 await root.statisticsModel.record(
                     event.model,
@@ -306,11 +276,7 @@ extension PlayerController {
                 await messagePipeline.processed(success: false)
                 // The in-hand event is dropped on purpose (its side effects may have run), but
                 // the rest of the backlog must not strand. See CODE_AUDIT_16 §3.2.
-                if await messagePipeline.hasQueuedMessages {
-                    Task { [weak self] in
-                        await self?.processMessages()
-                    }
-                }
+                await handOffBacklog()
                 return
             } catch {
                 // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.

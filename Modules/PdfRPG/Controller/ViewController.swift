@@ -31,11 +31,7 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: itemId)
         return ViewerRootView(model: model, entryId: entryId, configuration: configuration, onTextExtracted: onTextExtracted, dismissAction: dismissAction)
     }
-    
-    @MainActor func gameView(root: PdfRootModel) -> some View {
-        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
-}
 
 public extension ViewController {
     @MainActor func gamePdfView(root: PdfRootModel) -> some View {

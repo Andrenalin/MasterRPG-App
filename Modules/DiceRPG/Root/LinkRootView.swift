@@ -3,16 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-struct LinkRootView: View {
-    let type: LinkRootType
-    let itemSelectionModel: ItemSelectionModel
-
-    @Environment(DiceRootModel.self) private var root
-    
-    var body: some View {
-        LinkItemRootView(root: root.rootController, type: type, itemSelectionModel: itemSelectionModel)
-    }
-}
+typealias LinkRootView = ModuleLinkRootView<DiceRootModel>
 
 #Preview(traits: .mockData) {
     LinkRootView(type: .window, itemSelectionModel: ItemSelectionModel())

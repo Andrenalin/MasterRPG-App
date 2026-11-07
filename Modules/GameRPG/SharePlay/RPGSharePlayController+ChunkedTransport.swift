@@ -46,6 +46,7 @@ extension RPGSharePlayController {
     @discardableResult
     func publishAsset(
         _ model: GameNetworkModel,
+        isPlaylist: Bool = false,
         now: ContinuousClock.Instant = .now
     ) -> SharePlayAssetPublication {
         guard messenger != nil, let sessionId = groupSession?.id else { return .unavailable }
@@ -54,19 +55,21 @@ extension RPGSharePlayController {
         }
 
         let moduleKey = model.data.type
+        // An audio playlist has its own slot: its first track is shown right after it.
+        let slot = SharePlayJournalSlot(moduleKey, isPlaylist: isPlaylist && moduleKey == .audio)
         let itemId = model.data.id
         let version = model.data.effectiveAssetVersion
         let counter = model.counter
         let attachmentSize = Self.formattedByteCount(attachmentData.count)
-        guard journalLedger.shouldUpload(module: moduleKey, itemId: itemId, version: version, counter: counter, now: now) else {
+        guard journalLedger.shouldUpload(module: moduleKey, isPlaylist: slot.isPlaylist, itemId: itemId, version: version, counter: counter, now: now) else {
             Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) \(moduleKey.token, privacy: .public) \(itemId, privacy: .public) is already published")
             return .alreadyPublished
         }
-        journalLedger.willUpload(module: moduleKey, itemId: itemId, version: version, counter: counter, now: now)
+        journalLedger.willUpload(module: moduleKey, isPlaylist: slot.isPlaylist, itemId: itemId, version: version, counter: counter, now: now)
 
         let metadata = Self.journalMetadata(for: model)
         let publication = journalPublicationQueue.enqueue(
-            for: moduleKey,
+            for: slot,
             byteCount: attachmentData.count,
             policy: Self.journalPublicationPolicy(for: model),
             priority: .userInitiated
@@ -117,7 +120,7 @@ extension RPGSharePlayController {
             }
 
             guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-            self.journalUploadFailed(model, sessionId: sessionId)
+            self.journalUploadFailed(model, isPlaylist: slot.isPlaylist, sessionId: sessionId)
             return nil
         } commit: { [weak self] result in
             guard let self,
@@ -126,6 +129,7 @@ extension RPGSharePlayController {
             self.gameModel?.attachments[moduleKey] = result
             self.journalLedger.didUpload(
                 module: moduleKey,
+                isPlaylist: slot.isPlaylist,
                 itemId: itemId,
                 version: version,
                 counter: counter,
@@ -145,7 +149,7 @@ extension RPGSharePlayController {
         }
         if publication.admission == .rejected {
             Logger.sharePlay.warning("Journal queue full: falling back to chunked transport for message \(counter, privacy: .public)")
-            journalUploadFailed(model, sessionId: sessionId)
+            journalUploadFailed(model, isPlaylist: slot.isPlaylist, sessionId: sessionId)
             return .sentByMessenger
         }
         return .uploading
@@ -153,10 +157,11 @@ extension RPGSharePlayController {
 
     /// The Journal did not take the package: frees its ledger slot and sends the same message
     /// through Messenger, which carries smaller packages.
-    private func journalUploadFailed(_ model: GameNetworkModel, sessionId: UUID) {
+    private func journalUploadFailed(_ model: GameNetworkModel, isPlaylist: Bool, sessionId: UUID) {
         recordJournalTransport(state: .failed, byteCount: model.data.data?.count ?? 0, for: model)
         journalLedger.uploadFailed(
             module: model.data.type,
+            isPlaylist: isPlaylist,
             itemId: model.data.id,
             version: model.data.effectiveAssetVersion,
             counter: model.counter

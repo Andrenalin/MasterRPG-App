@@ -194,7 +194,7 @@ struct MasterControllerLostPlayerTests {
         let env = try await ConnectionTestEnvironment.make()
         let connId = UUID()
 
-        await env.master.receivedProcess(env.playerMessage, connectionId: connId)
+        await env.master.received(env.playerMessage, connectionId: connId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         await env.master.lostPlayer(for: connId)
@@ -226,8 +226,8 @@ struct MasterControllerLostPlayerTests {
             ]),
             data: NetworkCodableDataType(id: UUID(), type: .setting, version: 0, data: nil)
         )
-        await env.master.receivedProcess(env.playerMessage, connectionId: departingConnectionId)
-        await env.master.receivedProcess(remainingPlayerMessage, connectionId: remainingConnectionId)
+        await env.master.received(env.playerMessage, connectionId: departingConnectionId)
+        await env.master.received(remainingPlayerMessage, connectionId: remainingConnectionId)
 
         let sharedAudioId = UUID()
         let departingOnlyAudioId = UUID()
@@ -260,7 +260,7 @@ struct MasterControllerLostPlayerTests {
         let newConnId = UUID()
 
         // Initial connection
-        await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
+        await env.master.received(env.playerMessage, connectionId: oldConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // The live connection owns the identity until it is retired.
@@ -269,7 +269,7 @@ struct MasterControllerLostPlayerTests {
         // Player reconnects on a new connectionId.
         var reconnectMessage = env.playerMessage
         reconnectMessage.counter += 1
-        await env.master.receivedProcess(reconnectMessage, connectionId: newConnId)
+        await env.master.received(reconnectMessage, connectionId: newConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // A duplicate late close event for the old connection must not evict
@@ -288,11 +288,11 @@ struct MasterControllerLostPlayerTests {
         let oldConnId = UUID()
         let newConnId = UUID()
 
-        await env.master.receivedProcess(env.playerMessage, connectionId: oldConnId)
+        await env.master.received(env.playerMessage, connectionId: oldConnId)
         await env.master.lostPlayer(for: oldConnId)
         var reconnectMessage = env.playerMessage
         reconnectMessage.counter += 1
-        await env.master.receivedProcess(reconnectMessage, connectionId: newConnId)
+        await env.master.received(reconnectMessage, connectionId: newConnId)
         try #require(env.root.gameModel.gameRoster.players.count == 1)
 
         // New connection also drops — player must be removed
@@ -748,7 +748,7 @@ struct MasterControllerDirectProxyTests {
         #expect(env.master.normalizedObserverMessage(disguisedMapPin) == nil)
     }
 
-    @Test("Observer reports and screens require their exact protocol envelope")
+    @Test("Observer reports require their exact protocol envelope, and the removed screen upload is refused")
     func observerReportAndScreenAllowlistUsesExactTuples() async throws {
         // Given
         let env = try await MasterControllerHarness.make(asProxy: false)
@@ -815,24 +815,10 @@ struct MasterControllerDirectProxyTests {
                     version: 0,
                     data: SpaceListRequest(list: [:], players: [:]).encodeData()
                 )
-            ),
-            GameNetworkModel(
-                counter: 5,
-                proxyCounter: 0,
-                type: .store,
-                subType: .screen,
-                masterId: masterId,
-                sender: sender,
-                data: NetworkCodableDataType(
-                    id: UUID(),
-                    type: .game,
-                    version: 0,
-                    data: Data([0x01])
-                )
             )
         ]
 
-        // When / Then - legitimate observer reports and screen samples remain accepted.
+        // When / Then - legitimate observer reports remain accepted.
         for message in allowed {
             #expect(env.master.normalizedObserverMessage(message) != nil)
         }
@@ -852,13 +838,12 @@ struct MasterControllerDirectProxyTests {
         )
         #expect(env.master.normalizedObserverMessage(mismatchedListModule) == nil)
 
-        var revealScreen = allowed[4]
-        revealScreen.type = .reveal
-        #expect(env.master.normalizedObserverMessage(revealScreen) == nil)
-
-        var dataLessScreen = allowed[4]
-        dataLessScreen.data = NetworkCodableDataType(id: UUID(), type: .game, version: 0)
-        #expect(env.master.normalizedObserverMessage(dataLessScreen) == nil)
+        // The removed screen upload is not admitted any more. See CODE_AUDIT_Audio2 §6.5.
+        var screen = allowed[0]
+        screen.type = .store
+        screen.subType = .screen
+        screen.data = NetworkCodableDataType(id: UUID(), type: .game, version: 0, data: Data([0x01]))
+        #expect(env.master.normalizedObserverMessage(screen) == nil)
     }
 
     @Test(

@@ -1,22 +1,12 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
 import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
-import PdfRPG
 import SpaceRPG
 #if os(macOS)
-import AppKit
 #else
-import UIKit
 #endif
 
 // MARK: - Send PlayerNetworkStoreDelegate
@@ -76,9 +66,7 @@ extension PlayerController {
         Logger.networking.debug("PlayerController: Ready")
         gameModel.reset(lostMaster: false)
         await sendAudioList()
-        await sendPhotoList()
-        await sendPdfList()
-        await sendSpaceList()
+        await sendFileLists()
         await scheduleSendCharacter()
     }
 
@@ -111,11 +99,20 @@ extension PlayerController {
 
     /// The Journal named a file of the game master but its bytes did not load. The message is
     /// handled like its reference: an item this device already holds is shown, anything else
-    /// is asked for with the same counter. The game master does not upload a file again for
+    /// is asked for with the same counter. (An audio is reported as failed instead.) The game master does not upload a file again for
     /// the show it already uploaded it for; it does once the item is shown again later.
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
         guard model.sender.isMaster, !root.gameModel.gameConfig.isMaster else {
             Logger.networking.debug("PlayerController: SharePlay file-load-failure ignored \(model.counter, privacy: .public), sender/role check failed")
+            return
+        }
+        if model.data.type == .audio {
+            // The reference of this show was handled when it arrived, so the pipeline would drop
+            // this message as a repeat of it. The game master's play waits for this player's
+            // file: it must learn that the file did not arrive, to send it again a bounded
+            // number of times and then go on without this player.
+            let failure = await response(for: model, isSuccess: false, requestData: false)
+            await sendUpstream(model: failure)
             return
         }
         await receivedProcess(model, origin: .file)

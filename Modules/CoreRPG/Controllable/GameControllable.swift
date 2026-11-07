@@ -3,11 +3,6 @@
 import Foundation
 import Observation
 
-@MainActor
-public protocol ItemGameReportable {
-    var players: [UUID] { get set }
-}
-
 @MainActor @Observable
 public final class ItemGameModel {
     public typealias ModelType = Observable & Sendable
@@ -37,6 +32,20 @@ public final class ItemGameModel {
     // Stored here (not on domain models) to avoid shared state across game sessions
     // and to prevent cross-test contamination when tests run in parallel.
     public var playerReports: [UUID: [UUID]] = [:]
+
+    /// The game master's version of each item players report on. See `recordMasterVersion`.
+    public private(set) var masterVersions: [UUID: Int] = [:]
+
+    /// Records the game master's version of `itemId`. When it differs from the one recorded
+    /// before, the item was replaced during the game: the reports made for the old version no
+    /// longer count, so the players receive the new one. Returns whether reports were dropped.
+    @discardableResult
+    public func recordMasterVersion(_ version: Int, for itemId: UUID) -> Bool {
+        defer { masterVersions[itemId] = version }
+        guard let previous = masterVersions[itemId], previous != version else { return false }
+        playerReports[itemId] = []
+        return true
+    }
 
     public func setCurrent(players: [UUID]) {
         currentPlayers = players
@@ -116,6 +125,7 @@ public final class ItemGameModel {
         items = []
         itemData.removeAll()
         playerReports.removeAll()
+        masterVersions.removeAll()
     }
 
     func focus(on focusIds: [UUID]) {

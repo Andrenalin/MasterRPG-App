@@ -262,6 +262,10 @@ public final class GameRoot {
         sharingControlActions.update?(controls)
     }
 
+    /// Whether this device's audio transport may go through the game: a player's commands are
+    /// dropped by the game master while audio sharing is off. See CODE_AUDIT_Audio2 §5.14.
+    public var isAudioSharingEnabled: Bool { gameModel.gameControl.features.audioSharing }
+
     public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions(id: .object(ObjectIdentifier(self))) { [weak self] in
         self?.gameModel.gameControl.features ?? GameFeatureModel()
     }
@@ -409,6 +413,7 @@ extension GameRoot {
         networkStore.resetName(name: advertisedName, supporterTier: supporterTier)
         networkProxyStore.resetName(name: advertisedName, supporterTier: supporterTier)
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
+        installAudioCoordinatorChangeHandler()
 
         await adventureRoot.adventureGameControllable.startGame(with: id)
         guard generation == stopGeneration else { return }
@@ -491,6 +496,7 @@ extension GameRoot {
         if mode == .player {
             networkProxyStore.resetName(name: characterName, supporterTier: supporterTier)
             networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
+            installAudioCoordinatorChangeHandler()
         }
 
         await adventureRoot.adventureGameControllable.resetGame()
@@ -593,8 +599,18 @@ extension GameRoot {
         await stopGameTask?.value
     }
 
+    /// A media-services reset replaces the audio engine and its playback coordinator: the
+    /// SharePlay controller must coordinate the new one, or the players hear nothing for the rest
+    /// of the session. See CODE_AUDIT_Audio2 §5.9.
+    private func installAudioCoordinatorChangeHandler() {
+        audioRoot.setAudioCoordinatorChangeHandler { [weak self] coordinator in
+            self?.networkStore.sharePlayStore.setup(audioCoordinator: coordinator)
+        }
+    }
+
     private func performStopGame() async {
         cancelOwnedTasks()
+        audioRoot.setAudioCoordinatorChangeHandler(nil)
         mapRoot.mapGameControllable.resetBattleRound()
         battleRoundBroadcastLog.reset()
         await statisticsModel.checkpoint(participants: currentStatisticParticipants())
@@ -613,6 +629,8 @@ extension GameRoot {
         await adventureRoot.adventureGameControllable.resetGame()
         // Bytes peers sent for files not downloaded here are only for the running game.
         FileUrlDataController.releaseHeldPeerData()
+        // Other apps' audio may resume once the game's audio is not playing.
+        audioRoot.releaseAudioSession()
         #if !os(tvOS)
         gameModel.gameTableModel = nil
         #endif

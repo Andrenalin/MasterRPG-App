@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
-import CharacterRPG
 import CoreRPG
 import Foundation
 import os.log
+import CharacterRPG
 
 extension PlayerController: PlayerNetworkProxyControllerDelegate {
     func lostProxyConnection() async {
@@ -15,9 +15,7 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
         Logger.networking.debug("PlayerController: Proxy Ready")
         gameModel.reset(lostMaster: false)
         await sendAudioList()
-        await sendPhotoList()
-        await sendPdfList()
-        await sendSpaceList()
+        await sendFileLists()
         await scheduleSendCharacter()
     }
 

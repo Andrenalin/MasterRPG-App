@@ -7,6 +7,9 @@ struct DetailRootView: View {
     let root: AudioRootModel
     let model: AudioModel
 
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
+
     var body: some View {
         DetailListView(root: root, model: model, folderListController: root.folderListController)
             .detailInspectorModifier(root: root.rootController)
@@ -16,7 +19,8 @@ struct DetailRootView: View {
             .onChange(of: root.navigationModel.triggerSpaceAction) {
                 guard root.navigationModel.triggerSpaceAction else { return }
                 root.navigationModel.triggerSpaceAction = false
-                root.audioController.togglePlay(id: model.id)
+                // The same entry point as the play buttons: a folder plays its playlist.
+                root.toggleItem(id: model.id, isGameRunning: appGameStateModel?.isGameRunning == true, networkActions: networkActions)
             }
     }
 }

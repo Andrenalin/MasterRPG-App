@@ -161,10 +161,11 @@ public final class RuleRootModel {
         syncTask = nil
         syncDataController = nil
         if let dataControllable = itemController.itemDataModel.dataController, let context {
-            let controller = SyncDataController(
+            let controller = EntitySyncDataController(
                 context: context,
                 dataControllable: dataControllable,
-                itemController: itemController
+                itemController: itemController,
+                entity: RPGRule.entity()
             )
             syncDataController = controller
             syncTask = controller.start()
@@ -190,7 +191,7 @@ public final class RuleRootModel {
     @ObservationIgnored public let viewController: ViewController
     @ObservationIgnored let folderListController: FolderListController
     @ObservationIgnored let folderLinkController: FolderListController
-    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncDataController: EntitySyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
     @ObservationIgnored let editorLinkModel: EditorLinkModel
     @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
@@ -218,25 +219,3 @@ extension RuleRootModel: ItemRootControllable {
 
 extension RuleRootModel: RootExportControllable {}
 
-public extension RuleRootModel {
-    func itemDataCleanup() async throws {
-        for itemId in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: itemId) else { continue }
-            if model.displayState == DisplayStateMask.totalHidden.rawValue {
-                await editController.delete(itemId: model.id)
-            }
-        }
-    }
-
-    func checkFolders(reportModel: ValidateRepairModel) async {
-        let controller = ConvertController(
-            itemController: itemController,
-            editController: editController
-        )
-        await controller.repairHiddenAndFolders(reportModel: reportModel)
-    }
-
-    func validateLinks(reportModel: ValidateRepairModel) async {
-        await linkController.validateLinks(reportModel: reportModel)
-    }
-}

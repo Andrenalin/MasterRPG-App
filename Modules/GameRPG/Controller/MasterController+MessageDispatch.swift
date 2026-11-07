@@ -1,37 +1,17 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
 
 // MARK: - Message Dispatch
 
 extension MasterController {
-    func handle(
-        _ model: GameNetworkModel,
-        connectionId: ConnectionController.ID? = nil
-    ) async throws -> NetworkCodableDataType? {
-        try await handle(
-            model,
-            origin: connectionId.map { GameMessageOrigin.direct($0) }
-        )
-    }
-
     /// Not `private` because `MasterController+NetworkStoreDelegate.swift`'s
     /// `process(_:)` also calls this directly, from a different file.
     func handle(
         _ model: GameNetworkModel,
-        origin: GameMessageOrigin?
+        origin: GameMessageOrigin? = nil
     ) async throws -> NetworkCodableDataType? {
         switch model.data.type {
         case .adventure, .none, .rule, .setting, .editor, .generator, .search:

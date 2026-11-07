@@ -1215,7 +1215,7 @@ final class MasterPlayerControllerTests {
 
         // Route the request through the master's full receive pipeline, exactly
         // like the network layer would.
-        await sut.receivedProcess(request, connectionId: nil)
+        await sut.received(request, connectionId: nil)
         let repairResponse = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
 
         // The master's answer must be for the REQUESTED photo (A), not whatever
@@ -1268,7 +1268,7 @@ final class MasterPlayerControllerTests {
 
         // Asking for the bytes must leave the delivery pending: the request says the
         // reveal could not be used.
-        await sut.receivedProcess(request, connectionId: nil)
+        await sut.received(request, connectionId: nil)
         #expect(!originalLog.hasAcknowledgement(from: gameConfigModelPlayer.id))
         let delivery = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
         #expect(delivery.data.data != nil)
@@ -1286,7 +1286,7 @@ final class MasterPlayerControllerTests {
         // player's availability report.
         var uncorrelated = ack
         uncorrelated.counter += 100
-        await sut.receivedProcess(uncorrelated, connectionId: nil)
+        await sut.received(uncorrelated, connectionId: nil)
         #expect(!originalLog.hasAcknowledgement(from: gameConfigModelPlayer.id))
         #expect(!rootSut.photoRoot.photoGameControllable.isPhotoAvailable(
             itemId: photoId,
@@ -1298,12 +1298,12 @@ final class MasterPlayerControllerTests {
         // player received the asset.
         var failed = ack
         failed.subType = .failed
-        await sut.receivedProcess(failed, connectionId: nil)
+        await sut.received(failed, connectionId: nil)
         #expect(!originalLog.hasAcknowledgement(from: gameConfigModelPlayer.id))
 
         // Route the ack through the master's full receive pipeline, exactly
         // like the network layer would, so `updateMessage` actually runs.
-        await sut.receivedProcess(ack, connectionId: nil)
+        await sut.received(ack, connectionId: nil)
 
         let updatedRow = try #require(rootSut.logGameController.logRows.first { row in
             row.id == pendingRow.id

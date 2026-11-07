@@ -26,14 +26,14 @@ struct AudioControllerTests {
         sut.toggle()
         #expect(model.showPlayerToolBar)
 
-        sut.skipToCurrentItem(offsetBy: 1)
+        sut.skip(offsetBy: 1)
         #expect(model.currentId == third.id)
 
         model.currentItem = second
-        sut.skipToCurrentItem(offsetBy: -1)
+        sut.skip(offsetBy: -1)
         #expect(model.currentId == first.id)
 
-        sut.skipToCurrentItem(offsetBy: -1)
+        sut.skip(offsetBy: -1)
         #expect(model.currentId == first.id)
 
         model.currentItem = first
@@ -60,7 +60,7 @@ struct AudioControllerTests {
         #expect(model.currentId == first.id)
         #expect(model.player.currentItem != nil)
 
-        sut.togglePlay(id: second.id, triggerPlay: false)
+        await sut.preparePlay(id: second.id, triggerPlay: false)
         #expect(model.currentId == second.id)
 
         sut.loadAndPlay(id: first.id)
@@ -155,7 +155,7 @@ private extension AudioControllerTests {
             id: UUID(),
             url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
             title: title,
-            artist: "MasterRPG",
+            subtitle: "MasterRPG",
             duration: CMTime(seconds: 30, preferredTimescale: 1)
         )
     }

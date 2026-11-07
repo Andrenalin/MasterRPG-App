@@ -367,12 +367,13 @@ struct SimpleFileFlowTests {
             message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
             actionType: .playAudio
         )
+        await env.master.waitForAudioDeliveries()
 
         // Then: the file went to the player that lacked it, as a store that shows nothing.
         let packages = env.masterSends.filter { $0.message.data.data != nil && $0.message.data.type == .audio && $0.message.type == .store }
         #expect(packages.count == 1)
         #expect(packages.first?.connectionId == missing.connectionId)
-        #expect(await missing.root.audioRoot.audioGameControllable.hasLocalAudioData(for: audioId))
+        #expect(await missing.root.audioRoot.audioGameControllable.hasLocalFileData(for: audioId))
 
         // And its acknowledgement started the playback for everyone.
         let play = env.masterSends.filter { $0.message.subType == .playAudio }

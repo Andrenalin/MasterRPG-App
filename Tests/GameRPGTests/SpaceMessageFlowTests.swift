@@ -157,7 +157,7 @@ struct SpaceMessageFlowTests {
             counter: 8
         )
 
-        await env.master.receivedProcess(report, connectionId: connectionId)
+        await env.master.received(report, connectionId: connectionId)
         #expect(env.masterRoot.spaceRoot.spaceGameControllable.isSpaceAvailable(
             itemId: spaceId,
             for: env.player1Config.id,

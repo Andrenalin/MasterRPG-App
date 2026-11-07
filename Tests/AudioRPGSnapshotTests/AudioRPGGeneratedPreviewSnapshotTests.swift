@@ -55,14 +55,6 @@ struct AudioRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: AudioRPG::AudioPlayerView
-    @Test("AudioPlayerView")
-    func snapshotAudioPlayerView() async throws {
-        try await assertPreviewSnapshot("AudioPlayerView") {
-            AudioRPG.AudioPlayerView()
-        }
-    }
-
     // snapshot-root: AudioRPG::PlayerVolumeView
     @Test("PlayerVolumeView")
     func snapshotPlayerVolumeView() async throws {
@@ -152,7 +144,7 @@ struct AudioRPGGeneratedPreviewSnapshotTests {
     @Test("InlineRowViewer")
     func snapshotInlineRowViewer() async throws {
         try await assertPreviewSnapshot("InlineRowViewer") {
-            AudioRPG.InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .pdf), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
+            AudioRPG.InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .pdf))
         }
     }
 

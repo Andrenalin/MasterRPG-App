@@ -26,7 +26,7 @@ struct AudioLoopTests {
             id: UUID(),
             url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
             title: title,
-            artist: "MasterRPG",
+            subtitle: "MasterRPG",
             duration: CMTime(seconds: 30, preferredTimescale: 1)
         )
     }
@@ -53,7 +53,7 @@ struct AudioLoopTests {
         let model = root.audioPlayerModel
         model.wantsPlayback = true
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(model.isPlaybackComplete)
         #expect(!model.wantsPlayback)
@@ -64,7 +64,7 @@ struct AudioLoopTests {
         let (root, tracks) = Self.rootAtLastTrack(count: 3)
         root.audioPlayerModel.repeatPlayList = true
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(root.audioPlayerModel.currentId == tracks.first?.id)
         #expect(!root.audioPlayerModel.isPlaybackComplete)
@@ -78,7 +78,7 @@ struct AudioLoopTests {
         root.audioPlayerModel.currentItem = tracks[0]
         root.audioPlayerModel.repeatPlayList = true
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(root.audioPlayerModel.currentId == tracks[1].id)
     }
@@ -92,7 +92,7 @@ struct AudioLoopTests {
         root.audioPlayerModel.repeatPlayList = true
         root.audioGameControllable.setLoopReplayHandler { replays.commands.append($0) }
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         let command = try #require(replays.commands.first)
         let request = try #require(replays.requests.first)
@@ -114,7 +114,7 @@ struct AudioLoopTests {
         root.audioPlayerModel.playListRootId = playlistItemId
         root.audioGameControllable.setLoopReplayHandler { replays.commands.append($0) }
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         let request = try #require(replays.requests.first)
         #expect(request.id == playlistItemId)
@@ -128,7 +128,7 @@ struct AudioLoopTests {
         root.audioPlayerModel.repeatPlayList = true
         root.audioGameControllable.setLoopReplayHandler { replays.commands.append($0) }
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(replays.requests.map(\.id) == [tracks[0].id])
     }
@@ -139,7 +139,7 @@ struct AudioLoopTests {
         let replays = Replays()
         root.audioGameControllable.setLoopReplayHandler { replays.commands.append($0) }
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(replays.commands.isEmpty)
         #expect(root.audioPlayerModel.isPlaybackComplete)
@@ -155,7 +155,7 @@ struct AudioLoopTests {
         root.audioPlayerModel.repeatPlayList = true
         root.audioGameControllable.setLoopReplayHandler { replays.commands.append($0) }
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(replays.commands.isEmpty)
         #expect(root.audioPlayerModel.currentId == tracks[1].id)
@@ -169,7 +169,7 @@ struct AudioLoopTests {
         root.audioGameControllable.setLoopReplayHandler { replays.commands.append($0) }
         root.audioGameControllable.setLoopReplayHandler(nil)
 
-        root.audioController.resetPlaylist(complete: true)
+        root.audioController.advanceAfterTrackEnd(complete: true)
 
         #expect(replays.commands.isEmpty)
         #expect(root.audioPlayerModel.currentId == tracks.first?.id)

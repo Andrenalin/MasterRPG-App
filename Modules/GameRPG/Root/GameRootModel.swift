@@ -373,7 +373,7 @@ final class GameRootModel: Sendable {
         if latestValueUpdateCounters[key] == nil {
             latestValueUpdateOrder.append(key)
             // Growable by a peer sending many distinct entryIds — bounded
-            // the same way `deliveryMessagesByWireID` is.
+            // the same way the delivery log is bounded.
             // See CODE_AUDIT_Game §7.5.
             while latestValueUpdateOrder.count > Self.maximumRetainedValueUpdateCounters {
                 latestValueUpdateCounters[latestValueUpdateOrder.removeFirst()] = nil

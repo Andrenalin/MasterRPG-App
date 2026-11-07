@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
-import AudioRPG
 import CoreRPG
 import Foundation
 import os.log
+import AudioRPG
 
 extension PlayerController {
     func handleAudio(
@@ -20,34 +20,29 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             let revealed = try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true)
-            guard revealed, await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else {
+            guard revealed, await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) else {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
-            root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
-            // A track that belongs to the playlist that plays here joins it.
-            await root.audioRoot.audioGameControllable.itemArrived(id: model.data.id)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return await acceptAudio(model)
         case .store:
             // A store keeps the audio without showing it: the game master sends one to every
             // player before it starts an audio that somebody lacks.
             if model.data.data != nil {
                 try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             }
-            guard await root.audioRoot.gameControllable.hasItem(id: model.data.id, version: model.data.version),
-                  await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id)
-            else {
+            guard await holdsFile(of: model.data, in: root.audioRoot.gameControllable) else {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
-            root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
-            // A track that belongs to the playlist that plays here joins it.
-            await root.audioRoot.audioGameControllable.itemArrived(id: model.data.id)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return await acceptAudio(model)
         case .update:
             switch model.subType {
             case .audioList:
+                // On the game master's own device the master controller is authoritative: this
+                // snapshot could land after newer acknowledgements and erase them. See
+                // CODE_AUDIT_Audio2 §5.8.
+                guard !gameModel.asGameMaster else { return nil }
                 _ = applyAudioList(model)
             case .playAudio:
-                guard model.sender.isMaster else { return nil }
                 if root.audioRoot.audioGameControllable.shouldPlay(with: model.data) {
                     reportAudioAvailableToCurrentPlayers(itemId: model.data.id, model: model)
                 }
@@ -75,9 +70,17 @@ extension PlayerController {
         return nil
     }
 
+    /// The audio is readable here: the master learns it, and a track that belongs to the
+    /// playlist that plays here joins it.
+    private func acceptAudio(_ model: GameNetworkModel) async -> GameNetworkModel {
+        root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+        await root.audioRoot.audioGameControllable.itemArrived(id: model.data.id)
+        return await response(for: model, isSuccess: true, requestData: false)
+    }
+
     private func applyAudioList(_ model: GameNetworkModel) -> Bool {
         guard model.sender.isMaster,
-              gameModel.canApplyAudioList(from: model.masterId, counter: model.counter),
+              gameModel.canApplyList(.audio, from: model.masterId, counter: model.counter),
               root.audioRoot.audioGameControllable.applyAudioList(
                   data: model.data,
                   for: model.masterId,
@@ -85,7 +88,7 @@ extension PlayerController {
               )
         else { return false }
 
-        gameModel.recordAudioList(counter: model.counter, from: model.masterId)
+        gameModel.recordList(.audio, counter: model.counter, from: model.masterId)
         return true
     }
 

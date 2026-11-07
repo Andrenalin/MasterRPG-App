@@ -163,7 +163,7 @@ struct PdfMessageFlowTests {
             counter: 8
         )
 
-        await env.master.receivedProcess(report, connectionId: connectionId)
+        await env.master.received(report, connectionId: connectionId)
         #expect(env.masterRoot.pdfRoot.pdfGameControllable.isPdfAvailable(
             itemId: pdfId,
             for: env.player1Config.id,

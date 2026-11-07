@@ -30,7 +30,6 @@ struct ViewControllerTests {
         _ = sut.dropChooseView(model: selectionModel)
         _ = sut.linkListView(type: .inspector, itemSelectionModel: selectionModel)
         _ = sut.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: true), dismissAction: {})
-        _ = sut.gameView(root: root)
         _ = sut.diceRollView(root: root)
         _ = sut.diceActionBarView(root: root)
         _ = sut.diceResultView(root: root)

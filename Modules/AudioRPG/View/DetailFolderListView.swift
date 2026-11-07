@@ -19,8 +19,6 @@ struct DetailFolderListView: View {
 #endif
 
     var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-
         DetailFolderList(
             root: root.rootController,
             openFileWindowModel: root.openFileWindowModel,

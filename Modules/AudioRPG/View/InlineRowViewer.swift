@@ -5,7 +5,6 @@ import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
-    let destination: ItemRowModel
     /// Pre-resolved by the caller where available — see `ViewControllable`'s
     /// doc comment / CODE_AUDIT_10 §8.1. Only covers the `source.entryId ==
     /// nil` case below directly; the entry-linked case still needs its own
@@ -34,5 +33,5 @@ struct InlineRowViewer: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .pdf), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
+    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .pdf))
 }

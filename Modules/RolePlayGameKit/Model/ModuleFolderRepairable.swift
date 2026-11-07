@@ -23,7 +23,7 @@ import WeatherRPG
 protocol ModuleFolderRepairable: ItemRootControllable {
     func checkFolders(reportModel: ValidateRepairModel) async
     func validateLinks(reportModel: ValidateRepairModel) async
-    func itemDataCleanup() async throws
+    func itemDataCleanup() async
 }
 
 extension AdventureRootModel: ModuleFolderRepairable {}

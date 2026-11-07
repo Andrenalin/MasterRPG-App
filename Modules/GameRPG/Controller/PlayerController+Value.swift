@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
-import CharacterRPG
 import CoreRPG
 import Foundation
 import os.log
+import CharacterRPG
 
 extension PlayerController {
     /// Whether `characterId` is this player's Character or one of its companions; the master
@@ -25,7 +25,7 @@ extension PlayerController {
            isOwnOrCompanionCharacter(model.data.id) {
             let characterId = model.data.id
             // The master failed to import this player's Character package
-            // (see MasterController+ValueMessages.swift). `hasSendPlayer` was
+            // (see MasterController+ValueMessages.swift). `hasSentPlayer` was
             // already latched true when the original reference went out;
             // clear it so the existing `scheduleSendCharacter()` triggers
             // retry `sendCharacter()` instead of the handshake staying wedged

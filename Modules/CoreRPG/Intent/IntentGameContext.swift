@@ -11,6 +11,10 @@ public enum IntentGameContext {
     public static var networkActions: @MainActor () -> NetworkActions? = { nil }
     /// Whether this device runs the game as master or player; `nil` while no game runs.
     public static var gameModus: @MainActor () -> GameModus? = { nil }
+    /// Whether this device's audio transport (play, pause, skip, seek) goes through the game. A
+    /// player's commands are dropped by the game while audio sharing is off, so the device then
+    /// plays on its own. See CODE_AUDIT_Audio2 §5.14.
+    public static var canControlGameAudio: @MainActor () -> Bool = { true }
     /// The supporter tier a player joins with, as the join screen reads it from the environment.
     public static var supporterTier: @MainActor () -> SupporterTier = { .none }
     /// Sets the app's game flags as the game screens do, for an intent that joins or ends a game

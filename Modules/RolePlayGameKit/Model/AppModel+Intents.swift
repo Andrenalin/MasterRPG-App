@@ -38,6 +38,10 @@ extension AppModel {
             guard let gameStateModel, gameStateModel.isGameRunning else { return nil }
             return gameStateModel.gameModus
         }
+        IntentGameContext.canControlGameAudio = { [weak gameStateModel, weak gameRoot] in
+            guard let gameStateModel, let gameRoot else { return true }
+            return gameStateModel.gameModus == .master || gameRoot.isAudioSharingEnabled
+        }
         IntentGameContext.supporterTier = { [weak self] in self?.supporterTier ?? .none }
         IntentGameContext.nextTurn = { [weak gameRoot] in gameRoot?.nextTurn() }
         IntentGameContext.setGameState = { [weak gameStateModel] isRunning, modus in

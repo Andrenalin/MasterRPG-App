@@ -184,7 +184,16 @@ private extension PlayerShareReportTests {
         of module: SharedModule,
         by player: LinkedGameEnvironment.Player
     ) async throws {
-        let package = try await module.controllable(player.root).createGameData(for: itemId)
+        let controllable = module.controllable(player.root)
+        if module == .audio {
+            // Audio's share button names the item only; the game exports the file when the
+            // master lacks it. See CODE_AUDIT_Audio2 §7.6.
+            let reference = await controllable.share(id: itemId)
+            #expect(reference.data == nil)
+            await player.controller.game(message: reference, actionType: .generic)
+            return
+        }
+        let package = try await controllable.createGameData(for: itemId)
         #expect(package.data != nil)
         await player.controller.game(message: package, actionType: .generic)
     }

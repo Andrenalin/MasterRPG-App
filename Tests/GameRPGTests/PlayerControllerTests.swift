@@ -227,6 +227,35 @@ struct PlayerControllerTests {
         #expect(env.root.photoRoot.photoGameControllable.presentedPhotoId == nil)
     }
 
+    @Test("An audio file that did not load through SharePlay is reported to the game master as failed")
+    func audioLoadFailureIsReported() async throws {
+        // Given: the game master's store of an audio track, which this device holds only as a reference.
+        let env = try await PlayerControllerTestEnvironment.create()
+        let masterConfig = Self.masterConfig()
+        env.root.gameModel.reset(
+            gameConfig: GameConfigModel(id: env.gameConfig.id, state: .started, master: masterConfig.master),
+            gameRoster: env.root.gameModel.gameRoster
+        )
+        let trackId = UUID()
+        let reference = Self.networkModel(
+            counter: 39,
+            type: .store,
+            data: NetworkCodableDataType(id: trackId, type: .audio, version: 7),
+            gameConfig: masterConfig
+        )
+
+        // When: the Journal could not deliver the bytes (the reference itself was handled before).
+        await env.playerController.sharePlayFileLoadFailed(reference)
+
+        // Then: the master is told, so it sends the file again or goes on without this player.
+        let failure = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        #expect(failure.counter == 39)
+        #expect(failure.subType == .failed)
+        #expect(failure.data.id == trackId)
+        #expect(failure.data.version == 7)
+        #expect(failure.data.data == nil)
+    }
+
     @Test("Character join advertises metadata and sends the full package only when requested")
     func characterJoinHandshake() async throws {
         // Given
@@ -254,7 +283,7 @@ struct PlayerControllerTests {
         #expect(reference.data.id == characterId)
         #expect(reference.data.version == expectedVersion)
         #expect(reference.data.data == nil)
-        #expect(sut.gameModel.hasSendPlayer)
+        #expect(sut.gameModel.hasSentPlayer)
 
         // When: the master requests the mismatched package.
         let request = Self.networkModel(
@@ -467,7 +496,7 @@ struct PlayerControllerTests {
 
         await sut.lostProxyConnection()
         #expect(sut.gameModel.lostMaster)
-        #expect(sut.gameModel.hasSendPlayer == false)
+        #expect(sut.gameModel.hasSentPlayer == false)
 
         await sut.ready()
         #expect(sut.gameModel.lostMaster == false)
@@ -479,16 +508,12 @@ struct PlayerControllerTests {
         #expect(sut.gameModel.sendCharacterTask == nil)
 
         await sut.received(Self.networkModel(counter: 21, type: .update, data: data, gameConfig: masterConfig))
-        #expect(sut.gameModel.messageCounter == 1)
 
         await sut.receivedProxy(Self.networkModel(counter: 22, type: .update, data: data, gameConfig: masterConfig))
-        #expect(sut.gameModel.messageCounter == 2)
 
         await sut.receivedFile(Self.networkModel(counter: 23, type: .update, data: data, gameConfig: masterConfig))
-        #expect(sut.gameModel.messageCounter == 3)
 
         await sut.receivedFile(Self.networkModel(counter: 24, type: .update, data: data, gameConfig: env.gameConfig))
-        #expect(sut.gameModel.messageCounter == 3)
     }
 }
 

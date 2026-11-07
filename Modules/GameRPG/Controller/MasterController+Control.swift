@@ -1,25 +1,20 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
+import AdventureRPG
 import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
 import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
+import DiceRPG
+import MapRPG
 
 // MARK: - Control
 
 extension MasterController {
     func start() async {
         Logger.networking.debug("MasterController: Start")
-        root.logGameController.beginDeliverySession(gameModel.deliverySessionID)
+        root.logGameController.beginDeliverySession(gameModel.deliverySessionId)
         // A code that could not be read at launch (locked keychain) is resolved, and a code changed
         // moments ago is made durable, before it is put to use. See CODE_AUDIT_Join §5.5.
         root.gameJoinCodeModel.refreshFromStorage()
@@ -40,18 +35,10 @@ extension MasterController {
         resetPlayersTask = nil
         removeAudioLoopReplay()
         removeAudioPrefetch()
-        for task in audioPlayRetryTasks.values {
-            task.cancel()
-        }
-        audioPlayRetryTasks.removeAll()
-        gameModel.audioPlayRetryAttempts.removeAll()
-        gameModel.pendingAudioPlays.removeAll()
+        clearPendingAudioPlays()
         gameModel.sentMapContentVersions.removeAll()
         gameModel.resetCharacterOwnership()
-        gameModel.resetAudioListSequence()
-        gameModel.resetPhotoListSequence()
-        gameModel.resetPdfListSequence()
-        gameModel.resetSpaceListSequence()
+        gameModel.resetListSequences()
         gameModel.resetSpaceTransformSequence()
         await root.networkStore.stopGame()
         await root.networkProxyStore.stopGame()

@@ -1,22 +1,12 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
 import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
-import PdfRPG
 import SpaceRPG
 #if os(macOS)
-import AppKit
 #else
-import UIKit
 #endif
 
 // MARK: - Send Messages
@@ -50,22 +40,12 @@ extension PlayerController {
         }
         if actionType == .generic {
             switch message.type {
-            case .photo:
-                guard root.gameModel.gameControl.features.photoSharing else { return }
-                let masterId = root.gameModel.gameConfig.master.id
-                let masterHasIt = root.photoRoot.photoGameControllable.masterVersion(for: message.id, masterId: masterId) != nil
-                await shareFile(message, masterHasIt: masterHasIt)
-                return
-            case .pdf:
-                let masterId = root.gameModel.gameConfig.master.id
-                let masterHasIt = root.pdfRoot.pdfGameControllable.masterVersion(for: message.id, masterId: masterId) != nil
-                await shareFile(message, masterHasIt: masterHasIt)
-                return
-            case .space:
-                guard root.gameModel.gameControl.features.spaceSharing else { return }
-                let masterId = root.gameModel.gameConfig.master.id
-                let masterHasIt = root.spaceRoot.spaceGameControllable.masterVersion(for: message.id, masterId: masterId) != nil
-                await shareFile(message, masterHasIt: masterHasIt)
+            case .photo, .pdf, .space:
+                guard let access = FileBackedModuleAccess.access(for: message.type, in: root),
+                      access.isSharingEnabled(root.gameModel.gameControl.features)
+                else { return }
+                let masterHasIt = access.masterVersion(message.id, root.gameModel.gameConfig.master.id) != nil
+                await shareFile(message, masterHasIt: masterHasIt, controllable: access.controllable)
                 return
             case .audio:
                 guard root.gameModel.gameControl.features.audioSharing else { return }
@@ -73,7 +53,7 @@ extension PlayerController {
                     itemId: message.id,
                     for: root.gameModel.gameConfig.master.id
                 )
-                await shareFile(message, masterHasIt: masterHasIt)
+                await shareFile(message, masterHasIt: masterHasIt, controllable: root.audioRoot.gameControllable)
                 return
             default:
                 break
@@ -95,12 +75,33 @@ extension PlayerController {
     /// everybody sees: the player names the item and the master shows it, delivering it to
     /// whoever lacks it. The bytes go along only for an item the master has never reported,
     /// which it then adopts as its own copy.
-    private func shareFile(_ fullData: NetworkCodableDataType, masterHasIt: Bool) async {
-        await send(
-            type: .update,
-            subType: .generic,
-            updated: masterHasIt ? fullData.reference : fullData
-        )
+    ///
+    /// A bare reference is exported only when the master needs the bytes, so a file the master
+    /// holds is never read into memory. A failed export is logged and nothing is sent: the
+    /// master would only be told about an item it cannot get. See CODE_AUDIT_Audio2 §7.6.
+    private func shareFile(
+        _ data: NetworkCodableDataType,
+        masterHasIt: Bool,
+        controllable: any GameControllable
+    ) async {
+        guard !masterHasIt else {
+            await send(type: .update, subType: .generic, updated: data.reference)
+            return
+        }
+        var payload = data
+        if payload.data == nil {
+            guard await controllable.hasLocalFileData(for: data.id) else {
+                Logger.networking.error("PlayerController: Cannot share \(data.type.token, privacy: .public) \(data.id, privacy: .public): its file is not on this device")
+                return
+            }
+            do {
+                payload = try await controllable.createGameData(for: data.id)
+            } catch {
+                Logger.networking.error("PlayerController: Failed to export \(data.type.token, privacy: .public) \(data.id, privacy: .public) for sharing: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+                return
+            }
+        }
+        await send(type: .update, subType: .generic, updated: payload)
     }
 
     /// Sends a message of this player. Everything goes to the game master; a Dice roll, a

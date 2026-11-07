@@ -326,7 +326,7 @@ extension AppModel {
     
     public func cleanDatabase() async {
         for step in moduleFolderRepairSteps {
-            try? await step.root.itemDataCleanup()
+            await step.root.itemDataCleanup()
             // Files a game of the previous run left behind. See CODE_AUDIT_21 §5.14.
             await step.root.itemControllable.removeLeftoverGameFiles()
         }

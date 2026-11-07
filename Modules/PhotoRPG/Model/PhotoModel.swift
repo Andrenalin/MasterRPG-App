@@ -98,12 +98,9 @@ public final class PhotoModel: nonisolated Identifiable {
     var entries_: CRDTDataUpdate<[PhotoEntryModel]>
 
     public var parentId: UUID? = nil
-    
-    // only game properties
-    public var players: [UUID] = []
 }
 
-extension PhotoModel: nonisolated ItemGameReportable, nonisolated ItemLinkRegistrable {}
+extension PhotoModel: nonisolated ItemLinkRegistrable {}
 
 extension PhotoModel: nonisolated Comparable {
     nonisolated public static func < (lhs: PhotoModel, rhs: PhotoModel) -> Bool {

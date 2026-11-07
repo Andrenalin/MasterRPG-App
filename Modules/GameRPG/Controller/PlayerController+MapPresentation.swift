@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import os.log
 import MapRPG
 
 // Split out of PlayerController+Map.swift — presentation, pin and
@@ -54,9 +53,9 @@ extension PlayerController {
     /// anything. See CODE_AUDIT §5.2.
     func retryDeferredBattleRoundUpdate(itemId: UUID) {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == itemId,
-              let data = gameModel.pendingBattleRoundUpdate(for: itemId) else { return }
+              let data = gameModel.mapUpdates.pendingBattleRoundUpdate(for: itemId) else { return }
         guard root.mapRoot.mapGameControllable.applyBattleRoundUpdate(for: itemId, with: data) else { return }
-        gameModel.discardPendingBattleRoundUpdate(itemId: itemId)
+        gameModel.mapUpdates.discardPendingBattleRoundUpdate(itemId: itemId)
         setMapUpdateTypeAndSyncPawns()
     }
 

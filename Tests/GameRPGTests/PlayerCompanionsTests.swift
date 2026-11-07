@@ -196,7 +196,7 @@ struct PlayerCompanionsTests {
         #expect(announced.data.id == wolfId)
         #expect(announced.data.data == nil)
         #expect(announced.sender.companions == [wolf])
-        #expect(env.player.gameModel.hasSendPlayer)
+        #expect(env.player.gameModel.hasSentPlayer)
 
         // The master asks for the package; the player answers although it has no Character.
         let request = env.playerRoot.gameModel.outgoingMessage(
@@ -246,7 +246,7 @@ struct PlayerCompanionsTests {
 
         let announced = env.playerNetworkSpy.requestHistory.compactMap { ($0 as? GameNetworkModel)?.data.id }
         #expect(announced == [wolfId, wolfId, bearId], "the first, stale announcement and the complete second one")
-        #expect(env.player.gameModel.hasSendPlayer, "and the final send is the one that latches")
+        #expect(env.player.gameModel.hasSentPlayer, "and the final send is the one that latches")
     }
 
     @Test("The master tells the player when a companion package cannot be imported, and the player retries")
@@ -281,7 +281,7 @@ struct PlayerCompanionsTests {
             data: NetworkCodableDataType(id: wolf.characterId, type: .value, version: 3, data: nil)
         )
         #expect(try await env.player.handleValue(answer) == nil)
-        #expect(!env.player.gameModel.hasSendPlayer)
+        #expect(!env.player.gameModel.hasSentPlayer)
     }
 
     @Test("A companion package merges into a Character the master already has, it does not replace it (§6.4)")

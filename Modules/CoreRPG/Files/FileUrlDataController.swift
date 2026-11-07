@@ -264,13 +264,26 @@ public extension FileUrlDataController {
     /// right file to reuse.
     @concurrent
     func hasDownloadedData(for fileUrl: FileUrl) async -> Bool {
+        await hasDownloadedData(for: fileUrl, startingDownload: true)
+    }
+
+    /// `hasDownloadedData(for:)` without the side effect: an evicted iCloud file is reported as
+    /// missing but not asked for. Scans over a whole library (availability lists) use this, so a
+    /// player joining or a share completing does not download every evicted file of the user;
+    /// the downloads start for the items that are played or shared. See CODE_AUDIT_Audio2 §7.1.
+    @concurrent
+    func hasDownloadedDataWithoutFetching(for fileUrl: FileUrl) async -> Bool {
+        await hasDownloadedData(for: fileUrl, startingDownload: false)
+    }
+
+    private func hasDownloadedData(for fileUrl: FileUrl, startingDownload: Bool) async -> Bool {
         if fileUrl.hasUnconvertedData { return true }
         if fileUrl.location == .url {
             return await hasLocalData(for: fileUrl)
         }
         let isDownloaded = await deviceUrl(for: fileUrl) { url -> Bool? in
             guard let url, FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return false }
-            return Self.isDownloadedOrLocal(url)
+            return Self.isDownloadedOrLocal(url, startingDownload: startingDownload)
         } ?? false
         if isDownloaded {
             // iCloud delivered the file: the peer's copy is no longer needed.
@@ -312,11 +325,12 @@ public extension FileUrlDataController {
 
     /// `true` for a file outside iCloud Drive or a downloaded iCloud item. For an iCloud item
     /// that is not downloaded it starts the download and returns `false`.
-    private static func isDownloadedOrLocal(_ url: URL) -> Bool {
+    private static func isDownloadedOrLocal(_ url: URL, startingDownload: Bool = true) -> Bool {
         guard let values = try? url.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey]),
               values.isUbiquitousItem == true else { return true }
         let status = values.ubiquitousItemDownloadingStatus
         if status == .current || status == .downloaded { return true }
+        guard startingDownload else { return false }
         do {
             try FileManager.default.startDownloadingUbiquitousItem(at: url)
         } catch {

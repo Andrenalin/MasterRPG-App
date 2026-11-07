@@ -2,8 +2,6 @@
 
 import CoreRPG
 import AVFoundation
-import Combine
-import GroupActivities
 import OSLog
 import Observation
 
@@ -17,6 +15,14 @@ final class AudioController: Sendable {
     let itemController: ItemController
     let model: AudioPlayerModel
     
+    /// Loads the files of audio items as playlist items. See `AudioTrackLoader`.
+    @MainActor var trackLoader: AudioTrackLoader {
+        AudioTrackLoader(
+            fileUrlDataController: itemController.fileUrlDataController,
+            filenameExtension: itemController.config.filenameExtension
+        )
+    }
+
     @MainActor func prewarm() {
         initAudioSessionEngine()
     }
@@ -27,16 +33,20 @@ final class AudioController: Sendable {
 extension AudioController {
     /// Every play path ends here, so the first track can never begin under the default audio
     /// category (muted by the ring switch, no long-form routing) while the session is still
-    /// being configured. See CODE_AUDIT_19 §3.5, CODE_AUDIT_20 §3.2.
+    /// being configured, and the session is activated by the first real play, not before.
+    /// A pause that arrives while the session is being activated wins: the play on its way
+    /// checks the intent again. See CODE_AUDIT_19 §3.5, CODE_AUDIT_20 §3.2, CODE_AUDIT_Audio2 §3.3.
     @MainActor
     func play() {
         model.wantsPlayback = true
-        guard model.audioSession?.isConfiguring == true else {
+        guard let session = model.audioSession, session.needsActivation else {
             model.player.play()
             return
         }
+        let generation = model.playbackGeneration
         Task { @MainActor in
-            await model.audioSession?.waitUntilConfigured()
+            await session.activate()
+            guard model.playbackGeneration == generation, model.wantsPlayback else { return }
             model.player.play()
         }
     }
@@ -44,7 +54,15 @@ extension AudioController {
     @MainActor
     func pause() {
         model.wantsPlayback = false
+        model.playbackGeneration += 1
         model.player.pause()
+    }
+
+    /// Lets other apps' audio resume when nothing plays here.
+    @MainActor
+    func releaseAudioSession() {
+        guard !model.isPlaying, !model.wantsPlayback else { return }
+        model.audioSession?.deactivate()
     }
     
     @MainActor
@@ -64,22 +82,22 @@ extension AudioController {
     }
     
     @MainActor
-    func togglePlay(id: UUID? = nil, triggerPlay: Bool = true) {
+    func togglePlay(id: UUID? = nil) {
         if let id, id != model.currentId {
             if model.isPlaying {
                 pause()
             }
             model.set(currentId: id)
             Task {
-                await preparePlay(id: id, triggerPlay: triggerPlay)
+                await preparePlay(id: id)
             }
             return
         }
-        if triggerPlay { toggle() }
+        toggle()
     }
     
     @MainActor
-    func skipToCurrentItem(offsetBy offset: Int) {
+    func skip(offsetBy offset: Int) {
         guard let currentIndex = model.currentIndex else { return }
         let newIndex = currentIndex + offset
         guard newIndex >= 0 && newIndex < model.playList.count else { return }
@@ -87,41 +105,40 @@ extension AudioController {
         togglePlay(id: newId)
     }
 
-    // Stays nonisolated (not @MainActor) — the scrubber stores this as a
-    // @Sendable closure so it must remain callable from any isolation context.
-    func skip(to offset: TimeInterval) {
-        Task { @MainActor in
-            // Cancel any in-flight seek before starting a new one — a rapid
-            // sequence of calls (e.g. debounced scrubber updates) should only
-            // ever land on the last requested position. `preferredTimescale:
-            // 600` avoids snapping every seek to the nearest whole second.
-            // See CODE_AUDIT_Audio §7.1.
-            model.seekTask?.cancel()
-            model.seekTask = Task {
-                await model.player.seek(to: CMTime(seconds: offset, preferredTimescale: 600))
-            }
+    /// Seeks the current item to `offset` seconds. A newer seek replaces one still running, so a
+    /// rapid sequence (a scrubber drag) only lands on the last position; `preferredTimescale: 600`
+    /// avoids snapping every seek to the nearest whole second. See CODE_AUDIT_Audio §7.1.
+    @MainActor
+    func seek(to offset: TimeInterval) {
+        model.seekTask?.cancel()
+        model.seekTask = Task {
+            await model.player.seek(to: Self.seekTime(offset))
+            guard !Task.isCancelled else { return }
+            // A paused player has no tick to show the new position.
+            updateCurrentTime(time: model.player.currentTime())
         }
     }
+
+    /// `seek(to:)` that returns once the player is at `offset`, for a start that must not play
+    /// from the beginning first.
+    @MainActor
+    func seekAndWait(to offset: TimeInterval) async {
+        model.seekTask?.cancel()
+        await model.player.seek(to: Self.seekTime(offset))
+        updateCurrentTime(time: model.player.currentTime())
+    }
+
+    static func seekTime(_ offset: TimeInterval) -> CMTime {
+        CMTime(seconds: offset, preferredTimescale: seekTimescale)
+    }
+
+    private static let seekTimescale: CMTimeScale = 600
 
 }
 
 // MARK: - Playlist
 
 extension AudioController {
-    /// Snapshot of the fields the @concurrent loading code needs, extracted on the
-    /// MainActor so no live AudioModel instance crosses the isolation boundary.
-    private struct AudioAssetRequest: Sendable {
-        let id: UUID
-        let title: String
-        let artist: String
-        let fileUrl: FileUrl
-    }
-
-    /// How many tracks are copied/loaded at the same time. Unbounded fan-out used to queue
-    /// every track of a large playlist behind the file-coordination limiter at once.
-    /// See CODE_AUDIT_18 §5.7.
-    private static let maxConcurrentTrackLoads = 3
-
     /// Returns whether the loaded tracks were added. `false` means a newer replacement took
     /// the playlist while they loaded and they were discarded: the caller must not go on to
     /// select or play a track of this load, it is not in the playlist. See CODE_AUDIT_21 §3.4.
@@ -143,40 +160,24 @@ extension AudioController {
             // The old track must not go on playing without a playlist entry if the new load
             // fails. See CODE_AUDIT_23 §5.9.
             model.player.replaceCurrentItem(with: nil)
+            // The lock screen must not go on offering the dropped track. See CODE_AUDIT_Audio2 §5.16.
+            MediaPlayerCoordinator.handleItemChange(item: nil, index: 0, count: 0)
         }
         // Another replacement can interleave during the loading await below (shared-audio
         // observation, `loadAndPlay`, a game reveal). Items loaded for a playlist that has
         // been replaced since are discarded, not appended. See CODE_AUDIT_18 §3.7.
         let generation = model.playListGeneration
 
-        let requests = models.compactMap { item -> AudioAssetRequest? in
+        let requests = models.compactMap { item -> AudioTrackLoader.Request? in
             guard let fileUrl = item.fileUrl else { return nil }
-            return AudioAssetRequest(
+            return AudioTrackLoader.Request(
                 id: item.id,
                 title: item.name,
-                artist: item.description.isEmpty ? PlaylistItem.defaultArtistName : item.description,
+                subtitle: item.description.isEmpty ? PlaylistItem.defaultArtistName : item.description,
                 fileUrl: fileUrl
             )
         }
-
-        // Load concurrently (each request is an independent file copy + duration
-        // load off the main actor), then reassemble in the original request order.
-        let loaded = await withTaskGroup(of: (Int, PlaylistItem?).self) { group in
-            var pending = requests.enumerated().makeIterator()
-            for _ in 0..<Self.maxConcurrentTrackLoads {
-                guard let (index, request) = pending.next() else { break }
-                group.addTask { (index, await self.audioAsset(for: request)) }
-            }
-            var results = [Int: PlaylistItem?]()
-            for await (index, playItem) in group {
-                results[index] = playItem
-                if let (nextIndex, nextRequest) = pending.next() {
-                    group.addTask { (nextIndex, await self.audioAsset(for: nextRequest)) }
-                }
-            }
-            return results
-        }
-        let playItems = requests.indices.compactMap { loaded[$0] ?? nil }
+        let playItems = await trackLoader.load(requests)
         guard model.playListGeneration == generation else {
             for item in playItems {
                 try? FileManager.default.removeItem(at: item.url)
@@ -185,85 +186,17 @@ extension AudioController {
         }
         // Nothing loaded (offline iCloud file, failed copy): there is no track to select or play.
         guard !playItems.isEmpty || requests.isEmpty else { return false }
+        // Two loads can bring the same track (a background load of the playlist and a track that
+        // arrived meanwhile): the track that is in the playlist already stays, the copy goes.
+        let present = Set(model.playList.map(\.id))
+        let freshItems = playItems.filter { !present.contains($0.id) }
+        for item in playItems where present.contains(item.id) {
+            try? FileManager.default.removeItem(at: item.url)
+        }
         // Single mutation: one observation change instead of one per item.
-        model.playList.append(contentsOf: playItems)
+        model.playList.append(contentsOf: freshItems)
         return true
     }
-
-    /// @concurrent: file copies and asset loading must not run on the main actor —
-    /// nonisolated async would inherit the (main actor) caller's isolation here.
-    @concurrent
-    private func audioAsset(for request: AudioAssetRequest) async -> PlaylistItem? {
-        guard let fileUrlDataController = itemController.fileUrlDataController else { return nil }
-
-        var audioAsset: PlaylistItem? = nil
-        do {
-            audioAsset = try await fileUrlDataController.url(for: request.fileUrl) { url -> PlaylistItem? in
-                guard let url else { return nil }
-                // Read through the coordinated copy instead of the raw path: a coordinated
-                // read of an evicted iCloud file waits for its download (CODE_AUDIT_17
-                // §5.21), and works unchanged for local and app-group files. The former
-                // explicit `startDownloadingUbiquitousItem` step took a coordinated *write*
-                // lock, didn't wait, and could fail for non-ubiquitous files.
-                // See CODE_AUDIT_18 §5.7.
-                //
-                // Copy file-to-file: AVURLAsset streams from disk, so the track never
-                // needs to be loaded into memory.
-                //
-                // One temp file per load: two overlapping loads of the same track used to
-                // share `<id>.<ext>`, so one could delete the file the other's asset was
-                // still loading. Replacing/removing a playlist entry deletes its file, and
-                // a discarded load deletes its own. See CODE_AUDIT_18 §3.7 (and §7.1).
-                let tempUrl = Self.temporaryTrackUrl(for: request.id, pathExtension: url.pathExtension)
-                try await FileManager.default.copyItem(coordinatingAccessFrom: url, to: tempUrl)
-                return try await Self.loadingRemovingOnFailure(request, from: tempUrl)
-            }
-        } catch {
-            Logger.audioController.error("Cannot read audio from file url: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        }
-
-        do {
-            if audioAsset == nil, let data = request.fileUrl.data {
-                let tempUrl = Self.temporaryTrackUrl(for: request.id, pathExtension: itemController.config.filenameExtension)
-                try data.write(to: tempUrl)
-                return try await Self.loadingRemovingOnFailure(request, from: tempUrl)
-            }
-        } catch {
-            Logger.audioController.error("Cannot read audio from data: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        }
-        return audioAsset
-    }
-
-    /// Loads the copied track, deleting the copy when loading fails: nothing else would ever
-    /// remove it. See CODE_AUDIT_19 §7.3.
-    private static func loadingRemovingOnFailure(_ request: AudioAssetRequest, from tempUrl: URL) async throws -> PlaylistItem {
-        do {
-            return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
-        } catch {
-            try? FileManager.default.removeItem(at: tempUrl)
-            throw error
-        }
-    }
-
-    private static func temporaryTrackUrl(for id: UUID, pathExtension: String) -> URL {
-        trackDirectory
-            .appending(path: "\(id.uuidString)-\(UUID().uuidString)")
-            .appendingPathExtension(pathExtension)
-    }
-
-    /// The app's own folder for the temporary track copies. Emptied once per launch, on first
-    /// use, before this run has created any copy: copies still present at the previous exit
-    /// were never removed and piled up. See CODE_AUDIT_19 §7.3.
-    private static let trackDirectory: URL = {
-        let directory = URL.temporaryDirectory.appending(path: "AudioTracks", directoryHint: .isDirectory)
-        try? FileManager.default.removeItem(at: directory)
-        do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        } catch {
-            Logger.audioController.error("Cannot create the audio track folder: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        }
-        return directory
-    }()
 
     @MainActor func loadAndPlay(id: UUID) {
         // If item is already in playlist, just play it
@@ -278,22 +211,23 @@ extension AudioController {
         // cleared the current item while B was audible and published A as the shared track.
         // See CODE_AUDIT_21 §3.4.
         model.loadAndPlayTask?.cancel()
+        let generation = model.playbackGeneration
         model.loadAndPlayTask = Task {
             guard await add(audio: models, replace: true), !Task.isCancelled else { return }
-            // After loading, set it as current and play
+            // After loading, set it as current and play, unless a pause came in meanwhile.
             model.set(currentId: id)
-            await preparePlay(id: id)
+            await preparePlay(id: id, triggerPlay: model.playbackGeneration == generation)
         }
     }
 
     @MainActor func removeAudio(id: UUID) {
         if model.currentId == id && model.isPlaying {
-            togglePlay()
+            pause()
         }
         guard let index = model.playList.firstIndex(where: { $0.id == id }) else { return }
-        // Free the item's temp copy along with its playlist entry — its
-        // filename is stable per item (see `audioAsset(for:)`), so nothing
-        // else will reclaim it once it's gone from the list. See CODE_AUDIT §7.1.
+        // Free the item's temp copy along with its playlist entry — every load makes a file of
+        // its own (see `AudioTrackLoader`), so nothing else will reclaim it once it's gone from
+        // the list. See CODE_AUDIT §7.1.
         try? FileManager.default.removeItem(at: model.playList[index].url)
         model.playList.remove(at: index)
         // The removed item may have been the current-but-paused track: `currentItem`
@@ -311,10 +245,20 @@ extension AudioController {
 }
 
 extension AudioController {
+    /// Loads the track `id` into the player and, with `triggerPlay`, starts it. `startAt` seeks
+    /// before the start, so a positioned start never plays from the beginning first. A pause that
+    /// comes in while the track loads (or the session activates) is not overridden: the track
+    /// is prepared and stays paused.
     @MainActor
-    func preparePlay(id: UUID, triggerPlay: Bool = true) async {
+    func preparePlay(
+        id: UUID,
+        triggerPlay: Bool = true,
+        startAt: TimeInterval? = nil,
+        coordinationId: UUID? = nil
+    ) async {
         initAudioSessionEngine()
-        // A prior playlist-completion (see resetPlaylist) must not stick past the
+        let generation = model.playbackGeneration
+        // A prior playlist-completion (see advanceAfterTrackEnd) must not stick past the
         // track it applied to — otherwise every later toggle() treats playback as
         // "finished" and restarts from 0:00 instead of resuming. See CODE_AUDIT_Audio §5.2.
         model.isPlaybackComplete = false
@@ -325,19 +269,22 @@ extension AudioController {
         // before. See CODE_AUDIT_23 §5.9.
         guard model.currentItem != nil else {
             model.player.replaceCurrentItem(with: nil)
+            MediaPlayerCoordinator.handleItemChange(item: nil, index: 0, count: 0)
             return
         }
         // Must set coordinator ID before replacing the item — the AVPlayerPlaybackCoordinator
         // calls identifierFor(_:) during replaceCurrentItem, and needs the UUID already set.
         // Without this order the coordinator gets a random UUID on first play (works second time
         // only because sharedAudioId is already populated from the previous call).
-        model.coordinator?.coordinatePlayback(of: id)
+        model.coordinator?.coordinatePlayback(of: coordinationId ?? id)
         replaceCurrentItem()
         if let rootId = model.playListRootId, let trackId = model.currentId {
             model.trackStartHandler?(rootId, trackId)
         }
-        guard triggerPlay else { return }
-        await model.audioSession?.waitUntilConfigured()
+        if let startAt {
+            await seekAndWait(to: startAt)
+        }
+        guard triggerPlay, model.playbackGeneration == generation else { return }
         play()
     }
 
@@ -348,7 +295,7 @@ extension AudioController {
         let playerItem = AVPlayerItem(url: currentItem.url)
         model.player.replaceCurrentItem(with: playerItem)
         MediaPlayerCoordinator.handleItemChange(item: currentItem, index: index, count: model.playList.count)
-        Logger.audioController.debug("🎧 \(currentItem.title, privacy: .private) -> \(currentItem.artist, privacy: .private)  enqueued for playback.")
+        Logger.audioController.debug("🎧 \(currentItem.title, privacy: .private) -> \(currentItem.subtitle, privacy: .private)  enqueued for playback.")
     }
 }
 
@@ -361,11 +308,7 @@ private extension AudioController {
         model.audioSession = session
         
         model.coordinator = AudioListenerCoordinator(playbackCoordinator: model.player.playbackCoordinator)
-        // Re-observe here (not in observePlayback, which early-returns on re-init):
-        // after a media-services reset the coordinator is a new instance and the
-        // old observation task would keep following the stale one.
-        observeSharedAudio()
-        
+
         MediaPlayerCoordinator.handleRemoteCommands(using: self)
         
         observePlayback()
@@ -375,15 +318,19 @@ private extension AudioController {
 }
 
 extension AudioController {
-    @MainActor func resetPlaylist(complete: Bool) {
+    /// The current track ended (`complete`) or the playlist moves on: advances to the next track,
+    /// loops, or stops at the end.
+    @MainActor func advanceAfterTrackEnd(complete: Bool) {
         guard let currentIndex = model.currentIndex else { return }
         if currentIndex < model.playList.count - 1 {
             togglePlay(id: model.playList[currentIndex + 1].id)
-        } else if model.repeatPlayList, let first = model.playList.first {
+        } else if model.repeatPlayList, let first = model.playList.first,
+                  model.loopReplayHandler != nil || !model.isGameRunning() {
             if let loopReplayHandler = model.loopReplayHandler {
-                // In a game the loop is a new play for everyone: the players do not loop on
-                // their own, they play again when the game master sends the play command.
-                loopReplayHandler(AudioPlayRequest(id: model.playListRootId ?? first.id, shouldPlay: true).command)
+                // In a game the loop is a new play for everyone: the game master sends the play
+                // command. A player's device does not loop on its own (its Repeat toggle is
+                // ignored while a game runs), it plays again when that command arrives.
+                loopReplayHandler(AudioPlayRequest(id: model.playListRootId ?? first.id, shouldPlay: true, coordinationId: UUID()).command)
             } else if model.playList.count > 1 {
                 togglePlay(id: first.id)
             } else {
@@ -398,6 +345,8 @@ extension AudioController {
             model.isPlaybackComplete = complete
             if complete {
                 model.wantsPlayback = false
+                // Nothing is left to play: other apps may have the audio session back.
+                model.audioSession?.deactivate()
             }
         }
     }
@@ -416,15 +365,22 @@ extension AudioController: AudioPlayerSessionDelegate {
     /// state, which a task updates and which the system's pause may or may not have reached
     /// yet. The player is paused without giving the intent up. See CODE_AUDIT_21 §5.28.
     @MainActor func beginInterruption() -> Bool {
+        // A play that is on its way (activating the session) must not start inside the interruption.
+        model.playbackGeneration += 1
         guard model.wantsPlayback else { return false }
         model.player.pause()
         return true
     }
 
     /// `play()`, not a toggle: a player that had already resumed was paused by the toggle.
+    /// Without `wasPlaying` the interruption ended without a request to resume: the intent to
+    /// play is given up, so a seek or a command that reads it does not start the audio on its
+    /// own. See CODE_AUDIT_Audio2 §5.12.
     @MainActor func endInterruption(wasPlaying: Bool) {
         if wasPlaying {
             play()
+        } else if !model.isPlaying {
+            model.wantsPlayback = false
         }
     }
 
@@ -436,6 +392,7 @@ extension AudioController: AudioPlayerSessionDelegate {
         removeTimeObserver()
         model.removeSubscriptions()
         model.seekTask?.cancel()
+        model.playbackGeneration += 1
         model.player = AVPlayer()
         model.isPlaying = false
         model.wantsPlayback = false
@@ -447,6 +404,10 @@ extension AudioController: AudioPlayerSessionDelegate {
             model.coordinator?.coordinatePlayback(of: currentId)
         }
         replaceCurrentItem()
+        // A running SharePlay session still coordinates the dead player. See CODE_AUDIT_Audio2 §5.9.
+        if let coordinator = model.coordinator {
+            model.coordinatorDidChange?(coordinator)
+        }
     }
 }
 
@@ -458,16 +419,18 @@ extension AudioController: RemoteCommandHandler {
             // In a game the command goes through the game, so every player follows.
             if model.remoteCommandRouter?(command) == true { return }
             switch command {
+            case .togglePlayPause:
+                if model.isPlaying { pause() } else { toggle() }
             case .pause:
                 pause()
             case .play:
                 play()
             case .nextTrack:
-                skipToCurrentItem(offsetBy: 1)
+                skip(offsetBy: 1)
             case .previousTrack:
-                skipToCurrentItem(offsetBy: -1)
+                skip(offsetBy: -1)
             case .changePlaybackPosition(let offset):
-                skip(to: offset)
+                seek(to: offset)
             }
         }
     }

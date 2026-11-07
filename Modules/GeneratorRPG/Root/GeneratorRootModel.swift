@@ -98,7 +98,7 @@ public final class GeneratorRootModel {
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
-            let controller = SyncDataController(context: context, dataControllable: dataControllable, itemController: itemController)
+            let controller = EntitySyncDataController(context: context, dataControllable: dataControllable, itemController: itemController, entity: RPGGenerator.entity())
             syncDataController = controller
             syncTask = controller.start()
         }
@@ -130,7 +130,7 @@ public final class GeneratorRootModel {
     @ObservationIgnored let folderListController: FolderListController
     @ObservationIgnored let folderLinkController: FolderListController
 
-    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncDataController: EntitySyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
     /// Scoped per item, not per module: a module-keyed dictionary meant two macOS/visionOS

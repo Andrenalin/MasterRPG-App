@@ -1,18 +1,9 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
 import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
 
 // MARK: - MasterNetworkProxyControllerDelegate
 
@@ -41,6 +32,6 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
 
     func receivedServerProxy(_ model: GameNetworkModel, connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Proxy Received \(model.counter, privacy: .public)/\(model.proxyCounter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        await receivedProcess(model, origin: .proxy(connectionId))
+        await received(model, origin: .proxy(connectionId))
     }
 }

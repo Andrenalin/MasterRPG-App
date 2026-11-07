@@ -43,62 +43,18 @@ public struct AudioPlayerMiniBarView: View {
 
 private struct AudioPlayerMiniBarPlaybackControlsView: View {
     @Environment(AudioRootModel.self) private var root
-    @Environment(\.networkActions) private var networkActions
-    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 12) {
             if tabViewBottomAccessoryPlacement != .inline {
-                Button {
-                    withAnimation(.default.reduced(if: reduceMotion)) { root.skip(offsetBy: -1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions) }
-                } label: {
-                    Label {
-                        Text("Previous Track", bundle: .module)
-                    } icon: {
-                        Image(systemName: "backward.fill")
-                    }
-                    .labelStyle(.iconOnly)
-                    .font(.title3)
-                }
-                .accessibilityHint(Text("Play the previous track in the playlist", bundle: .module))
-                .disabled(!root.audioPlayerModel.hasPrev)
+                AudioTransportButton(kind: .previous)
             }
 
-            Button {
-                withAnimation(.default.reduced(if: reduceMotion)) { root.togglePlayback(isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions) }
-            } label: {
-                Label {
-                    Text(root.audioPlayerModel.isPlaying ? "Pause" : "Play", bundle: .module)
-                } icon: {
-                    Image(systemName: root.audioPlayerModel.isPlaying ? "pause.fill" : "play.fill")
-                }
-                .labelStyle(.iconOnly)
-                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                .font(.title2)
-                .padding(8)
-                .background(.regularMaterial, in: .circle)
-            }
-            .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
-            .accessibilityHint(root.audioPlayerModel.isPlaying ? Text("Pause playback", bundle: .module) : Text("Resume playback", bundle: .module))
-            .disabled(root.audioPlayerModel.playList.isEmpty)
+            AudioTransportButton(kind: .playPause, font: .title2, hasCircleBackground: true)
 
             if tabViewBottomAccessoryPlacement != .inline {
-                Button {
-                    withAnimation(.default.reduced(if: reduceMotion)) { root.skip(offsetBy: 1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions) }
-                } label: {
-                    Label {
-                        Text("Next", bundle: .module)
-                    } icon: {
-                        Image(systemName: "forward.fill")
-                    }
-                    .labelStyle(.iconOnly)
-                    .font(.title3)
-                }
-                .accessibilityLabel(Text("Next Track", bundle: .module))
-                .accessibilityHint(Text("Play the next track in the playlist", bundle: .module))
-                .disabled(!root.audioPlayerModel.hasNext)
+                AudioTransportButton(kind: .next)
 
                 AudioPlayerRepeatButton(audioPlayerModel: root.audioPlayerModel)
             }
@@ -139,7 +95,7 @@ private struct AudioPlayerMiniBarMusicArtTitleTimelineView: View {
                     .font(.headline).bold()
                     .lineLimit(1)
 
-                Text(currentItem?.artist ?? "")
+                Text(currentItem?.subtitle ?? "")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

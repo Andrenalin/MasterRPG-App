@@ -36,7 +36,7 @@ struct AudioPlaybackActionsTests {
             id: UUID(),
             url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
             title: title,
-            artist: "MasterRPG",
+            subtitle: "MasterRPG",
             duration: CMTime(seconds: 30, preferredTimescale: 1)
         )
     }

@@ -2,9 +2,16 @@
 
 import CoreRPG
 import Foundation
-import MapRPG
 import os.log
+import AdventureRPG
+import AudioRPG
+import CharacterRPG
+import DiceRPG
+import MapRPG
+import PdfRPG
 import PhotoRPG
+import SpaceRPG
+import TableRPG
 import WeatherRPG
 
 // A photo or a weather the game master shows while a map is on screen: on the map in the pin
@@ -77,7 +84,7 @@ extension PlayerController {
                 title: photo.title,
                 mode: .fullScreen,
                 sequence: masterController.gameModel.nextMapPhotoSequence(),
-                sessionId: masterController.gameModel.deliverySessionID
+                sessionId: masterController.gameModel.deliverySessionId
             )
             gameModel.mapPhoto.applyMaster(presentation)
             applyMapPhotoMode()

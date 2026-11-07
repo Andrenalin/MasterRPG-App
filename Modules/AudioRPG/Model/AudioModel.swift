@@ -91,9 +91,6 @@ public final class AudioModel: nonisolated Identifiable {
     var entries_: CRDTDataUpdate<[AudioEntryModel]>
 
     public var parentId: UUID? = nil
-
-    // only game properties
-    public var players: [UUID] = []
 }
 
 extension AudioModel {
@@ -112,7 +109,6 @@ extension AudioModel: nonisolated Comparable {
     }
 }
 
-extension AudioModel: nonisolated ItemGameReportable {}
 extension AudioModel: nonisolated ItemLinkRegistrable {}
 
 extension AudioModel: nonisolated ItemDiffComparable {

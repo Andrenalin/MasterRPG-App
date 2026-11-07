@@ -1,18 +1,18 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
+import AdventureRPG
 import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
 import CharacterRPG
-import WeatherRPG
+import DiceRPG
+import MapRPG
 import PdfRPG
+import PhotoRPG
 import SpaceRPG
+import TableRPG
+import WeatherRPG
 
 // MARK: - Send Messages
 
@@ -132,16 +132,8 @@ extension MasterController {
     private func recordMasterVersion(of reference: NetworkCodableDataType) {
         let masterId = root.gameModel.gameConfig.id
         let version = reference.effectiveAssetVersion
-        switch reference.type {
-        case .photo:
-            root.photoRoot.photoGameControllable.setMasterVersion(itemId: reference.id, version: version, masterId: masterId)
-        case .pdf:
-            root.pdfRoot.pdfGameControllable.setMasterVersion(itemId: reference.id, version: version, masterId: masterId)
-        case .space:
-            root.spaceRoot.spaceGameControllable.setMasterVersion(itemId: reference.id, version: version, masterId: masterId)
-        default:
-            break
-        }
+        FileBackedModuleAccess.access(for: reference.type, in: root)?
+            .setMasterVersion(reference.id, version, masterId)
     }
 
     /// The players whose reports do not show the master's version of the item. Modules without
@@ -149,21 +141,13 @@ extension MasterController {
     func playersMissing(_ reference: NetworkCodableDataType) -> Set<UUID> {
         let masterId = root.gameModel.gameConfig.id
         let players = root.gameModel.gameRoster.players.map(\.id).filter { $0 != masterId }
-        switch reference.type {
-        case .photo:
-            let photo = root.photoRoot.photoGameControllable
-            return Set(players.filter { !photo.isPhotoAvailable(itemId: reference.id, for: $0, masterId: masterId) })
-        case .pdf:
-            let pdf = root.pdfRoot.pdfGameControllable
-            return Set(players.filter { !pdf.isPdfAvailable(itemId: reference.id, for: $0, masterId: masterId) })
-        case .space:
-            let space = root.spaceRoot.spaceGameControllable
-            return Set(players.filter { !space.isSpaceAvailable(itemId: reference.id, for: $0, masterId: masterId) })
-        case .audio:
-            return Set(root.audioRoot.audioGameControllable.missingPlayers(for: reference.id))
-        default:
-            return []
+        if let access = FileBackedModuleAccess.access(for: reference.type, in: root) {
+            return Set(players.filter { !access.isAvailable(reference.id, $0, masterId) })
         }
+        if reference.type == .audio {
+            return Set(root.audioRoot.audioGameControllable.missingPlayers(for: reference.id))
+        }
+        return []
     }
 
     /// The package of an item, or `nil` when there is none to send: an export without the
@@ -176,22 +160,16 @@ extension MasterController {
         switch idType.type {
         case .map:
             return try await root.mapRoot.mapGameControllable.createMapGameData(for: idType.id)
-        case .photo:
-            guard await root.photoRoot.gameControllable.hasLocalFileData(for: idType.id) else { return nil }
-            return try await root.photoRoot.gameControllable.createGameData(for: idType.id)
-        case .pdf:
-            guard await root.pdfRoot.gameControllable.hasLocalFileData(for: idType.id) else { return nil }
-            return try await root.pdfRoot.gameControllable.createGameData(for: idType.id)
-        case .space:
-            guard await root.spaceRoot.gameControllable.hasLocalFileData(for: idType.id) else { return nil }
-            return try await root.spaceRoot.gameControllable.createGameData(for: idType.id)
         case .audio:
-            guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: idType.id) else { return nil }
+            guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: idType.id) else { return nil }
             return try await root.audioRoot.gameControllable.createGameData(for: idType.id)
         case .weather:
             return try await root.weatherRoot.weatherGameControllable.createWeatherGameData(for: idType.id)
         default:
-            return nil
+            guard let access = FileBackedModuleAccess.access(for: idType.type, in: root),
+                  await access.controllable.hasLocalFileData(for: idType.id)
+            else { return nil }
+            return try await access.controllable.createGameData(for: idType.id)
         }
     }
 
@@ -267,7 +245,7 @@ extension MasterController {
         )
         if existingCounter == nil {
             root.logGameController.addMessage(
-                messageID: GameDeliveryMessageID(sessionID: gameModel.deliverySessionID, counter: counter),
+                messageID: GameDeliveryMessageID(sessionID: gameModel.deliverySessionId, counter: counter),
                 type: type,
                 subType: subtype,
                 module: updated.type,

@@ -128,7 +128,7 @@ struct LogGameController: Sendable {
             gameModel.logs.append(messageID.counter)
             // Unbounded before this — a long session produced thousands of
             // entries even though the UI only ever renders `maximumVisibleMessages`.
-            // Same bounded-FIFO treatment as `MasterControllerModel.deliveryMessagesByWireID`.
+            // Same bounded-FIFO treatment as the other per-session logs.
             // See CODE_AUDIT_Game §7.5.
             while gameModel.logs.count > Self.maximumRetainedMessages {
                 gameModel.logData[gameModel.logs.removeFirst()] = nil

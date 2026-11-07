@@ -88,11 +88,7 @@ public extension ViewController {
     @MainActor func mapEditWindow(root: MapRootModel, isTileEditor: Bool = false) -> some View {
         MapEditWindow(isTileEditor: isTileEditor)
     }
-    
-    @MainActor func gameView(root: MapRootModel) -> some View {
-        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
-}
 
 // MARK: - Game
 

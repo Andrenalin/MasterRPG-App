@@ -1,18 +1,8 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
 
 // MARK: - File Message Support
 
@@ -47,27 +37,63 @@ extension MasterController {
         }
     }
 
-    /// Shared "apply an incoming file-version list" bookkeeping for the
-    /// three file-backed modules — applyPdfList/applyPhotoList/
-    /// applySpaceList below previously hand-duplicated this exact sequence,
-    /// differing only in which module's accessors they called.
-    /// See CODE_AUDIT_10 §9.2.
-    ///
-    /// Not `private` because it is called from `MasterController+PdfMessages.swift`,
-    /// `MasterController+PhotoMessages.swift`, and `MasterController+SpaceMessages.swift`
-    /// — three different files.
-    func applyFileList(
+    /// The master's handler of every message of a file-backed module (Photo, Pdf, Space): a
+    /// player's receipt, a request for the item's bytes, a player's report list and a player's
+    /// contribution. `handleOtherUpdate` takes the module's own update subtypes (Space's
+    /// transform). See CODE_AUDIT_Audio2 §9.4.
+    func handleFileBackedMessage(
         _ model: GameNetworkModel,
-        canApply: (_ senderId: UUID, _ counter: Int) -> Bool,
-        apply: (_ data: NetworkCodableDataType, _ senderId: UUID, _ masterId: UUID, _ authoritative: Bool) async -> Bool,
-        record: (_ counter: Int, _ senderId: UUID) -> Void
-    ) async -> Bool {
+        access: FileBackedModuleAccess,
+        handleOtherUpdate: (GameNetworkModel) async -> Void = { _ in }
+    ) async throws -> NetworkCodableDataType? {
+        if model.subType == .ok {
+            await recordFileOkAck(
+                model,
+                controllable: access.controllable,
+                setMasterVersion: access.setMasterVersion,
+                markAvailable: access.markAvailable,
+                announceList: { await broadcastFileList(access) }
+            )
+            return nil
+        }
+        guard model.subType != .failed else { return nil }
+
+        if model.isAssetRequest {
+            // An iCloud file that has not downloaded cannot be exported.
+            guard await access.controllable.hasLocalFileData(for: model.data.id) else { return nil }
+            return try await access.controllable.createGameData(for: model.data.id)
+        }
+        guard model.type == .update else { return nil }
+
+        switch model.subType {
+        case access.listSubType:
+            guard await applyFileList(model, access: access) else { return nil }
+            await broadcastFileList(access)
+        case .generic:
+            guard model.sender.role == .player,
+                  access.isSharingEnabled(root.gameModel.gameControl.features)
+            else { return nil }
+            await showPlayerContribution(model, controllable: access.controllable)
+        default:
+            await handleOtherUpdate(model)
+        }
+        return nil
+    }
+
+    /// Sends every player the authoritative report list: who has which version.
+    func broadcastFileList(_ access: FileBackedModuleAccess) async {
+        let list = await access.list(true, root.gameModel.gameConfig.id)
+        await send(type: .update, subtype: access.listSubType, updated: list)
+    }
+
+    /// Applies a player's report list of a file-backed module.
+    private func applyFileList(_ model: GameNetworkModel, access: FileBackedModuleAccess) async -> Bool {
         guard !model.sender.isMaster,
-              canApply(model.sender.id, model.counter),
-              await apply(model.data, model.sender.id, root.gameModel.gameConfig.id, false)
+              gameModel.canApplyList(access.module, from: model.sender.id, counter: model.counter),
+              await access.applyList(model.data, model.sender.id, root.gameModel.gameConfig.id, false)
         else { return false }
 
-        record(model.counter, model.sender.id)
+        gameModel.recordList(access.module, counter: model.counter, from: model.sender.id)
         return true
     }
 
@@ -76,7 +102,7 @@ extension MasterController {
     /// none, which the master then imports as its own. Either way the master shows the item
     /// like one of its own, so every player that lacks it is served the usual way.
     ///
-    /// Not `private` because the Pdf, Photo and Space message files call it.
+    /// Not `private` because the Pdf, Photo, Space and Audio message files call it.
     func showPlayerContribution(
         _ model: GameNetworkModel,
         controllable: any GameControllable

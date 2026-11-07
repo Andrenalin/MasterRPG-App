@@ -181,6 +181,35 @@ actor GameMessagePipeline {
         return .enqueued
     }
 
+    /// Enqueues `event` and logs what became of it; `true` when it is queued and the caller
+    /// drains the queue. `prefix` names the controller, `kind` the transport (`"file "`).
+    func enqueueAndLog(_ event: GameMessageEvent, prefix: String, kind: String = "") -> Bool {
+        let model = event.model
+        switch enqueue(event) {
+        case .enqueued:
+            return true
+        case .duplicate:
+            Logger.networking.debug("\(prefix, privacy: .public): Duplicate \(kind, privacy: .public)ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        case .queueFull:
+            // Distinct from an ordinary duplicate: a genuinely new message was discarded only
+            // because the pipeline is momentarily saturated, not because it was already seen.
+            // See CODE_AUDIT_Network §5.14.
+            Logger.networking.error("\(prefix, privacy: .public): Message queue full, \(kind, privacy: .public)message lost \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        case .pipelineStopped:
+            Logger.networking.debug("\(prefix, privacy: .public): Message pipeline stopped, ignoring \(kind, privacy: .public)\(model.counter, privacy: .public)")
+        }
+        return false
+    }
+
+    /// The drain runs inside whichever peer's receive task enqueued first, so cancelling that
+    /// task (teardown) must not strand the messages still queued: continue the drain on a
+    /// fresh task. If the cancellation was a genuine stop the pipeline was already reset and
+    /// the new drain finds no work. See CODE_AUDIT_16 §3.2.
+    func handOffBacklog(_ drain: @escaping @Sendable () async -> Void) {
+        guard hasQueuedMessages else { return }
+        Task { await drain() }
+    }
+
     /// Whether `event` repeats one that is queued or was processed recently.
     func hasSeen(_ event: GameMessageEvent) -> Bool {
         guard let key = event.deduplicationKey else { return false }

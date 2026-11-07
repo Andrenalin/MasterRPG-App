@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import MapRPG
 
 /// What a master message that arrived through SharePlay Messenger says about the participant
 /// the game master speaks from.
@@ -16,11 +15,6 @@ enum SharePlayMasterParticipantChange: Equatable, Sendable {
 
 @MainActor @Observable
 final class PlayerControllerModel {
-    private struct PendingMapUpdate: Sendable {
-        let data: NetworkCodableDataType
-        let counter: Int
-    }
-
     private struct Presentation: Sendable {
         let counter: Int
         let module: NetworkModules
@@ -36,13 +30,10 @@ final class PlayerControllerModel {
     @ObservationIgnored var mapPhotoMakeCurrentTask: Task<Void, Never>?
     /// The weather the game master shows on the 3D table. See `PlayerController+TableWeather.swift`.
     var tableWeather = TableWeatherState()
-    var messageCounter: Int = 0
     private var outgoingMessageCounter: Int = 1
     private var lastMasterStateCounters: [UUID: Int] = [:]
-    private var lastAudioListCounters: [UUID: Int] = [:]
-    private var lastPhotoListCounters: [UUID: Int] = [:]
-    private var lastPdfListCounters: [UUID: Int] = [:]
-    private var lastSpaceListCounters: [UUID: Int] = [:]
+    /// The order of the availability lists of the game master. See `ListSequenceTracker`.
+    private var listSequence = ListSequenceTracker()
     /// The newest master message that changed what this screen shows. A package of another
     /// item that arrives later with an older counter is stored but not shown.
     private var lastPresentation: Presentation?
@@ -52,21 +43,19 @@ final class PlayerControllerModel {
     private var sharePlayMasterParticipantId: UUID?
     private var sharePlayMasterParticipantLeft = false
     var lostMaster: Bool = true
-    var hasSendPlayer = false
-    /// How often the master answered `.failed` to this player's Character package, for which
-    /// Character version, and when the next announcement may go out. A rejected package was
-    /// announced again on every later master message, and exported and uploaded again each
-    /// time, with no limit. See CODE_AUDIT_21 §5.5.
-    private(set) var characterRejections = 0
-    private var rejectedCharacterVersion: Int?
-    private var characterRetryNotBefore: ContinuousClock.Instant?
-    /// Rejections of one Character version after which it is no longer sent.
-    static let maximumCharacterRejections = 3
-    /// How often a rejected Character is looked at again for a changed version.
-    static let rejectedCharacterProbeInterval: Duration = .seconds(60)
+    var hasSentPlayer = false
+    /// How often the master rejected this player's Character package, and when the next
+    /// announcement may go out. See `CharacterRejectionPolicy`.
+    private var characterRejectionPolicy = CharacterRejectionPolicy()
+    var characterRejections: Int { characterRejectionPolicy.rejections }
+    static var maximumCharacterRejections: Int { CharacterRejectionPolicy.maximumRejections }
+    static var rejectedCharacterProbeInterval: Duration { CharacterRejectionPolicy.probeInterval }
+    static func characterRetryDelay(afterRejection rejections: Int) -> Duration {
+        CharacterRejectionPolicy.retryDelay(afterRejection: rejections)
+    }
     var asGameMaster = false
     /// Counts the changes of the companion list. A send that ran while it changed has announced
-    /// an old list, so it does not latch `hasSendPlayer` and runs again.
+    /// an old list, so it does not latch `hasSentPlayer` and runs again.
     /// See CODE_AUDIT_24 §5.5.
     private(set) var companionGeneration = 0
     func noteCompanionsChanged() {
@@ -79,22 +68,9 @@ final class PlayerControllerModel {
     /// Pin photos of a map that were asked for on this connection, so every map state does
     /// not ask for them again.
     private var requestedPinPhotoIds: Set<UUID> = []
-    // The live part of a map can arrive before the map itself: Messenger is faster than the
-    // Journal. The newest content, state and battle round of each map wait here until the
-    // map is there.
-    private var pendingMapContentUpdates: [UUID: PendingMapUpdate] = [:]
-    private var pendingMapStates: [UUID: PendingMapUpdate] = [:]
-    private var pendingBattleRoundUpdates: [UUID: NetworkCodableDataType] = [:]
-    private var lastMapContentCounters: [UUID: Int] = [:]
-    private var lastMapStateCounters: [UUID: Int] = [:]
-    /// When each map was last asked for, so a burst of states for a map that is still on its
-    /// way asks once.
-    private var lastMapRequests: [UUID: ContinuousClock.Instant] = [:]
-    static let mapRequestInterval: Duration = .seconds(10)
-
-    func increaseMessageCounter() {
-        messageCounter += 1
-    }
+    /// The live part of a map that arrived before the map itself, and the order of the map
+    /// updates already applied. See `PendingMapUpdateQueue`.
+    var mapUpdates = PendingMapUpdateQueue()
 
     func nextOutgoingMessageCounter() -> Int {
         defer { outgoingMessageCounter += 1 }
@@ -143,46 +119,12 @@ final class PlayerControllerModel {
 
     // MARK: Availability lists
 
-    func canApplyAudioList(from masterId: UUID, counter: Int) -> Bool {
-        Self.isNewer(counter, than: lastAudioListCounters[masterId])
+    func canApplyList(_ module: NetworkModules, from masterId: UUID, counter: Int) -> Bool {
+        listSequence.canApply(module, from: masterId, counter: counter)
     }
 
-    func recordAudioList(counter: Int, from masterId: UUID) {
-        guard counter > 0 else { return }
-        lastAudioListCounters[masterId] = counter
-    }
-
-    func canApplyPhotoList(from masterId: UUID, counter: Int) -> Bool {
-        Self.isNewer(counter, than: lastPhotoListCounters[masterId])
-    }
-
-    func recordPhotoList(counter: Int, from masterId: UUID) {
-        guard counter > 0 else { return }
-        lastPhotoListCounters[masterId] = counter
-    }
-
-    func canApplyPdfList(from masterId: UUID, counter: Int) -> Bool {
-        Self.isNewer(counter, than: lastPdfListCounters[masterId])
-    }
-
-    func recordPdfList(counter: Int, from masterId: UUID) {
-        guard counter > 0 else { return }
-        lastPdfListCounters[masterId] = counter
-    }
-
-    func canApplySpaceList(from masterId: UUID, counter: Int) -> Bool {
-        Self.isNewer(counter, than: lastSpaceListCounters[masterId])
-    }
-
-    func recordSpaceList(counter: Int, from masterId: UUID) {
-        guard counter > 0 else { return }
-        lastSpaceListCounters[masterId] = counter
-    }
-
-    private static func isNewer(_ counter: Int, than last: Int?) -> Bool {
-        guard counter >= 0 else { return false }
-        guard counter > 0 else { return true }
-        return counter > (last ?? 0)
+    func recordList(_ module: NetworkModules, counter: Int, from masterId: UUID) {
+        listSequence.record(module, counter: counter, from: masterId)
     }
 
     // MARK: Presentation order
@@ -199,98 +141,6 @@ final class PlayerControllerModel {
     func markPresentation(counter: Int, module: NetworkModules, itemId: UUID) {
         guard counter >= (lastPresentation?.counter ?? 0) else { return }
         lastPresentation = Presentation(counter: counter, module: module, itemId: itemId)
-    }
-
-    // MARK: Map content and state
-
-    func queueMapContentUpdate(_ data: NetworkCodableDataType, counter: Int) {
-        guard shouldApplyMapContentUpdate(itemId: data.id, counter: counter) else { return }
-        if let current = pendingMapContentUpdates[data.id], counter != 0, current.counter >= counter {
-            return
-        }
-        pendingMapContentUpdates[data.id] = PendingMapUpdate(data: data, counter: counter)
-    }
-
-    func pendingMapContentUpdate(for itemId: UUID) -> (data: NetworkCodableDataType, counter: Int)? {
-        guard let pending = pendingMapContentUpdates[itemId] else { return nil }
-        return (pending.data, pending.counter)
-    }
-
-    func discardPendingMapContentUpdate(itemId: UUID) {
-        pendingMapContentUpdates[itemId] = nil
-    }
-
-    /// Also asked before a map package is imported over a map this player already holds: a
-    /// package that arrives after a newer content update would roll the map back.
-    func shouldApplyMapContentUpdate(itemId: UUID, counter: Int) -> Bool {
-        counter == 0 || counter > (lastMapContentCounters[itemId] ?? 0)
-    }
-
-    func markMapContentApplied(itemId: UUID, counter: Int) {
-        if counter > 0 {
-            lastMapContentCounters[itemId] = max(lastMapContentCounters[itemId] ?? 0, counter)
-        }
-        if let pending = pendingMapContentUpdates[itemId], pending.counter <= counter {
-            pendingMapContentUpdates[itemId] = nil
-        }
-    }
-
-    func queueMapState(_ data: NetworkCodableDataType, counter: Int) {
-        guard shouldApplyMapState(itemId: data.id, counter: counter) else { return }
-        if let current = pendingMapStates[data.id], counter != 0, current.counter >= counter {
-            return
-        }
-        pendingMapStates[data.id] = PendingMapUpdate(data: data, counter: counter)
-    }
-
-    func pendingMapState(for itemId: UUID) -> (data: NetworkCodableDataType, counter: Int)? {
-        guard let pending = pendingMapStates[itemId] else { return nil }
-        return (pending.data, pending.counter)
-    }
-
-    func discardPendingMapState(itemId: UUID) {
-        pendingMapStates[itemId] = nil
-    }
-
-    func shouldApplyMapState(itemId: UUID, counter: Int) -> Bool {
-        counter == 0 || counter > (lastMapStateCounters[itemId] ?? 0)
-    }
-
-    func markMapStateApplied(itemId: UUID, counter: Int) {
-        if counter > 0 {
-            lastMapStateCounters[itemId] = max(lastMapStateCounters[itemId] ?? 0, counter)
-        }
-        pendingMapStates[itemId] = nil
-    }
-
-    /// The replay slot of a battle round update that arrived before its map. Always
-    /// overwrites: a later update is at least as recent, and `applyRemoteState`'s own sequence
-    /// check decides whether a replay is still worth applying. See CODE_AUDIT §5.2.
-    func queueBattleRoundUpdate(_ data: NetworkCodableDataType) {
-        pendingBattleRoundUpdates[data.id] = data
-    }
-
-    func pendingBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType? {
-        pendingBattleRoundUpdates[itemId]
-    }
-
-    func discardPendingBattleRoundUpdate(itemId: UUID) {
-        pendingBattleRoundUpdates[itemId] = nil
-    }
-
-    /// Records a request for the map that answers a reveal, which is always sent.
-    func noteMapRequest(itemId: UUID, now: ContinuousClock.Instant = .now) {
-        lastMapRequests[itemId] = now
-    }
-
-    /// Whether a map state may ask for its map: not while a request of the last
-    /// `mapRequestInterval` may still be answered.
-    func mayRequestMap(itemId: UUID, now: ContinuousClock.Instant = .now) -> Bool {
-        if let last = lastMapRequests[itemId], last.duration(to: now) < Self.mapRequestInterval {
-            return false
-        }
-        lastMapRequests[itemId] = now
-        return true
     }
 
     @discardableResult
@@ -310,7 +160,7 @@ final class PlayerControllerModel {
     }
 
     func reset(sendPlayer: Bool) {
-        self.hasSendPlayer = sendPlayer
+        self.hasSentPlayer = sendPlayer
     }
 
     /// The screen the players share. Differs from `gameUpdateType` while the game master looks at
@@ -349,52 +199,27 @@ final class PlayerControllerModel {
     /// Reads both gate flags in one @MainActor property so a concurrent
     /// writer can't be observed between them. See CODE_AUDIT §3.1.
     var canSendCharacter: Bool {
-        guard !hasSendPlayer, !lostMaster else { return false }
-        if let characterRetryNotBefore, ContinuousClock.now < characterRetryNotBefore { return false }
+        guard !hasSentPlayer, !lostMaster else { return false }
+        if characterRejectionPolicy.isDelayed() { return false }
         return true
-    }
-
-    /// The delay before the announcement after the `rejections`-th rejection: 5 s, then 20 s.
-    static func characterRetryDelay(afterRejection rejections: Int) -> Duration {
-        .seconds(5 * (1 << (2 * max(0, rejections - 1))))
     }
 
     /// Records the master's `.failed` answer for the Character package of `version`. Returns
     /// `true` when that was the rejection after which the Character is no longer sent, so the
     /// caller tells the player once. See CODE_AUDIT_21 §5.5.
     func recordCharacterRejection(version: Int, now: ContinuousClock.Instant = .now) -> Bool {
-        if rejectedCharacterVersion != version {
-            rejectedCharacterVersion = version
-            characterRejections = 0
-        }
-        characterRejections += 1
-        hasSendPlayer = false
-        guard characterRejections < Self.maximumCharacterRejections else {
-            characterRetryNotBefore = now + Self.rejectedCharacterProbeInterval
-            return characterRejections == Self.maximumCharacterRejections
-        }
-        characterRetryNotBefore = now + Self.characterRetryDelay(afterRejection: characterRejections)
-        return false
+        hasSentPlayer = false
+        return characterRejectionPolicy.record(version: version, now: now)
     }
 
-    /// Whether the Character of `version` may be announced. A version the master rejected
-    /// `maximumCharacterRejections` times stays unsent; it is looked at again after the probe
-    /// interval, because an edited Character has a new version and gets new attempts.
+    /// Whether the Character of `version` may be announced. See `CharacterRejectionPolicy`.
     func mayAnnounceCharacter(version: Int, now: ContinuousClock.Instant = .now) -> Bool {
-        guard characterRejections >= Self.maximumCharacterRejections else { return true }
-        guard rejectedCharacterVersion == version else {
-            resetCharacterRejections()
-            return true
-        }
-        characterRetryNotBefore = now + Self.rejectedCharacterProbeInterval
-        return false
+        characterRejectionPolicy.mayAnnounce(version: version, now: now)
     }
 
     /// A new connection, or an edited Character: earlier rejections no longer count.
     func resetCharacterRejections() {
-        characterRejections = 0
-        rejectedCharacterVersion = nil
-        characterRetryNotBefore = nil
+        characterRejectionPolicy.reset()
     }
 
     /// The read-then-conditionally-write needs to stay one @MainActor call so a
@@ -422,22 +247,14 @@ final class PlayerControllerModel {
         proxyFocusTaskId = nil
         requestedPinPhotoIds = []
         resetMasterStateSequence()
-        lastAudioListCounters.removeAll()
-        lastPhotoListCounters.removeAll()
-        lastPdfListCounters.removeAll()
-        lastSpaceListCounters.removeAll()
+        listSequence.reset()
         // A restarted game master counts from one again.
         lastPresentation = nil
         mapPhotoMakeCurrentTask?.cancel()
         mapPhotoMakeCurrentTask = nil
         mapPhoto.reset()
         tableWeather.reset()
-        pendingMapContentUpdates.removeAll()
-        pendingMapStates.removeAll()
-        pendingBattleRoundUpdates.removeAll()
-        lastMapContentCounters.removeAll()
-        lastMapStateCounters.removeAll()
-        lastMapRequests.removeAll()
+        mapUpdates.reset()
         if !preservingSharePlayRebind {
             resetSharePlayMasterParticipant()
         }

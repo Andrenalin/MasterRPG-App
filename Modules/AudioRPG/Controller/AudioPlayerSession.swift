@@ -18,6 +18,11 @@ final class AudioPlayerSessionModel: Sendable {
     private(set) var audioSessionObservers: [Task<Void, Never>] = []
     private(set) var wasPlaying = false
     private(set) var configureTask: Task<Void, Never>?
+    /// Whether this session activated the audio session and has not given it back.
+    private(set) var isActive = false
+    /// Bumped by every interruption that begins: a resume that waited for the session to
+    /// activate checks it, so it does not play inside a newer interruption.
+    private(set) var interruptionGeneration = 0
     
     init(delegate: (AnyObject & AudioPlayerSessionDelegate)) {
         self.delegate = delegate
@@ -34,6 +39,15 @@ final class AudioPlayerSessionModel: Sendable {
     func reset(configureTask: Task<Void, Never>?) {
         self.configureTask = configureTask
     }
+
+    func reset(isActive: Bool) {
+        self.isActive = isActive
+    }
+
+    func beginInterruptionGeneration() -> Int {
+        interruptionGeneration += 1
+        return interruptionGeneration
+    }
 }
 
 final class AudioPlayerSession: Sendable {
@@ -47,28 +61,57 @@ final class AudioPlayerSession: Sendable {
         self.model = AudioPlayerSessionModel(delegate: delegate)
     }
 
+    /// Registers the notifications and sets the category. The session is not activated here:
+    /// activating it interrupts the user's Music or podcast, which must wait for audio that
+    /// really plays (see `activate()`). See CODE_AUDIT_Audio2 §5.10.
     @MainActor
     func initSession() {
 #if !os(macOS)
         registerSessionNotifications()
-        model.reset(configureTask: Task { await configureAndActivate() })
+        model.reset(configureTask: Task { await configure() })
 #endif
     }
 
-    /// Whether the initial category/activation is still pending. See CODE_AUDIT_20 §3.2.
+    /// Whether the category is still being set or the session is not active yet, so a play has
+    /// to go through `activate()` first. See CODE_AUDIT_20 §3.2.
     @MainActor
-    var isConfiguring: Bool {
-        model.configureTask != nil
+    var needsActivation: Bool {
+#if os(macOS)
+        false
+#else
+        model.configureTask != nil || !model.isActive
+#endif
     }
 
-    /// Waits for the initial category/activation so the first track never starts under the
-    /// default category (silenced by the ring switch). Returns at once after the first wait.
+    /// Waits for the initial category so the first track never starts under the default category
+    /// (silenced by the ring switch). Returns at once after the first wait.
     /// See CODE_AUDIT_19 §3.5.
     @MainActor
     func waitUntilConfigured() async {
         guard let task = model.configureTask else { return }
         await task.value
         model.reset(configureTask: nil)
+    }
+
+    /// Waits for the category and activates the session, once, for the audio about to play.
+    @MainActor
+    func activate() async {
+#if !os(macOS)
+        await waitUntilConfigured()
+        guard !model.isActive else { return }
+        await setActive()
+        model.reset(isActive: true)
+#endif
+    }
+
+    /// Gives the audio session back, telling other apps they may resume.
+    @MainActor
+    func deactivate() {
+#if !os(macOS)
+        guard model.isActive, model.configureTask == nil else { return }
+        model.reset(isActive: false)
+        Task { await setInactive() }
+#endif
     }
 }
 
@@ -97,13 +140,21 @@ private extension AudioPlayerSession {
         }
     }
 
-    /// Both `setCategory` and `setActive` are blocking AVAudioSession (SessionCore) calls
-    /// that can stall the main thread while a FaceTime/SharePlay call is active, so both
-    /// run off the main actor, category first. See CODE_AUDIT_18 §7.2.
+    /// `setCategory` and `setActive` are blocking AVAudioSession (SessionCore) calls that can
+    /// stall the main thread while a FaceTime/SharePlay call is active, so both run off the
+    /// main actor. See CODE_AUDIT_18 §7.2.
     @concurrent
-    func configureAndActivate() async {
+    func configure() async {
         setCategory()
-        await setActive()
+    }
+
+    @concurrent
+    func setInactive() async {
+        do {
+            try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            Logger.audioController.error("An error occurred deactivating the audio session: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        }
     }
 
     @concurrent
@@ -147,6 +198,7 @@ private extension AudioPlayerSession {
         model.reset(audioSessionObservers: observers)
     }
 
+    @MainActor
     func handleRouteChange(notification: Notification) {
         guard let info = notification.userInfo,
               let rawValue = info[AVAudioSessionRouteChangeReasonKey] as? UInt else { return }
@@ -159,9 +211,7 @@ private extension AudioPlayerSession {
               let previousRoute = info[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription,
               previousRoute.outputs.contains(where: { $0.portType != .builtInSpeaker && $0.portType != .builtInReceiver }) else { return }
 
-        Task {
-            await model.delegate?.routeChanged()
-        }
+        model.delegate?.routeChanged()
     }
 
     @MainActor
@@ -170,22 +220,30 @@ private extension AudioPlayerSession {
 
         let type = AVAudioSession.InterruptionType(rawValue: typeRaw)
         if type == .began {
+            _ = model.beginInterruptionGeneration()
             model.reset(wasPlaying: model.delegate?.beginInterruption() ?? false)
         } else if let optionsRaw,
                   AVAudioSession.InterruptionOptions(rawValue: optionsRaw).contains(.shouldResume) {
             let wasPlaying = model.wasPlaying
+            let generation = model.interruptionGeneration
             Task { [weak self] in
                 await self?.setActive()
-                self?.model.delegate?.endInterruption(wasPlaying: wasPlaying)
+                guard let self, self.model.interruptionGeneration == generation else { return }
+                self.model.reset(isActive: true)
+                self.model.delegate?.endInterruption(wasPlaying: wasPlaying)
             }
+        } else {
+            // The interruption ended without a request to resume: what was playing stays paused.
+            model.delegate?.endInterruption(wasPlaying: false)
         }
     }
 
+    @MainActor
     func handleMediaServicesReset(notification _: Notification) {
-        Task {
-            await removeAllSessionObservers()
-            await model.delegate?.resetMediaService()
-        }
+        removeAllSessionObservers()
+        // The reset deactivated the session and replaces the player: both start over.
+        model.reset(isActive: false)
+        model.delegate?.resetMediaService()
     }
 #endif
 

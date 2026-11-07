@@ -57,10 +57,16 @@ extension GameNetworkController {
                 }
             }
             if sharePlayPlayerIsMissing, !proxy {
-                sharePlayStore.publishAsset(full)
+                sharePlayStore.publishAsset(full, isPlaylist: isAudioPlaylist(full))
             }
         }
         await sendPlayer(data: reference)
+    }
+
+    /// Whether the package of `message` is an audio playlist, which the Journal holds in a slot
+    /// of its own: the first track is shown right after it and would replace it.
+    private func isAudioPlaylist(_ message: GameNetworkModel) -> Bool {
+        message.data.type == .audio && model.isAudioPlaylist?(message.data.id) == true
     }
 
     /// Sends a message to the peer a request came from, over the transport that carried the
@@ -79,14 +85,14 @@ extension GameNetworkController {
         case let .sharePlay(participantId):
             guard !proxy else { return }
             if data.carriesAsset {
-                sharePlayStore.publishAsset(data)
+                sharePlayStore.publishAsset(data, isPlaylist: isAudioPlaylist(data))
             } else {
                 sharePlayStore.sendDataReportingLoss(data, participantId: participantId)
             }
         case .file:
             // A Journal callback does not name its participant; the Journal reaches everyone.
             guard !proxy else { return }
-            sharePlayStore.publishAsset(data)
+            sharePlayStore.publishAsset(data, isPlaylist: isAudioPlaylist(data))
         case .local:
             if model.hasLocalPlayer {
                 await model.playerDelegate?.received(data)
@@ -130,7 +136,7 @@ extension GameNetworkController {
         await model.playerStore?.request(with: data)
         guard !proxy else { return }
         if data.carriesAsset {
-            sharePlayStore.publishAsset(data)
+            sharePlayStore.publishAsset(data, isPlaylist: isAudioPlaylist(data))
         } else {
             sharePlayStore.sendDataReportingLoss(data)
         }

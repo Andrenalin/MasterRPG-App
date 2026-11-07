@@ -205,7 +205,9 @@ public extension FileVersionGameControllable {
         guard let fileUrlDataController = itemControllable.fileUrlDataController else { return false }
         // Reported to the master as available: an iCloud file that has not downloaded must not
         // count, or the master sends only a reference to bytes this device cannot read.
-        return await fileUrlDataController.hasDownloadedData(for: fileUrl)
+        // A scan over every item must not start an iCloud download for each evicted file; the
+        // download starts for the item that is shown or shared (`hasLocalFileData`).
+        return await fileUrlDataController.hasDownloadedDataWithoutFetching(for: fileUrl)
     }
 
     func rebuildFileReports(masterVersions: [UUID: Int], masterId: UUID, only itemId: UUID? = nil) {

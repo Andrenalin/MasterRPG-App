@@ -98,9 +98,6 @@ public final class SpaceModel: nonisolated Identifiable {
     var entries_: CRDTDataUpdate<[SpaceEntryModel]>
 
     public var parentId: UUID? = nil
-    
-    // only game properties
-    public var players: [UUID] = []
 }
 
 extension SpaceModel: nonisolated Comparable {
@@ -112,7 +109,6 @@ extension SpaceModel: nonisolated Comparable {
     }
 }
 
-extension SpaceModel: nonisolated ItemGameReportable {}
 extension SpaceModel: nonisolated ItemLinkRegistrable {}
 
 extension SpaceModel: nonisolated ItemDiffComparable {

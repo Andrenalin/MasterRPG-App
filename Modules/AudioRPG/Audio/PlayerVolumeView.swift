@@ -8,56 +8,56 @@ struct PlayerVolumeView: View {
     let alignment: Alignment
 
     @State private var showVolume: Bool = false
-    @State private var sharingSize: CGSize = .init(width: 200, height: 64)
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The gap between the popover and its button.
+    private nonisolated static let buttonGap: CGFloat = 8
 
     var body: some View {
         #if os(visionOS)
         VStack(alignment: .trailing) {
-            volumeChangeView()
+            PlayerVolumeChangeView(root: root, showVolume: showVolume)
 
             PlayerVolumeButtonView(root: root, showVolume: $showVolume)
         }
         #else
         PlayerVolumeButtonView(root: root, showVolume: $showVolume)
         .overlay(alignment: alignment) {
-            volumeChangeView()
-                .offset(y: offsetY)
+            PlayerVolumeChangeView(root: root, showVolume: showVolume)
+                // The popover sits next to its button, on the side the alignment names: below
+                // for a bottom alignment, above for a top one. No measuring needed.
+                .alignmentGuide(alignment.vertical) { dimensions in
+                    switch alignment.vertical {
+                    case .bottom: dimensions[.top] - Self.buttonGap
+                    case .top: dimensions[.bottom] + Self.buttonGap
+                    default: dimensions[alignment.vertical]
+                    }
+                }
         }
-#endif
+        #endif
     }
+}
 
-    @ViewBuilder
-    func volumeChangeView() -> some View {
+/// The volume slider popover.
+private struct PlayerVolumeChangeView: View {
+    let root: AudioRootModel
+    let showVolume: Bool
+
+    @ScaledMetric(relativeTo: .body) private var sliderWidth = 160
+
+    var body: some View {
         @Bindable var model = root.audioController.model
 
         VStack {
-#if !os(tvOS)
             VolumeSlider(volume: $model.volume)
-                .frame(width: 160)
+                .frame(width: sliderWidth)
                 .tint(Color.accentColor)
-#endif
         }
         .padding(8)
         .fixedSize()
         .rowEditColor(backgroundColor: .black)
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: {
-            sharingSize = $0
-        }
-        .frame(width: sharingSize.width, height: sharingSize.height, alignment: .topTrailing)
         .opacity(showVolume ? 1 : 0)
         .allowsHitTesting(showVolume)
         .accessibilityHidden(!showVolume)
-    }
-
-    var offsetY: CGFloat {
-        #if os(visionOS)
-        -(sharingSize.height + 8)
-        #else
-        sharingSize.height + 8
-        #endif
     }
 }
 

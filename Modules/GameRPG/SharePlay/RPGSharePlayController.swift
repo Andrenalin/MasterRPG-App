@@ -26,7 +26,7 @@ protocol SharePlayControllerDelegate: AnyObject {
     func handleFileLoadFailure(_ model: GameNetworkModel) async -> Void
     func sharePlayLostPlayer(id: UUID) async
     /// Called when the local SharePlay session is invalidated so the player
-    /// controller can reset `hasSendPlayer` and mark the master as lost.
+    /// controller can reset `hasSentPlayer` and mark the master as lost.
     func sharePlayLostConnection() async
     /// Called each time a session is fully configured and joined. On a player
     /// device this triggers `ready()` so audio availability and the selected

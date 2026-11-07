@@ -19,23 +19,19 @@ struct AudioPlayerBarView: View {
                 AudioPlayerMiniBarView()
                     .glassEffect(.clear)
             }
-            .allowsHitTesting(true) // Ensure touches are registered
         } else {
             GlassEffectContainerView {
                 AudioPlayerBarContentView(viewModel: viewModel)
                     .glassEffect(.clear)
             }
-            .allowsHitTesting(true) // Ensure touches are registered
         }
 #elseif os(visionOS)
         AudioPlayerBarContentView(viewModel: viewModel)
-            .allowsHitTesting(true)
 #else
         GlassEffectContainerAll {
             AudioPlayerBarContentView(viewModel: viewModel)
                 .glassEffectAll(.clear)
         }
-        .allowsHitTesting(true)
 #endif
     }
 
@@ -72,6 +68,13 @@ private struct AudioPlayerBarContentView: View {
                 }
             )
             .padding(.horizontal, 8)
+#if os(iOS)
+            // The only route picker the player offers: AirPlay is declared as a background mode.
+            // See CODE_AUDIT_Audio2 §8.1.
+            RoutePickerView()
+                .frame(width: 32, height: 32)
+                .padding(.trailing, 8)
+#endif
         }
         .padding(.vertical, 8)
         .contentShape(.rect) // Ensure the entire bar area is interactive

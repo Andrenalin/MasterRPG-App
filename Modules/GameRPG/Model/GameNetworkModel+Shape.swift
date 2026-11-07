@@ -26,6 +26,19 @@ extension GameNetworkModel {
         subType == .ok || subType == .failed
     }
 
+    /// An availability report list in its exact protocol envelope: the list subtype of a
+    /// file-backed module or Audio together with that module's item type. Checking the subtype
+    /// alone would let a sender pair a benign list action with `.reveal`.
+    var isReportListEnvelope: Bool {
+        guard type == .update else { return false }
+        return switch (subType, data.type) {
+        case (.audioList, .audio), (.photoList, .photo), (.pdfList, .pdf), (.spaceList, .space):
+            true
+        default:
+            false
+        }
+    }
+
     /// A player's request for the bytes of an item the master named: the master's reveal or
     /// store echoed back with its counter and without bytes.
     var isAssetRequest: Bool {

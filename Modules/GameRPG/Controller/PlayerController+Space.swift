@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import os.log
 import SpaceRPG
 
 extension PlayerController {
@@ -18,63 +17,21 @@ extension PlayerController {
         // Spaces come from the game master only; a player shows one through the master.
         guard model.sender.isMaster else { return nil }
 
-        let masterId = model.masterId
-        let localPlayerId = root.gameModel.gameConfig.id
-        let space = root.spaceRoot.spaceGameControllable
-        if !(model.type == .update && (model.subType == .spaceList || model.subType == .spaceTransform)) {
-            space.setMasterVersion(
-                itemId: model.data.id,
-                version: model.data.effectiveAssetVersion,
-                masterId: masterId
-            )
-        }
-
-        switch model.type {
-        case .reveal:
-            guard try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) else {
-                return await response(for: model, isSuccess: true, requestData: true)
+        return try await handleFileBackedMessage(
+            model,
+            access: root.spaceRoot.fileBackedAccess,
+            versionlessSubTypes: [.spaceTransform],
+            // The game screen opens the immersive space itself when it shows the space
+            // module — see GameRootViewer's reveal handler.
+            didReveal: { _ in gameModel.setGameUpdateType(.space) },
+            handleOtherUpdate: { model in
+                if model.subType == .spaceTransform {
+                    applySpaceTransform(model)
+                } else if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
+                    gameModel.setGameUpdateType(.space)
+                }
             }
-            // The game screen opens the immersive space itself when it
-            // shows the space module — see GameRootViewer's reveal
-            // handler.
-            gameModel.setGameUpdateType(.space)
-            space.markSpaceAvailable(
-                itemId: model.data.id,
-                version: model.data.effectiveAssetVersion,
-                for: [localPlayerId, masterId],
-                masterId: masterId
-            )
-            return await response(for: model, isSuccess: true, requestData: false)
-        case .store:
-            if model.data.data != nil {
-                try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
-            }
-            guard await holdsFile(of: model.data, in: root.spaceRoot.gameControllable) else {
-                return await response(for: model, isSuccess: true, requestData: true)
-            }
-            space.markSpaceAvailable(
-                itemId: model.data.id,
-                version: model.data.effectiveAssetVersion,
-                for: [localPlayerId],
-                masterId: masterId
-            )
-            return await response(for: model, isSuccess: true, requestData: false)
-        case .update:
-            switch model.subType {
-            case .spaceList:
-                _ = await applySpaceList(model)
-                return nil
-            case .spaceTransform:
-                applySpaceTransform(model)
-                return nil
-            default:
-                break
-            }
-            if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                gameModel.setGameUpdateType(.space)
-            }
-        }
-        return nil
+        )
     }
 
     /// Applies a transform of the master's version of the Space. A player's transform also
@@ -91,30 +48,5 @@ extension PlayerController {
             counter: model.counter,
             timestamp: model.timestamp
         )
-    }
-
-    private func applySpaceList(_ model: GameNetworkModel) async -> Bool {
-        guard gameModel.canApplySpaceList(from: model.masterId, counter: model.counter),
-              await root.spaceRoot.spaceGameControllable.applySpaceList(
-                  data: model.data,
-                  for: model.masterId,
-                  with: model.masterId,
-                  authoritative: true
-              )
-        else { return false }
-
-        gameModel.recordSpaceList(counter: model.counter, from: model.masterId)
-        return true
-    }
-
-    func sendSpaceList() async {
-        // A proxy is a private mirror of its host and must not become a separate
-        // availability-report participant.
-        guard root.gameModel.gameType != .proxy else { return }
-        let spaceList = await root.spaceRoot.spaceGameControllable.spaceList(
-            allPlayers: false,
-            with: root.gameModel.gameConfig.master.id
-        )
-        await send(type: .update, subType: .spaceList, updated: spaceList)
     }
 }

@@ -99,7 +99,6 @@ struct GameControllerTests {
         #expect(playRequest.id == playlistId)
         #expect(playRequest.shouldPlay)
 
-        try await sut.play(id: nil, shouldPlay: true)
         try await sut.play(id: playlistId, shouldPlay: false)
     }
 

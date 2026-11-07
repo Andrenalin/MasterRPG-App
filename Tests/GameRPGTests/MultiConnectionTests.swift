@@ -421,7 +421,7 @@ private struct MultiplayerPhotoTopology {
     ) async throws -> GameNetworkModel {
         guard let hostRole = role.proxyHost else {
             masterNetwork.directMasterSpy.sendResponseData = nil
-            await master.receivedProcess(request, connectionId: nil)
+            await master.received(request, connectionId: nil)
             return try #require(
                 masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel
             )
@@ -445,7 +445,7 @@ private struct MultiplayerPhotoTopology {
             host.network.directPlayerSpy.requestData as? GameNetworkModel
         )
         masterNetwork.directMasterSpy.sendResponseData = nil
-        await master.receivedProcess(remappedRequest, connectionId: nil)
+        await master.received(remappedRequest, connectionId: nil)
         let hostRepair = try #require(
             masterNetwork.directMasterSpy.sendResponseData as? GameNetworkModel
         )
@@ -561,7 +561,7 @@ struct MultiConnectionAudioTests {
 
         let audioReference = await env.masterRoot.audioRoot.gameController.share(id: audioId)
         #expect(metadataOnlyAudio.version == audioReference.version)
-        #expect(await !env.player1Root.audioRoot.gameController.hasLocalAudioData(for: audioId))
+        #expect(await !env.player1Root.audioRoot.gameController.hasLocalFileData(for: audioId))
 
         await env.master.show(for: audioReference)
         let reveal = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
@@ -587,7 +587,7 @@ struct MultiConnectionAudioTests {
 
         // Assert - The bytes exist before OK is emitted.
         #expect(acknowledgment.subType == .ok)
-        #expect(await env.player1Root.audioRoot.gameController.hasLocalAudioData(for: audioId))
+        #expect(await env.player1Root.audioRoot.gameController.hasLocalFileData(for: audioId))
 
         let sendCountBeforeReceipt = env.masterNetworkSpy.sendResponseHistory.count
 
@@ -744,7 +744,7 @@ struct MultiConnectionAudioTests {
         try #require(response3 != nil)
 
         // Act - Master receives first acknowledgment
-        await env.master.receivedProcess(response1!, connectionId: nil)
+        await env.master.received(response1!, connectionId: nil)
 
         // Assert - Master broadcasts audio data
         let audioData1 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -756,7 +756,7 @@ struct MultiConnectionAudioTests {
         ])
 
         // Act - Master receives third player acknowledgment
-        await env.master.receivedProcess(response3!, connectionId: nil)
+        await env.master.received(response3!, connectionId: nil)
 
         // Assert - Master updates controls
         let audioData3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -787,7 +787,7 @@ struct MultiConnectionAudioTests {
         let response1 = env.playerNetworkSpy.requestData as? GameNetworkModel
         try #require(response1 != nil)
 
-        await env.master.receivedProcess(response1!, connectionId: nil)
+        await env.master.received(response1!, connectionId: nil)
         let audioData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         try #require(audioData != nil)
 
@@ -826,11 +826,11 @@ struct MultiConnectionAudioTests {
         let ack3 = env.playerNetworkSpy.requestData as? GameNetworkModel
 
         // Master sends audio data
-        await env.master.receivedProcess(ack1!, connectionId: nil)
+        await env.master.received(ack1!, connectionId: nil)
         let audioData1 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        await env.master.receivedProcess(ack2!, connectionId: nil)
+        await env.master.received(ack2!, connectionId: nil)
         let audioData2 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        await env.master.receivedProcess(ack3!, connectionId: nil)
+        await env.master.received(ack3!, connectionId: nil)
         let audioData3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
 
         // Players process audio
@@ -842,15 +842,15 @@ struct MultiConnectionAudioTests {
         let ok3 = env.playerNetworkSpy.requestData as? GameNetworkModel
 
         // Act - Master receives confirmations
-        await env.master.receivedProcess(ok3!, connectionId: nil)
+        await env.master.received(ok3!, connectionId: nil)
         var allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == false) // Not all yet
 
-        await env.master.receivedProcess(ok2!, connectionId: nil)
+        await env.master.received(ok2!, connectionId: nil)
         allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == false) // Still not all
 
-        await env.master.receivedProcess(ok1!, connectionId: nil)
+        await env.master.received(ok1!, connectionId: nil)
 
         // Assert - All players reported
         allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
@@ -887,15 +887,16 @@ struct MultiConnectionAudioTests {
 
         await env.player1.receivedProcess(showCommand!)
         let ack1 = env.playerNetworkSpy.requestData as? GameNetworkModel
-        await env.master.receivedProcess(ack1!, connectionId: nil)
+        await env.master.received(ack1!, connectionId: nil)
         let audioData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         await env.player1.receivedProcess(audioData!)
         let ok1 = env.playerNetworkSpy.requestData as? GameNetworkModel
-        await env.master.receivedProcess(ok1!, connectionId: nil)
+        await env.master.received(ok1!, connectionId: nil)
 
         // Act - Master sends play command
         let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
         // Assert - Play command broadcast
         let playCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
@@ -921,15 +922,16 @@ struct MultiConnectionAudioTests {
 
         await env.player1.receivedProcess(showCommand!)
         let ack1 = env.playerNetworkSpy.requestData as? GameNetworkModel
-        await env.master.receivedProcess(ack1!, connectionId: nil)
+        await env.master.received(ack1!, connectionId: nil)
         let audioData = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         await env.player1.receivedProcess(audioData!)
         let ok1 = env.playerNetworkSpy.requestData as? GameNetworkModel
-        await env.master.receivedProcess(ok1!, connectionId: nil)
+        await env.master.received(ok1!, connectionId: nil)
 
         // Master sends play
         let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         let playCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         try #require(playCommand != nil)
 
@@ -983,11 +985,11 @@ struct MultiConnectionAudioTests {
         await env.player3.receivedProcess(showCommand!)
         let ack3 = env.playerNetworkSpy.requestData as? GameNetworkModel
 
-        await env.master.receivedProcess(ack1!, connectionId: nil)
+        await env.master.received(ack1!, connectionId: nil)
         let data1 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        await env.master.receivedProcess(ack2!, connectionId: nil)
+        await env.master.received(ack2!, connectionId: nil)
         let data2 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
-        await env.master.receivedProcess(ack3!, connectionId: nil)
+        await env.master.received(ack3!, connectionId: nil)
         let data3 = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
 
         await env.player1.receivedProcess(data1!)
@@ -1000,13 +1002,14 @@ struct MultiConnectionAudioTests {
         try #require(ok1?.subType == .ok)
         try #require(ok2?.subType == .ok)
         try #require(ok3?.subType == .ok)
-        await env.master.receivedProcess(ok1!, connectionId: nil)
-        await env.master.receivedProcess(ok2!, connectionId: nil)
-        await env.master.receivedProcess(ok3!, connectionId: nil)
+        await env.master.received(ok1!, connectionId: nil)
+        await env.master.received(ok2!, connectionId: nil)
+        await env.master.received(ok3!, connectionId: nil)
 
         // Master sends play
         let playData = env.masterRoot.audioRoot.gameController.requestPlay(id: audioId)
         await env.master.game(message: playData, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         let playCommand = env.masterNetworkSpy.sendResponseData as? GameNetworkModel
         try #require(playCommand != nil)
         #expect(playCommand?.subType == .playAudio)
@@ -1072,7 +1075,7 @@ struct MultiConnectionPhotoTests {
         }
 
         for response in initialResponses.values where response.subType == .ok {
-            await env.master.receivedProcess(response, connectionId: nil)
+            await env.master.received(response, connectionId: nil)
         }
 
         let proxyHosts = try [MultiplayerPhotoRole.proxy1, .proxy2].map { try #require($0.proxyHost) }
@@ -1105,7 +1108,7 @@ struct MultiConnectionPhotoTests {
             let response = try await requester.receive(fullData)
             #expect(response.subType == .ok)
             if role.type != .proxy {
-                await env.master.receivedProcess(response, connectionId: nil)
+                await env.master.received(response, connectionId: nil)
             }
         }
 

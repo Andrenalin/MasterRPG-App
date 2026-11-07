@@ -22,12 +22,14 @@ struct AudioPlayerVolumeControl: View {
         static let sliderWidth: CGFloat = 100
         static let height: CGFloat = 44
         static let volumeSpring = Animation.spring(response: 0.25, dampingFraction: 0.75)
+        /// Volumes below which the speaker shows one and two waves.
+        static let lowVolume = 0.33
+        static let mediumVolume = 0.66
     }
 
     var body: some View {
         HStack(spacing: 0) {
-#if !os(tvOS)
-            // Volume slider (visible when expanded)
+            // Volume slider (visible when expanded); `VolumeSlider` is empty on tvOS.
             if isSliderVisible {
                 VolumeSlider(volume: $audioPlayerModel.volume)
                     .frame(width: Constants.sliderWidth)
@@ -36,7 +38,6 @@ struct AudioPlayerVolumeControl: View {
                     .padding(.trailing, 4)
                     .transition(.opacity)
             }
-#endif
 
             // Volume button
             Button {
@@ -77,11 +78,11 @@ struct AudioPlayerVolumeControl: View {
     }
 
     private var volumeIcon: String {
-        if audioPlayerModel.isMuted || audioPlayerModel.volume == 0 {
+        if audioPlayerModel.isMuted {
             "speaker.slash.fill"
-        } else if audioPlayerModel.volume < 0.33 {
+        } else if audioPlayerModel.volume < Constants.lowVolume {
             "speaker.wave.1.fill"
-        } else if audioPlayerModel.volume < 0.66 {
+        } else if audioPlayerModel.volume < Constants.mediumVolume {
             "speaker.wave.2.fill"
         } else {
             "speaker.wave.3.fill"

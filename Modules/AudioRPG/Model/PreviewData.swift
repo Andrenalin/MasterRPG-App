@@ -110,14 +110,14 @@ extension PlaylistItem {
                 id: AudioModel.previewId,
                 url: audioUrl,
                 title: "Storm over Emberkeep",
-                artist: "MasterRPG Preview",
+                subtitle: "MasterRPG Preview",
                 duration: CMTime(seconds: 180, preferredTimescale: 600)
             ),
             PlaylistItem(
                 id: AudioModel.previewAmbientId,
                 url: audioUrl,
                 title: "Rain in the Old Forest",
-                artist: "MasterRPG Preview",
+                subtitle: "MasterRPG Preview",
                 duration: CMTime(seconds: 240, preferredTimescale: 600)
             )
         ]

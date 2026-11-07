@@ -1,18 +1,15 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
 import AudioRPG
+import DiceRPG
 import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
 import PdfRPG
 import SpaceRPG
+import PhotoRPG
+import WeatherRPG
 
 // MARK: - Proxy host routing
 
@@ -148,7 +145,7 @@ extension MasterController {
         case .space:
             return try await root.spaceRoot.gameControllable.createGameData(for: model.data.id)
         default:
-            return try await handle(model, connectionId: connectionId)
+            return try await handle(model, origin: .direct(connectionId))
         }
     }
 
@@ -176,18 +173,14 @@ extension MasterController {
     /// itself, including the binaries of file-backed modules.
     private func canServeProxyRequest(for data: NetworkCodableDataType) async -> Bool {
         switch data.type {
-        case .photo:
-            guard await root.photoRoot.gameControllable.hasLocalFileData(for: data.id) else { return false }
-            return await root.photoRoot.gameControllable.networkVersion(for: data.id) == data.effectiveAssetVersion
-        case .pdf:
-            guard await root.pdfRoot.gameControllable.hasLocalFileData(for: data.id) else { return false }
-            return await root.pdfRoot.gameControllable.networkVersion(for: data.id) == data.effectiveAssetVersion
+        case .photo, .pdf, .space:
+            guard let access = FileBackedModuleAccess.access(for: data.type, in: root),
+                  await access.controllable.hasLocalFileData(for: data.id)
+            else { return false }
+            return await access.controllable.networkVersion(for: data.id) == data.effectiveAssetVersion
         case .audio:
-            guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: data.id) else { return false }
+            guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: data.id) else { return false }
             return await root.audioRoot.gameControllable.networkVersion(for: data.id) == data.effectiveAssetVersion
-        case .space:
-            guard await root.spaceRoot.gameControllable.hasLocalFileData(for: data.id) else { return false }
-            return await root.spaceRoot.gameControllable.networkVersion(for: data.id) == data.effectiveAssetVersion
         case .map:
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: data.id) else { return false }
             guard await root.mapRoot.mapGameControllable.missingMapImages(itemId: data.id).isEmpty else {

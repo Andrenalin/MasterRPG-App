@@ -47,10 +47,6 @@ public extension ViewController {
         let model = root.itemController.itemOrEmpty(for: itemId)
         return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
     }
-
-    @MainActor func gameView(root: DiceRootModel) -> some View {
-        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
-    }
 }
 
 public extension ViewController {

@@ -73,9 +73,7 @@ struct SharingActionView: View, Equatable {
         } else if showPlayControl {
             Button {
                 Task {
-                    let list = root.itemController.audioList(itemId: itemId)
-                    guard await root.audioController.add(audio: list, replace: true) else { return }
-                    root.audioController.togglePlay(id: list.first?.id)
+                    await root.playItem(id: itemId)
 #if !os(tvOS)
                     root.donatePlay(of: itemId)
 #endif
@@ -117,12 +115,12 @@ struct SharingActionView: View, Equatable {
 
     private func shareAudio() {
         Task {
+            let reference = await root.gameController.share(id: itemId)
             if appGameStateModel.gameModus == .master {
-                await networkActions?.shareId(root.gameController.share(id: itemId))
+                networkActions?.shareId(reference)
             } else {
-                if let result = try? await root.gameController.createGameData(for: itemId) {
-                    networkActions?.game(result, .generic, nil)
-                }
+                // Only the reference: the game exports the file when the master lacks it.
+                networkActions?.game(reference, .generic, nil)
             }
         }
     }

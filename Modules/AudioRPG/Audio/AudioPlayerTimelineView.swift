@@ -33,22 +33,13 @@ struct AudioPlayerTimelineView: View {
     }
 
     var body: some View {
-#if os(iOS)
-        AudioPlayerTimelineIPadView(
+AudioPlayerTimelineLayersView(
             currentItem: currentItem,
             audioPlayerModel: audioPlayerModel,
             viewModel: viewModel,
             showScrubber: showScrubber,
             hideScrubber: hideScrubber
         )
-#else
-        AudioPlayerTimelineMacView(
-            currentItem: currentItem,
-            audioPlayerModel: audioPlayerModel,
-            viewModel: viewModel,
-            hideScrubber: hideScrubber
-        )
-#endif
     }
 
     private func showScrubber() {
@@ -70,8 +61,10 @@ struct AudioPlayerTimelineView: View {
 // `some View` properties on `AudioPlayerTimelineView` itself that all re-evaluated
 // whenever any part of `AudioPlayerTimelineView`'s body did.
 
-/// iPad timeline (tap-based): tapping anywhere reveals the scrubber.
-private struct AudioPlayerTimelineIPadView: View {
+/// The timeline: the title and artwork, the progress bar and the scrubber over them. How the
+/// scrubber is revealed is the platform's: a tap on iOS, hovering elsewhere
+/// (`AudioPlayerTimelineRevealTrigger`, `AudioPlayerTimelineHoverRevealModifier`).
+private struct AudioPlayerTimelineLayersView: View {
     let currentItem: PlaylistItem?
     let audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
@@ -79,24 +72,18 @@ private struct AudioPlayerTimelineIPadView: View {
     let hideScrubber: () -> Void
 
     var body: some View {
-        Button {
-            showScrubber()
-        } label: {
-            AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
-                .contentShape(.rect)
-        }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Show Playback Controls", bundle: .module))
+        AudioPlayerTimelineRevealTrigger(currentItem: currentItem, viewModel: viewModel, showScrubber: showScrubber)
             .overlay(alignment: .bottom) {
                 AudioPlayerTimelineProgressOverlayView(audioPlayerModel: audioPlayerModel, viewModel: viewModel)
             }
             .overlay {
                 AudioPlayerTimelineScrubberOverlayView(
-                            audioPlayerModel: audioPlayerModel,
+                    audioPlayerModel: audioPlayerModel,
                     viewModel: viewModel,
                     hideScrubber: hideScrubber
                 )
             }
+            .modifier(AudioPlayerTimelineHoverRevealModifier(viewModel: viewModel))
             .task(id: currentItem?.id) {
                 viewModel.loadAlbumArtwork(for: currentItem)
             }
@@ -106,42 +93,49 @@ private struct AudioPlayerTimelineIPadView: View {
     }
 }
 
-/// macOS timeline (hover-based): hovering reveals the scrubber.
-private struct AudioPlayerTimelineMacView: View {
+/// The content of the timeline and what reveals the scrubber from it on iOS: a tap anywhere.
+/// Elsewhere the content only stops taking hits while the scrubber is shown.
+private struct AudioPlayerTimelineRevealTrigger: View {
     let currentItem: PlaylistItem?
-    let audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
-    let hideScrubber: () -> Void
+    let showScrubber: () -> Void
+
+    var body: some View {
+        #if os(iOS)
+        Button {
+            showScrubber()
+        } label: {
+            AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Show Playback Controls", bundle: .module))
+        #else
+        AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
+            .allowsHitTesting(!viewModel.isScrubberVisible)
+        #endif
+    }
+}
+
+/// Reveals the scrubber while the pointer is over the timeline (not on iOS, which taps, and
+/// not on tvOS, which has no pointer).
+private struct AudioPlayerTimelineHoverRevealModifier: ViewModifier {
+    let viewModel: AudioPlayerBarViewModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var body: some View {
-        AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
-            .allowsHitTesting(!viewModel.isScrubberVisible)
-            .overlay(alignment: .bottom) {
-                AudioPlayerTimelineProgressOverlayView(audioPlayerModel: audioPlayerModel, viewModel: viewModel)
-            }
-            .overlay {
-                AudioPlayerTimelineScrubberOverlayView(
-                            audioPlayerModel: audioPlayerModel,
-                    viewModel: viewModel,
-                    hideScrubber: hideScrubber
-                )
-            }
-            .contentShape(Rectangle())
-        #if !os(tvOS)
+    func body(content: Content) -> some View {
+        #if os(iOS) || os(tvOS)
+        content
+        #else
+        content
+            .contentShape(.rect)
             .onHover { hovering in
                 withAnimation(reduceMotion ? nil : AudioPlayerTimelineView.Constants.hoverSpring) {
                     viewModel.isScrubberVisible = hovering
                 }
             }
         #endif
-            .task(id: currentItem?.id) {
-                viewModel.loadAlbumArtwork(for: currentItem)
-            }
-            .onDisappear {
-                viewModel.cancelArtworkLoad()
-            }
     }
 }
 
@@ -161,7 +155,7 @@ private struct AudioPlayerTimelineContentLayerView: View {
 
             SongInfoView(
                 title: currentItem?.title ?? String(localized: "Not Playing", bundle: .module),
-                artist: currentItem?.artist ?? "---"
+                artist: currentItem?.subtitle ?? "---"
             )
             .blur(radius: viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
         }
@@ -179,7 +173,7 @@ private struct AudioPlayerTimelineProgressOverlayView: View {
     var body: some View {
         if !viewModel.isScrubberVisible {
             ProgressView(
-                value: audioPlayerModel.currentTime.isFinite ? audioPlayerModel.currentTime : 0,
+                value: audioPlayerModel.playerTime.elapsedSeconds.isFinite ? audioPlayerModel.playerTime.elapsedSeconds : 0,
                 total: audioPlayerModel.playerTime.totalDuration.isFinite ? max(audioPlayerModel.playerTime.totalDuration, 1) : 1
             )
             .progressViewStyle(.linear)
@@ -205,7 +199,7 @@ private struct AudioPlayerTimelineScrubberOverlayView: View {
     var body: some View {
         if viewModel.isScrubberVisible {
             AudioPlayerScrubberView(
-                currentTime: audioPlayerModel.currentTime,
+                currentTime: audioPlayerModel.playerTime.elapsedSeconds,
                 totalDuration: audioPlayerModel.playerTime.totalDuration,
                 elapsedText: audioPlayerModel.playerTime.elapsedText,
                 onSeek: { position in

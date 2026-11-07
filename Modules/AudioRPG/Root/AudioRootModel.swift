@@ -85,6 +85,9 @@ import SwiftUI
         audioPlayerModel.remoteCommandRouter = { [weak self] command in
             self?.routeRemoteCommand(command) ?? false
         }
+        audioPlayerModel.isGameRunning = { [weak self] in
+            self?.runningGameActions() != nil
+        }
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
@@ -106,7 +109,7 @@ import SwiftUI
         
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
-            let controller = SyncDataController(context: context, dataControllable: dataControllable, itemController: itemController)
+            let controller = EntitySyncDataController(context: context, dataControllable: dataControllable, itemController: itemController, entity: RPGAudio.entity())
             syncDataController = controller
             syncTask = controller.start()
         }
@@ -145,7 +148,7 @@ import SwiftUI
     @ObservationIgnored let folderListController: FolderListController
     @ObservationIgnored let folderLinkController: FolderListController
 
-    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncDataController: EntitySyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
@@ -184,21 +187,16 @@ extension AudioRootModel {
         return audioController.model.coordinator
     }
 
-    @MainActor public func itemDataCleanup() async throws {
-        for itemId in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: itemId) else { continue }
-            if model.displayState == DisplayStateMask.totalHidden.rawValue {
-                await editController.delete(itemId: model.id)
-            }
-        }
+    /// Registers what the game does when a media-services reset gives the audio engine a new
+    /// coordinator (`nil` removes it). It must not capture a SwiftUI view.
+    @MainActor public func setAudioCoordinatorChangeHandler(_ handler: (@MainActor (AudioListenerCoordinator) -> Void)?) {
+        audioController.model.coordinatorDidChange = handler
     }
 
-    public func checkFolders(reportModel: ValidateRepairModel) async {
-        let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.repairHiddenAndFolders(reportModel: reportModel)
+    /// Gives the audio session back to other apps when this device plays nothing: the game
+    /// activated it for its audio and never let go. See CODE_AUDIT_Audio2 §5.10.
+    @MainActor public func releaseAudioSession() {
+        audioController.releaseAudioSession()
     }
 
-    public func validateLinks(reportModel: ValidateRepairModel) async {
-        await linkController.validateLinks(reportModel: reportModel)
-    }
 }

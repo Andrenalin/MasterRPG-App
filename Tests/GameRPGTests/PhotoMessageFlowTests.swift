@@ -124,7 +124,7 @@ struct PhotoMessageFlowTests {
             counter: 8
         )
 
-        await env.master.receivedProcess(report, connectionId: connectionId)
+        await env.master.received(report, connectionId: connectionId)
         #expect(env.masterRoot.photoRoot.photoGameControllable.isPhotoAvailable(
             itemId: photoId,
             for: env.player1Config.id,

@@ -1,18 +1,18 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
+import AdventureRPG
 import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
 import CharacterRPG
-import WeatherRPG
+import DiceRPG
+import MapRPG
 import PdfRPG
+import PhotoRPG
 import SpaceRPG
+import TableRPG
+import WeatherRPG
 
 // MARK: - MasterNetworkStoreDelegate
 // Conformance itself is declared alongside the class in MasterController.swift (Swift requires
@@ -81,16 +81,12 @@ extension MasterController {
               model.targetId == nil
         else { return false }
 
-        switch (model.type, model.subType, model.data.type) {
-        case (.update, .audioList, .audio),
-             (.update, .photoList, .photo),
-             (.update, .pdfList, .pdf),
-             (.update, .spaceList, .space),
-             (.update, .store, .value),
-             (.store, .store, .setting):
-            return true
+        if model.isReportListEnvelope { return true }
+        return switch (model.type, model.subType, model.data.type) {
+        case (.update, .store, .value), (.store, .store, .setting):
+            true
         default:
-            return false
+            false
         }
     }
 
@@ -145,39 +141,20 @@ extension MasterController {
     }
 
     func received(_ model: GameNetworkModel, connectionId: ConnectionController.ID?) async {
-        await receivedProcess(model, connectionId: connectionId)
-    }
-
-    func received(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
-        await receivedProcess(model, origin: origin)
-    }
-
-    func receivedProcess(_ model: GameNetworkModel, connectionId: ConnectionController.ID?) async {
-        await receivedProcess(model, origin: .direct(connectionId))
+        await received(model, origin: .direct(connectionId))
     }
 
     /// Not `private` because `MasterController+ProxyDelegate.swift`'s
     /// `receivedServerProxy(_:connectionId:)` also calls this directly, from a
     /// different file.
-    func receivedProcess(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
+    func received(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
         Logger.networking.debug("MasterController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
 
         guard await accepts(model, origin: origin) else { return }
 
         let event = GameMessageEvent(model: model, origin: origin)
-        switch await messagePipeline.enqueue(event) {
-        case .enqueued:
+        if await messagePipeline.enqueueAndLog(event, prefix: "MasterController") {
             await processMessages()
-        case .duplicate:
-            Logger.networking.debug("MasterController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-        case .queueFull:
-            // Distinct from an ordinary duplicate: a genuinely new message
-            // was discarded only because the pipeline is momentarily
-            // saturated, not because it was already seen. See
-            // CODE_AUDIT_Network §5.14.
-            Logger.networking.error("MasterController: Message queue full, message lost \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-        case .pipelineStopped:
-            Logger.networking.debug("MasterController: Message pipeline stopped, ignoring \(model.counter, privacy: .public)")
         }
     }
 
@@ -202,13 +179,8 @@ extension MasterController {
         }
     }
 
-    /// The drain runs inside whichever peer's receive task enqueued first, so cancelling that
-    /// peer (teardown) must not strand the other peers' queued messages: continue the drain on
-    /// a fresh task. If the cancellation was a genuine stop the pipeline was already reset and
-    /// the new drain finds no work. See CODE_AUDIT_16 §3.2.
     private func handOffBacklog() async {
-        guard await messagePipeline.hasQueuedMessages else { return }
-        Task { [weak self] in
+        await messagePipeline.handOffBacklog { [weak self] in
             await self?.processMessages()
         }
     }
@@ -290,7 +262,7 @@ extension MasterController {
     /// this game, which is what lets it update an availability report.
     private func recordDeliveryReceipt(_ model: GameNetworkModel) -> Bool {
         guard let log = root.gameModel.logData[model.counter],
-              log.messageID.sessionID == gameModel.deliverySessionID,
+              log.messageID.sessionID == gameModel.deliverySessionId,
               log.module == model.data.type,
               log.itemId == model.data.id
         else { return false }
@@ -306,18 +278,15 @@ extension MasterController {
         guard model.sender.role == .observer else { return model }
         if model.isAcknowledgement { return model }
 
-        // Reports and screen samples are safe only in their exact protocol
+        // Reports are safe only in their exact protocol
         // envelopes. Checking the subtype alone lets an observer pair a benign
-        // action such as `.photoList` or `.screen` with `.reveal`, which then
+        // action such as `.photoList` with `.reveal`, which then
         // enters a file-backed module's presentation path.
-        switch (model.type, model.subType, model.data.type) {
-        case (.update, .audioList, .audio),
-             (.update, .photoList, .photo),
-             (.update, .pdfList, .pdf),
-             (.update, .spaceList, .space),
-             (.store, .screen, .game):
+        if model.isReportListEnvelope {
             guard model.data.data != nil else { return nil }
             return model
+        }
+        switch (model.type, model.subType, model.data.type) {
         case (.update, .mapPin, .map):
             // Moving a player pin the game master gave this observer; `handleMap` admits it
             // only for such a pin. See `MapPinModel.isControlled(by:)`.
@@ -342,15 +311,8 @@ extension MasterController {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
         guard root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
         guard await accepts(model, origin: .file) else { return }
-        switch await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) {
-        case .enqueued:
+        if await messagePipeline.enqueueAndLog(GameMessageEvent(model: model, origin: .file), prefix: "MasterController", kind: "file ") {
             await processMessages()
-        case .duplicate:
-            Logger.networking.debug("MasterController: Duplicate file ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-        case .queueFull:
-            Logger.networking.error("MasterController: Message queue full, file message lost \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-        case .pipelineStopped:
-            Logger.networking.debug("MasterController: Message pipeline stopped, ignoring file \(model.counter, privacy: .public)")
         }
     }
 }

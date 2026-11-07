@@ -58,7 +58,7 @@ struct MapMasterMessageFlowTests {
         )
 
         // When
-        await fixture.master.receivedProcess(request, connectionId: connectionId)
+        await fixture.master.received(request, connectionId: connectionId)
 
         // Then
         let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }

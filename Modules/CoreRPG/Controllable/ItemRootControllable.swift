@@ -39,6 +39,31 @@ public extension ItemRootControllable {
     }
 }
 
+/// The database maintenance every module root shares: repairing folders and hidden items,
+/// validating links and removing orphaned items. A module overrides `checkFolders` only when it
+/// has data of its own to repair (Character). See CODE_AUDIT_Audio2 §9.11.
+@MainActor
+public extension ItemRootControllable {
+    /// Deletes the items that are hidden everywhere (`totalHidden`) and so reachable by nobody.
+    func itemDataCleanup() async {
+        for itemId in itemControllable.itemDataModel.items {
+            guard let model = await itemControllable.item(for: itemId) else { continue }
+            if model.displayState == DisplayStateMask.totalHidden.rawValue {
+                await editControllable.delete(itemId: model.id)
+            }
+        }
+    }
+
+    func checkFolders(reportModel: ValidateRepairModel) async {
+        let controller = ConvertController(itemController: itemControllable, editController: editControllable)
+        await controller.repairHiddenAndFolders(reportModel: reportModel)
+    }
+
+    func validateLinks(reportModel: ValidateRepairModel) async {
+        await linkControllable.validateLinks(reportModel: reportModel)
+    }
+}
+
 @MainActor @Observable
 public final class ItemRootController: ItemRootControllable {
     public init(

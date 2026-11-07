@@ -15,7 +15,6 @@ import UIKit
 final class AudioPlayerBarViewModel {
     var isScrubberVisible = false
     var isVolumeSliderVisible = false
-    var previousVolume: Double = 0.25
     var albumArtwork: Image?
 
     private var artworkLoadTask: Task<Void, Never>?
@@ -79,12 +78,9 @@ final class AudioPlayerBarViewModel {
     }
 
     func toggleMute(audioPlayerModel: AudioPlayerModel) {
-        if audioPlayerModel.isMuted {
-            audioPlayerModel.volume = previousVolume
-        } else {
-            previousVolume = audioPlayerModel.volume
-            audioPlayerModel.volume = 0
-        }
+        // The volume before the mute lives on the player model (kept by `volume` itself), shared
+        // by every bar and by a slider dragged to zero.
+        audioPlayerModel.volume = audioPlayerModel.isMuted ? audioPlayerModel.previousVolume : 0
     }
 
     func appIconImage() -> Image {

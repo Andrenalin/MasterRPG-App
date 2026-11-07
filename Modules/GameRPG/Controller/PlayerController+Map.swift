@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import os.log
 import MapRPG
 
 // A map travels like every file-backed item: the game master names it, a player that lacks it
@@ -47,10 +46,10 @@ extension PlayerController {
                     for: model.data.id,
                     with: model.data
                 ) else {
-                    gameModel.queueBattleRoundUpdate(model.data)
+                    gameModel.mapUpdates.queueBattleRoundUpdate(model.data)
                     return nil
                 }
-                gameModel.discardPendingBattleRoundUpdate(itemId: model.data.id)
+                gameModel.mapUpdates.discardPendingBattleRoundUpdate(itemId: model.data.id)
                 setMapUpdateTypeAndSyncPawns()
             default:
                 break
@@ -67,7 +66,7 @@ extension PlayerController {
 
         if model.data.data != nil {
             // A package that arrives after a newer content update would roll the map back.
-            if !holdsMap || gameModel.shouldApplyMapContentUpdate(itemId: itemId, counter: model.counter) {
+            if !holdsMap || gameModel.mapUpdates.shouldApplyMapContentUpdate(itemId: itemId, counter: model.counter) {
                 // The master is unconditionally authoritative for map state — `.overwrite`
                 // skips the default last-writer-wins merge, which is keyed on each device's
                 // own wall clock and can let this player's stale copy of the map win over
@@ -79,7 +78,7 @@ extension PlayerController {
                     importMode: .overwrite
                 )
                 root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(model.data)
-                gameModel.markMapContentApplied(itemId: itemId, counter: model.counter)
+                gameModel.mapUpdates.markMapContentApplied(itemId: itemId, counter: model.counter)
             }
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: itemId) else {
                 // Never acknowledge or show a map without its background.
@@ -94,7 +93,7 @@ extension PlayerController {
             }
             guard isUsable else {
                 gameModel.clearGameUpdateTypeIfPhoto()
-                gameModel.noteMapRequest(itemId: itemId)
+                gameModel.mapUpdates.noteMapRequest(itemId: itemId)
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         }
@@ -117,20 +116,20 @@ extension PlayerController {
 
     /// Applies the content, state and battle round that arrived before their map.
     private func applyPendingMapUpdates(itemId: UUID) async {
-        if let pending = gameModel.pendingMapContentUpdate(for: itemId) {
-            if gameModel.shouldApplyMapContentUpdate(itemId: itemId, counter: pending.counter),
+        if let pending = gameModel.mapUpdates.pendingMapContentUpdate(for: itemId) {
+            if gameModel.mapUpdates.shouldApplyMapContentUpdate(itemId: itemId, counter: pending.counter),
                root.mapRoot.mapGameControllable.applyMapContentUpdate(for: itemId, with: pending.data) {
-                gameModel.markMapContentApplied(itemId: itemId, counter: pending.counter)
+                gameModel.mapUpdates.markMapContentApplied(itemId: itemId, counter: pending.counter)
             } else {
-                gameModel.discardPendingMapContentUpdate(itemId: itemId)
+                gameModel.mapUpdates.discardPendingMapContentUpdate(itemId: itemId)
             }
         }
-        if let pending = gameModel.pendingMapState(for: itemId) {
-            if gameModel.shouldApplyMapState(itemId: itemId, counter: pending.counter),
+        if let pending = gameModel.mapUpdates.pendingMapState(for: itemId) {
+            if gameModel.mapUpdates.shouldApplyMapState(itemId: itemId, counter: pending.counter),
                root.mapRoot.mapGameControllable.updateMap(for: itemId, with: pending.data) {
-                gameModel.markMapStateApplied(itemId: itemId, counter: pending.counter)
+                gameModel.mapUpdates.markMapStateApplied(itemId: itemId, counter: pending.counter)
             } else {
-                gameModel.discardPendingMapState(itemId: itemId)
+                gameModel.mapUpdates.discardPendingMapState(itemId: itemId)
             }
         }
         retryDeferredBattleRoundUpdate(itemId: itemId)
@@ -139,14 +138,14 @@ extension PlayerController {
     private func handleMapState(_ model: GameNetworkModel) async -> GameNetworkModel? {
         let itemId = model.data.id
         guard model.data.data != nil,
-              gameModel.shouldApplyMapState(itemId: itemId, counter: model.counter)
+              gameModel.mapUpdates.shouldApplyMapState(itemId: itemId, counter: model.counter)
         else { return nil }
 
         guard await holdsMap(model.data) else {
             // The state of a map this player lacks: it waits for the map, which is asked for
             // with the state's counter. A burst of states asks once.
-            gameModel.queueMapState(model.data, counter: model.counter)
-            guard gameModel.mayRequestMap(itemId: itemId) else { return nil }
+            gameModel.mapUpdates.queueMapState(model.data, counter: model.counter)
+            guard gameModel.mapUpdates.mayRequestMap(itemId: itemId) else { return nil }
             return root.gameModel.outgoingMessage(
                 counter: model.counter,
                 proxyCounter: model.proxyCounter,
@@ -158,7 +157,7 @@ extension PlayerController {
         }
 
         guard root.mapRoot.mapGameControllable.updateMap(for: itemId, with: model.data) else { return nil }
-        gameModel.markMapStateApplied(itemId: itemId, counter: model.counter)
+        gameModel.mapUpdates.markMapStateApplied(itemId: itemId, counter: model.counter)
         retryDeferredBattleRoundUpdate(itemId: itemId)
         gameModel.showMapForLiveUpdate(of: itemId)
         await refreshMapVisuals(itemId: itemId)
@@ -206,20 +205,20 @@ extension PlayerController {
         guard model.sender.isMaster,
               model.data.type == .map,
               model.data.data != nil,
-              gameModel.shouldApplyMapContentUpdate(itemId: itemId, counter: model.counter)
+              gameModel.mapUpdates.shouldApplyMapContentUpdate(itemId: itemId, counter: model.counter)
         else { return nil }
 
         guard await holdsMap(model.data) else {
             // Content alone shows nothing. It waits for the map, which the reveal or the
             // state that follows asks for.
-            gameModel.queueMapContentUpdate(model.data, counter: model.counter)
+            gameModel.mapUpdates.queueMapContentUpdate(model.data, counter: model.counter)
             return nil
         }
 
         guard root.mapRoot.mapGameControllable.applyMapContentUpdate(for: itemId, with: model.data) else {
             return nil
         }
-        gameModel.markMapContentApplied(itemId: itemId, counter: model.counter)
+        gameModel.mapUpdates.markMapContentApplied(itemId: itemId, counter: model.counter)
         await applyPendingMapUpdates(itemId: itemId)
         await refreshMapVisuals(itemId: itemId)
         return nil

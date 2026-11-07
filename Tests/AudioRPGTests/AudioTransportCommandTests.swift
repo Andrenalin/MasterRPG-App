@@ -33,6 +33,25 @@ struct AudioTransportCommandTests {
         try await fixture.root.gameController.play(AudioPlayRequest(id: fixture.playlistItemId, shouldPlay: true))
     }
 
+    @Test("A play of the loaded playlist restarts it in place without copying the files again")
+    func playRestartsInPlace() async throws {
+        let fixture = try await Self.fixture()
+        try await Self.start(fixture)
+        let model = fixture.root.audioPlayerModel
+        await model.remainingTracksTask?.value
+        let urls = model.playList.map(\.url)
+        try #require(urls.count == fixture.trackIds.count)
+        let generation = model.playListGeneration
+
+        // The loop of a playlist is a plain play again.
+        try await Self.start(fixture)
+
+        #expect(model.playList.map(\.url) == urls)
+        #expect(model.playListGeneration == generation)
+        #expect(model.currentId == fixture.trackIds[0])
+        #expect(model.wantsPlayback)
+    }
+
     @Test("A play command loads the playlist and starts its first track")
     func playStartsTheFirstTrack() async throws {
         let fixture = try await Self.fixture()
@@ -40,6 +59,8 @@ struct AudioTransportCommandTests {
         try await Self.start(fixture)
 
         let model = fixture.root.audioPlayerModel
+        // The tracks behind the start track load in the background. See CODE_AUDIT_Audio2 §7.2.
+        await model.remainingTracksTask?.value
         #expect(model.playList.map(\.id) == fixture.trackIds)
         #expect(model.currentId == fixture.trackIds[0])
         #expect(model.playListRootId == fixture.playlistItemId)
@@ -92,6 +113,8 @@ struct AudioTransportCommandTests {
         #expect(!model.wantsPlayback)
         // Pausing keeps the playlist and the track.
         #expect(model.currentId == fixture.trackIds[0])
+        // The tracks behind the start track load in the background. See CODE_AUDIT_Audio2 §7.2.
+        await model.remainingTracksTask?.value
         #expect(model.playList.count == 2)
     }
 
@@ -121,6 +144,8 @@ struct AudioTransportCommandTests {
         )
 
         let model = fixture.root.audioPlayerModel
+        // The tracks behind the start track load in the background. See CODE_AUDIT_Audio2 §7.2.
+        await model.remainingTracksTask?.value
         #expect(model.playList.map(\.id) == fixture.trackIds)
         #expect(model.currentId == fixture.trackIds[1])
         #expect(model.playListRootId == fixture.playlistItemId)
@@ -226,6 +251,8 @@ struct AudioTransportCommandTests {
         ))
 
         let model = fixture.root.audioPlayerModel
+        // The tracks behind the start track load in the background. See CODE_AUDIT_Audio2 §7.2.
+        await model.remainingTracksTask?.value
         #expect(model.playList.map(\.id) == fixture.trackIds)
         #expect(model.wantsPlayback)
         #expect(await waitUntil { Self.isNear(fixture, position) })
@@ -302,9 +329,67 @@ struct AudioTransportCommandTests {
         await fixture.root.audioGameControllable.loadPlaylist(with: command)
 
         let model = fixture.root.audioPlayerModel
+        // The tracks behind the start track load in the background. See CODE_AUDIT_Audio2 §7.2.
+        await model.remainingTracksTask?.value
         #expect(model.playList.map(\.id) == fixture.trackIds)
         #expect(model.currentId == fixture.trackIds[0])
         #expect(!model.wantsPlayback)
+    }
+    @Test("A SharePlay receiver prepares the first track in place for the loop's plain play")
+    func sharePlayReceiverRestartsTheLoadedPlaylistInPlace() async throws {
+        let fixture = try await Self.fixture()
+        await fixture.root.audioGameControllable.loadPlaylist(id: fixture.playlistItemId)
+        let model = fixture.root.audioPlayerModel
+        await model.remainingTracksTask?.value
+        // The playlist ran to its last track.
+        await fixture.root.audioController.preparePlay(id: fixture.trackIds[1], triggerPlay: false)
+        let generation = model.playListGeneration
+        let loadedTracks = model.playList.map(\.id)
+
+        let command = AudioPlayRequest(id: fixture.playlistItemId, shouldPlay: true).command
+        await fixture.root.audioGameControllable.loadPlaylist(with: command)
+
+        // Back at the first track without loading the playlist again: emptying the player would
+        // reach the game master as a pause of the coordinated playback.
+        #expect(model.playListGeneration == generation)
+        #expect(model.playList.map(\.id) == loadedTracks)
+        #expect(model.currentId == fixture.trackIds[0])
+        #expect(!model.wantsPlayback)
+    }
+    @Test("A replay names its own play for the coordinated playback")
+    func replayUsesItsCoordinationId() async throws {
+        let fixture = try await Self.fixture()
+        await fixture.root.audioGameControllable.loadPlaylist(id: fixture.playlistItemId)
+        let model = fixture.root.audioPlayerModel
+        #expect(model.coordinator?.sharedAudioId == fixture.trackIds[0])
+
+        // The group holds the track that ended as ended: the replay must not reuse its identifier.
+        let replayId = UUID()
+        let command = AudioPlayRequest(id: fixture.playlistItemId, shouldPlay: true, coordinationId: replayId).command
+        await fixture.root.audioGameControllable.loadPlaylist(with: command)
+
+        #expect(model.currentId == fixture.trackIds[0])
+        #expect(model.coordinator?.sharedAudioId == replayId)
+    }
+
+    @Test("The game master's loop sends a play command with its own coordination id")
+    func loopCommandCarriesACoordinationId() async throws {
+        let fixture = try await Self.fixture()
+        let model = fixture.root.audioPlayerModel
+        var sent: [AudioPlayRequest] = []
+        model.loopReplayHandler = { command in
+            if let request = AudioPlayRequest.decodeData(of: command.data) { sent.append(request) }
+        }
+        model.repeatPlayList = true
+        await fixture.root.audioGameControllable.loadPlaylist(id: fixture.playlistItemId)
+        await model.remainingTracksTask?.value
+        await fixture.root.audioController.preparePlay(id: fixture.trackIds[1], triggerPlay: false)
+
+        fixture.root.audioController.advanceAfterTrackEnd(complete: true)
+
+        #expect(sent.count == 1)
+        #expect(sent.first?.coordinationId != nil)
+        #expect(sent.first?.trackId == nil)
     }
 }
 #endif

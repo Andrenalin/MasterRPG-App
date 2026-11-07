@@ -1,9 +1,9 @@
 // @copyright André Trettin
 
-import CharacterRPG
 import CoreRPG
 import Foundation
 import os.log
+import CharacterRPG
 
 // Split out of PlayerController+Value.swift — this is outbound Character
 // lifecycle (announcing/sending this player's own Character), not `.value`
@@ -23,7 +23,7 @@ extension PlayerController {
         gameModel.sendCharacterTaskId = taskId
         gameModel.sendCharacterTask = Task { [weak self] in
             // Companions edited while a send runs make it announce an old list; it then leaves
-            // `hasSendPlayer` open and this runs it again. See CODE_AUDIT_24 §5.5.
+            // `hasSentPlayer` open and this runs it again. See CODE_AUDIT_24 §5.5.
             while let self {
                 let generation = self.gameModel.companionGeneration
                 await self.sendCharacter()

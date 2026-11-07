@@ -144,7 +144,7 @@ public final class AdventureRootModel {
 
         syncTask?.cancel()
         if let dataControllable = itemController.itemDataModel.dataController, let context {
-            let controller = SyncDataController(context: context, dataControllable: dataControllable, itemController: itemController)
+            let controller = EntitySyncDataController(context: context, dataControllable: dataControllable, itemController: itemController, entity: RPGAdventure.entity())
             syncDataController = controller
             syncTask = controller.start()
         }
@@ -223,7 +223,7 @@ public final class AdventureRootModel {
     @ObservationIgnored let folderListController: FolderListController
     @ObservationIgnored let folderLinkController: FolderListController
 
-    @ObservationIgnored var syncDataController: SyncDataController?
+    @ObservationIgnored var syncDataController: EntitySyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
@@ -354,22 +354,3 @@ public extension AdventureRootModel {
     }
 }
 
-public extension AdventureRootModel {
-    func itemDataCleanup() async throws {
-        for itemId in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: itemId) else { continue }
-            if model.displayState == DisplayStateMask.totalHidden.rawValue {
-                await editController.delete(itemId: model.id)
-            }
-        }
-    }
-
-    func checkFolders(reportModel: ValidateRepairModel) async {
-        let cc = ConvertController(itemController: itemController, editController: editController)
-        await cc.repairHiddenAndFolders(reportModel: reportModel)
-    }
-
-    func validateLinks(reportModel: ValidateRepairModel) async {
-        await linkController.validateLinks(reportModel: reportModel)
-    }
-}

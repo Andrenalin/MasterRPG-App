@@ -22,11 +22,11 @@ extension ViewController: ViewControllable {
     }
     
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
-        AnyView(InlineRowViewer(source: source, destination: destination).equatable())
+        AnyView(InlineRowViewer(source: source).equatable())
     }
 
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView {
-        AnyView(InlineRowViewer(source: source, destination: destination, sourceModel: sourceModel).equatable())
+        AnyView(InlineRowViewer(source: source, sourceModel: sourceModel).equatable())
     }
 }
 
@@ -40,10 +40,6 @@ public extension ViewController {
     @MainActor func viewer(root: AudioRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
         return ViewerRootView(model: model, configuration: configuration, dismissAction: dismissAction)
-    }
-
-    @MainActor func gameView(root: AudioRootModel) -> some View {
-        LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
 }
 

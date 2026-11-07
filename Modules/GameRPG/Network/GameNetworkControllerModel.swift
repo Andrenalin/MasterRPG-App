@@ -122,6 +122,11 @@ final class GameNetworkControllerModel {
         playerStore = player
     }
 
+    /// Whether an audio item is a playlist, which has its own SharePlay Journal slot (see
+    /// `SharePlayJournalSlot`). Set by the game master's controller; nothing is a playlist
+    /// without it.
+    var isAudioPlaylist: (@MainActor (UUID) -> Bool)?
+
     func didSetup() { isSetup = true }
 
     func setLocalPlayers(to hasPlayers: Bool) { hasLocalPlayer = hasPlayers }

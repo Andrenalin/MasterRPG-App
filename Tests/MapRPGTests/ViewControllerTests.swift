@@ -52,7 +52,6 @@ struct ViewControllerTests {
         _ = sut.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: true), dismissAction: {})
         _ = sut.mapEditWindow(root: root)
         _ = sut.mapEditWindow(root: root, isTileEditor: true)
-        _ = sut.gameView(root: root)
         _ = sut.gameMapView(root: root, playerId: playerId)
         _ = sut.gameMasterMapView(root: root, id: itemId)
         _ = sut.gameMasterMapView(root: root, id: nil)

@@ -66,9 +66,9 @@ public final class AudioListenerCoordinator {
     }
 
     /// AVFoundation calls identifierFor(_:) on an arbitrary queue; all mutable state
-    /// lives behind the Mutex. @unchecked remains only because NSObject itself is
-    /// not Sendable — the type carries no other unguarded state.
-    private final class CoordinatorDelegate: NSObject, AVPlayerPlaybackCoordinatorDelegate, @unchecked Sendable {
+    /// lives behind the Mutex, the type's only stored property, so the compiler checks its
+    /// `Sendable` conformance.
+    private final class CoordinatorDelegate: NSObject, AVPlayerPlaybackCoordinatorDelegate, Sendable {
         private let audioId = Mutex<UUID?>(nil)
 
         func setAudioId(_ audioId: UUID?) {

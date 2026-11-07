@@ -164,6 +164,7 @@ extension MultiConnectionAudioTests {
 
         // When
         await env.master.game(message: playData, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
         // Then
         let sent = env.masterNetworkSpy.sendResponseHistory
@@ -198,6 +199,7 @@ extension MultiConnectionAudioTests {
             message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
             actionType: .playAudio
         )
+        await env.master.waitForAudioDeliveries()
 
         // Then
         let repairs = env.masterNetworkSpy.sendResponseHistory
@@ -223,6 +225,7 @@ extension MultiConnectionAudioTests {
             message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
             actionType: .playAudio
         )
+        await env.master.waitForAudioDeliveries()
         let transfer = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
         // The player lacks the audio: it asks, gets the file and acknowledges it.
         let request = try #require(try await env.player2.handleAudio(transfer))
@@ -270,7 +273,7 @@ extension MultiConnectionAudioTests {
             id: audioId,
             url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
             title: "Loop",
-            artist: "MasterRPG",
+            subtitle: "MasterRPG",
             duration: .zero
         )
         audio.model.playList = [track]
@@ -280,7 +283,7 @@ extension MultiConnectionAudioTests {
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When
-        audio.resetPlaylist(complete: true)
+        audio.advanceAfterTrackEnd(complete: true)
         try await Self.waitForPlayCommand(in: env, after: baseline)
 
         // Then
@@ -307,7 +310,7 @@ extension MultiConnectionAudioTests {
             id: audioId,
             url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
             title: "No loop",
-            artist: "MasterRPG",
+            subtitle: "MasterRPG",
             duration: .zero
         )
         audio.model.playList = [track]
@@ -315,7 +318,7 @@ extension MultiConnectionAudioTests {
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When
-        audio.resetPlaylist(complete: true)
+        audio.advanceAfterTrackEnd(complete: true)
         try? await Task.sleep(for: .milliseconds(100))
 
         // Then
@@ -373,6 +376,7 @@ extension MultiConnectionAudioTests {
         func deliver(_ data: NetworkCodableDataType) async throws {
             let baseline = env.masterNetworkSpy.sendResponseHistory.count
             await env.master.game(message: data, actionType: .playAudio)
+            await env.master.waitForAudioDeliveries()
             let sent = env.masterNetworkSpy.sendResponseHistory
                 .dropFirst(baseline)
                 .compactMap { $0 as? GameNetworkModel }
@@ -381,6 +385,9 @@ extension MultiConnectionAudioTests {
         }
 
         try await deliver(AudioPlayRequest(id: playlistItemId, shouldPlay: true).command)
+        // The tracks behind the start track load in the background. See CODE_AUDIT_Audio2 §7.2.
+        await player.remainingTracksTask?.value
+        await master.remainingTracksTask?.value
         #expect(player.currentId == trackIds[0])
         #expect(master.currentId == trackIds[0])
 
@@ -435,6 +442,34 @@ extension MultiConnectionAudioTests {
         #expect(!master.wantsPlayback)
     }
 
+    @Test("A receipt for another version than the master's does not count as a report")
+    func staleReceiptIsIgnored() async throws {
+        // Given: the master holds version N of an audio.
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        let masterVersion = await env.masterRoot.audioRoot.gameController.networkVersion(for: audioId)
+        func receipt(version: Int) -> GameNetworkModel {
+            env.player2Root.gameModel.outgoingMessage(
+                counter: 2,
+                type: .reveal,
+                subType: .ok,
+                asMaster: false,
+                data: NetworkCodableDataType(id: audioId, type: .audio, version: version)
+            )
+        }
+
+        // When: a player confirms an older file, then the current one.
+        _ = try await env.master.handleAudio(receipt(version: masterVersion &+ 1))
+        let masterAudio = env.masterRoot.audioRoot.gameController
+        let afterStale = masterAudio.gameModel.playerReport(for: audioId).contains(env.player2Config.id)
+        _ = try await env.master.handleAudio(receipt(version: masterVersion))
+        let afterCurrent = masterAudio.gameModel.playerReport(for: audioId).contains(env.player2Config.id)
+
+        // Then: only the current one counts.
+        #expect(!afterStale)
+        #expect(afterCurrent)
+    }
+
     @Test("Receipt that completes a share announces the reports to the players")
     func completingReceiptAnnouncesReports() async throws {
         // Given: two of three players still miss the audio and no play is pending.
@@ -452,13 +487,15 @@ extension MultiConnectionAudioTests {
             env.player2Config.id,
             env.player3Config.id
         ])
+        // A receipt names the version the player holds: the master's.
+        let masterVersion = await env.masterRoot.audioRoot.gameController.networkVersion(for: audioId)
         func receipt(from root: GameRoot) -> GameNetworkModel {
             root.gameModel.outgoingMessage(
                 counter: 2,
                 type: .reveal,
                 subType: .ok,
                 asMaster: false,
-                data: NetworkCodableDataType(id: audioId, type: .audio, version: 0)
+                data: NetworkCodableDataType(id: audioId, type: .audio, version: masterVersion)
             )
         }
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
@@ -500,6 +537,7 @@ extension MultiConnectionAudioTests {
             message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
             actionType: .playAudio
         )
+        await env.master.waitForAudioDeliveries()
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
 
         // When - Player 2 reconnects and its fresh database report still lacks the audio.
@@ -529,6 +567,7 @@ extension MultiConnectionAudioTests {
             message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
             actionType: .playAudio
         )
+        await env.master.waitForAudioDeliveries()
         let pauseRequest = AudioPlayRequest(id: audioId, shouldPlay: false)
         let pauseData = NetworkCodableDataType(
             id: audioId,
@@ -539,6 +578,7 @@ extension MultiConnectionAudioTests {
 
         // When
         await env.master.game(message: pauseData, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         let baseline = env.masterNetworkSpy.sendResponseHistory.count
         _ = try await env.master.handleAudio(
             Self.audioReport(from: env.player2Root, availableIds: [audioId], counter: 2)

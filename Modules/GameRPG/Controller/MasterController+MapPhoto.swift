@@ -32,7 +32,7 @@ extension MasterController {
             title: module == .weather ? weatherTitle(for: itemId) : nil,
             mode: .popover,
             sequence: gameModel.nextMapPhotoSequence(),
-            sessionId: gameModel.deliverySessionID
+            sessionId: gameModel.deliverySessionId
         )
     }
 

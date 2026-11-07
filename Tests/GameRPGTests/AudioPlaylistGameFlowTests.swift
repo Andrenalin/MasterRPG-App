@@ -120,6 +120,7 @@ struct AudioPlaylistGameFlowTests {
         let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
 
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
         let timeline = Self.timeline(to: player, in: env)
         let playIndex = try #require(timeline.firstIndex { if case .play = $0 { true } else { false } })
@@ -143,6 +144,7 @@ struct AudioPlaylistGameFlowTests {
         let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
 
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
         // The master's track started: the second track follows on its own.
         #expect(await waitUntil { Self.packageIds(to: player, in: env).contains(playlist.trackIds[1]) })
@@ -163,12 +165,14 @@ struct AudioPlaylistGameFlowTests {
         let setup = try await Self.setup()
         let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         #expect(await waitUntil { Self.playlist(of: player) == Array(playlist.trackIds.prefix(2)) })
         let before = Self.timeline(to: player, in: env).count
 
         // Jump over the second track to the fourth, which no player has.
         let jump = AudioPlayRequest(id: playlist.rootId, shouldPlay: true, trackId: playlist.trackIds[3])
         await env.master.game(message: jump.command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
         let after = Array(Self.timeline(to: player, in: env).dropFirst(before))
         let packageIndex = try #require(after.firstIndex(of: .package(playlist.trackIds[3])))
@@ -186,15 +190,22 @@ struct AudioPlaylistGameFlowTests {
         let setup = try await Self.setup()
         let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         #expect(await waitUntil { Self.playlist(of: player) == Array(playlist.trackIds.prefix(2)) })
+        // The look-ahead of the first play is done, so it cannot send its package after the reset.
+        await env.master.waitForAudioPrefetch()
         env.clearHistory()
 
         // The playlist plays again, and the second track again.
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         let second = AudioPlayRequest(id: playlist.rootId, shouldPlay: true, trackId: playlist.trackIds[1])
         await env.master.game(message: second.command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
-        #expect(Self.packageIds(to: player, in: env).isEmpty)
+        // The play itself needs no package. The look-ahead of the second track's play may send
+        // the third one, which is not part of what the play needs.
+        #expect(Self.packageIds(to: player, in: env).filter { !playlist.trackIds.dropFirst(2).contains($0) }.isEmpty)
         let plays = Self.timeline(to: player, in: env).filter { if case .play = $0 { true } else { false } }
         #expect(plays.count == 2)
     }
@@ -208,6 +219,7 @@ struct AudioPlaylistGameFlowTests {
             message: AudioPlayRequest(id: playlist.rootId, shouldPlay: false, trackId: playlist.trackIds[2]).command,
             actionType: .playAudio
         )
+        await env.master.waitForAudioDeliveries()
 
         #expect(Self.packageIds(to: player, in: env).isEmpty)
     }
@@ -217,6 +229,7 @@ struct AudioPlaylistGameFlowTests {
         let setup = try await Self.setup()
         let (env, playlist) = (setup.env, setup.playlist)
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
         // The look-ahead of the first play is done: the first player has both tracks.
         #expect(await waitUntil { Self.playlist(of: setup.player) == Array(playlist.trackIds.prefix(2)) })
 
@@ -225,7 +238,10 @@ struct AudioPlaylistGameFlowTests {
         await env.ready(late)
         env.clearHistory()
         await env.master.game(message: AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command, actionType: .playAudio)
+        await env.master.waitForAudioDeliveries()
 
+        // The play follows the receipts of the start items, which arrive on their own.
+        #expect(await waitUntil { Self.timeline(to: late, in: env).contains { if case .play = $0 { true } else { false } } })
         // Before the play the late player got the start items only.
         let timeline = Self.timeline(to: late, in: env)
         let playIndex = try #require(timeline.firstIndex { if case .play = $0 { true } else { false } })

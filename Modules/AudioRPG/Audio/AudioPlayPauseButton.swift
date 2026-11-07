@@ -12,7 +12,6 @@ struct AudioPlayPauseButton: View, Equatable {
     let itemId: UUID
 
     @Environment(AudioRootModel.self) private var root
-    @Environment(\.networkActions) private var networkActions
     // Optional: the import review rows show this button outside the game environment.
     @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
 
@@ -39,27 +38,8 @@ struct AudioPlayPauseButton: View, Equatable {
     // MARK: - Actions
     
     private func handlePlayPause() {
-        if isCurrentlyPlaying {
-            root.audioController.pause()
-            return
-        }
-
-        // Broadcast play command to other players before changing local state
-        // so requestPlay computes shouldPlay=true from the current (not-yet-playing) state.
-        networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio, nil)
-
-        if root.audioPlayerModel.isPlaying && root.audioPlayerModel.currentId != itemId {
-            root.audioController.pause()
-        }
-
-        let isInPlaylist = root.audioPlayerModel.playList.contains(where: { $0.id == itemId })
-        if !isInPlaylist {
-            root.audioController.loadAndPlay(id: itemId)
-        } else if root.audioPlayerModel.currentId == itemId {
-            root.audioController.play()
-        } else {
-            root.audioController.togglePlay(id: itemId)
-        }
+        // The button only exists outside a game, so the play is always local.
+        root.toggleItem(id: itemId, isGameRunning: false, networkActions: nil)
     }
     
     // MARK: - Computed Properties

@@ -12,12 +12,23 @@ public final class AudioPlayerModel: Sendable {
     public var showPlayerToolBar: Bool = false
     var isPlaying: Bool = false
     var playerTime: PlayerTime = .zero
+    /// The player's position right now. Views read `playerTime.elapsedSeconds` instead, which
+    /// is observed.
     var currentTime: Double {
         player.currentTime().seconds
     }
-    var volume: Double = 0.25 {
-        didSet { player.volume = Float(volume) }
+    /// The volume a new player starts at, and the one a mute restores when none was set before.
+    static let defaultVolume = 0.25
+    var volume: Double = AudioPlayerModel.defaultVolume {
+        didSet {
+            player.volume = Float(volume)
+            // Every audible level is the one a later unmute returns to.
+            if volume > 0 { previousVolume = volume }
+        }
     }
+    /// The volume before the last mute, shared by every bar so a mute in one surface restores
+    /// the right level in another. See CODE_AUDIT_Audio2 §5.17.
+    @ObservationIgnored var previousVolume = AudioPlayerModel.defaultVolume
     var isMuted: Bool {
         volume == 0
     }
@@ -27,6 +38,10 @@ public final class AudioPlayerModel: Sendable {
     /// to resume; `isPlaying` is updated by an observer task and may or may not have seen the
     /// system's pause when the interruption is reported. See CODE_AUDIT_21 §5.28.
     @ObservationIgnored var wantsPlayback = false
+    /// Bumped by every pause and interruption: whoever resumes playback after an await compares
+    /// it with the value it read before, so a pause that came in between is not overridden by
+    /// a play that was already on its way. See CODE_AUDIT_Audio2 §3.3.
+    @ObservationIgnored var playbackGeneration = 0
 
     // MARK: player list
     var playList: [PlaylistItem] = []
@@ -63,6 +78,15 @@ public final class AudioPlayerModel: Sendable {
     /// plays, pauses or skips on every device, this one included. Set once by `AudioRootModel`.
     @ObservationIgnored var remoteCommandRouter: (@MainActor (RemoteCommand) -> Bool)?
 
+    /// Whether a game runs: on a player's device the game master's commands drive the playlist
+    /// (a loop, the next track), so the local Repeat toggle must not act on its own. Set once by
+    /// `AudioRootModel`.
+    @ObservationIgnored var isGameRunning: @MainActor () -> Bool = { false }
+
+    /// Told about the new coordinator after a media-services reset replaced the audio engine, so
+    /// a running SharePlay session coordinates the new player. See CODE_AUDIT_Audio2 §5.9.
+    @ObservationIgnored var coordinatorDidChange: (@MainActor (AudioListenerCoordinator) -> Void)?
+
     /// Set on the game master's device while a game runs. Told the playlist item and the track
     /// whenever a track starts here, whatever started it (a play, next, the end of the track
     /// before it), so the game can send the next track to the players ahead of its play.
@@ -86,11 +110,13 @@ public final class AudioPlayerModel: Sendable {
     var player = AVPlayer()
 
     private(set) var subscriptions = Set<AnyCancellable>()
-    var timeObserver: Any? = nil
-    @ObservationIgnored var sharedAudioTask: Task<Void, Never>?
+    @ObservationIgnored var timeObserver: Any? = nil
     @ObservationIgnored var seekTask: Task<Void, Never>?
     /// The running `loadAndPlay`, replaced (and cancelled) by the next one. See CODE_AUDIT_21 §3.4.
     @ObservationIgnored var loadAndPlayTask: Task<Void, Never>?
+    /// The background load of the tracks behind the one a game play started with. See
+    /// `GameController.loadRemainingTracks`.
+    @ObservationIgnored var remainingTracksTask: Task<Void, Never>?
     
     func add(subscriptions: Set<AnyCancellable>) {
         self.subscriptions = self.subscriptions.union(subscriptions)

@@ -1,18 +1,8 @@
 // @copyright André Trettin
 
-import AdventureRPG
 import CoreRPG
-import DiceRPG
 import Foundation
 import os.log
-import AudioRPG
-import MapRPG
-import PhotoRPG
-import TableRPG
-import CharacterRPG
-import WeatherRPG
-import PdfRPG
-import SpaceRPG
 
 // MARK: - Dispatch
 
@@ -22,10 +12,8 @@ extension PlayerController {
         usesSharePlayPlaybackCoordination: Bool = false
     ) async throws -> GameNetworkModel? {
         switch model.data.type {
-        case .none, .game, .rule, .setting, .editor, .generator, .search:
+        case .none, .game, .rule, .setting, .editor, .generator, .search, .adventure:
             return nil
-        case .adventure:
-            return handleAdventure(model)
         case .audio:
             return try await handleAudio(
                 model,
@@ -51,10 +39,6 @@ extension PlayerController {
             Logger.networking.error("PlayerController: Received unsupported module \(model.data.type.token, privacy: .public); ignoring.")
             return nil
         }
-    }
-
-    func handleAdventure(_ model: GameNetworkModel) -> GameNetworkModel? {
-        nil
     }
 }
 
@@ -83,8 +67,10 @@ extension PlayerController {
         // Only the item is named: the master builds the package itself. Echoing the
         // received data would send a map that merely lacks its background straight back.
         // The file-backed modules keep the versions they answer for, which the master
-        // compares with its own before it records the item as available.
+        // compares with its own before it records the item as available (Audio too, see
+        // CODE_AUDIT_Audio2 §5.13).
         let keepsVersion = requestData ||
+            model.data.type == .audio ||
             model.data.type == .photo ||
             model.data.type == .pdf ||
             model.data.type == .space ||
