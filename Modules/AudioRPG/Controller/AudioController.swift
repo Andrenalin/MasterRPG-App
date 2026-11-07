@@ -136,6 +136,8 @@ extension AudioController {
                 try? FileManager.default.removeItem(at: item.url)
             }
             model.playList = []
+            // A game play names the new playlist's root right after this.
+            model.playListRootId = nil
             model.isPlaybackComplete = false
             model.playListGeneration += 1
             // The old track must not go on playing without a playlist entry if the new load
@@ -331,6 +333,9 @@ extension AudioController {
         // only because sharedAudioId is already populated from the previous call).
         model.coordinator?.coordinatePlayback(of: id)
         replaceCurrentItem()
+        if let rootId = model.playListRootId, let trackId = model.currentId {
+            model.trackStartHandler?(rootId, trackId)
+        }
         guard triggerPlay else { return }
         await model.audioSession?.waitUntilConfigured()
         play()
@@ -375,7 +380,11 @@ extension AudioController {
         if currentIndex < model.playList.count - 1 {
             togglePlay(id: model.playList[currentIndex + 1].id)
         } else if model.repeatPlayList, let first = model.playList.first {
-            if model.playList.count > 1 {
+            if let loopReplayHandler = model.loopReplayHandler {
+                // In a game the loop is a new play for everyone: the players do not loop on
+                // their own, they play again when the game master sends the play command.
+                loopReplayHandler(AudioPlayRequest(id: model.playListRootId ?? first.id, shouldPlay: true).command)
+            } else if model.playList.count > 1 {
                 togglePlay(id: first.id)
             } else {
                 // A one-track playlist: `togglePlay` only switches to another track, so the
@@ -446,6 +455,8 @@ extension AudioController: AudioPlayerSessionDelegate {
 extension AudioController: RemoteCommandHandler {
     func performRemoteCommand(_ command: RemoteCommand) {
         Task { @MainActor in
+            // In a game the command goes through the game, so every player follows.
+            if model.remoteCommandRouter?(command) == true { return }
             switch command {
             case .pause:
                 pause()

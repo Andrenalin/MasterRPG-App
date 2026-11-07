@@ -24,6 +24,8 @@ extension MasterController {
         // moments ago is made durable, before it is put to use. See CODE_AUDIT_Join §5.5.
         root.gameJoinCodeModel.refreshFromStorage()
         root.gameJoinCodeModel.flushPendingWrites()
+        installAudioLoopReplay()
+        installAudioPrefetch()
         await root.networkStore.startMasterGame(
             game: root.gameModel.gameConfig,
             titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId),
@@ -36,6 +38,8 @@ extension MasterController {
         await messagePipeline.cancelAll()
         resetPlayersTask?.cancel()
         resetPlayersTask = nil
+        removeAudioLoopReplay()
+        removeAudioPrefetch()
         for task in audioPlayRetryTasks.values {
             task.cancel()
         }

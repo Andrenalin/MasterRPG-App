@@ -5,21 +5,23 @@ import SwiftUI
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(AudioRootModel.self) var root
-    AudioPlayerPlaybackControls(audioController: root.audioController, audioPlayerModel: root.audioPlayerModel)
+    AudioPlayerPlaybackControls(audioPlayerModel: root.audioPlayerModel)
         .padding()
 }
 
 struct AudioPlayerPlaybackControls: View {
-    let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel
 
+    @Environment(AudioRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 8) {
             Button {
                 withAnimation(.default.reduced(if: reduceMotion)) {
-                    audioController.skipToCurrentItem(offsetBy: -1)
+                    root.skip(offsetBy: -1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                 }
             } label: {
                 Label { Text("Previous Track", bundle: .module) } icon: { Image(systemName: "backward.fill") }
@@ -33,7 +35,7 @@ struct AudioPlayerPlaybackControls: View {
 
             Button {
                 withAnimation(.default.reduced(if: reduceMotion)) {
-                    audioController.togglePlay()
+                    root.togglePlayback(isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                 }
             } label: {
                 Label(
@@ -51,7 +53,7 @@ struct AudioPlayerPlaybackControls: View {
 
             Button {
                 withAnimation(.default.reduced(if: reduceMotion)) {
-                    audioController.skipToCurrentItem(offsetBy: 1)
+                    root.skip(offsetBy: 1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                 }
             } label: {
                 Label { Text("Next Track", bundle: .module) } icon: { Image(systemName: "forward.fill") }
@@ -62,6 +64,8 @@ struct AudioPlayerPlaybackControls: View {
             }
             .buttonStyle(.plain)
             .disabled(!audioPlayerModel.hasNext)
+
+            AudioPlayerRepeatButton(audioPlayerModel: audioPlayerModel)
         }
         .foregroundStyle(.primary)
     }

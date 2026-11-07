@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
+import CoreMedia
 import Foundation
 import RPGResourcesDebug
 import Testing
@@ -253,6 +254,187 @@ extension MultiConnectionAudioTests {
         ]))
     }
 
+    @Test("The master's loop sends the replay of the audio to the players")
+    func masterLoopSendsReplayToPlayers() async throws {
+        // Given: every player has the audio, the master loops its last track.
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        try await Self.reportAvailability(
+            in: env,
+            audioId: audioId,
+            availablePlayerIds: [env.player1Config.id, env.player2Config.id, env.player3Config.id]
+        )
+        env.master.installAudioLoopReplay()
+        let audio = env.masterRoot.audioRoot.audioController
+        let track = PlaylistItem(
+            id: audioId,
+            url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
+            title: "Loop",
+            artist: "MasterRPG",
+            duration: .zero
+        )
+        audio.model.playList = [track]
+        audio.model.currentItem = track
+        audio.model.playListRootId = audioId
+        audio.model.repeatPlayList = true
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When
+        audio.resetPlaylist(complete: true)
+        try await Self.waitForPlayCommand(in: env, after: baseline)
+
+        // Then
+        let sent = env.masterNetworkSpy.sendResponseHistory
+            .dropFirst(baseline)
+            .compactMap { $0 as? GameNetworkModel }
+        let replay = try #require(sent.first { $0.subType == .playAudio })
+        let request = try #require(AudioPlayRequest.decodeData(of: replay.data.data))
+        #expect(replay.sender.isMaster)
+        #expect(replay.targetId == nil)
+        #expect(replay.data.id == audioId)
+        #expect(request.id == audioId)
+        #expect(request.shouldPlay)
+    }
+
+    @Test("Without a loop the master sends no replay when the audio ends")
+    func masterEndWithoutLoopSendsNoReplay() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        env.master.installAudioLoopReplay()
+        let audio = env.masterRoot.audioRoot.audioController
+        let track = PlaylistItem(
+            id: audioId,
+            url: URL.temporaryDirectory.appending(path: "\(UUID().uuidString).m4a"),
+            title: "No loop",
+            artist: "MasterRPG",
+            duration: .zero
+        )
+        audio.model.playList = [track]
+        audio.model.currentItem = track
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When
+        audio.resetPlaylist(complete: true)
+        try? await Task.sleep(for: .milliseconds(100))
+
+        // Then
+        let sent = env.masterNetworkSpy.sendResponseHistory
+            .dropFirst(baseline)
+            .compactMap { $0 as? GameNetworkModel }
+        #expect(!sent.contains { $0.subType == .playAudio })
+        #expect(audio.model.isPlaybackComplete)
+    }
+
+    @Test("The loop replay belongs to the running game and goes away with it")
+    func loopReplayIsRemovedWhenTheGameStops() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let model = env.masterRoot.audioRoot.audioController.model
+        #expect(model.loopReplayHandler == nil)
+
+        // When / Then
+        env.master.installAudioLoopReplay()
+        #expect(model.loopReplayHandler != nil)
+
+        await env.master.stop()
+        #expect(model.loopReplayHandler == nil)
+    }
+
+    @Test("The master's pause, next, previous and seek reach the players")
+    func masterTransportReachesThePlayers() async throws {
+        // Given: everybody has the two-track playlist and it plays on the master and player 1.
+        let env = try await Self.preparedEnvironment()
+        try await Self.importAudioFixture(into: env.player1Root.adventureRoot)
+        env.player1Root.adventureRoot.startGame()
+        let masterAudio = env.masterRoot.audioRoot
+        let playlistItemId = try #require(
+            masterAudio.itemController.itemDataModel.items.first {
+                !masterAudio.gameController.gameItem(for: $0).entries.isEmpty
+            }
+        )
+        let trackIds = masterAudio.gameController.fetchPlaylist(id: playlistItemId).map(\.id)
+        try #require(trackIds.count == 2)
+        // One report per player: a later report replaces the earlier one of the same player.
+        for root in [env.player1Root, env.player2Root, env.player3Root] {
+            _ = try await env.master.handleAudio(
+                Self.audioReport(from: root, availableIds: trackIds + [playlistItemId])
+            )
+        }
+        let player = env.player1Root.audioRoot.audioController.model
+        let master = masterAudio.audioController.model
+
+        // The audio buttons call `networkActions.game`, which asks the master to send the command.
+        let commands = AudioCommandRecorder()
+        let actions = NetworkActions(shareId: { _ in }, send: { _ in }, game: { data, type, _ in
+            if type == .playAudio { commands.data.append(data) }
+        })
+
+        func deliver(_ data: NetworkCodableDataType) async throws {
+            let baseline = env.masterNetworkSpy.sendResponseHistory.count
+            await env.master.game(message: data, actionType: .playAudio)
+            let sent = env.masterNetworkSpy.sendResponseHistory
+                .dropFirst(baseline)
+                .compactMap { $0 as? GameNetworkModel }
+            let command = try #require(sent.first { $0.subType == .playAudio })
+            _ = try await env.player1.handleAudio(command)
+        }
+
+        try await deliver(AudioPlayRequest(id: playlistItemId, shouldPlay: true).command)
+        #expect(player.currentId == trackIds[0])
+        #expect(master.currentId == trackIds[0])
+
+        // When / Then: next
+        masterAudio.skip(offsetBy: 1, isGameRunning: true, networkActions: actions)
+        try await deliver(try #require(commands.takeLast()))
+        #expect(player.currentId == trackIds[1])
+        #expect(master.currentId == trackIds[1])
+
+        // When / Then: previous
+        masterAudio.skip(offsetBy: -1, isGameRunning: true, networkActions: actions)
+        try await deliver(try #require(commands.takeLast()))
+        #expect(player.currentId == trackIds[0])
+        #expect(master.currentId == trackIds[0])
+
+        // When / Then: pause
+        master.isPlaying = true
+        masterAudio.togglePlayback(isGameRunning: true, networkActions: actions)
+        let pause = try #require(commands.takeLast())
+        #expect(AudioPlayRequest.decodeData(of: pause.data)?.shouldPlay == false)
+        try await deliver(pause)
+        #expect(!player.wantsPlayback)
+        #expect(!master.wantsPlayback)
+
+        // When / Then: play again resumes the current track on both
+        master.isPlaying = false
+        masterAudio.togglePlayback(isGameRunning: true, networkActions: actions)
+        try await deliver(try #require(commands.takeLast()))
+        #expect(player.wantsPlayback)
+        #expect(master.wantsPlayback)
+        #expect(player.currentId == trackIds[0])
+
+        // When / Then: seek while playing moves both and keeps them playing
+        let position = try #require((master.playList.first?.duration.seconds).map { ($0 / 2).rounded() })
+        try #require(position >= 1)
+        master.isPlaying = true
+        masterAudio.seek(to: position, isGameRunning: true, networkActions: actions)
+        try await deliver(try #require(commands.takeLast()))
+        #expect(await waitUntil { abs(player.currentTime - position) < 1 })
+        #expect(await waitUntil { abs(master.currentTime - position) < 1 })
+        #expect(player.wantsPlayback)
+
+        // When / Then: seek while paused moves both and keeps them paused
+        master.isPlaying = false
+        master.wantsPlayback = false
+        masterAudio.seek(to: 0, isGameRunning: true, networkActions: actions)
+        let pausedSeek = try #require(commands.takeLast())
+        #expect(AudioPlayRequest.decodeData(of: pausedSeek.data)?.shouldPlay == false)
+        try await deliver(pausedSeek)
+        #expect(await waitUntil { player.currentTime < 1 })
+        #expect(!player.wantsPlayback)
+        #expect(!master.wantsPlayback)
+    }
+
     @Test("Receipt that completes a share announces the reports to the players")
     func completingReceiptAnnouncesReports() async throws {
         // Given: two of three players still miss the audio and no play is pending.
@@ -444,7 +626,28 @@ extension MultiConnectionAudioTests {
     }
 }
 
+/// Collects the commands the audio buttons hand to the game.
+@MainActor
+private final class AudioCommandRecorder {
+    var data: [NetworkCodableDataType] = []
+
+    func takeLast() -> NetworkCodableDataType? {
+        data.popLast()
+    }
+}
+
 private extension MultiConnectionAudioTests {
+    /// The loop hands the replay to a task, so the command is sent a moment after the loop ended.
+    static func waitForPlayCommand(in env: MultiConnectionTestEnvironment, after baseline: Int) async throws {
+        for _ in 0..<300 {
+            let sent = env.masterNetworkSpy.sendResponseHistory
+                .dropFirst(baseline)
+                .compactMap { $0 as? GameNetworkModel }
+            if sent.contains(where: { $0.subType == .playAudio }) { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
     static func importAudioFixture(into root: AdventureRootModel) async throws {
         let url = try #require(
             ResourcesDebug.bundle.url(forResource: ResourcesDebug.audioTestData, withExtension: "gmz")

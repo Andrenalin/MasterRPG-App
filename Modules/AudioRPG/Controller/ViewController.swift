@@ -62,7 +62,9 @@ public extension ViewController {
         PlayerVolumeView(root: root, alignment: alignment)
     }
 
-    @MainActor func toolbarVolumeButton(root: AudioRootModel) -> some View {
-        ToolbarVolumeButtonView(root: root)
+    /// The volume button of the game toolbar. Its popover shows the full audio player for the game
+    /// master (`showsPlayer`), and only the volume slider for the players.
+    @MainActor func toolbarVolumeButton(root: AudioRootModel, showsPlayer: Bool) -> some View {
+        ToolbarVolumeButtonView(root: root, showsPlayer: showsPlayer)
     }
 }

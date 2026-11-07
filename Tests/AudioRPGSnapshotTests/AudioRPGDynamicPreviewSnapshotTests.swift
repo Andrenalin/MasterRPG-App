@@ -14,10 +14,7 @@ struct AudioRPGDynamicPreviewSnapshotTests {
     @Test("AudioPlayerPlaybackControls")
     func audioPlayerPlaybackControls() async throws {
         try await assertPreviewSnapshot("AudioPlayerPlaybackControls") { root in
-            AudioPlayerPlaybackControls(
-                audioController: root.audioController,
-                audioPlayerModel: root.audioPlayerModel
-            )
+            AudioPlayerPlaybackControls(audioPlayerModel: root.audioPlayerModel)
             .padding()
         }
     }
@@ -28,7 +25,6 @@ struct AudioRPGDynamicPreviewSnapshotTests {
         try await assertPreviewSnapshot("AudioPlayerTimelineView") { root in
             AudioPlayerTimelineView(
                 currentItem: root.audioPlayerModel.currentItem,
-                audioController: root.audioController,
                 audioPlayerModel: root.audioPlayerModel,
                 viewModel: AudioPlayerBarViewModel()
             )

@@ -54,15 +54,11 @@ private struct AudioPlayerBarContentView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            AudioPlayerPlaybackControls(
-                audioController: root.audioController,
-                audioPlayerModel: root.audioPlayerModel
-            )
+            AudioPlayerPlaybackControls(audioPlayerModel: root.audioPlayerModel)
             .padding(.horizontal, 8)
 
             AudioPlayerTimelineView(
                 currentItem: root.audioPlayerModel.currentItem,
-                audioController: root.audioController,
                 audioPlayerModel: root.audioPlayerModel,
                 viewModel: viewModel
             )

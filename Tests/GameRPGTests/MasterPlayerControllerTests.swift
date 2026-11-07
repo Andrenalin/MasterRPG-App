@@ -194,14 +194,16 @@ final class MasterPlayerControllerTests {
         #expect(result!.subType == .ok)
         #expect(await rootPlayer.audioRoot.gameController.currentId == audioId)
         #expect(rootPlayer.audioRoot.gameController.gameItem(for: audioId).version == version)
-        // The persisted reveal brings the audio it references along (CODE_AUDIT_Folder §5.22).
-        let referencedIds = Set(rootSut.audioRoot.itemController.itemSync(for: audioId)?.entries.map(\.childId) ?? [])
-        #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 1 + referencedIds.count)
+        // A package holds the item itself with its list of tracks, never the other tracks: a
+        // playlist of many files cannot travel at once.
+        #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 1)
+        #expect(rootPlayer.audioRoot.itemController.itemSync(for: subAudioId, noGame: true) == nil)
+        #expect(rootPlayer.audioRoot.gameController.gameItem(for: audioId).entries.map(\.audioId).contains(subAudioId))
 
         response = try await sut.handle(result!)
         #expect(nil == response)
         #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: audioId) == [gameConfigModelPlayer.id])
-        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: subAudioId) == [gameConfigModelPlayer.id])
+        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: subAudioId).isEmpty)
 
         let playData = rootSut.audioRoot.gameController.requestPlay(id: audioId)
         rootPlayer.audioRoot.gameController.gameModel.setCurrent(players: [
@@ -212,16 +214,37 @@ final class MasterPlayerControllerTests {
         let sendedPlayAudioData = masterStoreAbstractionMock.sendResponseData as? GameNetworkModel
         #expect(nil != sendedPlayAudioData)
 
+        // The play starts with the first track alone.
         result = try await sutPlayer.handle(sendedPlayAudioData!)
         #expect(nil == result)
-        try #require(rootPlayer.audioRoot.audioController.model.playList.count == 2)
+        try #require(rootPlayer.audioRoot.audioController.model.playList.count == 1)
         #expect(rootPlayer.audioRoot.audioController.model.playList[0].id == audioId)
-        let audioFirst = rootSut.audioRoot.itemController.itemDataModel.items[1]
-        #expect(rootPlayer.audioRoot.audioController.model.playList[1].id == audioFirst)
+        #expect(rootPlayer.audioRoot.audioController.model.currentId == audioId)
+
+        // The second track is sent as a package of its own, while the first one plays.
+        rootSut.audioRoot.gameController.gameModel.setCurrent(players: [gameConfigModelPlayer.id])
+        await sut.prefetchNextAudio(rootId: audioId, after: audioId)
+        let sendedTrackData = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        #expect(sendedTrackData.data.id == subAudioId)
+        #expect(sendedTrackData.type == .store)
+        result = try await sutPlayer.handle(sendedTrackData)
+        #expect(nil != result)
+        #expect(result!.subType == .show)
+        response = try await sut.handle(result!)
+        let trackPackage = try #require(response)
+        #expect(trackPackage.id == subAudioId)
+        await sut.send(type: result!.type, subtype: result!.subType, updated: trackPackage)
+        let trackDelivery = try #require(masterStoreAbstractionMock.sendResponseData as? GameNetworkModel)
+        result = try await sutPlayer.handle(trackDelivery)
+        #expect(result?.subType == .ok)
+        _ = try await sut.handle(result!)
+
+        // It joins the playlist that plays, behind the first track.
+        #expect(rootPlayer.audioRoot.audioController.model.playList.map(\.id) == [audioId, subAudioId])
         #expect(rootPlayer.audioRoot.audioController.model.currentId == audioId)
         let expectedPlayers = Set([gameConfigModelPlayer.id, gameConfigModelSut.id])
         #expect(Set(rootPlayer.audioRoot.gameController.gameModel.playerReport(for: audioId)) == expectedPlayers)
-        #expect(Set(rootPlayer.audioRoot.gameController.gameModel.playerReport(for: subAudioId)) == expectedPlayers)
+        #expect(rootSut.audioRoot.gameController.gameModel.playerReport(for: subAudioId).contains(gameConfigModelPlayer.id))
     }
 
     @Test func handleDice() async throws {

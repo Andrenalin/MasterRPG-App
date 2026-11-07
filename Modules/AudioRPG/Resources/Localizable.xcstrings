@@ -1153,6 +1153,23 @@
         }
       }
     },
+    "Play the previous track in the playlist" : {
+      "comment" : "A hint that appears when a user taps the \"Previous Track\" button in the audio player bar, instructing them to play the previous track in the playlist.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorherigen Titel in der Wiedergabeliste abspielen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เล่นเพลงก่อนหน้าในเพลย์ลิสต์"
+          }
+        }
+      }
+    },
     "Playback Position" : {
       "localizations" : {
         "de" : {

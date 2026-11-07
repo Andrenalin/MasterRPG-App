@@ -65,7 +65,7 @@ private struct MenuBarAudioTransportView: View {
         HStack(spacing: 20) {
             Button {
                 withAnimation(.default.reduced(if: reduceMotion)) {
-                    root.audioController.skipToCurrentItem(offsetBy: -1)
+                    root.skip(offsetBy: -1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                 }
             } label: {
                 Label {
@@ -102,7 +102,7 @@ private struct MenuBarAudioTransportView: View {
 
             Button {
                 withAnimation(.default.reduced(if: reduceMotion)) {
-                    root.audioController.skipToCurrentItem(offsetBy: 1)
+                    root.skip(offsetBy: 1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
                 }
             } label: {
                 Label {
@@ -145,6 +145,8 @@ private struct MenuBarAudioTransportView: View {
 
 private struct MenuBarAudioTimeView: View {
     @Environment(AudioRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
 
     var body: some View {
         let model = root.audioController.model
@@ -152,7 +154,9 @@ private struct MenuBarAudioTimeView: View {
             currentTime: model.currentTime,
             totalDuration: model.playerTime.totalDuration,
             elapsedText: model.playerTime.elapsedText,
-            onSeek: { [audioController = root.audioController] in audioController.skip(to: $0) }
+            onSeek: { [root, networkActions, appGameStateModel] position in
+                root.seek(to: position, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
+            }
         )
         .disabled(model.currentId == nil)
     }

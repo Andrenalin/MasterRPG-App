@@ -39,7 +39,7 @@ struct GameToolbarContent: ToolbarContent {
 
 
         ToolbarItemGroup(placement: .principal) {
-            root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)
+            root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot, showsPlayer: role == .master)
 
             if role == .master,
                root.mapRoot.mapGameControllable.battleRoundModel.isRunning {

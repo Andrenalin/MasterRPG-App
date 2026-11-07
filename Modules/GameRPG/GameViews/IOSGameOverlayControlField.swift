@@ -29,7 +29,7 @@ struct IOSGameOverlayControlField: View {
         )
 
         HStack(spacing: spacing) {
-            root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)
+            root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot, showsPlayer: isMaster)
 
             GameBattleRoundIndicatorView(
                 indicator: presentation.battleRoundIndicator

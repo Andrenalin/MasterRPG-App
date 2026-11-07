@@ -8,7 +8,6 @@ import SwiftUI
     @Previewable @State var viewModel = AudioPlayerBarViewModel()
     AudioPlayerTimelineView(
         currentItem: root.audioPlayerModel.currentItem,
-        audioController: root.audioController,
         audioPlayerModel: root.audioPlayerModel,
         viewModel: viewModel
     )
@@ -17,7 +16,6 @@ import SwiftUI
 
 struct AudioPlayerTimelineView: View {
     let currentItem: PlaylistItem?
-    let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel
     @Bindable var viewModel: AudioPlayerBarViewModel
 
@@ -38,7 +36,6 @@ struct AudioPlayerTimelineView: View {
 #if os(iOS)
         AudioPlayerTimelineIPadView(
             currentItem: currentItem,
-            audioController: audioController,
             audioPlayerModel: audioPlayerModel,
             viewModel: viewModel,
             showScrubber: showScrubber,
@@ -47,7 +44,6 @@ struct AudioPlayerTimelineView: View {
 #else
         AudioPlayerTimelineMacView(
             currentItem: currentItem,
-            audioController: audioController,
             audioPlayerModel: audioPlayerModel,
             viewModel: viewModel,
             hideScrubber: hideScrubber
@@ -77,7 +73,6 @@ struct AudioPlayerTimelineView: View {
 /// iPad timeline (tap-based): tapping anywhere reveals the scrubber.
 private struct AudioPlayerTimelineIPadView: View {
     let currentItem: PlaylistItem?
-    let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
     let showScrubber: () -> Void
@@ -97,8 +92,7 @@ private struct AudioPlayerTimelineIPadView: View {
             }
             .overlay {
                 AudioPlayerTimelineScrubberOverlayView(
-                    audioController: audioController,
-                    audioPlayerModel: audioPlayerModel,
+                            audioPlayerModel: audioPlayerModel,
                     viewModel: viewModel,
                     hideScrubber: hideScrubber
                 )
@@ -115,7 +109,6 @@ private struct AudioPlayerTimelineIPadView: View {
 /// macOS timeline (hover-based): hovering reveals the scrubber.
 private struct AudioPlayerTimelineMacView: View {
     let currentItem: PlaylistItem?
-    let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
     let hideScrubber: () -> Void
@@ -130,8 +123,7 @@ private struct AudioPlayerTimelineMacView: View {
             }
             .overlay {
                 AudioPlayerTimelineScrubberOverlayView(
-                    audioController: audioController,
-                    audioPlayerModel: audioPlayerModel,
+                            audioPlayerModel: audioPlayerModel,
                     viewModel: viewModel,
                     hideScrubber: hideScrubber
                 )
@@ -201,10 +193,13 @@ private struct AudioPlayerTimelineProgressOverlayView: View {
 }
 
 private struct AudioPlayerTimelineScrubberOverlayView: View {
-    let audioController: AudioController
     let audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
     let hideScrubber: () -> Void
+
+    @Environment(AudioRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
 
     @ViewBuilder
     var body: some View {
@@ -213,7 +208,9 @@ private struct AudioPlayerTimelineScrubberOverlayView: View {
                 currentTime: audioPlayerModel.currentTime,
                 totalDuration: audioPlayerModel.playerTime.totalDuration,
                 elapsedText: audioPlayerModel.playerTime.elapsedText,
-                onSeek: { audioController.skip(to: $0) }
+                onSeek: { position in
+                    root.seek(to: position, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
+                }
             )
             .padding(.horizontal, AudioPlayerTimelineView.Constants.horizontalSpacing)
             .padding(.vertical, 8)

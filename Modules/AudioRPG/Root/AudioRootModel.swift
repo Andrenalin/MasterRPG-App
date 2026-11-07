@@ -81,6 +81,10 @@ import SwiftUI
             sheetControllable: sheetController,
             viewControllable: viewController
         )
+
+        audioPlayerModel.remoteCommandRouter = { [weak self] command in
+            self?.routeRemoteCommand(command) ?? false
+        }
     }
 
     @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
@@ -109,6 +113,13 @@ import SwiftUI
     }
 
     public let config: ModuleConfiguration
+
+    /// The actions of the running game, `nil` while none runs. Remote commands and the playback
+    /// intents ask it whether to go through the game. The app's game sets the shared
+    /// `IntentGameContext`; a test replaces this to run a game of its own.
+    @ObservationIgnored var runningGameActions: @MainActor () -> NetworkActions? = {
+        IntentGameContext.networkActions()
+    }
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel

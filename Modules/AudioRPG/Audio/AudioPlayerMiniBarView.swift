@@ -43,13 +43,31 @@ public struct AudioPlayerMiniBarView: View {
 
 private struct AudioPlayerMiniBarPlaybackControlsView: View {
     @Environment(AudioRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 12) {
+            if tabViewBottomAccessoryPlacement != .inline {
+                Button {
+                    withAnimation(.default.reduced(if: reduceMotion)) { root.skip(offsetBy: -1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions) }
+                } label: {
+                    Label {
+                        Text("Previous Track", bundle: .module)
+                    } icon: {
+                        Image(systemName: "backward.fill")
+                    }
+                    .labelStyle(.iconOnly)
+                    .font(.title3)
+                }
+                .accessibilityHint(Text("Play the previous track in the playlist", bundle: .module))
+                .disabled(!root.audioPlayerModel.hasPrev)
+            }
+
             Button {
-                withAnimation(.default.reduced(if: reduceMotion)) { root.audioController.togglePlay() }
+                withAnimation(.default.reduced(if: reduceMotion)) { root.togglePlayback(isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions) }
             } label: {
                 Label {
                     Text(root.audioPlayerModel.isPlaying ? "Pause" : "Play", bundle: .module)
@@ -68,7 +86,7 @@ private struct AudioPlayerMiniBarPlaybackControlsView: View {
 
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {
-                    withAnimation(.default.reduced(if: reduceMotion)) { root.audioController.skipToCurrentItem(offsetBy: 1) }
+                    withAnimation(.default.reduced(if: reduceMotion)) { root.skip(offsetBy: 1, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions) }
                 } label: {
                     Label {
                         Text("Next", bundle: .module)
@@ -81,6 +99,8 @@ private struct AudioPlayerMiniBarPlaybackControlsView: View {
                 .accessibilityLabel(Text("Next Track", bundle: .module))
                 .accessibilityHint(Text("Play the next track in the playlist", bundle: .module))
                 .disabled(!root.audioPlayerModel.hasNext)
+
+                AudioPlayerRepeatButton(audioPlayerModel: root.audioPlayerModel)
             }
         }
         .buttonStyle(.plain)

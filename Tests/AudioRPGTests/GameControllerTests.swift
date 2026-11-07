@@ -52,14 +52,21 @@ struct GameControllerTests {
         sut.gameModel.setCurrent(players: [playerId, otherPlayerId])
         #expect(!sut.allPlayersReported(for: playlistId))
 
+        // A report names the item that was received, not the tracks of its playlist.
         sut.report(itemId: playlistId, for: playerId)
         sut.report(itemId: playlistId, for: playerId)
         #expect(sut.gameModel.playerReport(for: playlistId) == [playerId])
-        #expect(sut.gameModel.playerReport(for: trackAId) == [playerId])
-        #expect(sut.gameModel.playerReport(for: trackBId) == [playerId])
+        #expect(sut.gameModel.playerReport(for: trackAId).isEmpty)
+        #expect(sut.gameModel.playerReport(for: trackBId).isEmpty)
 
+        // A playlist is ready once everyone has it and its first track; the second track follows.
         sut.report(itemId: playlistId, for: otherPlayerId)
+        #expect(!sut.allPlayersReported(for: playlistId))
+        sut.report(itemId: trackAId, for: playerId)
+        sut.report(itemId: trackAId, for: otherPlayerId)
         #expect(sut.allPlayersReported(for: playlistId))
+        #expect(sut.missingPlayers(for: playlistId).isEmpty)
+        #expect(Set(sut.missingPlayers(ofItem: trackBId)) == [playerId, otherPlayerId])
 
         let allPlayersData = await sut.audioList(allPlayers: true, with: masterId)
         let allPlayersRequest = try #require(AudioListRequest.decodeData(of: allPlayersData.data))
@@ -78,7 +85,7 @@ struct GameControllerTests {
             authoritative: false
         ))
         #expect(sut.gameModel.playerReport(for: playlistId).contains(playerId))
-        #expect(sut.gameModel.playerReport(for: trackBId).contains(otherPlayerId))
+        #expect(!sut.gameModel.playerReport(for: trackBId).contains(otherPlayerId))
 
         let reportsBeforeMalformedList = sut.gameModel.playerReports
         #expect(!sut.applyAudioList(
@@ -96,7 +103,7 @@ struct GameControllerTests {
         try await sut.play(id: playlistId, shouldPlay: false)
     }
 
-    @Test("Player report statuses follow each player's report of the whole playlist")
+    @Test("Player report statuses follow each player's report of what the playlist needs to start")
     func playerReportStatusesFollowReports() async throws {
         let root = AudioRootModel.testRoot()
         try await MockRoot.resetTestData(for: root)
@@ -115,8 +122,14 @@ struct GameControllerTests {
                 AudioEntryModel(id: UUID(), audioId: trackBId)
             ]
         )
-        root.itemController.replace(model: AudioModel(id: trackAId, name: "Track A"), isInsert: true)
-        root.itemController.replace(model: AudioModel(id: trackBId, name: "Track B"), isInsert: true)
+        root.itemController.replace(
+            model: AudioModel(id: trackAId, name: "Track A", fileUrl: try Self.localFileUrl(for: trackAId, fileData: Data("a".utf8))),
+            isInsert: true
+        )
+        root.itemController.replace(
+            model: AudioModel(id: trackBId, name: "Track B", fileUrl: try Self.localFileUrl(for: trackBId, fileData: Data("b".utf8))),
+            isInsert: true
+        )
         root.itemController.replace(model: playlist, isInsert: true)
         let controls = [
             SharingControlModel(id: zaraId, name: "Zara", show: true),
@@ -134,9 +147,8 @@ struct GameControllerTests {
             PlayerReportStatus(id: zaraId, name: "Zara", reported: false)
         ])
 
-        // One track of the playlist is not the playlist.
+        // The playlist item alone is not enough to start it: its first track is needed as well.
         sut.gameModel.setPlayerReport(playerId: arinId, for: playlistId)
-        sut.gameModel.setPlayerReport(playerId: arinId, for: trackAId)
         #expect(statuses().map(\.reported) == [false, false])
 
         // A view that read the statuses is told as soon as a report arrives.
@@ -146,15 +158,17 @@ struct GameControllerTests {
         } onChange: {
             didChange.withLock { $0 = true }
         }
-        sut.applyAudio(id: trackBId, for: [arinId])
+        sut.applyAudio(id: trackAId, for: [arinId])
         #expect(didChange.withLock { $0 })
         #expect(statuses().map(\.reported) == [true, false])
 
+        // The second track is sent later and does not matter for the start.
         sut.report(itemId: playlistId, for: zaraId)
+        sut.report(itemId: trackAId, for: zaraId)
         #expect(statuses().map(\.reported) == [true, true])
     }
 
-    @Test("A player that has a playlist is reported for its tracks")
+    @Test("A player that has a playlist is not reported for its other tracks")
     func applyAudioReportsPlaylistTracks() async throws {
         let root = AudioRootModel.testRoot()
         try await MockRoot.resetTestData(for: root)
@@ -172,7 +186,9 @@ struct GameControllerTests {
 
         sut.applyAudio(id: playlistId, for: [playerId, masterId])
 
-        #expect(Set(sut.gameModel.playerReport(for: trackId)) == Set([playerId, masterId]))
+        // The track is its own item with its own file: it is reported when it is received.
+        #expect(Set(sut.gameModel.playerReport(for: playlistId)) == Set([playerId, masterId]))
+        #expect(sut.gameModel.playerReport(for: trackId).isEmpty)
         #expect(sut.allPlayersReported(for: playlistId))
     }
 

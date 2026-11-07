@@ -24,6 +24,8 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
             root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+            // A track that belongs to the playlist that plays here joins it.
+            await root.audioRoot.audioGameControllable.itemArrived(id: model.data.id)
             return await response(for: model, isSuccess: true, requestData: false)
         case .store:
             // A store keeps the audio without showing it: the game master sends one to every
@@ -37,6 +39,8 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: true)
             }
             root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+            // A track that belongs to the playlist that plays here joins it.
+            await root.audioRoot.audioGameControllable.itemArrived(id: model.data.id)
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
@@ -62,7 +66,7 @@ extension PlayerController {
                 } else {
                     // The master device initiates playback; other SharePlay
                     // participants only prepare for AVPlayerPlaybackCoordinator.
-                    await root.audioRoot.audioGameControllable.loadPlaylist(id: model.data.id)
+                    await root.audioRoot.audioGameControllable.loadPlaylist(with: model.data)
                 }
             default:
                 break

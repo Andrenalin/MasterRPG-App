@@ -11,7 +11,7 @@ struct AudioPlayerScrubberView: View {
     let currentTime: Double
     let totalDuration: Double
     let elapsedText: String
-    let onSeek: @Sendable (Double) -> Void
+    let onSeek: @MainActor (Double) -> Void
 
     // Tracks the drag independently of `currentTime` so intermediate drag
     // positions don't each trigger a seek — only the value at release does.

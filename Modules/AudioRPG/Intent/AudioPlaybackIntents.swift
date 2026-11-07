@@ -7,7 +7,8 @@ import AppIntents
 
 /// Plays an audio track, or the playlist of an audio folder, through the app's own player, so a
 /// game master can start the music hands-free (Siri, AirPods, Action button). It takes the same
-/// path as the play button: `GameController.play(id:shouldPlay:)`. See CODE_AUDIT_AppIntents §4.6.
+/// path as the play button: while a game runs the play is sent through the game, so the players
+/// hear it too (`AudioRootModel.playFromIntent`). See CODE_AUDIT_AppIntents §4.6.
 public struct PlayAudioIntent: AudioPlaybackIntent {
     public static let title: LocalizedStringResource = "Play Audio"
     public static let description = IntentDescription(
@@ -40,7 +41,7 @@ public struct PlayAudioIntent: AudioPlaybackIntent {
             parameter: $target,
             prompt: .localized("Which audio do you want to play?", bundle: .module)
         )
-        try await root.gameController.play(id: model.id, shouldPlay: true)
+        try await root.playFromIntent(id: model.id)
         return .result(dialog: .localized("Playing \"\(target.name)\".", bundle: .module))
     }
 }
@@ -65,7 +66,7 @@ public struct PauseAudioIntent: AudioPlaybackIntent {
         guard root.audioController.model.isPlaying else {
             return .result(dialog: .localized("There is no audio playing.", bundle: .module))
         }
-        root.audioController.pause()
+        root.pauseFromIntent()
         return .result(dialog: .localized("Paused the audio.", bundle: .module))
     }
 }
@@ -91,8 +92,8 @@ public struct ResumeAudioIntent: AudioPlaybackIntent {
         }
         let title = player.playList[index].title
         if !player.isPlaying {
-            // `toggle()` restarts a finished track, as the player's play button does.
-            root.audioController.toggle()
+            // Restarts a finished track, as the player's play button does.
+            root.resumeFromIntent()
         }
         return .result(dialog: .localized("Playing \"\(title)\".", bundle: .module))
     }
@@ -121,8 +122,37 @@ public struct NextTrackIntent: AudioPlaybackIntent {
             return .result(dialog: .localized("This is the last track.", bundle: .module))
         }
         let title = player.playList[index + 1].title
-        root.audioController.skipToCurrentItem(offsetBy: 1)
+        root.nextTrackFromIntent()
         return .result(dialog: .localized("Playing \"\(title)\".", bundle: .module))
+    }
+}
+
+/// What the playback intents do. While a game runs (`runningGameActions` is not `nil`) they go
+/// through the game like the player's buttons, so Siri and Shortcuts play, pause and skip for
+/// every player; without a game they act on this device.
+extension AudioRootModel {
+    @MainActor
+    func playFromIntent(id: UUID) async throws {
+        let actions = runningGameActions()
+        try await startPlayback(id: id, isGameRunning: actions != nil, networkActions: actions)
+    }
+
+    @MainActor
+    func pauseFromIntent() {
+        let actions = runningGameActions()
+        pause(isGameRunning: actions != nil, networkActions: actions)
+    }
+
+    @MainActor
+    func resumeFromIntent() {
+        let actions = runningGameActions()
+        togglePlayback(isGameRunning: actions != nil, networkActions: actions)
+    }
+
+    @MainActor
+    func nextTrackFromIntent() {
+        let actions = runningGameActions()
+        skip(offsetBy: 1, isGameRunning: actions != nil, networkActions: actions)
     }
 }
 

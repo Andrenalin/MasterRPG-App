@@ -26,7 +26,16 @@ extension ExportController: ExportModelBacked {
     // `specialCategory` guard here regressed a real playlist export/import
     // round trip (caught by `MasterPlayerControllerTests.handleAudioPLayList`)
     // — confirmed by bisection while fixing CODE_AUDIT §5.1/§9.4.
+    //
+    // A package for players (a game) is the exception: it holds the item itself, with its list of
+    // tracks, but never the other tracks. A playlist of many files cannot travel as one package
+    // (SharePlay uploads one file per Journal slot), so the game master sends every track as a
+    // package of its own, the next one ahead of its play.
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+        if ExportAudience.isPlayerPackage {
+            let seeds = itemIds.ids[itemController.config.module, default: []]
+            return finalizeExportResults(Set(seeds.filter { itemController.itemSync(for: $0) != nil }), into: itemIds)
+        }
         let results = bfsExportResults(seedIds: itemIds.ids[itemController.config.module, default: []]) { id in
             guard let item = itemController.itemSync(for: id) else { return nil }
             return item.entries.compactMap { entryId in

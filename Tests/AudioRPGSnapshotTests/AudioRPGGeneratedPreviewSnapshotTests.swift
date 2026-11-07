@@ -93,7 +93,7 @@ struct AudioRPGGeneratedPreviewSnapshotTests {
     @Test("ToolbarVolumeButtonView")
     func snapshotToolbarVolumeButtonView() async throws {
         try await assertPreviewSnapshot("ToolbarVolumeButtonView") {
-            AudioRPG.ToolbarVolumeButtonView(root: .preview)
+            AudioRPG.ToolbarVolumeButtonView(root: .preview, showsPlayer: false)
         }
     }
 

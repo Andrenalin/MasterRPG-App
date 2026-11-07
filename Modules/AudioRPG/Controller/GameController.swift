@@ -15,14 +15,33 @@ public protocol AudioGameStorable: Sendable {
     /// without triggering play locally. Used in SharePlay mode where
     /// AVPlayerPlaybackCoordinator propagates play() from the initiating device.
     @MainActor func loadPlaylist(id: UUID) async
+    /// `loadPlaylist(id:)` for the play command in `data`: it prepares the track the command
+    /// names (not the first one), and does nothing for a pause, which the coordinator
+    /// propagates.
+    @MainActor func loadPlaylist(with data: NetworkCodableDataType) async
 
     @MainActor func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType
     @MainActor func applyAudio(id: UUID, for players: [UUID])
     @discardableResult
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) -> Bool
+    /// The players that lack what `itemId` needs to start: the item itself and, for a playlist,
+    /// its first track. The other tracks are sent ahead while the one before them plays.
     @MainActor func missingPlayers(for itemId: UUID) -> [UUID]
-    /// Whether `playerId` reported `itemId` and, for a playlist, each of its tracks.
+    /// The players that lack the item `itemId` itself, whatever its playlist holds.
+    @MainActor func missingPlayers(ofItem itemId: UUID) -> [UUID]
+    /// Whether `playerId` reported what `itemId` needs to start (see `missingPlayers(for:)`).
     @MainActor func isAudioAvailable(itemId: UUID, for playerId: UUID) -> Bool
+    /// The items a playlist needs on a device before it can start: the item itself and, for a
+    /// playlist, its first track.
+    @MainActor func startItemIds(for itemId: UUID) -> [UUID]
+    /// The items a play command needs on every device before it starts: the start items of the
+    /// playlist, and the track the command names. Empty for a pause.
+    @MainActor func requiredItemIds(for data: NetworkCodableDataType) -> [UUID]
+    /// The track that follows `trackId` in the playlist of `rootId`, if any.
+    @MainActor func nextTrackId(after trackId: UUID, in rootId: UUID) -> UUID?
+    /// A package arrived on this device: a track that belongs to the loaded playlist joins it.
+    @MainActor func itemArrived(id: UUID) async
+    /// Whether the file of the item `itemId` itself is on this device (not its other tracks).
     func hasLocalAudioData(for itemId: UUID) async -> Bool
     @MainActor func play(with data: NetworkCodableDataType) async throws
     func shouldPlay(with data: NetworkCodableDataType) -> Bool
@@ -31,6 +50,13 @@ public protocol AudioGameStorable: Sendable {
     /// instead of relaying a peer's payload. See CODE_AUDIT_23 §6.3.
     func sanitizedPlayRequest(from data: NetworkCodableDataType) -> NetworkCodableDataType?
     @MainActor func requestPlay(id: UUID) -> NetworkCodableDataType
+    /// Registers what the game master's loop does instead of restarting the playlist on this
+    /// device alone: it receives the play command that starts the playlist again for everyone.
+    /// `nil` (no game, or the game ended) makes the loop restart locally again.
+    @MainActor func setLoopReplayHandler(_ handler: (@MainActor (NetworkCodableDataType) -> Void)?)
+    /// Registers what the game master does whenever a track starts on this device: it is told the
+    /// playlist item and the track, to send the next track ahead. `nil` removes it.
+    @MainActor func setTrackStartHandler(_ handler: (@MainActor (_ rootId: UUID, _ trackId: UUID) -> Void)?)
 }
 
 struct GameController: Sendable {
@@ -58,119 +84,80 @@ extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
     var exportControllable: any ExportControllable { exportController as ExportControllable }
 
-    @MainActor func allPlayersReported(for id: UUID) -> Bool {
-        allPlayersReported(for: id, visited: [])
+    // A playlist is not one unit on the wire. Every track is an item with a file of its own and
+    // is sent, reported and acknowledged on its own: a playlist of many files cannot travel as
+    // one package (SharePlay uploads one file per Journal slot). A report names the item that
+    // was received, never the tracks of its playlist.
+
+    /// The items a playlist needs on a device before it can start: the item itself and its first
+    /// track (the same item for a track that is its own playlist's first). Every other track is
+    /// sent ahead while the one before it plays.
+    @MainActor func startItemIds(for id: UUID) -> [UUID] {
+        guard let firstTrackId = fetchPlaylist(id: id).first?.id, firstTrackId != id else { return [id] }
+        return [id, firstTrackId]
     }
 
-    // A named recursion depth (`deep < 10`) doesn't actually guard against a
-    // playlist cycle, only against a very deep one — switched to the same
-    // `visited` cycle guard the rest of this file's playlist traversals
-    // (missingPlayers/report/hasLocalAudioData) already use.
-    // See CODE_AUDIT_Game §9.14.
-    @MainActor private func allPlayersReported(for id: UUID, visited: Set<UUID>) -> Bool {
-        guard !visited.contains(id) else { return true }
-        let visited = visited.union([id])
-        let item = gameItem(for: id)
-        let players = gameModel.playerReport(for: id)
-        guard gameModel.currentPlayers.filter({ !players.contains($0) }).isEmpty else { return false }
-        for entry in item.entries {
-            if !allPlayersReported(for: entry.audioId, visited: visited) {
-                return false
-            }
-        }
-        return true
+    @MainActor func allPlayersReported(for id: UUID) -> Bool {
+        missingPlayers(for: id).isEmpty
     }
 
     @MainActor func missingPlayers(for itemId: UUID) -> [UUID] {
-        missingPlayers(for: itemId, visited: []).sorted()
+        Set(startItemIds(for: itemId).flatMap { missingPlayers(ofItem: $0) }).sorted()
     }
 
-    @MainActor private func missingPlayers(for itemId: UUID, visited: Set<UUID>) -> Set<UUID> {
-        guard !visited.contains(itemId) else { return [] }
-        let visited = visited.union([itemId])
+    @MainActor func missingPlayers(ofItem itemId: UUID) -> [UUID] {
         let reported = Set(gameModel.playerReport(for: itemId))
-        var missing = Set(gameModel.currentPlayers).subtracting(reported)
-        for entry in gameItem(for: itemId).entries {
-            missing.formUnion(missingPlayers(for: entry.audioId, visited: visited))
-        }
-        return missing
+        return Set(gameModel.currentPlayers).subtracting(reported).sorted()
     }
 
     @MainActor func isAudioAvailable(itemId: UUID, for playerId: UUID) -> Bool {
-        isAudioAvailable(itemId: itemId, for: playerId, visited: [])
+        startItemIds(for: itemId).allSatisfy { gameModel.playerReport(for: $0).contains(playerId) }
     }
 
-    @MainActor private func isAudioAvailable(itemId: UUID, for playerId: UUID, visited: Set<UUID>) -> Bool {
-        guard !visited.contains(itemId) else { return true }
-        guard gameModel.playerReport(for: itemId).contains(playerId) else { return false }
-        let visited = visited.union([itemId])
-        return gameItem(for: itemId).entries.allSatisfy {
-            isAudioAvailable(itemId: $0.audioId, for: playerId, visited: visited)
+    @MainActor func requiredItemIds(for data: NetworkCodableDataType) -> [UUID] {
+        guard let request = AudioPlayRequest.decodeData(of: data.data), request.shouldPlay else { return [] }
+        var ids = startItemIds(for: request.id)
+        if let trackId = request.trackId,
+           !ids.contains(trackId),
+           fetchPlaylist(id: request.id).contains(where: { $0.id == trackId }) {
+            ids.append(trackId)
         }
+        return ids
     }
 
-    /// The players a share of `itemId` lists. A player counts as reported once they have
-    /// every track of a playlist — the same rule `allPlayersReported(for:)` applies.
+    @MainActor func nextTrackId(after trackId: UUID, in rootId: UUID) -> UUID? {
+        let ids = fetchPlaylist(id: rootId).map(\.id)
+        guard let index = ids.firstIndex(of: trackId), ids.indices.contains(index + 1) else { return nil }
+        return ids[index + 1]
+    }
+
+    /// The players a share of `itemId` lists. A player counts as reported once they have what the
+    /// playlist needs to start (see `missingPlayers(for:)`).
     @MainActor func playerReportStatuses(for itemId: UUID, controls: [SharingControlModel]) -> [PlayerReportStatus] {
-        let missing = missingPlayers(for: itemId, visited: [])
+        let missing = Set(missingPlayers(for: itemId))
         return controls.playerReportStatuses { !missing.contains($0) }
     }
 
     @MainActor func report(itemId: UUID, for player: UUID) {
-        report(itemId: itemId, for: player, visited: [])
-    }
-
-    @MainActor private func report(itemId: UUID, for player: UUID, visited: Set<UUID>) {
-        guard !visited.contains(itemId) else { return }
-        let visited = visited.union([itemId])
-        let item = gameItem(for: itemId)
-        let players = gameModel.playerReport(for: itemId)
-        if !players.contains(player) {
-            gameModel.setPlayerReport(playerId: player, for: itemId)
-        }
-        for entry in item.entries {
-            report(itemId: entry.audioId, for: player, visited: visited)
-        }
+        guard !gameModel.playerReport(for: itemId).contains(player) else { return }
+        gameModel.setPlayerReport(playerId: player, for: itemId)
     }
 }
 
 extension GameController {
+    /// Whether the file of the item itself is on this device. The other tracks of a playlist are
+    /// separate items with files of their own, received one by one.
     func hasLocalAudioData(for itemId: UUID) async -> Bool {
-        await hasLocalAudioData(for: itemId, visited: [])
-    }
-
-    private func hasLocalAudioData(for itemId: UUID, visited: Set<UUID>) async -> Bool {
-        guard !visited.contains(itemId) else { return true }
-        let visited = visited.union([itemId])
-
-        let item = await gameItem(for: itemId)
-        // `item.entries` is itself `@MainActor` (inherited from `AudioModel`'s class
-        // annotation) — `await` alone hops there, no `MainActor.run` wrapper needed.
-        let entryIds = await item.entries.map(\.audioId)
-        guard await hasLocalFileData(for: itemId) else { return false }
-
-        for entryId in entryIds {
-            guard await hasLocalAudioData(for: entryId, visited: visited) else { return false }
-        }
-        return true
+        await hasLocalFileData(for: itemId)
     }
 
     @MainActor
-    private func hasLocalDatabaseAudioData(for itemId: UUID, visited: Set<UUID> = []) async -> Bool {
-        guard !visited.contains(itemId) else { return true }
+    private func hasLocalDatabaseAudioData(for itemId: UUID) async -> Bool {
         guard let item = itemController.itemSync(for: itemId, noGame: true) else { return false }
-        let visited = visited.union([itemId])
-
-        if let fileUrl = item.fileUrl,
-           let fileUrlDataController = itemController.fileUrlDataController,
-           await !fileUrlDataController.hasDownloadedData(for: fileUrl) {
-            return false
-        }
-
-        for entryId in item.entries.map(\.audioId) {
-            guard await hasLocalDatabaseAudioData(for: entryId, visited: visited) else { return false }
-        }
-        return true
+        guard let fileUrl = item.fileUrl,
+              let fileUrlDataController = itemController.fileUrlDataController
+        else { return true }
+        return await fileUrlDataController.hasDownloadedData(for: fileUrl)
     }
 
     @MainActor
@@ -207,32 +194,141 @@ extension GameController: AudioGameStorable {
     @MainActor
     func play(id: UUID?, shouldPlay: Bool) async throws {
         guard let id else { return }
-        guard shouldPlay else {
+        try await play(AudioPlayRequest(id: id, shouldPlay: shouldPlay))
+    }
+
+    /// Applies a play command on this device: pauses, resumes or skips within the playlist that
+    /// is already loaded, or loads the playlist of `request.id` and starts it (at the named
+    /// track, else the first).
+    @MainActor
+    func play(_ request: AudioPlayRequest) async throws {
+        let id = request.id
+        let list = fetchPlaylist(id: id)
+        let position = request.position.flatMap { Self.isValid(position: $0) ? $0 : nil }
+        guard request.shouldPlay else {
             audioController.pause()
+            if let position {
+                await seekPaused(rootId: id, trackId: request.trackId, to: position)
+            }
             return
         }
-        let list = fetchPlaylist(id: id)
+        // A command for a track of the playlist that plays already (resume, next, previous)
+        // must not copy every file again; the loop and a plain play still start it afresh. The
+        // track may have arrived after the playlist was loaded.
+        if let trackId = request.trackId, isLoaded(rootId: id) {
+            await syncLoadedPlaylist(id)
+            if audioController.model.playList.contains(where: { $0.id == trackId }) {
+                await playLoadedTrack(trackId, position: position)
+                return
+            }
+        }
         // A newer playlist replaced this one while it loaded: its first track is not in the
         // playlist, and selecting it would clear the current item. See CODE_AUDIT_21 §3.4.
         guard await audioController.add(audio: list, replace: true) else { return }
+        audioController.model.playListRootId = id
         guard let firstId = list.first?.id else { return }
+        let startId = request.trackId.flatMap { trackId in list.contains { $0.id == trackId } ? trackId : nil } ?? firstId
         // `add(replace:)` empties the playlist and the player but keeps `currentItem`. Starting
         // the song that was just stopped found `firstId == currentId`, so `togglePlay` only
         // resumed an empty player and nothing played. Select the new copy explicitly.
-        audioController.model.set(currentId: firstId)
-        await audioController.preparePlay(id: firstId, triggerPlay: true)
+        audioController.model.set(currentId: startId)
+        await audioController.preparePlay(id: startId, triggerPlay: true)
+        if let position {
+            audioController.skip(to: position)
+        }
+    }
+
+    /// A seek while paused: this device stays paused at the position, on the named track.
+    @MainActor
+    private func seekPaused(rootId: UUID, trackId: UUID?, to position: TimeInterval) async {
+        let model = audioController.model
+        guard isLoaded(rootId: rootId) else { return }
+        await syncLoadedPlaylist(rootId)
+        guard let trackId = trackId ?? model.currentId,
+              model.playList.contains(where: { $0.id == trackId })
+        else { return }
+        if trackId != model.currentId {
+            await audioController.preparePlay(id: trackId, triggerPlay: false)
+        }
+        audioController.skip(to: position)
+    }
+
+    /// Whether the playlist of `rootId` is the one that is loaded here. It may hold only the
+    /// tracks that arrived so far (see `syncLoadedPlaylist`).
+    @MainActor
+    private func isLoaded(rootId: UUID) -> Bool {
+        let model = audioController.model
+        return model.playListRootId == rootId && !model.playList.isEmpty
+    }
+
+    /// A track that arrived after the playlist was loaded joins it, at its place in the playlist.
+    /// The game master sends the tracks one after the other, so a device that started with the
+    /// first track gets the next ones while it plays.
+    @MainActor
+    private func syncLoadedPlaylist(_ rootId: UUID) async {
+        let list = fetchPlaylist(id: rootId)
+        let model = audioController.model
+        let loaded = Set(model.playList.map(\.id))
+        let arrived = list.filter { !loaded.contains($0.id) }
+        guard !arrived.isEmpty, await audioController.add(audio: arrived) else { return }
+        let order = Dictionary(uniqueKeysWithValues: list.enumerated().map { ($0.element.id, $0.offset) })
+        model.playList.sort { order[$0.id, default: .max] < order[$1.id, default: .max] }
+    }
+
+    @MainActor
+    func itemArrived(id: UUID) async {
+        guard let rootId = audioController.model.playListRootId else { return }
+        await syncLoadedPlaylist(rootId)
+    }
+
+    /// The current track resumes where it is; any other track starts from its beginning.
+    @MainActor
+    private func playLoadedTrack(_ trackId: UUID, position: TimeInterval?) async {
+        let model = audioController.model
+        if trackId == model.currentId, !model.isPlaybackComplete, model.currentItem != nil {
+            audioController.play()
+        } else {
+            await audioController.preparePlay(id: trackId, triggerPlay: true)
+        }
+        if let position {
+            audioController.skip(to: position)
+        }
     }
 
     @MainActor
     func loadPlaylist(id: UUID) async {
+        await loadPlaylist(id: id, trackId: nil)
+    }
+
+    @MainActor
+    private func loadPlaylist(id: UUID, trackId: UUID?) async {
         let list = fetchPlaylist(id: id)
         guard await audioController.add(audio: list, replace: true) else { return }
-        if let firstId = list.first?.id {
-            audioController.model.set(currentId: firstId)
-            await audioController.preparePlay(id: firstId, triggerPlay: false)
+        audioController.model.playListRootId = id
+        let startId = trackId.flatMap { trackId in list.contains { $0.id == trackId } ? trackId : nil } ?? list.first?.id
+        if let startId {
+            audioController.model.set(currentId: startId)
+            await audioController.preparePlay(id: startId, triggerPlay: false)
         }
     }
     
+    @MainActor
+    func loadPlaylist(with data: NetworkCodableDataType) async {
+        guard let request = AudioPlayRequest.decodeData(of: data.data), request.shouldPlay else { return }
+        let model = audioController.model
+        if let trackId = request.trackId, isLoaded(rootId: request.id) {
+            await syncLoadedPlaylist(request.id)
+            if model.playList.contains(where: { $0.id == trackId }) {
+                // Resume, next, previous: only a different track is prepared.
+                if trackId != model.currentId {
+                    await audioController.preparePlay(id: trackId, triggerPlay: false)
+                }
+                return
+            }
+        }
+        await loadPlaylist(id: request.id, trackId: request.trackId)
+    }
+
     @MainActor
     func audioList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType {
         let request: AudioListRequest
@@ -297,15 +393,20 @@ extension GameController: AudioGameStorable {
     
     @MainActor
     func play(with data: NetworkCodableDataType) async throws {
-        let request = AudioPlayRequest.decodeData(of: data.data)
-        try await play(id: request?.id, shouldPlay: request?.shouldPlay ?? false)
+        guard let request = AudioPlayRequest.decodeData(of: data.data) else { return }
+        try await play(request)
     }
 
     func shouldPlay(with data: NetworkCodableDataType) -> Bool {
         AudioPlayRequest.decodeData(of: data.data)?.shouldPlay ?? false
     }
 
-    /// A play request is two fields; anything larger is not one.
+    /// A position is a finite, non-negative number of seconds.
+    static func isValid(position: TimeInterval) -> Bool {
+        position.isFinite && position >= 0
+    }
+
+    /// A play request is a few small fields; anything larger is not one.
     private static let maximumPlayRequestBytes = 1024
 
     func sanitizedPlayRequest(from data: NetworkCodableDataType) -> NetworkCodableDataType? {
@@ -314,7 +415,9 @@ extension GameController: AudioGameStorable {
               let request = AudioPlayRequest.decodeData(of: payload),
               request.id == data.id
         else { return nil }
-        return NetworkCodableDataType(id: request.id, type: .audio, version: 0, data: request.encodeData())
+        var passedOn = request
+        passedOn.position = request.position.flatMap { Self.isValid(position: $0) ? $0 : nil }
+        return passedOn.command
     }
 
     @MainActor
@@ -322,14 +425,76 @@ extension GameController: AudioGameStorable {
         // Use isPlayingPlaylist rather than comparing currentId == id:
         // currentId is the active *track*, but id is the playlist root item,
         // so a direct comparison almost always returns false even when playing.
-        let requestData = AudioPlayRequest(id: id, shouldPlay: !isPlayingPlaylist(id: id))
-        return NetworkCodableDataType(id: id, type: .audio, version: 0, data: requestData.encodeData())
+        AudioPlayRequest(id: id, shouldPlay: !isPlayingPlaylist(id: id)).command
+    }
+
+    /// The item of the playlist that plays: what a transport command names, since a playlist item
+    /// of several tracks is not itself a track.
+    @MainActor
+    var playingRootId: UUID? {
+        audioController.model.playListRootId ?? audioController.model.currentId
+    }
+
+    /// The command that pauses the playlist on every device.
+    @MainActor
+    func requestPause() -> NetworkCodableDataType? {
+        playingRootId.map { AudioPlayRequest(id: $0, shouldPlay: false).command }
+    }
+
+    /// The command that plays `trackId` of the current playlist on every device. The track that
+    /// is current resumes where it is, any other starts from its beginning.
+    @MainActor
+    func requestTrack(_ trackId: UUID) -> NetworkCodableDataType? {
+        playingRootId.map { AudioPlayRequest(id: $0, shouldPlay: true, trackId: trackId).command }
+    }
+
+    /// The command that moves every device to `position` seconds of the current track. The audio
+    /// keeps playing, or stays paused, as it does here. `nil` without a current track or for a
+    /// position that is not a finite, non-negative time.
+    @MainActor
+    func requestSeek(to position: TimeInterval) -> NetworkCodableDataType? {
+        let model = audioController.model
+        guard Self.isValid(position: position), let currentId = model.currentId, let rootId = playingRootId else { return nil }
+        return AudioPlayRequest(id: rootId, shouldPlay: model.wantsPlayback, trackId: currentId, position: position).command
+    }
+
+    /// The command that plays the track `offset` away from the current one on every device, or
+    /// `nil` at the start or end of the playlist.
+    @MainActor
+    func requestSkip(offsetBy offset: Int) -> NetworkCodableDataType? {
+        let model = audioController.model
+        guard let index = model.currentIndex else { return nil }
+        let target = index + offset
+        guard model.playList.indices.contains(target) else { return nil }
+        return requestTrack(model.playList[target].id)
+    }
+
+    @MainActor
+    func setTrackStartHandler(_ handler: (@MainActor (_ rootId: UUID, _ trackId: UUID) -> Void)?) {
+        audioController.model.trackStartHandler = handler
+    }
+
+    @MainActor
+    func setLoopReplayHandler(_ handler: (@MainActor (NetworkCodableDataType) -> Void)?) {
+        audioController.model.loopReplayHandler = handler
     }
 }
 
 struct AudioPlayRequest: Codable, Sendable, MessageMapper {
     let id: UUID
     let shouldPlay: Bool
+    /// The track of the playlist `id` to play, for resume, next and previous. `nil` plays the
+    /// playlist from its first track. Absent in older commands, which decode as `nil`.
+    var trackId: UUID? = nil
+    /// Where in the track every device continues, in seconds, for a seek. With `shouldPlay` it
+    /// seeks while the audio plays; with a pause it seeks while it is paused. `nil` leaves the
+    /// position alone. Absent in older commands, which decode as `nil`.
+    var position: TimeInterval? = nil
+
+    /// The message that asks the game to play (or pause) `id`.
+    var command: NetworkCodableDataType {
+        NetworkCodableDataType(id: id, type: .audio, version: 0, data: encodeData())
+    }
 }
 
 struct AudioListRequest: Codable, Sendable, MessageMapper {

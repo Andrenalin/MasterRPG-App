@@ -73,6 +73,9 @@ extension MasterController {
         if reference.type == .map {
             await sendMapFollowUps(for: reference.id)
         }
+        if reference.type == .audio {
+            await showAudioStartItems(of: reference.id)
+        }
     }
 
     /// The live part of a map after its reveal: the photo-free content, the state (rooms,
