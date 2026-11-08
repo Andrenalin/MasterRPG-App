@@ -64,6 +64,17 @@ public final class ResourcesDebug {
         bundle.url(forResource: pdfExample, withExtension: "pdf")
     }
 
+    /// The PDFs in the `TestPdfs` resource folder. Folder structure is kept when the bundle keeps it,
+    /// otherwise the PDFs are looked up next to the other resources, minus `PdfExample`.
+    public static var testPdfUrls: [URL] {
+        let nested = bundle.urls(forResourcesWithExtension: "pdf", subdirectory: "TestPdfs") ?? []
+        if !nested.isEmpty {
+            return nested
+        }
+        return (bundle.urls(forResourcesWithExtension: "pdf", subdirectory: nil) ?? [])
+            .filter { $0.deletingPathExtension().lastPathComponent != pdfExample }
+    }
+
     public static var spaceExampleURL: URL? {
         bundle.url(forResource: spaceExample, withExtension: "usdz")
     }

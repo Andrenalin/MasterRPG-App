@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB1C0DE02FC300000056E461 /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; };
 		10A5D8E58E6F42069D56F3AB /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 0D7AB85DDBC44AC3BDC1FC31 /* SnapshotTesting */; };
 		3652CC8D7265490CA815B74D /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; };
 		385052589E47372394A5D9CA /* RPGResourcesDebug.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E8EE6CB2CD8E3A00010A25B /* RPGResourcesDebug.framework */; };
@@ -321,6 +322,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		AB1C0DE02FC300000056E463 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8E8EE6CA2CD8E3A00010A25B;
+			remoteInfo = RPGResourcesDebug;
+		};
 		0609B7C5AC00BA5E85C10190 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8EC4E46128DDA29600D0279F /* Project object */;
@@ -2005,6 +2013,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				599DCAD92E8E30C00056E46C /* GeneratorRPG.framework in Frameworks */,
+				AB1C0DE02FC300000056E461 /* RPGResourcesDebug.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3106,6 +3115,7 @@
 			);
 			dependencies = (
 				599DCADB2E8E30C00056E46C /* PBXTargetDependency */,
+				AB1C0DE02FC300000056E462 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8E8A410C2FC200000049C6B5 /* GeneratorRPGTests */,
@@ -5230,6 +5240,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		AB1C0DE02FC300000056E462 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8E8EE6CA2CD8E3A00010A25B /* RPGResourcesDebug */;
+			targetProxy = AB1C0DE02FC300000056E463 /* PBXContainerItemProxy */;
+		};
 		0A32131FBEA595D088BE3178 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8E8EE6CA2CD8E3A00010A25B /* RPGResourcesDebug */;

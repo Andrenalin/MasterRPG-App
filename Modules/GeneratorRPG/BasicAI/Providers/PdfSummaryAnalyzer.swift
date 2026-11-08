@@ -127,9 +127,8 @@ struct PdfSummaryAnalyzer: Sendable {
         Provide in \(outputLanguage) a structured summary analysis including:
         - The document title
         - A clear summary
-        - Relevant RPG tags (genre, setting, system, etc.)
+        - 3 to 5 specific tags in \(outputLanguage): what kind of document it is, what it is mainly about, and its specific places, peoples, creatures or themes
         - Major sections or chapters
-        - The document type (rulebook, adventure, supplement, etc.)
         """
     }
 
@@ -192,7 +191,13 @@ struct PdfSummaryAnalyzer: Sendable {
 
     private static let defaultInstructions = """
     Analyze and summarize RPG documents (rulebooks, adventures, supplements).
-    Provide clear titles, concise summaries, relevant tags, and major sections.
+    Provide clear titles, concise summaries, tags, and major sections.
+    Tags are short keywords (1 to 3 words) that tell this document apart from other RPG documents: \
+    what kind of document it is, what it is mainly about, and its named places, peoples, creatures, \
+    factions and central themes. Write every tag in the output language, translate the kind of \
+    document too. Never use generic tags that fit every RPG document, such as "RPG", "Setting", \
+    "System", "Genre" or "Role-playing game", and never write a label before a value \
+    ("Genre: Fantasy"); write only the value ("Fantasy").
     Be precise and factual, use document language. Don't change it.
     """
 }
