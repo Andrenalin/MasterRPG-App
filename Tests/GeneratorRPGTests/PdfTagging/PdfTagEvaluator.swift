@@ -7,7 +7,7 @@ import Foundation
 /// What a good tag set for one PDF looks like. Content expectations are *concept groups*: a group
 /// is matched when any of its terms appears in any tag, so "dungeon" and "Verlies" can stand for
 /// the same idea and the model is not pinned to one wording.
-struct PdfTagExpectation: Sendable, Equatable {
+struct PdfTagExpectation: Codable, Sendable, Equatable {
     /// Each inner array is one concept; a tag containing any of its terms matches the concept.
     var conceptGroups: [[String]]
     /// How many of `conceptGroups` must be matched. `nil` means all of them.

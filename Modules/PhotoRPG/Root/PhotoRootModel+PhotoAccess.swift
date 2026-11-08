@@ -67,3 +67,23 @@ public extension PhotoRootModel {
     }
 
 }
+
+#if !os(tvOS)
+import CoreGraphics
+import GeneratorRPG
+
+public extension PhotoRootModel {
+    /// The photo of `id` as a bounded, upright image for the Apple Intelligence analysis, or `nil`
+    /// when it is not downloaded or cannot be decoded.
+    @MainActor
+    func fetchPhotoAnalysisImage(for id: UUID) async -> CGImage? {
+        guard let item = await itemController.item(for: id), let fileUrl = item.fileUrl,
+              let fileUrlDataController else { return nil }
+        return await fileUrlDataController.resolvedImage(
+            for: fileUrl,
+            decodeData: { PhotoAnalysisImage.decode(data: $0) },
+            decodeUrl: { PhotoAnalysisImage.decode(url: $0) }
+        )
+    }
+}
+#endif

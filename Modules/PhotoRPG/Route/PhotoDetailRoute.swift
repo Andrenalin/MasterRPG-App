@@ -6,6 +6,9 @@ import SwiftUI
 public enum PhotoDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
     case folderInline(UUID)
+#if !os(tvOS)
+    case photoExtraction(UUID)
+#endif
 }
 
 extension PhotoDetailRoute: RawRepresentable {
@@ -13,6 +16,9 @@ extension PhotoDetailRoute: RawRepresentable {
         switch self {
         case .folder(let id): "folder/\(id.uuidString)"
         case .folderInline(let id): "folderInline/\(id.uuidString)"
+#if !os(tvOS)
+        case .photoExtraction(let id): "photoExtraction/\(id.uuidString)"
+#endif
         }
     }
 
@@ -22,6 +28,9 @@ extension PhotoDetailRoute: RawRepresentable {
         switch token {
         case "folder": self = .folder(uuid)
         case "folderInline": self = .folderInline(uuid)
+#if !os(tvOS)
+        case "photoExtraction": self = .photoExtraction(uuid)
+#endif
         default: return nil
         }
     }
@@ -46,6 +55,9 @@ extension PhotoDetailRoute: ItemDetailRoute {
         switch self {
             case .folder(let id): return id
             case .folderInline(let id): return id
+#if !os(tvOS)
+            case .photoExtraction(let id): return id
+#endif
         }
     }
 }
@@ -70,6 +82,11 @@ struct PhotoDetailRouteDestinationView: View {
                     DetailFolderListView(root: root, model: model, folderListController: folderListController, isSubFolder: true)
                 }
             }
+
+#if !os(tvOS)
+        case .photoExtraction(let itemId):
+            PhotoSummaryExtractionView(itemId: itemId)
+#endif
         }
     }
 }

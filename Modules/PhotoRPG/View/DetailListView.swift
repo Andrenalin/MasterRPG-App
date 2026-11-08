@@ -26,6 +26,11 @@ struct DetailListView: View {
                         ControlGroup {
                             ConvertImageEditor(model: model)
                         }
+#if !os(tvOS)
+                        if #available(anyAppleOS 27.0, *) {
+                            ExtractInformationToolBarButton(route: PhotoDetailRoute.photoExtraction(model.id), isDisabled: false)
+                        }
+#endif
                     }
                 }
             }

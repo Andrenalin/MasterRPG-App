@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ Apple's Private Cloud Compute can analyze the photo instead. The photo is sent to Apple, which designs it not to keep the photo. This needs a network connection and counts toward a daily limit." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Apple's Private Cloud Compute can analyze the photo instead. The photo is sent to Apple, which designs it not to keep the photo. This needs a network connection and counts toward a daily limit."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Stattdessen kann Apples Private Cloud Compute das Foto analysieren. Das Foto wird an Apple gesendet, das so konzipiert ist, dass es das Foto nicht speichert. Dafür ist eine Netzwerkverbindung nötig, und es zählt zu einem Tageslimit."
+          }
+        }
+      }
+    },
     "... and %lld more" : {
       "localizations" : {
         "de" : {
@@ -339,6 +355,22 @@
         }
       }
     },
+    "Allow and Analyze" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow and Analyze"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlauben und analysieren"
+          }
+        }
+      }
+    },
     "An unexpected generation error occurred: %@" : {
       "localizations" : {
         "de" : {
@@ -403,6 +435,22 @@
         }
       }
     },
+    "Analyze Photo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyze Photo"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto analysieren"
+          }
+        }
+      }
+    },
     "Analyze Text Entries" : {
       "localizations" : {
         "de" : {
@@ -431,6 +479,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "กำลังวิเคราะห์ PDF ด้วย Apple Intelligence..."
+          }
+        }
+      }
+    },
+    "Analyzing photo with Apple Intelligence..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyzing photo with Apple Intelligence..."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto wird mit Apple Intelligence analysiert..."
           }
         }
       }
@@ -483,6 +547,22 @@
         }
       }
     },
+    "Apple Intelligence is not available. Photo analysis requires it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence is not available. Photo analysis requires it."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist nicht verfügbar. Die Fotoanalyse benötigt es."
+          }
+        }
+      }
+    },
     "Apple Intelligence Not available" : {
       "localizations" : {
         "de" : {
@@ -495,6 +575,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Apple Intelligence ไม่พร้อมใช้งาน"
+          }
+        }
+      }
+    },
+    "Apple Intelligence on this device is not ready." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence on this device is not ready."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist auf diesem Gerät nicht bereit."
           }
         }
       }
@@ -841,6 +937,22 @@
         }
       }
     },
+    "Don't Allow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't Allow"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht erlauben"
+          }
+        }
+      }
+    },
     "Done" : {
       "localizations" : {
         "de" : {
@@ -965,6 +1077,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวดึงข้อมูล"
+          }
+        }
+      }
+    },
+    "Failed to analyze the photo: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to analyze the photo: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foto konnte nicht analysiert werden: %@"
           }
         }
       }
@@ -1461,6 +1589,22 @@
         }
       }
     },
+    "Only used when the on-device model cannot analyze the photo. The photo is then sent to Apple." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only used when the on-device model cannot analyze the photo. The photo is then sent to Apple."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird nur verwendet, wenn das Modell auf dem Gerät das Foto nicht analysieren kann. Das Foto wird dann an Apple gesendet."
+          }
+        }
+      }
+    },
     "Output Language" : {
       "localizations" : {
         "de" : {
@@ -1554,6 +1698,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สกีมาสรุป PDF มีข้อจำกัดที่ไม่รองรับ: %@ นี่คือข้อผิดพลาดของนักพัฒนา"
+          }
+        }
+      }
+    },
+    "Private Cloud Compute could not analyze the photo: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute could not analyze the photo: %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute konnte das Foto nicht analysieren: %@"
           }
         }
       }
@@ -1804,6 +1964,102 @@
         }
       }
     },
+    "The on-device model cannot analyze this photo, and Private Cloud Compute is turned off." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model cannot analyze this photo, and Private Cloud Compute is turned off."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf dem Gerät kann dieses Foto nicht analysieren, und Private Cloud Compute ist ausgeschaltet."
+          }
+        }
+      }
+    },
+    "The on-device model cannot analyze this photo. Allow Private Cloud Compute to continue." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model cannot analyze this photo. Allow Private Cloud Compute to continue."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf dem Gerät kann dieses Foto nicht analysieren. Erlaube Private Cloud Compute, um fortzufahren."
+          }
+        }
+      }
+    },
+    "The on-device model cannot read images." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model cannot read images."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf dem Gerät kann keine Bilder lesen."
+          }
+        }
+      }
+    },
+    "The on-device model is busy or limited right now." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model is busy or limited right now."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf dem Gerät ist gerade ausgelastet oder eingeschränkt."
+          }
+        }
+      }
+    },
+    "The on-device safety check stopped the analysis." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device safety check stopped the analysis."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sicherheitsprüfung auf dem Gerät hat die Analyse gestoppt."
+          }
+        }
+      }
+    },
+    "The output language is not supported on this device." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The output language is not supported on this device."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Ausgabesprache wird auf diesem Gerät nicht unterstützt."
+          }
+        }
+      }
+    },
     "The PDF content is too large. Processing only the first portion." : {
       "localizations" : {
         "de" : {
@@ -1848,6 +2104,38 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ภาษาของ PDF นี้ไม่รองรับโดย Apple Intelligence"
+          }
+        }
+      }
+    },
+    "The photo could not be read." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo could not be read."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foto konnte nicht gelesen werden."
+          }
+        }
+      }
+    },
+    "The photo is too large for the on-device model." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo is too large for the on-device model."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foto ist für das Modell auf dem Gerät zu groß."
           }
         }
       }
@@ -2222,6 +2510,38 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "อัปเกรดเพื่อใช้งาน Apple Intelligence"
+          }
+        }
+      }
+    },
+    "Use Private Cloud Compute when needed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Private Cloud Compute when needed"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute bei Bedarf verwenden"
+          }
+        }
+      }
+    },
+    "Use Private Cloud Compute?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Private Cloud Compute?"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute verwenden?"
           }
         }
       }

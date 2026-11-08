@@ -51,6 +51,19 @@ public final class ResourcesDebug {
 #endif
     }
 
+    /// A bundled test photo as a `CGImage`, for tests that feed images to a model.
+    @MainActor
+    public static func testPhotoCGImage(named name: String) -> CGImage? {
+        guard let image = previewImage(named: name) else {
+            return nil
+        }
+#if os(macOS)
+        return image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+#else
+        return image.cgImage
+#endif
+    }
+
     @MainActor
     public static func cachePhotoPreviewImage(named name: String) -> RPGResourcesDebugImage? {
         previewImage(named: name)

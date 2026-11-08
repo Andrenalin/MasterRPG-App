@@ -99,3 +99,34 @@ extension EditController {
     }
 #endif
 }
+
+// MARK: - Apply a photo analysis to a PhotoModel
+
+#if !os(tvOS)
+import GeneratorRPG
+
+/// Which values of a photo analysis the person wants to keep.
+struct PhotoPropertySelection {
+    var applyTitle = true
+    var applyDescription = true
+    var applyTags = true
+
+    var hasAnySelected: Bool {
+        applyTitle || applyDescription || applyTags
+    }
+}
+
+extension EditController {
+    @MainActor func applyAnalysis(_ analysis: PhotoSummaryAnalysis, to itemId: UUID, selection: PhotoPropertySelection) {
+        if selection.applyTitle {
+            reset(name: analysis.title, itemId: itemId)
+        }
+        if selection.applyDescription {
+            reset(description: analysis.summary, itemId: itemId)
+        }
+        if selection.applyTags {
+            reset(tags: analysis.tags, itemId: itemId)
+        }
+    }
+}
+#endif
