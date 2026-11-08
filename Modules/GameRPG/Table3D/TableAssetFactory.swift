@@ -42,12 +42,13 @@ enum TableAssetFactory {
         if let cachedWoodMaterials {
             return cachedWoodMaterials
         }
-        let materialSource = try await Entity(
-            named: "table_assembly",
-            in: tabletopGameContentBundle
-        )
         let materials: [any Material]
-        if let sourceModel = firstModelComponent(in: materialSource) {
+        // `tabletopGameContentBundle` is SwiftPM's `Bundle.module`, which `fatalError`s when the
+        // resource bundle is not next to the executable. The table only borrows its materials from
+        // it, so a missing bundle degrades to the plain wood material instead of crashing the game.
+        if let contentBundle = Self.tabletopContentBundleIfPresent(),
+           let materialSource = try? await Entity(named: "table_assembly", in: contentBundle),
+           let sourceModel = firstModelComponent(in: materialSource) {
             materials = sourceModel.materials
         } else {
             var fallbackMaterial = PhysicallyBasedMaterial()
@@ -59,6 +60,20 @@ enum TableAssetFactory {
         }
         cachedWoodMaterials = materials
         return materials
+    }
+
+    /// Non-fatal lookup of the package's resource bundle, mirroring the locations SwiftPM's
+    /// generated `Bundle.module` accessor searches (app resources, then each loaded framework).
+    private static func tabletopContentBundleIfPresent() -> Bundle? {
+        let bundleName = "RPGTabletopGameContent_RPGTabletopGameContent.bundle"
+        let hosts = [Bundle.main] + Bundle.allFrameworks
+        for host in hosts {
+            if let url = host.resourceURL?.appending(path: bundleName),
+               let bundle = Bundle(url: url) {
+                return bundle
+            }
+        }
+        return nil
     }
 
     static func firstModelComponent(in entity: Entity) -> ModelComponent? {
