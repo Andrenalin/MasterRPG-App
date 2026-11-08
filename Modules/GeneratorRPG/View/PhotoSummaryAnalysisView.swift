@@ -122,7 +122,6 @@ public struct PhotoSummaryAnalysisView: View {
 
 // MARK: - Subviews
 
-@available(anyAppleOS 27.0, *)
 private struct CloudToggle: View {
     @Binding var consent: PhotoCloudConsent
 
