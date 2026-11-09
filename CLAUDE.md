@@ -145,6 +145,7 @@ If CoreData is configured to use CloudKit:
 - **Controller** for the different controllers
 - **Intent** for App-Intents, Siri, Shortcuts and Widgets
 - **Menu** for Menu on mac / iPad command
+- **Preview** for `#if DEBUG` preview and mock fixtures (GameRPG)
 - **Model** Domain Model and Database Model
 - **Resources** Database file, Localizations
 - **Root** Root View, Models and entry of the module

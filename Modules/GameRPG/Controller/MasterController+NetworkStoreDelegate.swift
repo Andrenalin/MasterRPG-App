@@ -75,9 +75,9 @@ extension MasterController {
             role == .player
         case (true, .proxy(_)):
             role == .proxy
-        case (false, .proxy(_)), (false, .local),
+        case (false, .proxy(_)),
              (true, .direct(_)), (true, .sharePlay(_)),
-             (true, .file), (true, .local):
+             (true, .file):
             false
         }
     }
@@ -313,7 +313,7 @@ extension MasterController {
         return log.type == .reveal || log.type == .store
     }
 
-    /// Observers participate in availability/repair handshakes but cannot issue
+    /// Observers participate in availability and request handshakes but cannot issue
     /// gameplay actions. This is enforced again here even though the LAN bridge
     /// already refuses to relay observer group events.
     func normalizedObserverMessage(_ model: GameNetworkModel) -> GameNetworkModel? {

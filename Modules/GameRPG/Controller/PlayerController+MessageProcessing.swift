@@ -4,9 +4,6 @@ import CoreRPG
 import Foundation
 import MapRPG
 import os.log
-#if os(macOS)
-#else
-#endif
 
 // The incoming-message pipeline, split out of PlayerController+NetworkStoreDelegate.swift —
 // see CODE_AUDIT_19 §9.23.
@@ -39,9 +36,7 @@ extension PlayerController {
         let config = root.gameModel.gameConfig
         let acceptsLogicalAuthority: Bool
 
-        if origin == .local {
-            acceptsLogicalAuthority = model.masterId == config.master.id
-        } else if config.master.type == .master {
+        if config.master.type == .master {
             guard model.masterId == config.master.id else { return false }
             if model.sender.isMaster {
                 acceptsLogicalAuthority = model.sender.id == config.master.id
@@ -113,87 +108,109 @@ extension PlayerController {
         case apply(GameNetworkModel)
     }
 
+    /// The gates a message passes before a module sees it, in this order: addressee, the game
+    /// master's state and this device's visibility and feature gates, then the order of
+    /// presentations. Each gate answers `nil` to let the message through. A message rejected
+    /// only by this device's own policy is still forwarded to the proxy clients.
     private func prepareForProcessing(_ event: GameMessageEvent) async -> ProcessingDecision {
         let model = event.model
 
-        // Targeted messages are only processed by the addressee. Proxy clients
-        // are deliberately invisible upstream and every proxy request is remapped
-        // to its host ID, so a target belonging to another host can never live
-        // behind this device.
+        if let decision = rejectIfTargetedElsewhere(model) { return decision }
+        if !gameModel.asGameMaster, let decision = await applyPlayerGates(event) { return decision }
+
+        var applied = model
+        if let decision = orderPresentation(model, applied: &applied) { return decision }
+
+        await forwardToProxyClients(event)
+        return .apply(applied)
+    }
+
+    /// Targeted messages are only processed by the addressee.
+    private func rejectIfTargetedElsewhere(_ model: GameNetworkModel) -> ProcessingDecision? {
+        // Proxy clients are deliberately invisible upstream and every proxy request is remapped
+        // to its host ID, so a target belonging to another host can never live behind this
+        // device.
         if let targetId = model.targetId, targetId != root.gameModel.gameConfig.id {
             Logger.networking.debug("PlayerController: Message ignored, targeted at \(targetId, privacy: .public)")
             return .rejectPermanently
         }
+        return nil
+    }
 
-        if !gameModel.asGameMaster {
-            let controls = if let authoritativeControls = model.masterState?.controls {
-                authoritativeControls
-            } else {
-                root.gameModel.gameControl.controls
-            }
-            if let masterState = model.masterState,
-               model.sender.isMaster,
-               gameModel.shouldApplyMasterState(from: model.masterId, counter: model.counter) {
-                // One MainActor hop for the whole broadcast: applying config,
-                // controls and roster in separate steps lets concurrent message
-                // builders capture a torn state and send it back to the master.
-                // A single @MainActor function call preserves that atomicity the
-                // same way `MainActor.run` did — two separate `await`-ed calls
-                // would each be a scheduling point another queued task could
-                // interleave between.
-                applyMasterBroadcastAndResetPlayers(
-                    masterId: model.masterId,
-                    masterName: model.sender.name,
-                    supporterTier: model.sender.supporterTier,
-                    state: masterState
-                )
-            }
-
-            let localId = root.gameModel.gameConfig.id
-            let type = root.gameModel.gameType
-            let spaceSharing = root.gameModel.gameControl.features.spaceSharing
-            let dicePlayers = root.gameModel.gameControl.features.dicePlayers
-            // This hub's own roster visibility gates whether the message is
-            // applied to *this* device's local state, not whether it's valid.
-            // A proxy-connected player behind this hub has entirely separate
-            // roster/visibility state, so the message still needs forwarding
-            // to them even when it's not applied here. See CODE_AUDIT_Network
-            // §5.20.
-            guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
-                // The controls array carries every participant's id and display
-                // name — private. See CODE_AUDIT_Game §6.3.
-                Logger.networking.debug("PlayerController: Message will not be applied locally because of controls \(controls, privacy: .private)")
-                await forwardToProxyClients(event)
-                return .rejectLocallyOnly
-            }
-            // Other players send their requests, reports and contributions to the game
-            // master; SharePlay delivers them to everyone. Only a Dice roll, a moved pin and
-            // a Space transform are for the group. This is a property of the message
-            // itself, not of this device's state, so it stays a permanent rejection.
-            guard type == .proxy || model.sender.isMaster || model.isPlayerGroupEvent else {
-                Logger.networking.debug("PlayerController: Master-only player message ignored")
-                return .rejectPermanently
-            }
-            let isBlockedByFeature = !model.sender.isMaster && type != .proxy && (
-                (model.isDiceRollEvent && !dicePlayers) ||
-                (model.data.type == .space && !spaceSharing)
+    /// The master state of a broadcast, then the gates of a device that is not the game master:
+    /// the controls (visibility), whether the sender may publish to the group, and the features.
+    private func applyPlayerGates(_ event: GameMessageEvent) async -> ProcessingDecision? {
+        let model = event.model
+        let controls = if let authoritativeControls = model.masterState?.controls {
+            authoritativeControls
+        } else {
+            root.gameModel.gameControl.controls
+        }
+        if let masterState = model.masterState,
+           model.sender.isMaster,
+           gameModel.shouldApplyMasterState(from: model.masterId, counter: model.counter) {
+            // One MainActor hop for the whole broadcast: applying config,
+            // controls and roster in separate steps lets concurrent message
+            // builders capture a torn state and send it back to the master.
+            // A single @MainActor function call preserves that atomicity the
+            // same way `MainActor.run` did — two separate `await`-ed calls
+            // would each be a scheduling point another queued task could
+            // interleave between.
+            applyMasterBroadcastAndResetPlayers(
+                masterId: model.masterId,
+                masterName: model.sender.name,
+                supporterTier: model.sender.supporterTier,
+                state: masterState
             )
-            // Same rationale as the controls gate above: a feature flag local to this hub
-            // must not block relaying to downstream proxy clients, who may have a
-            // different configuration. See CODE_AUDIT_Network §5.20.
-            guard !isBlockedByFeature else {
-                // senderName is a participant's real display name — private. See CODE_AUDIT_Game §6.3.
-                Logger.networking.debug("PlayerController: Message will not be applied locally because it is send from Player \(model.senderName, privacy: .private)")
-                await forwardToProxyClients(event)
-                return .rejectLocallyOnly
-            }
         }
 
-        // What the screen shows follows the order the game master showed it in, not the
-        // order it arrived in: a package can take much longer than the reference of the
+        let localId = root.gameModel.gameConfig.id
+        let type = root.gameModel.gameType
+        let spaceSharing = root.gameModel.gameControl.features.spaceSharing
+        let dicePlayers = root.gameModel.gameControl.features.dicePlayers
+        // This hub's own roster visibility gates whether the message is
+        // applied to *this* device's local state, not whether it's valid.
+        // A proxy-connected player behind this hub has entirely separate
+        // roster/visibility state, so the message still needs forwarding
+        // to them even when it's not applied here. See CODE_AUDIT_Network
+        // §5.20.
+        guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
+            // The controls array carries every participant's id and display
+            // name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.debug("PlayerController: Message will not be applied locally because of controls \(controls, privacy: .private)")
+            await forwardToProxyClients(event)
+            return .rejectLocallyOnly
+        }
+        // Other players send their requests, reports and contributions to the game
+        // master; SharePlay delivers them to everyone. Only a Dice roll, a moved pin and
+        // a Space transform are for the group. This is a property of the message
+        // itself, not of this device's state, so it stays a permanent rejection.
+        guard type == .proxy || model.sender.isMaster || model.isPlayerGroupEvent else {
+            Logger.networking.debug("PlayerController: Master-only player message ignored")
+            return .rejectPermanently
+        }
+        let isBlockedByFeature = !model.sender.isMaster && type != .proxy && (
+            (model.isDiceRollEvent && !dicePlayers) ||
+            (model.data.type == .space && !spaceSharing)
+        )
+        // Same rationale as the controls gate above: a feature flag local to this hub
+        // must not block relaying to downstream proxy clients, who may have a
+        // different configuration. See CODE_AUDIT_Network §5.20.
+        guard !isBlockedByFeature else {
+            // senderName is a participant's real display name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.debug("PlayerController: Message will not be applied locally because it is send from Player \(model.senderName, privacy: .private)")
+            await forwardToProxyClients(event)
+            return .rejectLocallyOnly
+        }
+        return nil
+    }
+
+    /// What the screen shows follows the order the game master showed it in, not the order it
+    /// arrived in. `applied` becomes the message to hand to its module.
+    private func orderPresentation(_ model: GameNetworkModel, applied: inout GameNetworkModel) -> ProcessingDecision? {
+        // A package can take much longer than the reference of the
         // next show. One that arrives late is kept for later, and a late reference has
         // nothing left to say.
-        var applied = model
         if model.isPresentation {
             if gameModel.isCurrentPresentation(counter: model.counter, module: model.data.type, itemId: model.data.id) {
                 gameModel.markPresentation(counter: model.counter, module: model.data.type, itemId: model.data.id)
@@ -206,9 +223,7 @@ extension PlayerController {
                 return .rejectPermanently
             }
         }
-
-        await forwardToProxyClients(event)
-        return .apply(applied)
+        return nil
     }
 
     /// Mirrors a valid group/master message to this device's own downstream
@@ -216,7 +231,7 @@ extension PlayerController {
     /// this device's own local state. See CODE_AUDIT_Network §5.20.
     private func forwardToProxyClients(_ event: GameMessageEvent) async {
         let model = event.model
-        guard !event.fromProxy, event.origin != .local, !model.isAcknowledgement else { return }
+        guard !event.fromProxy, !model.isAcknowledgement else { return }
         if let key = event.deduplicationKey, !gameModel.claimProxyForward(key) { return }
         if model.data.type != .value {
             // Proxy clients mirror this player: an answer addressed to this
@@ -269,7 +284,7 @@ extension PlayerController {
                     usesSharePlayPlaybackCoordination: event.origin.usesSharePlayFileTransport
                 )
                 try Task.checkCancellation()
-                if let response, event.origin != .local {
+                if let response {
                     await sendUpstream(model: response)
                 }
                 await root.statisticsModel.record(
@@ -286,10 +301,8 @@ extension PlayerController {
             } catch {
                 // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
                 Logger.networking.error("PlayerController: Failed to process \(event.model.debugDescription, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                if event.origin != .local {
-                    let failure = response(for: event.model, isSuccess: false, requestData: false)
-                    await sendUpstream(model: failure)
-                }
+                let failure = response(for: event.model, isSuccess: false, requestData: false)
+                await sendUpstream(model: failure)
                 await messagePipeline.processed(success: false)
             }
         }

@@ -20,34 +20,30 @@ extension PlayerController {
             return nil
         }
 
-        switch model.type {
-        case .reveal:
-            if try await revealWeather(model) {
+        // Weather is immutable during a game. Presentation and request answers use reveal
+        // messages; live update messages are intentionally ignored.
+        return try await answerHeldItem(
+            model,
+            reveal: { try await revealWeather(model) },
+            didReveal: {
                 // A weather the game master showed while the map was on screen opens on the map.
                 if !presentOnMap(.weather, itemId: model.data.id) {
                     gameModel.showWeather()
                 }
                 tableWeatherArrived(model.data.id)
-                return response(for: model, isSuccess: true, requestData: false)
-            } else {
-                return response(for: model, isSuccess: true, requestData: true)
+            },
+            store: {
+                // Weather packages are game-session assets. Even legacy store messages must stay
+                // in game memory and never enter persistence.
+                try await root.weatherRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
+                root.weatherRoot.weatherGameControllable.markWeatherAvailable(
+                    itemId: model.data.id,
+                    version: model.data.version
+                )
+                tableWeatherArrived(model.data.id)
+                return true
             }
-        case .store:
-            // Weather packages are game-session assets. Even legacy store
-            // messages must stay in game memory and never enter persistence.
-            try await root.weatherRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
-            root.weatherRoot.weatherGameControllable.markWeatherAvailable(
-                itemId: model.data.id,
-                version: model.data.version
-            )
-            tableWeatherArrived(model.data.id)
-            return response(for: model, isSuccess: true, requestData: false)
-        case .update:
-            // Weather is immutable during a game. Presentation and repair use
-            // reveal messages; live update messages are intentionally ignored.
-            break
-        }
-        return nil
+        )
     }
 
     /// Makes the revealed weather current. The game master's own screen shows it from the

@@ -16,7 +16,7 @@ extension PlayerController {
             // content right after this reveal recorded its generation's
             // fingerprint. Refresh it so the game master's own co-located
             // screen keeps recognizing this exact, unedited map on a later
-            // reference-only reshow instead of chasing a phantom repair.
+            // reference-only reshow instead of chasing a phantom request.
             root.mapRoot.mapGameControllable.refreshAuthoritativeMapContentVersion(for: itemId)
         }
         retryDeferredBattleRoundUpdate(itemId: itemId)

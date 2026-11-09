@@ -216,15 +216,17 @@ extension MasterController {
         }
     }
 
-    /// Returns once the delivery for the pending play is done (for tests).
+#if DEBUG
+    /// A test affordance: returns once the delivery for the pending play is done.
     func waitForAudioDeliveries() async {
         await audioDeliveryTask?.value
     }
 
-    /// Returns once the look-ahead that sends the next track is done (for tests).
+    /// A test affordance: returns once the look-ahead that sends the next track is done.
     func waitForAudioPrefetch() async {
         await audioPrefetchTask?.value
     }
+#endif
 
     /// Forgets the pending play `id` with its retry task, attempts and failure counts.
     func clearPendingAudioPlay(_ id: UUID) {
@@ -269,9 +271,8 @@ extension MasterController {
         })
     }
 
-    /// A player received an audio package but could not use it. The package is sent again a
-    /// bounded number of times; then the play goes on without that player. See
-    /// CODE_AUDIT_Audio2 §5.4.
+    /// A player received an audio package but could not use it. The play goes on without that
+    /// player.
     private func handleAudioDeliveryFailure(_ model: GameNetworkModel) async {
         guard model.sender.role == .player else { return }
         let itemId = model.data.id
@@ -279,13 +280,9 @@ extension MasterController {
         let audio = root.audioRoot.audioGameControllable
         guard gameModel.pendingAudioPlays.values.contains(where: { audio.requiredItemIds(for: $0).contains(itemId) })
         else { return }
-        if gameModel.recordAudioDeliveryFailure(itemId: itemId, playerId: playerId) {
-            Logger.networking.error("MasterController: Retrying audio \(itemId, privacy: .public) for player \(playerId, privacy: .public) after it failed to import it.")
-            await deliverAudio(id: itemId, to: [playerId])
-        } else {
-            Logger.networking.error("MasterController: Giving up audio \(itemId, privacy: .public) for player \(playerId, privacy: .public) after repeated import failures.")
-            await startCompletePendingAudioPlays()
-        }
+        gameModel.abandonAudioDelivery(itemId: itemId, playerId: playerId)
+        Logger.networking.error("MasterController: Giving up audio \(itemId, privacy: .public) for player \(playerId, privacy: .public) after it failed to import it.")
+        await startCompletePendingAudioPlays()
     }
 
     /// Starts every pending play whose audio all players have by now.

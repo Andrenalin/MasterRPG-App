@@ -186,53 +186,7 @@ extension RPGSharePlayController {
     func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) async {
         Logger.sharePlay.debug("Configure Session \(groupSession.description, privacy: .private) state: \(self.printState(), privacy: .public)")
 
-        // An invalidated-state worker resets synchronously, then performs its
-        // delegate cleanup asynchronously. Do not let sessions() configure a
-        // replacement inside that suspension window.
-        await sessionTeardownCoordinator.waitForPendingTeardown()
-        guard !Task.isCancelled else {
-            leaveUnconfiguredSession(groupSession)
-            return
-        }
-
-        if self.groupSession?.id == groupSession.id,
-           messenger != nil,
-           journal != nil,
-           packageSender != nil {
-            Logger.sharePlay.debug("Configure Session ignored duplicate \(groupSession.id, privacy: .public)")
-            return
-        }
-        if self.groupSession != nil || messenger != nil || journal != nil || packageSender != nil {
-            // RPGActivity.sessions() can yield a replacement before the old
-            // state loop reports invalidation. Capture its physical roster,
-            // cancel every old worker, then await all loss handling before any
-            // replacement loop can announce ready/replay state.
-            let previousSessionId = self.groupSession?.id
-            let teardownEvents = participantTracker.drainSessionTeardownEvents()
-            let teardownDelegate = delegate
-            let callbackCoordinator = sessionCallbackCoordinator
-            let teardown = sessionTeardownCoordinator.start {
-                if let previousSessionId {
-                    await callbackCoordinator.waitUntilIdle(sessionId: previousSessionId)
-                }
-                await Self.reportSessionTeardown(teardownEvents, to: teardownDelegate)
-            }
-            reset()
-            await sessionTeardownCoordinator.waitForCompletion(of: teardown)
-            guard !Task.isCancelled else {
-                leaveUnconfiguredSession(groupSession)
-                return
-            }
-        } else {
-            // `reset()` above already resets the tracker for the
-            // replace-an-existing-session path (and `drainSessionTeardownEvents()`
-            // resets `participantTracker` a second time before that even
-            // runs) — redundant but harmless there. This `else` is reached
-            // only on the first-ever configure, where neither of those ran,
-            // so it's the sole place it actually needs resetting. See
-            // CODE_AUDIT_Reconnect §9.1.
-            participantTracker.reset()
-        }
+        guard await prepareForConfiguration(groupSession) else { return }
 
         sessionLifecycle.prepare(sessionId: groupSession.id)
         isActive = false
@@ -259,7 +213,95 @@ extension RPGSharePlayController {
         #if os(visionOS)
         gameModel?.shareState.isSharePlayActive = false
         #endif
-        let stateTask = Task { @MainActor [weak self] in
+        // One task per stream. Each re-binds `self` per element, so none keeps the controller
+        // alive for the session's lifetime, and `reset()` cancels all of them.
+        tasks[UUID()] = makeStateTask(groupSession: groupSession)
+        tasks[UUID()] = makeParticipantTask(groupSession: groupSession)
+        tasks[UUID()] = makeMessageTask(groupSession: groupSession, messenger: messenger)
+        tasks[UUID()] = makeJournalTask(groupSession: groupSession, journal: journal)
+
+        requestJoin(groupSession)
+        playBack?.coordinateWithSession(groupSession)
+        #if os(visionOS)
+        guard !Task.isCancelled,
+              sessionLoopIsCurrent(sessionId: groupSession.id)
+        else { return }
+        // This call handles the mirror-image ordering of
+        // `setup(tabletopGame:gameTableModel:)`'s own call to the same
+        // deferred helper: `tabletopGame` is already registered here because
+        // the 3D table view opened *before* this SharePlay session did, where
+        // that other call site handles a session that was already active
+        // before the table view opened. `deferCoordinateAndAssignSeats`'s own
+        // `coordinatedTabletopGame` guard keeps the two idempotent against
+        // each other regardless of which fires first.
+        if let tabletopGame {
+            deferCoordinateAndAssignSeats(
+                tabletopGame: tabletopGame,
+                groupSession: groupSession,
+                gameTableModel: gameModel?.gameTableModel
+            )
+        }
+        #endif
+    }
+
+    /// Clears the state of an earlier session before `groupSession` is configured. Returns
+    /// `false` when there is nothing to configure: the task was cancelled (the session is left)
+    /// or this very session is configured already.
+    private func prepareForConfiguration(_ groupSession: GroupSession<RPGActivity>) async -> Bool {
+        // An invalidated-state worker resets synchronously, then performs its
+        // delegate cleanup asynchronously. Do not let sessions() configure a
+        // replacement inside that suspension window.
+        await sessionTeardownCoordinator.waitForPendingTeardown()
+        guard !Task.isCancelled else {
+            leaveUnconfiguredSession(groupSession)
+            return false
+        }
+
+        if self.groupSession?.id == groupSession.id,
+           messenger != nil,
+           journal != nil,
+           packageSender != nil {
+            Logger.sharePlay.debug("Configure Session ignored duplicate \(groupSession.id, privacy: .public)")
+            return false
+        }
+        if self.groupSession != nil || messenger != nil || journal != nil || packageSender != nil {
+            // RPGActivity.sessions() can yield a replacement before the old
+            // state loop reports invalidation. Capture its physical roster,
+            // cancel every old worker, then await all loss handling before any
+            // replacement loop can announce ready/replay state.
+            let previousSessionId = self.groupSession?.id
+            let teardownEvents = participantTracker.drainSessionTeardownEvents()
+            let teardownDelegate = delegate
+            let callbackCoordinator = sessionCallbackCoordinator
+            let teardown = sessionTeardownCoordinator.start {
+                if let previousSessionId {
+                    await callbackCoordinator.waitUntilIdle(sessionId: previousSessionId)
+                }
+                await Self.reportSessionTeardown(teardownEvents, to: teardownDelegate)
+            }
+            reset()
+            await sessionTeardownCoordinator.waitForCompletion(of: teardown)
+            guard !Task.isCancelled else {
+                leaveUnconfiguredSession(groupSession)
+                return false
+            }
+        } else {
+            // `reset()` above already resets the tracker for the
+            // replace-an-existing-session path (and `drainSessionTeardownEvents()`
+            // resets `participantTracker` a second time before that even
+            // runs) — redundant but harmless there. This `else` is reached
+            // only on the first-ever configure, where neither of those ran,
+            // so it's the sole place it actually needs resetting. See
+            // CODE_AUDIT_Reconnect §9.1.
+            participantTracker.reset()
+        }
+
+        return true
+    }
+
+    /// Follows the session's state: joined (configured, replay), invalidated (teardown).
+    private func makeStateTask(groupSession: GroupSession<RPGActivity>) -> Task<Void, Never> {
+        Task { @MainActor [weak self] in
             for await state in groupSession.$state.values {
                 guard let self else { return }
                 guard !Task.isCancelled,
@@ -313,14 +355,12 @@ extension RPGSharePlayController {
                 }
             }
         }
-        tasks[UUID()] = stateTask
+    }
 
-        // Track transport identities directly. An initial participant snapshot
-        // may arrive before `.joined`; the tracker retains it and the state loop
-        // replays those participants exactly once after Messenger is ready.
-        // `self` is re-bound per element, not once before the loop, so the loop does not keep
-        // the controller alive for the session's lifetime. See CODE_AUDIT_19 §3.11.
-        let participantTask = Task { @MainActor [weak self] in
+    /// Follows the participant roster by transport identity. An initial snapshot may arrive before
+    /// `.joined`; the tracker retains it and the state task replays those participants once.
+    private func makeParticipantTask(groupSession: GroupSession<RPGActivity>) -> Task<Void, Never> {
+        Task { @MainActor [weak self] in
             for await _ in groupSession.$activeParticipants.values {
                 guard let self,
                       !Task.isCancelled,
@@ -357,9 +397,11 @@ extension RPGSharePlayController {
                 }
             }
         }
-        tasks[UUID()] = participantTask
+    }
 
-        let messageTask = Task { @MainActor [weak self] in
+    /// Reassembles the chunked Messenger packages and hands each complete message to the delegate.
+    private func makeMessageTask(groupSession: GroupSession<RPGActivity>, messenger: GroupSessionMessenger) -> Task<Void, Never> {
+        Task { @MainActor [weak self] in
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
                 guard let self else { return }
                 guard !Task.isCancelled,
@@ -394,8 +436,11 @@ extension RPGSharePlayController {
                 }
             }
         }
-        tasks[UUID()] = messageTask
-        let journalTask = Task { @MainActor [weak self] in
+    }
+
+    /// Hands every Journal snapshot to the attachment handling.
+    private func makeJournalTask(groupSession: GroupSession<RPGActivity>, journal: GroupSessionJournal) -> Task<Void, Never> {
+        Task { @MainActor [weak self] in
             for await attachment in journal.attachments {
                 guard let self else { return }
                 guard !Task.isCancelled,
@@ -404,8 +449,10 @@ extension RPGSharePlayController {
                 self.receiveJournalSnapshot(attachment, sessionId: groupSession.id)
             }
         }
-        tasks[UUID()] = journalTask
+    }
 
+    /// Queues the `join()` of `groupSession` and records that it was requested.
+    private func requestJoin(_ groupSession: GroupSession<RPGActivity>) {
         // Calling join() establishes the ordering guarantee documented by
         // GroupActivities: synchronization requested after this call is queued
         // until the session reaches .joined.
@@ -430,27 +477,6 @@ extension RPGSharePlayController {
         // reset() now owns cancellation of a delayed join for this session.
         tasks[UUID()] = sessionJoinTask
         sessionLifecycle.didRequestJoin(sessionId: groupSession.id)
-        playBack?.coordinateWithSession(groupSession)
-        #if os(visionOS)
-        guard !Task.isCancelled,
-              sessionLoopIsCurrent(sessionId: groupSession.id)
-        else { return }
-        // This call handles the mirror-image ordering of
-        // `setup(tabletopGame:gameTableModel:)`'s own call to the same
-        // deferred helper: `tabletopGame` is already registered here because
-        // the 3D table view opened *before* this SharePlay session did, where
-        // that other call site handles a session that was already active
-        // before the table view opened. `deferCoordinateAndAssignSeats`'s own
-        // `coordinatedTabletopGame` guard keeps the two idempotent against
-        // each other regardless of which fires first.
-        if let tabletopGame {
-            deferCoordinateAndAssignSeats(
-                tabletopGame: tabletopGame,
-                groupSession: groupSession,
-                gameTableModel: gameModel?.gameTableModel
-            )
-        }
-        #endif
     }
 
     func sessionLoopIsCurrent(sessionId: UUID) -> Bool {
@@ -511,63 +537,5 @@ extension RPGSharePlayController {
 #if os(visionOS)
         refreshSeatPlayerNames()
 #endif
-    }
-}
-
-/// Runs the `join()` and `leave()` of one `GroupSession` strictly one after the other, off the
-/// main actor. Commands are queued from the main actor in call order and one task executes them,
-/// so a `leave()` never overlaps a `join()` that is still running; `join()` blocks while it sets
-/// up the call's audio session, which the main thread must not wait for. After `leave()` the
-/// queue is finished: a later `join()` or `leave()` does nothing.
-///
-/// `GroupSession` is not `Sendable`. The box below only hands it to the one task that calls these
-/// two methods; everything that reads the session's state stays on the main actor.
-final class GroupSessionCommandQueue: Sendable {
-    private enum Command {
-        case join
-        case leave
-    }
-
-    /// Why `@unchecked`: Apple does not document `GroupSession` as `Sendable`. This relies on
-    /// `join()` and `leave()` being plain calls into the system that the framework serialises
-    /// itself, and on this box being the only place that calls them off the main actor, one
-    /// call at a time (see the command queue above). That is an assumption, not something
-    /// TSan can check inside system code. If a hitch from `join()` ever stops mattering,
-    /// the safer form is to call both on the main actor
-    /// (CODE_AUDIT_Game_Shareplay §3.3).
-    private struct SessionBox: @unchecked Sendable {
-        let session: GroupSession<RPGActivity>
-    }
-
-    private let continuation: AsyncStream<Command>.Continuation
-
-    init(session: GroupSession<RPGActivity>) {
-        let box = SessionBox(session: session)
-        let (stream, continuation) = AsyncStream.makeStream(of: Command.self)
-        self.continuation = continuation
-        Task.detached(priority: .userInitiated) {
-            for await command in stream {
-                switch command {
-                case .join:
-                    box.session.join()
-                case .leave:
-                    box.session.leave()
-                    return
-                }
-            }
-        }
-    }
-
-    deinit {
-        continuation.finish()
-    }
-
-    func join() {
-        continuation.yield(.join)
-    }
-
-    func leave() {
-        continuation.yield(.leave)
-        continuation.finish()
     }
 }

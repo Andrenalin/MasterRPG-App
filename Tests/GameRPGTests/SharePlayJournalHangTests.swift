@@ -78,8 +78,7 @@ struct SharePlayJournalHangTests {
 
     @Test("a removal that hangs in a live session is given up after its deadline")
     func hungCleanupIsAbandonedAfterItsDeadline() async {
-        // Given - one reservation, held by a hung removal; retiring the current attachment then
-        // uses the module's emergency slot, which hangs as well.
+        // Given - one reservation, held by a hung removal of the replaced attachment.
         let queue = SharePlayJournalPublicationQueue<HangAttachment>(
             maxOutstandingCleanups: 1,
             cleanupDeadline: .milliseconds(400)
@@ -94,18 +93,14 @@ struct SharePlayJournalHangTests {
             }
             await publication.value
         }
-        #expect(queue.retireCurrentAttachment(for: .photo) { _ in
-            await removeGate.wait()
-            return true
-        })
-        #expect(await Self.eventually { await removeGate.entered == 2 })
+        #expect(await Self.eventually { await removeGate.entered == 1 })
         let whileHung = queue.enqueue(for: .photo) { HangAttachment() } remove: { _ in true }
         #expect(whileHung.admission == .rejected)
 
         // When - the deadline passes.
         let released = await Self.eventually { queue.outstandingCleanupCount == 0 }
 
-        // Then - both slots are free again although the system calls never returned.
+        // Then - the reservation is free again although the system calls never returned.
         #expect(released)
         let afterDeadline = queue.enqueue(for: .photo) { HangAttachment() } remove: { _ in true }
         #expect(afterDeadline.admission == .enqueued)

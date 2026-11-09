@@ -59,7 +59,7 @@ extension GameTableModel {
 
     /// A structural edit (entries added/removed, e.g. the hex grid) needs the content update
     /// first — a map state that references entries a player doesn't have forces every player
-    /// through a repair round trip — then the map state. Honours "pause sharing" like
+    /// through a request round trip — then the map state. Honours "pause sharing" like
     /// `broadcastMapEdit`: while paused the map is marked, and the resume/refresh send
     /// (`sendMapUpdates`) pushes the content update. See CODE_AUDIT_18 §5.19, CODE_AUDIT_19 §3.12.
     func broadcastMapContentEdit(for mapId: UUID) {

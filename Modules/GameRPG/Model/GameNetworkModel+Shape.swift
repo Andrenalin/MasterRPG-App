@@ -46,6 +46,15 @@ extension GameNetworkModel {
         }
     }
 
+    /// An availability list of a file-backed module or Audio, by subtype alone. The exact
+    /// envelope check is `isReportListEnvelope`.
+    var isReportList: Bool {
+        switch subType {
+        case .audioList, .photoList, .pdfList, .spaceList: true
+        default: false
+        }
+    }
+
     /// A player's request for the bytes of an item the master named: the master's reveal or
     /// store echoed back with its counter and without bytes.
     var isAssetRequest: Bool {
@@ -72,6 +81,23 @@ extension GameNetworkModel {
             data.data != nil
     }
 
+    /// The small events a player publishes to the whole group.
+    enum GroupEventKind: Sendable {
+        case diceRoll
+        case mapPin
+        case spaceTransform
+    }
+
+    /// Which group event this message is by its shape alone, or `nil`: a complete Dice roll, a
+    /// moved map pin, a Space transform.
+    var groupEventKind: GroupEventKind? {
+        if isDiceRollEvent { return .diceRoll }
+        guard type == .update else { return nil }
+        if subType == .mapPin && data.type == .map { return .mapPin }
+        if subType == .spaceTransform && data.type == .space { return .spaceTransform }
+        return nil
+    }
+
     /// The small events a player publishes to the whole group: a Dice roll, a moved map pin, a
     /// Space transform. Everything else a player sends is for the master only.
     var isPlayerGroupEvent: Bool {
@@ -83,10 +109,7 @@ extension GameNetworkModel {
               GameNetworkModel.acceptsEventTimestamp(timestamp)
         else { return false }
 
-        if isDiceRollEvent { return true }
-        guard type == .update else { return false }
-        return (subType == .mapPin && data.type == .map) ||
-            (subType == .spaceTransform && data.type == .space)
+        return groupEventKind != nil
     }
 
     /// A master message that changes what the players' game screen shows.

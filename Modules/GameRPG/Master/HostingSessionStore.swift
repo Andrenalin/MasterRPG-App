@@ -102,11 +102,13 @@ final class HostingSessionStore: Sendable {
         return session
     }
 
-    /// Suspends until every Keychain write started so far has finished.
+#if DEBUG
+    /// A test affordance: suspends until every Keychain write started so far has finished.
     func waitForStoredWrites() async {
         let chain = writeChain.withLock { $0 }
         await chain?.value
     }
+#endif
 
     private static func session(from stored: String, passcode: String) -> String? {
         let parts = stored.split(separator: separator, maxSplits: 1)

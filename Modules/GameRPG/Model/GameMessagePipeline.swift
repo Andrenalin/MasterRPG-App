@@ -12,13 +12,12 @@ enum GameMessageOrigin: Hashable, Sendable {
     case proxy(ConnectionController.ID?)
     case sharePlay(UUID)
     case file
-    case local
 
     var connectionId: ConnectionController.ID? {
         switch self {
         case let .direct(connectionId), let .proxy(connectionId):
             connectionId
-        case .sharePlay, .file, .local:
+        case .sharePlay, .file:
             nil
         }
     }
@@ -37,7 +36,7 @@ enum GameMessageOrigin: Hashable, Sendable {
             connectionId
         case let .sharePlay(participantId):
             participantId
-        case .file, .local:
+        case .file:
             nil
         }
     }
@@ -51,7 +50,7 @@ enum GameMessageOrigin: Hashable, Sendable {
         switch self {
         case .sharePlay, .file:
             true
-        case .direct, .proxy, .local:
+        case .direct, .proxy:
             false
         }
     }

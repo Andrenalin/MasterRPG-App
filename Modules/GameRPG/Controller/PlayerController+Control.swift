@@ -6,9 +6,6 @@ import os.log
 import AdventureRPG
 import DiceRPG
 import MapRPG
-#if os(macOS)
-#else
-#endif
 
 // MARK: - Control
 

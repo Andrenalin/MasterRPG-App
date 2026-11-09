@@ -52,16 +52,5 @@ struct GamePlayerRoutesFileOriginTests {
         #expect(!accepted)
         #expect(!routes.isBound(.file, to: sender.id))
     }
-
-    @Test("The co-located player's local origin is still always accepted")
-    func localOriginIsUnchanged() {
-        var routes = GamePlayerRoutes()
-        let sender = player()
-
-        let accepted = routes.bind(.local, to: sender)
-
-        #expect(accepted)
-        #expect(routes.isBound(.local, to: sender.id))
-    }
 }
 #endif

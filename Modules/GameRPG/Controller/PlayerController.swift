@@ -3,9 +3,6 @@
 import CoreRPG
 import Foundation
 import os.log
-#if os(macOS)
-#else
-#endif
 
 @MainActor
 final class PlayerController {

@@ -22,20 +22,20 @@ actor ConnectionAttemptThrottle {
     }
 
     /// Consecutive failures from one source before it starts being throttled.
-    static let failureThreshold = 3
+    static let failureThreshold = GameLimits.Throttle.failureThreshold
     /// Lockout once the threshold is first reached; doubles per additional
     /// failure beyond the threshold, capped at `maximumLockout`.
-    private static let baseLockout: Double = 5
-    private static let maximumLockout: Double = 300
+    private static let baseLockout = GameLimits.Throttle.baseLockout
+    private static let maximumLockout = GameLimits.Throttle.maximumLockout
     /// Caps how many distinct sources are tracked at once. A source that
     /// fails once or twice and never authenticates (a scanner, a
     /// misconfigured device, a mistyped code someone gave up on) otherwise
     /// leaves a permanent entry for the life of the hosting session — nothing
     /// else ever prunes it. See CODE_AUDIT §6.4.
-    private static let maximumTrackedSources = 256
+    private static let maximumTrackedSources = GameLimits.Throttle.maximumTrackedSources
     /// A source that has been quiet this long starts counting from zero again, so failures from
     /// long-past typos never add up to a lockout. See CODE_AUDIT_Join §6.3.
-    static let failureDecay: Duration = .seconds(600)
+    static let failureDecay = GameLimits.Throttle.failureDecay
 
     private var sources: [String: State] = [:]
 
@@ -43,8 +43,7 @@ actor ConnectionAttemptThrottle {
     /// now. `now` is injectable for deterministic tests; production always
     /// measures against the real continuous clock so a wall-clock change
     /// (manual adjustment, NTP sync, DST) can neither shorten nor extend an
-    /// active lockout — matching `SharePlayMapRecoveryTracker`'s own use of
-    /// `ContinuousClock` for the same reason. See CODE_AUDIT §3.2.
+    /// active lockout.
     func shouldAllow(source: String, at now: ContinuousClock.Instant? = nil) -> Bool {
         guard let lockedUntil = sources[source]?.lockedUntil else { return true }
         return (now ?? ContinuousClock().now) >= lockedUntil

@@ -43,7 +43,7 @@ extension GameNetworkController {
                 connectionIds.append(connectionId)
             case .sharePlay:
                 sharePlayPlayerIsMissing = true
-            case .direct(nil), .proxy(nil), .file, .local, nil:
+            case .direct(nil), .proxy(nil), .file, nil:
                 break
             }
         }
@@ -106,10 +106,6 @@ extension GameNetworkController {
                 sharePlayStore.publishAsset(data, isPlaylist: isAudioPlaylist(data))
             } else {
                 sharePlayStore.sendDataReportingLoss(data)
-            }
-        case .local:
-            if model.hasLocalPlayer {
-                await model.playerDelegate?.received(data)
             }
         }
     }

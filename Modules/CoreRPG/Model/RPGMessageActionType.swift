@@ -14,6 +14,8 @@ public enum RPGMessageActionType: Int, Codable, Hashable, Sendable {
     case store = 10
     case show = 20
     case ok = 200
+    /// Reserved: nothing sends it any more. The raw value stays so that an envelope of an older
+    /// peer still decodes; the master does not admit it.
     case screen = 300
     case failed = 400
 

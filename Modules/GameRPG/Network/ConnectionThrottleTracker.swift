@@ -52,9 +52,9 @@ actor ConnectionThrottleTracker {
     }
 
     /// Handshakes that may be unresolved at once across all sources.
-    static let maximumPendingHandshakes = 16
+    static let maximumPendingHandshakes = GameLimits.Throttle.maximumPendingHandshakes
     /// Handshakes that may be unresolved at once from a single source.
-    static let maximumPendingHandshakesPerSource = 3
+    static let maximumPendingHandshakesPerSource = GameLimits.Throttle.maximumPendingHandshakesPerSource
 
     /// Ties `id` to `endpoint`'s throttle source while its handshake is in
     /// flight, so a later `resolve(id:succeeded:)` or `clear(id:)` knows what

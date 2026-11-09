@@ -312,7 +312,7 @@ struct GameStatisticsControllerTests {
                 sessionId: UUID(),
                 localParticipantId: masterId,
                 direction: .outgoing,
-                origin: .local
+                origin: .direct(nil)
             )
         }
 

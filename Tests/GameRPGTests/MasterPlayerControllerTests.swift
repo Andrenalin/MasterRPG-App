@@ -897,7 +897,7 @@ final class MasterPlayerControllerTests {
         await proxyMaster.receivedServerProxy(proxyMessage(counter: 1, type: .reveal, subType: .ok, data: NetworkCodableDataType(id: UUID(), type: .photo, version: 0), remoteId: remoteId), connectionId: connectionId)
         await proxyMaster.receivedServerProxy(proxyMessage(counter: 2, type: .update, subType: .store, data: NetworkCodableDataType(id: UUID(), type: .value, version: 0, data: Data([1])), remoteId: remoteId), connectionId: connectionId)
         await proxyMaster.receivedServerProxy(proxyMessage(counter: 3, type: .update, subType: .audioList, data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: Data([2])), remoteId: remoteId), connectionId: connectionId)
-        await proxyMaster.receivedServerProxy(proxyMessage(counter: 4, type: .store, subType: .screen, data: NetworkCodableDataType(id: UUID(), type: .game, version: 0, data: Data([3])), remoteId: remoteId), connectionId: connectionId)
+        await proxyMaster.receivedServerProxy(proxyMessage(counter: 4, type: .update, subType: .photoList, data: NetworkCodableDataType(id: UUID(), type: .photo, version: 0, data: Data([3])), remoteId: remoteId), connectionId: connectionId)
 
         #expect(playerStoreAbstractionMock.calledRequest == 0)
         #expect(!rootPlayer.gameModel.gameRoster.players.contains { $0.id == remoteId })

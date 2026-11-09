@@ -5,9 +5,6 @@ import Foundation
 import os.log
 import AudioRPG
 import SpaceRPG
-#if os(macOS)
-#else
-#endif
 
 // MARK: - Send Messages
 
@@ -119,20 +116,7 @@ extension PlayerController {
         // carry their versioned canonical package.
         guard type != .update || updated.type != .table else { return }
 
-        let outgoingTimestamp: TimeInterval
-        if type == .update,
-           subType == .spaceTransform,
-           updated.type == .space {
-            guard let timestamp = root.spaceRoot.spaceGameControllable
-                .causalSpaceTransformTimestamp(
-                    itemId: updated.id,
-                    version: updated.effectiveAssetVersion
-                )
-            else { return }
-            outgoingTimestamp = timestamp
-        } else {
-            outgoingTimestamp = Date.now.timeIntervalSince1970
-        }
+        guard let outgoingTimestamp = root.outgoingTimestamp(type: type, subtype: subType, updated: updated) else { return }
 
         let outgoingCounter = counter ?? gameModel.nextOutgoingMessageCounter()
         Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
@@ -145,19 +129,8 @@ extension PlayerController {
             data: updated
         )
 
-        // Group transports do not echo a sender's own event, and the master does
-        // not republish a Space transform. Apply this exact versioned envelope
-        // optimistically so SpaceViewer observes its own timestamped transform
-        // as acknowledged and does not retry forever.
-        if networkData.type == .update,
-           networkData.subType == .spaceTransform,
-           networkData.data.type == .space {
-            _ = root.spaceRoot.spaceGameControllable.applySpaceTransform(
-                data: networkData.data,
-                counter: networkData.counter,
-                timestamp: networkData.timestamp
-            )
-        }
+        // A rejected own transform is still sent: the master decides about it.
+        _ = root.applyOwnSpaceTransform(networkData)
 
         let origin: GameMessageOrigin = root.gameModel.gameType == .proxy ? .proxy(nil) : .direct(nil)
         await root.statisticsModel.record(networkData, direction: .outgoing, origin: origin)
@@ -177,11 +150,7 @@ extension PlayerController {
         _ source: GameNetworkModel,
         excludingProxyConnection connectionId: ConnectionController.ID?
     ) async {
-        let isSupportedEvent = source.isDiceRollEvent ||
-            (source.type == .update &&
-             ((source.subType == .mapPin && source.data.type == .map) ||
-              (source.subType == .spaceTransform && source.data.type == .space)))
-        guard isSupportedEvent else { return }
+        guard source.groupEventKind != nil else { return }
 
         let outgoingCounter = gameModel.nextOutgoingMessageCounter()
         let remapped = root.gameModel.outgoingMessage(

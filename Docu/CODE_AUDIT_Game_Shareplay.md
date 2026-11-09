@@ -544,6 +544,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** ~65 lines of public surface exist only to be tested and keep retire/supersede looking like live features.
 - **Action:** Remove the six entry points, keep the internal `currentAttachments` bookkeeping, and rewrite the tests through `enqueue`/`cancelAll`.
 - **Severity:** Medium
+- **Status: partly fixed 2026-11-09 (the six entry points are gone: `retireCurrentAttachment` and `supersedePresentation` had no production caller at all, so the dead retire/supersede path and its tests are deleted; the "newer admitted presentation obsoletes the active add" behaviour is now tested through `enqueue`. `currentAttachment(for:)` and the `NetworkModules` `enqueue` overload remain as `#if DEBUG` test affordances taking a `SharePlayJournalSlot`; the audit asked to rewrite those tests through `enqueue`/`cancelAll` only, which would have hidden what they assert, so that part is not done).**
 
 ### 9.2 Test affordances living in production types
 - **Location:** `Modules/GameRPG/Controller/LogGameController.swift:32-37,66-70,163-169,184-189`; `Controller/MasterController+MapMessages.swift:20-32`; `Controller/MasterController+AudioMessages.swift:171-179`; `Master/HostingSessionStore.swift:105-109`; `Controller/PlayerControllerModel.swift:50-55`; `SharePlay/SharePlayJournalLedger.swift:61-63` (`publication(for:)`)
@@ -551,6 +552,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Production surface grows only for tests and the audit-reference comments hide that it is dead for the app.
 - **Action:** Move to `#if DEBUG` or a test-support extension; have tests call `CharacterRejectionPolicy` and the `origin:` overload directly; delete pass-throughs.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (the test-only members are `#if DEBUG` test affordances: `logModels`, `maxPlayers`, `updateMessage(counter:)`, `playerNames(for:)`, `handleMap(_:connectionId:)`, `waitForAudioDeliveries/Prefetch`, `waitForStoredWrites`, `characterRejections`; the three `CharacterRejectionPolicy` pass-throughs are deleted and the tests call the policy directly. `publication(for:)` of the ledger is production code now (`publication(in:)`, used for the late Journal attachment). A Release iOS build compiles).**
 
 ### 9.3 Preview and mock fixtures compile into release builds and sit in the wrong folders
 - **Location:** `Modules/GameRPG/Controller/PreviewData.swift:1-319`; `Modules/GameRPG/Model/MockData.swift:1-71`
@@ -558,6 +560,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Preview support ships in the release framework and blurs the MVC folder rule.
 - **Action:** Move to a `Preview/` folder or wrap in `#if DEBUG`, matching other modules' `MockData`.
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09 (`PreviewData.swift` and `MockData.swift` are in `Modules/GameRPG/Preview/`, the folder is in CLAUDE.md. They are not under `#if DEBUG`: the `#Preview` blocks across GameRPG compile in Release and use `mockData`, so wrapping the files broke the Release build).**
 
 ### 9.4 Space-transform stamping and local-apply logic is copied between master and player send paths
 - **Location:** `Modules/GameRPG/Controller/MasterController+Messaging.swift:198-211,288-304,316-325`; `Controller/PlayerController+SendMessages.swift:62-64,122-134,148-160`
@@ -565,6 +568,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** "Stamp causally, apply locally, ignore if rejected" lives in two places; a Space ordering change must be made twice.
 - **Action:** A small helper on the Space controllable ("prepare outgoing transform" + apply-after-envelope); both paths call it; keep the master-only canonical re-wrap in the master.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (`GameRoot+SpaceTransformSend.swift`: `outgoingTimestamp(type:subtype:updated:)` and `applyOwnSpaceTransform(_:)`; both `send` functions call them. The master's canonical re-wrap in `game(message:)` stays in the master. Covered by the existing Space message-flow tests, no new test).**
 
 ### 9.5 Group-event shape is checked three times with slightly different rules
 - **Location:** `Modules/GameRPG/Controller/PlayerController+SendMessages.swift:176-186`; `Model/GameNetworkModel+Shape.swift:32-42,60-83`; `Controller/MasterController+ProxyRouting.swift:30,37-93`
@@ -572,6 +576,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** A fourth group event or list module means edits in several places.
 - **Action:** Express the group-event kind once (an enum derived from the shape) used by the relay filter and the proxy router with one relay tail; add a subtype-only `isReportList` next to `isReportListEnvelope`.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (`GameNetworkModel.GroupEventKind`/`groupEventKind` is the single definition; `isPlayerGroupEvent`, `relayProxyGroupEvent` and the proxy router use it, the router has one relay tail; `isReportList` replaces the 190-character condition).**
 
 ### 9.6 `RPGMessageActionType.screen` is never sent
 - **Location:** `Modules/CoreRPG/Model/RPGMessageActionType.swift:9`; `Modules/GameRPG/Controller/MasterController+ProxyRouting.swift:30`
@@ -579,6 +584,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** A wire value from removed screen-routing machinery implying unsupported behaviour.
 - **Action:** Keep the raw value reserved for decoding old peers, drop the proxy special case and mark it deprecated (or remove it if no compatibility is wanted).
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (raw value 300 stays reserved and documented as having no producer, so no wire change and no `currentVersion` bump; the proxy drop filter for `.screen` is gone. A `.screen` message from a proxy is now forwarded to the master like any unknown subtype, where it is not admitted; the proxy-announcement test uses a photo list instead).**
 
 ### 9.7 Audio delivery retry is configured to zero retries, leaving dead branches
 - **Location:** `Modules/GameRPG/Controller/MasterControllerModel.swift:28-33,172-182`
@@ -586,6 +592,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Counter, key type and retry-branch callers are machinery for a switched-off behaviour.
 - **Action:** Collapse to a "failed once, give up" set per item+player, or document the constant as an intentional knob.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (`abandonedAudioDeliveries` set per item+player; the zero-retry counter, `maximumAudioDeliveryRetries` and the dead retry branch are removed).**
 
 ### 9.8 Master and player listener-restart logic is the same pattern written twice
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:345-369,373`; `Player/PlayerNetworkController.swift:555-573`
@@ -593,6 +600,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Backoff/health-reset rules can drift; the constant lives outside `GameLimits`.
 - **Action:** Extract a `ListenerRestartScheduler` value type owning the counter, healthy-run reset, delay and cancel-and-replace task; move the constant to `GameLimits`.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (`Network/ListenerRestartScheduler.swift` owns the counter, healthy-run reset and cancel-and-replace task for master and player; `listenerHealthyDuration` is in `GameLimits`. Behaviour change: the healthy run is measured from every listener start, the master measured it from the first start only, so after two minutes of uptime its pause never grew again; the player now resets after a healthy run as well. Tested in `ListenerRestartSchedulerTests`).**
 
 ### 9.9 Player Table/Weather handlers repeat the reveal/store skeleton of `handleFileBackedMessage`
 - **Location:** `Modules/GameRPG/Controller/PlayerController+Table.swift:8-52`; `PlayerController+Weather.swift:8-65`; `PlayerController+FileSupport.swift:15-58`
@@ -600,6 +608,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** The "held or request it" protocol has three implementations; a fix to the ok/request decision must be found three times.
 - **Action:** Generalise into a "held item" handler parameterised by hold check and reveal/store receivers; Table and Weather keep only their special cases.
 - **Severity:** Medium
+- **Status: partly fixed 2026-11-09 (Table and Weather share `answerHeldItem`; the file-backed handler already had hooks and was left as it is, so the "held or request it" decision still exists twice).**
 
 ### 9.10 `configureGroupSession` is 256 lines
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:175-430`
@@ -607,6 +616,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** The only function over 100 lines in scope; the loops are independent but cannot be read or tested alone.
 - **Action:** One `makeXTask(groupSession:sessionId:)` builder per stream; keep `configureGroupSession` as the orchestrator.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (`prepareForConfiguration`, `makeStateTask`, `makeParticipantTask`, `makeMessageTask`, `makeJournalTask`, `requestJoin`; `configureGroupSession` is the ~55-line orchestrator. Existing session-lifecycle tests pass; the streams are not testable alone yet).**
 
 ### 9.11 Oversized SharePlay files
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift` (730), `+ChunkedTransport.swift` (661), `SharePlayJournalPublicationQueue.swift` (614), `+SessionLifecycle.swift` (542), `SharePlayDeferredDeliveryQueue.swift` (509)
@@ -614,6 +624,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Support types (lines 20-417) dominate the controller file; the queue files hold several unrelated types each.
 - **Action:** Move the types between MARK 53 and 418 into their own files; split the publication queue at its MARKs (Slot, policy/admission, completion bookkeeping, queue); split the deferred queue into queue, retry-loop helpers and budget.
 - **Severity:** Medium
+- **Status: partly fixed 2026-11-09 (`RPGSharePlayController.swift` 806→407 lines: lifecycle, coordinator, participant-tracker and delivery types have their own files; `SharePlayJournalPublication.swift`, `SharePlayAttachmentLoadRetry.swift`, `SharePlayMessengerPayloadBudget.swift`, `GroupSessionCommandQueue.swift` split off; `+ChunkedTransport.swift` (734) and `+SessionLifecycle.swift` (~540) remain over 500 lines, the queue file is 522).**
 
 ### 9.12 Oversized network and message files with mixed concerns
 - **Location:** `Modules/GameRPG/Player/PlayerNetworkController.swift` (622, MARKs `257,340,490,547`), `Master/MasterNetworkController.swift` (572, MARKs `95,220,269,312,421`), `Controller/MasterController+Messaging.swift:30-330`, `Controller/PlayerController+MessageProcessing.swift:105-201` (`prepareForProcessing`, 97 lines), `Controller/MasterController+PresentationReplay.swift:18-109`, `Controller/MasterController+ValueMessages.swift:12-102`
@@ -621,6 +632,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Hard to navigate; the Space duplication (§9.4) is buried in `send`; a new feature flag edits the middle of a long function.
 - **Action:** Move the delegate/listener/browser extensions into `+ConnectionDelegate`/`+Listener`/`+Browser`; split `+Messaging` into `+Show`, `+PlayerMessages`, `+Send`; turn the gates into an ordered list of named predicates.
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09 (Master/PlayerNetworkController split into `+Listener`/`+Browser` extensions, `MasterController+Messaging` into `+Show`/`+PlayerMessages`/`+Messaging`, `prepareForProcessing` into three named gates. Not done: `+PresentationReplay` and `+ValueMessages`; members the extensions use changed from `private` to internal).**
 
 ### 9.13 Constants and size ceilings scattered outside `GameLimits` and inconsistent with it
 - **Location:** `Modules/GameRPG/SharePlay/SharePlaySingleQueuePackageSender.swift:79-86`; `SharePlayInboundByteBudget.swift:15-16`; `SharePlayPackageReceiver.swift:41`; `RPGSharePlayController.swift:529-533`; `+JournalAttachments.swift:24-25,215`; `Network/ConnectionThrottleTracker.swift:55-57`; `Network/ConnectionAttemptThrottle.swift:25-38`; `Master/MasterNetworkController.swift:316-320,373,523`; `Player/PlayerNetworkController.swift:77`; delay arrays at `SharePlayDeferredDeliveryQueue.swift:357-371`
@@ -628,6 +640,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** The relationships (a transport must admit at least one `maximumMessageBytes`; cf. §5.1, §5.11) are not enforced anywhere, so changing one value can silently break another.
 - **Action:** Group by area in `GameLimits` (`SharePlay`, `LAN`, `Throttle`), express SharePlay ceilings as functions of `maximumMessageBytes`, add one test asserting the relationships.
 - **Severity:** Medium
+- **Status: partly fixed 2026-11-09 (`GameLimits.SharePlay` and `GameLimits.Throttle` hold the Messenger ceilings, inbound budget, retry-delay arrays and throttle limits; the type-local statics now read them; `GameLimitsRelationshipTests` pins the relations. The SharePlay ceilings are still constants checked against `maximumMessageBytes`, not derived from it; the LAN-side per-type timeouts and `ConnectionThrottleTracker` internals stay where they are).**
 
 ### 9.14 Empty platform conditionals in five PlayerController files
 - **Location:** `Modules/GameRPG/Controller/PlayerController.swift:6-8`, `PlayerController+Control.swift:9-11`, `PlayerController+NetworkStoreDelegate.swift:11-13`, `PlayerController+MessageProcessing.swift:6-8`, `PlayerController+SendMessages.swift:8-10`
@@ -635,6 +648,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Leftovers of removed platform code suggesting a split that no longer exists.
 - **Action:** Delete all five.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (all five empty blocks deleted).**
 
 ### 9.15 Leftover "repair" vocabulary from the removed repair machinery
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayDeferredDeliveryQueue.swift:128-135` (case `.repair`),`:329-331` (`isRepair`),`:220-240,268,300`; `Controller/MasterController+ProxyRouting.swift:132-134,207` (`proxyRepairData`); `SharePlay/SharePlayJournalLedger.swift:21-26`; `SharePlayJournalPublicationQueue.swift:31`; `Controller/PlayerController+Weather.swift:46`; `PlayerController+Map.swift:172`; `MasterController+NetworkStoreDelegate.swift:274` (24 occurrences)
@@ -642,6 +656,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** The name implies the removed handshake and could invite rebuilding it.
 - **Action:** Rename to "requested delivery"/"answer" (`.answer`, `isAnswer`, `proxyAnswerData`); update comments. Do not re-add any routing, admission or repair logic.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (`.answer`/`isAnswer`/`proxyAnswerData`, comments reworded; a few local variable names and test names in the SharePlay tests still say "repair").**
 
 ### 9.16 Stale and historical comments dominate doc comments
 - **Location:** 294 `CODE_AUDIT*` references in scope, e.g. `Modules/GameRPG/Model/GameLimits.swift:7-60`, `SharePlay/SharePlayDeferredDeliveryQueue.swift:134-152`, `SharePlay/RPGSharePlayController+SessionLifecycle.swift:417-427`, `SharePlay/SharePlayJournalLedger.swift:18-32`; comments naming deleted types at `Network/PhysicalIdentityDenylist.swift:10-18` (`SharePlayPlayerJournalAdmission`) and `Network/ConnectionAttemptThrottle.swift:42-47` (`SharePlayMapRecoveryTracker`); wrong mechanism named at `SharePlay/GameShareStateModel.swift:6-10` (`withObservationTracking` vs the actual `Observations` sequence, `RPGSharePlayController.swift:614-631`)
@@ -649,6 +664,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Audit documents get archived; the narrative hides the current rule and points at removed machinery.
 - **Action:** One short statement of the current rule per symbol; move history to git/audit docs; keep an audit reference only where the reason is not obvious.
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09 (the cited places: `GameLimits`, the deferred queue, the ledger, `PhysicalIdentityDenylist`, `ConnectionAttemptThrottle`, `GameShareStateModel` and the comments of the code touched in §9. About 250 other `CODE_AUDIT` references are untouched, as agreed).**
 
 ### 9.17 `GroupActivityManager` is a wrapper whose only job is two calls
 - **Location:** `Modules/GameRPG/Table3D/GroupActivityManager.swift:8-23`
@@ -656,6 +672,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Object lifetime is used to run a side effect.
 - **Action:** Make `tabletopGame` a `let`, or fold attach/detach into `RPGSharePlayController` called from the view lifecycle and delete the class.
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09 (`tabletopGame` is a `let`, the class doc describes the lifetime tie, `@Observable` dropped; the class stays. visionOS build checked).**
 
 ### 9.18 Duplicated `SharePlayJournalSlot` / `NetworkModules` overload pairs in queue and ledger
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayJournalLedger.swift:61-139`; `SharePlayJournalPublicationQueue.swift:274-338`
@@ -663,6 +680,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** `(module, isPlaylist)` *is* a slot; adding a slot dimension touches ~10 signatures.
 - **Action:** Take a `SharePlayJournalSlot` (and an item/version key) everywhere; build it once at the `RPGSharePlayController` call site.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (`SharePlayJournalLedger.Show` carries slot, item, version and counter; built once per message in `RPGSharePlayController`; the queue has one slot-based API).**
 
 ### 9.19 `.local` message origin is never produced, so its branches are dead
 - **Location:** `Modules/GameRPG/Controller/PlayerController+MessageProcessing.swift:41,208,266,284`; `Network/GameNetworkController+Delivery.swift:96-100`; `Controller/PlayerController+NetworkStoreDelegate.swift:87-89`
@@ -670,6 +688,7 @@ Clean results first: **zero** `TODO/FIXME/HACK/XXX/#warning`, **zero** `#if fals
 - **Why:** Either those rules are needed and missing for the GM's own player (it answers upstream and forwards to proxies; statistics count local traffic as network traffic) or the branches are dead and misleading.
 - **Action:** Decide: deliver the co-located player's messages as `.local`, or remove the branches.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (decision: remove. `GameMessageOrigin.local` and its branches are gone; the statistics origin `.local` stays for stored data).**
 
 ---
 

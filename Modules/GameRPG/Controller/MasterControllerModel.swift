@@ -50,14 +50,11 @@ final class MasterControllerModel {
     /// itself every `audioPlayRetryDelay` for the rest of the session.
     /// See CODE_AUDIT_17 §3.6.
     var audioPlayRetryAttempts: [UUID: Int] = [:]
-    /// How often a player failed to import an audio package, per item. See
-    /// `recordAudioDeliveryFailure`.
-    private var audioDeliveryFailures: [AudioDeliveryKey: Int] = [:]
-    /// Times the master sends an audio package again to a player that failed to import it. None:
-    /// a package a player could not load through the Journal (it stayed suspended until the
-    /// deadline) stalled again when sent again, and held up the player's other downloads. The
-    /// play goes on without that player.
-    static let maximumAudioDeliveryRetries = 0
+    /// The players given up on for an audio item. A package is not sent again to a player that
+    /// failed to import it: one the player could not load through the Journal (it stayed
+    /// suspended until the deadline) stalled again when sent again, and held up the player's
+    /// other downloads. The play goes on without that player.
+    private var abandonedAudioDeliveries: Set<AudioDeliveryKey> = []
 
     private struct AudioDeliveryKey: Hashable, Sendable {
         let itemId: UUID
@@ -186,7 +183,7 @@ final class MasterControllerModel {
     /// Forgets what was kept for a player that left.
     func forget(playerId: UUID) {
         listSequence.forget(senderId: playerId)
-        audioDeliveryFailures = audioDeliveryFailures.filter { $0.key.playerId != playerId }
+        abandonedAudioDeliveries = abandonedAudioDeliveries.filter { $0.playerId != playerId }
         // Every start of a game mints a new sender id, so a player that rejoins would meet its own
         // old binding on its Character and be refused for good. See CODE_AUDIT_Audio2 §5.2.
         characterOwnership[playerId] = nil
@@ -198,26 +195,18 @@ final class MasterControllerModel {
         pendingValueUpdatesAwaitingOwnership.removeValue(forKey: playerId)
     }
 
-    /// Counts a failed import of `itemId` on `playerId`. Returns whether the package should be
-    /// sent again (`false`: the player is given up on, see `isAudioDeliveryAbandoned`).
-    func recordAudioDeliveryFailure(itemId: UUID, playerId: UUID) -> Bool {
-        let key = AudioDeliveryKey(itemId: itemId, playerId: playerId)
-        let failures = (audioDeliveryFailures[key] ?? 0) + 1
-        audioDeliveryFailures[key] = failures
-        return failures <= Self.maximumAudioDeliveryRetries
-    }
-
     func isAudioDeliveryAbandoned(itemId: UUID, playerId: UUID) -> Bool {
-        (audioDeliveryFailures[AudioDeliveryKey(itemId: itemId, playerId: playerId)] ?? 0) > Self.maximumAudioDeliveryRetries
+        abandonedAudioDeliveries.contains(AudioDeliveryKey(itemId: itemId, playerId: playerId))
     }
 
-    /// Gives up on `playerId` for `itemId` (the pending play's deadline passed).
+    /// Gives up on `playerId` for `itemId`: its import failed, or the pending play's deadline
+    /// passed.
     func abandonAudioDelivery(itemId: UUID, playerId: UUID) {
-        audioDeliveryFailures[AudioDeliveryKey(itemId: itemId, playerId: playerId)] = Self.maximumAudioDeliveryRetries + 1
+        abandonedAudioDeliveries.insert(AudioDeliveryKey(itemId: itemId, playerId: playerId))
     }
 
     func resetAudioDeliveryFailures() {
-        audioDeliveryFailures.removeAll()
+        abandonedAudioDeliveries.removeAll()
     }
 
     func canApplyList(_ module: NetworkModules, from playerId: UUID, counter: Int) -> Bool {

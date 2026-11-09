@@ -12,8 +12,8 @@ import Foundation
 /// See CODE_AUDIT_21 §6.5.
 @MainActor
 struct SharePlayInboundByteBudget {
-    static let window: Duration = .seconds(60)
-    static let bytesPerSender = 512 * ByteUnit.mebibyte
+    static let window = GameLimits.SharePlay.inboundWindow
+    static let bytesPerSender = GameLimits.SharePlay.inboundBytesPerSender
 
     private var received: [UUID: [(at: ContinuousClock.Instant, count: Int)]] = [:]
 

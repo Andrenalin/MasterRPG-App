@@ -169,7 +169,7 @@ extension PlayerController {
     /// `PlayerController` is the game master's own co-located mirror,
     /// talking to itself. `root.mapRoot` is this device's single source of
     /// truth for the map regardless of any message describing it, so this
-    /// never imports, compares generations, or requests a repair: it only
+    /// never imports, compares generations, or requests the map again: it only
     /// ever updates this controller's own presentation bookkeeping
     /// (`gameUpdateType`, the current map, visuals) to match what the
     /// master already broadcast.

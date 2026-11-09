@@ -1051,7 +1051,7 @@ struct SharePlayPackageTransportTests {
         await thirdPublication.value
 
         #expect(recorder.attachmentIds == [firstMap.id, secondMap.id, thirdMap.id])
-        #expect(queue.currentAttachment(for: .map)?.id == thirdMap.id)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.map))?.id == thirdMap.id)
 
         await removalGate.releaseAll()
         await Task.yield()
@@ -1094,82 +1094,30 @@ struct SharePlayPackageTransportTests {
         // Then
         #expect(admissions == [.enqueued, .enqueued, .enqueued, .rejected, .rejected])
         #expect(recorder.attachmentIds == attachments.prefix(3).map(\.id))
-        #expect(queue.currentAttachment(for: .map)?.id == attachments[2].id)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.map))?.id == attachments[2].id)
         #expect(queue.outstandingPublicationCount == 0)
         #expect(queue.outstandingPublicationByteCount == 0)
         #expect(queue.outstandingCleanupCount <= 2)
 
-        // A Messenger fallback can still retire the stale current attachment
-        // through one bounded emergency slot for this module. Journal stays
-        // degraded until that retirement finishes.
-        let emergencyRetired = queue.retireCurrentAttachment(for: .map) { attachment in
-            await removalGate.suspendRemoval(of: attachment.id)
-            return true
-        }
-        await removalGate.waitUntilRemovalStarts(for: attachments[2].id)
-        let journalWhileRetiring = queue.enqueue(for: .map) {
-            TestJournalAttachment(id: UUID())
-        } remove: { _ in true }
-        #expect(emergencyRetired)
-        #expect(queue.currentAttachment(for: .map) == nil)
-        #expect(queue.outstandingCleanupCount == 3)
-        #expect(journalWhileRetiring.admission == .rejected)
-
         await removalGate.releaseAll()
         await Task.yield()
         queue.cancelAll()
     }
 
-    @Test("Messenger fallback retires the stale current Journal attachment")
-    func messengerFallbackRetiresCurrentJournalAttachment() async {
-        // Given
+    @Test("a newer admitted presentation makes the active Journal add obsolete")
+    func newerPresentationMakesActiveAddObsolete() async {
+        // Given - A is current and B is suspended inside Journal.add. C is admitted behind B.
         let queue = SharePlayJournalPublicationQueue<TestJournalAttachment>(
-            maxOutstandingCleanups: 1
-        )
-        let removalGate = JournalRemovalGate()
-        let current = TestJournalAttachment(id: UUID())
-        let publication = queue.enqueue(for: .photo) {
-            current
-        } remove: { _ in true }
-        await publication.value
-
-        // When
-        let retired = queue.retireCurrentAttachment(for: .photo) { attachment in
-            await removalGate.suspendRemoval(of: attachment.id)
-            return true
-        }
-        await removalGate.waitUntilRemovalStarts(for: current.id)
-
-        // Then - the stale attachment is no longer advertised as current even
-        // while the system removal is still suspended, and cleanup stays owned.
-        #expect(retired)
-        #expect(queue.currentAttachment(for: .photo) == nil)
-        #expect(queue.outstandingCleanupCount == 1)
-        let replacementAdmission = queue.enqueue(for: .photo) {
-            TestJournalAttachment(id: UUID())
-        } remove: { _ in true }.admission
-        #expect(replacementAdmission == .enqueued)
-
-        await removalGate.releaseAll()
-        await Task.yield()
-        queue.cancelAll()
-    }
-
-    @Test("a newer Messenger fallback supersedes an active Journal presentation")
-    func messengerFallbackSupersedesActiveJournalPresentation() async {
-        // Given - A is current and B is suspended inside Journal.add. With one
-        // publication slot, C cannot enter Journal and must use Messenger.
-        let queue = SharePlayJournalPublicationQueue<TestJournalAttachment>(
-            maxOutstandingPublications: 1,
-            maxOutstandingBytes: 4,
-            maxOutstandingCleanups: 1
+            maxOutstandingPublications: 2,
+            maxOutstandingBytes: 8,
+            maxOutstandingCleanups: 3
         )
         let publicationGate = JournalPublicationGate()
         let removalGate = JournalRemovalGate()
         let commitRecorder = JournalPublicationRecorder()
         let current = TestJournalAttachment(id: UUID())
         let active = TestJournalAttachment(id: UUID())
-        let rejected = TestJournalAttachment(id: UUID())
+        let newest = TestJournalAttachment(id: UUID())
         let first = queue.enqueue(
             for: .photo,
             byteCount: 4,
@@ -1198,36 +1146,30 @@ struct SharePlayPackageTransportTests {
         }
         await publicationGate.waitUntilFirstPublicationStarts()
 
-        // When - merely attempting C advances the presentation generation. The
-        // controller's fallback retirement removes A while B is still active.
+        // When - C is admitted while B is active, and B's add returns afterwards.
         let third = queue.enqueue(
             for: .photo,
             byteCount: 4,
             policy: .latestWins
         ) {
-            rejected
+            newest
         } commit: { attachment in
             commitRecorder.record(attachment)
-        } remove: { _ in true }
-        queue.supersedePresentation(for: .photo)
-        let retired = queue.retireCurrentAttachment(for: .photo) { attachment in
+        } remove: { attachment in
             await removalGate.suspendRemoval(of: attachment.id)
             return true
         }
-        await removalGate.waitUntilRemovalStarts(for: current.id)
         await publicationGate.resumeFirstPublication()
         await second.value
         await removalGate.waitUntilRemovalStarts(for: active.id)
+        await third.value
 
-        // Then - B's late attachment is cleaned through the bounded emergency
-        // slot and never becomes current or runs commit/cache/tracker effects.
-        #expect(third.admission == .rejected)
-        #expect(retired)
-        #expect(queue.currentAttachment(for: .photo) == nil)
-        #expect(commitRecorder.attachmentIds == [current.id])
+        // Then - B's late attachment is removed and never becomes current or runs the commit
+        // effects; C does.
+        #expect(third.admission == .enqueued)
+        #expect(commitRecorder.attachmentIds == [current.id, newest.id])
         #expect(!commitRecorder.attachmentIds.contains(active.id))
-        #expect(!commitRecorder.attachmentIds.contains(rejected.id))
-        #expect(queue.outstandingCleanupCount == 2)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.photo))?.id == newest.id)
 
         await removalGate.releaseAll()
         await Task.yield()
@@ -1289,14 +1231,14 @@ struct SharePlayPackageTransportTests {
         await firstPublication.value
         await newestPublication.value
         #expect(recorder.attachmentIds == [first.id, newest.id])
-        #expect(queue.currentAttachment(for: .photo)?.id == newest.id)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.photo))?.id == newest.id)
         #expect(queue.outstandingPublicationCount == 0)
         #expect(queue.outstandingPublicationByteCount == 0)
         queue.cancelAll()
     }
 
-    @Test("FIFO Journal repairs reject overload without replacing accepted work")
-    func fifoJournalRepairsAreBoundedWithoutCoalescing() async {
+    @Test("FIFO Journal answers reject overload without replacing accepted work")
+    func fifoJournalAnswersAreBoundedWithoutCoalescing() async {
         // Given
         let queue = SharePlayJournalPublicationQueue<TestJournalAttachment>(
             maxOutstandingPublications: 2,
@@ -1389,7 +1331,7 @@ struct SharePlayPackageTransportTests {
         #expect(queue.outstandingPublicationCount == 0)
         #expect(queue.outstandingPublicationByteCount == 0)
         #expect(queue.outstandingCleanupCount == 0)
-        #expect(queue.currentAttachment(for: .space)?.id == nil)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.space))?.id == nil)
 
         // A cancelled worker that unwinds later cannot clobber the next
         // generation's worker or accounting.
@@ -1404,7 +1346,7 @@ struct SharePlayPackageTransportTests {
         await publicationGate.resumeFirstPublication()
         await replacementPublication.value
         #expect(replacementPublication.admission == .enqueued)
-        #expect(queue.currentAttachment(for: .space)?.id == replacement.id)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.space))?.id == replacement.id)
         #expect(queue.outstandingPublicationCount == 0)
         #expect(queue.outstandingPublicationByteCount == 0)
         queue.cancelAll()
@@ -1447,7 +1389,7 @@ struct SharePlayPackageTransportTests {
         // never committed or advertised as the current presentation.
         #expect(await discardRecorder.recordedCount(for: lateAttachment.id) == 1)
         #expect(commitRecorder.attachmentIds.isEmpty)
-        #expect(queue.currentAttachment(for: .photo) == nil)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.photo)) == nil)
         #expect(queue.outstandingCleanupCount == 0)
     }
 
@@ -1669,7 +1611,7 @@ struct SharePlayPackageTransportTests {
         #expect(limiter.activeCount == 0)
     }
 
-    @Test("deferred delivery coalesces presentations and retains targeted repairs")
+    @Test("deferred delivery coalesces presentations and retains targeted answers")
     func deferredDeliveryIsBoundedAndPurposeAware() {
         // Given
         let sessionId = UUID()
@@ -1879,8 +1821,8 @@ struct SharePlayPackageTransportTests {
         #expect(receiver.cumulativeIncompleteByteCount == 8)
     }
 
-    @Test("a targeted repair evicts deferred presentations before it is rejected")
-    func targetedRepairEvictsDeferredPresentations() {
+    @Test("a targeted answer evicts deferred presentations before it is rejected")
+    func targetedAnswerEvictsDeferredPresentations() {
         // Given
         let sessionId = UUID()
         var queue = SharePlayDeferredDeliveryQueue(

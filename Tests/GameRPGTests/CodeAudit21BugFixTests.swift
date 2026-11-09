@@ -41,8 +41,8 @@ struct CodeAudit21BugFixTests {
         #expect(!model.recordCharacterRejection(version: 7, now: start))
         // Not sent again before the retry delay is over.
         #expect(!model.canSendCharacter)
-        #expect(PlayerControllerModel.characterRetryDelay(afterRejection: 1) == .seconds(5))
-        #expect(PlayerControllerModel.characterRetryDelay(afterRejection: 2) == .seconds(20))
+        #expect(CharacterRejectionPolicy.retryDelay(afterRejection: 1) == .seconds(5))
+        #expect(CharacterRejectionPolicy.retryDelay(afterRejection: 2) == .seconds(20))
 
         #expect(!model.recordCharacterRejection(version: 7, now: start))
         // The last allowed rejection is the one the player is told about, once.
@@ -58,7 +58,7 @@ struct CodeAudit21BugFixTests {
     @Test("A new connection forgets earlier Character rejections")
     func lostConnectionResetsRejections() {
         let model = PlayerControllerModel()
-        for _ in 0..<PlayerControllerModel.maximumCharacterRejections {
+        for _ in 0..<CharacterRejectionPolicy.maximumRejections {
             _ = model.recordCharacterRejection(version: 1)
         }
         #expect(!model.mayAnnounceCharacter(version: 1))

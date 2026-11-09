@@ -62,17 +62,17 @@ extension RPGSharePlayController {
         }
 
         let moduleKey = model.data.type
-        // An audio playlist has its own slot: its first track is shown right after it.
-        let slot = SharePlayJournalSlot(moduleKey, isPlaylist: isPlaylist && moduleKey == .audio)
-        let itemId = model.data.id
-        let version = model.data.effectiveAssetVersion
-        let counter = model.counter
+        let show = SharePlayJournalLedger.Show(model: model, isPlaylist: isPlaylist)
+        let slot = show.slot
+        let itemId = show.itemId
+        let version = show.version
+        let counter = show.counter
         let attachmentSize = Self.formattedByteCount(attachmentData.count)
-        guard journalLedger.shouldUpload(module: moduleKey, isPlaylist: slot.isPlaylist, itemId: itemId, version: version, counter: counter, now: now) else {
+        guard journalLedger.shouldUpload(show, now: now) else {
             Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) \(moduleKey.token, privacy: .public) \(itemId, privacy: .public) is already published")
             return .alreadyPublished
         }
-        journalLedger.willUpload(module: moduleKey, isPlaylist: slot.isPlaylist, itemId: itemId, version: version, counter: counter, now: now)
+        journalLedger.willUpload(show, now: now)
 
         let metadata = Self.journalMetadata(for: model)
         // A package Messenger cannot carry has no fallback: a timed-out add of it is awaited,
@@ -103,11 +103,7 @@ extension RPGSharePlayController {
                 guard let self else { return true }
                 if exceedsMessenger, self.adoptLateJournalAttachment(
                     lateAttachment,
-                    module: moduleKey,
-                    isPlaylist: slot.isPlaylist,
-                    itemId: itemId,
-                    version: version,
-                    counter: counter,
+                    show: show,
                     sessionId: sessionId
                 ) {
                     return true
@@ -152,21 +148,14 @@ extension RPGSharePlayController {
             }
 
             guard self.sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
-            self.journalUploadFailed(model, isPlaylist: slot.isPlaylist, sessionId: sessionId)
+            self.journalUploadFailed(model, show: show, sessionId: sessionId)
             return nil
         } commit: { [weak self] result in
             guard let self,
                   self.sessionLifecycle.isCurrent(sessionId: sessionId)
             else { return }
             self.gameModel?.attachments[moduleKey] = result
-            self.journalLedger.didUpload(
-                module: moduleKey,
-                isPlaylist: slot.isPlaylist,
-                itemId: itemId,
-                version: version,
-                counter: counter,
-                attachmentId: result.id
-            )
+            self.journalLedger.didUpload(show, attachmentId: result.id)
             self.recordJournalTransport(state: .succeeded, byteCount: attachmentData.count, for: model)
             let total = Self.formattedDuration(enqueuedAt.duration(to: .now))
             Logger.sharePlay.debug("Journal ✓: message \(counter, privacy: .public) added attachment \(result.id, privacy: .public), size \(attachmentSize, privacy: .public), \(slot.token, privacy: .public) \(itemId, privacy: .public), \(total, privacy: .public) since queued")
@@ -182,7 +171,7 @@ extension RPGSharePlayController {
         }
         if publication.admission == .rejected {
             Logger.sharePlay.warning("Journal queue full: falling back to chunked transport for message \(counter, privacy: .public)")
-            return journalUploadFailed(model, isPlaylist: slot.isPlaylist, sessionId: sessionId) ? .sentByMessenger : .unavailable
+            return journalUploadFailed(model, show: show, sessionId: sessionId) ? .sentByMessenger : .unavailable
         }
         return .uploading
     }
@@ -190,15 +179,9 @@ extension RPGSharePlayController {
     /// The Journal did not take the package: frees its ledger slot and sends the same message
     /// through Messenger, which carries smaller packages.
     @discardableResult
-    private func journalUploadFailed(_ model: GameNetworkModel, isPlaylist: Bool, sessionId: UUID) -> Bool {
+    private func journalUploadFailed(_ model: GameNetworkModel, show: SharePlayJournalLedger.Show, sessionId: UUID) -> Bool {
         recordJournalTransport(state: .failed, byteCount: model.data.data?.count ?? 0, for: model)
-        journalLedger.uploadFailed(
-            module: model.data.type,
-            isPlaylist: isPlaylist,
-            itemId: model.data.id,
-            version: model.data.effectiveAssetVersion,
-            counter: model.counter
-        )
+        journalLedger.uploadFailed(show)
         guard enqueueChunkedSend(model, sessionId: sessionId, participantId: nil) else {
             Logger.sharePlay.error("SharePlay lost message \(model.counter, privacy: .public) (\(model.data.type.token, privacy: .public)): the Journal did not take it and Messenger cannot carry it")
             return false
@@ -210,30 +193,19 @@ extension RPGSharePlayController {
     /// long as it still is the publication the ledger waits for. Returns whether it was kept.
     private func adoptLateJournalAttachment(
         _ attachment: GroupSessionJournal.Attachment,
-        module: NetworkModules,
-        isPlaylist: Bool,
-        itemId: UUID,
-        version: Int,
-        counter: Int,
+        show: SharePlayJournalLedger.Show,
         sessionId: UUID
     ) -> Bool {
         guard sessionLifecycle.isCurrent(sessionId: sessionId),
-              let publication = journalLedger.publication(for: module, isPlaylist: isPlaylist),
+              let publication = journalLedger.publication(in: show.slot),
               publication.attachmentId == nil,
-              publication.itemId == itemId,
-              publication.version == version,
-              publication.counter == counter
+              publication.itemId == show.itemId,
+              publication.version == show.version,
+              publication.counter == show.counter
         else { return false }
-        gameModel?.attachments[module] = attachment
-        journalLedger.didUpload(
-            module: module,
-            isPlaylist: isPlaylist,
-            itemId: itemId,
-            version: version,
-            counter: counter,
-            attachmentId: attachment.id
-        )
-        Logger.sharePlay.debug("Journal ✓: kept the late attachment \(attachment.id, privacy: .public) of message \(counter, privacy: .public)")
+        gameModel?.attachments[show.slot.module] = attachment
+        journalLedger.didUpload(show, attachmentId: attachment.id)
+        Logger.sharePlay.debug("Journal ✓: kept the late attachment \(attachment.id, privacy: .public) of message \(show.counter, privacy: .public)")
         return true
     }
 
@@ -745,5 +717,18 @@ extension RPGSharePlayController {
         } else {
             groupSession?.leave()
         }
+    }
+}
+
+extension SharePlayJournalLedger.Show {
+    /// The show a message delivers. An audio playlist has its own slot: its first track is
+    /// shown right after it.
+    init(model: GameNetworkModel, isPlaylist: Bool) {
+        self.init(
+            slot: SharePlayJournalSlot(model.data.type, isPlaylist: isPlaylist && model.data.type == .audio),
+            itemId: model.data.id,
+            version: model.data.effectiveAssetVersion,
+            counter: model.counter
+        )
     }
 }

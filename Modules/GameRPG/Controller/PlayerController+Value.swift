@@ -35,7 +35,7 @@ extension PlayerController {
             // ended in another full upload of a package the master cannot import.
             // See CODE_AUDIT_21 §5.5.
             if gameModel.recordCharacterRejection(version: model.data.version) {
-                Logger.networking.error("PlayerController: Master failed to import Character \(characterId, privacy: .private) \(PlayerControllerModel.maximumCharacterRejections, privacy: .public) times; no longer sending it")
+                Logger.networking.error("PlayerController: Master failed to import Character \(characterId, privacy: .private) \(CharacterRejectionPolicy.maximumRejections, privacy: .public) times; no longer sending it")
                 let name = root.characterRoot.itemControllable.nameSync(itemId: characterId)
                 root.logGameController.addNote(String(
                     localized: "The game master's device did not accept the Character \"\(name)\".",

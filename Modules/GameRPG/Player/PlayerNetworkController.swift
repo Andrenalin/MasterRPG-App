@@ -22,7 +22,7 @@ final class PlayerNetworkController: Sendable {
     // unknown attempt.
     // See CODE_AUDIT §9.7 for why this is the shared `ConnectionThrottleTracker`
     // rather than a hand-rolled throttle + pending-sources dictionary here.
-    private let connectionThrottle = ConnectionThrottleTracker()
+    let connectionThrottle = ConnectionThrottleTracker()
 
     /// Resolved by `readyConnection(for:)` (true) or by the first-attempt
     /// branch of `failed(with:for:)` (false), and drained defensively by
@@ -62,18 +62,17 @@ final class PlayerNetworkController: Sendable {
     /// True from the moment the master connection is lost until a reconnect authenticates (or
     /// the controller stops): the fallback listener must survive failed connection attempts
     /// while this is set. See CODE_AUDIT_Join §5.1.
-    private var isAwaitingReconnect = false
-    private var listenerRetryTask: Task<Void, Never>?
-    private var listenerRetryAttempt = 0
+    var isAwaitingReconnect = false
+    var listenerRestarts = ListenerRestartScheduler()
     private var reconnectDeadlineTask: Task<Void, Never>?
     /// When the reconnect attempt that is waiting for its handshake was accepted.
-    private var reconnectAttemptStart: ContinuousClock.Instant?
+    var reconnectAttemptStart: ContinuousClock.Instant?
     /// See `GameLimits.reconnectHandshakeGrace`; a property so a test need not wait for it.
     var reconnectHandshakeGrace = GameLimits.reconnectHandshakeGrace
     /// Bumped by every `stop()`. `restart(connection:)` suspends before it installs the new
     /// connection and compares this afterwards, so a connection accepted for a session that
     /// was stopped meanwhile is dropped instead of installed. See CODE_AUDIT_21 §3.3.
-    private var stopGeneration = 0
+    var stopGeneration = 0
 
     /// Arguments: name, supporter tier, service type, passcode, session id, delegate.
     private let makeListener: @MainActor (String, SupporterTier, GameServiceType, String, String?, any ListenerManagerDelegate) -> any ListenerManaging
@@ -199,9 +198,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         stopGeneration += 1
         resolvePendingConnection(success: false)
         isAwaitingReconnect = false
-        listenerRetryTask?.cancel()
-        listenerRetryTask = nil
-        listenerRetryAttempt = 0
+        listenerRestarts.reset()
         reconnectDeadlineTask?.cancel()
         reconnectDeadlineTask = nil
         let connectionController = networkModel.connectionController
@@ -239,7 +236,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
 
 // MARK: - Player Connection Handling
 
-private extension PlayerNetworkController {
+extension PlayerNetworkController {
     func start(model: PlayerBrowserModel) async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Start with browser model")
         let passcode = networkModel.passcode
@@ -317,6 +314,7 @@ private extension PlayerNetworkController {
         let manager = makeListener(networkModel.name, networkModel.supporterTier, fallbackServiceType, networkModel.passcode, networkModel.sessionId, self)
         networkModel.reset(listener: manager)
         manager.startListening()
+        listenerRestarts.listenerStarted()
     }
 }
 
@@ -393,7 +391,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         }
         Logger.playerNetworkController.debug("PlayerNetworkController: Lost connection to server, start own listener")
         isAwaitingReconnect = true
-        listenerRetryAttempt = 0
+        listenerRestarts.reset()
         await startPlayerServer()
         await delegate?.playerLostMaster()
     }
@@ -408,8 +406,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         // The master authenticated: the fallback listener has done its job. It is retired here,
         // not when a connection first arrives. See CODE_AUDIT_Join §5.1.
         isAwaitingReconnect = false
-        listenerRetryTask?.cancel()
-        listenerRetryTask = nil
+        listenerRestarts.cancel()
         reconnectDeadlineTask?.cancel()
         reconnectDeadlineTask = nil
         let fallbackListener = networkModel.listener
@@ -429,7 +426,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
     }
 }
 
-private extension PlayerNetworkController {
+extension PlayerNetworkController {
     /// Takes the master's session from its current browser entry. The join may have used an
     /// entry whose TXT record had not resolved yet; the reconnect service must still carry the
     /// session, or the restarted master never redials this player. Keeps the known session when
@@ -467,136 +464,6 @@ private extension PlayerNetworkController {
     func stop(connection id: ConnectionController.ID) async {
         guard isCurrentConnection(id) else { return }
         await stop()
-    }
-}
-
-// MARK: - Observe BrowserManager for Lost Connection
-
-extension PlayerNetworkController {
-    /// One stored `Observations` loop instead of re-arming `withObservationTracking` per
-    /// change. It delivers every change for the task's lifetime, so a removal landing while
-    /// an earlier batch is still being torn down is not missed. See CODE_AUDIT_18 §3.21.
-    func observeRemovedConnection() {
-        guard networkModel.model != nil else { return }
-        let browser = browserManager
-        networkModel.observeRemovalTask?.cancel()
-        // The sequence holds the browser weakly and ends with it, so a controller released
-        // without `stop()` cannot keep the browser and its Bonjour browse alive.
-        // See CODE_AUDIT_20 §3.5.
-        let changes = Observations<[BrowserGameModel], Never>.untilFinished { [weak browser] in
-            guard let browser else { return .finish }
-            return .next(browser.removed)
-        }
-        networkModel.observeRemovalTask = Task { @MainActor [weak self] in
-            for await removed in changes {
-                guard let self, !Task.isCancelled else { return }
-                // `takeRemoved()` below empties the list, which is itself a change.
-                guard !removed.isEmpty else { continue }
-                await self.checkForRemoval()
-            }
-        }
-    }
-
-    func checkForRemoval() async {
-        guard networkModel.model != nil else { return }
-        // Re-arm `withObservationTracking` before processing the current
-        // batch, not after. `onChange` fires once and must be re-registered
-        // before the next mutation to be seen at all; the async teardown
-        // below (`removedConnection` → `lostConnection` → several actor hops
-        // and `stop()`'s own connection teardown) can take long enough that a
-        // second Bonjour-removal change lands while still in flight — arming
-        // late meant that change was missed until some later, unrelated
-        // mutation happened to re-trigger observation. A second
-        // `checkForRemoval()` scheduled by that re-registration racing this
-        // one's own loop is safe: `lostConnection(for:)` is already
-        // idempotent via `markLostIfCurrent`. See CODE_AUDIT_Reconnect §3.5.
-        let removedGames = browserManager.takeRemoved()
-        for game in removedGames {
-            let endpoint = browserManager.nwEndpoint(for: game)
-            await removedConnection(endpoint: endpoint)
-        }
-    }
-
-    func removedConnection(endpoint: NWEndpoint) async {
-        guard let model = networkModel.model else { return }
-        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription, privacy: .private)")
-        if model.endpoint == endpoint {
-            guard let id = networkModel.connectionController?.id else { return }
-            await lostConnection(for: id)
-        }
-    }
-}
-
-// MARK: - ListenerManagerDelegate
-
-extension PlayerNetworkController: ListenerManagerDelegate {
-    @MainActor
-    func listenerReady() async {}
-
-    /// The fallback listener failed. While the player is still waiting for its master it is
-    /// recreated after a pause; only when that keeps failing (or there is nothing to wait for)
-    /// does the controller stop. See CODE_AUDIT_Join §5.3.
-    @MainActor
-    func listenerCancelled() async {
-        Logger.playerNetworkController.debug("PlayerNetworkController: Listener cancelled")
-        networkModel.reset(listener: nil)
-        guard isAwaitingReconnect, networkModel.playerConnectionId != nil,
-              GameLimits.allowsListenerRestart(attempt: listenerRetryAttempt) else {
-            await stop()
-            return
-        }
-        let delay = GameLimits.networkRestartDelay(forAttempt: listenerRetryAttempt)
-        listenerRetryAttempt += 1
-        listenerRetryTask?.cancel()
-        listenerRetryTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, let self, self.isAwaitingReconnect, self.networkModel.listener == nil else { return }
-            await self.startPlayerServer()
-        }
-    }
-
-    @MainActor
-    func listenerNewConnection(_ connection: GameConnection) async {
-        // Returning without keeping `connection` closes it.
-        guard await connectionThrottle.shouldAllow(endpoint: connection.remoteEndpoint) else {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Rejected connection attempt from throttled source")
-            return
-        }
-        // Only a lost player takes a connection, and only one at a time. The listener stays up
-        // either way: it is retired when a connection authenticates, so one unauthenticated or
-        // foreign connection can no longer end the reconnect. See CODE_AUDIT_Join §5.1.
-        //
-        // An attempt that is still unauthenticated after the grace period gives way to a newer
-        // connection and counts as a failure of its source: a stalled peer used to keep every
-        // other connection, the master's among them, out for the whole handshake deadline,
-        // while the master gives up after a few dials. See CODE_AUDIT_21 §6.2.
-        if let stalledId = stalledReconnectAttemptId() {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Replacing a stalled reconnect attempt")
-            let generation = stopGeneration
-            await connectionThrottle.resolve(id: stalledId, succeeded: false)
-            // A stop during that suspension ended the reconnect.
-            guard generation == stopGeneration, isAwaitingReconnect else { return }
-        } else {
-            guard networkModel.connectionState == .lost else {
-                Logger.playerNetworkController.debug("PlayerNetworkController: Dropping connection attempt outside a reconnect")
-                return
-            }
-        }
-        Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
-        networkModel.reset(isConnected: false)
-        networkModel.reset(state: .notReady)
-        await restart(connection: connection)
-    }
-}
-
-private extension PlayerNetworkController {
-    /// The reconnect attempt that has waited for its handshake longer than the grace period.
-    func stalledReconnectAttemptId() -> ConnectionController.ID? {
-        guard isAwaitingReconnect, networkModel.connectionState == .notReady,
-              let id = networkModel.connectionController?.id,
-              let start = reconnectAttemptStart,
-              ContinuousClock.now - start >= reconnectHandshakeGrace else { return nil }
-        return id
     }
 }
 

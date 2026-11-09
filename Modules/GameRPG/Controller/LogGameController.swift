@@ -29,12 +29,13 @@ struct LogGameController: Sendable {
         String(localized: "No Players", bundle: .module).localizedString
     }
     
-    /// Test affordance — production code reads `logRows` instead.
-    /// See CODE_AUDIT_Game §9.22.
+#if DEBUG
+    /// A test affordance: production code reads `logRows` instead.
     @MainActor
     var logModels: [LogGameModel] {
         gameModel.logs.compactMap { gameModel.logData[$0] }
     }
+#endif
 
     @MainActor
     var logRows: [LogMessageRowModel] {
@@ -63,11 +64,13 @@ struct LogGameController: Sendable {
         return rows
     }
     
-    /// Test affordance. See CODE_AUDIT_Game §9.22.
+#if DEBUG
+    /// A test affordance.
     @MainActor
     var maxPlayers: Int {
         gameModel.gameRoster.players.count
     }
+#endif
     
     @MainActor
     var attachments: [AttachmentMetadata] {
@@ -160,14 +163,15 @@ struct LogGameController: Sendable {
         )
     }
 
-    /// Test affordance — production code calls `updateMessage(messageID:player:)`
-    /// directly, already having the full `GameDeliveryMessageID`.
-    /// See CODE_AUDIT_Game §9.22.
+#if DEBUG
+    /// A test affordance: production code calls `updateMessage(messageID:player:)` directly,
+    /// already having the full `GameDeliveryMessageID`.
     @MainActor
     func updateMessage(counter: Int, player: UUID) {
         guard let messageID = gameModel.logData[counter]?.messageID else { return }
         updateMessage(messageID: messageID, player: player)
     }
+#endif
 
     /// Applies an acknowledgement only to its exact session-qualified send.
     /// Duplicate, stale, unexpected, and cross-session acknowledgements are
@@ -181,12 +185,14 @@ struct LogGameController: Sendable {
         return log.acknowledge(playerID: player)
     }
 
-    /// Test affordance. See CODE_AUDIT_Game §9.22.
+#if DEBUG
+    /// A test affordance.
     @MainActor
     func playerNames(for players: [UUID]) -> String {
         let playerNamesById = Dictionary(gameModel.gameRoster.players.map { ($0.id, $0.name) }, uniquingKeysWith: { _, new in new })
         return namedPlayers(for: players, namesById: playerNamesById)
     }
+#endif
     
     @MainActor
     func name(for module: NetworkModules, itemId: UUID) -> String {

@@ -3,11 +3,9 @@
 #if os(visionOS)
 import Foundation
 
-/// `mode` is observed directly via `withObservationTracking` (see
-/// `RPGSharePlayController.observeShareStateMode()`) rather than through a
-/// separate Combine publisher — `@Observable` already notifies on every
-/// property change, so a hand-rolled `PassthroughSubject` here would just
-/// duplicate that. See CODE_AUDIT §4.2.
+/// `mode` is observed directly through an `Observations` sequence (see
+/// `RPGSharePlayController.observeShareStateMode()`) rather than through a separate Combine
+/// publisher: `@Observable` already notifies on every property change.
 @MainActor @Observable
 final class GameShareStateModel {
     enum PresentationMode: String, Sendable, CaseIterable, Codable {

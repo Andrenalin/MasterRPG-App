@@ -24,66 +24,23 @@ extension MasterController {
         _ model: GameNetworkModel,
         connectionId: ConnectionController.ID?
     ) async -> Bool {
-        // Reports and screens are meaningless upstream — the master does not
-        // know the proxy exists. The host is authoritative for the character
-        // and the audio availability, so the proxy's own announcements drop too.
-        if model.isAcknowledgement || model.subType == .screen || model.subType == .audioList || model.subType == .photoList || model.subType == .pdfList || model.subType == .spaceList {
+        // Reports are meaningless upstream — the master does not know the proxy exists. The host
+        // is authoritative for the character and the audio availability, so the proxy's own
+        // announcements drop too.
+        if model.isAcknowledgement || model.isReportList {
             return true
         }
         if model.data.type == .value, model.type == .update, model.subType == .store {
             return true
         }
 
-        if model.data.type == .dice, model.type == .update {
-            guard model.isDiceRollEvent else { return true }
-            guard root.gameModel.gameControl.features.dicePlayers else { return true }
-            // The proxy rolls as the host player — show it on the host as well.
-            let hostName = root.gameModel.gamePlayer.name
-            let hostSupporterTier = root.gameModel.gamePlayer.supporterTier
-            _ = root.diceRoot.diceGameControllable.addGameDiceResult(
-                data: model.data,
-                name: hostName,
-                supporterTier: hostSupporterTier,
-                isGameMaster: false
-            )
-            await root.gameModel.playerController?.relayProxyGroupEvent(
-                model,
-                excludingProxyConnection: connectionId
-            )
+        // A Dice message of the proxy that is not a complete roll is dropped, like any other
+        // Dice update.
+        if model.data.type == .dice, model.type == .update, model.groupEventKind != .diceRoll {
             return true
         }
-
-        if model.data.type == .map,
-           model.type == .update,
-           model.subType == .mapPin {
-            // Update the host's own map first, then tell the master.
-            let hostId = root.gameModel.gameConfig.id
-            guard root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
-                itemId: model.data.id,
-                data: model.data,
-                playerId: hostId
-            ) else {
-                return true
-            }
-            await root.gameModel.playerController?.relayProxyGroupEvent(
-                model,
-                excludingProxyConnection: connectionId
-            )
-            return true
-        }
-
-        if model.data.type == .space,
-           model.type == .update,
-           model.subType == .spaceTransform {
-            guard root.gameModel.gameControl.features.spaceSharing,
-                  root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
-                  await root.spaceRoot.gameControllable.networkVersion(for: model.data.id) == model.data.effectiveAssetVersion,
-                  root.spaceRoot.spaceGameControllable.applySpaceTransform(
-                      data: model.data,
-                      counter: model.counter,
-                      timestamp: model.timestamp
-                  )
-            else { return true }
+        if let kind = model.groupEventKind {
+            guard await applyProxyGroupEvent(model, kind: kind) else { return true }
             await root.gameModel.playerController?.relayProxyGroupEvent(
                 model,
                 excludingProxyConnection: connectionId
@@ -98,7 +55,7 @@ extension MasterController {
                     // fast and the master never learns about the proxy.
                     // `authoritativeMaster` mirrors replayCurrentPresentation:
                     // the proxy's handlers only accept reveals from the master.
-                    if let requestedData = try await proxyRepairData(
+                    if let requestedData = try await proxyAnswerData(
                         for: model,
                         connectionId: connectionId
                     ) {
@@ -127,11 +84,50 @@ extension MasterController {
         return true
     }
 
+    /// Applies a proxy client's group event to the host's own game, as the host player.
+    /// Returns whether it was accepted and is relayed on.
+    private func applyProxyGroupEvent(
+        _ model: GameNetworkModel,
+        kind: GameNetworkModel.GroupEventKind
+    ) async -> Bool {
+        switch kind {
+        case .diceRoll:
+            guard root.gameModel.gameControl.features.dicePlayers else { return false }
+            // The proxy rolls as the host player — show it on the host as well.
+            let hostName = root.gameModel.gamePlayer.name
+            let hostSupporterTier = root.gameModel.gamePlayer.supporterTier
+            _ = root.diceRoot.diceGameControllable.addGameDiceResult(
+                data: model.data,
+                name: hostName,
+                supporterTier: hostSupporterTier,
+                isGameMaster: false
+            )
+            return true
+        case .mapPin:
+            // Update the host's own map first, then tell the master.
+            return root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
+                itemId: model.data.id,
+                data: model.data,
+                playerId: root.gameModel.gameConfig.id
+            )
+        case .spaceTransform:
+            guard root.gameModel.gameControl.features.spaceSharing,
+                  root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
+                  await root.spaceRoot.gameControllable.networkVersion(for: model.data.id) == model.data.effectiveAssetVersion
+            else { return false }
+            return root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                data: model.data,
+                counter: model.counter,
+                timestamp: model.timestamp
+            )
+        }
+    }
+
     /// Asset requests bypass the normal peer-presentation handlers. Those
     /// handlers intentionally publish a player's reveal to the group, whereas
-    /// a proxy repair must return the host's bytes only to the requesting
+    /// a proxy answer must return the host's bytes only to the requesting
     /// private mirror.
-    private func proxyRepairData(
+    private func proxyAnswerData(
         for model: GameNetworkModel,
         connectionId: ConnectionController.ID?
     ) async throws -> NetworkCodableDataType? {
@@ -204,7 +200,7 @@ extension MasterController {
         case .table:
             // A player's current-session Table is a CRDT merge with its local
             // copy and may no longer equal the game master's canonical package.
-            // Always forward proxy repairs to the real master.
+            // Always forward proxy requests for it to the real master.
             return false
         default:
             return true

@@ -92,7 +92,6 @@ enum GameStatisticOrigin: Int16, Codable, Hashable, Sendable {
         case .proxy: .proxy
         case .sharePlay: .sharePlay
         case .file: .fileTransfer
-        case .local: .local
         }
     }
 }

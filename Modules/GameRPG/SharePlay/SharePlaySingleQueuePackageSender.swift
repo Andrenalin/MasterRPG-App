@@ -97,8 +97,8 @@ enum SharePlayPackageSenderError: Error, Equatable {
     nonisolated static let lowPackageCount = 60
     nonisolated static let throttleInMilliseconds = 200
     nonisolated static let maxOutstandingMessages = 16
-    nonisolated static let maxOutstandingBytes = 128 * ByteUnit.megabyte
-    nonisolated static let maxMessageByteCount = 64 * ByteUnit.megabyte
+    nonisolated static let maxOutstandingBytes = GameLimits.SharePlay.messengerOutstandingBytes
+    nonisolated static let maxMessageByteCount = GameLimits.SharePlay.messengerMessageBytes
 
     func send(data: Data, participantId: UUID? = nil) async throws {
         guard !isStopped else { throw SharePlayPackageSenderError.senderStopped }

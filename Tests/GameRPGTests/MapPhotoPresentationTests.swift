@@ -485,7 +485,7 @@ struct MapPhotoPresentationTests {
         masterPlayer.requestMapPhotoMode(.closed)
         #expect(masterPlayer.gameModel.mapPhoto.isLocal)
         #expect(masterPlayer.gameModel.sharedUpdateType == .map)
-        #expect(await root.gameModel.masterController?.replayMapPhoto(to: .local) == false)
+        #expect(await root.gameModel.masterController?.replayMapPhoto(to: .direct(nil)) == false)
 
         // A pin the players see: a master presentation, so the replay carries it.
         root.mapRoot.photoPopover.actions?.showPhotoFullScreen(pin, true)
@@ -527,7 +527,7 @@ struct MapPhotoPresentationTests {
 
         #expect(masterPlayer.gameModel.mapPhoto.isLocal, "nothing with the pin's name and position goes out")
         #expect(masterPlayer.gameModel.sharedUpdateType == .map)
-        #expect(await root.gameModel.masterController?.replayMapPhoto(to: .local) == false)
+        #expect(await root.gameModel.masterController?.replayMapPhoto(to: .direct(nil)) == false)
 
         root.mapRoot.rootModel.isMapStreaming = true
         root.mapRoot.photoPopover.actions?.showPhotoFullScreen(pin, true)

@@ -7,18 +7,11 @@ import Foundation
 /// remember "this physical identity already departed, so a late-arriving
 /// claim to rebind under it must not be trusted."
 ///
-/// Before this type existed, the LAN and SharePlay sides of the game each
-/// grew their own ad-hoc version of this idea: `MasterControllerModel`
-/// tracked retired `ConnectionController.ID`s in an unbounded `Set` (see
-/// CODE_AUDIT_Reconnect §7.1), while the SharePlay master-participant pin and
-/// `SharePlayPlayerJournalAdmission`'s sender/participant bindings tracked no
-/// departed identities at all — leaving both open to a `GroupSessionMessenger`
-/// redelivery arriving after the real departure being mistaken for a fresh,
-/// legitimate rebind and permanently squatting the slot a genuine reconnect
-/// needed (CODE_AUDIT_Reconnect §3.2, §3.3). This type is the one place that
-/// invariant is implemented, so every user gets the same bounded-memory
-/// guarantee and the same "insert on departure, consult before trusting a
-/// bind" contract. See CODE_AUDIT_Reconnect §9.2.
+/// A redelivery that arrives after the real departure must not be mistaken for a fresh rebind:
+/// it would squat the slot a genuine reconnect needs. This type is the one place that invariant
+/// is implemented, for the LAN connection ids and the SharePlay master participant alike: the
+/// memory is bounded, identities are inserted on departure and consulted before a bind is
+/// trusted.
 struct PhysicalIdentityDenylist<ID: Hashable & Sendable>: Sendable {
     private var denylisted: Set<ID> = []
     private var order: [ID] = []

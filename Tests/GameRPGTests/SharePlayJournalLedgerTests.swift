@@ -14,10 +14,25 @@ struct SharePlayJournalLedgerTests {
     let photoId = UUID()
     let start = ContinuousClock.now
 
+    func show(
+        _ module: NetworkModules,
+        _ itemId: UUID,
+        _ version: Int,
+        _ counter: Int,
+        isPlaylist: Bool = false
+    ) -> SharePlayJournalLedger.Show {
+        SharePlayJournalLedger.Show(
+            slot: SharePlayJournalSlot(module, isPlaylist: isPlaylist),
+            itemId: itemId,
+            version: version,
+            counter: counter
+        )
+    }
+
     func uploaded(counter: Int = 5, version: Int = 3, at instant: ContinuousClock.Instant? = nil) -> SharePlayJournalLedger {
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .photo, itemId: photoId, version: version, counter: counter, now: instant ?? start)
-        ledger.didUpload(module: .photo, itemId: photoId, version: version, counter: counter, attachmentId: UUID())
+        ledger.willUpload(show(.photo, photoId, version, counter), now: instant ?? start)
+        ledger.didUpload(show(.photo, photoId, version, counter), attachmentId: UUID())
         return ledger
     }
 
@@ -25,22 +40,22 @@ struct SharePlayJournalLedgerTests {
     func emptySlotUploads() {
         let ledger = SharePlayJournalLedger()
 
-        #expect(ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(ledger.shouldUpload(show(.photo, photoId, 3, 5), now: start))
     }
 
     @Test("Another item or another version of the slot's item uploads")
     func otherItemOrVersionUploads() {
         let ledger = uploaded()
 
-        #expect(ledger.shouldUpload(module: .photo, itemId: UUID(), version: 3, counter: 5, now: start))
-        #expect(ledger.shouldUpload(module: .photo, itemId: photoId, version: 4, counter: 5, now: start))
+        #expect(ledger.shouldUpload(show(.photo, UUID(), 3, 5), now: start))
+        #expect(ledger.shouldUpload(show(.photo, photoId, 4, 5), now: start))
     }
 
     @Test("Each module has its own slot")
     func modulesAreIndependent() {
         let ledger = uploaded()
 
-        #expect(ledger.shouldUpload(module: .pdf, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(ledger.shouldUpload(show(.pdf, photoId, 3, 5), now: start))
     }
 
     @Test("A request for the show that was already uploaded never uploads again")
@@ -48,73 +63,73 @@ struct SharePlayJournalLedgerTests {
         let ledger = uploaded(counter: 5)
         let muchLater = start + .seconds(600)
 
-        #expect(!ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: muchLater))
-        #expect(!ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 4, now: muchLater))
+        #expect(!ledger.shouldUpload(show(.photo, photoId, 3, 5), now: muchLater))
+        #expect(!ledger.shouldUpload(show(.photo, photoId, 3, 4), now: muchLater))
     }
 
     @Test("A later show within a minute of the upload does not upload again")
     func laterShowWithinTheIntervalDoesNotUpload() {
         let ledger = uploaded(counter: 5)
 
-        #expect(!ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 6, now: start + .seconds(59)))
-        #expect(!ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 6, now: start + SharePlayJournalLedger.reuploadInterval))
+        #expect(!ledger.shouldUpload(show(.photo, photoId, 3, 6), now: start + .seconds(59)))
+        #expect(!ledger.shouldUpload(show(.photo, photoId, 3, 6), now: start + SharePlayJournalLedger.reuploadInterval))
     }
 
     @Test("A later show more than a minute after the upload uploads again")
     func laterShowAfterTheIntervalUploads() {
         let ledger = uploaded(counter: 5)
 
-        #expect(ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 6, now: start + .seconds(61)))
+        #expect(ledger.shouldUpload(show(.photo, photoId, 3, 6), now: start + .seconds(61)))
     }
 
     @Test("The upload is reserved while it is still running")
     func runningUploadReservesTheSlot() {
         // Given: queued, not finished.
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start)
+        ledger.willUpload(show(.photo, photoId, 3, 5), now: start)
 
         // Then: a second player asking for the same show starts no second upload.
-        #expect(!ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(!ledger.shouldUpload(show(.photo, photoId, 3, 5), now: start))
     }
 
     @Test("A failed upload frees the slot")
     func failedUploadFreesTheSlot() {
         // Given
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start)
+        ledger.willUpload(show(.photo, photoId, 3, 5), now: start)
 
         // When
-        ledger.uploadFailed(module: .photo, itemId: photoId, version: 3, counter: 5)
+        ledger.uploadFailed(show(.photo, photoId, 3, 5))
 
         // Then
-        #expect(ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(ledger.shouldUpload(show(.photo, photoId, 3, 5), now: start))
     }
 
     @Test("A failure report of an older upload does not free a newer one")
     func failureOfAnOlderUploadIsIgnored() {
         // Given
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start)
-        ledger.willUpload(module: .photo, itemId: photoId, version: 4, counter: 6, now: start)
+        ledger.willUpload(show(.photo, photoId, 3, 5), now: start)
+        ledger.willUpload(show(.photo, photoId, 4, 6), now: start)
 
         // When
-        ledger.uploadFailed(module: .photo, itemId: photoId, version: 3, counter: 5)
+        ledger.uploadFailed(show(.photo, photoId, 3, 5))
 
         // Then
-        #expect(!ledger.shouldUpload(module: .photo, itemId: photoId, version: 4, counter: 6, now: start))
+        #expect(!ledger.shouldUpload(show(.photo, photoId, 4, 6), now: start))
     }
 
     @Test("An attachment that left the Journal can be uploaded again")
     func removedAttachmentUploadsAgain() throws {
         // Given
         var ledger = uploaded(counter: 5)
-        let attachmentId = try #require(ledger.publication(for: .photo)?.attachmentId)
+        let attachmentId = try #require(ledger.publication(in: SharePlayJournalSlot(.photo))?.attachmentId)
 
         // When
         ledger.didRemove(attachmentId: attachmentId)
 
         // Then
-        #expect(ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(ledger.shouldUpload(show(.photo, photoId, 3, 5), now: start))
     }
 
     @Test("A Journal snapshot without the attachment forgets it; a running upload stays reserved")
@@ -122,15 +137,15 @@ struct SharePlayJournalLedgerTests {
         // Given
         var finished = uploaded(counter: 5)
         var running = SharePlayJournalLedger()
-        running.willUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start)
+        running.willUpload(show(.photo, photoId, 3, 5), now: start)
 
         // When
         finished.reconcile(attachmentIds: [])
         running.reconcile(attachmentIds: [])
 
         // Then
-        #expect(finished.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
-        #expect(!running.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(finished.shouldUpload(show(.photo, photoId, 3, 5), now: start))
+        #expect(!running.shouldUpload(show(.photo, photoId, 3, 5), now: start))
     }
 
     @Test("A received attachment is handed to the game once")
@@ -156,7 +171,7 @@ struct SharePlayJournalLedgerTests {
     func ownUploadIsNotProcessed() throws {
         // Given
         var ledger = uploaded()
-        let attachmentId = try #require(ledger.publication(for: .photo)?.attachmentId)
+        let attachmentId = try #require(ledger.publication(in: SharePlayJournalSlot(.photo))?.attachmentId)
 
         // When
         let processes = ledger.shouldProcess(attachmentId: attachmentId)
@@ -171,16 +186,16 @@ struct SharePlayJournalLedgerTests {
         let playlistId = UUID()
         let trackId = UUID()
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, now: start)
-        ledger.didUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, attachmentId: UUID())
-        ledger.willUpload(module: .audio, itemId: trackId, version: 1, counter: 59, now: start)
+        ledger.willUpload(show(.audio, playlistId, 1, 58), now: start)
+        ledger.didUpload(show(.audio, playlistId, 1, 58), attachmentId: UUID())
+        ledger.willUpload(show(.audio, trackId, 1, 59), now: start)
 
         // Then: players that ask for the playlist while they load the track must not push the
         // track out again — the two would take the slot from each other for good.
-        #expect(!ledger.shouldUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, now: start + .seconds(1)))
-        #expect(!ledger.shouldUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, now: start + .seconds(600)))
+        #expect(!ledger.shouldUpload(show(.audio, playlistId, 1, 58), now: start + .seconds(1)))
+        #expect(!ledger.shouldUpload(show(.audio, playlistId, 1, 58), now: start + .seconds(600)))
         // The track keeps its slot, too.
-        #expect(!ledger.shouldUpload(module: .audio, itemId: trackId, version: 1, counter: 59, now: start + .seconds(1)))
+        #expect(!ledger.shouldUpload(show(.audio, trackId, 1, 59), now: start + .seconds(1)))
     }
 
     @Test("A later show of a pushed-out item uploads it again")
@@ -188,11 +203,11 @@ struct SharePlayJournalLedgerTests {
         // Given
         let playlistId = UUID()
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, now: start)
-        ledger.willUpload(module: .audio, itemId: UUID(), version: 1, counter: 59, now: start)
+        ledger.willUpload(show(.audio, playlistId, 1, 58), now: start)
+        ledger.willUpload(show(.audio, UUID(), 1, 59), now: start)
 
         // Then
-        #expect(ledger.shouldUpload(module: .audio, itemId: playlistId, version: 1, counter: 60, now: start))
+        #expect(ledger.shouldUpload(show(.audio, playlistId, 1, 60), now: start))
     }
 
     @Test("A failed upload of the item that pushed another out leaves the pushed-out show answered")
@@ -201,15 +216,15 @@ struct SharePlayJournalLedgerTests {
         let playlistId = UUID()
         let trackId = UUID()
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, now: start)
-        ledger.willUpload(module: .audio, itemId: trackId, version: 1, counter: 59, now: start)
+        ledger.willUpload(show(.audio, playlistId, 1, 58), now: start)
+        ledger.willUpload(show(.audio, trackId, 1, 59), now: start)
 
         // When
-        ledger.uploadFailed(module: .audio, itemId: trackId, version: 1, counter: 59)
+        ledger.uploadFailed(show(.audio, trackId, 1, 59))
 
         // Then: the track can be tried again, the playlist's show is still not uploaded twice.
-        #expect(ledger.shouldUpload(module: .audio, itemId: trackId, version: 1, counter: 59, now: start))
-        #expect(!ledger.shouldUpload(module: .audio, itemId: playlistId, version: 1, counter: 58, now: start))
+        #expect(ledger.shouldUpload(show(.audio, trackId, 1, 59), now: start))
+        #expect(!ledger.shouldUpload(show(.audio, playlistId, 1, 58), now: start))
     }
 
     @Test("The oldest pushed-out shows are forgotten beyond the limit")
@@ -217,13 +232,13 @@ struct SharePlayJournalLedgerTests {
         // Given: many items shown one after the other.
         var ledger = SharePlayJournalLedger()
         let firstId = UUID()
-        ledger.willUpload(module: .audio, itemId: firstId, version: 1, counter: 1, now: start)
+        ledger.willUpload(show(.audio, firstId, 1, 1), now: start)
         for counter in 2...40 {
-            ledger.willUpload(module: .audio, itemId: UUID(), version: 1, counter: counter, now: start)
+            ledger.willUpload(show(.audio, UUID(), 1, counter), now: start)
         }
 
         // Then: the first one is forgotten, so a request may upload it again.
-        #expect(ledger.shouldUpload(module: .audio, itemId: firstId, version: 1, counter: 1, now: start))
+        #expect(ledger.shouldUpload(show(.audio, firstId, 1, 1), now: start))
     }
 
     @Test("An audio playlist has a slot of its own: its track does not push it out")
@@ -232,14 +247,14 @@ struct SharePlayJournalLedgerTests {
         let playlistId = UUID()
         let trackId = UUID()
         var ledger = SharePlayJournalLedger()
-        ledger.willUpload(module: .audio, isPlaylist: true, itemId: playlistId, version: 1, counter: 58, now: start)
-        ledger.willUpload(module: .audio, itemId: trackId, version: 1, counter: 59, now: start)
+        ledger.willUpload(show(.audio, playlistId, 1, 58, isPlaylist: true), now: start)
+        ledger.willUpload(show(.audio, trackId, 1, 59), now: start)
 
         // Then: both stay reserved, the second upload did not displace the first.
-        #expect(ledger.publication(for: .audio, isPlaylist: true)?.itemId == playlistId)
-        #expect(ledger.publication(for: .audio)?.itemId == trackId)
-        #expect(!ledger.shouldUpload(module: .audio, isPlaylist: true, itemId: playlistId, version: 1, counter: 58, now: start))
-        #expect(!ledger.shouldUpload(module: .audio, itemId: trackId, version: 1, counter: 59, now: start))
+        #expect(ledger.publication(in: SharePlayJournalSlot(.audio, isPlaylist: true))?.itemId == playlistId)
+        #expect(ledger.publication(in: SharePlayJournalSlot(.audio))?.itemId == trackId)
+        #expect(!ledger.shouldUpload(show(.audio, playlistId, 1, 58, isPlaylist: true), now: start))
+        #expect(!ledger.shouldUpload(show(.audio, trackId, 1, 59), now: start))
     }
 
     @Test("A reset forgets everything")
@@ -251,8 +266,8 @@ struct SharePlayJournalLedgerTests {
         ledger.reset()
 
         // Then
-        #expect(ledger.publication(for: .photo) == nil)
-        #expect(ledger.shouldUpload(module: .photo, itemId: photoId, version: 3, counter: 5, now: start))
+        #expect(ledger.publication(in: SharePlayJournalSlot(.photo)) == nil)
+        #expect(ledger.shouldUpload(show(.photo, photoId, 3, 5), now: start))
     }
 }
 
@@ -291,7 +306,7 @@ struct SharePlayJournalSlotTests {
 
         // Then: the track did not replace the playlist.
         #expect(queue.currentAttachment(for: SharePlayJournalSlot(.audio, isPlaylist: true))?.id == playlist.id)
-        #expect(queue.currentAttachment(for: .audio)?.id == track.id)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.audio))?.id == track.id)
         #expect(removed.isEmpty)
 
         // When: the next track replaces the track, as before.
@@ -299,7 +314,7 @@ struct SharePlayJournalSlotTests {
         for _ in 0..<50 where removed.isEmpty { await Task.yield() }
 
         // Then
-        #expect(queue.currentAttachment(for: .audio)?.id == nextTrack.id)
+        #expect(queue.currentAttachment(for: SharePlayJournalSlot(.audio))?.id == nextTrack.id)
         #expect(queue.currentAttachment(for: SharePlayJournalSlot(.audio, isPlaylist: true))?.id == playlist.id)
         #expect(removed == [track.id])
     }

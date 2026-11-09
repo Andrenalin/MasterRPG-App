@@ -17,9 +17,9 @@ import WeatherRPG
 // MARK: - Map Messages
 
 extension MasterController {
-    /// Test affordance — real dispatch always goes through `handle(_:origin:)`,
-    /// which calls the `origin`-based overload below directly.
-    /// See CODE_AUDIT_Game §9.22.
+#if DEBUG
+    /// A test affordance: real dispatch always goes through `handle(_:origin:)`, which calls
+    /// the `origin`-based overload below directly.
     func handleMap(
         _ model: GameNetworkModel,
         connectionId: ConnectionController.ID? = nil
@@ -29,6 +29,7 @@ extension MasterController {
             origin: connectionId.map { GameMessageOrigin.direct($0) }
         )
     }
+#endif
 
     /// Not `private` because `MasterController+MessageDispatch.swift`'s
     /// `handle(_:origin:)` also calls this directly, from a different file.

@@ -4,99 +4,11 @@ import CoreRPG
 import Foundation
 import os.log
 
-// MARK: - Slot
-
-/// One place in the Journal: the slot of a module, or the slot of the audio playlists.
-///
-/// The Journal holds one attachment per slot, and a new publication replaces the one before it.
-/// An audio playlist is shown together with its first track, which would replace it before every
-/// player has loaded it: a playlist has a slot of its own.
-struct SharePlayJournalSlot: Hashable, Sendable {
-    let module: NetworkModules
-    let isPlaylist: Bool
-
-    init(_ module: NetworkModules, isPlaylist: Bool = false) {
-        self.module = module
-        self.isPlaylist = isPlaylist
-    }
-
-    var token: String {
-        isPlaylist ? "\(module.token) PLAYLIST" : module.token
-    }
-}
-
-// MARK: - Publication policy & admission
-
-enum SharePlayJournalPublicationPolicy: Equatable, Sendable {
-    /// Every accepted publication is significant and stays in FIFO order. This
-    /// is used for repairs such as Audio/Weather, where dropping one item could
-    /// leave a participant without the requested bytes.
-    case fifo
-    /// Only the newest pending presentation for a module is significant. An
-    /// active publication is allowed to finish, while older pending
-    /// presentations are replaced before they retain and publish stale bytes.
-    case latestWins
-}
-
-enum SharePlayJournalPublicationAdmission: Equatable, Sendable {
-    case enqueued
-    case replacedPending
-    case rejected
-}
-
-// MARK: - Publication completion bookkeeping
-
-@MainActor
-private final class SharePlayJournalPublicationCompletion {
-    private var isFinished = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
-
-    func wait() async {
-        guard !isFinished else { return }
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
-        }
-    }
-
-    func finish() {
-        guard !isFinished else { return }
-        isFinished = true
-        let currentWaiters = waiters
-        waiters = []
-        currentWaiters.forEach { $0.resume() }
-    }
-}
-
-// MARK: - Enqueue result
-
-@MainActor
-struct SharePlayJournalPublicationEnqueueResult {
-    let admission: SharePlayJournalPublicationAdmission
-    private let completion: SharePlayJournalPublicationCompletion
-
-    fileprivate init(
-        admission: SharePlayJournalPublicationAdmission,
-        completion: SharePlayJournalPublicationCompletion
-    ) {
-        self.admission = admission
-        self.completion = completion
-    }
-
-    /// Test/debug synchronization for the accepted publication. Replaced,
-    /// rejected, and session-cancelled operations complete immediately.
-    var value: Void {
-        get async {
-            await completion.wait()
-        }
-    }
-}
-
 // MARK: - Publication queue
 //
-// `retryUntilRemoved` (used by `scheduleCleanup`/`scheduleEmergencyCleanup`
-// below) lives in SharePlayDeferredDeliveryQueue.swift alongside
-// `SharePlayAttachmentLoadRetry` — see CODE_AUDIT §9.6/§9.10. It's also used
-// by `SharePlayJournalAddLimiter.swift`'s `operationFinished(...)`.
+// The slot, policy, admission and completion types are in SharePlayJournalPublication.swift.
+// `retryUntilRemoved` (used by `scheduleCleanup`/`scheduleEmergencyCleanup` below) lives in
+// SharePlayAttachmentLoadRetry.swift; `SharePlayJournalAddLimiter.swift` uses it as well.
 
 /// Serializes publications for one journal slot without putting removal of the
 /// previous attachment on the publication's critical path.
@@ -268,6 +180,8 @@ where Attachment.ID == UUID {
         )
     }
 
+#if DEBUG
+    /// A test affordance: the production caller always names the slot.
     @discardableResult
     func enqueue(
         for module: NetworkModules,
@@ -289,71 +203,11 @@ where Attachment.ID == UUID {
         )
     }
 
-    func currentAttachment(for module: NetworkModules) -> Attachment? {
-        currentAttachments[SharePlayJournalSlot(module)]
+    /// A test affordance: the attachment the slot's last accepted publication left behind.
+    func currentAttachment(for slot: SharePlayJournalSlot) -> Attachment? {
+        currentAttachments[slot]
     }
-
-    func currentAttachment(for module: SharePlayJournalSlot) -> Attachment? {
-        currentAttachments[module]
-    }
-
-    /// Marks an active latest-wins add obsolete after a newer presentation has
-    /// been safely admitted to Messenger. Rejected fallbacks do not advance the
-    /// generation, so the last deliverable presentation is preserved.
-    func supersedePresentation(for module: NetworkModules) {
-        supersedePresentation(for: SharePlayJournalSlot(module))
-    }
-
-    func supersedePresentation(for module: SharePlayJournalSlot) {
-        _ = nextPresentationGeneration(for: module)
-    }
-
-    /// Removes the current attachment from the module slot and keeps its
-    /// cleanup retained until the system removal finishes. This is used when a
-    /// newer presentation falls back to Messenger: a late join must not treat
-    /// the older Journal attachment as the current presentation.
-    @discardableResult
-    func retireCurrentAttachment(
-        for module: NetworkModules,
-        priority: TaskPriority? = nil,
-        remove: @escaping @MainActor (Attachment) async -> Bool
-    ) -> Bool {
-        retireCurrentAttachment(for: SharePlayJournalSlot(module), priority: priority, remove: remove)
-    }
-
-    @discardableResult
-    func retireCurrentAttachment(
-        for module: SharePlayJournalSlot,
-        priority: TaskPriority? = nil,
-        remove: @escaping @MainActor (Attachment) async -> Bool
-    ) -> Bool {
-        guard let attachment = currentAttachments[module] else { return false }
-
-        if let activeOperation = activePublications[module],
-           activeOperation.reservesCleanup,
-           transferredCleanupReservationOperationIds.insert(activeOperation.id).inserted {
-            currentAttachments[module] = nil
-            scheduleCleanup(attachment, priority: priority, remove: remove)
-            return true
-        }
-
-        guard cleanupReservationCount < maxOutstandingCleanups else {
-            guard emergencyCleanupTasks[module] == nil else { return false }
-            currentAttachments[module] = nil
-            scheduleEmergencyCleanup(
-                attachment,
-                for: module,
-                priority: priority,
-                remove: remove
-            )
-            return true
-        }
-
-        currentAttachments[module] = nil
-        cleanupReservationCount += 1
-        scheduleCleanup(attachment, priority: priority, remove: remove)
-        return true
-    }
+#endif
 
     func cancelAll() {
         generation &+= 1

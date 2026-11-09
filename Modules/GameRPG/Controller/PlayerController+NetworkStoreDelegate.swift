@@ -8,9 +8,6 @@ import MapRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
-#if os(macOS)
-#else
-#endif
 
 // MARK: - Send PlayerNetworkStoreDelegate
 // Conformance itself is declared alongside the class in PlayerController.swift (Swift requires

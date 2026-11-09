@@ -47,12 +47,10 @@ final class PlayerControllerModel {
     /// How often the master rejected this player's Character package, and when the next
     /// announcement may go out. See `CharacterRejectionPolicy`.
     private var characterRejectionPolicy = CharacterRejectionPolicy()
+#if DEBUG
+    /// A test affordance.
     var characterRejections: Int { characterRejectionPolicy.rejections }
-    static var maximumCharacterRejections: Int { CharacterRejectionPolicy.maximumRejections }
-    static var rejectedCharacterProbeInterval: Duration { CharacterRejectionPolicy.probeInterval }
-    static func characterRetryDelay(afterRejection rejections: Int) -> Duration {
-        CharacterRejectionPolicy.retryDelay(afterRejection: rejections)
-    }
+#endif
     var asGameMaster = false
     /// Counts the changes of the companion list. A send that ran while it changed has announced
     /// an old list, so it does not latch `hasSentPlayer` and runs again.

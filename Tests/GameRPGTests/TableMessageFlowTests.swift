@@ -255,8 +255,8 @@ struct TableMessageFlowTests {
         )
     }
 
-    @Test("Proxy Table repair is always forwarded to the canonical master")
-    func proxyRepairAlwaysForwardsUpstream() async throws {
+    @Test("Proxy Table request is always forwarded to the canonical master")
+    func proxyTableRequestAlwaysForwardsUpstream() async throws {
         // Given - The host has received this exact Table in the current session,
         // and its persistent player copy deliberately makes the CRDT merge
         // differ from the master's canonical package.

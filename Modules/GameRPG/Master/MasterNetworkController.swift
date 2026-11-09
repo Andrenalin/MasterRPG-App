@@ -10,28 +10,26 @@ final class MasterNetworkController: Sendable {
     /// Held weakly here on the main actor: a frame goes from its connection straight to the
     /// delegate, not through an actor that only held the reference.
     /// See CODE_AUDIT_Game_Shareplay §7.4.
-    private weak var delegate: (any MasterNetworkControllerDelegate)?
+    weak var delegate: (any MasterNetworkControllerDelegate)?
     /// Arguments: name, supporter tier, proxy, passcode, session id, delegate.
     let listenerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkModel
     private let hostingSessions: HostingSessionStore
-    private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
+    var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
     // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the inbound
     // listener. connectToPlayer's outbound reconnect dial-outs are never throttled —
     // this device is the one connecting there, not receiving an unknown attempt.
     // See CODE_AUDIT §9.7 for why this is the shared `ConnectionThrottleTracker`
     // rather than a hand-rolled throttle + pending-sources dictionary here.
-    private let connectionThrottle = ConnectionThrottleTracker()
+    let connectionThrottle = ConnectionThrottleTracker()
 
     /// Outbound connections that reached `.ready`; anything else is still dialing.
-    private var establishedConnectionIds: Set<ConnectionController.ID> = []
+    var establishedConnectionIds: Set<ConnectionController.ID> = []
     /// Failed redials per fallback endpoint since it last connected, and the pending retry.
-    private var redialAttempts: [NWEndpoint: Int] = [:]
-    private var redialTasks: [NWEndpoint: Task<Void, Never>] = [:]
-    private var listenerRestartTask: Task<Void, Never>?
-    private var listenerRestartAttempt = 0
-    private var listenerStartedAt: ContinuousClock.Instant?
+    var redialAttempts: [NWEndpoint: Int] = [:]
+    var redialTasks: [NWEndpoint: Task<Void, Never>] = [:]
+    var listenerRestarts = ListenerRestartScheduler()
     /// Serializes outbound sends: each send encodes off the main actor and only hands its
     /// frame to the connections after the previous send did, so a small message sent after
     /// a large one can no longer overtake it (a pin/map-state arriving before its map).
@@ -103,7 +101,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         // Stable while the code is: players waiting to reconnect after the master ended and
         // restarted the game still advertise it, so they are redialed.
         networkModel.sessionId = hostingSessions.sessionId(forPasscode: passcode, proxy: proxy)
-        listenerRestartAttempt = 0
+        listenerRestarts.reset()
         startListener()
 
         networkModel.browserManager = BrowserManager(serviceType: proxy ? .proxyClient : .master, recordsRemovals: false)
@@ -111,7 +109,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         observeConnections()
     }
 
-    private func startListener() {
+    func startListener() {
         networkModel.listener = listenerBuilder(
             networkModel.name,
             networkModel.supporterTier,
@@ -121,13 +119,13 @@ extension MasterNetworkController: MasterNetworkControllable {
             self
         )
         networkModel.listener?.startListening()
+        listenerRestarts.listenerStarted()
         // `listenerStatus` becomes `.running` only once `listenerReady()` fires for the
         // listener's real `.ready` event — see §5.22. Until then hosting reads as starting
         // (not "stopped"); a restart keeps showing `.restarting`. See CODE_AUDIT_18 §5.15.
         if networkModel.listenerStatus != .restarting {
             networkModel.listenerStatus = .starting
         }
-        listenerStartedAt = ContinuousClock.now
     }
 
     /// Restarts hosting services that stopped while the app was not active, without dropping
@@ -135,9 +133,7 @@ extension MasterNetworkController: MasterNetworkControllable {
     func resumeAfterActivation() {
         guard networkModel.isStreaming else { return }
         if networkModel.listener == nil {
-            listenerRestartTask?.cancel()
-            listenerRestartTask = nil
-            listenerRestartAttempt = 0
+            listenerRestarts.reset()
             startListener()
         }
         if let browser = networkModel.browserManager {
@@ -183,8 +179,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         redialTasks.values.forEach { $0.cancel() }
         redialTasks = [:]
         redialAttempts = [:]
-        listenerRestartTask?.cancel()
-        listenerRestartTask = nil
+        listenerRestarts.cancel()
         // A new hosting session's first send must not wait for the old session's tail.
         // See CODE_AUDIT_19 §3.13.
         outboundChain = nil
@@ -296,267 +291,5 @@ extension MasterNetworkController: ConnectionControllerDelegate {
 
     func received(data: Data?, for id: ConnectionController.ID) async {
         await delegate?.masterReceived(data: data, for: id)
-    }
-}
-
-// MARK: - ListenerManagerDelegate
-
-extension MasterNetworkController: ListenerManagerDelegate {
-    /// Live connections a master accepts from its listener at once.
-    static let maximumConnections = 32
-    /// Reconnect dials in flight or connected at once. Kept apart from the inbound limit so
-    /// advertisements from other devices can never use up the slots players join through.
-    /// See CODE_AUDIT_Join §6.2.
-    static let maximumOutboundDials = 8
-
-    /// Connections the listener accepted (everything that is not one of our own dials).
-    private var inboundConnectionCount: Int {
-        networkModel.connections.count - browserConnectionEndpoints.count
-    }
-
-    /// A failed listener no longer ends hosting: connected players keep their connections and
-    /// the listener is recreated with a growing pause, so new and reconnecting players can still
-    /// join. If it keeps failing the status becomes `.failed` for the UI to show.
-    /// See CODE_AUDIT_Join §5.3.
-    /// The only point `listenerStatus` is set to `.running` from — derived from the
-    /// listener's real `.ready` state, not assumed right after `startListener()` calls
-    /// `startListening()`. See CODE_AUDIT_17 §5.22.
-    @MainActor
-    func listenerReady() async {
-        guard networkModel.isStreaming else { return }
-        networkModel.listenerStatus = .running
-    }
-
-    @MainActor
-    func listenerWaiting(_ error: NWError) async {
-        guard networkModel.isStreaming else { return }
-        networkModel.listenerStatus = .waiting
-    }
-
-    @MainActor
-    func listenerCancelled() async {
-        guard networkModel.isStreaming else { return }
-        Logger.networking.debug("MasterNetworkController: Listener stopped, scheduling restart")
-        let staleListener = networkModel.listener
-        networkModel.listener = nil
-        staleListener?.stopListening()
-
-        // A listener that ran for a while before failing is a new incident, not a retry storm.
-        if let startedAt = listenerStartedAt, ContinuousClock.now - startedAt > Self.listenerHealthyDuration {
-            listenerRestartAttempt = 0
-        }
-        guard GameLimits.allowsListenerRestart(attempt: listenerRestartAttempt) else {
-            networkModel.listenerStatus = .failed
-            return
-        }
-        let delay = GameLimits.networkRestartDelay(forAttempt: listenerRestartAttempt)
-        listenerRestartAttempt += 1
-        networkModel.listenerStatus = .restarting
-        listenerRestartTask?.cancel()
-        listenerRestartTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, let self, self.networkModel.isStreaming, self.networkModel.listener == nil else { return }
-            self.startListener()
-        }
-    }
-
-    static let listenerHealthyDuration: Duration = .seconds(120)
-
-    @MainActor
-    func listenerNewConnection(_ connection: GameConnection) async {
-        // A game has a handful of players; an unbounded connection table lets one
-        // authenticated (or handshake-spamming) peer exhaust memory. See CODE_AUDIT_15 §6.1.
-        guard inboundConnectionCount < Self.maximumConnections else {
-            // Returning drops the only reference, which closes the connection.
-            Logger.networking.debug("MasterNetworkController: Rejected connection, connection limit reached")
-            return
-        }
-        let generation = networkModel.connectionGeneration
-        guard await connectionThrottle.shouldAllow(endpoint: connection.remoteEndpoint) else {
-            Logger.networking.debug("MasterNetworkController: Rejected connection attempt from throttled source")
-            return
-        }
-        let id = UUID()
-        await connectionThrottle.register(id: id, endpoint: connection.remoteEndpoint)
-        // A reset during the suspensions above already cleared the pending bookkeeping; a
-        // connection admitted now would have no owning listener. See CODE_AUDIT_16 §3.3.
-        guard generation == networkModel.connectionGeneration,
-              inboundConnectionCount < Self.maximumConnections else {
-            await connectionThrottle.clear(id: id)
-            return
-        }
-        Logger.networking.debug("MasterNetworkController: New Connection")
-        addNew(ConnectionController(id: id, connection: connection, delegate: self))
-        enforceHandshakeDeadline(for: id)
-    }
-
-    /// Drops an inbound connection still unauthenticated after `GameLimits.handshakeDeadline`, so
-    /// idle sockets cannot hold the pending-handshake slots. See CODE_AUDIT_16 §6.2.
-    private func enforceHandshakeDeadline(for id: ConnectionController.ID) {
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: GameLimits.handshakeDeadline)
-            guard let self, await connectionThrottle.isPending(id: id) else { return }
-            Logger.networking.debug("MasterNetworkController: Handshake deadline expired")
-            guard let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
-            await stale.cancel()
-        }
-    }
-
-    /// Convenience accessor used by tests to inject a connection directly.
-    func newConnection(for connection: GameConnection) async {
-        await listenerNewConnection(connection)
-    }
-}
-
-// MARK: - Observe BrowserManager for Connections
-
-extension MasterNetworkController {
-    /// One stored `Observations` loop instead of re-arming `withObservationTracking` per
-    /// change (two unstructured hops each, and the chain broke whenever an early return
-    /// skipped the re-arm). See CODE_AUDIT_18 §3.21.
-    func observeConnections() {
-        guard let browser = networkModel.browserManager else { return }
-        networkModel.observeConnectionsTask?.cancel()
-        // The sequence and the task hold the browser weakly, and the sequence ends with it: a
-        // controller released without `stopStreaming()` must not keep the browser and its
-        // Bonjour browse alive. See CODE_AUDIT_20 §3.5.
-        let changes = Observations<[BrowserGameModel], Never>.untilFinished { [weak browser] in
-            guard let browser else { return .finish }
-            return .next(browser.games)
-        }
-        networkModel.observeConnectionsTask = Task { @MainActor [weak self, weak browser] in
-            for await games in changes {
-                guard let self, let browser, !Task.isCancelled,
-                      self.networkModel.browserManager === browser else { return }
-                self.refresh(games: games)
-            }
-        }
-    }
-
-    func refresh(games: [BrowserGameModel]) {
-        guard let manager = networkModel.browserManager, manager.isBrowsing else {
-            // A browser inside its supervised restart pause is only briefly not browsing:
-            // keep it (and its dialed connections) instead of dropping auto-redial for the
-            // rest of the session. See CODE_AUDIT_18 §5.14.
-            if networkModel.browserManager?.isSupervising == true { return }
-            networkModel.browserManager = nil
-            networkModel.browserConnections = []
-            browserConnectionEndpoints = [:]
-            return
-        }
-        // Only this session's own reconnect services are dialed: another group's players
-        // advertise the same service type on the same network. See CODE_AUDIT_Join §5.2.
-        let ownGames = games.filter { $0.sessionId == networkModel.sessionId }
-        for game in games where game.sessionId != networkModel.sessionId {
-            Logger.networking.debug("MasterNetworkController: Not redialing \(game.endpointName, privacy: .private), session \(game.sessionId == nil ? "missing" : "different", privacy: .public)")
-        }
-        let endpoints = ownGames.map { manager.nwEndpoint(for: $0) }
-        let advertisedEndpoints = Set(endpoints)
-        networkModel.browserConnections.removeAll { !advertisedEndpoints.contains($0) }
-        browserConnectionEndpoints = browserConnectionEndpoints.filter { advertisedEndpoints.contains($0.value) }
-        for endpoint in redialTasks.keys where !advertisedEndpoints.contains(endpoint) {
-            redialTasks.removeValue(forKey: endpoint)?.cancel()
-            redialAttempts.removeValue(forKey: endpoint)
-        }
-
-        for endpoint in endpoints {
-            // An endpoint waiting for its backoff is redialed by that timer, not immediately.
-            if !networkModel.browserConnections.contains(endpoint), redialTasks[endpoint] == nil {
-                connectToPlayer(endpoint: endpoint)
-            }
-        }
-    }
-}
-
-private extension MasterNetworkController {
-    func removeConnectionAndNotify(id: ConnectionController.ID) async {
-        if removeConnection(id: id) {
-            await delegate?.masterLostPlayer(with: id)
-        }
-    }
-
-    func removeConnection(id: ConnectionController.ID) -> Bool {
-        guard networkModel.removeConnection(id: id) else { return false }
-
-        networkModel.connectionStartTasks[id]?.cancel()
-        networkModel.connectionStartTasks.removeValue(forKey: id)
-        let wasEstablished = establishedConnectionIds.remove(id) != nil
-        if let endpoint = browserConnectionEndpoints.removeValue(forKey: id),
-           !browserConnectionEndpoints.values.contains(endpoint) {
-            networkModel.browserConnections.removeAll { $0 == endpoint }
-            if !wasEstablished {
-                scheduleRedial(of: endpoint)
-            }
-        }
-        return true
-    }
-
-    /// Retries a dial that failed before it connected, with a growing pause and a bounded number
-    /// of attempts. Previously nothing retried it until an unrelated service came or went, and
-    /// then every missing endpoint was redialed at once. See CODE_AUDIT_Join §5.4.
-    func scheduleRedial(of endpoint: NWEndpoint) {
-        guard networkModel.isStreaming else { return }
-        let attempt = redialAttempts[endpoint, default: 0] + 1
-        guard attempt <= Self.maximumRedialAttempts else { return }
-        redialAttempts[endpoint] = attempt
-        let seconds = min(2 << (attempt - 1), 30)
-        redialTasks[endpoint]?.cancel()
-        redialTasks[endpoint] = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(seconds))
-            guard !Task.isCancelled, let self else { return }
-            self.redialTasks.removeValue(forKey: endpoint)
-            guard self.networkModel.isStreaming, self.isAdvertised(endpoint) else { return }
-            self.connectToPlayer(endpoint: endpoint)
-        }
-    }
-
-    static let maximumRedialAttempts = 5
-
-    func isAdvertised(_ endpoint: NWEndpoint) -> Bool {
-        guard let manager = networkModel.browserManager else { return false }
-        return manager.games.contains {
-            $0.sessionId == networkModel.sessionId && manager.nwEndpoint(for: $0) == endpoint
-        }
-    }
-
-    /// Cancels a dial that has not connected after `GameLimits.handshakeDeadline`, so a peer that accepts the
-    /// connection and then stalls cannot hold its slot forever.
-    func enforceDialDeadline(for id: ConnectionController.ID) {
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: GameLimits.handshakeDeadline)
-            guard let self, !establishedConnectionIds.contains(id),
-                  let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
-            Logger.networking.debug("MasterNetworkController: Dial deadline expired")
-            await stale.cancel()
-        }
-    }
-
-    func addNew(_ connection: any ConnectionControllable) {
-        networkModel.connections.append(connection)
-        let id = connection.id
-        networkModel.connectionStartTasks[id]?.cancel()
-        networkModel.connectionStartTasks[id] = Task { @MainActor [weak self] in
-            await connection.startConnection()
-            self?.networkModel.connectionStartTasks.removeValue(forKey: id)
-        }
-    }
-
-}
-
-extension MasterNetworkController {
-    func connectToPlayer(endpoint: NWEndpoint) {
-        guard !networkModel.browserConnections.contains(endpoint) else { return }
-        guard browserConnectionEndpoints.count < Self.maximumOutboundDials else {
-            Logger.networking.debug("MasterNetworkController: Not dialing, outbound dial limit reached")
-            return
-        }
-        networkModel.browserConnections.append(endpoint)
-        // Reuses the same passcode this session's listener was started with —
-        // this is a reconnect dial-out to a player already admitted earlier
-        // in the session, not a new join, so no new code entry is needed.
-        let connection = browserConnectionBuilder(endpoint, networkModel.passcode, self)
-        browserConnectionEndpoints[connection.id] = endpoint
-        addNew(connection)
-        enforceDialDeadline(for: connection.id)
     }
 }

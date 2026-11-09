@@ -18,12 +18,12 @@ enum SharePlayAssetPublication: Equatable, Sendable {
 /// What this device uploaded to the SharePlay Journal, one slot per module (and one for audio playlists), and which Journal
 /// attachments it already handed to the game.
 ///
-/// The upload rule is the whole file-repair policy for SharePlay:
+/// The upload rule is the whole file-delivery policy for SharePlay:
 /// - Another item or version than the slot holds is uploaded.
 /// - The same item and version is never uploaded twice for one show: the counter of the show
 ///   has to be newer than the one the upload answered.
 /// - For a newer show it is uploaded again only when the last upload is older than
-///   `reuploadInterval`. This repairs the rare participant whose download never finished: the
+///   `reuploadInterval`. This reaches the rare participant whose download never finished: the
 ///   game master shows the item again after a minute. A request alone never uploads again.
 /// - That holds after another item took the slot: the Journal keeps one attachment per module,
 ///   so two items shown one after the other (an audio playlist and its first track) replace each
@@ -44,7 +44,7 @@ struct SharePlayJournalLedger: Sendable {
     }
 
     /// What a publication is about: an item in one version.
-    private struct Key: Hashable, Sendable {
+    fileprivate struct Key: Hashable, Sendable {
         let slot: SharePlayJournalSlot
         let itemId: UUID
         let version: Int
@@ -58,84 +58,86 @@ struct SharePlayJournalLedger: Sendable {
     private var displaced: [Key: Publication] = [:]
     private var processedAttachmentIds: Set<UUID> = []
 
-    func publication(for module: NetworkModules, isPlaylist: Bool = false) -> Publication? {
-        publications[SharePlayJournalSlot(module, isPlaylist: isPlaylist)]
+    /// One show of an item: the slot it takes, the item and version it delivers and the counter
+    /// of the message that shows it.
+    struct Show: Hashable, Sendable {
+        let slot: SharePlayJournalSlot
+        let itemId: UUID
+        let version: Int
+        let counter: Int
+
+        init(slot: SharePlayJournalSlot, itemId: UUID, version: Int, counter: Int) {
+            self.slot = slot
+            self.itemId = itemId
+            self.version = version
+            self.counter = counter
+        }
+
+        fileprivate var key: Key {
+            Key(slot: slot, itemId: itemId, version: version)
+        }
     }
 
-    func shouldUpload(
-        module: NetworkModules,
-        isPlaylist: Bool = false,
-        itemId: UUID,
-        version: Int,
-        counter: Int,
-        now: ContinuousClock.Instant = .now
-    ) -> Bool {
-        let slot = SharePlayJournalSlot(module, isPlaylist: isPlaylist)
-        guard let publication = publications[slot],
-              publication.itemId == itemId,
-              publication.version == version
+    func publication(in slot: SharePlayJournalSlot) -> Publication? {
+        publications[slot]
+    }
+
+    func shouldUpload(_ show: Show, now: ContinuousClock.Instant = .now) -> Bool {
+        guard let publication = publications[show.slot],
+              publication.itemId == show.itemId,
+              publication.version == show.version
         else {
             // Not in the slot: new, or pushed out by another item. A show that was uploaded
             // before is not uploaded again for a request.
-            guard let pushedOut = displaced[Key(slot: slot, itemId: itemId, version: version)] else { return true }
-            return counter > pushedOut.counter
+            guard let pushedOut = displaced[show.key] else { return true }
+            return show.counter > pushedOut.counter
         }
-        guard counter > publication.counter else { return false }
+        guard show.counter > publication.counter else { return false }
         return publication.uploadedAt.duration(to: now) > Self.reuploadInterval
     }
 
     /// Reserves the slot when the upload is queued, so a second request for the same show that
     /// arrives while the bytes are still on their way does not start another upload.
-    mutating func willUpload(
-        module: NetworkModules,
-        isPlaylist: Bool = false,
-        itemId: UUID,
-        version: Int,
-        counter: Int,
-        now: ContinuousClock.Instant = .now
-    ) {
-        let slot = SharePlayJournalSlot(module, isPlaylist: isPlaylist)
-        if let current = publications[slot],
-           current.itemId != itemId || current.version != version {
-            displaced[Key(slot: slot, itemId: current.itemId, version: current.version)] = current
+    mutating func willUpload(_ show: Show, now: ContinuousClock.Instant = .now) {
+        if let current = publications[show.slot],
+           current.itemId != show.itemId || current.version != show.version {
+            displaced[Key(slot: show.slot, itemId: current.itemId, version: current.version)] = current
             if displaced.count > Self.displacedLimit,
                let oldest = displaced.min(by: { $0.value.counter < $1.value.counter }) {
                 displaced[oldest.key] = nil
             }
         }
-        displaced[Key(slot: slot, itemId: itemId, version: version)] = nil
-        publications[slot] = Publication(
+        displaced[show.key] = nil
+        publications[show.slot] = Publication(
             attachmentId: nil,
-            itemId: itemId,
-            version: version,
-            counter: counter,
+            itemId: show.itemId,
+            version: show.version,
+            counter: show.counter,
             uploadedAt: now
         )
     }
 
-    mutating func didUpload(module: NetworkModules, isPlaylist: Bool = false, itemId: UUID, version: Int, counter: Int, attachmentId: UUID) {
-        let slot = SharePlayJournalSlot(module, isPlaylist: isPlaylist)
+    mutating func didUpload(_ show: Show, attachmentId: UUID) {
         processedAttachmentIds.insert(attachmentId)
-        guard var publication = publications[slot],
-              publication.itemId == itemId,
-              publication.version == version,
-              publication.counter == counter
+        guard var publication = publications[show.slot],
+              publication.itemId == show.itemId,
+              publication.version == show.version,
+              publication.counter == show.counter
         else { return }
         publication.attachmentId = attachmentId
-        publications[slot] = publication
+        publications[show.slot] = publication
     }
 
     /// Frees the slot of an upload that did not reach the Journal, so the next request or show
     /// can try again.
-    mutating func uploadFailed(module: NetworkModules, isPlaylist: Bool = false, itemId: UUID, version: Int, counter: Int) {
-        let slot = SharePlayJournalSlot(module, isPlaylist: isPlaylist)
-        guard let publication = publications[slot],
+    mutating func uploadFailed(_ show: Show) {
+        guard let publication = publications[show.slot],
               publication.attachmentId == nil,
-              publication.itemId == itemId,
-              publication.version == version,
-              publication.counter == counter
+              publication.itemId == show.itemId,
+              publication.version == show.version,
+              publication.counter == show.counter
         else { return }
-        publications[slot] = nil
+        publications[show.slot] = nil
     }
 
     /// Forgets attachments that left the Journal. `journal.attachments` always reports the full
