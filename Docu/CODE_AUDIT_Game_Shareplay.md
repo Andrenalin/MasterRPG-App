@@ -492,6 +492,7 @@ Players are trusted (peer import policy gaps are won't-fix, CODE_AUDIT_Folder §
 - **Why:** Traffic over the FaceTime relay grows with N² (join-time portrait photos, contributed files); a late joiner sees the master's current map/photo only after all of those loads finish or hit their 30–180 s deadlines.
 - **Action:** On a device without a master delegate answer `false` for non-master attachments; in the join batch skip attachments the device will not route and key later waits per item, not on the whole batch.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** The player-side half was done with §6.2: `shouldLoadFile` answers `false` for a non-master attachment on a device without a master delegate, and the game master loads only `.player` senders' files. New: the load ordering is in `SharePlayJournalLoadSequencer`. The first batch still keeps the message order, but every load waits only for the load of its own item and the loads in front of it, so a later publication of an item in the batch no longer waits for the whole batch; later snapshots load concurrently, per item in order. Tests: `SharePlayJournalLoadSequencerTests`. The wiring in `startJournalLoads` needs a live `GroupSessionJournal` and is untested. Loads inside the join batch still run one after the other, so that the game master's last presentation wins.
 
 ### 7.2 The master rebuilds the full package for every player's request
 - **Location:** `Modules/GameRPG/Controller/MasterController+MapMessages.swift:43-63`; `Controller/MasterController+FileMessageSupport.swift:55-80`; asset-answer path in `MasterController+WeatherMessages.swift`
@@ -499,6 +500,7 @@ Players are trusted (peer import policy gaps are won't-fix, CODE_AUDIT_Folder §
 - **Why:** With N players a large map is exported N times in a row, and every other master message (pins, dice, acks) waits behind them — lag exactly when the GM switches scenes.
 - **Action:** Cache the most recent exported package per (item, version) for the duration of a presentation and reuse it for every requester; an edit changes the version and invalidates it.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (map, file-backed modules, weather; not audio, which has its own coalescer).** `MasterPackageCache` keeps the last two exported packages (within one frame of 100 MB); a request for the same item reuses the package while the item's fingerprint (version, asset version, content version; for a map the one `shareMap` reports) is unchanged, and an edit drops it. It is used by the presentation (`createGameData(for:)`), the map and file-backed asset requests and the weather request, and cleared when the game stops. Tests: `MasterPackageCacheTests` including `playersShareOneExport` (a second request after a show is a cache hit). **Residual:** a first request still exports in the serial pipeline (one export instead of N, but not off-pipeline); the version of a file-backed item does not cover edits that leave it unchanged, same as the version the players compare.
 
 ### 7.3 Per-chunk overhead and ~3× peak memory on large SharePlay receives
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayPackageReceiver.swift:15-22,30-31,85-90,256-282`; `SharePlay/RPGSharePlayController+ChunkedTransport.swift:460-470`; `Root/GameRootModel.swift:86-92`
@@ -506,6 +508,7 @@ Players are trusted (peer import policy gaps are won't-fix, CODE_AUDIT_Folder §
 - **Why:** Memory pressure on constrained devices plus avoidable observation-registrar and main-actor task churn during large transfers.
 - **Action:** Release chunks while reassembling (or decode from the chunk sequence); drop `@Observable` or mark internals `@ObservationIgnored`; use one long-lived expiry loop that sleeps until the earliest deadline.
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09.** `SharePlayCompletedPackage.takeReassembledData()` lets go of the chunks when the package is assembled for decoding (peak: assembled bytes + decoded model, not chunks + assembled + model); `SharePlayPackageReceiver` and `PackageMessageList` are no longer `@Observable`; `GameRootModel`'s three private counters are `@ObservationIgnored`; the expiry timer is one sleeping task that is kept while its deadline is not later than the earliest one (no cancel and create per chunk). Tests: `PackageReceiverPerformanceTests` (200 chunks sleep once; chunks released) plus the existing receiver tests. **Not done:** the decoded model still holds its own copy of the bytes; memory was not measured.
 
 ### 7.4 Each received LAN frame takes four actor hops through `DelegateBox` actors
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:8-26`; `Player/PlayerNetworkController.swift:8-26`
@@ -513,6 +516,7 @@ Players are trusted (peer import policy gaps are won't-fix, CODE_AUDIT_Folder §
 - **Why:** Added latency per frame for no isolation benefit.
 - **Action:** Store the weak delegate on a `@MainActor` holder or pass a `@MainActor @Sendable` closure capturing weak self.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `MasterNetworkControllerDelegateBox` and `PlayerNetworkControllerDelegateBox` are gone: the main-actor controllers hold the delegate weakly and call it directly, so a frame no longer goes through two extra actors. Covered by the existing master and player network controller tests (no new test: no behaviour change); the number of hops was not measured.
 
 ### 7.5 Inbound byte budget keeps an entry for every sender that ever sent
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayInboundByteBudget.swift:13-37`
@@ -520,6 +524,7 @@ Players are trusted (peer import policy gaps are won't-fix, CODE_AUDIT_Folder §
 - **Why:** Map grows by one entry per participant in a long session; negligible, hygiene.
 - **Action:** Remove an entry when its count reaches zero.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `SharePlayInboundByteBudget` forgets a sender once all its records left the window (every `admit` prunes) or were given back (`release`). Tests: `InboundByteBudgetTableTests`.
 
 ---
 

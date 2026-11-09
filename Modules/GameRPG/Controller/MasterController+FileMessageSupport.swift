@@ -76,7 +76,7 @@ extension MasterController {
             guard await access.controllable.hasLocalFileData(for: model.data.id) else {
                 throw AssetRequestUnavailable.notDownloaded
             }
-            return try await access.controllable.createGameData(for: model.data.id)
+            return try await cachedPackage(module: model.data.type, itemId: model.data.id, controllable: access.controllable)
         }
         guard model.type == .update else { return nil }
 

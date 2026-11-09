@@ -83,12 +83,12 @@ final class GameRootModel: Sendable {
     // identical or non-increasing `Date.now` timestamp (clock coalescing, or
     // a system clock adjustment), which previously made the second one fail
     // this gate and be silently dropped. See CODE_AUDIT_Network §5.17.
-    private var latestValueUpdateCounters: [ValueUpdateKey: Int] = [:]
+    @ObservationIgnored private var latestValueUpdateCounters: [ValueUpdateKey: Int] = [:]
     /// Items each player's Character packages introduced to this device, per sender. A
     /// package may only overwrite items that are its own primary item, are listed here or
     /// are new — see `PeerImportPolicy` / CODE_AUDIT_15 §5.2.
-    private var peerIntroducedItemIds: [UUID: Set<UUID>] = [:]
-    private var latestValueUpdateOrder: [ValueUpdateKey] = []
+    @ObservationIgnored private var peerIntroducedItemIds: [UUID: Set<UUID>] = [:]
+    @ObservationIgnored private var latestValueUpdateOrder: [ValueUpdateKey] = []
     private static let maximumRetainedValueUpdateCounters = 512
 
     var masterController: MasterController?

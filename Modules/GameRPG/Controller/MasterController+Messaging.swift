@@ -164,17 +164,17 @@ extension MasterController {
     func createGameData(for idType: NetworkCodableDataType) async throws -> NetworkCodableDataType? {
         switch idType.type {
         case .map:
-            return try await root.mapRoot.mapGameControllable.createMapGameData(for: idType.id)
+            return try await cachedMapPackage(for: idType.id)
         case .audio:
             guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: idType.id) else { return nil }
             return try await root.audioRoot.gameControllable.createGameData(for: idType.id)
         case .weather:
-            return try await root.weatherRoot.weatherGameControllable.createWeatherGameData(for: idType.id)
+            return try await cachedWeatherPackage(for: idType.id)
         default:
             guard let access = FileBackedModuleAccess.access(for: idType.type, in: root),
                   await access.controllable.hasLocalFileData(for: idType.id)
             else { return nil }
-            return try await access.controllable.createGameData(for: idType.id)
+            return try await cachedPackage(module: idType.type, itemId: idType.id, controllable: access.controllable)
         }
     }
 

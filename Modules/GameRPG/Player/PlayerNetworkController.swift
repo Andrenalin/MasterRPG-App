@@ -5,30 +5,13 @@ import Network
 import os.log
 import CoreRPG
 
-actor PlayerNetworkControllerDelegateBox {
-    private weak var delegate: (any PlayerNetworkControllerDelegate)?
-
-    init(_ delegate: (any PlayerNetworkControllerDelegate)?) {
-        self.delegate = delegate
-    }
-
-    func playerLostMaster() async {
-        await delegate?.playerLostMaster()
-    }
-
-    func playerReceived(data: Data?) async {
-        await delegate?.playerReceived(data: data)
-    }
-
-    func playerReady() async {
-        await delegate?.playerReady()
-    }
-}
-
 @MainActor
 final class PlayerNetworkController: Sendable {
     let proxy: Bool
-    private let delegate: PlayerNetworkControllerDelegateBox
+    /// Held weakly here on the main actor: a frame goes from its connection straight to the
+    /// delegate, not through an actor that only held the reference.
+    /// See CODE_AUDIT_Game_Shareplay §7.4.
+    private weak var delegate: (any PlayerNetworkControllerDelegate)?
 
     let browserManager: BrowserManager
     let networkModel: PlayerNetworkModel
@@ -115,7 +98,7 @@ final class PlayerNetworkController: Sendable {
         }
         self.networkModel = PlayerNetworkModel(name: name)
         self.proxy = proxy
-        self.delegate = PlayerNetworkControllerDelegateBox(delegate)
+        self.delegate = delegate
         self.browserManager = BrowserManager(serviceType: proxy ? .proxyServer : .player)
         Logger.playerNetworkController.debug("PlayerNetworkController: Init")
     }
@@ -412,7 +395,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         isAwaitingReconnect = true
         listenerRetryAttempt = 0
         await startPlayerServer()
-        await delegate.playerLostMaster()
+        await delegate?.playerLostMaster()
     }
 
     @MainActor
@@ -434,7 +417,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         fallbackListener?.stopListening()
         refreshMasterSessionId()
         resolvePendingConnection(success: true)
-        await delegate.playerReady()
+        await delegate?.playerReady()
     }
 
     func received(data: Data?, for id: ConnectionController.ID) async {
@@ -442,7 +425,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore data from replaced connection \(id.uuidString, privacy: .public)")
             return
         }
-        await delegate.playerReceived(data: data)
+        await delegate?.playerReceived(data: data)
     }
 }
 

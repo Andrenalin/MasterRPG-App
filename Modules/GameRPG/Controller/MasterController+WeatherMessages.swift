@@ -20,7 +20,7 @@ extension MasterController {
         case .reveal, .store:
             // A player request names only the Weather. Always rebuild the full
             // canonical package from the master; inbound peer bytes are ignored.
-            return try await root.weatherRoot.weatherGameControllable.createWeatherGameData(for: model.data.id)
+            return try await cachedWeatherPackage(for: model.data.id)
         case .update:
             // Weather is immutable for the lifetime of a game. Live update
             // messages are intentionally unsupported for now.

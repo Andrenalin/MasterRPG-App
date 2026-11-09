@@ -157,60 +157,28 @@ extension RPGSharePlayController {
     /// neither the next snapshot nor the other attachments from being looked at.
     ///
     /// The first snapshot with something to load (what a late joiner finds in the Journal) keeps
-    /// the message order: its loads run one after the other in a task of their own, so the last
-    /// presentation the game master showed is the one applied last. Every later snapshot loads
-    /// concurrently; only the loads of the same item wait for each other, which keeps a newer
-    /// publication of an item behind its older one. A load whose attachment left the Journal
-    /// ends on its own.
+    /// the message order, so the last presentation the game master showed is the one applied last.
+    /// Every later snapshot loads concurrently; only the loads of the same item wait for each
+    /// other, which keeps a newer publication of an item behind its older one. A load whose
+    /// attachment left the Journal ends on its own. See `SharePlayJournalLoadSequencer`.
     private func startJournalLoads(
         _ loads: [(attachment: GroupSessionJournal.Attachment, metadata: GameNetworkModel)],
         snapshotCount: Int,
         sessionId: UUID
     ) {
-        guard !loads.isEmpty else { return }
-        if !journalJoinBatchHandled {
-            journalJoinBatchHandled = true
-            let token = UUID()
-            let itemIds = Set(loads.map(\.metadata.data.id))
-            let previous = itemIds.compactMap { journalLoadTasks[$0]?.task }
-            let task = Task { @MainActor [weak self] in
-                for task in previous { await task.value }
-                for load in loads {
-                    guard let self,
-                          !Task.isCancelled,
-                          self.sessionLifecycle.isCurrent(sessionId: sessionId)
-                    else { return }
-                    await self.loadJournalAttachment(load.attachment, metadata: load.metadata, snapshotCount: snapshotCount, sessionId: sessionId)
+        journalLoadSequencer.start(
+            loads.map { load in
+                SharePlayJournalLoadSequencer.Load(load.metadata.data.id) { @MainActor [weak self] in
+                    await self?.loadJournalAttachment(
+                        load.attachment,
+                        metadata: load.metadata,
+                        snapshotCount: snapshotCount,
+                        sessionId: sessionId
+                    )
                 }
-                self?.finishJournalLoad(token: token, itemIds: itemIds)
-            }
-            for itemId in itemIds {
-                journalLoadTasks[itemId] = (token, task)
-            }
-            return
-        }
-        for load in loads {
-            let itemId = load.metadata.data.id
-            let token = UUID()
-            let previous = journalLoadTasks[itemId]?.task
-            let task = Task { @MainActor [weak self] in
-                await previous?.value
-                guard let self,
-                      !Task.isCancelled,
-                      self.sessionLifecycle.isCurrent(sessionId: sessionId)
-                else { return }
-                await self.loadJournalAttachment(load.attachment, metadata: load.metadata, snapshotCount: snapshotCount, sessionId: sessionId)
-                self.finishJournalLoad(token: token, itemIds: [itemId])
-            }
-            journalLoadTasks[itemId] = (token, task)
-        }
-    }
-
-    /// Forgets the load `token` for `itemIds`, unless a newer load of the item replaced it.
-    private func finishJournalLoad(token: UUID, itemIds: Set<UUID>) {
-        for itemId in itemIds where journalLoadTasks[itemId]?.token == token {
-            journalLoadTasks[itemId] = nil
-        }
+            },
+            isCurrent: { [weak self] in self?.sessionLifecycle.isCurrent(sessionId: sessionId) ?? false }
+        )
     }
 
     /// Downloads one attachment and hands it to the game, or reports that it did not arrive.

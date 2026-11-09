@@ -48,7 +48,7 @@ extension MasterController {
                 Logger.networking.debug("MasterController: Map request for \(model.data.id, privacy: .public) not answered while map sharing is paused")
                 return nil
             }
-            let package = try await root.mapRoot.mapGameControllable.createMapGameData(for: model.data.id)
+            let package = try await cachedMapPackage(for: model.data.id)
             await send(
                 type: .reveal,
                 subtype: .show,

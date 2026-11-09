@@ -5,29 +5,12 @@ import Network
 import os.log
 import CoreRPG
 
-actor MasterNetworkControllerDelegateBox {
-    private weak var delegate: (any MasterNetworkControllerDelegate)?
-
-    init(_ delegate: (any MasterNetworkControllerDelegate)?) {
-        self.delegate = delegate
-    }
-
-    func masterLostPlayer(with connectionId: ConnectionController.ID) async {
-        await delegate?.masterLostPlayer(with: connectionId)
-    }
-
-    func masterReady(for connectionId: ConnectionController.ID) async {
-        await delegate?.masterReady(for: connectionId)
-    }
-
-    func masterReceived(data: Data?, for connectionId: ConnectionController.ID) async {
-        await delegate?.masterReceived(data: data, for: connectionId)
-    }
-}
-
 @MainActor
 final class MasterNetworkController: Sendable {
-    private let delegate: MasterNetworkControllerDelegateBox
+    /// Held weakly here on the main actor: a frame goes from its connection straight to the
+    /// delegate, not through an actor that only held the reference.
+    /// See CODE_AUDIT_Game_Shareplay §7.4.
+    private weak var delegate: (any MasterNetworkControllerDelegate)?
     /// Arguments: name, supporter tier, proxy, passcode, session id, delegate.
     let listenerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
@@ -79,7 +62,7 @@ final class MasterNetworkController: Sendable {
     ) {
         self.networkModel = MasterNetworkModel(name: name)
         self.hostingSessions = hostingSessions
-        self.delegate = MasterNetworkControllerDelegateBox(delegate)
+        self.delegate = delegate
         self.listenerBuilder = listenerBuilder
         self.browserConnectionBuilder = browserConnectionBuilder
         // Reads the stored hosting session off the main actor, so starting to host never waits
@@ -308,11 +291,11 @@ extension MasterNetworkController: ConnectionControllerDelegate {
         if let endpoint = browserConnectionEndpoints[id] {
             redialAttempts.removeValue(forKey: endpoint)
         }
-        await delegate.masterReady(for: id)
+        await delegate?.masterReady(for: id)
     }
 
     func received(data: Data?, for id: ConnectionController.ID) async {
-        await delegate.masterReceived(data: data, for: id)
+        await delegate?.masterReceived(data: data, for: id)
     }
 }
 
@@ -488,7 +471,7 @@ extension MasterNetworkController {
 private extension MasterNetworkController {
     func removeConnectionAndNotify(id: ConnectionController.ID) async {
         if removeConnection(id: id) {
-            await delegate.masterLostPlayer(with: id)
+            await delegate?.masterLostPlayer(with: id)
         }
     }
 

@@ -17,18 +17,27 @@ struct SharePlayInboundByteBudget {
 
     private var received: [UUID: [(at: ContinuousClock.Instant, count: Int)]] = [:]
 
+    /// Senders that currently have bytes recorded.
+    var senderCount: Int { received.count }
+
     /// Records `count` bytes from `sender`; `false` once the sender is over its budget for the
-    /// current window.
+    /// current window. A sender whose records have all left the window is forgotten, so the
+    /// table holds only the senders that sent lately. See CODE_AUDIT_Game_Shareplay §7.5.
     mutating func admit(_ count: Int, from sender: UUID, now: ContinuousClock.Instant = .now) -> Bool {
-        var history = (received[sender] ?? []).filter { now - $0.at < Self.window }
+        prune(now: now)
+        var history = received[sender] ?? []
         let used = history.reduce(0) { $0 + $1.count }
-        guard used + count <= Self.bytesPerSender else {
-            received[sender] = history
-            return false
-        }
+        guard used + count <= Self.bytesPerSender else { return false }
         history.append((now, count))
         received[sender] = history
         return true
+    }
+
+    private mutating func prune(now: ContinuousClock.Instant) {
+        for (sender, history) in received {
+            let current = history.filter { now - $0.at < Self.window }
+            received[sender] = current.isEmpty ? nil : current
+        }
     }
 
     /// Gives back `count` of the bytes recorded for `sender`, newest records first. A Journal
@@ -45,7 +54,8 @@ struct SharePlayInboundByteBudget {
             history[index].count -= taken
             remaining -= taken
         }
-        received[sender] = history.filter { $0.count > 0 }
+        let remainingHistory = history.filter { $0.count > 0 }
+        received[sender] = remainingHistory.isEmpty ? nil : remainingHistory
     }
 
     mutating func reset() {

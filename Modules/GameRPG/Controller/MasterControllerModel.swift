@@ -67,6 +67,9 @@ final class MasterControllerModel {
     /// content version is preceded by the content: revealing a room changes what the players
     /// may read of it, and only the content update carries that text.
     var sentMapContentVersions: [UUID: Int] = [:]
+    /// The packages exported last, reused for every player that asks for the same item.
+    /// See `MasterPackageCache`.
+    var packageCache = MasterPackageCache()
     /// Orders the game master's map photo changes (the presentation itself lives in the game
     /// master's own screen state, see `MasterController+MapPhoto.swift`) and table weather
     /// changes (see `MasterController+TableWeather.swift`).

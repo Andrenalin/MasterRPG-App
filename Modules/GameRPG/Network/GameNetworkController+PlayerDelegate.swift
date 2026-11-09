@@ -49,7 +49,7 @@ extension GameNetworkController {
         guard !proxy, let mismatch = GameVersionMismatch.detect(in: data) else { return }
         Logger.networking.error("GameNetworkController: Cannot read a message of another app version: \(String(describing: mismatch), privacy: .public)")
         if model.claimMismatchReport(mismatch) {
-            if let connectionId {
+            if connectionId != nil {
                 await model.masterDelegate?.incompatibleVersion(mismatch)
             } else {
                 await model.playerDelegate?.incompatibleVersion(mismatch)

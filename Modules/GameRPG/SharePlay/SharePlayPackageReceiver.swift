@@ -2,17 +2,44 @@
 
 import CoreRPG
 import Foundation
+import os
 import os.log
 
 struct SharePlayCompletedPackage: Sendable {
     let id: UUID
     let sourceParticipantId: UUID
-    let chunks: [Data]
     let byteCount: Int
+    private let chunkStore: OSAllocatedUnfairLock<[Data]>
+
+    init(id: UUID, sourceParticipantId: UUID, chunks: [Data], byteCount: Int) {
+        self.id = id
+        self.sourceParticipantId = sourceParticipantId
+        self.byteCount = byteCount
+        self.chunkStore = OSAllocatedUnfairLock(initialState: chunks)
+    }
+
+    /// The chunks as they arrived.
+    var chunks: [Data] { chunkStore.withLock { $0 } }
 
     /// Linear-time assembly. Production invokes this from an `@concurrent`
     /// decode helper so large payloads never concatenate on the main actor.
     nonisolated func reassembledData() -> Data {
+        Self.assemble(chunkStore.withLock { $0 }, byteCount: byteCount)
+    }
+
+    /// Like `reassembledData()`, and lets go of the chunks: for a package that is decoded once,
+    /// the chunks and the assembled bytes (and then the decoded model) would otherwise all be in
+    /// memory at the same time. A second call finds nothing left. See
+    /// CODE_AUDIT_Game_Shareplay §7.3.
+    nonisolated func takeReassembledData() -> Data {
+        let taken = chunkStore.withLock { chunks in
+            defer { chunks = [] }
+            return chunks
+        }
+        return Self.assemble(taken, byteCount: byteCount)
+    }
+
+    private nonisolated static func assemble(_ chunks: [Data], byteCount: Int) -> Data {
         var result = Data()
         result.reserveCapacity(byteCount)
         for chunk in chunks {
@@ -27,7 +54,7 @@ struct SharePlayPackageStreamKey: Hashable, Sendable {
     let packageId: UUID
 }
 
-@MainActor @Observable
+@MainActor
 final class SharePlayPackageReceiver {
     typealias Sleep = @Sendable (Duration) async throws -> Void
 
@@ -77,10 +104,12 @@ final class SharePlayPackageReceiver {
     private var activityOrder: [SharePlayPackageStreamKey: UInt64] = [:]
     private var nextActivityOrder: UInt64 = 0
     private var expirationTask: Task<Void, Never>?
+    private var scheduledExpiration: ContinuousClock.Instant?
 
     func reset() {
         expirationTask?.cancel()
         expirationTask = nil
+        scheduledExpiration = nil
         receivedPackages.removeAll()
         cumulativeIncompleteByteCount = 0
         lastReceivedAt.removeAll()
@@ -268,14 +297,26 @@ final class SharePlayPackageReceiver {
         activityOrder.removeValue(forKey: key)
     }
 
+    /// One sleeping task serves every stream. Progress only moves the earliest deadline later,
+    /// so a task that wakes up early finds nothing expired and schedules the real deadline; no
+    /// task is cancelled and created per chunk (about 1,000 for a 64 MB stream).
+    /// See CODE_AUDIT_Game_Shareplay §7.3.
     private func scheduleNextExpiration() {
-        expirationTask?.cancel()
-        expirationTask = nil
-        guard let nextReceivedAt = lastReceivedAt.values.min() else { return }
+        guard let nextReceivedAt = lastReceivedAt.values.min() else {
+            expirationTask?.cancel()
+            expirationTask = nil
+            scheduledExpiration = nil
+            return
+        }
 
         let deadline = nextReceivedAt.advanced(by: expirationInterval)
+        if expirationTask != nil, let scheduledExpiration, scheduledExpiration <= deadline {
+            return
+        }
+        expirationTask?.cancel()
         let delay = now().duration(to: deadline)
         let sleep = self.sleep
+        scheduledExpiration = deadline
         expirationTask = Task { @MainActor [weak self] in
             do {
                 if delay > .zero {
@@ -287,13 +328,14 @@ final class SharePlayPackageReceiver {
             }
             guard let self else { return }
             self.expirationTask = nil
+            self.scheduledExpiration = nil
             _ = self.pruneExpired(at: self.now())
             self.scheduleNextExpiration()
         }
     }
 }
 
-@MainActor @Observable
+@MainActor
 final class PackageMessageList {
     init(initialPackage: PackageMessage) {
         self.id = initialPackage.uuid

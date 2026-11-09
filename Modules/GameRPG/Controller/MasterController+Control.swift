@@ -39,6 +39,7 @@ extension MasterController {
         runningAudioPlay = nil
         lateAudioPlayers.removeAll()
         gameModel.sentMapContentVersions.removeAll()
+        gameModel.packageCache.removeAll()
         gameModel.resetCharacterOwnership()
         gameModel.resetListSequences()
         gameModel.resetSpaceTransformSequence()

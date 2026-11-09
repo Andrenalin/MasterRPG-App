@@ -550,12 +550,8 @@ final class RPGSharePlayController {
     var journalMetadataCache: [UUID: GameNetworkModel] = [:]
     var currentJournalAttachmentIds: Set<UUID> = []
     var journalDrainTask: Task<Void, Never>?
-    /// The Journal load that runs for each item, so a newer publication of the item waits for the
-    /// older one. Loads of different items run side by side.
-    var journalLoadTasks: [UUID: (token: UUID, task: Task<Void, Never>)] = [:]
-    /// Whether the first snapshot with something to load (a late joiner's) was handled: it loads
-    /// in message order, every later one concurrently.
-    var journalJoinBatchHandled = false
+    /// Which Journal load waits for which. See `SharePlayJournalLoadSequencer`.
+    let journalLoadSequencer = SharePlayJournalLoadSequencer()
     // Normal Messenger sends are admitted before encoding, then processed in
     // invocation order. This prevents a burst from spawning unbounded parallel
     // Base64 encodes before the package sender can apply its own bounds.

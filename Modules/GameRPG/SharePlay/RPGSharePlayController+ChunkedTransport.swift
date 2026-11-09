@@ -534,7 +534,7 @@ extension RPGSharePlayController {
         from package: SharePlayCompletedPackage
     ) async -> (model: GameNetworkModel, byteCount: Int)? {
         guard !Task.isCancelled else { return nil }
-        let data = package.reassembledData()
+        let data = package.takeReassembledData()
         guard !Task.isCancelled,
               let model = GameNetworkModel.decodeData(of: data)
         else { return nil }
@@ -710,9 +710,7 @@ extension RPGSharePlayController {
         pendingJournalSnapshot = nil
         currentJournalAttachmentIds = []
         journalDrainTask = nil
-        journalLoadTasks.values.forEach { $0.task.cancel() }
-        journalLoadTasks = [:]
-        journalJoinBatchHandled = false
+        journalLoadSequencer.cancelAll()
         sessionLifecycle.reset()
         participantTracker.reset()
         journalLedger.reset()
