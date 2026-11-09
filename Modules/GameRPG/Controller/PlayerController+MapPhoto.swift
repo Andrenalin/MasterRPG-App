@@ -174,7 +174,7 @@ extension PlayerController {
         }
     }
 
-    private func cancelMapPhotoMakeCurrent() {
+    func cancelMapPhotoMakeCurrent() {
         gameModel.mapPhotoMakeCurrentTask?.cancel()
         gameModel.mapPhotoMakeCurrentTask = nil
     }

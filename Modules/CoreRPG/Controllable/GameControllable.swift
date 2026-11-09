@@ -23,7 +23,13 @@ public final class ItemGameModel {
     public var focusItemIds: [UUID] = []
 
     public var currentItemId: UUID? {
-        itemDataModel.gameItems.first
+        itemDataModel.isGameCurrentCleared ? nil : itemDataModel.gameItems.first
+    }
+
+    /// Takes the current item off the screen without dropping it: it and the other items keep
+    /// their game copies, and showing one again makes it current. Ended by any other first item.
+    public func clearCurrent() {
+        itemDataModel.isGameCurrentCleared = true
     }
 
     public var currentPlayers: [UUID] = []
@@ -84,6 +90,7 @@ public final class ItemGameModel {
     /// See CODE_AUDIT_16 §3.10.
     func moveToFront(itemId: UUID) -> Bool {
         guard let index = items.firstIndex(of: itemId) else { return false }
+        itemDataModel.isGameCurrentCleared = false
         if index != 0 {
             items.remove(at: index)
             items.insert(itemId, at: 0)
@@ -100,6 +107,7 @@ public final class ItemGameModel {
                 items.append(itemId)
             }
         } else if let index = items.firstIndex(of: itemId) {
+            itemDataModel.isGameCurrentCleared = false
             if index != 0 {
                 items.remove(at: index)
                 items.insert(itemId, at: 0)
@@ -122,6 +130,7 @@ public final class ItemGameModel {
 
     func reset() {
         resetGeneration &+= 1
+        itemDataModel.isGameCurrentCleared = false
         items = []
         itemData.removeAll()
         playerReports.removeAll()

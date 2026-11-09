@@ -42,7 +42,18 @@ public final class ItemDataModel: Sendable {
     public var items: [UUID] = []
     public var itemData: [UUID: ModelType] = [:]
     
-    public var gameItems: [UUID] = []
+    /// The items of the running game, the current one first. Another first item (an insert, a
+    /// removal) ends `isGameCurrentCleared`.
+    public var gameItems: [UUID] = [] {
+        didSet {
+            if gameItems.first != oldValue.first {
+                isGameCurrentCleared = false
+            }
+        }
+    }
+    /// Set by `ItemGameModel.clearCurrent()`: the game has no current item although `gameItems`
+    /// still holds its items (and their session state), so a later show finds them again.
+    public var isGameCurrentCleared = false
     public var gameItemData: [UUID: ModelType] = [:]
 
     /// The ids `ItemControllable.delete` is working on. The item leaves memory before the

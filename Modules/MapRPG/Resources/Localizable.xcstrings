@@ -3024,6 +3024,22 @@
           }
         }
       }
+    },
+    "Clear Map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล้างแผนที่"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

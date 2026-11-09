@@ -32,11 +32,20 @@ public struct NetworkActions: Sendable {
     public let shareId: @MainActor @Sendable (NetworkCodableDataType) -> Void
     public let send: @MainActor @Sendable (NetworkCodableDataType) -> Void
     public let game: @MainActor @Sendable (NetworkCodableDataType, RPGMessageActionType, UUID?) -> Void
+    /// Takes the shown map off every screen, the game master's own included. With `false` (the
+    /// game master paused sharing) only the game master's own screen is cleared.
+    public let clearMap: @MainActor @Sendable (_ shareWithPlayers: Bool) -> Void
 
-    public init(shareId: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void, send: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void, game: @MainActor @escaping @Sendable (NetworkCodableDataType, RPGMessageActionType, UUID?) -> Void) {
+    public init(
+        shareId: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void,
+        send: @MainActor @escaping @Sendable (NetworkCodableDataType) -> Void,
+        game: @MainActor @escaping @Sendable (NetworkCodableDataType, RPGMessageActionType, UUID?) -> Void,
+        clearMap: @MainActor @escaping @Sendable (_ shareWithPlayers: Bool) -> Void = { _ in }
+    ) {
         self.shareId = shareId
         self.send = send
         self.game = game
+        self.clearMap = clearMap
     }
     
     @MainActor static let empty = NetworkActions(shareId: { _ in }, send: { _ in }, game: { _, _, _ in })

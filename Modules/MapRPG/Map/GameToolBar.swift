@@ -151,6 +151,7 @@ private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
     let model: Session
 
     @Environment(MapRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
@@ -200,6 +201,20 @@ private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
             title: String(localized: "Pointing Mode", bundle: .module),
             module: .map,
             isSelected: model.isPointing
+        )
+
+        Button {
+            // Like every other edit, it reaches the players only while sharing is on; the game
+            // master's own screen is always cleared.
+            networkActions?.clearMap(model.isStreaming)
+        } label: {
+            Image(systemName: "xmark.rectangle")
+                .frame(height: iconSize)
+        }
+        .selectedRoundButton(
+            title: String(localized: "Clear Map", bundle: .module),
+            module: .map,
+            isSelected: false
         )
     }
 

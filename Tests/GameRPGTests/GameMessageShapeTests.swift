@@ -130,6 +130,9 @@ struct GameMessageShapeTests {
         #expect(!message(role: .master, type: .update, subType: .photoList, module: .photo, bytes: Data([1])).isPresentation)
         #expect(!message(role: .master, type: .reveal, subType: .show, module: .audio).isPresentation)
         #expect(!message(role: .player, type: .reveal, subType: .show, module: .photo).isPresentation)
+        // The game master's "Clear Map" is a show of no module, ordered with the other shows.
+        #expect(message(role: .master, type: .reveal, subType: .show, module: .none).isPresentation)
+        #expect(!message(role: .player, type: .reveal, subType: .show, module: .none).isPresentation)
     }
 
     @Test("A package of a file-backed module travels as an asset")

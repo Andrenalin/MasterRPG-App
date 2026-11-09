@@ -22,7 +22,9 @@ extension PlayerController {
             return nil
         }
         switch model.data.type {
-        case .none, .game, .rule, .setting, .editor, .generator, .search, .adventure:
+        case .none:
+            return handleMapCleared(model)
+        case .game, .rule, .setting, .editor, .generator, .search, .adventure:
             return nil
         case .audio:
             return try await handleAudio(

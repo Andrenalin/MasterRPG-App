@@ -118,7 +118,8 @@ extension GameNetworkModel {
 
         if type == .reveal {
             return switch data.type {
-            case .map, .photo, .pdf, .space, .table, .weather:
+            // `.none` is the game master clearing the shown map; it orders with the shows.
+            case .map, .photo, .pdf, .space, .table, .weather, .none:
                 true
             default:
                 false

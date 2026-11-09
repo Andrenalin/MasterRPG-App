@@ -57,6 +57,8 @@ extension GameTableModel {
 
         guard let currentItemId = mapRoot.mapGameControllable.gameModel.currentItemId else {
             clearPinSelection()
+            clearPinPhoto()
+            sharedPhotoPinIds = []
             currentMapId = nil
             clearBoardImage()
             syncPawnsWithMapPins()

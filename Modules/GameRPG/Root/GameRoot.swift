@@ -236,6 +236,8 @@ public final class GameRoot {
                 await playerStore?.game(message: message, actionType: actionType)
             }
         }
+    } clearMap: { @MainActor [weak self] shareWithPlayers in
+        self?.scheduleMapClear(shareWithPlayers: shareWithPlayers)
     }
 
     public lazy var sharingControlActions: SharingControlActions = SharingControlActions(id: .object(ObjectIdentifier(self))) { [weak self] in
@@ -288,6 +290,14 @@ public final class GameRoot {
         guard let store = gameModel.masterController else { return }
         scheduleNetworkAction {
             await store.broadcastMapPhoto(presentation)
+        }
+    }
+
+    /// Takes the shown map off the screens, in order with the game master's other changes.
+    func scheduleMapClear(shareWithPlayers: Bool) {
+        guard let store = gameModel.masterController else { return }
+        scheduleNetworkAction {
+            await store.clearShownMap(shareWithPlayers: shareWithPlayers)
         }
     }
 
