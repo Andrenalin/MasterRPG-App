@@ -54,6 +54,52 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         return groupId
     }
 
+    /// An item can move into another when it is an ordinary, visible item that is not a group
+    /// itself and owns no group values (nested groups are not supported), and the target is an
+    /// ordinary, visible item that is not a group either.
+    @MainActor func canMoveIntoGroup(itemId: UUID, into targetId: UUID) -> Bool {
+        guard itemId != targetId,
+              let item = itemControllable.itemSync(for: itemId) as? Model,
+              let target = itemControllable.itemSync(for: targetId) as? Model else { return false }
+        return isMovableIntoGroup(item) && canHostGroupValues(target)
+    }
+
+    /// Turns the existing item `itemId` into a hidden group value of `targetId`: the new entry's
+    /// group link is the item's id, the item gets `groupId = targetId` and is hidden. The item
+    /// keeps its id, so every link to it stays valid.
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID? {
+        guard canMoveIntoGroup(itemId: itemId, into: targetId), let item = editModel(for: itemId) else { return nil }
+
+        // A hidden group has no folder; the folder would keep listing it.
+        if item.parentId != nil {
+            removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false)
+        }
+        guard var group = editModel(for: itemId) else { return nil }
+        group.groupId = targetId
+        group.isGroupHiddenToggle = true
+        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+
+        // The entry mirrors the item's name and description, as `convertToGroup` does: editing
+        // the entry writes both back to the item.
+        var entry = Model.Entry.empty
+        entry.name = group.name
+        entry.content = group.description
+        entry.groupItemId = itemId
+        add(entry: entry, itemId: targetId)
+        return entry.id
+    }
+
+    @MainActor private func isMovableIntoGroup(_ item: Model) -> Bool {
+        guard canHostGroupValues(item) else { return false }
+        return !item.entries.contains { $0.groupItemId != nil }
+    }
+
+    @MainActor private func canHostGroupValues(_ item: Model) -> Bool {
+        !item.specialCategory
+            && item.groupId == nil
+            && item.displayState == DisplayStateMask.fullVisible.rawValue
+    }
+
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {
         guard let item = itemControllable.itemSync(for: itemId) as? Model else { return [] }
         return item.entries.compactMap {

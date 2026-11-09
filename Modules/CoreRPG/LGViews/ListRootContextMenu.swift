@@ -47,6 +47,7 @@ struct ListRootContextMenu: View {
         Divider()
         ExportItemView(controller: controller, currentSelected: currentSelected, title: title)
         GroupEditView(controller: controller, currentSelected: currentSelected, title: title)
+        MoveIntoGroupMenu(root: root, controller: controller, currentSelected: currentSelected, listController: listController, title: title)
         if canGenerate {
             GenerateItemView(currentSelected: currentSelected, title: title)
         }
@@ -327,6 +328,85 @@ private struct GroupEditView: View {
         #if !os(tvOS)
         .keyboardShortcut("g", modifiers: [.command, .control])
         #endif
+    }
+}
+
+/// "Move <item> into <open item> as group value", and a picker for any other item that can host
+/// it. Only for one row (not in selection mode), and only where the module has group values
+/// (Character, Adventure) and the row can become one: the entry is hidden otherwise.
+private struct MoveIntoGroupMenu: View {
+    let root: any ItemRootControllable
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let listController: (any FolderListControllable)?
+    let title: String
+
+    var body: some View {
+        if let itemId = currentSelected,
+           let editable = root.editControllable as? any EntryDataEditable,
+           editable.canAddGroups {
+            // The row being right-clicked is not necessarily the open one: the open item is the
+            // list's selection.
+            let openTarget = openTarget(itemId: itemId, editable: editable)
+            if let openTarget {
+                Button {
+                    move(itemId: itemId, into: openTarget.id, editable: editable)
+                } label: {
+                    Label {
+                        Text("Move \(title) into \(openTarget.name) as group value", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.turn.down.right")
+                    }
+                }
+            }
+            if hasCandidates(itemId: itemId, excluding: openTarget?.id, editable: editable) {
+                Menu {
+                    ForEach(candidates(itemId: itemId, excluding: openTarget?.id, editable: editable)) { target in
+                        Button(target.name) {
+                            move(itemId: itemId, into: target.id, editable: editable)
+                        }
+                    }
+                } label: {
+                    Label {
+                        Text("Move \(title) into group value of", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.turn.down.right")
+                    }
+                }
+            }
+        }
+    }
+
+    private func openTarget(itemId: UUID, editable: any EntryDataEditable) -> FolderRepresentable? {
+        guard let openId = root.currentSelectedItemId,
+              editable.canMoveIntoGroup(itemId: itemId, into: openId),
+              let open = root.itemControllable.itemSync(for: openId) else { return nil }
+        return FolderRepresentable(id: openId, name: open.name)
+    }
+
+    private func hasCandidates(itemId: UUID, excluding openId: UUID?, editable: any EntryDataEditable) -> Bool {
+        root.itemControllable.itemDataModel.items.contains {
+            $0 != openId && editable.canMoveIntoGroup(itemId: itemId, into: $0)
+        }
+    }
+
+    private func candidates(itemId: UUID, excluding openId: UUID?, editable: any EntryDataEditable) -> [FolderRepresentable] {
+        root.itemControllable.itemDataModel.items.compactMap { targetId -> FolderRepresentable? in
+            guard targetId != openId,
+                  editable.canMoveIntoGroup(itemId: itemId, into: targetId),
+                  let target = root.itemControllable.itemSync(for: targetId) else { return nil }
+            return FolderRepresentable(id: targetId, name: target.name)
+        }
+        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    private func move(itemId: UUID, into targetId: UUID, editable: any EntryDataEditable) {
+        withAnimation {
+            guard editable.moveIntoGroup(itemId: itemId, into: targetId) != nil else { return }
+            // The item only changed fields (groupId, hidden) the list does not observe: ask for
+            // a fresh list at once, like the sheet's group conversion does.
+            listController?.update(debounce: false)
+        }
     }
 }
 

@@ -35,6 +35,12 @@ public protocol EntryDataEditable: EditControllable {
     @MainActor func addNewGroup(itemId: UUID) async -> UUID
     @MainActor func canBecomeGroup(itemId: UUID) -> Bool
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID
+    /// Whether the item `itemId` can become a hidden group value inside `targetId`.
+    @MainActor func canMoveIntoGroup(itemId: UUID, into targetId: UUID) -> Bool
+    /// Moves the item `itemId` into `targetId`: a new entry of `targetId` stands for the item,
+    /// which becomes a hidden group of the target. Returns the new entry's id, or `nil` if the
+    /// item cannot be moved.
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID?
 
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     /// Whether `entry` has an image for its thumbnail slot. An entry with nothing to show (a map
@@ -122,6 +128,10 @@ public extension EntryDataEditable {
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
         UUID() // Default implementation does nothing, returns empty UUID
     }
+
+    @MainActor func canMoveIntoGroup(itemId: UUID, into targetId: UUID) -> Bool { false }
+
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID? { nil }
 
     @MainActor func entryContent(itemId: UUID, entryId: UUID) -> String {
         editModel(for: itemId)?[entryId].content ?? ""

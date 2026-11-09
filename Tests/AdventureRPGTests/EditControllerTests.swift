@@ -173,6 +173,87 @@ struct EditControllerTests {
         #expect(sut.canBecomeGroup(itemId: groupItemId) == false)
     }
 
+    // MARK: - moveIntoGroup
+
+    @Test func moveIntoGroupAddsEntryAndHidesTheItem() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let targetId = await root.itemController.addNew(type: .item)
+        let movedId = await root.itemController.addNew(type: .item)
+        sut.reset(name: "Battle Value", itemId: movedId)
+        sut.reset(description: "Fighting values.", itemId: movedId)
+        #expect(sut.canMoveIntoGroup(itemId: movedId, into: targetId))
+
+        let entryId = try #require(sut.moveIntoGroup(itemId: movedId, into: targetId))
+
+        let target = root.itemController.itemOrEmpty(for: targetId)
+        let entry = try #require(target.entries.first(where: { $0.id == entryId }))
+        #expect(entry.adventureId == movedId)
+        #expect(entry.name == "Battle Value")
+
+        let moved = root.itemController.itemOrEmpty(for: movedId)
+        #expect(moved.id == movedId)
+        #expect(moved.groupId == targetId)
+        #expect(moved.displayState == 1)
+        #expect(moved.description == "Fighting values.")
+        #expect(moved.parentId == nil)
+    }
+
+    @Test func moveIntoGroupLeavesTheFolder() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let targetId = await root.itemController.addNew(type: .item)
+        let folderId = await root.itemController.addNew(type: .folder)
+        let movedId = await root.itemController.addNew(type: .item)
+        sut.addItem(itemId: movedId, parentId: folderId)
+        #expect(root.itemController.itemOrEmpty(for: movedId).parentId == folderId)
+
+        #expect(sut.moveIntoGroup(itemId: movedId, into: targetId) != nil)
+
+        #expect(root.itemController.itemOrEmpty(for: movedId).parentId == nil)
+        #expect(root.itemController.itemOrEmpty(for: folderId).entries.contains(where: { $0.childId == movedId }) == false)
+    }
+
+    @Test func moveIntoGroupRefusesAnItemWithGroupValues() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let targetId = await root.itemController.addNew(type: .item)
+        let movedId = await root.itemController.addNew(type: .item)
+        _ = await sut.addNewGroup(itemId: movedId)
+
+        #expect(sut.canMoveIntoGroup(itemId: movedId, into: targetId) == false)
+        #expect(sut.moveIntoGroup(itemId: movedId, into: targetId) == nil)
+        #expect(root.itemController.itemOrEmpty(for: movedId).groupId == nil)
+        #expect(root.itemController.itemOrEmpty(for: targetId).entries.contains(where: { $0.adventureId == movedId }) == false)
+    }
+
+    @Test func moveIntoGroupRefusesGroupsFoldersAndItself() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let otherId = await root.itemController.addNew(type: .item)
+        let folderId = await root.itemController.addNew(type: .folder)
+        let entryId = await sut.addNewGroup(itemId: itemId)
+        let groupId = try #require(root.itemController.itemOrEmpty(for: itemId).entries.first(where: { $0.id == entryId })?.adventureId)
+
+        // itself
+        #expect(sut.canMoveIntoGroup(itemId: otherId, into: otherId) == false)
+        // an item that already is a group, as the moved item and as the target
+        #expect(sut.canMoveIntoGroup(itemId: groupId, into: otherId) == false)
+        #expect(sut.canMoveIntoGroup(itemId: otherId, into: groupId) == false)
+        // a folder, as the moved item and as the target
+        #expect(sut.canMoveIntoGroup(itemId: folderId, into: otherId) == false)
+        #expect(sut.canMoveIntoGroup(itemId: otherId, into: folderId) == false)
+        // an item that was moved already cannot move again
+        #expect(sut.moveIntoGroup(itemId: otherId, into: itemId) != nil)
+        let third = await root.itemController.addNew(type: .item)
+        #expect(sut.canMoveIntoGroup(itemId: otherId, into: third) == false)
+    }
+
     @Test func convertToGroupCreatesNewGroupFromEntry() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.editController
