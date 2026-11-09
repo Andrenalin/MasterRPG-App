@@ -480,6 +480,10 @@ final class RPGSharePlayController {
     var packageSender: SharePlaySingleQueuePackageSender?
     var packageReceiver = SharePlayPackageReceiver()
     var inboundByteBudget = SharePlayInboundByteBudget()
+    /// The bytes of Journal attachments one participant has had loaded per minute. Kept apart
+    /// from `inboundByteBudget`, which counts Messenger packages.
+    /// See CODE_AUDIT_Game_Shareplay §6.2.
+    var journalLoadBudget = SharePlayInboundByteBudget()
 
     // Kept alive through session resets so the player can re-join automatically
     // when SharePlay becomes available again for a running game. Only cancelled

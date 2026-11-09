@@ -12,6 +12,14 @@ enum GameLimits {
     /// See CODE_AUDIT_17 §6.2.
     static let maximumMessageBytes = 100 * ByteUnit.megabyte
 
+    /// Whether a package of `byteCount` raw bytes may go into the SharePlay Journal, which takes
+    /// no attachment over 100 MB. The sender refuses a larger one instead of letting the add
+    /// fail or hang, and the receiver ignores one it loaded anyway.
+    /// See CODE_AUDIT_Game_Shareplay §6.2.
+    static func fitsJournalAttachment(byteCount: Int) -> Bool {
+        byteCount >= 0 && byteCount <= maximumMessageBytes
+    }
+
     /// Bytes the JSON envelope around an attachment may add to its base64 payload: the sender,
     /// master state, ids and versions. A generous bound, not a measurement.
     static let envelopeAllowanceBytes = 256 * ByteUnit.kibibyte

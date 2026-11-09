@@ -31,6 +31,23 @@ struct SharePlayInboundByteBudget {
         return true
     }
 
+    /// Gives back `count` of the bytes recorded for `sender`, newest records first. A Journal
+    /// load reserves the largest size before it starts, because nothing says how large the
+    /// attachment is, and returns what the load did not use.
+    /// See CODE_AUDIT_Game_Shareplay §6.2.
+    mutating func release(_ count: Int, from sender: UUID) {
+        guard count > 0, var history = received[sender] else { return }
+        var remaining = count
+        var index = history.count
+        while index > 0, remaining > 0 {
+            index -= 1
+            let taken = min(history[index].count, remaining)
+            history[index].count -= taken
+            remaining -= taken
+        }
+        received[sender] = history.filter { $0.count > 0 }
+    }
+
     mutating func reset() {
         received.removeAll()
     }

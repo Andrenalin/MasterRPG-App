@@ -54,6 +54,13 @@ extension RPGSharePlayController {
             return enqueueChunkedSend(model, sessionId: sessionId, participantId: nil) ? .sentByMessenger : .unavailable
         }
 
+        // The Journal takes no attachment over 100 MB; a larger one would only fail or hang the
+        // add. See CODE_AUDIT_Game_Shareplay §6.2.
+        guard GameLimits.fitsJournalAttachment(byteCount: attachmentData.count) else {
+            Logger.sharePlay.error("Journal: message \(model.counter, privacy: .public) \(model.data.type.token, privacy: .public) \(model.data.id, privacy: .public) is \(attachmentData.count, privacy: .public) bytes, over the Journal limit; not published")
+            return .unavailable
+        }
+
         let moduleKey = model.data.type
         // An audio playlist has its own slot: its first track is shown right after it.
         let slot = SharePlayJournalSlot(moduleKey, isPlaylist: isPlaylist && moduleKey == .audio)
@@ -717,6 +724,7 @@ extension RPGSharePlayController {
         participantPlayers = [:]
         packageReceiver.reset()
         inboundByteBudget.reset()
+        journalLoadBudget.reset()
         gameModel?.attachments = [:]
         if groupSession != nil {
             leaveGroupSession()

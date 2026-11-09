@@ -223,6 +223,27 @@ extension RPGSharePlayController {
         var metadata = initialMetadata
         let attachmentId = attachment.id
         let loadStartedAt = ContinuousClock.now
+        // Nothing says how large an attachment is before it is loaded, so a participant's load
+        // reserves the largest size from its budget and gives back what it did not use.
+        // The game master's own files are not counted. See CODE_AUDIT_Game_Shareplay §6.2.
+        let senderId = metadata.sender.id
+        let countsAgainstBudget = !metadata.sender.isMaster
+        var reservedBytes = 0
+        if countsAgainstBudget {
+            guard journalLoadBudget.admit(GameLimits.maximumMessageBytes, from: senderId) else {
+                // Retried with the next snapshot, once the loads in flight gave their bytes back.
+                journalLedger.retryProcessing(attachmentId: attachmentId)
+                Logger.sharePlay.debug("Journal: attachment \(attachmentId, privacy: .public) of \(senderId, privacy: .public) waits, the sender is over its load budget")
+                return
+            }
+            reservedBytes = GameLimits.maximumMessageBytes
+        }
+        var loadedBytes = 0
+        defer {
+            if countsAgainstBudget {
+                journalLoadBudget.release(reservedBytes - loadedBytes, from: senderId)
+            }
+        }
         let loadLabel = "attachment \(attachmentId) of message \(metadata.counter) (\(metadata.data.type.token) \(metadata.data.id) v\(metadata.data.effectiveAssetVersion))"
         Logger.sharePlay.debug("Journal: loading \(loadLabel, privacy: .public); snapshot held \(snapshotCount, privacy: .public) attachments, session has \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public) participants")
         // A load gives no progress. This says how long it has been waiting and whether the
@@ -261,7 +282,8 @@ extension RPGSharePlayController {
             else { return }
             // A participant can publish a blob of any size; the Messenger path refuses more
             // than this. See CODE_AUDIT_23 §6.5.
-            guard data.count <= GameLimits.maximumMessageBytes else {
+            loadedBytes = min(data.count, reservedBytes)
+            guard GameLimits.fitsJournalAttachment(byteCount: data.count) else {
                 Logger.sharePlay.warning("Journal: attachment \(attachment.id, privacy: .public) of message \(metadata.counter, privacy: .public) exceeds the size limit; ignored")
                 return
             }

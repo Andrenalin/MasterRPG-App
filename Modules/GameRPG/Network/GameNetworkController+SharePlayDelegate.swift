@@ -29,9 +29,17 @@ extension GameNetworkController: SharePlayControllerDelegate {
     }
 
     func shouldLoadFile(_ message: GameNetworkModel) async -> Bool {
-        // Only the game master's files are for a player; a player's contribution is for the
-        // game master, which has nothing to compare it with here.
-        guard message.sender.isMaster, !model.hasLocalPlayer else { return true }
+        // The Journal hands every participant every attachment, and a load puts the whole blob
+        // in memory. What would be refused after the load is not loaded:
+        // - a player's device uses only the game master's files; another player's contribution
+        //   is for the game master (`routeSharePlayFileUpdate` ignores it without one);
+        // - the game master's device uses only the files of players: an attachment that claims
+        //   to come from the game master is another peer's (it never loads its own).
+        // See CODE_AUDIT_Game_Shareplay §6.2.
+        if model.masterDelegate != nil {
+            return !message.sender.isMaster && message.sender.role == .player
+        }
+        guard message.sender.isMaster else { return false }
         return await model.playerDelegate?.sharePlayHoldsFile(message) != true
     }
 
