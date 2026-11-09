@@ -124,7 +124,20 @@ enum GameMessageEnqueueResult: Sendable, Equatable {
     }
 }
 
+/// The pipelines whose drain worker the current task runs inside of (directly or through awaited
+/// handlers). A handler that submits to a pipeline it already runs inside must not wait for its
+/// own message: the worker is busy with the handler, so the wait would never end.
+enum GameMessageDrainContext {
+    @TaskLocal static var activePipelines: Set<ObjectIdentifier> = []
+}
+
 actor GameMessagePipeline {
+    private struct Waiter {
+        let id: Int
+        let ticket: Int
+        let continuation: CheckedContinuation<Void, Never>
+    }
+
     private let recentLimit: Int
     /// Unlike `recentKeys`, `messages` itself had no cap — each element
     /// retains a full `GameNetworkModel`, megabytes for a map/photo/pdf/space
@@ -143,6 +156,18 @@ actor GameMessagePipeline {
     /// cleared the flag under the second drain. See CODE_AUDIT_21 §3.9.
     private var inFlightGeneration: Int?
     private var isCancelled = false
+    /// Events admitted so far, and events that have left the queue for good (processed, or
+    /// discarded by `reset()`/`cancelAll()`). Events are handled strictly in the order they were
+    /// admitted, so the event admitted as number `n` is finished once `finishedCount >= n`.
+    private var admittedCount = 0
+    private var finishedCount = 0
+    private var waiters: [Waiter] = []
+    private var nextWaiterId = 0
+    /// The one task that drains `messages`. Owned here, not by whichever peer's receive task
+    /// enqueued first, so a peer disconnecting (cancelling its receive task) cannot cancel the
+    /// handling of another peer's message. Only `cancelAll()` cancels it. See CODE_AUDIT_Game_Shareplay §3.1.
+    private var drainTask: Task<Void, Never>?
+    private var isDraining = false
     private var recentKeys: [GameMessageKey] = []
     private var recentKeySet: Set<GameMessageKey> = []
     private var pendingKeySet: Set<GameMessageKey> = []
@@ -178,6 +203,7 @@ actor GameMessagePipeline {
             pendingKeySet.insert(key)
         }
         messages.append(event)
+        admittedCount += 1
         return .enqueued
     }
 
@@ -201,13 +227,80 @@ actor GameMessagePipeline {
         return false
     }
 
-    /// The drain runs inside whichever peer's receive task enqueued first, so cancelling that
-    /// task (teardown) must not strand the messages still queued: continue the drain on a
-    /// fresh task. If the cancellation was a genuine stop the pipeline was already reset and
-    /// the new drain finds no work. See CODE_AUDIT_16 §3.2.
-    func handOffBacklog(_ drain: @escaping @Sendable () async -> Void) {
-        guard hasQueuedMessages else { return }
-        Task { await drain() }
+    /// Admits `event` and returns once it has been handled. The queue is drained by the
+    /// pipeline's own worker, which runs `drain` (the controller's loop over `next()`); the
+    /// caller only waits for its own message, so a slow handler still holds back the peer that
+    /// sent the message and nobody else. Cancelling the caller stops the waiting, never the
+    /// handling. A duplicate or a rejected message returns at once.
+    func submit(
+        _ event: GameMessageEvent,
+        prefix: String,
+        kind: String = "",
+        drain: @escaping @Sendable () async -> Void
+    ) async {
+        guard enqueueAndLog(event, prefix: prefix, kind: kind) else { return }
+        let ticket = admittedCount
+        startDrainIfNeeded(drain)
+        guard !GameMessageDrainContext.activePipelines.contains(ObjectIdentifier(self)) else { return }
+        await waitUntilFinished(ticket)
+    }
+
+    private func startDrainIfNeeded(_ drain: @escaping @Sendable () async -> Void) {
+        guard !isDraining, !isCancelled, !messages.isEmpty else { return }
+        isDraining = true
+        let active = GameMessageDrainContext.activePipelines.union([ObjectIdentifier(self)])
+        drainTask = Task { [weak self] in
+            await GameMessageDrainContext.$activePipelines.withValue(active) {
+                await drain()
+            }
+            await self?.drainEnded(restartWith: drain)
+        }
+    }
+
+    /// The worker left its loop. Normally the queue is empty. A worker that left early (its
+    /// task was cancelled by a stop that has been followed by a new game, or a handler that
+    /// threw `CancellationError`) leaves messages behind, so a new worker takes them over.
+    private func drainEnded(restartWith drain: @escaping @Sendable () async -> Void) {
+        isDraining = false
+        drainTask = nil
+        startDrainIfNeeded(drain)
+    }
+
+    private func waitUntilFinished(_ ticket: Int) async {
+        guard finishedCount < ticket else { return }
+        let id = nextWaiterId
+        nextWaiterId += 1
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                guard !Task.isCancelled else {
+                    continuation.resume()
+                    return
+                }
+                waiters.append(Waiter(id: id, ticket: ticket, continuation: continuation))
+            }
+        } onCancel: {
+            Task { await self.stopWaiting(id: id) }
+        }
+    }
+
+    private func stopWaiting(id: Int) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else { return }
+        waiters.remove(at: index).continuation.resume()
+    }
+
+    private func resumeFinishedWaiters() {
+        let finished = waiters.filter { $0.ticket <= finishedCount }
+        guard !finished.isEmpty else { return }
+        waiters.removeAll { $0.ticket <= finishedCount }
+        for waiter in finished {
+            waiter.continuation.resume()
+        }
+    }
+
+    /// Every queued event, and the one in hand, is gone: nobody has anything left to wait for.
+    private func discardAll() {
+        finishedCount = admittedCount
+        resumeFinishedWaiters()
     }
 
     /// Whether `event` repeats one that is queued or was processed recently.
@@ -232,9 +325,7 @@ actor GameMessagePipeline {
         return true
     }
 
-    /// Lets a drain loop that bailed out on cancellation (see
-    /// `PlayerController.processMessages()`, CODE_AUDIT.md §3.4) decide whether it needs to
-    /// hand off to a fresh Task to avoid stranding whatever is still queued.
+    /// Whether events are waiting to be handled.
     var hasQueuedMessages: Bool {
         !messages.isEmpty
     }
@@ -254,6 +345,8 @@ actor GameMessagePipeline {
         defer { inFlightGeneration = nil }
         // The event of a session that was reset meanwhile: its keys went with the reset.
         guard inFlightGeneration == generation else { return }
+        finishedCount += 1
+        resumeFinishedWaiters()
         if let currentKey {
             pendingKeySet.remove(currentKey)
             if success {
@@ -287,6 +380,7 @@ actor GameMessagePipeline {
     }
 
     func cancelAll() {
+        drainTask?.cancel()
         messages.removeAll()
         generation += 1
         isCancelled = true
@@ -297,6 +391,7 @@ actor GameMessagePipeline {
         relayedKeySet.removeAll()
         currentKey = nil
         currentEvent = nil
+        discardAll()
     }
 
     func reset() {
@@ -310,6 +405,7 @@ actor GameMessagePipeline {
         relayedKeySet.removeAll()
         currentKey = nil
         currentEvent = nil
+        discardAll()
     }
 
     private func remember(_ key: GameMessageKey) {

@@ -23,8 +23,8 @@ extension PlayerController {
             Logger.networking.debug("PlayerController: Message rejected because its sender does not belong to this game session")
             return
         }
-        if await messagePipeline.enqueueAndLog(GameMessageEvent(model: model, origin: origin), prefix: "PlayerController") {
-            await processMessages()
+        await messagePipeline.submit(GameMessageEvent(model: model, origin: origin), prefix: "PlayerController") { [weak self] in
+            await self?.processMessages()
         }
     }
 
@@ -221,12 +221,9 @@ extension PlayerController {
         await scheduleSendCharacter()
     }
 
-    private func handOffBacklog() async {
-        await messagePipeline.handOffBacklog { [weak self] in
-            await self?.processMessages()
-        }
-    }
-
+    /// The pipeline's drain loop; it runs only in the pipeline's own worker task (see
+    /// `GameMessagePipeline.submit`), never in a sender's task. The task is cancelled only when
+    /// the game stops.
     func processMessages() async {
         while let event = await messagePipeline.next() {
             // Bail out before any processing is attempted, so the one
@@ -239,9 +236,6 @@ extension PlayerController {
             // See CODE_AUDIT_Network §5.15.
             guard !Task.isCancelled else {
                 await messagePipeline.requeueCurrentOnCancellation()
-                // Without the hand-off a message requeued here would strand until an unrelated
-                // future message happens to re-trigger `.enqueued`. See CODE_AUDIT.md §3.4.
-                await handOffBacklog()
                 return
             }
             let model: GameNetworkModel
@@ -274,9 +268,8 @@ extension PlayerController {
                 await messagePipeline.processed(success: true)
             } catch is CancellationError {
                 await messagePipeline.processed(success: false)
-                // The in-hand event is dropped on purpose (its side effects may have run), but
-                // the rest of the backlog must not strand. See CODE_AUDIT_16 §3.2.
-                await handOffBacklog()
+                // The in-hand event is dropped on purpose (its side effects may have run). The
+                // pipeline starts a new worker for the rest of the backlog when this one ends.
                 return
             } catch {
                 // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.

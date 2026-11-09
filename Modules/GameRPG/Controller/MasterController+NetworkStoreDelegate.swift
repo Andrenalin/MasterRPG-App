@@ -152,36 +152,29 @@ extension MasterController {
 
         guard await accepts(model, origin: origin) else { return }
 
-        let event = GameMessageEvent(model: model, origin: origin)
-        if await messagePipeline.enqueueAndLog(event, prefix: "MasterController") {
-            await processMessages()
+        await messagePipeline.submit(GameMessageEvent(model: model, origin: origin), prefix: "MasterController") { [weak self] in
+            await self?.processMessages()
         }
     }
 
+    /// The pipeline's drain loop; it runs only in the pipeline's own worker task (see
+    /// `GameMessagePipeline.submit`), never in a peer's receive task, so a peer disconnecting
+    /// cannot cancel the handling of another peer's message. The task is cancelled only when
+    /// the game stops.
     private func processMessages() async {
         while let event = await messagePipeline.next() {
             // Bail out before any processing is attempted, so the one
             // message `next()` already dequeued isn't lost: `processed(success:)`
             // only clears bookkeeping, it never restores the event to the
             // queue. `requeueCurrentOnCancellation()` puts it back at the
-            // front so the next real trigger resumes the backlog, matching
-            // PlayerController.processMessages' policy. See
-            // CODE_AUDIT_Network §5.15 (superseding CODE_AUDIT_Game §3.8's
-            // inaccurate claim that the old `processed(success: false)` call
-            // already preserved the in-hand event).
+            // front, matching PlayerController.processMessages' policy.
+            // See CODE_AUDIT_Network §5.15.
             guard !Task.isCancelled else {
                 await messagePipeline.requeueCurrentOnCancellation()
-                await handOffBacklog()
                 return
             }
             let success = await process(event)
             await messagePipeline.processed(success: success)
-        }
-    }
-
-    private func handOffBacklog() async {
-        await messagePipeline.handOffBacklog { [weak self] in
-            await self?.processMessages()
         }
     }
 
@@ -311,8 +304,8 @@ extension MasterController {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
         guard root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
         guard await accepts(model, origin: .file) else { return }
-        if await messagePipeline.enqueueAndLog(GameMessageEvent(model: model, origin: .file), prefix: "MasterController", kind: "file ") {
-            await processMessages()
+        await messagePipeline.submit(GameMessageEvent(model: model, origin: .file), prefix: "MasterController", kind: "file ") { [weak self] in
+            await self?.processMessages()
         }
     }
 }
