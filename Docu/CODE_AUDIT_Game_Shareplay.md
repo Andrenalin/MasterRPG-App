@@ -178,6 +178,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A case added without bumping `currentVersion` makes a mixed-version game fail with a decode error and no user-visible version message (see §5.9).
 - **Action:** Treat any case addition as a `currentVersion` bump (documented beside the enums), or decode unknown cases to an explicit `.unknown` the dispatcher ignores.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (first option of the action).** The rule is written beside `NetworkModules`, `RPGMessageType`, `RPGMessageActionType` and `GameNetworkModel.currentVersion`: any case change is a version bump. `WireContractTests` pins the raw values of all three enums together with the version, so a case added without a bump fails the build. It also pins that an unknown case or another version is dropped. **Not done:** a decode fallback to `.unknown` — it would need every exhaustive switch to handle it (and conflicts with §4.2), and the version check already refuses an older peer explicitly.
 
 ### 4.2 `@unknown default` on the project's own module enum
 - **Location:** `Modules/GameRPG/Controller/PlayerController+Dispatch.swift:38-40`
@@ -185,6 +186,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Hides the exhaustiveness error that should force handling when a module is added; the unknown-case risk belongs at decode time (§4.1).
 - **Action:** Switch exhaustively with no default.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `@unknown default` removed; the switch over `NetworkModules` is exhaustive, so a new module is a compile error here. The compiler is the test.
 
 ### 4.3 `Date()` for game start time
 - **Location:** `Modules/GameRPG/Root/GameRootModel.swift:68`
@@ -192,6 +194,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Style; if it feeds elapsed-time math rather than display, a `ContinuousClock.Instant` is immune to wall-clock changes.
 - **Action:** Use `.now`; use `ContinuousClock` if it feeds durations.
 - **Severity:** Low
+- **Status: fixed 2026-11-09, no test.** `Date.now` in the property default. `startGameTime` stays a wall-clock `Date`: it is shown as a date and given to the statistics session, and `GameRoot` sets it again at game start. A default value of `Date.now` has nothing to assert.
 
 ---
 

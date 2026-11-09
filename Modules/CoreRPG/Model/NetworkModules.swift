@@ -3,6 +3,14 @@
 import Foundation
 import SwiftUI
 
+/// The modules of the app.
+///
+/// Wire format: the raw values travel in every envelope and decode strictly. A peer that does
+/// not know a case cannot decode the envelope and drops it, with a decode error and no hint
+/// about the version. Adding, removing or renumbering a case therefore changes the wire format:
+/// bump `GameNetworkModel.currentVersion` with it (a peer of another version is refused with an
+/// explicit "unsupported version" instead). `WireContractTests` pins the cases and the version
+/// together so that neither changes alone. See CODE_AUDIT_Game_Shareplay §4.1.
 public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
     case none = 0
     case photo = 1

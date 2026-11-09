@@ -65,7 +65,7 @@ final class GameRootModel: Sendable {
     /// device that reconnects in the same session gets its pins back.
     var pinControllers: [UUID: Set<UUID>] = [:]
 
-    var startGameTime = Date()
+    var startGameTime = Date.now
 
     var selectedCharacter: UUID?
     var selectedGameMaster: UUID?

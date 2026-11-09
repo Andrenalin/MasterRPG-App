@@ -35,9 +35,6 @@ extension PlayerController {
             return try await handleValue(model)
         case .space:
             return try await handleSpace(model)
-        @unknown default:
-            Logger.networking.error("PlayerController: Received unsupported module \(model.data.type.token, privacy: .public); ignoring.")
-            return nil
         }
     }
 }

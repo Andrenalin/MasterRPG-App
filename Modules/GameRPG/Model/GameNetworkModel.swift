@@ -111,6 +111,11 @@ enum GamePlatform: String, Codable, Sendable {
 struct GameNetworkModel: Codable, Sendable {
     /// The one wire format this app speaks. An envelope stamped with any other version, or one
     /// of an earlier app release that has no `sender` at all, does not decode and is dropped.
+    ///
+    /// Bump it with every change of the wire enums (`NetworkModules`, `RPGMessageType`,
+    /// `RPGMessageActionType`): they decode strictly, so a case an older peer does not know
+    /// would otherwise only show up there as a silent decode failure. `WireContractTests`
+    /// fails until the pinned cases and this number are updated together.
     static let currentVersion = 3
 
     var version: Int = GameNetworkModel.currentVersion
