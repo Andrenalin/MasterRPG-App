@@ -244,7 +244,7 @@ extension RPGSharePlayController {
                     await self?.currentJournalAttachmentIds.contains(attachmentId) ?? false
                 },
                 operation: {
-                    try await SharePlayAttachmentLoadRetry.load {
+                    try await SharePlayAttachmentLoadRetry.loadWhileUploading {
                         do {
                             return try await attachment.load(Data.self)
                         } catch {

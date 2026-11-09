@@ -16,6 +16,11 @@ final class MasterNetworkStoreDelegateMock: MasterNetworkStoreDelegate, @uncheck
     var calledFileReceived = 0
     var receivedHandler: ((GameNetworkModel, GameMessageOrigin) -> Void)?
     var receivedFileHandler: ((GameNetworkModel) -> Void)?
+    var incompatibleMismatches: [GameVersionMismatch] = []
+
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) {
+        incompatibleMismatches.append(mismatch)
+    }
 
     func accepts(_ model: GameNetworkModel, origin: GameMessageOrigin) -> Bool {
         acceptedOrigins.append(origin)
@@ -54,6 +59,11 @@ final class PlayerNetworkStoreDelegateMock: PlayerNetworkStoreDelegate, @uncheck
     var calledReceived = 0
     var calledFileReceived = 0
     var calledFileLoadFailed = 0
+    var incompatibleMismatches: [GameVersionMismatch] = []
+
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) {
+        incompatibleMismatches.append(mismatch)
+    }
 
     func lostConnection() {
         calledLostConnection += 1

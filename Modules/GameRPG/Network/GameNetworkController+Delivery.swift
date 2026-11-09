@@ -32,6 +32,7 @@ extension GameNetworkController {
     func sendPresentation(
         _ reference: GameNetworkModel,
         missingPlayers: Set<UUID>,
+        isSuperseded: () -> Bool = { false },
         package: () async -> NetworkCodableDataType?
     ) async {
         var connectionIds: [ConnectionController.ID] = []
@@ -48,6 +49,13 @@ extension GameNetworkController {
         }
 
         if !connectionIds.isEmpty || sharePlayPlayerIsMissing, let payload = await package() {
+            // A later show was made while the package was built: players would only keep the
+            // bytes of a presentation they ignore. See CODE_AUDIT_Game_Shareplay §5.29.
+            if isSuperseded() {
+                Logger.networking.debug("GameNetworkController: Presentation \(reference.counter, privacy: .public) was superseded while its package was built; package not sent")
+                await sendPlayer(data: reference)
+                return
+            }
             var full = reference
             full.data = payload
             if !connectionIds.isEmpty, let bytes = await encodedOffMain(full) {
@@ -91,8 +99,14 @@ extension GameNetworkController {
             }
         case .file:
             // A Journal callback does not name its participant; the Journal reaches everyone.
+            // Only a package belongs there: an acknowledgement or a list is a small message,
+            // and goes through Messenger.
             guard !proxy else { return }
-            sharePlayStore.publishAsset(data, isPlaylist: isAudioPlaylist(data))
+            if data.carriesAsset {
+                sharePlayStore.publishAsset(data, isPlaylist: isAudioPlaylist(data))
+            } else {
+                sharePlayStore.sendDataReportingLoss(data)
+            }
         case .local:
             if model.hasLocalPlayer {
                 await model.playerDelegate?.received(data)
@@ -101,12 +115,17 @@ extension GameNetworkController {
     }
 
     /// Sends a message to one player, wherever that player is connected. A player this device
-    /// has no route to gets it by broadcast; its target id keeps the others from applying it.
+    /// has no route to gets nothing (except the player on this device): broadcasting it would
+    /// show every other player an answer meant for one. See CODE_AUDIT_Game_Shareplay §5.28.
     func sendPlayer(_ data: GameNetworkModel, toPlayer playerId: UUID) async {
         if let origin = model.playerRoutes.origin(for: playerId) {
             await sendAsset(data, to: origin)
+        } else if !proxy, model.hasLocalPlayer {
+            // The player on this device has no route of its own; it applies the message only if
+            // its target id is its own.
+            await model.playerDelegate?.received(data)
         } else {
-            await sendPlayer(data: data)
+            Logger.networking.debug("GameNetworkController: No route to player \(playerId, privacy: .public); message \(data.counter, privacy: .public) dropped")
         }
     }
 

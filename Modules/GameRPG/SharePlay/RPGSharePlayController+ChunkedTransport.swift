@@ -68,6 +68,10 @@ extension RPGSharePlayController {
         journalLedger.willUpload(module: moduleKey, isPlaylist: slot.isPlaylist, itemId: itemId, version: version, counter: counter, now: now)
 
         let metadata = Self.journalMetadata(for: model)
+        // A package Messenger cannot carry has no fallback: a timed-out add of it is awaited,
+        // and kept when it returns, instead of being removed and lost.
+        // See CODE_AUDIT_Game_Shareplay §5.11.
+        let exceedsMessenger = !SharePlayMessengerPayloadBudget.accepts(rawPayloadByteCount: attachmentData.count)
         let enqueuedAt = ContinuousClock.now
         Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) queued \(slot.token, privacy: .public) \(itemId, privacy: .public) v\(version, privacy: .public), \(attachmentSize, privacy: .public), participants \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public)")
         let publication = journalPublicationQueue.enqueue(
@@ -83,13 +87,24 @@ extension RPGSharePlayController {
             let queueWait = Self.formattedDuration(enqueuedAt.duration(to: addStartedAt))
             Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) attachment \(attachmentSize, privacy: .public), waited \(queueWait, privacy: .public) in the queue, adding now. model: \(model.debugDescription, privacy: .private)")
             let outcome = await self.journalAddLimiter.run(
-                for: moduleKey,
+                for: slot,
                 scope: sessionId,
                 timeout: Self.journalAddTimeout
             ) {
                 try await journal.add(attachmentData, metadata: metadata)
             } discardLateValue: { [weak self] lateAttachment in
                 guard let self else { return true }
+                if exceedsMessenger, self.adoptLateJournalAttachment(
+                    lateAttachment,
+                    module: moduleKey,
+                    isPlaylist: slot.isPlaylist,
+                    itemId: itemId,
+                    version: version,
+                    counter: counter,
+                    sessionId: sessionId
+                ) {
+                    return true
+                }
                 return await self.removeJournalAttachment(
                     lateAttachment,
                     from: journal,
@@ -118,6 +133,10 @@ extension RPGSharePlayController {
                 Logger.sharePlay.error("Journal ✕: message \(counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(moduleKey.token, privacy: .public) and id: \(itemId, privacy: .public) after \(addDuration, privacy: .public), error: \(errorDescription, privacy: .private)")
             case .timedOut:
                 Logger.sharePlay.error("Journal ⌛: message \(counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment after \(addDuration, privacy: .public); module is degraded to Messenger until the add returns")
+                if exceedsMessenger {
+                    Logger.sharePlay.warning("Journal: message \(counter, privacy: .public) is too large for Messenger; its late add is kept when it returns")
+                    return nil
+                }
             case .unavailable:
                 Logger.sharePlay.warning("Journal bypass: \(moduleKey.token, privacy: .public) still has a quarantined add; using Messenger for message \(counter, privacy: .public)")
             case .cancelled:
@@ -156,15 +175,15 @@ extension RPGSharePlayController {
         }
         if publication.admission == .rejected {
             Logger.sharePlay.warning("Journal queue full: falling back to chunked transport for message \(counter, privacy: .public)")
-            journalUploadFailed(model, isPlaylist: slot.isPlaylist, sessionId: sessionId)
-            return .sentByMessenger
+            return journalUploadFailed(model, isPlaylist: slot.isPlaylist, sessionId: sessionId) ? .sentByMessenger : .unavailable
         }
         return .uploading
     }
 
     /// The Journal did not take the package: frees its ledger slot and sends the same message
     /// through Messenger, which carries smaller packages.
-    private func journalUploadFailed(_ model: GameNetworkModel, isPlaylist: Bool, sessionId: UUID) {
+    @discardableResult
+    private func journalUploadFailed(_ model: GameNetworkModel, isPlaylist: Bool, sessionId: UUID) -> Bool {
         recordJournalTransport(state: .failed, byteCount: model.data.data?.count ?? 0, for: model)
         journalLedger.uploadFailed(
             module: model.data.type,
@@ -173,7 +192,42 @@ extension RPGSharePlayController {
             version: model.data.effectiveAssetVersion,
             counter: model.counter
         )
-        _ = enqueueChunkedSend(model, sessionId: sessionId, participantId: nil)
+        guard enqueueChunkedSend(model, sessionId: sessionId, participantId: nil) else {
+            Logger.sharePlay.error("SharePlay lost message \(model.counter, privacy: .public) (\(model.data.type.token, privacy: .public)): the Journal did not take it and Messenger cannot carry it")
+            return false
+        }
+        return true
+    }
+
+    /// Keeps an add that returned after its timeout when Messenger cannot carry the package, as
+    /// long as it still is the publication the ledger waits for. Returns whether it was kept.
+    private func adoptLateJournalAttachment(
+        _ attachment: GroupSessionJournal.Attachment,
+        module: NetworkModules,
+        isPlaylist: Bool,
+        itemId: UUID,
+        version: Int,
+        counter: Int,
+        sessionId: UUID
+    ) -> Bool {
+        guard sessionLifecycle.isCurrent(sessionId: sessionId),
+              let publication = journalLedger.publication(for: module, isPlaylist: isPlaylist),
+              publication.attachmentId == nil,
+              publication.itemId == itemId,
+              publication.version == version,
+              publication.counter == counter
+        else { return false }
+        gameModel?.attachments[module] = attachment
+        journalLedger.didUpload(
+            module: module,
+            isPlaylist: isPlaylist,
+            itemId: itemId,
+            version: version,
+            counter: counter,
+            attachmentId: attachment.id
+        )
+        Logger.sharePlay.debug("Journal ✓: kept the late attachment \(attachment.id, privacy: .public) of message \(counter, privacy: .public)")
+        return true
     }
 
     @discardableResult
@@ -212,6 +266,9 @@ extension RPGSharePlayController {
         deliveryAttempt: Int = 0
     ) -> Bool {
         let rawPayloadByteCount = model.data.data?.count ?? 0
+        if deliveryAttempt == 0, allowDeferral {
+            stateSupersession.noteSent(model, participantId: participantId)
+        }
         guard SharePlayMessengerPayloadBudget.accepts(
             rawPayloadByteCount: rawPayloadByteCount
         ) else {
@@ -241,6 +298,7 @@ extension RPGSharePlayController {
                   let sender = self.packageSender
             else { return }
             guard let encodedModel = await Self.encodedData(for: model) else {
+                Logger.sharePlay.error("Chunked ✕: message \(model.counter, privacy: .public) (\(model.data.type.token, privacy: .public)) could not be encoded")
                 guard operationToken.canCommit(
                     lifecycle: self.sessionLifecycle,
                     currentGeneration: self.sendOperationGeneration,
@@ -284,6 +342,12 @@ extension RPGSharePlayController {
             guard outcome == .retryableFailure,
                   deliveryAttempt + 1 < Self.maxChunkedDeliveryAttempts
             else { return }
+            // A newer update of the same entity went out meanwhile: resending this one would
+            // apply it after the newer one. See CODE_AUDIT_Game_Shareplay §5.18.
+            guard !self.stateSupersession.isSuperseded(model, participantId: participantId) else {
+                Logger.sharePlay.debug("Chunked retry skipped: message \(model.counter, privacy: .public) was superseded by a newer update")
+                return
+            }
 
             let retryAt = ContinuousClock().now.advanced(by: Self.chunkedRetryDelay(forAttempt: deliveryAttempt + 1))
             let admission = self.deferredDeliveryQueue.enqueue(
@@ -310,7 +374,12 @@ extension RPGSharePlayController {
                 Logger.sharePlay.warning("Chunked queue full: deferred critical message \(model.counter, privacy: .public)")
                 return true
             }
-            Logger.sharePlay.warning("Chunked queue full: ignored message \(model.counter, privacy: .public)")
+            // A promotion that finds the queue still full is not a loss: the entry stays where
+            // it is. Only a message that really goes unsent is worth a warning. See
+            // CODE_AUDIT_Game_Shareplay §5.2.
+            if allowDeferral {
+                Logger.sharePlay.warning("Chunked queue full: ignored message \(model.counter, privacy: .public)")
+            }
         }
         return enqueued
     }
@@ -383,49 +452,45 @@ extension RPGSharePlayController {
         sendOperationTask = nil
     }
 
+    /// Sends the deferred messages that are ready, in queue order. Called after every completed
+    /// send operation, when a timer for a retry back-off fires and when an entry is deferred.
+    ///
+    /// A full send queue ends the pass without a timer: a send operation is running, and its
+    /// completion calls this again. A timer against a deadline that has already passed fired at
+    /// once, promoted, found the queue full and armed the next one, a loop on the main actor for
+    /// as long as a large transfer filled the queue (CODE_AUDIT_Game_Shareplay §5.2). A timer is
+    /// armed only for the earliest entry that is not ready yet, and an entry that waits for its
+    /// back-off no longer holds back the ready ones behind it (§5.17).
     func promoteDeferredDeliveries() {
-        while let delivery = deferredDeliveryQueue.first {
-            guard sessionLifecycle.isCurrent(sessionId: delivery.sessionId) else {
-                deferredDeliveryQueue.removeFirst()
-                continue
-            }
-            guard delivery.isReady(at: ContinuousClock().now) else {
-                scheduleDeferredPromotionIfNeeded()
-                return
-            }
+        deferredDeliveryQueue.removeEntries { [sessionLifecycle] entry in
+            !sessionLifecycle.isCurrent(sessionId: entry.sessionId)
+        }
+        let now = ContinuousClock().now
+        while let ready = deferredDeliveryQueue.firstReady(at: now) {
+            let delivery = ready.entry
             guard enqueueChunkedSend(
                 delivery.model,
                 sessionId: delivery.sessionId,
                 participantId: delivery.participantId,
                 allowDeferral: false,
                 deliveryAttempt: delivery.deliveryAttempt
-            ) else {
-                // Symmetry with the "not ready yet" branch above: if
-                // capacity is still exhausted right now, schedule a timed
-                // re-check as defense in depth instead of relying solely on
-                // the next unrelated send's completion to trigger another
-                // promotion attempt. A no-op when the head entry has no
-                // `retryNotBefore` (nothing to schedule against). See
-                // CODE_AUDIT_Network §5.3.
-                scheduleDeferredPromotionIfNeeded()
-                return
-            }
-            deferredDeliveryQueue.removeFirst()
+            ) else { return }
+            deferredDeliveryQueue.remove(ready.token)
         }
+        scheduleDeferredPromotionIfNeeded()
     }
 
+    /// Arms the timer for the earliest deferred entry whose back-off has not passed yet.
     func scheduleDeferredPromotionIfNeeded() {
+        let now = ContinuousClock().now
         guard deferredPromotionTask == nil,
-              let delivery = deferredDeliveryQueue.first,
-              let retryNotBefore = delivery.retryNotBefore
+              let retryNotBefore = deferredDeliveryQueue.earliestRetry(after: now)
         else { return }
         let generation = sendOperationGeneration
-        let delay = ContinuousClock().now.duration(to: retryNotBefore)
+        let delay = now.duration(to: retryNotBefore)
         deferredPromotionTask = Task { @MainActor [weak self] in
             do {
-                if delay > .zero {
-                    try await Task.sleep(for: delay)
-                }
+                try await Task.sleep(for: delay)
             } catch {
                 return
             }
@@ -518,6 +583,22 @@ extension RPGSharePlayController {
             return .succeeded
         } catch is CancellationError {
             return .cancelled
+        } catch SharePlayPackageDeliveryError.participantNotActive(let participantId) {
+            // The addressee left: no retry of this message can reach it, and each one would
+            // encode the whole payload again. See CODE_AUDIT_Game_Shareplay §5.16.
+            guard operationToken.canCommit(
+                lifecycle: sessionLifecycle,
+                currentGeneration: sendOperationGeneration,
+                taskIsCancelled: Task.isCancelled
+            ) else { return .cancelled }
+            recordChunkedTransport(
+                count: packageCount,
+                byteCount: data.count,
+                state: .failed,
+                for: model
+            )
+            Logger.sharePlay.warning("Chunked ✕: message \(model.counter, privacy: .public) is for participant \(participantId, privacy: .private), who is no longer active; not retried")
+            return .terminalFailure
         } catch SharePlayPackageSenderError.messageTooLarge {
             guard operationToken.canCommit(
                 lifecycle: sessionLifecycle,
@@ -630,6 +711,7 @@ extension RPGSharePlayController {
         journalLedger.reset()
         journalPublicationQueue.cancelAll()
         journalAddLimiter.cancelAll()
+        stateSupersession.reset()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
         participantPlayers = [:]

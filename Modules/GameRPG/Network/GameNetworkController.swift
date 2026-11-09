@@ -108,6 +108,10 @@ extension GameNetworkController {
         Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .private)")
         await model.masterStore?.waitForHostingSessionReady()
         model.masterStore?.startStreaming(passcode: passcode)
+        if !proxy {
+            // Kept for a call that starts after the game. See CODE_AUDIT_Game_Shareplay §5.20.
+            sharePlayStore.pendingActivation = .init(name: game.master.adventureTitle, image: titleImage)
+        }
         if !proxy && sharePlayStore.canActivateSharePlay {
             // Subscribe to sessions() before activating, so the session delivered
             // by activate() can never race past the for-await loop.
@@ -149,7 +153,10 @@ extension GameNetworkController {
             if !proxy { sharePlayStore.reset() }
         } else {
             await model.playerStore?.stop()
-            if !proxy { sharePlayStore.leaveGroupSession() }
+            // Not only leaving: Messenger, the send queue, deferred retries and Journal loads of
+            // the left session would run on, and a quick restart could receive their traffic.
+            // `reset()` also leaves the session. See CODE_AUDIT_Game_Shareplay §5.30.
+            if !proxy { sharePlayStore.reset() }
         }
         if !proxy {
             sharePlayStore.stopJoin()

@@ -178,6 +178,15 @@ extension ConnectionController: ConnectionControllable {
             return
         }
         guard connection != nil else { return }
+        // The receiving framer fails the connection on a frame past the shared maximum
+        // (`GameProtocol.isMessageLengthValid`), which would end the peer's connection for a
+        // message it can never take. Skipped instead, so the connection and every other
+        // message to this peer survive. See CODE_AUDIT_Game_Shareplay §5.1.
+        guard GameProtocol.isMessageLengthValid(UInt32(clamping: content.count)) else {
+            let uuid = id.uuidString
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Skipped a message of \(content.count, privacy: .public) bytes: over the \(GameLimits.maximumMessageBytes, privacy: .public)-byte frame limit")
+            return
+        }
         // A peer that stops reading (poor Wi-Fi, a backgrounded device that still answers
         // keepalives) used to make this device keep every later map, photo and PDF frame until
         // the system ended the game for everyone. Such a connection is dropped instead: the

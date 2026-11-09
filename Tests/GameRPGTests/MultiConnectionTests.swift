@@ -576,6 +576,8 @@ struct MultiConnectionAudioTests {
 
         // Act - The master answers the request; only the successful import is acknowledged.
         let audioData = try #require(try await env.master.handle(request))
+        // The player has a connection; a player without a route gets nothing (§5.28).
+        env.master.bind(connectionId: UUID(), playerId: env.player1Config.id)
         await env.master.send(
             type: request.type,
             subtype: request.subType,

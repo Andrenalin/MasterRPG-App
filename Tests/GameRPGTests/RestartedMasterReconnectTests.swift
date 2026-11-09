@@ -61,3 +61,59 @@ struct RestartedMasterReconnectTests {
         #expect(root.gameModel.gameConfig.master.type == .notSet)
     }
 }
+
+/// CODE_AUDIT_Game_Shareplay §5.3.
+@Suite("A master that rejoins under a new SharePlay participant")
+@MainActor
+struct MasterParticipantChangeTests {
+    private func masterMessage(counter: Int, config: GameConfigModel) -> GameNetworkModel {
+        GameNetworkModel(
+            counter: counter,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            gameConfig: config,
+            data: NetworkCodableDataType(id: UUID(), type: .value, version: 1, data: nil)
+        )
+    }
+
+    @Test("Its first message forgets the counters of the old run, before the old participant's departure is seen")
+    func changedParticipantResetsSequences() async throws {
+        let root = GameRoot.previewFixture(game: .player)
+        let player = try #require(root.gameModel.playerController)
+        let config = root.gameModel.gameConfig
+        let masterId = config.master.id
+        let oldParticipant = UUID()
+        let newParticipant = UUID()
+
+        // The old run got as far as counter 50 and presented something.
+        let first = masterMessage(counter: 50, config: GameConfigModel(id: masterId, state: .started, master: config.master))
+        #expect(await player.acceptsSessionMessage(first, origin: .sharePlay(oldParticipant)))
+        #expect(player.gameModel.shouldApplyMasterState(from: masterId, counter: 50))
+        player.gameModel.markPresentation(counter: 50, module: .photo, itemId: UUID())
+        #expect(!player.gameModel.shouldApplyMasterState(from: masterId, counter: 1))
+
+        // The restarted master speaks from a new participant and counts from one.
+        let restarted = masterMessage(counter: 1, config: GameConfigModel(id: masterId, state: .started, master: config.master))
+        #expect(await player.acceptsSessionMessage(restarted, origin: .sharePlay(newParticipant)))
+
+        #expect(player.gameModel.shouldApplyMasterState(from: masterId, counter: 1))
+        #expect(player.gameModel.isCurrentPresentation(counter: 1, module: .map, itemId: UUID()))
+    }
+
+    @Test("The same participant keeps its counters")
+    func unchangedParticipantKeepsSequences() async throws {
+        let root = GameRoot.previewFixture(game: .player)
+        let player = try #require(root.gameModel.playerController)
+        let config = root.gameModel.gameConfig
+        let masterId = config.master.id
+        let participant = UUID()
+        let masterConfig = GameConfigModel(id: masterId, state: .started, master: config.master)
+
+        #expect(await player.acceptsSessionMessage(masterMessage(counter: 50, config: masterConfig), origin: .sharePlay(participant)))
+        #expect(player.gameModel.shouldApplyMasterState(from: masterId, counter: 50))
+        #expect(await player.acceptsSessionMessage(masterMessage(counter: 51, config: masterConfig), origin: .sharePlay(participant)))
+
+        #expect(!player.gameModel.shouldApplyMasterState(from: masterId, counter: 49))
+    }
+}

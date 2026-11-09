@@ -3,10 +3,17 @@
 import CoreRPG
 import Foundation
 
+/// An error no retry can fix, e.g. a send to a participant who left. The sender gives up on it
+/// at once. See CODE_AUDIT_Game_Shareplay §5.16.
+protocol SharePlayTerminalPackageError: Error {}
+
 enum SharePlayPackageSenderError: Error, Equatable {
     case queueFull
     case messageTooLarge
     case senderStopped
+    /// One package did not finish sending within the deadline. See
+    /// CODE_AUDIT_Game_Shareplay §5.12.
+    case packageTimedOut
 }
 
 /// Serializes complete Messenger payloads. GroupSessionMessenger preserves the
@@ -20,8 +27,10 @@ enum SharePlayPackageSenderError: Error, Equatable {
         maxOutstandingMessages: Int = SharePlaySingleQueuePackageSender.maxOutstandingMessages,
         maxOutstandingBytes: Int = SharePlaySingleQueuePackageSender.maxOutstandingBytes,
         maxMessageByteCount: Int = SharePlaySingleQueuePackageSender.maxMessageByteCount,
+        packageSendTimeout: Duration = SharePlaySingleQueuePackageSender.defaultPackageSendTimeout,
         sendPackage: @escaping (PackageMessage, UUID?) async throws -> Void
     ) {
+        self.packageSendTimeout = packageSendTimeout
         self.packageSize = max(1, packageSize)
         self.retryDelays = retryDelays
         self.maxOutstandingMessages = max(1, maxOutstandingMessages)
@@ -36,6 +45,7 @@ enum SharePlayPackageSenderError: Error, Equatable {
         maxOutstandingMessages: Int = SharePlaySingleQueuePackageSender.maxOutstandingMessages,
         maxOutstandingBytes: Int = SharePlaySingleQueuePackageSender.maxOutstandingBytes,
         maxMessageByteCount: Int = SharePlaySingleQueuePackageSender.maxMessageByteCount,
+        packageSendTimeout: Duration = SharePlaySingleQueuePackageSender.defaultPackageSendTimeout,
         sendPackage: @escaping (PackageMessage) async throws -> Void
     ) {
         self.init(
@@ -43,7 +53,8 @@ enum SharePlayPackageSenderError: Error, Equatable {
             retryDelays: retryDelays,
             maxOutstandingMessages: maxOutstandingMessages,
             maxOutstandingBytes: maxOutstandingBytes,
-            maxMessageByteCount: maxMessageByteCount
+            maxMessageByteCount: maxMessageByteCount,
+            packageSendTimeout: packageSendTimeout
         ) { package, _ in
             try await sendPackage(package)
         }
@@ -61,6 +72,7 @@ enum SharePlayPackageSenderError: Error, Equatable {
     private let maxOutstandingMessages: Int
     private let maxOutstandingBytes: Int
     private let maxMessageByteCount: Int
+    private let packageSendTimeout: Duration
     private let sendPackage: (PackageMessage, UUID?) async throws -> Void
 
     private var pendingRequests: [Request] = []
@@ -78,6 +90,9 @@ enum SharePlayPackageSenderError: Error, Equatable {
     // keeps that same worst case near 171 KB and leaves transport headroom.
     nonisolated static let packageSize = 64_000
     nonisolated static let encodedMessageSizeLimit = 256_000
+    /// A `messenger.send` that never returns would otherwise stall every later message of the
+    /// session. The send itself cannot be cancelled; the queue gives up waiting for it.
+    nonisolated static let defaultPackageSendTimeout: Duration = .seconds(60)
     nonisolated static let defaultRetryDelays: [Duration] = [.milliseconds(100), .milliseconds(300)]
     nonisolated static let lowPackageCount = 60
     nonisolated static let throttleInMilliseconds = 200
@@ -220,17 +235,50 @@ enum SharePlayPackageSenderError: Error, Equatable {
         while true {
             try checkCancellation(of: requestId)
             do {
-                try await sendPackage(package, participantId)
+                try await sendPackageWithinDeadline(package, participantId: participantId)
                 try checkCancellation(of: requestId)
                 return
             } catch let error as CancellationError {
                 throw error
+            } catch let error as any SharePlayTerminalPackageError {
+                throw error
+            } catch SharePlayPackageSenderError.packageTimedOut {
+                // Retrying would wait for the deadline again; the caller retries the message.
+                throw SharePlayPackageSenderError.packageTimedOut
             } catch {
                 guard retryIndex < retryDelays.count else { throw error }
                 let delay = retryDelays[retryIndex]
                 retryIndex += 1
                 try await Task.sleep(for: delay)
             }
+        }
+    }
+
+    /// Races the send against the deadline without waiting for the send to unwind: a task group
+    /// would, and the send may never return.
+    private func sendPackageWithinDeadline(_ package: PackageMessage, participantId: UUID?) async throws {
+        let race = PackageSendRace()
+        let send = sendPackage
+        let timeout = packageSendTimeout
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+                race.continuation = continuation
+                race.sendTask = Task { @MainActor in
+                    do {
+                        try await send(package, participantId)
+                        race.finish(.success(()))
+                    } catch {
+                        race.finish(.failure(error))
+                    }
+                }
+                race.timerTask = Task { @MainActor in
+                    try? await Task.sleep(for: timeout)
+                    guard !Task.isCancelled else { return }
+                    race.finish(.failure(SharePlayPackageSenderError.packageTimedOut))
+                }
+            }
+        } onCancel: {
+            Task { @MainActor in race.finish(.failure(CancellationError())) }
         }
     }
 
@@ -263,6 +311,22 @@ enum SharePlayPackageSenderError: Error, Equatable {
         cancelledRequestIds.remove(request.id)
         activeRequest = nil
         guard let continuation = continuations.removeValue(forKey: request.id) else { return }
+        continuation.resume(with: result)
+    }
+}
+
+/// The outcome of one package send that races its deadline: the first result wins.
+@MainActor
+private final class PackageSendRace {
+    var continuation: CheckedContinuation<Void, any Error>?
+    var sendTask: Task<Void, Never>?
+    var timerTask: Task<Void, Never>?
+
+    func finish(_ result: Result<Void, any Error>) {
+        guard let continuation else { return }
+        self.continuation = nil
+        timerTask?.cancel()
+        sendTask?.cancel()
         continuation.resume(with: result)
     }
 }

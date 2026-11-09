@@ -119,7 +119,7 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         }
     }
 
-    private enum Key: Hashable, Sendable {
+    fileprivate enum Key: Hashable, Sendable {
         case presentation(
             sessionId: UUID,
             participantId: UUID?,
@@ -237,7 +237,12 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         // (see `.event`'s doc comment) — both may displace coalescible
         // presentation intent under pressure, never another repair/event.
         // See CODE_AUDIT_Network §5.1.
-        if Self.isRepair(key) || Self.isEvent(key) {
+        //
+        // An event is not allowed to: a presentation is the game master's latest word for a
+        // module, and coalescing keeps only one per module, so dropping it loses what the
+        // players see for good while an event is one of many. The event is refused instead.
+        // See CODE_AUDIT_Game_Shareplay §5.12.
+        if Self.isRepair(key) {
             for candidate in order where
                 (prospectiveCount > maxCount || prospectiveByteCount > maxBytes) &&
                 candidate != key && Self.isPresentation(candidate) {
@@ -282,6 +287,40 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
     mutating func removeFirst() {
         guard !order.isEmpty else { return }
         remove(order[0])
+    }
+
+    /// Names one entry for `remove(_:)`. Entries have no identity of their own: a key stands
+    /// for at most one entry at a time.
+    struct EntryToken: Sendable {
+        fileprivate let key: Key
+    }
+
+    /// The earliest entry in queue order that may be sent at `instant`. An entry that waits for
+    /// a retry back-off does not hold back the ones behind it, which are ready already.
+    /// See CODE_AUDIT_Game_Shareplay §5.17.
+    func firstReady(at instant: ContinuousClock.Instant) -> (token: EntryToken, entry: Entry)? {
+        for key in order {
+            if let entry = entries[key], entry.isReady(at: instant) {
+                return (EntryToken(key: key), entry)
+            }
+        }
+        return nil
+    }
+
+    mutating func remove(_ token: EntryToken) {
+        remove(token.key)
+    }
+
+    /// The first moment after `instant` at which an entry that is not ready now becomes ready.
+    func earliestRetry(after instant: ContinuousClock.Instant) -> ContinuousClock.Instant? {
+        entries.values.compactMap(\.retryNotBefore).filter { $0 > instant }.min()
+    }
+
+    /// Drops every entry `isObsolete` names, e.g. those of an ended session.
+    mutating func removeEntries(where isObsolete: (Entry) -> Bool) {
+        for key in order where entries[key].map(isObsolete) == true {
+            remove(key)
+        }
     }
 
     mutating func reset() {
@@ -359,6 +398,24 @@ enum SharePlayAttachmentLoadRetry {
         .seconds(1),
         .seconds(2)
     ]
+
+    /// While a large upload is still in progress every load throws. The outer deadline of the
+    /// load (30-180 s) and `isStillWanted` end the waiting, so these delays only space the
+    /// attempts: a short back-off first, then one try every few seconds. See
+    /// CODE_AUDIT_Game_Shareplay §5.13.
+    static let uploadWaitDelays: [Duration] =
+        [.milliseconds(250), .seconds(1), .seconds(2)] + Array(repeating: .seconds(3), count: 60)
+
+    /// `load` for an attachment whose upload may still be running: it keeps trying until the
+    /// caller's deadline or cancellation stops it.
+    static func loadWhileUploading<Value: Sendable>(
+        sleep: @Sendable (Duration) async throws -> Void = { delay in
+            try await Task.sleep(for: delay)
+        },
+        operation: @Sendable () async throws -> Value
+    ) async throws -> Value {
+        try await load(retryDelays: uploadWaitDelays, sleep: sleep, operation: operation)
+    }
 
     /// Shared by the 3 best-effort attachment-cleanup retry loops across this
     /// module — previously the same 4-element literal was hand-copied at each

@@ -256,6 +256,39 @@ struct PlayerControllerTests {
         #expect(failure.data.data == nil)
     }
 
+    @Test("A photo or map that did not load through SharePlay is asked for again, although its reference was handled")
+    func nonAudioLoadFailureAsksAgain() async throws {
+        for (module, version) in [(NetworkModules.photo, 4), (.map, 2), (.pdf, 3)] {
+            // Given: the game master's store of an item, handled once as a reference.
+            let env = try await PlayerControllerTestEnvironment.create()
+            let masterConfig = Self.masterConfig()
+            env.root.gameModel.reset(
+                gameConfig: GameConfigModel(id: env.gameConfig.id, state: .started, master: masterConfig.master),
+                gameRoster: env.root.gameModel.gameRoster
+            )
+            let itemId = UUID()
+            let reference = Self.networkModel(
+                counter: 41,
+                type: .store,
+                data: NetworkCodableDataType(id: itemId, type: module, version: version),
+                gameConfig: masterConfig
+            )
+            await env.playerController.receivedProcess(reference, origin: .sharePlay(UUID()))
+            env.playerNetworkSpy.requestData = nil
+
+            // When: the Journal could not deliver its bytes.
+            await env.playerController.sharePlayFileLoadFailed(reference)
+
+            // Then: the player asks for the item with the counter of the show, not the pipeline
+            // swallowing the repeat.
+            let request = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel, "\(module)")
+            #expect(request.isAssetRequest, "\(module)")
+            #expect(request.counter == 41, "\(module)")
+            #expect(request.data.id == itemId, "\(module)")
+            #expect(request.data.data == nil, "\(module)")
+        }
+    }
+
     @Test("Character join advertises metadata and sends the full package only when requested")
     func characterJoinHandshake() async throws {
         // Given

@@ -248,10 +248,20 @@ struct SimpleFileFlowTests {
             relayToProxyClients: false
         )
 
+        await env.settle()
+
         // Then: the exchange ended. The player asked once per message and got no package.
         let requests = env.playerSends.filter { $0.message.isAssetRequest && $0.message.data.id == photoId }
         #expect(requests.count == 2)
         #expect(Self.packages(of: photoId, in: env).isEmpty)
+        // And the master answered each request with a failure, to that player only, so the
+        // player does not wait for bytes that never come (CODE_AUDIT_Game_Shareplay §5.5).
+        let failures = env.masterSends.filter {
+            $0.message.subType == .failed && $0.message.data.id == photoId
+        }
+        #expect(failures.count == 2)
+        #expect(failures.allSatisfy { $0.connectionId == player.connectionId })
+        #expect(failures.first?.message.counter == requests.first?.message.counter)
         #expect(player.controller.gameModel.gameUpdateType != .photo)
     }
 
@@ -382,6 +392,113 @@ struct SimpleFileFlowTests {
         #expect(play.count == 1)
         #expect(play.first?.connectionId == nil)
         #expect(env.master.gameModel.pendingAudioPlays[audioId] == nil)
+    }
+
+    @Test("A pending audio play starts for the ready players after its deadline, a late player joins it (§5.7)")
+    func pendingAudioPlayHasADeadline() async throws {
+        // Given: one player that answers and one that never does.
+        let env = try await LinkedGameEnvironment.create()
+        try await env.importData(named: ResourcesDebug.audioTestData, into: env.masterRoot)
+        env.masterRoot.adventureRoot.startGame()
+        let ready = try await env.addPlayer(named: "Ready")
+        try await env.importData(named: ResourcesDebug.audioTestData, into: ready.root)
+        ready.root.adventureRoot.startGame()
+        let quiet = try await env.addPlayer(named: "Quiet")
+        quiet.root.adventureRoot.startGame()
+        await env.ready(ready)
+        await env.ready(quiet)
+        env.mute(quiet)
+        env.clearHistory()
+        env.master.audioPlayDeadline = .seconds(2)
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+
+        // When
+        await env.master.game(
+            message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
+            actionType: .playAudio
+        )
+        await env.master.waitForAudioDeliveries()
+
+        // Then: the quiet player blocks the play until the deadline, then it starts for all.
+        #expect(env.masterSends.filter { $0.message.subType == .playAudio }.isEmpty)
+        let deadline = ContinuousClock.now + .seconds(5)
+        while env.master.runningAudioPlay == nil, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(env.master.runningAudioPlay != nil)
+        let plays = env.masterSends.filter { $0.message.subType == .playAudio }
+        #expect(plays.count == 1)
+        #expect(plays.first?.connectionId == nil)
+        #expect(env.master.gameModel.pendingAudioPlays[audioId] == nil)
+        #expect(env.master.audioPlayDeadlineTasks.isEmpty)
+
+        // And the player joins the running play once it has the file.
+        env.unmute(quiet)
+        try await env.importData(named: ResourcesDebug.audioTestData, into: quiet.root)
+        env.clearHistory()
+        await env.ready(quiet)
+        await env.settle()
+        let joins = env.masterSends.filter { $0.message.subType == .playAudio }
+        #expect(joins.count == 1)
+        #expect(joins.first?.connectionId == quiet.connectionId)
+    }
+
+    @Test("A receipt whose log row was evicted still completes the delivery (§5.8)")
+    func receiptCountsAfterTheLogRowIsEvicted() async throws {
+        // Given: a play waits for a player; its package was sent but not delivered yet.
+        let env = try await LinkedGameEnvironment.create()
+        try await env.importData(named: ResourcesDebug.audioTestData, into: env.masterRoot)
+        env.masterRoot.adventureRoot.startGame()
+        let missing = try await env.addPlayer(named: "Missing")
+        missing.root.adventureRoot.startGame()
+        await env.ready(missing)
+        env.mute(missing)
+        env.clearHistory()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        await env.master.game(
+            message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
+            actionType: .playAudio
+        )
+        await env.master.waitForAudioDeliveries()
+        let package = try #require(env.masterSends.map(\.message).first { $0.type == .store && $0.data.data != nil })
+        #expect(env.master.gameModel.pendingAudioPlays[audioId] != nil)
+
+        // When: the display log forgets every row before the receipt arrives.
+        env.masterRoot.gameModel.logs.removeAll()
+        env.masterRoot.gameModel.logData.removeAll()
+        env.unmute(missing)
+        await missing.controller.receivedProcess(package)
+        await env.settle()
+
+        // Then: the receipt was still matched, so the play started.
+        #expect(env.master.gameModel.pendingAudioPlays[audioId] == nil)
+        #expect(env.masterSends.contains { $0.message.subType == .playAudio })
+    }
+
+    @Test("A pause cancels the deadline of a pending audio play")
+    func pauseCancelsTheAudioPlayDeadline() async throws {
+        let env = try await LinkedGameEnvironment.create()
+        try await env.importData(named: ResourcesDebug.audioTestData, into: env.masterRoot)
+        env.masterRoot.adventureRoot.startGame()
+        let quiet = try await env.addPlayer(named: "Quiet")
+        quiet.root.adventureRoot.startGame()
+        await env.ready(quiet)
+        env.mute(quiet)
+        env.master.audioPlayDeadline = .seconds(30)
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+
+        await env.master.game(
+            message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
+            actionType: .playAudio
+        )
+        await env.master.waitForAudioDeliveries()
+        #expect(env.master.audioPlayDeadlineTasks.count == 1)
+
+        let pause = AudioPlayRequest(id: audioId, shouldPlay: false).command
+        await env.master.requestAudioPlay(pause)
+
+        #expect(env.master.audioPlayDeadlineTasks.isEmpty)
+        #expect(env.master.runningAudioPlay == nil)
     }
 
     @Test("A player that holds an audio skips the Journal copy, one that lacks it loads it")

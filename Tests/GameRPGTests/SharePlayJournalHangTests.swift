@@ -82,7 +82,7 @@ struct SharePlayJournalHangTests {
         // uses the module's emergency slot, which hangs as well.
         let queue = SharePlayJournalPublicationQueue<HangAttachment>(
             maxOutstandingCleanups: 1,
-            cleanupDeadline: .milliseconds(50)
+            cleanupDeadline: .milliseconds(400)
         )
         let removeGate = HangGate()
         for _ in 0 ..< 2 {

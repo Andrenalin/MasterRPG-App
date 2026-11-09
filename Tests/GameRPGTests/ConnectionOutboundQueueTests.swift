@@ -52,15 +52,32 @@ struct ConnectionOutboundQueueTests {
         #expect(delegate.calledFailed == 1)
     }
 
-    @Test("One frame is queued whatever its size")
-    func oneOversizedFrameIsQueued() async {
+    @Test("A frame past the frame limit is skipped and does not count against the queue (§5.1)")
+    func oversizedFrameIsSkippedNotQueued() async {
+        let delegate = PlayerConnectionDelegateMock()
+        let controller = stalledConnection(delegate: delegate)
+        let frame = Data(count: GameLimits.maximumMessageBytes)
+
+        // The receiving framer would fail the connection on this frame.
+        await controller.response(type: .gameData, encodedContent: Data(count: GameLimits.maximumMessageBytes + 1))
+
+        // It left no trace in the queue: three full frames still fit, a fourth byte does not.
+        for _ in 0..<(GameLimits.maximumOutboundQueuedBytes / GameLimits.maximumMessageBytes) {
+            await controller.response(type: .gameData, encodedContent: frame)
+        }
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(delegate.calledFailed == 0)
+        await controller.response(type: .gameData, encodedContent: Data(count: 1))
+        await waitForFailure(delegate)
+        #expect(delegate.calledFailed == 1)
+    }
+
+    @Test("The largest frame the receiver accepts is queued")
+    func largestAcceptedFrameIsQueued() async {
         let delegate = PlayerConnectionDelegateMock()
         let controller = stalledConnection(delegate: delegate)
 
-        await controller.response(
-            type: .gameData,
-            encodedContent: Data(count: GameLimits.maximumOutboundQueuedBytes + 1)
-        )
+        await controller.response(type: .gameData, encodedContent: Data(count: GameLimits.maximumMessageBytes))
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(delegate.calledFailed == 0)

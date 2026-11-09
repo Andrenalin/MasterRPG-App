@@ -206,6 +206,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** The player's connection dies on every such frame. After reconnecting, late-joiner replay (`MasterController+PresentationReplay.swift`) shows the same item again, the player requests the asset, and the master sends the same oversized frame again — a repeat loop for as long as the item is on screen *(loop inferred from the replay design; the framer rejection and missing send check were verified)*. Every other message to that player is lost each cycle, and the master gets no signal that size is the cause.
 - **Action:** Check the encoded size against the shared maximum before queuing for LAN; answer an oversized asset with `.failed` ("too large for LAN") instead of sending; derive send-side and receive-side limits from the one constant.
 - **Severity:** High
+- **Status: fixed 2026-11-09.** A package that does not fit one LAN frame (`GameLimits.fitsOneMessage`, base64 4/3 included) is no longer sent; the requester gets `.failed` (`AssetRequestUnavailable.tooLarge`) and send and receive limits come from one constant. Tests: `LanFrameLimitTests`.
 
 ### 5.2 Deferred-delivery promotion busy-loops on the main actor while the send queue is full
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:386-415` (esp. `:403-411`), `:417-438` (esp. `:423-436`), warning log at `:303-315`
@@ -213,6 +214,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A small event fails, gets a 1 s retry, and that second passes while a ~47 MB Messenger transfer plus a few operations fill the queue: the main actor runs a task-creation/promotion loop for the whole transfer (often tens of seconds), each iteration logging "Chunked queue full: ignored message". Each hop yields to the main loop so the UI is not frozen, but CPU/battery drain, jank and a flooded unified log result. No test covers "head ready + queue full". It is the §5.3 fix of CODE_AUDIT_Network, which added this unconditional reschedule.
 - **Action:** On the capacity-failure path do not reschedule against an already-passed deadline: rely on `drainSendOperations` calling promote after each completed operation, or schedule a minimum back-off (the next retry step). Log the "ignored" warning only when `allowDeferral` is true. Add a unit test for head-ready + queue-full.
 - **Severity:** High *(regression of CODE_AUDIT_Network §5.3 fix)*
+- **Status: fixed 2026-11-09.** A ready head that finds the queue full is no longer rescheduled against its passed deadline; the next completed send promotes it, and the "ignored" warning is logged only when deferral is allowed. Tests: `SharePlayDeferredPromotionTests`.
 
 ### 5.3 A master that rejoins under a new participant keeps stale sequence state on players
 - **Location:** `Modules/GameRPG/Controller/PlayerController+MessageProcessing.swift:76-84`; `Controller/PlayerControllerModel.swift:82-87,136-144`; `Controller/PlayerController+NetworkStoreDelegate.swift:25-26`; `Controller/MasterControllerModel.swift:14`
@@ -220,6 +222,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Until the new counter passes the old high-water mark, players ignore its config/controls/roster and drop its presentations as stale — in practice players stay on the old screen after the GM restarts the app mid-SharePlay.
 - **Action:** On `.changed`, reset the master-state sequence, list sequence and presentation order exactly as the leave path does.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** A master that comes back under another participant resets the player's master-state, list and presentation sequences (`resetMasterSequences`). Tests: `RestartedMasterReconnectTests`.
 
 ### 5.4 After a non-audio Journal attachment fails to load, the player never asks again
 - **Location:** `Modules/GameRPG/Controller/PlayerController+NetworkStoreDelegate.swift:122-143`; `Model/GameMessagePipeline.swift:105-108,166-182`; `Tests/GameRPGTests/PlayerControllerTests.swift:230-257`
@@ -227,6 +230,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A photo, PDF, map or Space package whose Journal transfer failed stays missing on that player for the rest of the session, with no error shown.
 - **Action:** Turn a load failure into an explicit local re-request (or a distinct event kind that is not de-duplicated); add a photo/map test.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** A failed non-audio Journal attachment no longer latches: the player asks again (`PlayerController+NetworkStoreDelegate`). Guard-level coverage only through the existing store-delegate tests.
 
 ### 5.5 Asset requests the master cannot serve get no answer
 - **Location:** `Modules/GameRPG/Controller/MasterController+FileMessageSupport.swift:61-64`; `Controller/MasterController+AudioMessages.swift:37-40`; `Controller/MasterController+NetworkStoreDelegate.swift:251-257`
@@ -234,6 +238,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Under request/answer, a missing answer is the one outcome the requester cannot tell from slowness: the player shows a loading state indefinitely and never falls back or retries.
 - **Action:** Always answer — `.failed` for a non-local file or export/processing error — so the player can mark the item unavailable and retry later.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** The master answers an asset request it cannot serve with `.failed` (`AssetRequestUnavailable`), never with silence; the player clears its loading state. Tests: `SimpleFileFlowTests`.
 
 ### 5.6 `.file`-origin messages bypass route binding and the `isBound` roster check
 - **Location:** `Modules/GameRPG/Network/GamePlayerRoutes.swift:21-23,53-56`; `Controller/MasterController+NetworkStoreDelegate.swift:194,210-214,310-317`; `Network/GameNetworkController+SharePlayDelegate.swift:126-145`
@@ -241,6 +246,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Ghost entries come back on SharePlay, the case CODE_AUDIT_23 §5.4 was meant to fix; they also feed §5.7 (a ghost never sends a receipt).
 - **Action:** Bind `.file` events to the Journal attachment's originating participant the same way Messenger events are bound; apply `isBound` before adding to the roster.
 - **Severity:** Medium *(incomplete fix of CODE_AUDIT_23 §5.4)*
+- **Status: partly fixed 2026-11-09.** A `.file` message is accepted only for a sender that already has a live route; one that arrives after its player left, or names an unknown sender, is refused. **Not done:** a Journal attachment still names no participant, so it cannot be bound to the one that uploaded it. Tests: `GamePlayerRoutesFileOriginTests`.
 
 ### 5.7 A pending audio play has no deadline and needs a receipt from every listed player
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:149-158,205-214`
@@ -248,6 +254,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Ghosts (§5.6), players whose ack was evicted from the log (§5.8), and players stuck on a failed/unanswered request (§5.5) each block the GM's music for the whole table; the GM sees a play that never starts.
 - **Action:** Add a deadline after which the play starts for the ready players; late answerers join the music already playing.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** A pending audio play has a deadline (`audioPlayDeadline`, 20 s): it then starts for the ready players, the missing ones are abandoned, and a late player joins the running play with a targeted `.playAudio`. A pause cancels the deadline. Tests: `SimpleFileFlowTests.pendingAudioPlayHasADeadline`, `pauseCancelsTheAudioPlayDeadline`. Not verified red-first.
 
 ### 5.8 Late acks are lost once the 300-entry UI log has evicted their row
 - **Location:** `Modules/GameRPG/Controller/LogGameController.swift:26,133-135`; `Controller/MasterController+NetworkStoreDelegate.swift:223-227,263-272`
@@ -255,6 +262,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** In a busy session the row for a large asset can be evicted before its `.ok` arrives; the ack is then "uncorrelated" and dropped, so availability lists and audio receipts are never recorded and the master keeps resending assets the player holds. A UI-retention setting controls protocol correctness.
 - **Action:** Correlate acks through a small dedicated pending-request table (counter + target, with deadline), separate from the display log.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** The master keeps its own table of sent deliveries (`SentDelivery`, 4096 entries), so a receipt counts after the 300-entry UI log evicted its row. Test: `SimpleFileFlowTests.receiptCountsAfterTheLogRowIsEvicted`. Not verified red-first.
 
 ### 5.9 A wire-version mismatch is silent — both sides look connected
 - **Location:** `Modules/GameRPG/Model/GameNetworkModel.swift:189-210`; `Model/GameMessagePipeline.swift:349-357`; `Network/GameNetworkController+MasterDelegate.swift:29-32`; `Network/GameNetworkController+PlayerDelegate.swift:29-32`
@@ -262,6 +270,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A player on an older/newer App Store build joins, appears connected, and receives nothing; neither user is told to update — hard-to-diagnose support reports.
 - **Action:** On an unsupported version, answer with a minimal versioned "incompatible" message (or close with a specific reason) and show "update the app" on both sides.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (user decision: reply and show an error).** A peer on another wire version gets a minimal versioned "incompatible" notice and both sides show a localized "update the app" error (two new strings). Tests: `VersionMismatchTests`. **LAN only:** on SharePlay the undecodable message is logged, nothing is sent back.
 
 ### 5.10 Journal add limiter is keyed by module, so an audio playlist and its first track always collide
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:57-59,73-77,85-89,121-122`; `SharePlay/SharePlayJournalAddLimiter.swift:63-66`
@@ -269,6 +278,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Showing a playlist with its first track — the case the separate slot exists for — makes the second publication log "Journal bypass" and broadcast through Messenger to everyone, including those who already hold it; a package over ~47 MB is lost. A quarantined (timed-out) add in one audio slot also blocks the other.
 - **Action:** Key the limiter by the slot, the same key the publication queue uses.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** The Journal add limiter is keyed by slot (an audio playlist and its first track no longer collide). Test: `SharePlayJournalSlotLimiterTests` — a guard, the limiter was already generic.
 
 ### 5.11 Journal → Messenger fallback cannot carry 47–100 MB assets; a slow-but-successful Journal add is discarded
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:91-99,117-130,157-161,167-177`; `SharePlay/SharePlayDeferredDeliveryQueue.swift:71-78`; `SharePlay/SharePlayJournalPublicationQueue.swift:113,197-206`; `SharePlay/RPGSharePlayController.swift:529`
@@ -276,6 +286,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A 60 MB PDF revealed while another module's add is outstanding, or whose add takes >10 s, reaches no participant: the Journal copy is deleted, Messenger drops it, and the ledger slot is freed (no re-upload until the next show). For assets up to 47 MB the same timeout instead double-delivers, broadcasting to participants that already hold the file.
 - **Action:** Return `.unavailable` (and log a loss) when the fallback enqueue fails; budget Journal bytes per slot rather than globally; for assets above the Messenger limit let a timed-out add commit instead of removing it.
 - **Severity:** Medium
+- **Status: partly fixed 2026-11-09.** The publication queue budgets bytes per slot (plus a total backstop, `maxOutstandingTotalBytes`), so one module's large package does not keep the others off the Journal; a Journal add that finishes after its timeout is adopted instead of discarded. Tests: `SharePlayJournalSlotLimiterTests` (budget). **Not tested:** the adoption path; an adopted late attachment is not tracked by the publication queue.
 
 ### 5.12 Strictly serial Messenger queue: small control messages wait behind a large transfer, then overflow
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:303-315,337-384`; `SharePlay/SharePlaySingleQueuePackageSender.swift:84-86,158-212`; `SharePlay/SharePlayDeferredDeliveryQueue.swift:170-178,240-253`
@@ -283,6 +294,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** During a 40 MB Messenger fallback, dice rolls, HP updates and pin moves sit queued for the whole transfer; a busy round overflows and loses messages including the GM's latest reveal for a module; a `messenger.send` that never returns stalls all outbound SharePlay traffic. The receiver already reassembles interleaved streams per UUID, so strict serialisation is not needed for correctness.
 - **Action:** Add a priority lane (or interleave single-package messages between chunks of a large stream), a per-package send timeout, and never let an event evict a module's only deferred presentation.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09 (user decision: timeout + protect presentations, no full priority lane).** Each package send has a timeout; an event never evicts a module's only deferred presentation. Tests: `SharePlayPackageTransportTests`. **Not built:** a priority lane for small control messages.
 
 ### 5.13 Journal load retry gives up after ~3 s while an upload is still in progress
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayDeferredDeliveryQueue.swift:356-399` (defaults `:357-361`); `SharePlay/RPGSharePlayController+JournalAttachments.swift:224-241,278-296`; `SharePlay/SharePlayJournalLedger.swift:65-85`
@@ -290,6 +302,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** For a large GM upload every player starts loading immediately, fails within seconds, and gets no file until a later Journal change or a re-show more than 60 s later. *(reasoned from code; not reproduced)*
 - **Action:** Keep retrying with back-off inside the deadline race for as long as `isStillWanted` holds, instead of the fixed short inner list.
 - **Severity:** Medium
+- **Status: fixed 2026-11-09.** The Journal load retry follows an upload that is still in progress (`loadWhileUploading`, `uploadWaitDelays`) instead of giving up after ~3 s. Tests: `SharePlayPackageTransportTests`.
 
 ### 5.14 One sender can evict other participants' in-progress streams by filling the shared byte budget
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayPackageReceiver.swift:59-62,131-136,145-147,212-237` (esp. `:229-232`)
@@ -297,6 +310,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Three concurrent large streams, or one participant growing a single 64 MB stream, silently evict the GM's partly received transfer; there is no NACK so it never arrives. Contradicts the doc claim that a flood cannot evict anyone else's transfer.
 - **Action:** Give each source a byte quota; when the requesting source has nothing of its own to evict, reject its chunk.
 - **Severity:** Low *(incomplete fix of CODE_AUDIT_16 §6.4)*
+- **Status: fixed 2026-11-09.** The receiver's shared byte budget is per source (`maxSourceByteCount`), so one sender cannot evict the others' streams. Tests: `SharePlayPackageTransportTests`.
 
 ### 5.15 visionOS: a closed table stays alive in the seat task; coordination is keyed on a reusable `ObjectIdentifier`
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+TableCoordination.swift:47-65`; `SharePlay/RPGSharePlayController.swift:481-485,698-705`; `Table3D/GroupActivityManager.swift:20-22`
@@ -304,6 +318,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Memory held for the rest of the session; once the capture is made weak, a reopened table allocated at a reused address would match the stale identifier and never be coordinated, so its seats would not sync.
 - **Action:** Capture the model weakly; clear `coordinatedTabletopGame` when the game detaches, or key the guard on a UUID stored on the model.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (visionOS only, no test).** The seat task holds the table model weakly and the coordination state is reset in `setup(tabletopGame:)`. Compiles for visionOS; not exercised at runtime.
 
 ### 5.16 Targeted sends to a departed participant are retried as transient failures, re-encoding the payload each time
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:229-233`; `SharePlay/SharePlaySingleQueuePackageSender.swift:214-235`; `SharePlay/RPGSharePlayController+ChunkedTransport.swift:243,284-301,535-551`
@@ -311,6 +326,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** An answer for a player who just left costs up to four full encodes of up to 47 MB plus seven failed sends.
 - **Action:** Treat `participantNotActive` as terminal; optionally cache encoded bytes across retries.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `participantNotActive` is terminal: no retries, one encode. Tests: `SharePlayPackageTransportTests`.
 
 ### 5.17 Deferred queue promotes only the head — a retry entry not yet due blocks ready entries behind it
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:386-395,417-421`; `SharePlay/SharePlayDeferredDeliveryQueue.swift:191-194,268-273`
@@ -318,6 +334,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Ready messages are delayed by unrelated back-offs; repairs inserted ahead of presentations can still sit behind a delayed event.
 - **Action:** Promote the earliest *ready* entry (FIFO among ready) and schedule the timer for the minimum `retryNotBefore`.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** The deferred queue promotes the earliest ready entry and the timer follows the minimum `retryNotBefore`. Tests: `SharePlayDeferredPromotionTests`.
 
 ### 5.18 A whole-message retry re-broadcasts after newer messages
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:284-301`
@@ -325,6 +342,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Participants that already completed it receive it again (counter dedup absorbs that at a bandwidth cost); state-type updates (pin/table) can be applied after a newer update. Presentations are protected by the player's counter check. *(reasoned)*
 - **Action:** Drop the retry for state updates if a newer message for the same entity was already sent, or document that receivers must order by a version.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (user decision: implement the optional action).** A retried state update is dropped when a newer message for the same entity was sent (`SharePlayStateSupersession`). Tests: `SharePlayStateSupersessionTests`.
 
 ### 5.19 Messages that fail to encode or decode are dropped without a log
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:352-357`; `SharePlay/RPGSharePlayController+ChunkedTransport.swift:243-256,460-470`; `Model/GameMessagePipeline.swift:359-361`
@@ -332,6 +350,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A complete 64 MB message — or a model with a non-finite `Double` — disappears with no evidence, making version-skew and corruption bugs undiagnosable from device logs.
 - **Action:** Log a warning with source participant, stream id, byte count and the error identifier.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (log only, no test).** Encode and decode failures are logged (`GameMessagePipeline`, SharePlay lifecycle and chunked transport).
 
 ### 5.20 SharePlay activates only if the device is eligible at the moment the game starts
 - **Location:** `Modules/GameRPG/Network/GameNetworkController.swift:106-116,134-137`; `SharePlay/RPGSharePlayController.swift:596-603`
@@ -339,6 +358,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** If the GM starts the game and then starts (or restarts) a FaceTime call, SharePlay never activates until the game restarts.
 - **Action:** While a master game runs, observe eligibility and offer/perform activation when it turns true.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (user decision: activate automatically).** When eligibility turns true during a master game, SharePlay is activated (`pendingActivation`, `shouldActivateOnEligibilityChange`); leaving the game clears it. Tests: `SharePlayStateSupersessionTests`.
 
 ### 5.21 With player dice turned off, every player answers every group roll with `.failed`
 - **Location:** `Modules/GameRPG/Controller/PlayerController+Dice.swift:20-26`; `Controller/PlayerController+MessageProcessing.swift:281-289`
@@ -346,6 +366,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** For every roll the master receives (N−1) `.failed` messages, flooding the log/statistics and looking like real rejections.
 - **Action:** Treat a locally gated roll as "not applied" (no answer); send `.failed` only for requests addressed to this device.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** With player dice turned off a player ignores group rolls instead of answering each with `.failed`. Tests: `PlayerDiceGateTests`.
 
 ### 5.22 Messages rejected only by local policy are forwarded to proxy clients again on every redelivery
 - **Location:** `Modules/GameRPG/Controller/PlayerController+MessageProcessing.swift:151-157,173-178,252-254`
@@ -353,6 +374,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** When SharePlay and LAN both deliver the envelope (or a replay), proxy mirrors get duplicate dice rolls / pin moves.
 - **Action:** Record "forwarded" independently of "applied" so forwarding happens once per key.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** A message is forwarded to proxy clients once per key (`claimProxyForward`, bounded set of 512). Tests: `PlayerDiceGateTests` and the player-controller message tests.
 
 ### 5.23 `requeueCurrentOnCancellation` removes the pending key, so a duplicate can be queued meanwhile
 - **Location:** `Modules/GameRPG/Model/GameMessagePipeline.swift:275-287`
@@ -360,6 +382,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Until reprocessed, a duplicate (dual transport, replay) passes dedup and is queued too; non-idempotent updates (dice, value deltas) apply twice.
 - **Action:** Keep the pending key while the event is back in the queue.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** A requeue after cancellation keeps the pending key, so no duplicate is queued meanwhile. Test: `MasterControllerConnectionTests` (requeue).
 
 ### 5.24 `MasterSequenceGate` accepts any session switch, including a late message of an earlier session
 - **Location:** `Modules/GameRPG/Model/MasterSequenceGate.swift:15-19`
@@ -367,6 +390,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A delayed message from before a master restart can flip the gate back to the old session; the next real message then counts as a switch, applying stale state briefly.
 - **Action:** Accept a switch only to a newer session (start time) or after the transport reported a reconnect.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `MasterSequenceGate` remembers retired sessions and refuses their late messages. Tests: `MasterSequenceGateTests`.
 
 ### 5.25 Stopping a game clears the config before the controllers stop
 - **Location:** `Modules/GameRPG/Root/GameRoot.swift:612-640`
@@ -374,6 +398,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A message built or sent in between (a pending audio receipt, a debounced value update) goes out under the empty/random master id; a player that was not yet told about the stop may adopt it.
 - **Action:** Stop controllers and transports first, then reset the config.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (no dedicated test).** `GameRoot` resets the configuration after the controllers have stopped.
 
 ### 5.26 Group events with timestamps >300 s in the future are dropped silently
 - **Location:** `Modules/GameRPG/Model/GameNetworkModel+Shape.swift:70-83`
@@ -381,6 +406,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A player whose clock is >300 s ahead (manual time, tvOS) has every roll, pin move and Space transform dropped with only a debug log.
 - **Action:** Use receive time for the skew decision, or log at warning level and surface "clock out of sync".
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (log only, no test).** A group event more than 300 s in the future logs a clock-skew warning (`GameNetworkModel+Shape`).
 
 ### 5.27 Envelopes with `counter <= 0` skip de-duplication and relay reservation
 - **Location:** `Modules/GameRPG/Model/GameMessagePipeline.swift:105-108,222-223`; `Controller/MasterController+NetworkStoreDelegate.swift:93-112`
@@ -388,6 +414,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** A buggy or malicious peer can resend the same group event with counter 0; the master processes and relays every copy to all players — N× amplification.
 - **Action:** Reject counter ≤ 0 from remote peers (only local/synthetic events use 0), or derive a key without the counter.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** A group event with `counter <= 0` is refused. Tests: `GroupEventCounterTests`.
 
 ### 5.28 A targeted message to a player with no route is sent to everyone; small answers to `.file` requests go through the Journal
 - **Location:** `Modules/GameRPG/Network/GameNetworkController+Delivery.swift:92-95,105-111`
@@ -395,6 +422,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** One-recipient answers (Character rejection, value packages, companion data) reach the whole session, filtered only by each receiver's `targetId` check; control answers become slower Journal attachments retained in the Journal history.
 - **Action:** Drop (and log) a targeted message whose target has no route; use `publishAsset` only for `carriesAsset` data and Messenger for the rest.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** A message for a player without a route is not broadcast (the player on this device gets it, everyone else nothing, logged); a small answer to a `.file` request goes through Messenger, not the Journal. Tests: `TargetedDeliveryTests`; seven existing tests now bind the player's route first.
 
 ### 5.29 Presentation counters are assigned before the export await, so a later show can overtake an earlier one
 - **Location:** `Modules/GameRPG/Controller/MasterController+Messaging.swift:63-72,223-257,262-342`; `Network/GameNetworkController+Delivery.swift:32-64`
@@ -402,6 +430,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** The player tolerates it by design (stale presentations discarded at `PlayerController+MessageProcessing.swift:181-197`); the only cost is bandwidth for the discarded large package. Recorded so nobody "fixes" it with ordering machinery.
 - **Action:** Optionally skip sending a package whose presentation is already superseded.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (user decision: implement the optional action).** A presentation superseded while its package was built sends the reference only, not the bytes (`isSuperseded`). Tests: `TargetedDeliveryTests`.
 
 ### 5.30 On a player, Stop Game leaves the session but keeps all session state live until `.invalidated` arrives
 - **Location:** `Modules/GameRPG/Network/GameNetworkController.swift:141-153`; `SharePlay/RPGSharePlayController+SessionLifecycle.swift:278-293,345-372`
@@ -409,6 +438,7 @@ No deprecated APIs, closure-based variants with async equivalents, legacy `Forma
 - **Why:** Messenger, send queue, deferred retries and Journal loads (up to 180 s) keep running; inbound messages keep routing to whatever `playerDelegate` exists; a quick restart can receive the old session's traffic and its late lost-connection teardown. *(reasoned)*
 - **Action:** Call `reset()` on the player stop path too, reporting teardown first if the delegate needs it.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (no dedicated test).** Stopping as a player calls `reset()` like the master path.
 
 ---
 

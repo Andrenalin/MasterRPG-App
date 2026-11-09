@@ -37,6 +37,14 @@ extension MasterController {
             return false
         }
 
+        // A group event is de-duplicated and relayed by its counter. A remote peer counts from
+        // one: counter 0 would be handled, and relayed to every player, again for each copy.
+        // See CODE_AUDIT_Game_Shareplay §5.27.
+        guard model.counter > 0 || !model.isPlayerGroupEvent else {
+            Logger.networking.warning("MasterController: Rejected group event without a counter from \(model.sender.id, privacy: .public)")
+            return false
+        }
+
         guard acceptsTransportRole(model.sender.role, origin: origin) else {
             Logger.networking.debug("MasterController: Rejected \(String(describing: model.sender.role), privacy: .public) sender on incompatible transport")
             return false
@@ -223,6 +231,12 @@ extension MasterController {
             try Task.checkCancellation()
             if let requestedData = try await handle(model, origin: event.origin) {
                 try Task.checkCancellation()
+                if model.isAssetRequest {
+                    let byteCount = requestedData.data?.count ?? 0
+                    guard GameLimits.fitsOneMessage(payloadBytes: byteCount) else {
+                        throw AssetRequestUnavailable.tooLarge(byteCount: byteCount)
+                    }
+                }
                 // The answer to a request: it keeps the counter of the message the player
                 // could not use, and goes back the way the request came. A request that
                 // echoes no master message (a pin photo of a map) has counter 0 and is
@@ -243,17 +257,52 @@ extension MasterController {
             return true
         } catch is CancellationError {
             return false
+        } catch let unavailable as AssetRequestUnavailable {
+            Logger.networking.error("MasterController: Cannot serve the request for \(model.data.type.token, privacy: .public) \(model.data.id, privacy: .public): \(String(describing: unavailable), privacy: .public); answering failed")
+            await answerAssetRequestFailed(model, origin: event.origin)
+            await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+            return true
         } catch {
             // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
             Logger.networking.error("MasterController: Failed to process \(model.debugDescription, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            await answerAssetRequestFailed(model, origin: event.origin)
             return false
         }
+    }
+
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) async {
+        root.logGameController.addNote(mismatch.logText)
+    }
+
+    /// Tells the player that asked for an item's bytes that it will not get them, under the
+    /// counter of its request and to that player only. Anything but an asset request is left
+    /// alone: those have their own answers.
+    private func answerAssetRequestFailed(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
+        guard model.isAssetRequest else { return }
+        await send(
+            type: model.type,
+            subtype: .failed,
+            updated: model.data,
+            counter: model.counter > 0 ? model.counter : nil,
+            origin: origin,
+            playerId: model.sender.id
+        )
     }
 
     /// Marks the acknowledging player in the log row of the message it answers, found by the
     /// echoed counter. Returns whether the acknowledgement belongs to a reveal or store of
     /// this game, which is what lets it update an availability report.
     private func recordDeliveryReceipt(_ model: GameNetworkModel) -> Bool {
+        // The display log keeps only the newest rows: a receipt for a row it has evicted still
+        // belongs to the message, which the master's own table remembers.
+        // See CODE_AUDIT_Game_Shareplay §5.8.
+        if let sent = gameModel.sentDelivery(counter: model.counter) {
+            guard sent.module == model.data.type, sent.itemId == model.data.id else { return false }
+            if let log = root.gameModel.logData[model.counter], log.messageID.sessionID == gameModel.deliverySessionId {
+                root.logGameController.updateMessage(messageID: log.messageID, player: model.sender.id)
+            }
+            return sent.type == .reveal || sent.type == .store
+        }
         guard let log = root.gameModel.logData[model.counter],
               log.messageID.sessionID == gameModel.deliverySessionId,
               log.module == model.data.type,

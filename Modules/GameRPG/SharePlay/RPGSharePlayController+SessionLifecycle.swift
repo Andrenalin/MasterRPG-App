@@ -141,6 +141,7 @@ extension RPGSharePlayController {
 
     func stopJoin() {
         Logger.sharePlay.debug("SharePlay: stopJoin")
+        pendingActivation = nil
         connectionState = .inactive
         // Revoke and cancel the normal observer before creating a cleanup-only
         // replacement. An already-admitted configure await cannot commit with
@@ -369,8 +370,15 @@ extension RPGSharePlayController {
                     package: message,
                     from: context.source.id
                 ),
-                   self.admitsInboundPackage(completedPackage, from: context.source.id),
-                   let decodedMessage = await Self.decodedMessage(from: completedPackage) {
+                   self.admitsInboundPackage(completedPackage, from: context.source.id) {
+                    guard let decodedMessage = await Self.decodedMessage(from: completedPackage) else {
+                        // A complete message that does not decode: version skew or corruption.
+                        // See CODE_AUDIT_Game_Shareplay §5.19.
+                        if !Task.isCancelled {
+                            Logger.sharePlay.warning("Chunked ✕: stream \(completedPackage.id, privacy: .public) from \(completedPackage.sourceParticipantId, privacy: .private) (\(completedPackage.byteCount, privacy: .public) bytes) could not be decoded")
+                        }
+                        continue
+                    }
                     let size = Self.formattedByteCount(decodedMessage.byteCount)
                     Logger.sharePlay.debug("Chunked ✓: received \(message.total, privacy: .public) packages, assembled size \(size, privacy: .public) from \(context.source.id, privacy: .public)")
                     guard !Task.isCancelled,

@@ -21,6 +21,7 @@ extension MasterController {
             let hasPendingPlay = gameModel.pendingAudioPlays[model.data.id] != nil
             root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             await startCompletePendingAudioPlays()
+            await joinRunningAudioPlay(playerId: model.sender.id)
             // Only the master collects the receipts. The one that completes a share is
             // announced, so a player's share button turns to play as well; a pending play
             // announces it with its play command instead.
@@ -35,8 +36,11 @@ extension MasterController {
         }
 
         if model.isAssetRequest {
-            // An iCloud file that has not downloaded cannot be exported.
-            guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) else { return nil }
+            // An iCloud file that has not downloaded cannot be exported. The requester is
+            // told, see `AssetRequestUnavailable`.
+            guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) else {
+                throw AssetRequestUnavailable.notDownloaded
+            }
             return try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
         }
         guard model.type == .update else { return nil }
@@ -71,6 +75,7 @@ extension MasterController {
                 await deliverPendingAudio(pending, to: [model.sender.id])
             }
             await startCompletePendingAudioPlays()
+            await joinRunningAudioPlay(playerId: model.sender.id)
         default:
             break
         }
@@ -129,10 +134,51 @@ extension MasterController {
     func requestAudioPlay(_ data: NetworkCodableDataType) async {
         clearPendingAudioPlays()
         if !root.audioRoot.audioGameControllable.shouldPlay(with: data) {
-            await broadcastAudioPlay(data)
+            await broadcastAudioPlay(data, plays: false)
             return
         }
         await startPendingAudioPlay(data)
+    }
+
+    /// Starts the play for the players that are ready once the deadline passed: a player that
+    /// never answers (a ghost, a lost receipt, a stalled download) must not hold the music of the
+    /// whole table. The players it started without join the running play when their file
+    /// arrives (`joinRunningAudioPlay`). See CODE_AUDIT_Game_Shareplay §5.7.
+    private func scheduleAudioPlayDeadline(for id: UUID) {
+        guard audioPlayDeadlineTasks[id] == nil else { return }
+        let deadline = audioPlayDeadline
+        audioPlayDeadlineTasks[id] = Task { [weak self] in
+            try? await Task.sleep(for: deadline)
+            guard !Task.isCancelled, let self else { return }
+            await self.audioPlayDeadlineExpired(id: id)
+        }
+    }
+
+    func audioPlayDeadlineExpired(id: UUID) async {
+        audioPlayDeadlineTasks[id] = nil
+        guard let data = gameModel.pendingAudioPlays[id] else { return }
+        let audio = root.audioRoot.audioGameControllable
+        let missing = missingPlayers(for: data)
+        guard !missing.isEmpty else { return }
+        Logger.networking.error("MasterController: Audio \(id, privacy: .public) starts after its deadline without \(missing.count, privacy: .public) player(s).")
+        for itemId in audio.requiredItemIds(for: data) {
+            for playerId in audio.missingPlayers(ofItem: itemId) where missing.contains(playerId) {
+                gameModel.abandonAudioDelivery(itemId: itemId, playerId: playerId)
+            }
+        }
+        lateAudioPlayers.formUnion(missing)
+        await startCompletePendingAudioPlays()
+    }
+
+    /// Sends the running play to `playerId` alone when it started without them and they have the
+    /// files now.
+    func joinRunningAudioPlay(playerId: UUID) async {
+        guard lateAudioPlayers.contains(playerId), let running = runningAudioPlay else { return }
+        let audio = root.audioRoot.audioGameControllable
+        guard audio.requiredItemIds(for: running).allSatisfy({ !audio.missingPlayers(ofItem: $0).contains(playerId) })
+        else { return }
+        lateAudioPlayers.remove(playerId)
+        await send(type: .update, subtype: .playAudio, updated: running, playerId: playerId)
     }
 
     /// Notes the master's current version of every item the play needs: a file the game master
@@ -153,6 +199,8 @@ extension MasterController {
         if missingPlayers.isEmpty {
             await startCompletePendingAudioPlays()
         } else {
+            // A retry is the same play again and keeps its deadline.
+            scheduleAudioPlayDeadline(for: data.id)
             startAudioDelivery(data, to: missingPlayers)
         }
     }
@@ -180,6 +228,8 @@ extension MasterController {
 
     /// Forgets the pending play `id` with its retry task, attempts and failure counts.
     func clearPendingAudioPlay(_ id: UUID) {
+        audioPlayDeadlineTasks[id]?.cancel()
+        audioPlayDeadlineTasks[id] = nil
         audioPlayRetryTasks[id]?.cancel()
         audioPlayRetryTasks[id] = nil
         gameModel.audioPlayRetryAttempts[id] = nil
@@ -190,10 +240,16 @@ extension MasterController {
     func clearPendingAudioPlays() {
         audioDeliveryTask?.cancel()
         audioDeliveryTask = nil
+        // A new play or a pause replaces the music a late player could still join.
+        lateAudioPlayers.removeAll()
         for task in audioPlayRetryTasks.values {
             task.cancel()
         }
         audioPlayRetryTasks.removeAll()
+        for task in audioPlayDeadlineTasks.values {
+            task.cancel()
+        }
+        audioPlayDeadlineTasks.removeAll()
         gameModel.audioPlayRetryAttempts.removeAll()
         gameModel.pendingAudioPlays.removeAll()
         gameModel.resetAudioDeliveryFailures()
@@ -381,7 +437,9 @@ extension MasterController {
         }
     }
 
-    private func broadcastAudioPlay(_ data: NetworkCodableDataType) async {
+    private func broadcastAudioPlay(_ data: NetworkCodableDataType, plays: Bool = true) async {
+        // A pause ends the music a late player could still join.
+        runningAudioPlay = plays ? data : nil
         await send(type: .update, subtype: .playAudio, updated: data)
         let hasLocalPlayer = root.networkStore.model.hasLocalPlayer
         if !hasLocalPlayer {

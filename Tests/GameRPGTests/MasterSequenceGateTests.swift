@@ -29,6 +29,23 @@ struct MasterSequenceGateTests {
         #expect(restarted)
     }
 
+    @Test("A late message of an earlier session cannot switch the gate back (§5.24)")
+    func lateMessageOfAnEarlierSessionIsRefused() {
+        var gate = MasterSequenceGate()
+        let old = UUID(), current = UUID()
+        let first = gate.accept(sessionId: old, sequence: 9)
+        let switched = gate.accept(sessionId: current, sequence: 1)
+        let lateOld = gate.accept(sessionId: old, sequence: 10)
+        let next = gate.accept(sessionId: current, sequence: 2)
+        gate.reset()
+        let afterReset = gate.accept(sessionId: old, sequence: 11)
+        #expect(first)
+        #expect(switched)
+        #expect(!lateOld)
+        #expect(next)
+        #expect(!afterReset)
+    }
+
     @Test func resetForgetsTheOrder() {
         var gate = MasterSequenceGate()
         let session = UUID()

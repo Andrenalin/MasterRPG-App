@@ -12,6 +12,22 @@ enum GameLimits {
     /// See CODE_AUDIT_17 §6.2.
     static let maximumMessageBytes = 100 * ByteUnit.megabyte
 
+    /// Bytes the JSON envelope around an attachment may add to its base64 payload: the sender,
+    /// master state, ids and versions. A generous bound, not a measurement.
+    static let envelopeAllowanceBytes = 256 * ByteUnit.kibibyte
+
+    /// Whether a message carrying `payloadBytes` of raw attachment data still fits one frame of
+    /// `maximumMessageBytes`. The payload is Base64 inside the JSON envelope, which inflates it
+    /// by 4/3, so a file of ~75 MB already makes a frame the receiving framer rejects with
+    /// `EMSGSIZE`, which ends the player's connection. The send side checks the same constant the
+    /// receive side enforces. See CODE_AUDIT_Game_Shareplay §5.1.
+    static func fitsOneMessage(payloadBytes: Int) -> Bool {
+        guard payloadBytes >= 0, payloadBytes <= maximumMessageBytes else { return false }
+        // Base64: four characters for every started group of three bytes.
+        let encoded = (payloadBytes + 2) / 3 * 4
+        return encoded + envelopeAllowanceBytes <= maximumMessageBytes
+    }
+
     /// Largest payload of a player's group event (a Dice roll, a moved pin, a Space transform).
     /// The master relays these to every peer as soon as their shape is right, so the shape check
     /// bounds the bytes as well: these events are a few hundred bytes to a few kilobytes, and

@@ -11,7 +11,34 @@ final class MasterControllerModel {
         let version: Int
     }
 
+    /// What the master sent under a counter, so an acknowledgement is matched to its message
+    /// without the display log: that log keeps only the newest rows, and a receipt for an evicted
+    /// row would otherwise be dropped. See CODE_AUDIT_Game_Shareplay §5.8.
+    struct SentDelivery: Equatable, Sendable {
+        let type: RPGMessageType
+        let module: NetworkModules
+        let itemId: UUID
+    }
+    static let maximumSentDeliveries = 4096
+    private var sentDeliveries: [Int: SentDelivery] = [:]
+    private var sentDeliveryOrder: [Int] = []
+
+    func recordSentDelivery(counter: Int, type: RPGMessageType, module: NetworkModules, itemId: UUID) {
+        guard sentDeliveries.updateValue(SentDelivery(type: type, module: module, itemId: itemId), forKey: counter) == nil else { return }
+        sentDeliveryOrder.append(counter)
+        while sentDeliveryOrder.count > Self.maximumSentDeliveries {
+            sentDeliveries[sentDeliveryOrder.removeFirst()] = nil
+        }
+    }
+
+    func sentDelivery(counter: Int) -> SentDelivery? {
+        sentDeliveries[counter]
+    }
+
     var messageCounter: Int = 1
+    /// The counter of the newest item the game master showed. A show whose package is still
+    /// being built when a newer one starts is superseded. See CODE_AUDIT_Game_Shareplay §5.29.
+    var latestShownCounter = 0
     /// The delivery namespace of this game's message log. A restarted game counts from one
     /// again and must not complete a row of the game before it.
     let deliverySessionId = UUID()
@@ -179,6 +206,11 @@ final class MasterControllerModel {
 
     func isAudioDeliveryAbandoned(itemId: UUID, playerId: UUID) -> Bool {
         (audioDeliveryFailures[AudioDeliveryKey(itemId: itemId, playerId: playerId)] ?? 0) > Self.maximumAudioDeliveryRetries
+    }
+
+    /// Gives up on `playerId` for `itemId` (the pending play's deadline passed).
+    func abandonAudioDelivery(itemId: UUID, playerId: UUID) {
+        audioDeliveryFailures[AudioDeliveryKey(itemId: itemId, playerId: playerId)] = Self.maximumAudioDeliveryRetries + 1
     }
 
     func resetAudioDeliveryFailures() {

@@ -112,12 +112,14 @@ where Attachment.ID == UUID {
     init(
         maxOutstandingPublications: Int = 16,
         maxOutstandingBytes: Int = GameLimits.maximumMessageBytes,
+        maxOutstandingTotalBytes: Int? = nil,
         maxOutstandingCleanups: Int = 8,
         cleanupDeadline: Duration = .seconds(30)
     ) {
         self.cleanupDeadline = cleanupDeadline
         self.maxOutstandingPublications = max(1, maxOutstandingPublications)
         self.maxOutstandingBytes = max(1, maxOutstandingBytes)
+        self.maxOutstandingTotalBytes = max(self.maxOutstandingBytes, maxOutstandingTotalBytes ?? self.maxOutstandingBytes.multipliedReportingOverflow(by: 3).partialValue)
         self.maxOutstandingCleanups = max(1, maxOutstandingCleanups)
     }
 
@@ -134,7 +136,11 @@ where Attachment.ID == UUID {
     }
 
     private let maxOutstandingPublications: Int
+    /// The most one slot may hold: a large package of one module must not keep the others off
+    /// the Journal. See CODE_AUDIT_Game_Shareplay §5.11.
     private let maxOutstandingBytes: Int
+    /// A backstop over all slots, so the packages waiting in memory stay bounded.
+    private let maxOutstandingTotalBytes: Int
     private let maxOutstandingCleanups: Int
     /// Longest one system `remove` may stay suspended before the cleanup gives up on it.
     private let cleanupDeadline: Duration
@@ -191,6 +197,8 @@ where Attachment.ID == UUID {
         }
         let prospectivePublicationCount = outstandingPublicationCount - replacedOperations.count + 1
         let prospectiveByteCount = outstandingPublicationByteCount - reclaimedBytes + safeByteCount
+        let slotByteCount = existingPending.reduce(activePublications[module]?.byteCount ?? 0) { $0 + $1.byteCount }
+        let prospectiveSlotByteCount = slotByteCount - reclaimedBytes + safeByteCount
         let pendingAfterReplacement = existingPending.filter { !replaceableIds.contains($0.id) }
         let reservesCleanup = currentAttachments[module] != nil ||
             activePublications[module] != nil ||
@@ -204,7 +212,8 @@ where Attachment.ID == UUID {
             (reservesCleanup ? 1 : 0)
 
         guard prospectivePublicationCount <= maxOutstandingPublications,
-              prospectiveByteCount <= maxOutstandingBytes,
+              prospectiveSlotByteCount <= maxOutstandingBytes,
+              prospectiveByteCount <= maxOutstandingTotalBytes,
               prospectiveCleanupReservationCount <= maxOutstandingCleanups
         else {
             completion.finish()

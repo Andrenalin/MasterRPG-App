@@ -36,6 +36,8 @@ extension MasterController {
         removeAudioLoopReplay()
         removeAudioPrefetch()
         clearPendingAudioPlays()
+        runningAudioPlay = nil
+        lateAudioPlayers.removeAll()
         gameModel.sentMapContentVersions.removeAll()
         gameModel.resetCharacterOwnership()
         gameModel.resetListSequences()

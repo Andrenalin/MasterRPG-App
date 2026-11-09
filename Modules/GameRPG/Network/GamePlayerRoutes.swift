@@ -18,7 +18,14 @@ struct GamePlayerRoutes: Sendable {
     /// Binds a physical origin to the sender it speaks for. An origin that already speaks for a
     /// sender cannot change identity, and a second origin cannot take over a bound sender.
     /// Origins without a physical identity (Journal, the co-located player) are always accepted.
+    ///
+    /// A Journal attachment (`.file`) names no participant it came from, so it cannot be bound
+    /// to one. It is accepted only for a sender that already speaks over a connection of its own
+    /// and still does: an attachment that arrives after its player left, or that names a sender
+    /// this device never heard from, would otherwise add a roster entry with no route. See
+    /// CODE_AUDIT_Game_Shareplay §5.6.
     mutating func bind(_ origin: GameMessageOrigin, to sender: GameSenderModel) -> Bool {
+        if origin == .file { return originsByPlayer[sender.id] != nil }
         guard let connectionId = origin.participantConnectionId else { return true }
         guard !retiredConnectionIds.contains(connectionId) else { return false }
         if let existingPlayerId = playersByConnection[connectionId] {
@@ -51,6 +58,7 @@ struct GamePlayerRoutes: Sendable {
     /// processed: its connection may have been lost while it waited in the queue. Origins
     /// without a physical identity always pass. See CODE_AUDIT_23 §5.4.
     func isBound(_ origin: GameMessageOrigin, to senderId: UUID) -> Bool {
+        if origin == .file { return originsByPlayer[senderId] != nil }
         guard let connectionId = origin.participantConnectionId else { return true }
         return playersByConnection[connectionId] == senderId
     }

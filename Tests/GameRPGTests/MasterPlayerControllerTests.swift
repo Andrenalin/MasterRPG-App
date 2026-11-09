@@ -782,6 +782,9 @@ final class MasterPlayerControllerTests {
 
         // The master answers the request itself: the package under the counter of the
         // reveal, followed by the content and the state of the map.
+        // The player has a connection: the follow-ups are addressed to it, and a player without
+        // a route gets nothing (CODE_AUDIT_Game_Shareplay §5.28).
+        sut.bind(connectionId: UUID(), playerId: fullMapRequest.sender.id)
         #expect(try await sut.handle(fullMapRequest) == nil)
         let answers = masterStoreAbstractionMock.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
         let fullMapReveal = try #require(answers.last { $0.type == .reveal && $0.data.data != nil })

@@ -380,9 +380,9 @@ actor GameMessagePipeline {
         if let currentEvent {
             messages.insert(currentEvent, at: 0)
         }
-        if let currentKey {
-            pendingKeySet.remove(currentKey)
-        }
+        // The key stays pending while the event is queued again: a duplicate (dual transport, a
+        // replay) arriving before it is handled is refused, not queued next to it.
+        // See CODE_AUDIT_Game_Shareplay §5.23.
         currentKey = nil
         currentEvent = nil
     }
@@ -461,7 +461,14 @@ extension GameNetworkModel: MessageMapper {
     }
 
     func encodeData() -> Data? {
-        try? Self.outboundEncoder.encode(self)
+        do {
+            return try Self.outboundEncoder.encode(self)
+        } catch {
+            // A model that cannot be encoded (e.g. a non-finite Double) used to vanish without a
+            // trace. See CODE_AUDIT_Game_Shareplay §5.19.
+            Logger.networking.error("GameNetworkModel: Failed to encode message \(counter, privacy: .public) (\(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public), \(data.type.token, privacy: .public)): \(error.logIdentifier, privacy: .public)")
+            return nil
+        }
     }
 
     /// LAN messages can carry multi-megabyte Base64 attachments; decoding them on the main actor

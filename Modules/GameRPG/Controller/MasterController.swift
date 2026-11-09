@@ -55,6 +55,17 @@ final class MasterController {
     var audioDeliveryTask: Task<Void, Never>?
     var audioPrefetchTask: Task<Void, Never>?
 
+    /// How long a pending audio play waits for the players' receipts before it starts for the
+    /// players that are ready. See CODE_AUDIT_Game_Shareplay §5.7.
+    var audioPlayDeadline: Duration = .seconds(20)
+    /// The deadline of each pending play, cancelled with the play.
+    var audioPlayDeadlineTasks: [UUID: Task<Void, Never>] = [:]
+    /// The play command that is running for the table now, so a player whose file arrives after
+    /// the deadline can join it. `nil` after a pause and at the end of the game.
+    var runningAudioPlay: NetworkCodableDataType?
+    /// The players the running play started without.
+    var lateAudioPlayers: Set<UUID> = []
+
     init(root: GameRoot, asProxy: Bool) {
         self.root = root
         self.asProxy = asProxy

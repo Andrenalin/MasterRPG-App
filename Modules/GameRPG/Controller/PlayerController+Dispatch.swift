@@ -11,6 +11,16 @@ extension PlayerController {
         _ model: GameNetworkModel,
         usesSharePlayPlaybackCoordination: Bool = false
     ) async throws -> GameNetworkModel? {
+        // The master's answer that it cannot deliver an item. Handling it like the reveal it
+        // answers would ask for the item again, and the master would refuse again, without end.
+        // See CODE_AUDIT_Game_Shareplay §5.5.
+        if model.sender.isMaster,
+           model.subType == .failed,
+           model.type == .reveal || model.type == .store,
+           model.data.type != .value {
+            Logger.networking.error("PlayerController: The game master cannot deliver \(model.data.type.token, privacy: .public) \(model.data.id, privacy: .public)")
+            return nil
+        }
         switch model.data.type {
         case .none, .game, .rule, .setting, .editor, .generator, .search, .adventure:
             return nil

@@ -17,6 +17,10 @@ import SpaceRPG
 // same-file `Sendable` conformance for a class); this extension supplies the requirements.
 
 extension PlayerController {
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) async {
+        root.logGameController.addNote(mismatch.logText)
+    }
+
     func lostConnection() async {
         await resetForLostConnection(preservingSharePlayRebind: false)
     }
@@ -139,6 +143,17 @@ extension PlayerController {
             await sendUpstream(model: failure)
             return
         }
-        await receivedProcess(model, origin: .file)
+        // Not fed back through the pipeline: the reference of this show was handled when it
+        // arrived, and this message has the same key, so the pipeline would drop it as a repeat
+        // and no request would ever go out. The player asks for the item itself. An item this
+        // device holds after all needs nothing. See CODE_AUDIT_Game_Shareplay §5.4.
+        if await sharePlayHoldsFile(model) {
+            Logger.networking.debug("PlayerController: SharePlay file-load-failure for \(model.data.id, privacy: .public) needs no request, the file is already here")
+            return
+        }
+        var reference = model
+        reference.data = model.data.reference
+        let request = response(for: reference, isSuccess: true, requestData: true)
+        await sendUpstream(model: request)
     }
 }

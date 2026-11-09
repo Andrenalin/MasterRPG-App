@@ -431,7 +431,7 @@ struct SharePlayParticipantTracker: Sendable {
     }
 }
 
-enum SharePlayPackageDeliveryError: LocalizedError {
+enum SharePlayPackageDeliveryError: LocalizedError, SharePlayTerminalPackageError {
     case participantNotActive(UUID)
 
     var errorDescription: String? {
@@ -466,6 +466,14 @@ final class RPGSharePlayController {
     var isActive: Bool = false
     var connectionState: SharePlayConnectionState = .inactive
     var canActivateSharePlay: Bool = false
+    /// What a running master game offers SharePlay with, kept while the game runs so a call
+    /// that starts (or restarts) after the game activates it. `nil` when no master game runs.
+    /// See CODE_AUDIT_Game_Shareplay §5.20.
+    var pendingActivation: PendingActivation?
+    struct PendingActivation {
+        let name: String?
+        let image: AKImage?
+    }
     var stateText: String = "Not Active"
 
     var gameModel: GameRootModel?
@@ -554,10 +562,14 @@ final class RPGSharePlayController {
     var sendOperationGeneration: UInt64 = 0
     var deferredDeliveryQueue = SharePlayDeferredDeliveryQueue()
     var deferredPromotionTask: Task<Void, Never>?
+    /// The newest state update sent per entity; see `SharePlayStateSupersession`.
+    var stateSupersession = SharePlayStateSupersession()
     // Publications for one module are serialized, but cleanup of the previous
     // attachment never blocks publication of the next map/photo/PDF/space.
     let journalPublicationQueue = SharePlayJournalPublicationQueue<GroupSessionJournal.Attachment>()
-    let journalAddLimiter = SharePlayJournalAddLimiter<NetworkModules, GroupSessionJournal.Attachment>()
+    /// Keyed by the same slot as the publication queue: an audio playlist and its first track are
+    /// published at the same time and must not block each other. See CODE_AUDIT_Game_Shareplay §5.10.
+    let journalAddLimiter = SharePlayJournalAddLimiter<SharePlayJournalSlot, GroupSessionJournal.Attachment>()
     var journal: GroupSessionJournal?
 
     static let journalAddTimeout: Duration = .seconds(10)
@@ -623,6 +635,18 @@ final class RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: deinit")
     }
 
+    /// A master game that started while the device could not offer SharePlay activates it when it
+    /// becomes eligible (the game master starts a FaceTime call after the game).
+    nonisolated static func shouldActivateOnEligibilityChange(
+        wasEligible: Bool,
+        isEligible: Bool,
+        hasPendingActivation: Bool,
+        hasSession: Bool,
+        isActivating: Bool
+    ) -> Bool {
+        isEligible && !wasEligible && hasPendingActivation && !hasSession && !isActivating
+    }
+
     func setup(gameModel: GameRootModel) {
         Logger.sharePlay.debug("SharePlay: setup")
         self.gameModel = gameModel
@@ -632,7 +656,19 @@ final class RPGSharePlayController {
             guard let observer = self?.groupStateObserver else { return }
             for await value in observer.$isEligibleForGroupSession.values {
                 guard let self else { return }
+                let wasEligible = self.canActivateSharePlay
                 self.canActivateSharePlay = value
+                if Self.shouldActivateOnEligibilityChange(
+                    wasEligible: wasEligible,
+                    isEligible: value,
+                    hasPendingActivation: self.pendingActivation != nil,
+                    hasSession: self.groupSession != nil,
+                    isActivating: self.activationTask != nil
+                ), let pending = self.pendingActivation {
+                    Logger.sharePlay.debug("SharePlay: eligible during a running game, activating")
+                    if self.joinTask == nil { self.joinGame() }
+                    self.startSharing(with: pending.name, image: pending.image)
+                }
             }
         }
 
@@ -674,6 +710,12 @@ final class RPGSharePlayController {
 
     #if os(visionOS)
     func setup(tabletopGame: TabletopGame, gameTableModel: GameTableModel? = nil) {
+        // A new instance never inherits the coordination of an earlier one: the guard compares
+        // `ObjectIdentifier`s, and a game allocated at the address of a released one would
+        // otherwise match and never be coordinated. See CODE_AUDIT_Game_Shareplay §5.15.
+        if self.tabletopGame !== tabletopGame {
+            coordinatedTabletopGame = nil
+        }
         self.tabletopGame = tabletopGame
         if let groupSession {
             deferCoordinateAndAssignSeats(

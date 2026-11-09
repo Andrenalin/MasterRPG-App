@@ -6,6 +6,18 @@ import os.log
 
 // MARK: - File Message Support
 
+/// Why the master cannot serve a player's request for the bytes of an item. The request is
+/// answered with `.failed` (never with silence): under request/answer a missing answer cannot
+/// be told from a slow one, and the player would show a loading state for good. See
+/// CODE_AUDIT_Game_Shareplay §5.5 and §5.1.
+enum AssetRequestUnavailable: Error, Equatable {
+    /// The master's file is an iCloud placeholder or was evicted.
+    case notDownloaded
+    /// The package does not fit one frame (`GameLimits.fitsOneMessage`); sending it would end
+    /// the player's connection.
+    case tooLarge(byteCount: Int)
+}
+
 extension MasterController {
     /// Shared "player acknowledged a reveal" bookkeeping for the three
     /// file-backed modules (Pdf, Photo, Space) — handlePdf/handlePhoto/
@@ -59,8 +71,11 @@ extension MasterController {
         guard model.subType != .failed else { return nil }
 
         if model.isAssetRequest {
-            // An iCloud file that has not downloaded cannot be exported.
-            guard await access.controllable.hasLocalFileData(for: model.data.id) else { return nil }
+            // An iCloud file that has not downloaded cannot be exported. The requester is
+            // told, see `AssetRequestUnavailable`.
+            guard await access.controllable.hasLocalFileData(for: model.data.id) else {
+                throw AssetRequestUnavailable.notDownloaded
+            }
             return try await access.controllable.createGameData(for: model.data.id)
         }
         guard model.type == .update else { return nil }

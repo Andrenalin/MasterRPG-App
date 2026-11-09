@@ -22,6 +22,10 @@ extension PlayerController {
                 (features.dicePlayers || model.sender.isMaster)
         else {
             Logger.networking.debug("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — self message or feature gate (diceMaster: \(features.diceMaster, privacy: .public), dicePlayers: \(features.dicePlayers, privacy: .public), senderIsMaster: \(model.sender.isMaster, privacy: .public))")
+            // A group roll that this device does not apply is not a failure to report: every
+            // player would answer every roll. Only a message addressed to this device is
+            // answered. See CODE_AUDIT_Game_Shareplay §5.21.
+            guard model.targetId == root.gameModel.gameConfig.id else { return nil }
             return response(for: model, isSuccess: false, requestData: false)
         }
 

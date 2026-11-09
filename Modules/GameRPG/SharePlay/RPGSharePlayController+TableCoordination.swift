@@ -44,9 +44,11 @@ extension RPGSharePlayController {
         gameTableModel.observer.canAutoClaimSeat = true
         applySeatPlayerNames(to: gameTableModel, groupSession: groupSession, masterParticipantId: masterId)
 
-        let seatTask = Task { [weak self] in
+        // The model is held weakly: a closed volume's TabletopKit and RealityKit graph must not
+        // live on until the session ends. See CODE_AUDIT_Game_Shareplay §5.15.
+        let seatTask = Task { [weak self, weak gameTableModel] in
             for await _ in groupSession.$activeParticipants.values {
-                guard let self else { return }
+                guard let self, let gameTableModel else { return }
                 let isMaster = self.gameModel?.gameConfig.isMaster ?? false
                 let masterId = await self.masterParticipantId(in: groupSession, isMaster: isMaster)
                 guard !Task.isCancelled, self.groupSession?.id == groupSession.id else { return }

@@ -267,6 +267,8 @@ struct PlayerCompanionsTests {
             data: NetworkCodableDataType(id: wolf.characterId, type: .value, version: 3, data: Data([1, 2, 3]))
         )
 
+        // The player has a connection: the failure is addressed to it (CODE_AUDIT_Game_Shareplay §5.28).
+        env.master.bind(connectionId: UUID(), playerId: annaId)
         #expect(try await env.master.handleValue(broken) == nil)
 
         let failure = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)

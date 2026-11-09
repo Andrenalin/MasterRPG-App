@@ -140,6 +140,16 @@ final class LinkedGameEnvironment {
         }
     }
 
+    /// Stops the link from delivering to `player` (the master still records what it sent): a
+    /// player that went quiet, a ghost or a stalled download.
+    func mute(_ player: Player) {
+        masterStore.mutedConnections.insert(player.connectionId)
+    }
+
+    func unmute(_ player: Player) {
+        masterStore.mutedConnections.remove(player.connectionId)
+    }
+
     func clearHistory() {
         masterStore.sends.removeAll()
         masterStore.received.removeAll()
@@ -178,6 +188,7 @@ private final class LinkedMasterStore: MasterNetworkControllable, @unchecked Sen
     @MainActor let networkModel: MasterNetworkModel
     weak var masterNetwork: GameNetworkController?
     var playerNetworks: [ConnectionController.ID: GameNetworkController] = [:]
+    var mutedConnections: Set<ConnectionController.ID> = []
     var sends: [(connectionId: ConnectionController.ID?, message: GameNetworkModel)] = []
     var received: [(connectionId: ConnectionController.ID, message: GameNetworkModel)] = []
 
@@ -217,7 +228,7 @@ private final class LinkedMasterStore: MasterNetworkControllable, @unchecked Sen
         if let message = GameNetworkModel.decodeData(of: bytes) {
             sends.append((connectionId, message))
         }
-        for (_, network) in networks {
+        for (id, network) in networks where !mutedConnections.contains(id) {
             await network.playerReceived(data: bytes)
         }
     }

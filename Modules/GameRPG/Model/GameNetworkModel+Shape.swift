@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import os.log
 
 // What a message is follows from its shape alone: who sent it, its type and subtype, and
 // whether it carries bytes. The transports and both controllers decide with these predicates.
@@ -15,9 +16,15 @@ extension GameNetworkModel {
         _ timestamp: TimeInterval,
         now: TimeInterval = Date.now.timeIntervalSince1970
     ) -> Bool {
-        timestamp.isFinite &&
+        let isAccepted = timestamp.isFinite &&
             timestamp > 0 &&
             timestamp <= now + maximumFutureEventTimestampSkew
+        // A sender whose clock runs far ahead loses every roll and pin move; at least say why.
+        // See CODE_AUDIT_Game_Shareplay §5.26.
+        if !isAccepted, timestamp.isFinite, timestamp > now {
+            Logger.networking.warning("GameNetworkModel: Event dropped, its timestamp is \(Int(timestamp - now), privacy: .public) s ahead of this device's clock (limit \(Int(maximumFutureEventTimestampSkew), privacy: .public) s); the sender's clock is probably wrong")
+        }
+        return isAccepted
     }
 
     /// A player's answer to a master message, echoing its counter: received (`.ok`) or not

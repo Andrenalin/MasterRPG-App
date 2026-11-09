@@ -617,7 +617,6 @@ extension GameRoot {
         await statisticsModel.finishSession()
         gameModel.playerGameStarted = false
         gameModel.gameConfig.state = .stopped
-        gameModel.gameConfig = .empty
         // Guests of the 3D table belong to the game that ends here. See CODE_AUDIT_21 §5.12.
         gameModel.tableGuests = [:]
         gameModel.tableGuestMasterId = nil
@@ -626,6 +625,10 @@ extension GameRoot {
         await gameModel.playerController?.stop()
         gameModel.playerController?.uninstallMapPhotoActions()
         gameModel.playerController = nil
+        // Only now: a message built while the controllers were stopping (a pending receipt, a
+        // debounced value update) must not go out under the empty config's random master id.
+        // See CODE_AUDIT_Game_Shareplay §5.25.
+        gameModel.gameConfig = .empty
         await adventureRoot.adventureGameControllable.resetGame()
         // Bytes peers sent for files not downloaded here are only for the running game.
         FileUrlDataController.releaseHeldPeerData()

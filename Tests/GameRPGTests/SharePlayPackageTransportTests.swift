@@ -1787,6 +1787,98 @@ struct SharePlayPackageTransportTests {
         #expect(queue.byteCount == 0)
     }
 
+    @Test("an event is refused rather than evicting a module's deferred presentation (§5.12)")
+    func eventNeverEvictsAPresentation() {
+        let sessionId = UUID()
+        var queue = SharePlayDeferredDeliveryQueue(maxCount: 2, maxBytes: 100, maxEntryBytes: 100)
+        let photo = Self.message(type: .reveal, module: .photo, data: Data(repeating: 1, count: 4))
+        let pdf = Self.message(type: .reveal, module: .pdf, data: Data(repeating: 2, count: 4))
+        var event = Self.message(type: .update, module: .dice, data: Data(repeating: 3, count: 4))
+        event.subType = .generic
+        let photoAdmission = queue.enqueue(photo, sessionId: sessionId, participantId: nil)
+        let pdfAdmission = queue.enqueue(pdf, sessionId: sessionId, participantId: nil)
+        #expect(photoAdmission == .enqueued)
+        #expect(pdfAdmission == .enqueued)
+        #expect(!event.isPresentation)
+
+        let admission = queue.enqueue(event, sessionId: sessionId, participantId: nil)
+
+        #expect(admission == .rejectedSaturated)
+        #expect(queue.count == 2)
+        #expect(queue.first?.model.data.type == .photo)
+    }
+
+    @Test("a package send that never returns times out instead of stalling the queue (§5.12)")
+    func packageSendTimesOut() async throws {
+        let calls = SendCallCounter()
+        let sender = SharePlaySingleQueuePackageSender(
+            packageSize: 4,
+            retryDelays: [],
+            packageSendTimeout: .milliseconds(50)
+        ) { _ in
+            if await calls.next() == 1 {
+                // The first send never returns, and ignores cancellation.
+                await withCheckedContinuation { (_: CheckedContinuation<Void, Never>) in }
+            }
+        }
+
+        await #expect(throws: SharePlayPackageSenderError.packageTimedOut) {
+            try await sender.send(data: Data("abcd".utf8))
+        }
+        // The next message goes out.
+        try await sender.send(data: Data("efgh".utf8))
+        #expect(await calls.count == 2)
+    }
+
+    @Test("a send to a participant who left is not retried (§5.16)")
+    func departedParticipantIsNotRetried() async {
+        let calls = SendCallCounter()
+        let sender = SharePlaySingleQueuePackageSender(
+            packageSize: 4,
+            retryDelays: [.milliseconds(1), .milliseconds(1)]
+        ) { _ in
+            _ = await calls.next()
+            throw SharePlayPackageDeliveryError.participantNotActive(UUID())
+        }
+
+        await #expect(throws: SharePlayPackageDeliveryError.self) {
+            try await sender.send(data: Data("abcd".utf8))
+        }
+        #expect(await calls.count == 1)
+    }
+
+    @Test("a load waits for a running upload for far longer than the short default retry (§5.13)")
+    func loadWhileUploadingKeepsTrying() async throws {
+        let calls = SendCallCounter()
+        let result: Int = try await SharePlayAttachmentLoadRetry.loadWhileUploading(sleep: { _ in }) {
+            let attempt = await calls.next()
+            if attempt < 12 { throw SharePlayPackageDeliveryError.participantNotActive(UUID()) }
+            return attempt
+        }
+        #expect(result == 12)
+        #expect(SharePlayAttachmentLoadRetry.defaultRetryDelays.count < 11)
+    }
+
+    @Test("a source that is out of quota loses nothing of another source, and a newcomer is refused (§5.14)")
+    func sourcesDoNotEvictEachOther() {
+        let sourceA = UUID(), sourceB = UUID(), sourceC = UUID()
+        let a1 = UUID(), b1 = UUID(), c1 = UUID()
+        let receiver = SharePlayPackageReceiver(
+            maxIncompleteStreams: 4,
+            maxPackagesPerStream: 3,
+            maxPackageByteCount: 4,
+            maxStreamByteCount: 4,
+            maxCumulativeByteCount: 8
+        )
+        _ = receiver.received(package: Self.incompletePackage(id: a1, count: 1, data: "1111"), from: sourceA)
+        _ = receiver.received(package: Self.incompletePackage(id: b1, count: 1, data: "2222"), from: sourceB)
+
+        _ = receiver.received(package: Self.incompletePackage(id: c1, count: 1, data: "3333"), from: sourceC)
+
+        #expect(Set(receiver.receivedPackages.keys.map(\.packageId)) == [a1, b1])
+        #expect(receiver.cumulativeIncompleteByteCount == 8)
+    }
+
     @Test("a targeted repair evicts deferred presentations before it is rejected")
     func targetedRepairEvictsDeferredPresentations() {
         // Given
@@ -2591,6 +2683,13 @@ private actor JournalPublicationGate {
     func resumeFirstPublication() {
         publicationWaiter?.resume()
         publicationWaiter = nil
+    }
+}
+private actor SendCallCounter {
+    private(set) var count = 0
+    func next() -> Int {
+        count += 1
+        return count
     }
 }
 #endif

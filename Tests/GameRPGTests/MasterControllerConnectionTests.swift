@@ -125,6 +125,20 @@ struct GameMessagePipelineTests {
         #expect(redelivered?.model.counter == message.counter)
     }
 
+    @Test("a requeued event keeps its key, so a duplicate arriving meanwhile is refused (§5.23)")
+    func requeuedEventStillBlocksADuplicate() async {
+        let pipeline = GameMessagePipeline()
+        let event = GameMessageEvent(model: Self.message(counter: 4, senderId: UUID()), origin: .direct(UUID()))
+        #expect(await pipeline.enqueue(event) == .enqueued)
+        #expect(await pipeline.next() != nil)
+
+        await pipeline.requeueCurrentOnCancellation()
+
+        #expect(await pipeline.enqueue(event) == .duplicate)
+        #expect(await pipeline.next() != nil)
+        #expect(await pipeline.next() == nil)
+    }
+
     // CODE_AUDIT_21 §3.9: `reset()` cleared the busy flag while a handler of the old session was
     // still suspended, so the next enqueue started a second drain next to it.
     @Test("a reset while an event is in hand does not let a second drain start")
@@ -586,11 +600,22 @@ struct MasterControllerDirectProxyTests {
             Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
             origin: .sharePlay(UUID())
         )))
-        // The Journal carries the file a player contributes.
+        // The Journal carries the file a player contributes, from a player that already speaks
+        // over a participant of its own (it has no origin to bind to; CODE_AUDIT_Game_Shareplay
+        // §5.6). One this device never heard from is refused.
+        let contributorID = UUID()
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .player, senderID: contributorID, masterID: masterID),
+            origin: .sharePlay(UUID())
+        ))
+        #expect(await env.master.accepts(
+            Self.transportMessage(role: .player, senderID: contributorID, masterID: masterID),
             origin: .file
         ))
+        #expect(!(await env.master.accepts(
+            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            origin: .file
+        )))
         #expect(!(await env.master.accepts(
             Self.transportMessage(role: .observer, senderID: fileObserverID, masterID: masterID),
             origin: .file
@@ -979,13 +1004,17 @@ struct MasterControllerDirectProxyTests {
         let data = NetworkCodableDataType(id: UUID(), type: .photo, version: 1, data: nil)
 
         await env.master.start()
+        // The player has a connection: a message for one player goes to it alone, never to all
+        // (CODE_AUDIT_Game_Shareplay §5.28).
+        env.master.bind(connectionId: UUID(), playerId: playerId)
         await env.master.send(updated: data)
         await env.master.game(message: data, actionType: .generic, playerId: playerId)
         await env.master.stop()
 
         #expect(env.directMasterSpy.calledStartStreaming == 1)
         #expect(env.proxyMasterSpy.calledStartProxyStreaming == 0)
-        #expect(env.directMasterSpy.calledSendResponseAll == 2)
+        #expect(env.directMasterSpy.calledSendResponseAll == 1)
+        #expect(env.directMasterSpy.calledSendResponseId == 1)
         #expect(env.directMasterSpy.calledStopStreaming == 1)
         #expect(env.directPlayerSpy.calledStop == 1)
         #expect(env.root.gameModel.gameRoster.players.isEmpty)

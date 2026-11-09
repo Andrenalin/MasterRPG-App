@@ -142,18 +142,16 @@ struct GamePlayerRoutesTests {
         #expect(routes.origin(for: player.id) == .sharePlay(participantId))
     }
 
-    @Test("An origin without a physical identity is accepted and binds nothing")
+    @Test("The co-located player is accepted and binds nothing")
     func anonymousOriginsBindNothing() {
         // Given
         var routes = GamePlayerRoutes()
         let player = sender()
 
         // When
-        let journal = routes.bind(.file, to: player)
         let local = routes.bind(.local, to: player)
 
         // Then
-        #expect(journal)
         #expect(local)
         #expect(routes.origin(for: player.id) == nil)
     }

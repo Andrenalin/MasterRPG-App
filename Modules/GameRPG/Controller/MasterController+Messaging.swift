@@ -61,8 +61,13 @@ extension MasterController {
         }
 
         let message = outgoingMessage(type: .reveal, subtype: .show, updated: reference)
+        gameModel.latestShownCounter = message.counter
         await root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
-        await store.sendPresentation(message, missingPlayers: playersMissing(reference)) { [self] in
+        await store.sendPresentation(
+            message,
+            missingPlayers: playersMissing(reference),
+            isSuperseded: { [gameModel] in gameModel.latestShownCounter != message.counter }
+        ) { [self] in
             do {
                 return try await createGameData(for: reference)
             } catch {
@@ -244,6 +249,7 @@ extension MasterController {
             data: updated
         )
         if existingCounter == nil {
+            gameModel.recordSentDelivery(counter: counter, type: type, module: updated.type, itemId: updated.id)
             root.logGameController.addMessage(
                 messageID: GameDeliveryMessageID(sessionID: gameModel.deliverySessionId, counter: counter),
                 type: type,

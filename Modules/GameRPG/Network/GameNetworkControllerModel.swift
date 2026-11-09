@@ -30,10 +30,14 @@ protocol MasterNetworkStoreDelegate: Sendable & AnyObject {
     /// event before it passes it on, so an implausible, repeated or disabled one is not
     /// multiplied to every device. See CODE_AUDIT_23 §6.4.
     func mayRelay(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool
+    /// A peer runs another version of the app. See CODE_AUDIT_Game_Shareplay §5.9.
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) async
 }
 
 extension MasterNetworkStoreDelegate {
     func mayRelay(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool { true }
+
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) async {}
 
     func ready(for connectionId: ConnectionController.ID) async {
         await ready(for: .direct(connectionId))
@@ -65,9 +69,14 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func isSharePlayMasterParticipant(id: UUID) async -> Bool
     /// Notifies a player that one physical GroupSession participant left.
     func sharePlayParticipantLeft(id: UUID) async
+    /// The master or another peer runs another version of the app. See
+    /// CODE_AUDIT_Game_Shareplay §5.9.
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) async
 }
 
 extension PlayerNetworkStoreDelegate {
+    func incompatibleVersion(_ mismatch: GameVersionMismatch) async {}
+
     func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async {
         await received(model)
     }
@@ -114,6 +123,26 @@ final class GameNetworkControllerModel {
     var hasLocalPlayer = false
     /// Which connection or SharePlay participant speaks for which player.
     var playerRoutes = GamePlayerRoutes()
+    /// The connections that were already told this device cannot read them, and the mismatches
+    /// already shown: each is said once, not for every message of a peer that keeps sending.
+    private var versionNoticeConnectionIds: Set<UUID> = []
+    private var hasSentVersionNotice = false
+    private var reportedMismatches: Set<GameVersionMismatch> = []
+
+    /// Whether the notice goes to `connectionId` now (once per connection).
+    func claimVersionNotice(for connectionId: UUID) -> Bool {
+        versionNoticeConnectionIds.insert(connectionId).inserted
+    }
+
+    func claimVersionNoticeToMaster() -> Bool {
+        defer { hasSentVersionNotice = true }
+        return !hasSentVersionNotice
+    }
+
+    /// Whether `mismatch` is news to the person at this device.
+    func claimMismatchReport(_ mismatch: GameVersionMismatch) -> Bool {
+        reportedMismatches.insert(mismatch).inserted
+    }
 
     private(set) var masterStore: (any MasterNetworkControllable)?
     private(set) var playerStore: (any PlayerNetworkControllable)?

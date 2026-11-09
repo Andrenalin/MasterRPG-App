@@ -90,6 +90,38 @@ final class PlayerControllerModel {
         lastMasterStateCounters.removeAll()
     }
 
+    /// Forgets how far the game master's counters had come: its master-state sequence, the
+    /// availability lists and the presentation order. A restarted game master counts from one
+    /// again, and until its counters pass the old high-water marks every config, roster and
+    /// presentation of it would count as stale. Shared by the lost connection and by a master
+    /// that comes back under another SharePlay participant. See
+    /// CODE_AUDIT_Game_Shareplay §5.3.
+    func resetMasterSequences() {
+        resetMasterStateSequence()
+        listSequence.reset()
+        lastPresentation = nil
+        forwardedProxyKeys.removeAll()
+        forwardedProxyKeyOrder.removeAll()
+    }
+
+    // MARK: Proxy forwarding
+
+    private var forwardedProxyKeys: Set<GameMessageKey> = []
+    private var forwardedProxyKeyOrder: [GameMessageKey] = []
+    private static let maximumForwardedProxyKeys = 512
+
+    /// Whether the message under `key` is forwarded to the proxy clients now: once per key,
+    /// however often it is redelivered or rejected only by this device's policy.
+    /// See CODE_AUDIT_Game_Shareplay §5.22.
+    func claimProxyForward(_ key: GameMessageKey) -> Bool {
+        guard forwardedProxyKeys.insert(key).inserted else { return false }
+        forwardedProxyKeyOrder.append(key)
+        if forwardedProxyKeyOrder.count > Self.maximumForwardedProxyKeys {
+            forwardedProxyKeys.remove(forwardedProxyKeyOrder.removeFirst())
+        }
+        return true
+    }
+
     // MARK: SharePlay master participant
 
     func noteSharePlayMasterParticipant(id: UUID) -> SharePlayMasterParticipantChange {
@@ -246,10 +278,7 @@ final class PlayerControllerModel {
         proxyFocusTask = nil
         proxyFocusTaskId = nil
         requestedPinPhotoIds = []
-        resetMasterStateSequence()
-        listSequence.reset()
-        // A restarted game master counts from one again.
-        lastPresentation = nil
+        resetMasterSequences()
         mapPhotoMakeCurrentTask?.cancel()
         mapPhotoMakeCurrentTask = nil
         mapPhoto.reset()

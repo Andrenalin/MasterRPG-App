@@ -38,6 +38,7 @@ final class SharePlayPackageReceiver {
         maxPackageByteCount: Int = SharePlaySingleQueuePackageSender.packageSize,
         maxStreamByteCount: Int = SharePlaySingleQueuePackageSender.maxMessageByteCount,
         maxCumulativeByteCount: Int = SharePlaySingleQueuePackageSender.maxOutstandingBytes,
+        maxSourceByteCount: Int? = nil,
         expirationInterval: Duration = .seconds(120),
         now: @escaping @MainActor () -> ContinuousClock.Instant = { ContinuousClock().now },
         sleep: @escaping Sleep = { try await Task.sleep(for: $0) }
@@ -48,6 +49,7 @@ final class SharePlayPackageReceiver {
         self.maxPackageByteCount = max(1, maxPackageByteCount)
         self.maxStreamByteCount = max(1, maxStreamByteCount)
         self.maxCumulativeByteCount = max(1, maxCumulativeByteCount)
+        self.maxSourceByteCount = max(1, maxSourceByteCount ?? max(self.maxStreamByteCount, self.maxCumulativeByteCount / 2))
         self.expirationInterval = expirationInterval > .zero ? expirationInterval : .seconds(1)
         self.now = now
         self.sleep = sleep
@@ -64,6 +66,10 @@ final class SharePlayPackageReceiver {
     private let maxPackageByteCount: Int
     private let maxStreamByteCount: Int
     private let maxCumulativeByteCount: Int
+    /// The incomplete bytes one participant may hold. A source over its quota loses its own
+    /// oldest stream or has its chunk refused; it never evicts another participant's transfer.
+    /// See CODE_AUDIT_Game_Shareplay §5.14.
+    private let maxSourceByteCount: Int
     private let expirationInterval: Duration
     private let now: @MainActor () -> ContinuousClock.Instant
     private let sleep: Sleep
@@ -204,7 +210,7 @@ final class SharePlayPackageReceiver {
             guard evictLeastRecentlyActiveStream(preferringSource: source, onlySource: true) else { return false }
         }
         while receivedPackages.count >= maxIncompleteStreams {
-            guard evictLeastRecentlyActiveStream(preferringSource: source) else { return false }
+            guard evictLeastRecentlyActiveStream(preferringSource: source, onlySource: true) else { return false }
         }
         return true
     }
@@ -214,10 +220,19 @@ final class SharePlayPackageReceiver {
         excluding key: SharePlayPackageStreamKey?,
         preferringSource source: UUID
     ) -> Bool {
+        while incompleteByteCount(ofSource: source) > maxSourceByteCount - additionalByteCount {
+            guard evictLeastRecentlyActiveStream(excluding: key, preferringSource: source, onlySource: true) else { return false }
+        }
         while cumulativeIncompleteByteCount > maxCumulativeByteCount - additionalByteCount {
-            guard evictLeastRecentlyActiveStream(excluding: key, preferringSource: source) else { return false }
+            guard evictLeastRecentlyActiveStream(excluding: key, preferringSource: source, onlySource: true) else { return false }
         }
         return true
+    }
+
+    private func incompleteByteCount(ofSource source: UUID) -> Int {
+        receivedPackages.reduce(0) { total, entry in
+            entry.key.sourceParticipantId == source ? total + entry.value.receivedByteCount : total
+        }
     }
 
     @discardableResult

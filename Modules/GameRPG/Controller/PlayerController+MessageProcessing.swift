@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import MapRPG
 import os.log
 #if os(macOS)
 #else
@@ -77,6 +78,16 @@ extension PlayerController {
             // The GroupSession can survive while the master's participant ID
             // changes. Re-announce availability and Character exactly as on a
             // fresh session so the rejoined master rebuilds its reports.
+            //
+            // Its first message can arrive before the old participant's departure is
+            // observed, so the counters of the old run are forgotten here, as the departure
+            // would have done: the restarted master counts from one, and its config,
+            // roster and presentations would otherwise count as stale. The duplicate keys of
+            // the old run go too, or the same counters would be dropped as duplicates.
+            // See CODE_AUDIT_Game_Shareplay §5.3.
+            gameModel.resetMasterSequences()
+            root.mapRoot.mapGameControllable.battleRoundModel.resetNetworkSequence()
+            await messagePipeline.reset()
             #if os(visionOS)
             root.networkStore.sharePlayStore.masterParticipantDidChange()
             #endif
@@ -206,6 +217,7 @@ extension PlayerController {
     private func forwardToProxyClients(_ event: GameMessageEvent) async {
         let model = event.model
         guard !event.fromProxy, event.origin != .local, !model.isAcknowledgement else { return }
+        if let key = event.deduplicationKey, !gameModel.claimProxyForward(key) { return }
         if model.data.type != .value {
             // Proxy clients mirror this player: an answer addressed to this
             // device must be processed by them too, so clear the target before
