@@ -2,6 +2,7 @@
 
 #if canImport(Testing)
 import Foundation
+import Synchronization
 import Testing
 
 @testable import GameRPG
@@ -108,7 +109,7 @@ struct GameJoinCodeModelTests {
     }
 
     @Test("The remembered code is only offered for the host that accepted it (§5.9)")
-    func rememberedCodeIsPerHost() {
+    func rememberedCodeIsPerHost() async {
         let storage = InMemoryJoinCodeStorage()
         let model = GameJoinCodeModel(defaults: nil, codeStorage: storage)
 
@@ -116,7 +117,7 @@ struct GameJoinCodeModelTests {
 
         #expect(model.rememberedMasterJoinCode(forHost: "Curse of Strahd") == "2468")
         #expect(model.rememberedMasterJoinCode(forHost: "Other Game") == nil)
-        model.flushPendingWrites()
+        await model.flushPendingWrites()
         #expect(storage.values[Self.lastCodeKey] == "2468")
         #expect(storage.values[Self.lastHostKey] == "Curse of Strahd")
     }
@@ -131,14 +132,14 @@ struct GameJoinCodeModelTests {
     }
 
     @Test("Reset replaces both codes and forgets the remembered host code")
-    func resetReplacesAndForgets() {
+    func resetReplacesAndForgets() async {
         let storage = InMemoryJoinCodeStorage(values: [Self.masterKey: "1111", Self.playerKey: "2222"])
         let model = GameJoinCodeModel(defaults: nil, codeStorage: storage)
         model.rememberMasterJoinCode("3333", forHost: "Host")
-        model.flushPendingWrites()
+        await model.flushPendingWrites()
 
         model.reset()
-        model.flushPendingWrites()
+        await model.flushPendingWrites()
 
         #expect(GameJoinCodeModel.isValidCode(model.masterCode))
         #expect(model.rememberedMasterJoinCode(forHost: "Host") == nil)
@@ -148,18 +149,72 @@ struct GameJoinCodeModelTests {
     }
 
     @Test("A write that fails is retried on the next flush")
-    func failedWriteIsRetried() {
+    func failedWriteIsRetried() async {
         let storage = InMemoryJoinCodeStorage(values: [Self.masterKey: "1111", Self.playerKey: "2222"])
         let model = GameJoinCodeModel(defaults: nil, codeStorage: storage)
         storage.isUnavailable = true
         model.masterCode = "9999"
-        model.flushPendingWrites()
+        await model.flushPendingWrites()
         #expect(storage.values[Self.masterKey] == "1111")
 
         storage.isUnavailable = false
-        model.flushPendingWrites()
+        await model.flushPendingWrites()
 
         #expect(storage.values[Self.masterKey] == "9999")
+    }
+
+    @Test("Flushing the pending writes does not write on the main thread (Game_Shareplay §3.4)")
+    func flushDoesNotWriteOnTheMainThread() async {
+        // Given - a Keychain that records where it is written. Which thread writes is what
+        // decides whether the main actor can stall; a stopwatch on the main actor would depend
+        // on how busy the test machine is.
+        let storage = ThreadRecordingWriteStorage()
+        let model = GameJoinCodeModel(defaults: nil, codeStorage: storage)
+        // `init` stores the codes it generates on the calling thread; only the flush counts here.
+        let writesAtInit = storage.writeCount
+        let mainWritesAtInit = storage.mainThreadWriteCount
+        model.masterCode = "1111"
+        model.playerCode = "2222"
+
+        // When
+        await model.flushPendingWrites()
+
+        // Then
+        #expect(storage.writeCount - writesAtInit >= 2)
+        #expect(storage.mainThreadWriteCount == mainWritesAtInit)
+        #expect(storage.values[Self.masterKey] == "1111")
+        #expect(storage.values[Self.playerKey] == "2222")
+    }
+}
+
+/// A Keychain that records the threads it is written from.
+private final class ThreadRecordingWriteStorage: JoinCodeStorage {
+    private let base = InMemoryJoinCodeStorage()
+    private let counts = Mutex<(total: Int, main: Int)>((0, 0))
+
+    var writeCount: Int { counts.withLock { $0.total } }
+    var mainThreadWriteCount: Int { counts.withLock { $0.main } }
+
+    var values: [String: String] { base.values }
+
+    func read(forKey key: String) -> JoinCodeReadResult { base.read(forKey: key) }
+
+    func set(_ value: String, forKey key: String) -> Bool {
+        pause()
+        return base.set(value, forKey: key)
+    }
+
+    func remove(forKey key: String) -> Bool {
+        pause()
+        return base.remove(forKey: key)
+    }
+
+    private func pause() {
+        let onMain = Thread.isMainThread
+        counts.withLock {
+            $0.total += 1
+            if onMain { $0.main += 1 }
+        }
     }
 }
 #endif

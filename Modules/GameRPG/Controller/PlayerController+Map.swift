@@ -82,7 +82,7 @@ extension PlayerController {
             }
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: itemId) else {
                 // Never acknowledge or show a map without its background.
-                return await response(for: model, isSuccess: false, requestData: false)
+                return response(for: model, isSuccess: false, requestData: false)
             }
         } else {
             let isUsable: Bool
@@ -94,7 +94,7 @@ extension PlayerController {
             guard isUsable else {
                 gameModel.clearGameUpdateTypeIfPhoto()
                 gameModel.mapUpdates.noteMapRequest(itemId: itemId)
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
         }
 
@@ -104,7 +104,7 @@ extension PlayerController {
         } else {
             await requestMissingMapImages(itemId: itemId)
         }
-        return await response(for: model, isSuccess: true, requestData: false)
+        return response(for: model, isSuccess: true, requestData: false)
     }
 
     /// Whether this player holds the map with the background the message names.
@@ -177,7 +177,7 @@ extension PlayerController {
         switch model.type {
         case .reveal, .store:
             await presentMap(itemId: model.data.id)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
             case .mapState:

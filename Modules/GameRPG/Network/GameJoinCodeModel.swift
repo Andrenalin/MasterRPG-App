@@ -77,11 +77,20 @@ public final class GameJoinCodeModel: Sendable {
         }
     }
 
-    /// Writes any queued change now, on the calling thread. Called right before a code is put to
-    /// use (hosting/joining), so a code changed moments ago is durable even if the app is
+    /// Writes any queued change now and returns once it is stored. Called right before a code is
+    /// put to use (hosting/joining), so a code changed moments ago is durable even if the app is
     /// suspended straight afterwards. See CODE_AUDIT_Join §3.3.
-    public func flushPendingWrites() {
-        writeBuffer.flush(to: codeStorage)
+    ///
+    /// The Keychain goes over XPC and the flush may wait for a debounced write that is still
+    /// running, so it runs off the main actor and the caller awaits it: tapping Host or Join
+    /// never blocks the main thread on the write lock or on `SecItem` I/O.
+    /// See CODE_AUDIT_Game_Shareplay §3.4.
+    public func flushPendingWrites() async {
+        let buffer = writeBuffer
+        let storage = codeStorage
+        await Task(priority: .userInitiated) { @concurrent in
+            buffer.flush(to: storage)
+        }.value
     }
 
     public var masterCode: String {

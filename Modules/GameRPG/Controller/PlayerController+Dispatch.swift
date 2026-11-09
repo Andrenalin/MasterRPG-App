@@ -52,11 +52,15 @@ extension PlayerController {
     /// Only a reference is answered with a request. A package that arrived and still left the
     /// item unusable (the master could not read its own file, for example) is answered with
     /// `.failed`: asking again would bring the same bytes, without end.
-    nonisolated func response(
+    ///
+    /// Plain main-actor and synchronous: under approachable concurrency a `nonisolated async`
+    /// version ran on its caller and only awaited main-actor state, which cost a hop and
+    /// suggested off-main work that never happened (CODE_AUDIT_Game_Shareplay §3.13).
+    func response(
         for model: GameNetworkModel,
         isSuccess: Bool,
         requestData: Bool
-    ) async -> GameNetworkModel {
+    ) -> GameNetworkModel {
         let asksForData = requestData && model.data.data == nil
         let subType: RPGMessageActionType = if asksForData {
             model.subType
@@ -85,7 +89,7 @@ extension PlayerController {
             assetVersion: keepsVersion ? model.data.assetVersion : nil,
             contentVersion: keepsVersion ? model.data.contentVersion : nil
         )
-        return await root.gameModel.outgoingMessage(
+        return root.gameModel.outgoingMessage(
             counter: model.counter,
             proxyCounter: model.proxyCounter,
             type: model.type,

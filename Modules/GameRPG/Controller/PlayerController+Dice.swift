@@ -22,7 +22,7 @@ extension PlayerController {
                 (features.dicePlayers || model.sender.isMaster)
         else {
             Logger.networking.debug("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — self message or feature gate (diceMaster: \(features.diceMaster, privacy: .public), dicePlayers: \(features.dicePlayers, privacy: .public), senderIsMaster: \(model.sender.isMaster, privacy: .public))")
-            return await response(for: model, isSuccess: false, requestData: false)
+            return response(for: model, isSuccess: false, requestData: false)
         }
 
         // Peers may contribute only a complete roll. Dice focus/visibility and
@@ -43,12 +43,12 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await !root.diceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
-            return await response(for: model, isSuccess: true, requestData: false)
+            return response(for: model, isSuccess: true, requestData: false)
         case .store:
             try await root.diceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: model.subType == .show)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
             case .show, .store:

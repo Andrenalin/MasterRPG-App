@@ -23,6 +23,11 @@ protocol MasterNetworkControllable: Sendable & AnyObject {
     @MainActor func toggleStreaming(passcode: String)
     @MainActor func startProxyStreaming(passcode: String)
 
+    /// Returns once the stored hosting session has been read off the main actor, so the
+    /// following `startStreaming`/`startProxyStreaming` never reads the Keychain on it.
+    /// See CODE_AUDIT_Game_Shareplay §3.5.
+    @MainActor func waitForHostingSessionReady() async
+
     /// Returns whether a connection with that id exists and the data was handed
     /// to it — false means the id is unknown here (e.g. a SharePlay participant)
     /// and the caller must deliver another way.
@@ -34,6 +39,7 @@ protocol MasterNetworkControllable: Sendable & AnyObject {
 
 extension MasterNetworkControllable {
     @MainActor func resumeAfterActivation() {}
+    @MainActor func waitForHostingSessionReady() async {}
 }
 
 /// Whether this device's game listener is accepting new joins.

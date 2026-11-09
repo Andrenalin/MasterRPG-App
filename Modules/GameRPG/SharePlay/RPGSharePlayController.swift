@@ -234,7 +234,16 @@ struct SharePlayActivationLifecycle: Sendable {
 @MainActor
 final class SharePlaySessionCallbackCoordinator {
     private var activeCounts: [UUID: Int] = [:]
-    private var idleWaiters: [UUID: [CheckedContinuation<Void, Never>]] = [:]
+    private struct IdleWaiter {
+        let id: UUID
+        let continuation: CheckedContinuation<Bool, Never>
+        let timeoutTask: Task<Void, Never>
+    }
+
+    /// Longest a session replacement waits for callbacks of the previous session.
+    static let defaultIdleTimeout: Duration = .seconds(10)
+
+    private var idleWaiters: [UUID: [IdleWaiter]] = [:]
 
     func perform(
         sessionId: UUID,
@@ -249,11 +258,33 @@ final class SharePlaySessionCallbackCoordinator {
         return !Task.isCancelled && shouldContinue()
     }
 
-    func waitUntilIdle(sessionId: UUID) async {
-        guard activeCounts[sessionId, default: 0] > 0 else { return }
-        await withCheckedContinuation { continuation in
-            idleWaiters[sessionId, default: []].append(continuation)
+    /// Waits until no admitted callback of the session is running, but at most `timeout`.
+    /// A hung delegate callback must not wedge the reconnection to a replacement session
+    /// (CODE_AUDIT_Game_Shareplay §3.10). Returns `false` when it gave up waiting; the
+    /// callback keeps running and is still revalidated by `perform` when it returns.
+    @discardableResult
+    func waitUntilIdle(sessionId: UUID, timeout: Duration = defaultIdleTimeout) async -> Bool {
+        guard activeCounts[sessionId, default: 0] > 0 else { return true }
+        let waiterId = UUID()
+        return await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+            let timeoutTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: timeout)
+                guard !Task.isCancelled else { return }
+                self?.expireWaiter(id: waiterId, sessionId: sessionId)
+            }
+            idleWaiters[sessionId, default: []].append(
+                IdleWaiter(id: waiterId, continuation: continuation, timeoutTask: timeoutTask)
+            )
         }
+    }
+
+    private func expireWaiter(id: UUID, sessionId: UUID) {
+        guard var waiters = idleWaiters[sessionId],
+              let index = waiters.firstIndex(where: { $0.id == id }) else { return }
+        let waiter = waiters.remove(at: index)
+        idleWaiters[sessionId] = waiters.isEmpty ? nil : waiters
+        Logger.networking.error("SharePlay: gave up waiting for callbacks of the previous session")
+        waiter.continuation.resume(returning: false)
     }
 
     private func finishCallback(sessionId: UUID) {
@@ -264,7 +295,10 @@ final class SharePlaySessionCallbackCoordinator {
         }
 
         activeCounts.removeValue(forKey: sessionId)
-        idleWaiters.removeValue(forKey: sessionId)?.forEach { $0.resume() }
+        for waiter in idleWaiters.removeValue(forKey: sessionId) ?? [] {
+            waiter.timeoutTask.cancel()
+            waiter.continuation.resume(returning: true)
+        }
     }
 }
 

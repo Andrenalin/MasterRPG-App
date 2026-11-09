@@ -1060,6 +1060,29 @@ struct MasterControllerDirectProxyTests {
         #expect(sent.data.id == characterId)
     }
 
+    @Test("a cancelled proxy replay does not send the character (Game_Shareplay §3.9)")
+    func cancelledProxyReadyDoesNotSendCharacter() async throws {
+        // Guard test: the old `try?` also ended without a send, so this does not fail on the old
+        // code (the audit calls it harmless). It pins the behaviour now that cancellation is
+        // told apart from a real export error.
+        let env = try await MasterControllerHarness.make(asProxy: true)
+        let characterId = await env.root.characterRoot.itemController.addNew(type: .character)
+        env.root.characterRoot.editController.reset(name: "Proxy Hero", itemId: characterId)
+        let playerId = env.root.gameModel.gameConfig.id
+        env.root.gameModel.gameRoster = GameRosterModel(players: [
+            PlayerGameModel(id: playerId, type: .proxy, name: "Proxy", characterId: characterId)
+        ])
+
+        let master = env.master
+        let replay = Task { @MainActor in
+            await master.readyProxy(for: UUID())
+        }
+        replay.cancel()
+        await replay.value
+
+        #expect(env.proxyMasterSpy.calledSendResponseId == 0)
+    }
+
     @Test("proxy messages are never relayed raw to the master network")
     func proxyMessageIsNotRelayedRawToMaster() async throws {
         let env = try await MasterControllerHarness.make(asProxy: true)

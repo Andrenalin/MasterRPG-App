@@ -24,7 +24,7 @@ extension PlayerController {
                await root.tableRoot.gameControllable.networkVersion(for: model.data.id) == model.data.version,
                await root.tableRoot.gameControllable.setCurrent(itemId: model.data.id) {
                 gameModel.setGameUpdateType(.table)
-                return await response(for: model, isSuccess: true, requestData: false)
+                return response(for: model, isSuccess: true, requestData: false)
             }
             if try await root.tableRoot.tableGameControllable.receiveTable(
                 itemId: model.data.id,
@@ -32,9 +32,9 @@ extension PlayerController {
                 makeCurrent: true
             ) {
                 gameModel.setGameUpdateType(.table)
-                return await response(for: model, isSuccess: true, requestData: false)
+                return response(for: model, isSuccess: true, requestData: false)
             } else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
             if try await root.tableRoot.tableGameControllable.receiveTable(
@@ -42,9 +42,9 @@ extension PlayerController {
                 data: model.data,
                 makeCurrent: false
             ) {
-                return await response(for: model, isSuccess: true, requestData: false)
+                return response(for: model, isSuccess: true, requestData: false)
             }
-            return await response(for: model, isSuccess: true, requestData: true)
+            return response(for: model, isSuccess: true, requestData: true)
         case .update:
             return nil
         }

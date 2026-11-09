@@ -135,7 +135,7 @@ extension PlayerController {
                 Logger.networking.debug("PlayerController: SharePlay file-load-failure for \(model.data.id, privacy: .public) not reported, the file is already here")
                 return
             }
-            let failure = await response(for: model, isSuccess: false, requestData: false)
+            let failure = response(for: model, isSuccess: false, requestData: false)
             await sendUpstream(model: failure)
             return
         }

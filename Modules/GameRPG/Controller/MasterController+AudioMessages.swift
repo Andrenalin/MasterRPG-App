@@ -299,16 +299,10 @@ extension MasterController {
     /// waits for that export instead of reading the whole file into memory again (a join, a
     /// retry and a prefetch can ask for the same track at once). See CODE_AUDIT_Audio2 §7.3.
     private func audioPackage(for id: UUID) async throws -> NetworkCodableDataType {
-        let task: Task<NetworkCodableDataType, Error>
-        if let running = audioPackageTasks[id] {
-            task = running
-        } else {
-            let audio = root.audioRoot.gameControllable
-            task = Task { try await audio.createGameData(for: id) }
-            audioPackageTasks[id] = task
+        let audio = root.audioRoot.gameControllable
+        return try await audioPackages.value(for: id) {
+            try await audio.createGameData(for: id)
         }
-        defer { audioPackageTasks[id] = nil }
-        return try await task.value
     }
 
     /// After an audio was shown (its own package went out): a playlist's first track, when it is

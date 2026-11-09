@@ -30,21 +30,21 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             guard try await access.controllable.reveal(itemId: model.data.id, data: model.data, save: true) else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
             didReveal(model.data.id)
             access.markAvailable(model.data.id, model.data.effectiveAssetVersion, [localPlayerId, masterId], masterId)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return response(for: model, isSuccess: true, requestData: false)
         case .store:
             if model.data.data != nil {
                 try await access.controllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             }
             guard await holdsFile(of: model.data, in: access.controllable) else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
             access.markAvailable(model.data.id, model.data.effectiveAssetVersion, [localPlayerId], masterId)
             didHold(model.data.id)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return response(for: model, isSuccess: true, requestData: false)
         case .update:
             if isList {
                 _ = await applyFileList(model, access: access)

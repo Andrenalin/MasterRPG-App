@@ -54,6 +54,7 @@ final class MasterNetworkController: Sendable {
     /// a large one can no longer overtake it (a pin/map-state arriving before its map).
     /// See CODE_AUDIT_18 §3.15.
     private var outboundChain: Task<Void, Never>?
+    private var hostingSessionPrewarmTask: Task<Void, Never>?
 
     static func gameListenerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, supporterTier, proxy, passcode, sessionId, delegate in
@@ -82,8 +83,10 @@ final class MasterNetworkController: Sendable {
         self.listenerBuilder = listenerBuilder
         self.browserConnectionBuilder = browserConnectionBuilder
         // Reads the stored hosting session off the main actor, so starting to host never waits
-        // on the Keychain. See CODE_AUDIT_20 §3.7.
-        Task { await hostingSessions.prewarm() }
+        // on the Keychain. The task is kept: hosting awaits it (`waitForHostingSessionReady`),
+        // where a discarded task turned the race into a synchronous Keychain read on the main
+        // actor. See CODE_AUDIT_20 §3.7, CODE_AUDIT_Game_Shareplay §3.5.
+        hostingSessionPrewarmTask = Task { await hostingSessions.prewarm() }
         Logger.networking.debug("MasterNetworkController: Init")
     }
 
@@ -95,6 +98,10 @@ final class MasterNetworkController: Sendable {
 // MARK: - Control
 
 extension MasterNetworkController: MasterNetworkControllable {
+    func waitForHostingSessionReady() async {
+        await hostingSessionPrewarmTask?.value
+    }
+
     func startStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Streaming")
         beginHosting(passcode: passcode, proxy: false)

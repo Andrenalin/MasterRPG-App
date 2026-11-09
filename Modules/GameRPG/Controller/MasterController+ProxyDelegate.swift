@@ -19,15 +19,26 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
         Logger.networking.debug("MasterController: Proxy Ready for \(connectionId, privacy: .public)")
         await replayCurrentPresentation(to: .proxy(connectionId))
         guard let characterId = root.gameModel.gamePlayer.characterId else { return }
-        if let data = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
-            await send(
-                type: .update,
-                subtype: .store,
-                updated: data,
-                connectionId: connectionId,
-                authoritativeMaster: true
-            )
+        // Cancellation ends the replay; any other failure only skips the character and is logged.
+        // `try?` made the two indistinguishable and the replay went on to send.
+        // See CODE_AUDIT_Game_Shareplay §3.9.
+        let data: NetworkCodableDataType
+        do {
+            data = try await root.characterRoot.gameControllable.createGameData(for: characterId)
+            try Task.checkCancellation()
+        } catch is CancellationError {
+            return
+        } catch {
+            Logger.networking.error("MasterController: Cannot export the proxy host character \(characterId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            return
         }
+        await send(
+            type: .update,
+            subtype: .store,
+            updated: data,
+            connectionId: connectionId,
+            authoritativeMaster: true
+        )
     }
 
     func receivedServerProxy(_ model: GameNetworkModel, connectionId: ConnectionController.ID) async {

@@ -28,9 +28,9 @@ extension PlayerController {
                     gameModel.showWeather()
                 }
                 tableWeatherArrived(model.data.id)
-                return await response(for: model, isSuccess: true, requestData: false)
+                return response(for: model, isSuccess: true, requestData: false)
             } else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
             // Weather packages are game-session assets. Even legacy store
@@ -41,7 +41,7 @@ extension PlayerController {
                 version: model.data.version
             )
             tableWeatherArrived(model.data.id)
-            return await response(for: model, isSuccess: true, requestData: false)
+            return response(for: model, isSuccess: true, requestData: false)
         case .update:
             // Weather is immutable during a game. Presentation and repair use
             // reveal messages; live update messages are intentionally ignored.

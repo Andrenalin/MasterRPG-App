@@ -115,6 +115,31 @@ final class LinkedGameEnvironment {
         await masterStore.playerNetworks[player.connectionId]?.playerReady()
     }
 
+    /// Waits until the master and every player have handled all they were sent, including the
+    /// replies that handling caused. A reply sent while a worker is busy is queued behind the
+    /// current message and its sender returns at once, so the call that started a flow returns
+    /// before the flow has ended. Fails the test when the links do not settle.
+    func settle(timeout: Duration = .seconds(10), sourceLocation: SourceLocation = #_sourceLocation) async {
+        let deadline = ContinuousClock.now + timeout
+        while !(await isSettled) {
+            guard ContinuousClock.now < deadline else {
+                Issue.record("The linked game did not settle", sourceLocation: sourceLocation)
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    private var isSettled: Bool {
+        get async {
+            guard await master.messagePipeline.isIdle else { return false }
+            for player in players where await !player.controller.messagePipeline.isIdle {
+                return false
+            }
+            return true
+        }
+    }
+
     func clearHistory() {
         masterStore.sends.removeAll()
         masterStore.received.removeAll()

@@ -135,6 +135,8 @@ struct SimpleFileFlowTests {
 
         // When
         await env.master.show(for: await module.controllable(in: env.masterRoot).share(id: itemId))
+        // The master's answer to the player's request is queued behind the player's echo.
+        await env.settle()
 
         // Then: the reference went to everyone and the player echoed it without bytes.
         let reference = try #require(env.masterSends.first { $0.message.type == .reveal && $0.message.data.id == itemId })

@@ -330,6 +330,14 @@ actor GameMessagePipeline {
         !messages.isEmpty
     }
 
+    /// Whether nothing is queued and no worker is handling an event. A reply that a handler
+    /// triggers while the worker is busy is queued behind it and its sender returns at once
+    /// (the nested-submit rule of the drain ownership), so a caller that needs "everything
+    /// this caused is handled" waits for this.
+    var isIdle: Bool {
+        messages.isEmpty && !isDraining
+    }
+
     /// The next event, or `nil` while an event is still in hand: also one of a session that was
     /// reset since. Its drain picks up the new messages once its handler has returned.
     func next() -> GameMessageEvent? {

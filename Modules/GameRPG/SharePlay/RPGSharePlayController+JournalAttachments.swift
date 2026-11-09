@@ -31,6 +31,9 @@ extension RPGSharePlayController {
     /// call that never returns would keep every later publication from being looked at.
     static let journalMetadataLoadDeadline: Duration = .seconds(20)
 
+    /// Key of the Journal snapshot drain task in `tasks`.
+    static let journalDrainTaskKey = UUID(uuidString: "5A1F0E6C-3D2B-4C7A-9B14-2E8D6F0A7C31") ?? UUID()
+
     /// Records the newest full Journal snapshot and makes sure one drain task processes it.
     /// Older unprocessed snapshots are dropped: every snapshot lists all current attachments.
     func receiveJournalSnapshot(
@@ -54,7 +57,9 @@ extension RPGSharePlayController {
             }
         }
         journalDrainTask = task
-        tasks[UUID()] = task
+        // One fixed key: a finished drain's handle is replaced by the next one instead of
+        // piling up for the whole session (CODE_AUDIT_Game_Shareplay §3.11).
+        trackSessionTask(task, key: Self.journalDrainTaskKey)
     }
 
     func handle(_ attachments: GroupSessionJournal.Attachments.Element, sessionId: UUID) async {

@@ -21,7 +21,7 @@ extension PlayerController {
         case .reveal:
             let revealed = try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true)
             guard revealed, await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
             return await acceptAudio(model)
         case .store:
@@ -31,7 +31,7 @@ extension PlayerController {
                 try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             }
             guard await holdsFile(of: model.data, in: root.audioRoot.gameControllable) else {
-                return await response(for: model, isSuccess: true, requestData: true)
+                return response(for: model, isSuccess: true, requestData: true)
             }
             return await acceptAudio(model)
         case .update:
@@ -75,7 +75,7 @@ extension PlayerController {
     private func acceptAudio(_ model: GameNetworkModel) async -> GameNetworkModel {
         root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
         await root.audioRoot.audioGameControllable.itemArrived(id: model.data.id)
-        return await response(for: model, isSuccess: true, requestData: false)
+        return response(for: model, isSuccess: true, requestData: false)
     }
 
     private func applyAudioList(_ model: GameNetworkModel) -> Bool {

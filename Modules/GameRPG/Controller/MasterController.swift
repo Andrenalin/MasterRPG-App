@@ -47,7 +47,7 @@ final class MasterController {
 
     /// The audio exports that run, per item, so a second delivery of the same file waits for
     /// the first. Declared here for the same reason as `audioPlayRetryTasks`.
-    var audioPackageTasks: [UUID: Task<NetworkCodableDataType, Error>] = [:]
+    let audioPackages = SharedWorkCoalescer<UUID, NetworkCodableDataType>()
 
     /// The delivery of what the pending audio play lacks, and the look-ahead that sends the next
     /// track: both outside the game master's action chain. Declared here for the same reason as

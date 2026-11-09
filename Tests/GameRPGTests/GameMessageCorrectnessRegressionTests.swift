@@ -516,7 +516,7 @@ struct GameMessageCorrectnessRegressionTests {
         let reference = root.gameModel.outgoingMessage(counter: 42, type: .reveal, subType: .show, asMaster: true, data: payload.reference)
 
         // When — the player asks for the item the reference named.
-        let request = await player.response(for: reference, isSuccess: true, requestData: true)
+        let request = player.response(for: reference, isSuccess: true, requestData: true)
 
         // Then
         #expect(request.isAssetRequest)
@@ -530,7 +530,7 @@ struct GameMessageCorrectnessRegressionTests {
 
         // When — the package arrived and the item is still unusable. Asking again would
         // bring the same bytes: the master and the player would never stop.
-        let unusable = await player.response(for: incoming, isSuccess: true, requestData: true)
+        let unusable = player.response(for: incoming, isSuccess: true, requestData: true)
 
         // Then
         #expect(!unusable.isAssetRequest)
@@ -539,7 +539,7 @@ struct GameMessageCorrectnessRegressionTests {
         #expect(unusable.counter == incoming.counter)
 
         // When — a plain acknowledgement carries the same identity rule.
-        let ack = await player.response(for: incoming, isSuccess: true, requestData: false)
+        let ack = player.response(for: incoming, isSuccess: true, requestData: false)
 
         // Then
         #expect(ack.subType == .ok)

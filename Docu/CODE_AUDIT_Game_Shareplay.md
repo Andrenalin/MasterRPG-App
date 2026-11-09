@@ -76,6 +76,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** The `@unchecked` justification (internal thread-safety of `GroupSession`) is undocumented; a race inside system code is invisible to TSan. The ordering of join vs leave itself is correct (`GroupSessionCommandQueue`, CODE_AUDIT_24 §3.1 is fixed).
 - **Action:** Document next to the box why it runs off-main (presumably a blocking XPC call) and that it was verified, or call join/leave on the main actor where all other session access happens and measure the hitch.
 - **Severity:** Low
+- **Status: documented 2026-11-09, no behaviour change.** `SessionBox` now states why it is `@unchecked` (assumption: `join()`/`leave()` are serialised by the framework and only the command queue calls them off-main) and that this cannot be verified with TSan. No test possible. Open: decide whether to call both on the main actor.
 
 ### 3.4 Join-code Keychain flush holds a `Mutex` across `SecItem` I/O while the main actor waits on it
 - **Location:** `Modules/GameRPG/Network/GameJoinCodeModel.swift:83-85,303-328`; callers `Controller/MasterController+Control.swift:20-21`, `Controller/PlayerController+Control.swift:23-24`
@@ -83,6 +84,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** If a debounced background flush is mid-write, tapping Host/Join blocks the main thread on the lock (Keychain goes over XPC; tens to hundreds of ms, more after first unlock) and then performs its own synchronous I/O — a visible stall.
 - **Action:** Hold the lock only to take the pending snapshot; serialise writes on one non-main executor (the existing `@concurrent` chain) and `await` the flush from the host/join path.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `flushPendingWrites()` is `async` and runs the Keychain loop in a `@concurrent` task; Host/Join `await` it, so the main actor never waits on the write lock or the I/O. Test: `GameJoinCodeModelTests.flushDoesNotWriteOnTheMainThread`.
 
 ### 3.5 Keychain reads on the main actor in model init and session-id lookup
 - **Location:** `Modules/GameRPG/Network/GameJoinCodeModel.swift:35-44`; `Modules/GameRPG/Master/HostingSessionStore.swift:60-103`; prewarm fired untracked at `Master/MasterNetworkController.swift:86`, synchronous use in `beginHosting` (~`:115`)
@@ -90,6 +92,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** File/XPC I/O on main during start; the discarded prewarm task turns a race into a stall.
 - **Action:** Load off-main and publish; store the prewarm task and `await` it in `beginHosting`.
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09.** The prewarm task is stored (`hostingSessionPrewarmTask`); `startMasterGame` and `startProxyServer` `await waitForHostingSessionReady()` before hosting, so `sessionId(forPasscode:)` no longer falls back to a main-thread Keychain read. Tests: `HostingSessionPrewarmTests`. **Not changed:** `GameJoinCodeModel.init` still loads synchronously; loading off-main would make the join codes provisional at launch — needs a decision.
 
 ### 3.6 Shared audio export is neither cancellable nor safely de-duplicated
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:301-312` (callers `:276-296`, `:164-169`)
@@ -97,6 +100,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** Cancelling a caller does not end its wait (a cancelled caller still waits for a multi-MB read). Interleaving: waiter 1 clears; waiter 3 starts export T2; waiter 2 (a joiner of T1) clears T2's entry; waiter 4 starts a duplicate export — the dedup is defeated.
 - **Action:** Clear the entry only if it still holds the same task; wrap the wait in a cancellation handler that cancels the shared task when the last waiter leaves.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** New `SharedWorkCoalescer` (main actor): one run per key, per-waiter cancellation, the last waiter leaving cancels the work, and a run removes only its own entry (identity by run id). `audioPackage(for:)` uses it. Tests: `SharedWorkCoalescerTests`.
 
 ### 3.7 A session yielded by `sessions()` is dropped without `leave()` on cancellation paths
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:181-182,207-208; 131-134`
@@ -104,6 +108,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** The system keeps an unjoined, un-left session pending; the FaceTime UI may keep offering the activity and the next `sessions()` iteration may not yield it again. Only during shutdown/replacement.
 - **Action:** Call `leave()` on a yielded-but-never-configured session on those early returns.
 - **Severity:** Low
+- **Status: fixed 2026-11-09 (no unit test).** `configureGroupSession` calls `leave()` on the yielded session at both cancellation returns, unless it is the session already in use (`leaveUnconfiguredSession`). The observer loop's `canConfigure` return already left the session. A `GroupSession` cannot be created in a test.
 
 ### 3.8 Untracked fire-and-forget tasks
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:86` (prewarm), `:205,:212-216,:406-412,:535-541`; `Network/ConnectionController.swift:145,190`; `Model/GameMessagePipeline.swift:210` (`handOffBacklog`); `SharePlay/SharePlaySingleQueuePackageSender.swift:120`; `SharePlay/SharePlayJournalAddLimiter.swift:108`
@@ -111,6 +116,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** Untracked tasks outlive stop/reset and escape cancellation.
 - **Action:** Store the prewarm task; remove `handOffBacklog` together with the §3.1 fix; leave the rest.
 - **Severity:** Low
+- **Status: fixed 2026-11-09** together with §3.1 (`handOffBacklog` removed) and §3.5 (prewarm task stored).
 
 ### 3.9 `try?` on proxy character export hides cancellation
 - **Location:** `Modules/GameRPG/Controller/MasterController+ProxyDelegate.swift:20-24`
@@ -118,6 +124,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** After a cancelled proxy replay the code cannot tell cancellation from absence. Harmless today (only skips a send).
 - **Action:** `do/catch`; return on `CancellationError`, log other errors.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `do/catch`: `CancellationError` returns (plus a `checkCancellation` after the export), other errors are logged. Guard test `cancelledProxyReadyDoesNotSendCharacter` — it does not fail on the old code, because the old `try?` also ended without a send (the audit calls it harmless).
 
 ### 3.10 Session teardown waits without limit for in-flight callbacks; the Messenger receive loop is serialised behind full message processing
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:181,199-207,286-292,364-369`; `SharePlay/RPGSharePlayController.swift:252-257,288-293`
@@ -125,6 +132,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** A slow or hung callback delays or wedges reconnection to a new session, and long processing stalls reassembly for all participants so partial streams whose remaining chunks are already buffered can expire.
 - **Action:** Bound the teardown wait with a timeout and continue after logging; hand completed messages to the pipeline without awaiting their processing inside the Messenger loop (compatible with the single-owner drain of §3.1).
 - **Severity:** Low
+- **Status: partly fixed 2026-11-09.** `SharePlaySessionCallbackCoordinator.waitUntilIdle(sessionId:timeout:)` gives up after 10 s (logs, returns `false`) and both teardown closures use it, so a hung delegate callback cannot wedge the reconnection. Tests: `SharePlayLifecycleAuditTests`. **Not changed:** the Messenger receive loop still awaits `processMessages()` — that await is the backpressure, and the pipeline caps would drop messages instead.
 
 ### 3.11 `tasks` dictionary gains an entry for every Journal drain episode
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+JournalAttachments.swift:38-52`; `SharePlay/RPGSharePlayController.swift:497`
@@ -132,6 +140,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** Finished handles accumulate for the whole session, one per idle→busy Journal transition. Small but unbounded.
 - **Action:** Store under a fixed key (as `trackSessionTask(_:key:)` supports) or remove on completion.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** The drain task is stored under `journalDrainTaskKey` via `trackSessionTask`. Test: `SharePlayLifecycleAuditTests.journalDrainEpisodesDoNotAccumulateTaskHandles`.
 
 ### 3.12 Journal metadata loads run serially with no deadline
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+JournalAttachments.swift:65-85`; `SharePlay/RPGSharePlayController.swift:498-501`
@@ -139,6 +148,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** If one metadata load stalls, no later snapshot is processed — contradicting the drain's stated goal that a hung load cannot keep later publications from being looked at. *(reasoned from code; not reproduced)*
 - **Action:** Wrap metadata loads in the same deadline race used for byte loads.
 - **Severity:** Low
+- **Status: fixed 2026-11-09** with §3.2 (`loadMetadata` deadline, 20 s). Join-batch loads still run one after the other.
 
 ### 3.13 `nonisolated async` response builder adds only an executor hop
 - **Location:** `Modules/GameRPG/Controller/PlayerController+Dispatch.swift:55-57`
@@ -146,6 +156,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** Suggests off-main work that does not happen and costs an extra hop.
 - **Action:** Make it a plain `@MainActor` or synchronous method.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `PlayerController.response(for:isSuccess:requestData:)` is a synchronous main-actor method; the `await`s at the call sites are gone. Covered by the existing `response` tests in `GameMessageCorrectnessRegressionTests`.
 
 ### 3.14 Unneeded `@preconcurrency import TabletopKit`
 - **Location:** `Modules/GameRPG/Table3D/GroupActivityManager.swift:6`
@@ -153,6 +164,7 @@ Ground truth: zero compiler warnings under Swift 6 / `SWIFT_STRICT_CONCURRENCY=c
 - **Why:** Suppresses Sendable diagnostics for this file and can hide a real crossing.
 - **Action:** Remove the attribute and fix any diagnostic that appears.
 - **Severity:** Low
+- **Status: fixed 2026-11-09.** `@preconcurrency` removed from `GroupActivityManager.swift`; the visionOS build has no new diagnostics.
 
 ---
 

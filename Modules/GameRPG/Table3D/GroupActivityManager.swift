@@ -3,7 +3,7 @@
 #if os(visionOS)
 import GroupActivities
 import SwiftUI
-@preconcurrency import TabletopKit
+import TabletopKit
 
 @MainActor @Observable
 final class GroupActivityManager {

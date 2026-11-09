@@ -34,7 +34,7 @@ struct PlayerShareReportTests {
         }
 
         // When: the owner shares it.
-        try await Self.share(itemId, of: module, by: sharer)
+        try await Self.share(itemId, of: module, by: sharer, in: env)
 
         // Then: its file went to the master once, and the master delivered its new copy to
         // the two players that lacked it.
@@ -62,7 +62,7 @@ struct PlayerShareReportTests {
         }
 
         // When: a player shares it.
-        try await Self.share(itemId, of: module, by: env.players[0])
+        try await Self.share(itemId, of: module, by: env.players[0], in: env)
 
         // Then: no file crossed the network in either direction, and everyone confirmed the
         // master's reference from its own copy.
@@ -92,7 +92,7 @@ struct PlayerShareReportTests {
         }
 
         // When: a player that has it shares it.
-        try await Self.share(itemId, of: module, by: sharer)
+        try await Self.share(itemId, of: module, by: sharer, in: env)
 
         // Then: the player named the item to the master, without its file.
         let share = try #require(env.playerSends.first {
@@ -180,6 +180,17 @@ private extension PlayerShareReportTests {
 
     /// The player taps share on `itemId`.
     static func share(
+        _ itemId: UUID,
+        of module: SharedModule,
+        by player: LinkedGameEnvironment.Player,
+        in env: LinkedGameEnvironment
+    ) async throws {
+        try await send(itemId, of: module, by: player)
+        // The master's delivery and the players' receipts are queued behind the share.
+        await env.settle()
+    }
+
+    private static func send(
         _ itemId: UUID,
         of module: SharedModule,
         by player: LinkedGameEnvironment.Player

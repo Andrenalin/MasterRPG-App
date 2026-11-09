@@ -106,6 +106,7 @@ extension GameNetworkController {
     func startMasterGame(game: GameConfigModel, titleImage: AKImage?, passcode: String) async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .private)")
+        await model.masterStore?.waitForHostingSessionReady()
         model.masterStore?.startStreaming(passcode: passcode)
         if !proxy && sharePlayStore.canActivateSharePlay {
             // Subscribe to sessions() before activating, so the session delivered
@@ -115,9 +116,10 @@ extension GameNetworkController {
         }
     }
 
-    func startProxyServer(passcode: String) {
+    func startProxyServer(passcode: String) async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: start proxy server \(name, privacy: .private)")
+        await model.masterStore?.waitForHostingSessionReady()
         model.masterStore?.startProxyStreaming(passcode: passcode)
     }
 

@@ -18,7 +18,7 @@ extension MasterController {
         // A code that could not be read at launch (locked keychain) is resolved, and a code changed
         // moments ago is made durable, before it is put to use. See CODE_AUDIT_Join §5.5.
         root.gameJoinCodeModel.refreshFromStorage()
-        root.gameJoinCodeModel.flushPendingWrites()
+        await root.gameJoinCodeModel.flushPendingWrites()
         installAudioLoopReplay()
         installAudioPrefetch()
         await root.networkStore.startMasterGame(

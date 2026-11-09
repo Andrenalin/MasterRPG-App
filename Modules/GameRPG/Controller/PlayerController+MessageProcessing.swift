@@ -275,7 +275,7 @@ extension PlayerController {
                 // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
                 Logger.networking.error("PlayerController: Failed to process \(event.model.debugDescription, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 if event.origin != .local {
-                    let failure = await response(for: event.model, isSuccess: false, requestData: false)
+                    let failure = response(for: event.model, isSuccess: false, requestData: false)
                     await sendUpstream(model: failure)
                 }
                 await messagePipeline.processed(success: false)

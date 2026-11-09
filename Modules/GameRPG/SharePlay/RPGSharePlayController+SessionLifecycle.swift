@@ -172,6 +172,16 @@ extension RPGSharePlayController {
         joinTask = nil
     }
 
+    /// Leaves a session `sessions()` yielded that this controller will no longer join. Dropping
+    /// it unjoined and un-left keeps it pending in the system, and the next `sessions()`
+    /// iteration may not offer the activity again (CODE_AUDIT_Game_Shareplay §3.7). The
+    /// session in use is never left here: its `leave()` goes through the command queue.
+    private func leaveUnconfiguredSession(_ session: GroupSession<RPGActivity>) {
+        guard self.groupSession?.id != session.id else { return }
+        Logger.sharePlay.debug("Leaving yielded session that was cancelled before configuration \(session.id, privacy: .public)")
+        session.leave()
+    }
+
     func configureGroupSession(_ groupSession: GroupSession<RPGActivity>) async {
         Logger.sharePlay.debug("Configure Session \(groupSession.description, privacy: .private) state: \(self.printState(), privacy: .public)")
 
@@ -179,7 +189,10 @@ extension RPGSharePlayController {
         // delegate cleanup asynchronously. Do not let sessions() configure a
         // replacement inside that suspension window.
         await sessionTeardownCoordinator.waitForPendingTeardown()
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled else {
+            leaveUnconfiguredSession(groupSession)
+            return
+        }
 
         if self.groupSession?.id == groupSession.id,
            messenger != nil,
@@ -205,7 +218,10 @@ extension RPGSharePlayController {
             }
             reset()
             await sessionTeardownCoordinator.waitForCompletion(of: teardown)
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else {
+                leaveUnconfiguredSession(groupSession)
+                return
+            }
         } else {
             // `reset()` above already resets the tracker for the
             // replace-an-existing-session path (and `drainSessionTeardownEvents()`
@@ -504,6 +520,13 @@ final class GroupSessionCommandQueue: Sendable {
         case leave
     }
 
+    /// Why `@unchecked`: Apple does not document `GroupSession` as `Sendable`. This relies on
+    /// `join()` and `leave()` being plain calls into the system that the framework serialises
+    /// itself, and on this box being the only place that calls them off the main actor, one
+    /// call at a time (see the command queue above). That is an assumption, not something
+    /// TSan can check inside system code. If a hitch from `join()` ever stops mattering,
+    /// the safer form is to call both on the main actor
+    /// (CODE_AUDIT_Game_Shareplay §3.3).
     private struct SessionBox: @unchecked Sendable {
         let session: GroupSession<RPGActivity>
     }
