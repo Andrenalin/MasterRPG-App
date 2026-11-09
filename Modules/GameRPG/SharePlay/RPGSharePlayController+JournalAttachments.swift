@@ -26,6 +26,11 @@ extension RPGSharePlayController {
         }
     }
 
+    /// Longest `loadMetadata` of one attachment may stay suspended. The metadata is small, but
+    /// the call is as unbounded as `load`: the snapshots are handled one after the other, so a
+    /// call that never returns would keep every later publication from being looked at.
+    static let journalMetadataLoadDeadline: Duration = .seconds(20)
+
     /// Records the newest full Journal snapshot and makes sure one drain task processes it.
     /// Older unprocessed snapshots are dropped: every snapshot lists all current attachments.
     func receiveJournalSnapshot(
@@ -68,7 +73,14 @@ extension RPGSharePlayController {
                 continue
             }
             do {
-                let metadata = try await attachment.loadMetadata(of: GameNetworkModel.self)
+                let attachmentId = attachment.id
+                let metadata = try await SharePlayAttachmentLoadRetry.load(
+                    deadline: Self.journalMetadataLoadDeadline,
+                    isStillWanted: { [weak self] in
+                        await self?.currentJournalAttachmentIds.contains(attachmentId) ?? false
+                    },
+                    operation: { try await attachment.loadMetadata(of: GameNetworkModel.self) }
+                )
                 guard !Task.isCancelled,
                       sessionLifecycle.isCurrent(sessionId: sessionId)
                 else { return }

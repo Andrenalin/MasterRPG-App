@@ -36,11 +36,17 @@ private struct SharePlayJournalAddAttemptKey<Key: Hashable & Sendable>: Hashable
 /// being committed as current state.
 @MainActor
 final class SharePlayJournalAddLimiter<Key: Hashable & Sendable, Value: Sendable> {
-    init(maxRetainedAttempts: Int = 16) {
+    init(maxRetainedAttempts: Int = 16, maxObsoleteAttempts: Int = 8) {
         self.maxRetainedAttempts = max(1, maxRetainedAttempts)
+        self.maxObsoleteAttempts = max(1, maxObsoleteAttempts)
     }
 
+    /// Cap for the attempts of the current session.
     private let maxRetainedAttempts: Int
+    /// Cap for the attempts of ended sessions whose system call has not returned. They are
+    /// counted apart: an ended session's hung adds must not use up the Journal of the next
+    /// session, yet each one keeps its payload alive, so their number stays bounded.
+    private let maxObsoleteAttempts: Int
     private var attempts: [SharePlayJournalAddAttemptKey<Key>: SharePlayJournalAddAttempt<Value>] = [:]
 
     var activeCount: Int {
@@ -61,8 +67,10 @@ final class SharePlayJournalAddLimiter<Key: Hashable & Sendable, Value: Sendable
         discardLateValue: @escaping @MainActor (Value) async -> Bool
     ) async -> SharePlayJournalAddOutcome<Value> {
         let attemptKey = SharePlayJournalAddAttemptKey(key: key, scope: scope)
+        let obsoleteCount = attempts.values.filter(\.isObsolete).count
         guard attempts[attemptKey] == nil,
-              attempts.count < maxRetainedAttempts
+              attempts.count - obsoleteCount < maxRetainedAttempts,
+              obsoleteCount < maxObsoleteAttempts
         else { return .unavailable }
 
         let attempt = SharePlayJournalAddAttempt<Value>()

@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import os.log
 
 // MARK: - Slot
 
@@ -111,8 +112,10 @@ where Attachment.ID == UUID {
     init(
         maxOutstandingPublications: Int = 16,
         maxOutstandingBytes: Int = GameLimits.maximumMessageBytes,
-        maxOutstandingCleanups: Int = 8
+        maxOutstandingCleanups: Int = 8,
+        cleanupDeadline: Duration = .seconds(30)
     ) {
+        self.cleanupDeadline = cleanupDeadline
         self.maxOutstandingPublications = max(1, maxOutstandingPublications)
         self.maxOutstandingBytes = max(1, maxOutstandingBytes)
         self.maxOutstandingCleanups = max(1, maxOutstandingCleanups)
@@ -133,11 +136,17 @@ where Attachment.ID == UUID {
     private let maxOutstandingPublications: Int
     private let maxOutstandingBytes: Int
     private let maxOutstandingCleanups: Int
+    /// Longest one system `remove` may stay suspended before the cleanup gives up on it.
+    private let cleanupDeadline: Duration
     private var pendingPublications: [SharePlayJournalSlot: [PublicationOperation]] = [:]
     private var activePublications: [SharePlayJournalSlot: PublicationOperation] = [:]
     private var publicationWorkers: [SharePlayJournalSlot: (id: UUID, task: Task<Void, Never>)] = [:]
     private var cleanupTasks: [UUID: Task<Void, Never>] = [:]
-    private var emergencyCleanupTasks: [SharePlayJournalSlot: Task<Void, Never>] = [:]
+    private var emergencyCleanupTasks: [SharePlayJournalSlot: (id: UUID, task: Task<Void, Never>)] = [:]
+    /// The one best-effort removal per slot of an add that returned after its session was
+    /// reset. It belongs to the old session, so unlike `emergencyCleanupTasks` it never keeps
+    /// the slot off the Journal for the session that follows.
+    private var obsoleteCleanupTasks: [SharePlayJournalSlot: (id: UUID, task: Task<Void, Never>)] = [:]
     private var currentAttachments: [SharePlayJournalSlot: Attachment] = [:]
     private var cleanupReservationCount = 0
     private var transferredCleanupReservationOperationIds: Set<UUID> = []
@@ -147,7 +156,7 @@ where Attachment.ID == UUID {
     private(set) var outstandingPublicationByteCount = 0
 
     var outstandingCleanupCount: Int {
-        cleanupTasks.count + emergencyCleanupTasks.count
+        cleanupTasks.count + emergencyCleanupTasks.count + obsoleteCleanupTasks.count
     }
 
     @discardableResult
@@ -341,7 +350,8 @@ where Attachment.ID == UUID {
         generation &+= 1
         publicationWorkers.values.forEach { $0.task.cancel() }
         cleanupTasks.values.forEach { $0.cancel() }
-        emergencyCleanupTasks.values.forEach { $0.cancel() }
+        emergencyCleanupTasks.values.forEach { $0.task.cancel() }
+        obsoleteCleanupTasks.values.forEach { $0.task.cancel() }
         activePublications.values.forEach { $0.completion.finish() }
         pendingPublications.values.flatMap { $0 }.forEach { $0.completion.finish() }
         pendingPublications = [:]
@@ -349,11 +359,16 @@ where Attachment.ID == UUID {
         publicationWorkers = [:]
         currentAttachments = [:]
         presentationGenerations = [:]
-        // A system removal may ignore cancellation. Keep those task handles and
-        // their reservations across sessions so repeated resets cannot create
-        // an unbounded set of untracked cleanup operations. Publication-only
-        // reservations are released here.
-        cleanupReservationCount = cleanupTasks.count
+        // A system removal may ignore cancellation and never return (its session was
+        // invalidated mid-call). The cleanup tasks race it against cancellation and a deadline
+        // (`removeBounded`), so they end on their own; they are forgotten here so that a call
+        // of the ended session cannot hold a reservation, or the module's slot, in the next one.
+        // A task that finishes later finds its entry gone and releases nothing.
+        // See CODE_AUDIT_Game_Shareplay §3.2.
+        cleanupTasks = [:]
+        emergencyCleanupTasks = [:]
+        obsoleteCleanupTasks = [:]
+        cleanupReservationCount = 0
         transferredCleanupReservationOperationIds = []
         outstandingPublicationCount = 0
         outstandingPublicationByteCount = 0
@@ -527,7 +542,7 @@ where Attachment.ID == UUID {
         let task = Task(priority: priority) { [weak self] in
             await retryUntilRemoved(
                 delays: SharePlayAttachmentLoadRetry.cleanupRetryDelays,
-                remove: { await remove(attachment) },
+                remove: { await self?.removeBounded(attachment, remove: remove) ?? true },
                 finish: { self?.finishCleanup(id: id) }
             )
         }
@@ -539,47 +554,77 @@ where Attachment.ID == UUID {
         releaseCleanupReservation()
     }
 
+    /// One system removal, given up on after `cleanupDeadline`. `GroupSessionJournal.remove` can
+    /// stay suspended for ever and ignores cancellation, so the removal runs in a task of its
+    /// own that is abandoned on the deadline or on cancellation. Returns `true` when the
+    /// removal is done *or given up*, which ends the retry loop and frees its slot: a call that
+    /// hung once is not worth issuing again. `false` is a removal that failed and may be retried.
+    private func removeBounded(
+        _ attachment: Attachment,
+        remove: @escaping @MainActor (Attachment) async -> Bool
+    ) async -> Bool {
+        do {
+            return try await SharePlayAttachmentLoadRetry.load(deadline: cleanupDeadline) {
+                await remove(attachment)
+            }
+        } catch is CancellationError {
+            return false
+        } catch {
+            Logger.sharePlay.error("Journal: gave up a removal of attachment \(attachment.id, privacy: .public) that did not return within \(String(describing: self.cleanupDeadline), privacy: .public)")
+            return true
+        }
+    }
+
     /// Fallback retirement must be able to hide the stale current attachment
     /// even when the ordinary cleanup pool is saturated. One extra task per
     /// module keeps that escape hatch finite; the module rejects Journal work
-    /// until its retirement returns and uses Messenger in the meantime.
+    /// until its retirement returns (or is given up) and uses Messenger in the meantime.
     private func scheduleEmergencyCleanup(
         _ attachment: Attachment,
         for module: SharePlayJournalSlot,
         priority: TaskPriority?,
         remove: @escaping @MainActor (Attachment) async -> Bool
     ) {
+        let id = UUID()
         let task = Task(priority: priority) { [weak self] in
             await retryUntilRemoved(
                 delays: SharePlayAttachmentLoadRetry.cleanupRetryDelays,
-                remove: { await remove(attachment) },
-                finish: { self?.finishEmergencyCleanup(for: module) }
+                remove: { await self?.removeBounded(attachment, remove: remove) ?? true },
+                finish: { self?.finishEmergencyCleanup(for: module, id: id) }
             )
         }
-        emergencyCleanupTasks[module] = task
+        emergencyCleanupTasks[module] = (id, task)
     }
 
-    private func finishEmergencyCleanup(for module: SharePlayJournalSlot) {
+    private func finishEmergencyCleanup(for module: SharePlayJournalSlot, id: UUID) {
+        guard emergencyCleanupTasks[module]?.id == id else { return }
         emergencyCleanupTasks[module] = nil
     }
 
     /// A publication may ignore cancellation inside the system Journal add and
     /// return an attachment after the queue has reset. It belongs to the old
-    /// session and must never become current. Use the queue's single bounded
-    /// per-module escape hatch for one best-effort removal so repeated resets
-    /// cannot create an untracked retry loop.
+    /// session and must never become current. One best-effort removal per slot,
+    /// bounded by the deadline, so repeated resets cannot create an untracked retry
+    /// loop. It does not occupy the slot's emergency cleanup: the new session may
+    /// use the Journal at once.
     private func scheduleObsoleteCleanup(
         _ attachment: Attachment,
         for module: SharePlayJournalSlot,
         priority: TaskPriority?,
         remove: @escaping @MainActor (Attachment) async -> Bool
     ) {
-        guard emergencyCleanupTasks[module] == nil else { return }
+        guard obsoleteCleanupTasks[module] == nil else { return }
+        let id = UUID()
         let task = Task(priority: priority) { @MainActor [weak self] in
-            _ = await remove(attachment)
-            self?.finishEmergencyCleanup(for: module)
+            _ = await self?.removeBounded(attachment, remove: remove)
+            self?.finishObsoleteCleanup(for: module, id: id)
         }
-        emergencyCleanupTasks[module] = task
+        obsoleteCleanupTasks[module] = (id, task)
+    }
+
+    private func finishObsoleteCleanup(for module: SharePlayJournalSlot, id: UUID) {
+        guard obsoleteCleanupTasks[module]?.id == id else { return }
+        obsoleteCleanupTasks[module] = nil
     }
 
     private func releaseCleanupReservation() {
