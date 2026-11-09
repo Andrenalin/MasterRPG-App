@@ -104,7 +104,7 @@
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Debug"
-      shouldUseLaunchSchemeArgsEnv = "YES"
+      shouldUseLaunchSchemeArgsEnv = "NO"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
