@@ -35,10 +35,12 @@ struct SelectedAdventureView: View {
                         SelectedAdventureViewOptionView(root: root, isCompactLayout: isCompactLayout)
                     }
                 } else {
-                    HStack(alignment: .top, spacing: 12) {
-                        SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
-                    }
-                    .overlay(alignment: .trailing) {
+                    // A ZStack (not an overlay) so the card grows to the
+                    // options' height and their bottom padding is kept.
+                    ZStack(alignment: .trailing) {
+                        HStack(alignment: .top, spacing: 12) {
+                            SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
+                        }
                         SelectedAdventureViewOptionView(root: root, isCompactLayout: isCompactLayout)
                     }
                 }

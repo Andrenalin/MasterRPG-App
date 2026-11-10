@@ -39,10 +39,12 @@ struct SelectedPlayerView: View {
                         }
                     }
                 } else {
-                    HStack(alignment: .top, spacing: 12) {
-                        SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
-                    }
-                    .overlay(alignment: .trailing) {
+                    // A ZStack (not an overlay) so the card grows to the
+                    // options' height and their bottom padding is kept.
+                    ZStack(alignment: .trailing) {
+                        HStack(alignment: .top, spacing: 12) {
+                            SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
+                        }
                         if root.gameModel.selectedCharacter != nil {
                             SelectedPlayerViewSharePlayStartView(root: root, isCompactLayout: isCompactLayout)
                         }
