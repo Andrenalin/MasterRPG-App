@@ -300,6 +300,15 @@ extension RPGSharePlayController {
             else { return }
             let elapsed = Self.formattedDuration(loadStartedAt.duration(to: .now))
             Logger.sharePlay.debug("Journal: attachment \(attachment.id, privacy: .public) of message \(metadata.counter, privacy: .public) was replaced while loading (after \(elapsed, privacy: .public)); skipped")
+            // An audio is never superseded by a successor of itself (every track of a playlist
+            // uses the one audio slot): the game master waits for this file, so it is told it
+            // did not arrive. A show of anything else needs no word, its successor follows.
+            // See CODE_AUDIT_Game_Photo_Audio §5.1.
+            if metadata.data.type == .audio {
+                _ = await performSessionCallback(sessionId: sessionId, operation: {
+                    await delegate?.handleFileLoadFailure(metadata)
+                })
+            }
             return
         } catch let error {
             guard !Task.isCancelled,

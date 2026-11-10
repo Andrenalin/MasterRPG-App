@@ -55,6 +55,9 @@ final class MasterControllerModel {
     /// suspended until the deadline) stalled again when sent again, and held up the player's
     /// other downloads. The play goes on without that player.
     private var abandonedAudioDeliveries: Set<AudioDeliveryKey> = []
+    /// The deliveries sent a second time after the player reported a failed import. The first
+    /// failure earns one more try, the second one the abandon. See CODE_AUDIT_Game_Photo_Audio §5.2.
+    private var retriedAudioDeliveries: Set<AudioDeliveryKey> = []
 
     private struct AudioDeliveryKey: Hashable, Sendable {
         let itemId: UUID
@@ -184,6 +187,7 @@ final class MasterControllerModel {
     func forget(playerId: UUID) {
         listSequence.forget(senderId: playerId)
         abandonedAudioDeliveries = abandonedAudioDeliveries.filter { $0.playerId != playerId }
+        retriedAudioDeliveries = retriedAudioDeliveries.filter { $0.playerId != playerId }
         // Every start of a game mints a new sender id, so a player that rejoins would meet its own
         // old binding on its Character and be refused for good. See CODE_AUDIT_Audio2 §5.2.
         characterOwnership[playerId] = nil
@@ -205,8 +209,15 @@ final class MasterControllerModel {
         abandonedAudioDeliveries.insert(AudioDeliveryKey(itemId: itemId, playerId: playerId))
     }
 
+    /// Whether the failed delivery of `itemId` to `playerId` may be sent once more. Answers `true`
+    /// once per delivery and remembers it.
+    func claimAudioDeliveryRetry(itemId: UUID, playerId: UUID) -> Bool {
+        retriedAudioDeliveries.insert(AudioDeliveryKey(itemId: itemId, playerId: playerId)).inserted
+    }
+
     func resetAudioDeliveryFailures() {
         abandonedAudioDeliveries.removeAll()
+        retriedAudioDeliveries.removeAll()
     }
 
     func canApplyList(_ module: NetworkModules, from playerId: UUID, counter: Int) -> Bool {

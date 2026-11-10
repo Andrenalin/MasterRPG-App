@@ -54,6 +54,10 @@ final class MasterController {
     /// `audioPlayRetryTasks`. See CODE_AUDIT_Audio2 §7.4.
     var audioDeliveryTask: Task<Void, Never>?
     var audioPrefetchTask: Task<Void, Never>?
+    /// The look-ahead that waits for the players still loading the current track, and the task
+    /// that lets it go on after `audioPrefetchHold`. See CODE_AUDIT_Game_Photo_Audio §5.1.
+    var heldAudioPrefetch: (rootId: UUID, trackId: UUID)?
+    var audioPrefetchHoldTask: Task<Void, Never>?
 
     /// How long a pending audio play waits for the players' receipts before it starts for the
     /// players that are ready. See CODE_AUDIT_Game_Shareplay §5.7.

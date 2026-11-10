@@ -283,5 +283,85 @@ struct AudioPlaylistGameFlowTests {
             #expect(!Self.packageIds(to: late, in: env).contains(trackId))
         }
     }
+
+    // MARK: CODE_AUDIT_Game_Photo_Audio §5
+
+    @Test("The next track waits while a player still loads the current one (§5.1)")
+    func theLookAheadWaitsForAPlayerThatIsStillLoading() async throws {
+        let setup = try await Self.setup()
+        let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
+
+        // The player has not reported the first track: it may still be downloading it.
+        await env.master.prefetchNextAudio(rootId: playlist.rootId, after: playlist.trackIds[0])
+
+        #expect(env.master.heldAudioPrefetch?.trackId == playlist.trackIds[0])
+        #expect(!Self.packageIds(to: player, in: env).contains(playlist.trackIds[1]))
+
+        // Its receipt lets the look-ahead go on.
+        env.masterRoot.audioRoot.gameControllable.report(itemId: playlist.trackIds[0], for: player.id)
+        env.master.resumeHeldAudioPrefetch()
+        await env.master.waitForAudioPrefetch()
+
+        #expect(env.master.heldAudioPrefetch == nil)
+        #expect(Self.packageIds(to: player, in: env).contains(playlist.trackIds[1]))
+    }
+
+    @Test("The look-ahead goes on by force without waiting (§5.1)")
+    func aForcedLookAheadDoesNotWait() async throws {
+        let setup = try await Self.setup()
+        let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
+
+        await env.master.prefetchNextAudio(rootId: playlist.rootId, after: playlist.trackIds[0], force: true)
+
+        #expect(env.master.heldAudioPrefetch == nil)
+        #expect(Self.packageIds(to: player, in: env).contains(playlist.trackIds[1]))
+    }
+
+    private static func failureReport(
+        from player: LinkedGameEnvironment.Player,
+        itemId: UUID,
+        in env: LinkedGameEnvironment
+    ) async -> GameNetworkModel {
+        let reference = await env.masterRoot.audioRoot.gameControllable.share(id: itemId)
+        return player.root.gameModel.outgoingMessage(
+            counter: 0,
+            type: .reveal,
+            subType: .failed,
+            asMaster: false,
+            data: reference
+        )
+    }
+
+    @Test("The first failed import sends the track once more (§5.2)")
+    func aFailedImportIsRetriedOnce() async throws {
+        let setup = try await Self.setup()
+        let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
+        let trackId = playlist.trackIds[0]
+        let play = AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command
+        env.master.gameModel.pendingAudioPlays[play.id] = play
+
+        _ = try await env.master.handle(await Self.failureReport(from: player, itemId: trackId, in: env))
+
+        // The track goes to the player again, and nobody is given up on.
+        #expect(Self.packageIds(to: player, in: env).contains(trackId))
+        #expect(!env.master.gameModel.isAudioDeliveryAbandoned(itemId: trackId, playerId: player.id))
+    }
+
+    @Test("A second failed import gives the player up (§5.2)")
+    func aSecondFailureAbandonsThePlayer() async throws {
+        let setup = try await Self.setup()
+        let (env, player, playlist) = (setup.env, setup.player, setup.playlist)
+        let trackId = playlist.trackIds[0]
+        let play = AudioPlayRequest(id: playlist.rootId, shouldPlay: true).command
+        env.master.gameModel.pendingAudioPlays[play.id] = play
+        // The retry was used already.
+        #expect(env.master.gameModel.claimAudioDeliveryRetry(itemId: trackId, playerId: player.id))
+        #expect(!env.master.gameModel.claimAudioDeliveryRetry(itemId: trackId, playerId: player.id))
+
+        _ = try await env.master.handle(await Self.failureReport(from: player, itemId: trackId, in: env))
+
+        #expect(env.master.gameModel.isAudioDeliveryAbandoned(itemId: trackId, playerId: player.id))
+        #expect(!Self.packageIds(to: player, in: env).contains(trackId))
+    }
 }
 #endif

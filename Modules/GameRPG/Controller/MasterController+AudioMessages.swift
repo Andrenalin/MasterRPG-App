@@ -22,6 +22,7 @@ extension MasterController {
             root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             await startCompletePendingAudioPlays()
             await joinRunningAudioPlay(playerId: model.sender.id)
+            resumeHeldAudioPrefetch()
             // Only the master collects the receipts. The one that completes a share is
             // announced, so a player's share button turns to play as well; a pending play
             // announces it with its play command instead.
@@ -275,17 +276,31 @@ extension MasterController {
         })
     }
 
-    /// A player received an audio package but could not use it. The play goes on without that
-    /// player.
+    /// A player received an audio package but could not use it, or lost it while it loaded. The
+    /// first failure sends the package to that player once more; the second one makes the play
+    /// go on without that player. A play that already started without the player
+    /// (`lateAudioPlayers`) takes the retry as well, so the player can still join it.
+    /// See CODE_AUDIT_Game_Photo_Audio §5.2.
     private func handleAudioDeliveryFailure(_ model: GameNetworkModel) async {
         guard model.sender.role == .player else { return }
         let itemId = model.data.id
         let playerId = model.sender.id
         let audio = root.audioRoot.audioGameControllable
-        guard gameModel.pendingAudioPlays.values.contains(where: { audio.requiredItemIds(for: $0).contains(itemId) })
-        else { return }
+        let isPending = gameModel.pendingAudioPlays.values.contains { audio.requiredItemIds(for: $0).contains(itemId) }
+        let joinsRunningPlay = lateAudioPlayers.contains(playerId)
+            && runningAudioPlay.map { audio.requiredItemIds(for: $0).contains(itemId) } == true
+        guard isPending || joinsRunningPlay else { return }
+        guard audio.missingPlayers(ofItem: itemId).contains(playerId) else { return }
+
+        if gameModel.claimAudioDeliveryRetry(itemId: itemId, playerId: playerId) {
+            Logger.networking.error("MasterController: Audio \(itemId, privacy: .public) failed for player \(playerId, privacy: .public); sending it once more.")
+            await deliverAudio(id: itemId, to: [playerId])
+            return
+        }
+        guard isPending else { return }
         gameModel.abandonAudioDelivery(itemId: itemId, playerId: playerId)
-        Logger.networking.error("MasterController: Giving up audio \(itemId, privacy: .public) for player \(playerId, privacy: .public) after it failed to import it.")
+        Logger.networking.error("MasterController: Giving up audio \(itemId, privacy: .public) for player \(playerId, privacy: .public) after it failed to import it twice.")
+        resumeHeldAudioPrefetch()
         await startCompletePendingAudioPlays()
     }
 
@@ -313,10 +328,14 @@ extension MasterController {
             guard !Task.isCancelled else { return }
             let missing = Set(audio.missingPlayers(ofItem: itemId)).intersection(players)
             guard !missing.isEmpty else { continue }
-            guard await deliverAudio(id: itemId, to: missing) else {
+            // A pause or a newer play replaces this play while a large track is exported: that
+            // track is not uploaded then, it would only delay the package of the new play in the
+            // shared audio slot. See CODE_AUDIT_Game_Photo_Audio §5.4.
+            let isSuperseded = { [self] in Task.isCancelled || gameModel.pendingAudioPlays[data.id] == nil }
+            guard await deliverAudio(id: itemId, to: missing, isSuperseded: isSuperseded) else {
                 // A pause, a newer play or the end of the game may have replaced this play
                 // while the package was prepared: nothing is left to retry then.
-                if gameModel.pendingAudioPlays[data.id] != nil {
+                if !Task.isCancelled, gameModel.pendingAudioPlays[data.id] != nil {
                     scheduleAudioPlayRetry(id: data.id)
                 }
                 return
@@ -330,7 +349,11 @@ extension MasterController {
     /// reference to everyone: see `GameNetworkController.sendPresentation`. Returns `false` when
     /// the package could not be prepared.
     @discardableResult
-    private func deliverAudio(id: UUID, to players: Set<UUID>) async -> Bool {
+    private func deliverAudio(
+        id: UUID,
+        to players: Set<UUID>,
+        isSuperseded: () -> Bool = { false }
+    ) async -> Bool {
         // An evicted iCloud file is asked for here and the export would wait for the download,
         // stalling the master's pipeline or the game master's action chain. Without the file the
         // delivery fails and the bounded retry tries again. See CODE_AUDIT_Audio2 §5.11.
@@ -348,7 +371,7 @@ extension MasterController {
         }
         let message = outgoingMessage(type: .store, subtype: .show, updated: reference)
         await root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
-        await store.sendPresentation(message, missingPlayers: players) { package }
+        await store.sendPresentation(message, missingPlayers: players, isSuperseded: isSuperseded) { package }
         return true
     }
 
@@ -379,12 +402,70 @@ extension MasterController {
     /// Sends the track after `trackId` to the players that lack it, while `trackId` plays, so it
     /// is on their devices before it is needed. The master's own device advances at the end of a
     /// track without a message, as every player's device does.
-    func prefetchNextAudio(rootId: UUID, after trackId: UUID) async {
+    ///
+    /// The Journal keeps one attachment per slot, and the next track takes the slot of the
+    /// current one: a player still downloading the current track would lose it. The look-ahead
+    /// therefore waits until no player is loading the track that plays (their receipt, a failure
+    /// report or `audioPrefetchHold` ends the wait). `force` skips the wait.
+    /// See CODE_AUDIT_Game_Photo_Audio §5.1.
+    func prefetchNextAudio(rootId: UUID, after trackId: UUID, force: Bool = false) async {
         let audio = root.audioRoot.audioGameControllable
         guard let nextId = audio.nextTrackId(after: trackId, in: rootId) else { return }
         let missing = Set(audio.missingPlayers(ofItem: nextId))
         guard !missing.isEmpty else { return }
-        await deliverAudio(id: nextId, to: missing)
+        if !force, !playersLoading(itemId: trackId).isEmpty {
+            holdAudioPrefetch(rootId: rootId, trackId: trackId)
+            return
+        }
+        // A newer track starting cancels this task, and the package is not sent for a track
+        // that no longer plays.
+        await deliverAudio(id: nextId, to: missing, isSuperseded: { Task.isCancelled })
+    }
+
+    /// How long the look-ahead waits for a player that is still loading the current track, so a
+    /// player that never answers cannot stop the next track from reaching the others.
+    static let audioPrefetchHold: Duration = .seconds(60)
+
+    /// The players that may still be downloading `itemId`: those without a receipt, except the
+    /// ones the master gave up on after a failure. A player the play started without at its
+    /// deadline is still downloading.
+    private func playersLoading(itemId: UUID) -> Set<UUID> {
+        Set(root.audioRoot.audioGameControllable.missingPlayers(ofItem: itemId).filter {
+            !gameModel.isAudioDeliveryAbandoned(itemId: itemId, playerId: $0) || lateAudioPlayers.contains($0)
+        })
+    }
+
+    private func holdAudioPrefetch(rootId: UUID, trackId: UUID) {
+        heldAudioPrefetch = (rootId, trackId)
+        audioPrefetchHoldTask?.cancel()
+        audioPrefetchHoldTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.audioPrefetchHold)
+            guard !Task.isCancelled, let self,
+                  let held = self.heldAudioPrefetch, held.trackId == trackId
+            else { return }
+            Logger.networking.error("MasterController: Sending the track after \(trackId, privacy: .public) although a player still loads it.")
+            self.heldAudioPrefetch = nil
+            self.startAudioPrefetch(rootId: rootId, trackId: trackId, force: true)
+        }
+    }
+
+    /// Lets the held look-ahead go on once nobody is loading the track that plays.
+    func resumeHeldAudioPrefetch() {
+        guard let held = heldAudioPrefetch, playersLoading(itemId: held.trackId).isEmpty else { return }
+        heldAudioPrefetch = nil
+        audioPrefetchHoldTask?.cancel()
+        audioPrefetchHoldTask = nil
+        startAudioPrefetch(rootId: held.rootId, trackId: held.trackId)
+    }
+
+    /// Only a package goes out, so it does not need the order of the game master's actions, and
+    /// it must not hold them: a task of its own, replaced by the next track and cancelled by
+    /// `stop()`. See CODE_AUDIT_Audio2 §7.4.
+    private func startAudioPrefetch(rootId: UUID, trackId: UUID, force: Bool = false) {
+        audioPrefetchTask?.cancel()
+        audioPrefetchTask = Task { [weak self] in
+            await self?.prefetchNextAudio(rootId: rootId, after: trackId, force: force)
+        }
     }
 
     /// Lets the game master's device send the next track ahead whenever a track starts on it.
@@ -394,13 +475,11 @@ extension MasterController {
         // The closure lives on the audio model: it holds the controller weakly and no view.
         root.audioRoot.audioGameControllable.setTrackStartHandler { [weak self] rootId, trackId in
             guard let self else { return }
-            // Only a package goes out, so it does not need the order of the game master's
-            // actions, and it must not hold them: a task of its own, replaced by the next
-            // track and cancelled by `stop()`. See CODE_AUDIT_Audio2 §7.4.
-            self.audioPrefetchTask?.cancel()
-            self.audioPrefetchTask = Task { [weak self] in
-                await self?.prefetchNextAudio(rootId: rootId, after: trackId)
-            }
+            // A new track replaces the look-ahead that still waits for the one before.
+            self.heldAudioPrefetch = nil
+            self.audioPrefetchHoldTask?.cancel()
+            self.audioPrefetchHoldTask = nil
+            self.startAudioPrefetch(rootId: rootId, trackId: trackId)
         }
     }
 
@@ -408,6 +487,9 @@ extension MasterController {
         guard !asProxy else { return }
         audioPrefetchTask?.cancel()
         audioPrefetchTask = nil
+        audioPrefetchHoldTask?.cancel()
+        audioPrefetchHoldTask = nil
+        heldAudioPrefetch = nil
         root.audioRoot.audioGameControllable.setTrackStartHandler(nil)
     }
 

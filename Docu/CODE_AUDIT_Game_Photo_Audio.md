@@ -79,6 +79,7 @@ _No findings._ The audited paths already use `Task.sleep(for:)`, `ContinuousCloc
 - **Why:** The player never gets the current track. The master keeps it in `lateAudioPlayers` and never sends that track again: the ledger's `displaced` rule refuses a re-upload for the same show, and an audio player doesn't send asset requests from the Journal path. The player stays silent until the GM plays something new.
 - **Action:** Give a prefetch a slot of its own (as was done for playlists), or hold the prefetch until every player who still lacks the current track has reported or been abandoned. Also, for audio, turn `noLongerCurrent` into the same `.failed` report the deadline branch sends, so the master knows.
 - **Severity:** High
+- **Status:** Fixed 2026-11-10 (held prefetch, not a new slot): `prefetchNextAudio` waits while a player without a receipt (or one the play started without at its deadline) may still load the current track (`playersLoading`, `heldAudioPrefetch`). A receipt or a failure report resumes it; after `audioPrefetchHold` (60 s) it goes on anyway, so a player that never answers cannot starve the others of the next track. A `noLongerCurrent` load of an audio now reports the failure like the deadline branch, and §5.2 turns that into a resend. A slot of its own was not chosen: an asset-request answer cannot tell the slot and would replace the current track again, and two uploads would share the slow Journal bandwidth. Pinned by `AudioPlaylistGameFlowTests.theLookAheadWaitsForAPlayerThatIsStillLoading` and `aForcedLookAheadDoesNotWait`. The `noLongerCurrent` report is not tested.
 
 ### 5.2 An audio Journal-load failure abandons the player immediately
 - **Location:** `Modules/GameRPG/Controller/PlayerController+NetworkStoreDelegate.swift:128-141`, `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:276-286`
@@ -86,6 +87,7 @@ _No findings._ The audited paths already use `Task.sleep(for:)`, `ContinuousCloc
 - **Why:** On SharePlay, one slow or failed Journal load (180 s deadline) permanently costs that player the track. A photo player in the same situation sends an asset request instead and gets the file.
 - **Action:** Pick one rule. Either retry once through Messenger or the Journal (the ledger allows it for a newer counter) before abandoning, or fix the player comment to match the actual behaviour.
 - **Severity:** Medium
+- **Status:** Fixed 2026-11-10: the first `.failed` for a delivery sends the track to that player once more (`claimAudioDeliveryRetry`, then `deliverAudio`); the second one abandons it. A play that already started without the player (`lateAudioPlayers`) takes the retry too, so the player can still join. The player comment now says "once". Pinned by `aFailedImportIsRetriedOnce` and `aSecondFailureAbandonsThePlayer`. Residual: on SharePlay a resend inside the 60 s `reuploadInterval` while the Journal still holds the track is `.alreadyPublished`, so the player gets no new bytes and the play starts at its deadline without them.
 
 ### 5.3 The asset-request answer after a Journal fallback can broadcast the whole file again over Messenger
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:181-190`, `SharePlayJournalLedger.swift:85-97, 133-141`, `GameNetworkController+Delivery.swift:93-99`
@@ -93,6 +95,7 @@ _No findings._ The audited paths already use `Task.sleep(for:)`, `ContinuousCloc
 - **Why:** The file goes out over Messenger twice, a ~1.8× expanded multi-MB payload each time. It also holds up the queue for longer (§7.3).
 - **Action:** After a Messenger fallback, keep the ledger entry marked "delivered by Messenger for counter N" instead of clearing it, so a request for the same show is answered with `.alreadyPublished`.
 - **Severity:** Medium
+- **Status:** Fixed 2026-11-10: `journalUploadFailed` frees the ledger slot only when Messenger cannot carry the message either. After a fallback the show stays reserved, so a late asset request is `.alreadyPublished`; a newer show of the same item uploads again after `reuploadInterval`, as for any upload. Guard only, no test (needs a live Journal).
 
 ### 5.4 Audio deliveries can't be superseded while their package is built
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:345-347`
@@ -100,6 +103,7 @@ _No findings._ The audited paths already use `Task.sleep(for:)`, `ContinuousCloc
 - **Why:** This uploads a stale multi-MB package into the shared audio slot, delaying the new play's package (FIFO, §7.2) and possibly replacing it.
 - **Action:** Pass an `isSuperseded` closure that checks `gameModel.pendingAudioPlays[data.id] == nil` (and the prefetch task's cancellation).
 - **Severity:** Low
+- **Status:** Fixed 2026-11-10: `deliverAudio` takes `isSuperseded`. `deliverPendingAudio` passes "cancelled or no longer pending", the look-ahead passes "cancelled". A superseded delivery sends only the reference. `deliverPendingAudio` also no longer schedules a retry for a cancelled task. Guard only, no test (the window is the export).
 
 ---
 

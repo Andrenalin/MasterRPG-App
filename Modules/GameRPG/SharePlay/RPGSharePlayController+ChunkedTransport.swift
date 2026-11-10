@@ -181,13 +181,17 @@ extension RPGSharePlayController {
         return .uploading
     }
 
-    /// The Journal did not take the package: frees its ledger slot and sends the same message
-    /// through Messenger, which carries smaller packages.
+    /// The Journal did not take the package: sends the same message through Messenger, which
+    /// carries smaller packages. The ledger keeps the show as delivered then: a request for it
+    /// that arrives later finds the slot taken and is not answered with the whole file over
+    /// Messenger a second time. The slot is freed only when Messenger cannot carry the message
+    /// either, so the next request or show can try again.
+    /// See CODE_AUDIT_Game_Photo_Audio §5.3.
     @discardableResult
     private func journalUploadFailed(_ model: GameNetworkModel, show: SharePlayJournalLedger.Show, sessionId: UUID) -> Bool {
         recordJournalTransport(state: .failed, byteCount: model.data.data?.count ?? 0, for: model)
-        journalLedger.uploadFailed(show)
         guard enqueueChunkedSend(model, sessionId: sessionId, participantId: nil) else {
+            journalLedger.uploadFailed(show)
             Logger.sharePlay.error("SharePlay lost message \(model.counter, privacy: .public) (\(model.data.type.token, privacy: .public)): the Journal did not take it and Messenger cannot carry it")
             return false
         }

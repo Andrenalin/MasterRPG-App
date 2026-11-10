@@ -143,8 +143,8 @@ extension PlayerController {
         if model.data.type == .audio {
             // The reference of this show was handled when it arrived, so the pipeline would drop
             // this message as a repeat of it. The game master's play waits for this player's
-            // file: it must learn that the file did not arrive, to send it again a bounded
-            // number of times and then go on without this player. A player that already holds
+            // file: it must learn that the file did not arrive, to send it again once and then
+            // go on without this player. See CODE_AUDIT_Game_Photo_Audio §5.2. A player that already holds
             // the file answered Ok when the reference arrived; the Journal copy it could not
             // load is redundant for it, and a failure would make the master send it again.
             if await holdsFile(of: model.data, in: root.audioRoot.gameControllable) {
