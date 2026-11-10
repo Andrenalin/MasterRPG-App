@@ -106,6 +106,14 @@ public final class ValueModel: nonisolated Identifiable {
     }
     var photos_: CRDTDataUpdate<[UUID]>
 
+    /// The photos the editor lists. The portrait is always the first photo, but data from before the
+    /// list existed, or whose list was lost, has a `photoId` and no `photos`. The sheet shows that
+    /// portrait, so the editor lists it too instead of offering to drop a photo.
+    public var editorPhotos: [UUID] {
+        guard photos.isEmpty, let photoId else { return photos }
+        return [photoId]
+    }
+
     public var entries: [ValueEntryModel] {
         get { entries_.wrappedValue }
         set { entries_.wrappedValue = newValue }

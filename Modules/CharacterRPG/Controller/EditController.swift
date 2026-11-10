@@ -255,6 +255,22 @@ extension EditController {
         save(updated: item, message: String(localized: "Remove Dice", bundle: .module).localizedString)
     }
 
+    /// Restores the rule `add(selection:)` keeps: the portrait (`photoId`) is the first photo of the list.
+    /// - A portrait without a list gets the list `[photoId]`.
+    /// - A list without a portrait gets its first photo as the portrait.
+    /// Does nothing, and saves nothing, when both are set or both are empty.
+    @MainActor func repairPhotoList(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        if let photoId = item.photoId {
+            guard item.photos.isEmpty else { return }
+            item.photos <=> [photoId]
+        } else {
+            guard let first = item.photos.first else { return }
+            item.photoId = first
+        }
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+    }
+
     @MainActor func removePhotos(itemId: UUID) async {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = nil

@@ -20,7 +20,7 @@ struct PhotoDropSection: View {
                 }
             }
             .task(id: model.photoId) {
-                root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.photos)
+                root.editController.valueEditModel.selectionPhoto.resetSelection(selectionIds: model.editorPhotos)
             }
     }
 }

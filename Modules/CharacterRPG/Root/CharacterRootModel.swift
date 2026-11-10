@@ -290,6 +290,9 @@ extension CharacterRootModel {
                 item.entries = entries
                 editController.save(updated: item, message: String(localized: "update entries", bundle: .module).localizedString)
             }
+            if !groupItemIds.contains(model.id) {
+                editController.repairPhotoList(itemId: model.id)
+            }
             // A group item must stay without a dice, so it is not given one from its entries.
             guard model.diceId == nil, !groupItemIds.contains(model.id) else { continue }
             let entry = model.entries.first {
