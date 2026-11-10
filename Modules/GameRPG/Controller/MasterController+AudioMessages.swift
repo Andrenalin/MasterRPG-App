@@ -133,6 +133,11 @@ extension MasterController {
     /// Plays an audio for everyone. A play command starts only once every player reported the
     /// file: the players that lack it get it first, and their acknowledgements start it.
     ///
+    /// BY DESIGN (CODE_AUDIT_Game_Photo_Audio §7.6): the music starts together, so the play waits
+    /// for the slowest player up to `audioPlayDeadline`; it does not start at the first receipt.
+    /// Audio therefore feels slower than a photo, which shows on each device on arrival. Do not
+    /// report the gate again; shorten what is in front of it instead.
+    ///
     /// The game has a single audio stream: any new play or pause replaces the play that still
     /// waits for a player's file, so it cannot start later and replace what the game master
     /// chose since. See CODE_AUDIT_Audio2 §5.1.

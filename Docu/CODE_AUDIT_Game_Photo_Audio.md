@@ -157,6 +157,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Why:** This is repeated multi-MB disk reads and memory spikes on the master for content that hasn't changed. Photo avoids it through `MasterPackageCache`.
 - **Action:** Use `cachedPackage` for Audio too, keyed by `networkVersion`. Check that `MasterPackageCache`'s size bound fits audio-sized entries, or cache only the most recent track.
 - **Severity:** Medium
+- **Status:** Fixed 2026-11-10: `createGameData(for:)` in `MasterController+Show.swift` now calls `audioPackage(for:)` like the push and the asset requests (§3.2), so a re-show, a retry and a prefetch of an unchanged track read the file once. The cache keeps at most 2 packages within one frame (`GameLimits.maximumMessageBytes`): a larger track is still coalesced but not kept, which is the intended bound. The proxy path in `MasterController+ProxyRouting.swift` still exports uncached (Photo too, not audio-specific).
 
 ### 7.6 Audio adds a "wait for everyone" gate and an extra round trip that Photo doesn't have
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:134-206, 292-300`, `MasterController.swift:60`, `PlayerController+Audio.swift:45-65`, `Modules/AudioRPG/Controller/AudioListenerCoordinator.swift:35-52`
@@ -164,6 +165,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Why:** The time until audio is heard is the slowest player's download plus two Messenger hops plus coordinator readiness. Even with equal transfer speed, Audio *feels* slower than Photo. This is mostly by design (synchronised music), but it adds to §7.1–§7.4.
 - **Action:** Keep the gate, but shorten what's in front of it (§7.1–§7.4). Consider starting the play for ready players once the *first* receipt is in and the rest join through `joinRunningAudioPlay`, which already exists. Check the `🎧 Coordinated playback suspended locally` diagnostics to see whether coordination adds noticeable delay.
 - **Severity:** Medium
+- **Status:** By design, no behavior change (2026-11-10, user decision). The gate stays: the table's music starts together, after every receipt or the 20 s deadline, and a late player joins through `joinRunningAudioPlay`. What sits in front of it got shorter with §3.2, §5, §7.4 and §7.5 (no repeated exports on the pipeline, no lost track, no stale upload). Marked in code on `requestAudioPlay`. The coordinator wait was not measured: the `🎧 Coordinated playback` log lines in `AudioListenerCoordinator` remain for that.
 
 ---
 

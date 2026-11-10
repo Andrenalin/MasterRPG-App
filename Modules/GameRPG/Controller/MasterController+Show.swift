@@ -161,7 +161,9 @@ extension MasterController {
             return try await cachedMapPackage(for: idType.id)
         case .audio:
             guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: idType.id) else { return nil }
-            return try await root.audioRoot.gameControllable.createGameData(for: idType.id)
+            // The same cached, coalesced package as the push and the asset requests: a re-show
+            // does not read the file again. See CODE_AUDIT_Game_Photo_Audio §7.5.
+            return try await audioPackage(for: idType.id)
         case .weather:
             return try await cachedWeatherPackage(for: idType.id)
         default:
