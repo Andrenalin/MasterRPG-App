@@ -272,6 +272,21 @@ public final class GameRoot {
         self?.gameModel.gameControl.features ?? GameFeatureModel()
     }
     
+    /// "Generate Map" in the photo list: a map made from the photo in game memory only, shown to
+    /// the players. Only the game master of a running game gets it.
+    public var generateMapAction: GenerateMapAction {
+        GenerateMapAction(
+            id: .object(ObjectIdentifier(self)),
+            isEnabled: gameModel.gameConfig.isMaster && gameModel.gameConfig.state != .stopped
+        ) { [weak self] photoId in
+            guard let store = self?.gameModel.masterController else { return }
+            self?.scheduleNetworkAction { [weak self] in
+                guard let reference = await self?.mapRoot.mapGameControllable.createTemporaryMap(photoId: photoId) else { return }
+                await store.show(for: reference)
+            }
+        }
+    }
+
     var characterName: String {
         if let selectedCharacter = gameModel.selectedCharacter {
             return characterRoot.linkControllable.name(for: selectedCharacter)

@@ -14,7 +14,8 @@ struct InspectorRowView: View {
 
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.itemGenerationAction) private var itemGenerationAction
-    
+    @Environment(\.generateMapAction) private var generateMapAction
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         
@@ -157,6 +158,10 @@ struct InspectorRowView: View {
             generateItemView(model: model)
         }
 
+        if canGenerateMap(model: model) {
+            generateMapView(model: model)
+        }
+
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
             MediumDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
@@ -197,6 +202,29 @@ struct InspectorRowView: View {
     func canGenerate(model: (any ItemDataAccessible)?) -> Bool {
         guard itemGenerationAction.isEnabled, let model else { return false }
         return root.configurable.module == .table && !model.specialCategory
+    }
+
+    /// Only a photo item (not an entry row, folder or collection) of a running game.
+    func canGenerateMap(model: (any ItemDataAccessible)?) -> Bool {
+        guard generateMapAction.isEnabled,
+              root.configurable.module == .photo,
+              root.itemControllable.itemDataModel.isGameMode,
+              item.source.entryId == nil,
+              let model else { return false }
+        return !model.specialCategory
+    }
+
+    func generateMapView(model: (any ItemDataAccessible)?) -> some View {
+        Button {
+            guard let model else { return }
+            generateMapAction(photoId: model.id)
+        } label: {
+            Label {
+                Text("Generate Map", bundle: .module)
+            } icon: {
+                Image(systemName: "map")
+            }
+        }
     }
 
     func generateItemView(model: (any ItemDataAccessible)?) -> some View {

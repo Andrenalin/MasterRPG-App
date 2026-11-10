@@ -106,6 +106,10 @@ public protocol MapGameStorable: Sendable {
     @MainActor func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType)
     @MainActor func refreshAuthoritativeMapContentVersion(for itemId: UUID)
     func shareMap(id: UUID) async -> NetworkCodableDataType
+    /// Creates a map in game memory only, with `photoId` as its background, and returns the
+    /// reference to show it with. Nothing reaches the library; the map is gone with the game.
+    /// `nil` when no game runs or the photo cannot be measured.
+    @MainActor func createTemporaryMap(photoId: UUID) async -> NetworkCodableDataType?
     /// `@concurrent`, like `createGameData`. See CODE_AUDIT_18 §7.1.
     @concurrent func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType
     func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType

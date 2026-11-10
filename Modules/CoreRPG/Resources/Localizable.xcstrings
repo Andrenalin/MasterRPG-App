@@ -3415,6 +3415,17 @@
         }
       }
     },
+    "Generate Map" : {
+      "comment" : "A context menu button in a photo list during a game that creates a temporary map from the photo and shows it to the players.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte erzeugen"
+          }
+        }
+      }
+    },
     "Generate from %@" : {
       "localizations" : {
         "de" : {
