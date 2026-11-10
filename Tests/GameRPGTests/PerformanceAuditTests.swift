@@ -4,8 +4,10 @@
 import AdventureRPG
 import CoreRPG
 import Foundation
+import RPGResourcesDebug
 import Testing
 
+@testable import AudioRPG
 @testable import GameRPG
 
 /// CODE_AUDIT_Game_Shareplay §7.1 (Journal load ordering), §7.2 (package cache), §7.3 (receiver
@@ -263,6 +265,27 @@ struct MasterPackageCacheTests {
         #expect((again.data?.count ?? 0) > 0)
         #expect(env.master.gameModel.packageCache.hitCount >= 1)
         #expect(await ReportedFileModule.photo.controllable(in: secondPlayer.root).currentId == itemId)
+    }
+
+    @Test("An audio asset request is answered from the package the push exported (Game_Photo_Audio §3.2)")
+    func audioRequestsShareOneExport() async throws {
+        // Given: a game master with an audio file.
+        let env = try await LinkedGameEnvironment.create()
+        try await env.importData(named: ResourcesDebug.audioTestData, into: env.masterRoot)
+        env.masterRoot.adventureRoot.startGame()
+        let audioId = try #require(env.masterRoot.audioRoot.gameControllable.itemControllable.itemDataModel.items.first)
+
+        // When: the package is exported once and two players then ask for it.
+        let exported = try await env.master.audioPackage(for: audioId)
+        let hitsBefore = env.master.gameModel.packageCache.hitCount
+        let first = try await env.master.audioPackage(for: audioId)
+        let second = try await env.master.audioPackage(for: audioId)
+
+        // Then: the requests are answered from the cache, with the same bytes.
+        #expect((exported.data?.count ?? 0) > 0)
+        #expect(first == exported)
+        #expect(second == exported)
+        #expect(env.master.gameModel.packageCache.hitCount == hitsBefore + 2)
     }
 }
 

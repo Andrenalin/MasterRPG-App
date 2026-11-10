@@ -41,7 +41,11 @@ extension MasterController {
             guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) else {
                 throw AssetRequestUnavailable.notDownloaded
             }
-            return try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
+            // Answered from the package `deliverAudio` just exported (or joins the export that
+            // still runs) instead of reading the whole track again inside the serial master
+            // pipeline, where the other players' receipts wait behind it.
+            // See CODE_AUDIT_Game_Photo_Audio §3.2.
+            return try await audioPackage(for: model.data.id)
         }
         guard model.type == .update else { return nil }
 
@@ -351,10 +355,13 @@ extension MasterController {
     /// The package of the audio `id`. A delivery that starts while an identical export still runs
     /// waits for that export instead of reading the whole file into memory again (a join, a
     /// retry and a prefetch can ask for the same track at once). See CODE_AUDIT_Audio2 §7.3.
-    private func audioPackage(for id: UUID) async throws -> NetworkCodableDataType {
+    /// The newest export is also kept in the package cache for as long as the file is unchanged,
+    /// so the asset requests of the players that follow the push cost no export.
+    /// See CODE_AUDIT_Game_Photo_Audio §3.2.
+    func audioPackage(for id: UUID) async throws -> NetworkCodableDataType {
         let audio = root.audioRoot.gameControllable
-        return try await audioPackages.value(for: id) {
-            try await audio.createGameData(for: id)
+        return try await audioPackages.value(for: id) { [self] in
+            try await cachedPackage(module: .audio, itemId: id, controllable: audio)
         }
     }
 

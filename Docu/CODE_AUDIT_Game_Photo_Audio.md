@@ -53,6 +53,7 @@ _Compiler ground truth:_ an iOS Simulator build of `MasterRPG` (2026-11-09) repo
 - **Why:** Two uploads of the same bytes overlap, and the late attachment is then removed (`discardLateValue` → `removeJournalAttachment`). The upload was wasted, and it slowed down the Messenger copy while both ran. This is the concurrency side of §7.2.
 - **Action:** Treat a timed-out add of a package that Messenger *can* carry the way the code already treats one Messenger cannot (`exceedsMessenger`, lines 104-110): keep waiting, and adopt the late attachment instead of sending the bytes a second way.
 - **Severity:** Low (see the correction at the top: the add returned on hand-off in the device log, so no timed-out add was observed)
+- **Status:** Fixed 2026-11-10 with §7.2: a package of 3 MB or more (`journalWaitInsteadOfFallbackBytes`) keeps waiting after a timeout and adopts the late attachment (`waitsForLateAdd`), so its bytes are not sent a second way. Below 3 MB the Messenger fallback stays on purpose: that resend is fast, and it is the safety net if an add hangs for good. Not exercised on device.
 
 ### 3.2 The asset-request export holds the master's serial message pipeline
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:38-45`, `MasterController+NetworkStoreDelegate.swift:230-255`
@@ -60,6 +61,7 @@ _Compiler ground truth:_ an iOS Simulator build of `MasterRPG` (2026-11-09) repo
 - **Why:** Every message behind it in the pipeline waits too, including other players' `.ok` receipts, which are what start the pending play. See §7.4 for the impact.
 - **Action:** Answer from a cache (§7.4), or start the export in its own task and answer when it is done, as `startAudioDelivery` already does for the push path (`MasterController+AudioMessages.swift:212-217`).
 - **Severity:** Medium
+- **Status:** Fixed 2026-11-10: the asset-request branch in `handleAudio` calls `audioPackage(for:)`, which joins a running export (the `audioPackages` coalescer) and otherwise answers from `MasterPackageCache` through `cachedPackage` (fingerprint: `networkVersion`). `deliverAudio` uses the same function, so the export of the push fills the cache for the players' requests. Pinned by `MasterPackageCacheTests.audioRequestsShareOneExport`. Residual: `createGameData(for:)` in `MasterController+Show.swift` and the cache bound (2 entries, one frame) for audio-sized packages are §7.5, not changed here.
 
 ---
 
