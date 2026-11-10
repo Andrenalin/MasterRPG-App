@@ -4,8 +4,15 @@ import Observation
 
 @MainActor @Observable
 public final class AppGameStateModel: Sendable {
-    public init() {}
+    public init(isGameRunning: Bool = false, gameModus: GameModus = .edit) {
+        self.isGameRunning = isGameRunning
+        self.gameModus = gameModus
+    }
+        
+    public var isGameRunning: Bool
+    public var gameModus: GameModus
     
-    public var isGameRunning: Bool = false
-    public var gameModus: GameModus = .edit
+    public static func preview(isGameRunning: Bool) -> AppGameStateModel {
+        AppGameStateModel(isGameRunning: isGameRunning)
+    }
 }

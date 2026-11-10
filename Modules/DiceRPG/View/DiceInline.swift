@@ -29,7 +29,13 @@ struct DiceInline: View {
                     DiceInlineLabel(dice: root.gameController.gameItem(for: itemId))
                 }
                 .frame(minHeight: 44)
+                #if os(visionOS)
+                // The borderless style insets its highlight by ~8pt; plain keeps it on the label's shape.
+                .buttonStyle(.plain)
+                .hoverEffect(.highlight)
+                #else
                 .borderLessTVButtonStyle()
+                #endif
             } else {
                 MenuTV {
                     Button {
@@ -98,6 +104,11 @@ struct DiceInline: View {
                     .animation(Animation.bouncy.reduced(if: reduceMotion), value: showResult)
             }
         }
+#if os(visionOS)
+        // Button and menu both draw their hover/pressed highlight with the border shape
+        // (a capsule by default); match it to the label's rounded rect.
+        .buttonBorderShape(.roundedRectangle(radius: DiceInlineLabel.cornerRadius))
+#endif
     }
     
     private var players: [SharingControlModel] {
@@ -119,6 +130,8 @@ struct DiceInline: View {
 /// Shared label style for `DiceInline`'s plain-button and menu-button
 /// branches — was duplicated verbatim between the two; see CODE_AUDIT_13 §8.11.
 private struct DiceInlineLabel: View {
+    static let cornerRadius: CGFloat = 8
+
     let dice: DiceModel
 
     var body: some View {
@@ -134,11 +147,12 @@ private struct DiceInlineLabel: View {
         .padding(4)
         .foregroundStyle(.white)
         .background {
-            Color.accentColor.clipShape(.rect(cornerRadius: 8))
+            Color.accentColor.clipShape(.rect(cornerRadius: Self.cornerRadius))
         }
 #if os(visionOS)
         // The hover highlight must follow the drawn shape, not the style's default rounded rect.
-        .contentShape(.hoverEffect, .rect(cornerRadius: 8))
+        .contentShape(.hoverEffect, .rect(cornerRadius: Self.cornerRadius))
+        .contentShape(.interaction, .rect(cornerRadius: Self.cornerRadius))
 #endif
     }
     
@@ -149,5 +163,7 @@ private struct DiceInlineLabel: View {
 
 #Preview {
     DiceInline(itemId: DiceModel.previewId, resultCategory: ResultCategory(id: UUID(), module: .dice), player: true)
+        .padding()
         .environment(DiceRootModel.preview)
+        .environment(AppGameStateModel(isGameRunning: true))
 }
