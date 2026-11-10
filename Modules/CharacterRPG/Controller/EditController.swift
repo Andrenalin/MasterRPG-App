@@ -247,6 +247,14 @@ extension EditController {
         save(updated: item, message: String(localized: "Change Dice", bundle: .module).localizedString)
     }
     
+    /// Clears the item's own dice. Unlike `removeDice(itemId:entryId:)`, which unlinks an entry's
+    /// dice, this is the item-level `diceId`. Does nothing, and saves nothing, when there is none.
+    @MainActor func removeDice(itemId: UUID) {
+        guard let item = editModel(for: itemId), item.diceId != nil else { return }
+        item.diceId = nil
+        save(updated: item, message: String(localized: "Remove Dice", bundle: .module).localizedString)
+    }
+
     @MainActor func removePhotos(itemId: UUID) async {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = nil

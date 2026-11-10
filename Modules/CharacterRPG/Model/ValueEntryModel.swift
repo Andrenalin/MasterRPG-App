@@ -75,8 +75,11 @@ public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
         }
     }
 
+    /// A group entry (one that points to a sub-item with `valueId`) stands for that item and has no
+    /// number of its own, whatever type it was converted from. Calculating its empty value
+    /// would show "= 0 Error".
     var canCalculate: Bool {
-        type == .number || type == .decimal
+        valueId == nil && (type == .number || type == .decimal)
     }
 }
 

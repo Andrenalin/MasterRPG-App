@@ -13,9 +13,12 @@ extension SheetController: SheetControllable {
     @MainActor var linkRegisterController: LinkRegisterController { itemController.linkRegisterController }
 
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        sheet(root: root, itemId: itemId, destination: destination, level: level, isShown: isShown, moduleDepth: moduleDepth, isEditor: isEditor, visited: [])
+        sheet(root: root, itemId: itemId, destination: destination, level: level, isShown: isShown, moduleDepth: moduleDepth, isEditor: isEditor, showsItemInlines: true, visited: [])
     }
 
+    /// `showsItemInlines` is false for the sub-value of a group entry (`entry.valueId`):
+    /// the group entry stands for that value, so the value's own dice and photo are not shown.
+    ///
     /// `visited` guards against a cycle in the value/link graph (a plausible
     /// outcome of a merge/import bug, or two devices concurrently editing via
     /// CloudKit sync — the same class of malformed data `EditController`'s
@@ -23,7 +26,7 @@ extension SheetController: SheetControllable {
     /// already guard against with `RecursionLimits.maxValueLinkDepth`) recursing
     /// indefinitely and crashing with a stack overflow while building the sheet
     /// tree. See CODE_AUDIT_Character §5.1.
-    @MainActor private func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool, visited: Set<UUID>) -> SheetModel {
+    @MainActor private func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool, showsItemInlines: Bool, visited: Set<UUID>) -> SheetModel {
         guard !visited.contains(itemId), visited.count < RecursionLimits.maxValueLinkDepth else {
             return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: true, showHeader: false, name: "", description: "", inlineEntries: [], entries: [])
         }
@@ -32,11 +35,11 @@ extension SheetController: SheetControllable {
         let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         var inlineEntries: [SheetModel] = []
 
-        if let diceId = model.diceId {
+        if showsItemInlines, let diceId = model.diceId {
             inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level, isShown: isShown))
         }
 
-        if let photoId = model.photoId {
+        if showsItemInlines, let photoId = model.photoId {
             inlineEntries.append(createPhotoInline(photoId: photoId, itemId: itemId, level: level, isShown: isShown))
         }
 
@@ -68,13 +71,14 @@ extension SheetController: SheetControllable {
         let (name, description) = entryNameDescription(entry: entry, root: root)
 
         var inlineEntries: [SheetModel] = []
-        if let diceId = entry.diceId {
+        // A group value (an entry that holds a sub-value) shows no dice of its own.
+        if let diceId = entry.diceId, entry.valueId == nil {
             inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level, isShown: true, destination: destination))
         }
 
         var allSheets: [SheetModel] = []
         if let subValueId = entry.valueId {
-            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor, visited: visited)]
+            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor, showsItemInlines: false, visited: visited)]
         }
 
         let links = linkRegisterController.linksFrom(source: destination)
@@ -86,7 +90,7 @@ extension SheetController: SheetControllable {
             switch linkDestination.typeId {
             case .value:
                 if linkDestination.entryId == nil {
-                    linkedSheet = sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor, visited: visited)
+                    linkedSheet = sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor, showsItemInlines: true, visited: visited)
                 } else {
                     linkedSheet = nil
                 }
@@ -129,6 +133,10 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
+        update(root: root, sheetModel: sheetModel, isEditor: isEditor, showsItemInlines: true)
+    }
+
+    @MainActor private func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool, showsItemInlines: Bool) {
         let startTime = ContinuousClock.now
         Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
@@ -137,7 +145,7 @@ extension SheetController: SheetControllable {
         var changeCount = 0
         var updatedInlineEntries: [SheetModel] = []
 
-        if let diceId = item.diceId {
+        if showsItemInlines, let diceId = item.diceId {
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
             // Reuse existing if found, otherwise create new
             let diceSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: item.id, level: sheetModel.level, isShown: sheetModel.isShown)
@@ -145,7 +153,7 @@ extension SheetController: SheetControllable {
             updatedInlineEntries.append(diceSheetModel)
         }
 
-        if let photoId = item.photoId {
+        if showsItemInlines, let photoId = item.photoId {
             let photoSource = ItemRowModel(itemId: photoId, typeId: .photo)
             // Reuse existing if found, otherwise create new
             let photoSheetModel = sheetModel.inlineEntries.first(where: { $0.sheetType == .photo }) ?? createPhotoInline(photoId: photoId, itemId: item.id, level: sheetModel.level, isShown: sheetModel.isShown)
@@ -217,7 +225,7 @@ extension SheetController: SheetControllable {
             existingSheetModel.hasChanged = true
         }
         // Update per-entry dice inline
-        if let diceId = entry.diceId {
+        if let diceId = entry.diceId, entry.valueId == nil {
             let destination = ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemController.config.module)
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
             let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: item.id, level: sheetModel.level, isShown: true, destination: destination)
@@ -228,7 +236,7 @@ extension SheetController: SheetControllable {
         }
 
         var unmatchedExisting = existingSheetModel.entries
-        let reconciledEntries = projectedEntry.entries.map { projectedChild -> SheetModel in
+        let reconciledEntries = projectedEntry.entries.enumerated().map { offset, projectedChild -> SheetModel in
             guard let existingIndex = unmatchedExisting.firstIndex(where: {
                 $0.source == projectedChild.source && $0.linkNumber == projectedChild.linkNumber
             }) else {
@@ -239,7 +247,12 @@ extension SheetController: SheetControllable {
             let existingChild = unmatchedExisting.remove(at: existingIndex)
             existingChild.destination = projectedChild.destination
             existingChild.linkNumber = projectedChild.linkNumber
-            root.rootModel(for: existingChild.source.typeId)?.sheetControllable.update(root: root, sheetModel: existingChild, isEditor: isEditor)
+            // The first child of a group entry is its sub-value, which hides its own dice and photo.
+            if entry.valueId != nil, offset == 0 {
+                update(root: root, sheetModel: existingChild, isEditor: isEditor, showsItemInlines: false)
+            } else {
+                root.rootModel(for: existingChild.source.typeId)?.sheetControllable.update(root: root, sheetModel: existingChild, isEditor: isEditor)
+            }
             return existingChild
         }
         if !unmatchedExisting.isEmpty {

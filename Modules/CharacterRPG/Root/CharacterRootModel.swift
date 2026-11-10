@@ -231,8 +231,9 @@ extension CharacterRootModel {
         reportModel.update(section: "Validating Character Data")
         editController.repairCharacterConstraints()
 
+        let groupItemIds = await groupItemIds()
         for id in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: id), model.displayState != DisplayStateMask.totalHidden.rawValue && model.specialCategory == false else { continue }
+            guard let model = await itemController.item(for: id), isRepairable(model) else { continue }
             var entries: [ValueEntryModel] = []
             for entry in model.entries {
                 guard let valueId = entry.valueId, let value = await itemController.item(for: valueId) else {
@@ -258,29 +259,39 @@ extension CharacterRootModel {
                 if !value.tags.isEmpty {
                     editController.reset(tags: [], itemId: valueId)
                 }
+                // A group item is shown through its entry; the sheet shows neither its dice nor its
+                // photo (see SheetController), so a leftover one is dropped.
                 if value.photoId != nil || !value.photos.isEmpty {
                     await editController.removePhotos(itemId: valueId)
+                }
+                if value.diceId != nil {
+                    editController.removeDice(itemId: valueId)
                 }
 
                 // The entry shows the group item's name as plain text. Comparing it with the raw name
                 // (a markdown link for table-generated items) never matches what is written here,
                 // so every repair rewrote the entry and moved its sync clock.
                 let linkFreeName = value.name.withoutLink()
+                var updatedEntry = entry
                 if entry.name != linkFreeName {
-                    var updatedEntry = entry
                     updatedEntry.name = linkFreeName
                     updatedEntry.content = value.description
-                    entries.append(updatedEntry)
-                } else {
-                    entries.append(entry)
                 }
+                // A group has no number of its own. A number or decimal type left over from the entry it
+                // was converted from made the inspector show "= 0 Error". `reset(valueType:)` only
+                // writes a changed type, so a repeated run leaves the entry's sync clock alone.
+                if updatedEntry.type == .number || updatedEntry.type == .decimal {
+                    updatedEntry.reset(valueType: .text)
+                }
+                entries.append(updatedEntry)
             }
             if model.entries != entries {
                 guard let item = editController.editModel(for: id) else { continue }
                 item.entries = entries
                 editController.save(updated: item, message: String(localized: "update entries", bundle: .module).localizedString)
             }
-            guard model.diceId == nil else { continue }
+            // A group item must stay without a dice, so it is not given one from its entries.
+            guard model.diceId == nil, !groupItemIds.contains(model.id) else { continue }
             let entry = model.entries.first {
                 $0.diceId != nil
             }
@@ -289,6 +300,22 @@ extension CharacterRootModel {
 
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
+    }
+
+    /// Items the repair looks at: neither hidden everywhere nor a special-category item.
+    private func isRepairable(_ model: ValueModel) -> Bool {
+        model.displayState != DisplayStateMask.totalHidden.rawValue && model.specialCategory == false
+    }
+
+    /// The items that are a group: every item an entry of a repairable item points to with
+    /// `valueId`. Collected up front, because the repair visits an item before or after its owner.
+    private func groupItemIds() async -> Set<UUID> {
+        var ids: Set<UUID> = []
+        for id in itemController.itemDataModel.items {
+            guard let model = await itemController.item(for: id), isRepairable(model) else { continue }
+            ids.formUnion(model.entries.compactMap(\.valueId))
+        }
+        return ids
     }
 
 }

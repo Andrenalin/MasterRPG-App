@@ -2857,18 +2857,18 @@
         }
       }
     },
-    "Validate Folders" : {
+    "Validate Data" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ordner validieren"
+            "value" : "Daten validieren"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ตรวจสอบโฟลเดอร์"
+            "value" : "ตรวจสอบข้อมูล"
           }
         }
       }

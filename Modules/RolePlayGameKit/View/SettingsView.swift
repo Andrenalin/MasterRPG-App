@@ -95,7 +95,7 @@ public struct SettingsView: View {
                 Button {
                     navigator.navigate(to: SettingsRoute.validate, method: .managedSheet)
                 } label: {
-                    Label { Text("Validate Folders", bundle: .module) } icon: { Image(systemName: "folder") }
+                    Label { Text("Validate Data", bundle: .module) } icon: { Image(systemName: "folder") }
                 }
             } header: {
                 Text("Data Checks", bundle: .module)

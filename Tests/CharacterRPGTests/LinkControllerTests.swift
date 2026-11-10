@@ -44,6 +44,35 @@ struct LinkControllerTests {
         #expect(sut.linkText(model: root.itemController.itemOrEmpty(for: itemId), entry: entry) == result)
     }
     
+    /// The inspector showed "Bonus Items: ... = 0 Error": a group entry converted from a number
+    /// entry keeps type `.number` and an empty value, which can not be calculated.
+    @Test(arguments: [ValueEntryModel.ValueType.number, .decimal, .text])
+    func groupEntryNeverShowsACalculatedValue(type: ValueEntryModel.ValueType) async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.linkController
+
+        let ownerId = await root.itemController.addNew(type: .item)
+        let groupId = await root.itemController.addNew(type: .item)
+        let entry = ValueEntryModel(id: UUID(), name: "Bonus Items", type: type, value: "", valueId: groupId)
+        let owner = root.itemController.itemOrEmpty(for: ownerId)
+        owner.entries.append(entry)
+        root.itemController.replace(model: owner, isInsert: false)
+
+        #expect(sut.calculate(entry: entry) == nil)
+        let text = sut.linkText(model: root.itemController.itemOrEmpty(for: ownerId), entry: entry)
+        #expect(!text.contains("Error"), Comment(rawValue: text))
+        #expect(!text.contains("= "), Comment(rawValue: text))
+        #expect(text.contains("Bonus Items"))
+        #expect(text.contains(root.itemController.itemOrEmpty(for: groupId).url(linkNumber: 0)), "the row still links to the group item")
+    }
+
+    @Test func numberEntryStillCalculates() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.linkController
+        let entry = ValueEntryModel(id: UUID(), name: "Sum", type: .number, value: "27+2")
+        #expect(sut.calculate(entry: entry) == "29")
+    }
+
     @Test func toggleWithShareTogglerAndEditAction() async throws {
         let root = try await MockRoot.importTestData()
         
@@ -608,5 +637,31 @@ struct LinkControllerTests {
     
     private func editAction() -> ((ItemRowModel) -> Bool) {
         { _ in true }
+    }
+
+    // MARK: - Inline description
+
+    @Test func inlineDescriptionWithoutDescriptionShowsOnlyTheEntryCount() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.linkController
+
+        for entryCount in [0, 1, 3] {
+            let text = sut.formatInlineDescription(description: "", entryCount: entryCount)
+            #expect(!text.contains("--"), "no separator without a description: \(text)")
+            #expect(!text.localizedStandardContains("description"), "no placeholder text: \(text)")
+            #expect(!text.isEmpty)
+        }
+        #expect(sut.formatInlineDescription(description: "", entryCount: 3).contains("3"))
+    }
+
+    @Test func inlineDescriptionWithDescriptionPrefixesTheEntryCount() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.linkController
+
+        for entryCount in [0, 1, 3] {
+            let withoutDescription = sut.formatInlineDescription(description: "", entryCount: entryCount)
+            let text = sut.formatInlineDescription(description: "A tall tower", entryCount: entryCount)
+            #expect(text == "A tall tower -- \(withoutDescription)")
+        }
     }
 }

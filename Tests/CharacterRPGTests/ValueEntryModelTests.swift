@@ -215,5 +215,16 @@ struct ValueEntryModelTests {
         sut.value = "27|-3"
         #expect(sut.valueNumber == -3)
     }
+
+    @Test("Only a number or decimal entry that is no group can be calculated")
+    func canCalculate() {
+        for type in ValueEntryModel.ValueType.allCases {
+            let plain = ValueEntryModel(id: UUID(), name: "Plain", type: type, value: "1")
+            #expect(plain.canCalculate == (type == .number || type == .decimal), "plain \(type)")
+
+            let group = ValueEntryModel(id: UUID(), name: "Group", type: type, value: "", valueId: UUID())
+            #expect(!group.canCalculate, "a group entry of type \(type) has no number of its own")
+        }
+    }
 }
 #endif

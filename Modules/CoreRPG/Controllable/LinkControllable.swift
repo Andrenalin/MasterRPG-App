@@ -365,13 +365,6 @@ public extension LinkControllable {
 
 public extension LinkControllable {
     @MainActor func formatInlineDescription(description: String, entryCount: Int) -> String {
-        let descriptionText: String
-        if description.isEmpty {
-            descriptionText = String(localized: "No description", bundle: .module)
-        } else {
-            descriptionText = description
-        }
-
         let entriesText: String
         if entryCount == 0 {
             entriesText = String(localized: "has no entries", bundle: .module)
@@ -381,6 +374,7 @@ public extension LinkControllable {
             entriesText = String(localized: "\(entryCount) Entries", bundle: .module)
         }
 
-        return "\(descriptionText) -- \(entriesText)"
+        // An item without a description shows just its entry count.
+        return description.isEmpty ? entriesText : "\(description) -- \(entriesText)"
     }
 }

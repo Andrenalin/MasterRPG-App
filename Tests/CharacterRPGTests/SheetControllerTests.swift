@@ -309,6 +309,90 @@ struct SheetControllerTests {
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.inlineEntries.map(\.source.itemId) == [updatedDiceId])
     }
 
+    @Test func characterSheetGroupEntryHasNoDiceInline() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let itemId = UUID()
+        let diceId = UUID()
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "", diceId: diceId)
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+        root.itemController.replace(
+            model: ValueModel(id: itemId, name: "Character", description: "", category: .character, entries: [entry]),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+        let plain = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(plain.inlineEntries.contains(where: { $0.sheetType == .dice }), "A plain entry keeps its dice")
+
+        _ = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+        let group = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(group.sheetType == .group)
+        #expect(group.inlineEntries.isEmpty, "A group value shows no dice inline")
+
+        // Built fresh from the stored group, too.
+        let rebuilt = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+        let rebuiltGroup = try #require(rebuilt.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(rebuiltGroup.sheetType == .group)
+        #expect(rebuiltGroup.inlineEntries.isEmpty)
+    }
+
+    @Test func characterSheetSubValueHasNoItemDiceOrPhotoInline() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let parentId = UUID()
+        let subValueId = UUID()
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "", valueId: subValueId)
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+        root.itemController.replace(
+            model: ValueModel(id: subValueId, name: "Skill list", description: "", category: .character, photoId: UUID(), entries: [], diceId: UUID()),
+            isInsert: true
+        )
+        root.itemController.replace(
+            model: ValueModel(id: parentId, name: "Character", description: "", category: .character, entries: [entry]),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: parentId, destination: nil, level: 0, isShown: true, isEditor: false)
+        let group = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        let subValue = try #require(group.entries.first(where: { $0.source.itemId == subValueId }))
+        #expect(subValue.inlineEntries.isEmpty, "A group's sub-value shows neither its dice nor its photo")
+
+        // The update path (which refreshes existing models) keeps them hidden too.
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+        let updatedSubValue = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id })?.entries.first(where: { $0.source.itemId == subValueId }))
+        #expect(updatedSubValue.inlineEntries.isEmpty)
+
+        // A top-level sheet of the same value keeps its dice and photo.
+        let standalone = sut.sheet(root: rootManager, itemId: subValueId, destination: nil, level: 0, isShown: true, isEditor: false)
+        #expect(Set(standalone.inlineEntries.map(\.sheetType)) == [.dice, .photo])
+    }
+
     @Test func characterUpdateRefreshesEntryConvertedToGroup() async throws {
         let root = try await MockRoot.importTestData()
         let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
