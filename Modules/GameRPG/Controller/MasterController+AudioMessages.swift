@@ -37,16 +37,16 @@ extension MasterController {
         }
 
         if model.isAssetRequest {
-            // An iCloud file that has not downloaded cannot be exported. The requester is
-            // told, see `AssetRequestUnavailable`.
-            guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) else {
-                throw AssetRequestUnavailable.notDownloaded
-            }
             // Answered from the package `deliverAudio` just exported (or joins the export that
             // still runs) instead of reading the whole track again inside the serial master
-            // pipeline, where the other players' receipts wait behind it.
-            // See CODE_AUDIT_Game_Photo_Audio §3.2.
-            return try await audioPackage(for: model.data.id)
+            // pipeline, where the other players' receipts wait behind it. The request itself is
+            // answered like the one of a file-backed module. See CODE_AUDIT_Game_Photo_Audio
+            // §3.2 and §9.1.
+            return try await answerAssetRequest(
+                for: model,
+                hasLocalFileData: { await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) },
+                package: { try await audioPackage(for: model.data.id) }
+            )
         }
         guard model.type == .update else { return nil }
 

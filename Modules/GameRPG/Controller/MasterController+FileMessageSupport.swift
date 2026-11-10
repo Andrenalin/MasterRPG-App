@@ -19,20 +19,13 @@ enum AssetRequestUnavailable: Error, Equatable {
 }
 
 extension MasterController {
-    /// Shared "player acknowledged a reveal" bookkeeping for the three
-    /// file-backed modules (Pdf, Photo, Space) — handlePdf/handlePhoto/
-    /// handleSpace's `.ok` branch previously hand-duplicated this exact
-    /// sequence, differing only in which module's accessors they called.
-    /// See CODE_AUDIT_10 §9.2.
+    /// Shared "player acknowledged a reveal" bookkeeping of the file-backed modules (Pdf, Photo,
+    /// Space), called by `handleFileBackedMessage` for the `.ok` of all three. See CODE_AUDIT_10 §9.2.
     ///
     /// Only the master collects the receipts. The one after which every player holds the
     /// item is announced with the authoritative list, so the share button of every player
     /// reads "everyone has it" as well.
-    ///
-    /// Not `private` because it is called from `MasterController+PdfMessages.swift`,
-    /// `MasterController+PhotoMessages.swift`, and `MasterController+SpaceMessages.swift`
-    /// — three different files.
-    func recordFileOkAck(
+    private func recordFileOkAck(
         _ model: GameNetworkModel,
         controllable: any GameControllable,
         setMasterVersion: (_ itemId: UUID, _ version: Int, _ masterId: UUID) -> Void,
@@ -71,12 +64,11 @@ extension MasterController {
         guard model.subType != .failed else { return nil }
 
         if model.isAssetRequest {
-            // An iCloud file that has not downloaded cannot be exported. The requester is
-            // told, see `AssetRequestUnavailable`.
-            guard await access.controllable.hasLocalFileData(for: model.data.id) else {
-                throw AssetRequestUnavailable.notDownloaded
-            }
-            return try await cachedPackage(module: model.data.type, itemId: model.data.id, controllable: access.controllable)
+            return try await answerAssetRequest(
+                for: model,
+                hasLocalFileData: { await access.controllable.hasLocalFileData(for: model.data.id) },
+                package: { try await cachedPackage(module: model.data.type, itemId: model.data.id, controllable: access.controllable) }
+            )
         }
         guard model.type == .update else { return nil }
 
@@ -93,6 +85,21 @@ extension MasterController {
             await handleOtherUpdate(model)
         }
         return nil
+    }
+
+    /// The answer to a player's request for the bytes of an item, shared by the file-backed
+    /// modules and Audio. An iCloud file that has not downloaded cannot be exported: the requester
+    /// is told, see `AssetRequestUnavailable`. Otherwise `package` supplies the bytes from the
+    /// package cache, so N requests cost one export. See CODE_AUDIT_Game_Photo_Audio §9.1.
+    func answerAssetRequest(
+        for model: GameNetworkModel,
+        hasLocalFileData: () async -> Bool,
+        package: () async throws -> NetworkCodableDataType
+    ) async throws -> NetworkCodableDataType {
+        guard await hasLocalFileData() else {
+            throw AssetRequestUnavailable.notDownloaded
+        }
+        return try await package()
     }
 
     /// Sends every player the authoritative report list: who has which version.

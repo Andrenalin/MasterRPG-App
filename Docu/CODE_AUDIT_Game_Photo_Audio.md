@@ -183,6 +183,7 @@ _No findings._ No SwiftUI views are on the audited message paths.
 - **Why:** The differences that make Audio slower live exactly in this copied code.
 - **Action:** Pull the asset-request branch (the `hasLocalFileData` guard plus `cachedPackage`) into one shared helper used by both handlers. Keep only the pending-play parts audio-specific.
 - **Severity:** Medium
+- **Status:** Fixed 2026-11-10: `answerAssetRequest(for:hasLocalFileData:package:)` in `MasterController+FileMessageSupport.swift` holds the guard and the `AssetRequestUnavailable.notDownloaded` answer; `handleFileBackedMessage` passes `cachedPackage`, `handleAudio` passes `audioPackage(for:)` (cached and coalesced, §3.2). The `.ok`, `.failed` and list branches stay audio-specific on purpose: they carry the pending plays, the receipt-version check and the retry-once policy of §5.2. `recordFileOkAck` is now `private`, as only `handleFileBackedMessage` calls it.
 
 ### 9.2 Stale comments
 - **Location:** `Modules/GameRPG/Controller/PlayerController+NetworkStoreDelegate.swift:129-133` (promises a bounded resend that doesn't exist, see §5.2); `Modules/GameRPG/Controller/MasterController+FileMessageSupport.swift:32-34` (says three callers, but Photo, Pdf and Space all go through `handleFileBackedMessage` now)
@@ -190,6 +191,7 @@ _No findings._ No SwiftUI views are on the audited message paths.
 - **Why:** They mislead the next person debugging this exact slowness.
 - **Action:** Update them along with the fixes above.
 - **Severity:** Low
+- **Status:** Fixed 2026-11-10: the player comment says the failed audio is sent "once" (§5.2, true now); the `recordFileOkAck` comment names its one caller, `handleFileBackedMessage`, instead of three message files.
 
 ---
 

@@ -9,7 +9,7 @@ import SpaceRPG
 /// What the game controllers need of a file-backed module (Photo, Pdf, Space): its report list,
 /// its master-version baseline and its availability reports, behind one shape instead of three
 /// per-module copies of every handler. Audio keeps its own handlers (pending plays), but shares
-/// the sequencing keys. See CODE_AUDIT_Audio2 §9.4.
+/// the sequencing keys and the answer to an asset request (`answerAssetRequest`). See CODE_AUDIT_Audio2 §9.4.
 @MainActor
 struct FileBackedModuleAccess {
     /// The module's key in the list sequence tracker.
