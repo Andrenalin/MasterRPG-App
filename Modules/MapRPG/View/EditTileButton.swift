@@ -23,6 +23,10 @@ struct EditTileButton: View {
                 Image(systemName: "skew")
             }
         }
+#if os(iOS)
+        // Opens the same editor cover, which renders empty without a photo.
+        .disabled(model.photoId == nil)
+#endif
     }
 }
 

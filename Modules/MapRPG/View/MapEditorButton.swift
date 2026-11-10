@@ -28,6 +28,10 @@ struct MapEditorButton: View {
             }
         }
         .popoverTip(MasterRPGTips.openMapEditor)
+#if os(iOS)
+        // Without a photo the iOS editor cover renders empty (no toolbar to dismiss it).
+        .disabled(model.photoId == nil)
+#endif
     }
 }
 
