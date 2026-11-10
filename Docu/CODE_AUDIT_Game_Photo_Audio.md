@@ -12,7 +12,7 @@ _Date: 2026-11-09 · Scope: how the game master sends an Audio item and a Photo 
 
 1. **[Low, disproved on device] The 10 s Journal add timeout could push large audio packages onto Messenger.** Did not happen: `add` returns on hand-off (2.6 s for 9.2 MB). §7.1, `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:176`, `RPGSharePlayController+ChunkedTransport.swift:96-152`
 2. **[Low, not observed] A timed-out add keeps uploading and blocks the audio slot.** Only if an add ever outlives its timeout. The bytes would go up twice, and every later audio package uses Messenger until the hidden add returns. §7.2, `SharePlayJournalAddLimiter.swift:137-148, 164-213`
-3. **[High] A large package on Messenger holds up the play command.** All Messenger traffic shares one FIFO queue, so `.playAudio`, receipts and map updates wait behind a multi-MB audio upload. §7.3, `RPGSharePlayController+ChunkedTransport.swift:385-432`
+3. **[Won't fix, by design] A large package on Messenger holds up the play command.** All Messenger traffic shares one FIFO queue, so `.playAudio`, receipts and map updates wait behind a multi-MB audio upload. §7.3, `RPGSharePlayController+ChunkedTransport.swift:385-432`
 4. **[High] Each player's asset request triggers a full, uncached audio export on the master's message pipeline.** Photo answers the same request from the package cache. §7.4, `MasterController+AudioMessages.swift:38-45` vs `MasterController+FileMessageSupport.swift:73-80`
 5. **[High] Prefetching the next track can cancel a slow player's download of the current track.** The Journal holds one audio attachment, the abort is silent, and the track is never sent again. §5.1, `MasterController+AudioMessages.swift:375-398`, `RPGSharePlayController+JournalAttachments.swift:276-284`
 6. **[Medium] A failed audio Journal load drops the player at once.** The comments say the master sends it again. §5.2, `PlayerController+NetworkStoreDelegate.swift:128-141`, `MasterController+AudioMessages.swift:276-286`
@@ -131,7 +131,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Severity:** Low (was High)
 - **Status:** A safeguard was added 2026-11-10 with §7.1: a package of 3 MB or more (`GameLimits.SharePlay.journalWaitInsteadOfFallbackBytes`) that times out keeps waiting and adopts the late attachment instead of repeating the upload through Messenger (`waitsForLateAdd` in `RPGSharePlayController+ChunkedTransport.swift`). Residual: if such an add outlives even the scaled timeout, the next add in that slot is still `.unavailable` and uses Messenger. Not exercised on device.
 
-### 7.3 Messenger fallback: small chunks sent one at a time, double Base64, one shared queue
+### 7.3 Messenger fallback: small chunks sent one at a time, double Base64, one shared queue (won't fix)
 - **Location:** `Modules/GameRPG/SharePlay/SharePlaySingleQueuePackageSender.swift:91, 97-98, 173-227`, `RPGSharePlayController+ChunkedTransport.swift:385-432, 495-499`, `RPGSharePlayController+SessionLifecycle.swift:199-207`
 - **What:**
   - The `GameNetworkModel` is JSON-encoded (the file bytes become Base64, ×4/3).
@@ -141,6 +141,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Why:** A 15 MB track is ~27 MB on the wire in ~420 strictly sequential sends. While it is on the queue, the master's other Messenger messages wait behind it, including the `.playAudio` command that starts the music (§7.6), receipts, map pin moves and dice. A prefetch of the next track can therefore delay the *current* play command. Photo packages rarely reach this queue.
 - **Action:** Keep large packages off Messenger (§7.1). If a fallback is still needed, give small control messages their own queue or priority ahead of package streams, and send the payload as raw `Data` chunks (not a Codable struct with a `Data` field) to avoid the second Base64 pass.
 - **Severity:** High
+- **Status:** **Won't fix, by design (2026-11-10).** The chunked Messenger transport is proven, long-running code that works reliably with SharePlay, and its overhead (64 KB sequential packages, double Base64, one shared FIFO queue) is accepted. It is marked in the code with `ACCEPTED OVERHEAD, WON'T FIX (CODE_AUDIT_Game_Photo_Audio §7.3)` in `SharePlaySingleQueuePackageSender`, `PackageMessage` and `addSendTask`, so the next audit does not report it again. Note: since the device log (see the correction at the top) a large audio normally travels through the Journal, not this queue, so the case of §7.3 arises only on a Journal fallback. The slow audio download through the Journal is still open: the Journal worked before but now has an issue with audio downloads, to be examined separately.
 
 ### 7.4 Audio asset requests run an uncached, uncoalesced export on the master pipeline
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:38-45` vs `Modules/GameRPG/Controller/MasterController+FileMessageSupport.swift:73-80`, `MasterController+PackageCache.swift:28-40`; player side `PlayerController+Audio.swift:27-36`
@@ -148,6 +149,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Why:** With N SharePlay players, the master reads and serialises the whole track N extra times, one after another, on its message pipeline (§3.2). The `.ok` receipts that release the pending play queue up behind those exports. This cost is specific to Audio.
 - **Action:** Route audio asset requests through the same `cachedPackage(module:itemId:controllable:)` as the file-backed modules (fingerprint: `networkVersion`), and have `deliverAudio` fill that cache. Consider skipping the request on SharePlay while a Journal publication for that counter is expected (the player already handles a failed load separately).
 - **Severity:** High
+- **Status:** Fixed 2026-11-10 together with §3.2: the asset-request branch of `handleAudio` and `deliverAudio` both call `audioPackage(for:)` (export coalescer plus `cachedPackage`, fingerprint `networkVersion`), so N requests cost no extra export: they join a running export or read the package the push just made. Pinned by `MasterPackageCacheTests.audioRequestsShareOneExport`. Not done on purpose: skipping the player's request while a Journal publication is expected. The request is now cheap, and skipping it would leave a player without the file if the Journal load fails. The answer is still dropped as `.alreadyPublished` (§5.3 keeps it so after a Messenger fallback).
 
 ### 7.5 No package cache for Audio: every show, play, retry and prefetch exports again
 - **Location:** `Modules/GameRPG/Controller/MasterController+Show.swift:162-164`, `MasterController+AudioMessages.swift:337-347, 354-359, 417-435`
@@ -193,7 +195,7 @@ _No findings._ No SwiftUI views are on the audited message paths.
 
 - **Size-aware deadlines everywhere on SharePlay.** The add timeout (§7.1), the 20 s audio-play deadline and the 180 s load deadline should come from one function of byte count, kept in `GameLimits.SharePlay` next to the other ceilings and pinned by `GameLimitsRelationshipTests`.
 - **One package cache for every module that exports a file.** Map, Weather, Photo, Pdf and Space use `MasterPackageCache`; Audio should too (§7.4, §7.5).
-- **Messenger is for control traffic.** Large payloads should reach Messenger only as a last resort, and never ahead of small messages (§7.3).
+- **Messenger is for control traffic.** Large payloads should reach Messenger only as a last resort (§7.3 is accepted by design and not to be changed, see its status).
 - **One slot is one item.** Anything that publishes a *different* item into a slot another device may still be loading needs either its own slot (as the playlist got) or a "still needed" check (§5.1).
 - **Confirm on device before tuning.** Done once (2026-11-10), and it overturned §7.1/§7.2: the master's `add … returned after Y` is the hand-off time, not the upload time. The honest numbers are on the player: `Journal ✓: received … in X (rate/s)`. Compare master and player logs of one audio play and one photo show before blaming a path.
 

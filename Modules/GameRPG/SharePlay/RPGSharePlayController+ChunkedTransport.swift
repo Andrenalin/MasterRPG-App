@@ -390,6 +390,9 @@ extension RPGSharePlayController {
 
     /// Bounds work before encoding and preserves the same FIFO order that the
     /// package sender enforces once bytes have been produced.
+    ///
+    /// All Messenger traffic goes through this one FIFO queue. ACCEPTED OVERHEAD, WON'T FIX
+    /// (CODE_AUDIT_Game_Photo_Audio §7.3): a large package delays the messages queued behind it.
     @discardableResult
     func addSendTask(
         byteCount: Int,

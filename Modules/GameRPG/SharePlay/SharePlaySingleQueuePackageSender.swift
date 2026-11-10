@@ -16,6 +16,13 @@ enum SharePlayPackageSenderError: Error, Equatable {
     case packageTimedOut
 }
 
+/// ACCEPTED OVERHEAD, WON'T FIX (CODE_AUDIT_Game_Photo_Audio §7.3): this chunked transport is
+/// proven, long-running code that works reliably with SharePlay. Its cost is known and accepted
+/// by design: 64 KB packages sent one at a time, a pause every 60 packages, the file Base64-encoded
+/// twice (about 1.78x on the wire), and one FIFO queue shared by every Messenger message, so a
+/// large package delays the small messages behind it. Do not report it again in an audit and do
+/// not restructure it for speed.
+///
 /// Serializes complete Messenger payloads. GroupSessionMessenger preserves the
 /// order of individual sends, but actor reentrancy used to let two `send` calls
 /// alternate their chunks whenever the first call suspended. This queue keeps
