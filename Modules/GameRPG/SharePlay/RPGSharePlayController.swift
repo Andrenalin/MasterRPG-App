@@ -43,9 +43,13 @@ protocol SharePlayControllerDelegate: AnyObject {
     /// The SharePlay participant this player device has pinned as the game master, if any of
     /// `participantIds` is it. Used to keep the master out of the table's player-seat ranking.
     func pinnedMasterParticipantId(among participantIds: [UUID]) async -> UUID?
+    /// The download of the file `model` names started, is running, ended or was dropped
+    /// (`nil`). A player device shows it in the item's row. Nothing goes to the game master.
+    func sharePlayTransferChanged(_ status: ItemTransferStatus?, for model: GameNetworkModel)
 }
 
 extension SharePlayControllerDelegate {
+    func sharePlayTransferChanged(_ status: ItemTransferStatus?, for model: GameNetworkModel) {}
     func pinnedMasterParticipantId(among participantIds: [UUID]) async -> UUID? { nil }
     func shouldLoadFile(_ model: GameNetworkModel) async -> Bool { true }
 }

@@ -2,14 +2,16 @@
 
 _Date: 2026-11-09 · Scope: how the game master sends an Audio item and a Photo item to players, and why Audio is slow over SharePlay while Photo is fast. Read-only audit; nothing was changed._
 
-**Short answer:** yes, the two paths differ. Both put the file in the SharePlay **Journal**. But every Journal add has a **10-second timeout** (`RPGSharePlayController.journalAddTimeout`). A photo upload usually finishes inside it. An audio track is several times larger, so it usually doesn't. Then the audio package falls back to the chunked **Messenger** path, which is much slower. That path sends 64 KB chunks one at a time, Base64-encodes the bytes twice, and holds up every other game message behind it. Meanwhile the timed-out Journal upload keeps running and competes for the same upload bandwidth. Audio also adds costs that Photo doesn't have: an uncached re-export of the file for every player's request, run on the master's message pipeline; a "wait until every player has the file" gate before playback; and a prefetch that can remove the track a slow player is still downloading.
+> **Correction 2026-11-10 (device log):** §7.1 and §7.2 (and §3.1) rested on an assumption that was wrong: that `GroupSessionJournal.add` returns only after the upload has finished. A real run (9.2 MB m4a, two devices) shows it returns on hand-off: the master's `add of 9.2 MB returned … after 2.6 s`, while the player's `Journal ✓: received … size 9.2 MB in 42.6 s (216 kB/s)`, with `still loading` heartbeats every 10 s in between. The 10 s timeout never fired and there was no Messenger fallback. **The audio is slow because the Journal itself moves only about 0.2–0.7 MB/s (photo 171 kB: 0.6 s, 284 kB/s; map 311 kB: 0.4 s, 728 kB/s) and the track is about 50 times larger.** The master cannot measure the real upload time: the API gives no progress. §7.1 and §7.2 now describe a defensive risk that was not hit, and their severity is lowered. §7.3 to §7.6 were not tested by this run.
+
+**Short answer (as written 2026-11-09; the cause below was disproved on device, see the correction above):** yes, the two paths differ. Both put the file in the SharePlay **Journal**. But every Journal add has a **10-second timeout** (`RPGSharePlayController.journalAddTimeout`). A photo upload usually finishes inside it. An audio track is several times larger, so it usually doesn't. Then the audio package falls back to the chunked **Messenger** path, which is much slower. That path sends 64 KB chunks one at a time, Base64-encodes the bytes twice, and holds up every other game message behind it. Meanwhile the timed-out Journal upload keeps running and competes for the same upload bandwidth. Audio also adds costs that Photo doesn't have: an uncached re-export of the file for every player's request, run on the master's message pipeline; a "wait until every player has the file" gate before playback; and a prefetch that can remove the track a slow player is still downloading.
 
 ---
 
 ## 1. Executive summary
 
-1. **[High] The 10 s Journal add timeout pushes large audio packages onto Messenger.** §7.1, `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:176`, `RPGSharePlayController+ChunkedTransport.swift:96-152`
-2. **[High] A timed-out add keeps uploading and blocks the audio slot.** The bytes go up twice, and every later audio package uses Messenger until the hidden add returns. §7.2, `SharePlayJournalAddLimiter.swift:137-148, 164-213`
+1. **[Low, disproved on device] The 10 s Journal add timeout could push large audio packages onto Messenger.** Did not happen: `add` returns on hand-off (2.6 s for 9.2 MB). §7.1, `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:176`, `RPGSharePlayController+ChunkedTransport.swift:96-152`
+2. **[Low, not observed] A timed-out add keeps uploading and blocks the audio slot.** Only if an add ever outlives its timeout. The bytes would go up twice, and every later audio package uses Messenger until the hidden add returns. §7.2, `SharePlayJournalAddLimiter.swift:137-148, 164-213`
 3. **[High] A large package on Messenger holds up the play command.** All Messenger traffic shares one FIFO queue, so `.playAudio`, receipts and map updates wait behind a multi-MB audio upload. §7.3, `RPGSharePlayController+ChunkedTransport.swift:385-432`
 4. **[High] Each player's asset request triggers a full, uncached audio export on the master's message pipeline.** Photo answers the same request from the package cache. §7.4, `MasterController+AudioMessages.swift:38-45` vs `MasterController+FileMessageSupport.swift:73-80`
 5. **[High] Prefetching the next track can cancel a slow player's download of the current track.** The Journal holds one audio attachment, the abort is silent, and the track is never sent again. §5.1, `MasterController+AudioMessages.swift:375-398`, `RPGSharePlayController+JournalAttachments.swift:276-284`
@@ -24,7 +26,7 @@ _Date: 2026-11-09 · Scope: how the game master sends an Audio item and a Photo 
 | Master message | `.reveal` via `show(for:)` | `.store` per required track via `deliverAudio`; `.playAudio` after the receipts |
 | Journal publication policy | `.latestWins` (a newer reveal replaces a waiting one) | `.fifo` (`.store`), queued one after another in the audio slot |
 | Typical package size | ~0.3–5 MB | ~3–30 MB per track |
-| Journal add within 10 s | usually yes | often no, so it falls back to Messenger (§7.1) |
+| Journal add within 10 s | yes (device log: 1.3–1.8 s) | yes (device log: 9.2 MB in 2.6 s); the add returns on hand-off, so the real upload runs on afterwards (player received it after 42.6 s) |
 | Master answer to the player's request | `cachedPackage` (memory) | `createGameData` (full export, uncached and not coalesced) on the pipeline (§7.4) |
 | When the player sees or hears it | on arrival | after **all** receipts or the 20 s deadline, plus `.ok` → master → `.playAudio`, plus AVPlayer coordination (§7.6) |
 | Slot replacement while loading | intended (newer photo wins) | prefetch replaces a track that is still needed (§5.1) |
@@ -34,7 +36,7 @@ _Date: 2026-11-09 · Scope: how the game master sends an Audio item and a Photo 
 
 ## 2. Quick wins
 
-- Scale `journalAddTimeout` with the attachment size, or give Audio/Pdf/Space a longer timeout like the load deadline already does (`RPGSharePlayController+JournalAttachments.swift:22-27`). See §7.1.
+- ~~Scale `journalAddTimeout` with the attachment size~~ (done as a safeguard, §7.1; it was not the cause of the slow audio).
 - Serve audio asset requests through `cachedPackage` (or at least the `audioPackages` coalescer), like `handleFileBackedMessage` does. See §7.4.
 - In the `noLongerCurrent` branch for audio, report the load failure to the master, or treat it as a failure the master can retry. See §5.1.
 - Fix the two stale comments in §9.2.
@@ -50,7 +52,7 @@ _Compiler ground truth:_ an iOS Simulator build of `MasterRPG` (2026-11-09) repo
 - **What:** On timeout the limiter cancels the add task and resumes the caller with `.timedOut`. `GroupSessionJournal.add` ignores cancellation, so the system upload keeps running while the caller has already started the Messenger fallback.
 - **Why:** Two uploads of the same bytes overlap, and the late attachment is then removed (`discardLateValue` → `removeJournalAttachment`). The upload was wasted, and it slowed down the Messenger copy while both ran. This is the concurrency side of §7.2.
 - **Action:** Treat a timed-out add of a package that Messenger *can* carry the way the code already treats one Messenger cannot (`exceedsMessenger`, lines 104-110): keep waiting, and adopt the late attachment instead of sending the bytes a second way.
-- **Severity:** Medium
+- **Severity:** Low (see the correction at the top: the add returned on hand-off in the device log, so no timed-out add was observed)
 
 ### 3.2 The asset-request export holds the master's serial message pipeline
 - **Location:** `Modules/GameRPG/Controller/MasterController+AudioMessages.swift:38-45`, `MasterController+NetworkStoreDelegate.swift:230-255`
@@ -107,21 +109,21 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 
 ## 7. Performance
 
-### 7.1 Every module gets the same 10 s Journal add timeout, so audio falls back to Messenger
+### 7.1 Every module gets the same 10 s Journal add timeout, so audio could fall back to Messenger
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:176`, `RPGSharePlayController+ChunkedTransport.swift:96-100, 137-142, 150-151`
-- **What:** `journalAddTimeout = .seconds(10)` applies to every add, whatever its size. On timeout, a package Messenger can carry (≤ ~47 MB raw) goes to `journalUploadFailed`, then `enqueueChunkedSend`. The *load* side already accepts that large modules take longer (`journalAttachmentLoadDeadline`: 180 s for Audio/Pdf/Space vs 30 s otherwise, `RPGSharePlayController+JournalAttachments.swift:22-27`). The add side doesn't.
-- **Why:** This is the main reason Audio is slow and Photo is fast. A 1–3 MB photo uploads in under 10 s, so it stays on the Journal (a CloudAsset made for large blobs). A 10–20 MB track over a typical home uplink through the FaceTime relay does not, so it ends up on the far slower Messenger path (§7.3). Look for `Journal ⌛: message … timed out adding audio attachment` followed by `Chunked: message …, packages N` in the master's `sharePlay` log to confirm on device.
-- **Action:** Make the add timeout depend on size, e.g. a floor plus bytes ÷ an assumed minimum uplink rate, or reuse the per-module load deadline. Prefer waiting for the Journal over falling back for packages above a few MB.
-- **Severity:** High
-- **Status:** Fixed 2026-11-10. `GameLimits.SharePlay.journalAddTimeout(forByteCount:)` = 10 s + bytes ÷ 250 KiB/s, capped at 180 s (the audio load deadline). Used at `RPGSharePlayController+ChunkedTransport.swift:99`; pinned in `GameLimitsRelationshipTests`. Not measured on device. §7.2 and §3.1 (adopting a late add instead of falling back) remain open.
+- **What:** `journalAddTimeout = .seconds(10)` applied to every add, whatever its size. On timeout, a package Messenger can carry (≤ ~47 MB raw) goes to `journalUploadFailed`, then `enqueueChunkedSend`. The *load* side accepts that large modules take longer (`journalAttachmentLoadDeadline`: 180 s for Audio/Pdf/Space vs 30 s otherwise).
+- **Why (original claim, disproved):** The audit assumed `add` returns only when the upload is done, so a 10–20 MB track would exceed 10 s and take the far slower Messenger path (§7.3). **The device log of 2026-11-10 shows `add` returns on hand-off:** `Journal: message 15 add of 9.2 MB returned attachment … after 2.6 s`, with no `Journal ⌛` and no `Chunked: message 15, packages N`. The upload then continued in the background and the player needed 42.6 s (216 kB/s) to receive the track. The timeout is therefore not the reason audio is slow. It would matter only if an add ever hung for 10 s.
+- **Action:** None needed for the audio delay. The size-aware timeout stays as a harmless safeguard. The real lever is the amount of data the Journal has to move (a smaller or lower-bitrate file, or the local-network transport for co-located players).
+- **Severity:** Low (was High)
+- **Status:** A safeguard was added 2026-11-10: `GameLimits.SharePlay.journalAddTimeout(forByteCount:)` = 10 s + bytes ÷ 250 KiB/s, capped at 180 s, used at `RPGSharePlayController+ChunkedTransport.swift:99` and pinned in `GameLimitsRelationshipTests`. The device log showed it was not the cause, so the speed problem is **not fixed** by it.
 
 ### 7.2 A timed-out add blocks the audio slot and uploads the bytes twice
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayJournalAddLimiter.swift:69-74, 164-213`, `RPGSharePlayController+ChunkedTransport.swift:143-144`
-- **What:** The limiter keeps the timed-out attempt under its key `(slot, session)` until the system add returns. Until then, every `run(for: .audio …)` returns `.unavailable` ("Journal bypass … quarantined add"), and that package also goes over Messenger. Meanwhile the hidden add is still uploading the same bytes.
-- **Why:** After the first large track times out, the next ones (the pending play's other start items, the prefetched next track, a replay) all take the slow path. They also share upload bandwidth with the leftover Journal upload. Photos seldom time out, so the photo slot is rarely blocked.
-- **Action:** Covered by §3.1 / §7.1: don't fall back for packages that would finish on the Journal with a realistic deadline. If the fallback stays, adopt the late attachment instead of removing it, and lift the block as soon as it returns.
-- **Severity:** High
-- **Status:** Fixed 2026-11-10 together with §7.1. A package of 3 MB or more (`GameLimits.SharePlay.journalWaitInsteadOfFallbackBytes`) no longer falls back to Messenger when its add times out: it keeps waiting and adopts the late attachment (`waitsForLateAdd` in `RPGSharePlayController+ChunkedTransport.swift`), so the bytes go up once. The limiter lifts its block as soon as the add returns. Smaller packages still fall back. Residual: if a large add outlives even the scaled timeout, the next add in that slot is still `.unavailable` and uses Messenger. Not device-verified.
+- **What:** The limiter keeps a timed-out attempt under its key `(slot, session)` until the system add returns. Until then, every `run(for: .audio …)` returns `.unavailable` ("Journal bypass … quarantined add"), and that package goes over Messenger.
+- **Why (original claim, not observed):** This follows from §7.1. Because `add` returns on hand-off (device log: 2.6 s for 9.2 MB), no add timed out, so the slot was never quarantined and no bytes went up twice. It remains possible only if an add hangs past its timeout.
+- **Action:** None needed for the audio delay.
+- **Severity:** Low (was High)
+- **Status:** A safeguard was added 2026-11-10 with §7.1: a package of 3 MB or more (`GameLimits.SharePlay.journalWaitInsteadOfFallbackBytes`) that times out keeps waiting and adopts the late attachment instead of repeating the upload through Messenger (`waitsForLateAdd` in `RPGSharePlayController+ChunkedTransport.swift`). Residual: if such an add outlives even the scaled timeout, the next add in that slot is still `.unavailable` and uses Messenger. Not exercised on device.
 
 ### 7.3 Messenger fallback: small chunks sent one at a time, double Base64, one shared queue
 - **Location:** `Modules/GameRPG/SharePlay/SharePlaySingleQueuePackageSender.swift:91, 97-98, 173-227`, `RPGSharePlayController+ChunkedTransport.swift:385-432, 495-499`, `RPGSharePlayController+SessionLifecycle.swift:199-207`
@@ -187,7 +189,7 @@ _No findings._ No SwiftUI views are on the audited message paths.
 - **One package cache for every module that exports a file.** Map, Weather, Photo, Pdf and Space use `MasterPackageCache`; Audio should too (§7.4, §7.5).
 - **Messenger is for control traffic.** Large payloads should reach Messenger only as a last resort, and never ahead of small messages (§7.3).
 - **One slot is one item.** Anything that publishes a *different* item into a slot another device may still be loading needs either its own slot (as the playlist got) or a "still needed" check (§5.1).
-- **Confirm on device before tuning.** The master log already records everything needed: `Journal: … add of X returned … after Y`, `Journal ⌛`, `Journal bypass`, `Chunked: … packages N`, and on the player `Journal ✓: received … (rate/s)`. One audio play and one photo show from the same session will confirm §7.1–§7.3.
+- **Confirm on device before tuning.** Done once (2026-11-10), and it overturned §7.1/§7.2: the master's `add … returned after Y` is the hand-off time, not the upload time. The honest numbers are on the player: `Journal ✓: received … in X (rate/s)`. Compare master and player logs of one audio play and one photo show before blaming a path.
 
 ---
 
@@ -195,7 +197,7 @@ _No findings._ No SwiftUI views are on the audited message paths.
 
 - The LAN (Bonjour) transport for Audio vs Photo. Only SharePlay was in scope, and both modules send one framed package per connection there.
 - Pdf, Space, Map and Weather delivery, except where they share code with Photo.
-- Runtime behaviour of `GroupSessionJournal.add`, in particular whether it returns only after the upload has finished. §7.1 assumes it does, as the code's own timeout handling also does. Nothing was measured on device.
+- Runtime behaviour of `GroupSessionJournal.add` was assumed, not measured: the audit took it to return only after the upload has finished. The 2026-11-10 device log disproved that (it returns on hand-off); see the correction at the top.
 - How long `AVPlayerPlaybackCoordinator` waits for participants (§7.6) was not measured.
 - The AudioRPG playback engine (`AudioController`, playlist loading) beyond the game-message entry points.
 - Export format internals (`rootExportController.export`) and `MasterPackageCache` eviction bounds.
@@ -205,8 +207,8 @@ _No findings._ No SwiftUI views are on the audited message paths.
 
 ## 12. Verification
 
-- **§7.1:** open `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:176` (`journalAddTimeout = .seconds(10)`). Then `RPGSharePlayController+ChunkedTransport.swift:96-100` (the timeout is passed to the limiter), lines 137-142 (on `.timedOut`, only a package `exceedsMessenger` avoids the fallback), and line 151 (`journalUploadFailed` → `enqueueChunkedSend`, lines 182-189). Compare with `RPGSharePlayController+JournalAttachments.swift:22-27`, where the load deadline is 180 s for `.audio`.
-- **§7.2:** `SharePlayJournalAddLimiter.swift:71-74` (`attempts[attemptKey] == nil` or `.unavailable`). Lines 137-148: on timeout the attempt stays in `attempts`. Lines 164-213: it is removed only once the system add returns, after late cleanup. `RPGSharePlayController+ChunkedTransport.swift:143-144`: `.unavailable` takes the Messenger fallback.
+- **§7.1 (disproved on device, kept for the code trail):** open `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:176` (`journalAddTimeout = .seconds(10)`). Then `RPGSharePlayController+ChunkedTransport.swift:96-100` (the timeout is passed to the limiter), lines 137-142 (on `.timedOut`, only a package `exceedsMessenger` avoids the fallback), and line 151 (`journalUploadFailed` → `enqueueChunkedSend`, lines 182-189). Compare with `RPGSharePlayController+JournalAttachments.swift:22-27`, where the load deadline is 180 s for `.audio`.
+- **§7.2 (not observed on device):** `SharePlayJournalAddLimiter.swift:71-74` (`attempts[attemptKey] == nil` or `.unavailable`). Lines 137-148: on timeout the attempt stays in `attempts`. Lines 164-213: it is removed only once the system add returns, after late cleanup. `RPGSharePlayController+ChunkedTransport.swift:143-144`: `.unavailable` takes the Messenger fallback.
 - **§7.3:** `SharePlaySingleQueuePackageSender.swift:91` (64,000-byte packages), lines 97-98 (200 ms every 60 packages), and lines 203-226 (each `sendWithRetry` awaited in turn). `SharePlayMessages.swift:5-17`: `PackageMessage.data: Data` is Codable, so it is Base64 a second time. `RPGSharePlayController+ChunkedTransport.swift:385-432`: one `pendingSendOperations` FIFO drained by a single task.
 - **§7.4:** `MasterController+AudioMessages.swift:44` calls `root.audioRoot.gameControllable.createGameData(for:)` directly, while `MasterController+FileMessageSupport.swift:79` calls `cachedPackage(...)`. `PlayerController+Audio.swift:30-34`: a `.store` without data returns `requestData: true`. `GameNetworkController+Delivery.swift:67-71`: the Journal publication is queued before the Messenger reference is sent.
 - **§5.1:** `MasterController+AudioMessages.swift:388-396` (the track-start handler publishes the next track). `SharePlayJournalPublicationQueue.swift:311-319` (the commit replaces the slot's attachment and schedules removal of the old one). `RPGSharePlayController+JournalAttachments.swift:231-234` (`isStillWanted` checks `currentJournalAttachmentIds`) and lines 276-284 (`noLongerCurrent` returns without any delegate call). `SharePlayJournalLedger.swift:90-93` (a displaced show is not uploaded again for the same counter).

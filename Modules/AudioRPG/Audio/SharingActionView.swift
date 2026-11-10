@@ -52,7 +52,7 @@ struct SharingActionView: View, Equatable {
 
     var body: some View {
         if appGameStateModel.isGameRunning {
-            PlayerReportRow(statuses: playerReportStatuses)
+            PlayerReportRow(statuses: playerReportStatuses, transfer: transfer)
                 .shareListItem(isActive: canShare, allReported: allReported, feedBackEnabled: true, module: .audio, secondActionIcon: playIcon) {
                     shareAudio()
                 } secondAction: {
@@ -97,6 +97,12 @@ struct SharingActionView: View, Equatable {
     private var playerReportStatuses: [PlayerReportStatus] {
         guard showPlayerReport, appGameStateModel.gameModus == .master else { return [] }
         return root.gameController.playerReportStatuses(for: itemId, controls: sharingControlActions.control?() ?? [])
+    }
+
+    /// The download of this track on a player device, shown where the master sees its players.
+    private var transfer: ItemTransferStatus? {
+        guard showPlayerReport, appGameStateModel.gameModus == .player else { return nil }
+        return root.gameController.gameModel.transfers[itemId]
     }
 
     private var canShare: Bool {

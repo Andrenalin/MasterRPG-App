@@ -8258,6 +8258,125 @@
           }
         }
       }
+    },
+    "Started" : {
+      "comment" : "Download of an item's file began on this device.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestartet"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มแล้ว"
+          }
+        }
+      }
+    },
+    "Loading %@" : {
+      "comment" : "Download of an item's file is running; %@ is the time so far, e.g. 10s.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lädt %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังโหลด %@"
+          }
+        }
+      }
+    },
+    "Failed" : {
+      "comment" : "The download of an item's file did not arrive.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fehlgeschlagen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล้มเหลว"
+          }
+        }
+      }
+    },
+    "Download started" : {
+      "comment" : "VoiceOver label of the download status.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download gestartet"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มดาวน์โหลดแล้ว"
+          }
+        }
+      }
+    },
+    "Downloading for %@" : {
+      "comment" : "VoiceOver label of the download status; %@ is the time so far.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lädt seit %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังดาวน์โหลดมา %@"
+          }
+        }
+      }
+    },
+    "Downloaded: %@" : {
+      "comment" : "VoiceOver label of the download status; %@ is time and rate, e.g. 4.2s · 1.3 MB/s.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geladen: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดาวน์โหลดแล้ว: %@"
+          }
+        }
+      }
+    },
+    "Download failed" : {
+      "comment" : "VoiceOver label of the download status.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download fehlgeschlagen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดาวน์โหลดล้มเหลว"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

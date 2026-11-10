@@ -97,6 +97,21 @@ extension PlayerController {
         await receivedFile(model)
     }
 
+    /// Keeps the download of a game master's file in the item's game model, where its row shows
+    /// it. Modules without a downloaded file have no row for it.
+    func sharePlayTransferChanged(_ status: ItemTransferStatus?, for model: GameNetworkModel) {
+        guard !root.gameModel.gameConfig.isMaster else { return }
+        let controllable: any GameControllable
+        switch model.data.type {
+        case .audio: controllable = root.audioRoot.gameControllable
+        case .photo: controllable = root.photoRoot.gameControllable
+        case .pdf: controllable = root.pdfRoot.gameControllable
+        case .space: controllable = root.spaceRoot.gameControllable
+        default: return
+        }
+        controllable.gameModel.transfers[model.data.id] = status
+    }
+
     func isSharePlayMasterParticipant(id: UUID) async -> Bool {
         gameModel.isSharePlayMasterParticipant(id: id)
     }

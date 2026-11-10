@@ -427,6 +427,14 @@ extension RPGSharePlayController {
                           self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                     else { return }
                     let gameModel = decodedMessage.model
+                    // A file that came in chunks shows how long they took, as a Journal load does.
+                    // A single chunk measured nothing.
+                    if completedPackage.transferDuration > .zero, let bytes = gameModel.data.data?.count, bytes > 0 {
+                        self.delegate?.sharePlayTransferChanged(
+                            ItemTransferStatus(state: .done, duration: completedPackage.transferDuration, byteCount: bytes),
+                            for: gameModel
+                        )
+                    }
                     guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
                         await self.delegate?.handleUpdate(
                             gameModel,

@@ -620,6 +620,32 @@ struct SharePlayPackageTransportTests {
         #expect(receiver.cumulativeIncompleteByteCount == 8)
     }
 
+    @Test("a completed stream reports the time from its first to its last chunk")
+    func completedStreamReportsTransferDuration() {
+        // Given
+        var now = ContinuousClock().now
+        let id = UUID()
+        let receiver = SharePlayPackageReceiver(now: { now })
+
+        // When
+        _ = receiver.received(package: Self.incompletePackage(id: id, count: 1), from: Self.packageSourceParticipantId)
+        now = now.advanced(by: .seconds(2))
+        _ = receiver.received(package: Self.incompletePackage(id: id, count: 2), from: Self.packageSourceParticipantId)
+        now = now.advanced(by: .milliseconds(500))
+        let completed = receiver.received(package: Self.incompletePackage(id: id, count: 3), from: Self.packageSourceParticipantId)
+
+        // Then
+        #expect(completed?.transferDuration == .milliseconds(2500))
+    }
+
+    @Test("a message that came in one chunk measured no transfer time")
+    func singleChunkHasNoTransferDuration() {
+        let receiver = SharePlayPackageReceiver()
+        let single = PackageMessage(uuid: UUID(), count: 1, total: 1, data: Data("x".utf8))
+        let completed = receiver.received(package: single, from: Self.packageSourceParticipantId)
+        #expect(completed?.transferDuration == .zero)
+    }
+
     @Test("duplicate chunks do not extend incomplete stream expiry")
     func duplicateChunksDoNotExtendExpiry() {
         // Given

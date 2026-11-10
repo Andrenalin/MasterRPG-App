@@ -9,6 +9,8 @@ struct SharePlayCompletedPackage: Sendable {
     let id: UUID
     let sourceParticipantId: UUID
     let byteCount: Int
+    /// From the first chunk to the last one; `.zero` for a message that came in one chunk.
+    var transferDuration: Duration = .zero
     private let chunkStore: OSAllocatedUnfairLock<[Data]>
 
     init(id: UUID, sourceParticipantId: UUID, chunks: [Data], byteCount: Int) {
@@ -101,6 +103,7 @@ final class SharePlayPackageReceiver {
     private let now: @MainActor () -> ContinuousClock.Instant
     private let sleep: Sleep
     private var lastReceivedAt: [SharePlayPackageStreamKey: ContinuousClock.Instant] = [:]
+    private var firstReceivedAt: [SharePlayPackageStreamKey: ContinuousClock.Instant] = [:]
     private var activityOrder: [SharePlayPackageStreamKey: UInt64] = [:]
     private var nextActivityOrder: UInt64 = 0
     private var expirationTask: Task<Void, Never>?
@@ -113,6 +116,7 @@ final class SharePlayPackageReceiver {
         receivedPackages.removeAll()
         cumulativeIncompleteByteCount = 0
         lastReceivedAt.removeAll()
+        firstReceivedAt.removeAll()
         activityOrder.removeAll()
         nextActivityOrder = 0
     }
@@ -185,6 +189,7 @@ final class SharePlayPackageReceiver {
             }
             packageList = PackageMessageList(initialPackage: package)
             receivedPackages[streamKey] = packageList
+            firstReceivedAt[streamKey] = receivedAt
             cumulativeIncompleteByteCount += packageData.count
         }
         recordActivity(for: streamKey, at: receivedAt)
@@ -193,9 +198,12 @@ final class SharePlayPackageReceiver {
             scheduleNextExpiration()
             return nil
         }
-        let completedPackage = packageList.completedPackage(
+        var completedPackage = packageList.completedPackage(
             sourceParticipantId: sourceParticipantId
         )
+        if let firstReceivedAt = firstReceivedAt[streamKey] {
+            completedPackage.transferDuration = firstReceivedAt.duration(to: receivedAt)
+        }
         removeStream(key: streamKey)
         scheduleNextExpiration()
         return completedPackage
@@ -294,6 +302,7 @@ final class SharePlayPackageReceiver {
             cumulativeIncompleteByteCount -= removed.receivedByteCount
         }
         lastReceivedAt.removeValue(forKey: key)
+        firstReceivedAt.removeValue(forKey: key)
         activityOrder.removeValue(forKey: key)
     }
 

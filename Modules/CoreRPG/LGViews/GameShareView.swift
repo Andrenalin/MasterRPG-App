@@ -28,7 +28,7 @@ public struct GameShareView<Content: View>: View {
         // button's allReported state and the row below it.
         let statuses = playerReportStatuses
         if showsReportBesideButton {
-            PlayerReportRow(statuses: statuses)
+            PlayerReportRow(statuses: statuses, transfer: transfer)
                 .shareListItem(isActive: canShare, allReported: allReported(statuses), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
@@ -37,8 +37,8 @@ public struct GameShareView<Content: View>: View {
                     // Only where this view offers sharing: a Photo embedded in a Map shares through
                     // the Map, so its report row showed player names for a share it doesn't offer.
                     // See CODE_AUDIT_19 §8.1.
-                    if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
-                        PlayerReportRow(statuses: statuses)
+                    if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty || transfer != nil {
+                        PlayerReportRow(statuses: statuses, transfer: transfer)
                             // Informational only: a tap on a control in the content's top-trailing
                             // corner must reach that control, not this caption.
                             .allowsHitTesting(false)
@@ -111,6 +111,12 @@ public struct GameShareView<Content: View>: View {
 // MARK: - Player report status
 
 private extension GameShareView {
+    /// The download of this item's file on a player device; the game master has none.
+    var transfer: ItemTransferStatus? {
+        guard appGameStateModel.gameModus == .player else { return nil }
+        return root.gameControllable.gameModel.transfers[itemId]
+    }
+
     /// Only the game master receives per-player acknowledgements for a share, so
     /// this stays empty (and the row never appears) anywhere else. A player device
     /// shows the outcome on its button alone, see `allReported(_:)`.

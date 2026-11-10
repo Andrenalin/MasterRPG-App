@@ -39,6 +39,10 @@ public final class ItemGameModel {
     // and to prevent cross-test contamination when tests run in parallel.
     public var playerReports: [UUID: [UUID]] = [:]
 
+    /// The running or last download of each item's file on this device, shown in the item's row.
+    /// Only a player device downloads; the game master never gets another device's entries.
+    public var transfers: [UUID: ItemTransferStatus] = [:]
+
     /// The game master's version of each item players report on. See `recordMasterVersion`.
     public private(set) var masterVersions: [UUID: Int] = [:]
 
@@ -134,6 +138,7 @@ public final class ItemGameModel {
         items = []
         itemData.removeAll()
         playerReports.removeAll()
+        transfers.removeAll()
         masterVersions.removeAll()
     }
 

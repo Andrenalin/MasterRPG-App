@@ -24,13 +24,16 @@ public extension [SharingControlModel] {
 }
 
 /// The players a share was sent to: confirmed names bold, pending ones secondary, and a
-/// checkmark once everyone confirmed. Shows nothing without players.
+/// checkmark once everyone confirmed. On a player device, which lists no players, it shows
+/// the download of the item's file instead (`transfer`). Shows nothing without either.
 public struct PlayerReportRow: View {
-    public init(statuses: [PlayerReportStatus]) {
+    public init(statuses: [PlayerReportStatus], transfer: ItemTransferStatus? = nil) {
         self.statuses = statuses
+        self.transfer = transfer
     }
 
     let statuses: [PlayerReportStatus]
+    let transfer: ItemTransferStatus?
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     /// Insets of the player report capsule, scaling with Dynamic Type. See CODE_AUDIT_20 §8.7.
@@ -38,12 +41,16 @@ public struct PlayerReportRow: View {
     @ScaledMetric(relativeTo: .caption) private var reportVerticalInset: CGFloat = 3
 
     public var body: some View {
-        if !statuses.isEmpty {
+        if !statuses.isEmpty || transfer != nil {
             HStack(spacing: 4) {
-                Text(attributedNames)
-                if statuses.allSatisfy(\.reported) {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.tint)
+                if statuses.isEmpty, let transfer {
+                    TransferStatusText(transfer: transfer)
+                } else {
+                    Text(attributedNames)
+                    if statuses.allSatisfy(\.reported) {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.tint)
+                    }
                 }
             }
             .font(.caption)
@@ -60,6 +67,28 @@ public struct PlayerReportRow: View {
             .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)
+        }
+    }
+}
+
+/// The download of an item's file on a player device: `Started`, `Loading 10s` while it
+/// runs, `4.2s · 1.3 MB/s` when it arrived, `Failed` when it did not.
+struct TransferStatusText: View {
+    let transfer: ItemTransferStatus
+
+    var body: some View {
+        switch transfer.state {
+        case .loading where transfer.duration == .zero:
+            Text("Started", bundle: .module)
+                .foregroundStyle(.secondary)
+        case .loading:
+            Text("Loading \(transfer.duration.formatted(ItemTransferStatus.durationStyle))", bundle: .module)
+                .foregroundStyle(.secondary)
+        case .done:
+            Text(verbatim: ItemTransferStatus.summary(duration: transfer.duration, byteCount: transfer.byteCount))
+        case .failed:
+            Text("Failed", bundle: .module)
+                .foregroundStyle(.red)
         }
     }
 }
@@ -91,6 +120,18 @@ private extension PlayerReportRow {
     }
 
     var accessibilityLabel: Text {
+        if statuses.isEmpty, let transfer {
+            return switch transfer.state {
+            case .loading where transfer.duration == .zero:
+                Text("Download started", bundle: .module)
+            case .loading:
+                Text("Downloading for \(transfer.duration.formatted(ItemTransferStatus.durationStyle))", bundle: .module)
+            case .done:
+                Text("Downloaded: \(ItemTransferStatus.summary(duration: transfer.duration, byteCount: transfer.byteCount))", bundle: .module)
+            case .failed:
+                Text("Download failed", bundle: .module)
+            }
+        }
         let reportedNames = statuses.filter(\.reported).map(\.name).joined(separator: ", ")
         let missingNames = statuses.filter { !$0.reported }.map(\.name).joined(separator: ", ")
         if missingNames.isEmpty {
@@ -101,6 +142,16 @@ private extension PlayerReportRow {
         }
         return Text("Confirmed: \(reportedNames). Waiting on: \(missingNames)", bundle: .module)
     }
+}
+
+#Preview("Player download") {
+    VStack(alignment: .leading) {
+        PlayerReportRow(statuses: [], transfer: .init(state: .loading))
+        PlayerReportRow(statuses: [], transfer: .init(state: .loading, duration: .seconds(10)))
+        PlayerReportRow(statuses: [], transfer: .init(state: .done, duration: .milliseconds(4200), byteCount: 5_460_000))
+        PlayerReportRow(statuses: [], transfer: .init(state: .failed, duration: .seconds(180)))
+    }
+    .padding()
 }
 
 #Preview {

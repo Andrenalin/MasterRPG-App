@@ -28,6 +28,12 @@ extension GameNetworkController: SharePlayControllerDelegate {
         await model.playerDelegate?.sharePlayFileLoadFailed(message)
     }
 
+    func sharePlayTransferChanged(_ status: ItemTransferStatus?, for message: GameNetworkModel) {
+        // Only a player downloads the game master's files.
+        guard message.sender.isMaster, !model.hasLocalPlayer else { return }
+        model.playerDelegate?.sharePlayTransferChanged(status, for: message)
+    }
+
     func shouldLoadFile(_ message: GameNetworkModel) async -> Bool {
         // The Journal hands every participant every attachment, and a load puts the whole blob
         // in memory. What would be refused after the load is not loaded:

@@ -60,6 +60,8 @@ protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func receivedSharePlay(_ model: GameNetworkModel, participantId: UUID) async
     func receivedSharePlayFile(_ model: GameNetworkModel) async
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async
+    /// The download of the file `model` names started, is running, ended or was dropped (`nil`).
+    func sharePlayTransferChanged(_ status: ItemTransferStatus?, for model: GameNetworkModel)
     /// Whether this device already holds the file `model` names, in that version, so the
     /// Journal's copy of it need not be downloaded.
     func sharePlayHoldsFile(_ model: GameNetworkModel) async -> Bool
@@ -86,6 +88,8 @@ extension PlayerNetworkStoreDelegate {
     }
 
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {}
+
+    func sharePlayTransferChanged(_ status: ItemTransferStatus?, for model: GameNetworkModel) {}
 
     func sharePlayHoldsFile(_ model: GameNetworkModel) async -> Bool { false }
 

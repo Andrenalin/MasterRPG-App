@@ -214,12 +214,26 @@ extension RPGSharePlayController {
         }
         let loadLabel = "attachment \(attachmentId) of message \(metadata.counter) (\(metadata.data.type.token) \(metadata.data.id) v\(metadata.data.effectiveAssetVersion))"
         Logger.sharePlay.debug("Journal: loading \(loadLabel, privacy: .public); snapshot held \(snapshotCount, privacy: .public) attachments, session has \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public) participants")
+        // The item's row shows the download: started now, then every heartbeat, then its outcome.
+        // A load that ends any other way (replaced, cancelled) takes the entry away again.
+        let transferModel = metadata
+        var transferEnded = false
+        delegate?.sharePlayTransferChanged(ItemTransferStatus(state: .loading), for: transferModel)
+        defer {
+            if !transferEnded {
+                delegate?.sharePlayTransferChanged(nil, for: transferModel)
+            }
+        }
         // A load gives no progress. This says how long it has been waiting and whether the
         // attachment is still in the Journal, until it ends.
         let heartbeat = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(10))
                 guard !Task.isCancelled, let self else { return }
+                self.delegate?.sharePlayTransferChanged(
+                    ItemTransferStatus(state: .loading, duration: loadStartedAt.duration(to: .now)),
+                    for: transferModel
+                )
                 let elapsed = Self.formattedDuration(loadStartedAt.duration(to: .now))
                 let stillInJournal = self.currentJournalAttachmentIds.contains(attachmentId)
                 Logger.sharePlay.debug("Journal: still loading \(loadLabel, privacy: .public) after \(elapsed, privacy: .public); in the Journal: \(stillInJournal, privacy: .public), Journal holds \(self.currentJournalAttachmentIds.count, privacy: .public) attachments")
@@ -259,6 +273,11 @@ extension RPGSharePlayController {
             let loadDuration = loadStartedAt.duration(to: .now)
             let seconds = max(0.001, Double(loadDuration.components.seconds) + Double(loadDuration.components.attoseconds) / 1e18)
             let rate = Self.formattedByteCount(Int(Double(data.count) / seconds))
+            transferEnded = true
+            delegate?.sharePlayTransferChanged(
+                ItemTransferStatus(state: .done, duration: loadDuration, byteCount: data.count),
+                for: transferModel
+            )
             Logger.sharePlay.debug("Journal ✓: received message \(metadata.counter, privacy: .public) attachment \(attachment.id, privacy: .public), size \(size, privacy: .public) in \(Self.formattedDuration(loadDuration), privacy: .public) (\(rate, privacy: .public)/s)")
             metadata.data = NetworkCodableDataType(
                 id: metadata.data.id,
@@ -295,6 +314,11 @@ extension RPGSharePlayController {
             if (error as? SharePlayAttachmentLoadAbort) != .deadlineExceeded {
                 journalLedger.retryProcessing(attachmentId: attachment.id)
             }
+            transferEnded = true
+            delegate?.sharePlayTransferChanged(
+                ItemTransferStatus(state: .failed, duration: loadStartedAt.duration(to: .now)),
+                for: transferModel
+            )
             let elapsed = Self.formattedDuration(loadStartedAt.duration(to: .now))
             let stillInJournal = currentJournalAttachmentIds.contains(attachment.id)
             Logger.sharePlay.warning("Journal attachment \(attachment.id, privacy: .public) (\(loadLabel, privacy: .public)) remained unavailable after \(elapsed, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); in the Journal: \(stillInJournal, privacy: .public), Journal holds \(self.currentJournalAttachmentIds.count, privacy: .public) attachments, session has \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public) participants")
