@@ -354,7 +354,8 @@ extension SearchController {
     ///
     /// - `parentId != nil`: scoped to the given character. All results carry that character's
     ///   `itemId` so the UI navigates back to the character, not into a sub-value group.
-    /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == DisplayStateMask.fullVisible.rawValue`).
+    /// - `parentId == nil`: walks all root characters (`groupId == nil`, not a folder/collection,
+    ///   `displayState == DisplayStateMask.fullVisible.rawValue`).
     ///
     /// Empty search is handled properly:
     /// - `parentId != nil`, empty → delegates to `focusedCharacterInspector` (all entries shown)
@@ -376,6 +377,9 @@ extension SearchController {
                 guard !Task.isCancelled else { break }
                 guard let character = await itemController.item(for: itemId),
                       character.groupId == nil,
+                      // A folder or collection is no character: the flat link/selection list
+                      // shows folders only in folder mode (same rule as `listModeCharacterResults`).
+                      !character.specialCategory,
                       character.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
                 if searchText.isEmpty {
                     foundResults.append(makeResult(item: character, searchText: "", displayMode: displayMode))

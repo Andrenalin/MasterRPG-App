@@ -216,6 +216,72 @@ struct SearchControllerTests {
                 "Character with no matching name or description must be excluded (entries not searched in common inspector)")
     }
 
+    @Test("Inspector nil focus, empty search: a folder is not listed as a character (character selection)")
+    func inspectorNilFocusEmptySearchExcludesFolders() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Spieler", itemId: folderId)
+        root.editController.reset(name: "Rupert Raubein", itemId: charId)
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+
+        #expect(results.map(\.itemId) == [charId],
+                "Only the character is listed; the folder 'Spieler' must not get a row of its own")
+    }
+
+    @Test("Inspector nil focus, empty search: a character inside a folder is still listed, the folder is not")
+    func inspectorNilFocusListsCharacterInsideFolder() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Spieler", itemId: folderId)
+        root.editController.reset(name: "Rupert Raubein", itemId: charId)
+        root.editController.addItem(itemId: charId, parentId: folderId)
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+
+        #expect(results.map(\.itemId) == [charId])
+    }
+
+    @Test("Inspector nil focus, text search: a folder whose name matches is not listed")
+    func inspectorNilFocusTextSearchExcludesFolders() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.searchController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let charId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Dragon Vault", itemId: folderId)
+        root.editController.reset(name: "Dragon Knight", itemId: charId)
+
+        let results = await sut.inspectorSearchResults(
+            searchText: "Dragon",
+            listMode: .list,
+            displayMode: .medium,
+            focusId: nil
+        )
+
+        #expect(!results.contains(where: { $0.itemId == folderId }))
+        #expect(results.contains(where: { $0.itemId == charId }))
+    }
+
     // MARK: - Inspector search, focusId = character (focused character inspector)
 
     @Test("Focused inspector: empty search returns character with all entries")
