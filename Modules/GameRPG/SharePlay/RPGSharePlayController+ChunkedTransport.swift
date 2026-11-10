@@ -79,6 +79,11 @@ extension RPGSharePlayController {
         // and kept when it returns, instead of being removed and lost.
         // See CODE_AUDIT_Game_Shareplay §5.11.
         let exceedsMessenger = !SharePlayMessengerPayloadBudget.accepts(rawPayloadByteCount: attachmentData.count)
+        // A large package is not sent a second way when its add times out: Messenger is slower
+        // than the upload still running, and the timed-out add would block the slot meanwhile.
+        // See CODE_AUDIT_Game_Photo_Audio §7.2.
+        let waitsForLateAdd = exceedsMessenger
+            || GameLimits.SharePlay.journalWaitsInsteadOfFallback(forByteCount: attachmentData.count)
         let enqueuedAt = ContinuousClock.now
         Logger.sharePlay.debug("Journal: message \(counter, privacy: .public) queued \(slot.token, privacy: .public) \(itemId, privacy: .public) v\(version, privacy: .public), \(attachmentSize, privacy: .public), participants \(self.groupSession?.activeParticipants.count ?? 0, privacy: .public)")
         let publication = journalPublicationQueue.enqueue(
@@ -96,12 +101,12 @@ extension RPGSharePlayController {
             let outcome = await self.journalAddLimiter.run(
                 for: slot,
                 scope: sessionId,
-                timeout: Self.journalAddTimeout
+                timeout: Self.journalAddTimeout(forByteCount: attachmentData.count)
             ) {
                 try await journal.add(attachmentData, metadata: metadata)
             } discardLateValue: { [weak self] lateAttachment in
                 guard let self else { return true }
-                if exceedsMessenger, self.adoptLateJournalAttachment(
+                if waitsForLateAdd, self.adoptLateJournalAttachment(
                     lateAttachment,
                     show: show,
                     sessionId: sessionId
@@ -136,8 +141,8 @@ extension RPGSharePlayController {
                 Logger.sharePlay.error("Journal ✕: message \(counter, privacy: .public) cannot add \(attachmentSize, privacy: .public) attachment for module \(moduleKey.token, privacy: .public) and id: \(itemId, privacy: .public) after \(addDuration, privacy: .public), error: \(errorDescription, privacy: .private)")
             case .timedOut:
                 Logger.sharePlay.error("Journal ⌛: message \(counter, privacy: .public) timed out adding \(moduleKey.token, privacy: .public) attachment after \(addDuration, privacy: .public); module is degraded to Messenger until the add returns")
-                if exceedsMessenger {
-                    Logger.sharePlay.warning("Journal: message \(counter, privacy: .public) is too large for Messenger; its late add is kept when it returns")
+                if waitsForLateAdd {
+                    Logger.sharePlay.warning("Journal: message \(counter, privacy: .public) is \(exceedsMessenger ? "too large for Messenger" : "faster to wait for than to resend", privacy: .public); its late add is kept when it returns")
                     return nil
                 }
             case .unavailable:

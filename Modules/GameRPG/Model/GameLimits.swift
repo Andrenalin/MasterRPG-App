@@ -98,6 +98,35 @@ extension GameLimits {
         static let inboundBytesPerSender = 512 * ByteUnit.mebibyte
         static let inboundWindow: Duration = .seconds(60)
 
+        /// The shortest wait for one Journal add, enough for a small package such as a photo.
+        static let journalAddMinimumTimeout: Duration = .seconds(10)
+        /// The uplink an add is assumed to reach at least (about 2 Mbit/s through the FaceTime
+        /// relay). A package that is still moving at this rate is not given up on.
+        static let journalAddAssumedBytesPerSecond = 250 * ByteUnit.kibibyte
+        /// The longest wait for one Journal add: the load deadline of the large modules.
+        static let journalAddMaximumTimeout: Duration = .seconds(180)
+
+        /// How long an add of `byteCount` bytes may stay suspended before the package goes
+        /// through Messenger instead. Messenger is several times slower than the Journal for a
+        /// large package (chunks one at a time, Base64 twice), so a track that is still uploading
+        /// is waited for rather than sent a second way. See CODE_AUDIT_Game_Photo_Audio §7.1.
+        static func journalAddTimeout(forByteCount byteCount: Int) -> Duration {
+            let transfer = Duration.seconds(Double(max(0, byteCount)) / Double(journalAddAssumedBytesPerSecond))
+            return min(journalAddMaximumTimeout, journalAddMinimumTimeout + transfer)
+        }
+
+        /// From this size on, a Journal add that runs past its timeout is waited for instead of
+        /// being repeated through Messenger: the Messenger copy of such a package is slower than
+        /// the upload still running, and the two would share the uplink. A smaller package
+        /// falls back as before.
+        static let journalWaitInsteadOfFallbackBytes = 3 * ByteUnit.megabyte
+
+        /// Whether a timed-out add of `byteCount` bytes keeps waiting for the Journal and adopts
+        /// its late attachment. See CODE_AUDIT_Game_Photo_Audio §7.2.
+        static func journalWaitsInsteadOfFallback(forByteCount byteCount: Int) -> Bool {
+            byteCount >= journalWaitInsteadOfFallbackBytes
+        }
+
         /// The pauses between attempts to load an attachment whose upload may not be
         /// downloadable yet; the last value repeats until the load's own deadline.
         static let attachmentRetryDelays: [Duration] = [.milliseconds(250), .seconds(1), .seconds(2)]

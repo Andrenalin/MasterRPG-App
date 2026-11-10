@@ -173,7 +173,10 @@ final class RPGSharePlayController {
     let journalAddLimiter = SharePlayJournalAddLimiter<SharePlayJournalSlot, GroupSessionJournal.Attachment>()
     var journal: GroupSessionJournal?
 
-    static let journalAddTimeout: Duration = .seconds(10)
+    /// The wait for one Journal add grows with the package, see `GameLimits.SharePlay.journalAddTimeout(forByteCount:)`.
+    static func journalAddTimeout(forByteCount byteCount: Int) -> Duration {
+        GameLimits.SharePlay.journalAddTimeout(forByteCount: byteCount)
+    }
     /// One send and three retries. A single retry after one second dropped the message while
     /// a large transfer still held the send queue. See CODE_AUDIT_21 §5.6.
     static let maxChunkedDeliveryAttempts = 4

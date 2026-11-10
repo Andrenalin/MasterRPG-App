@@ -55,6 +55,30 @@ struct GameLimitsRelationshipTests {
         #expect(GameLimits.SharePlay.uploadWaitDelays.starts(with: base))
     }
 
+    @Test("The Journal add timeout grows with the package and stays within its bounds")
+    @MainActor
+    func journalAddTimeoutScalesWithSize() {
+        let limits = GameLimits.SharePlay.self
+        #expect(limits.journalAddTimeout(forByteCount: 0) == limits.journalAddMinimumTimeout)
+        #expect(limits.journalAddTimeout(forByteCount: -1) == limits.journalAddMinimumTimeout)
+        // A photo keeps a short wait, a 20 MB track gets well over the old fixed 10 s.
+        #expect(limits.journalAddTimeout(forByteCount: 1 * ByteUnit.megabyte) < .seconds(20))
+        #expect(limits.journalAddTimeout(forByteCount: 20 * ByteUnit.megabyte) > .seconds(60))
+        #expect(limits.journalAddTimeout(forByteCount: 5 * ByteUnit.megabyte) <= limits.journalAddTimeout(forByteCount: 10 * ByteUnit.megabyte))
+        // The largest Journal package is capped at the long load deadline.
+        #expect(limits.journalAddTimeout(forByteCount: GameLimits.maximumMessageBytes) == limits.journalAddMaximumTimeout)
+        #expect(limits.journalAddMaximumTimeout == RPGSharePlayController.journalAttachmentLoadDeadline(for: .audio))
+    }
+
+    @Test("A package Messenger cannot carry always waits for its Journal add")
+    func largePackagesWaitForTheJournal() {
+        let limits = GameLimits.SharePlay.self
+        #expect(!limits.journalWaitsInsteadOfFallback(forByteCount: 1 * ByteUnit.megabyte))
+        #expect(limits.journalWaitsInsteadOfFallback(forByteCount: 15 * ByteUnit.megabyte))
+        #expect(limits.journalWaitsInsteadOfFallback(forByteCount: limits.messengerMessageBytes))
+        #expect(limits.journalWaitInsteadOfFallbackBytes <= limits.messengerMessageBytes)
+    }
+
     @Test("The throttle admits a single source fewer handshakes than all sources together")
     func throttleLimitsAreConsistent() {
         #expect(GameLimits.Throttle.maximumPendingHandshakesPerSource < GameLimits.Throttle.maximumPendingHandshakes)

@@ -113,6 +113,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Why:** This is the main reason Audio is slow and Photo is fast. A 1–3 MB photo uploads in under 10 s, so it stays on the Journal (a CloudAsset made for large blobs). A 10–20 MB track over a typical home uplink through the FaceTime relay does not, so it ends up on the far slower Messenger path (§7.3). Look for `Journal ⌛: message … timed out adding audio attachment` followed by `Chunked: message …, packages N` in the master's `sharePlay` log to confirm on device.
 - **Action:** Make the add timeout depend on size, e.g. a floor plus bytes ÷ an assumed minimum uplink rate, or reuse the per-module load deadline. Prefer waiting for the Journal over falling back for packages above a few MB.
 - **Severity:** High
+- **Status:** Fixed 2026-11-10. `GameLimits.SharePlay.journalAddTimeout(forByteCount:)` = 10 s + bytes ÷ 250 KiB/s, capped at 180 s (the audio load deadline). Used at `RPGSharePlayController+ChunkedTransport.swift:99`; pinned in `GameLimitsRelationshipTests`. Not measured on device. §7.2 and §3.1 (adopting a late add instead of falling back) remain open.
 
 ### 7.2 A timed-out add blocks the audio slot and uploads the bytes twice
 - **Location:** `Modules/GameRPG/SharePlay/SharePlayJournalAddLimiter.swift:69-74, 164-213`, `RPGSharePlayController+ChunkedTransport.swift:143-144`
@@ -120,6 +121,7 @@ _No findings._ Inbound byte budgets (`SharePlayInboundByteBudget`, `journalLoadB
 - **Why:** After the first large track times out, the next ones (the pending play's other start items, the prefetched next track, a replay) all take the slow path. They also share upload bandwidth with the leftover Journal upload. Photos seldom time out, so the photo slot is rarely blocked.
 - **Action:** Covered by §3.1 / §7.1: don't fall back for packages that would finish on the Journal with a realistic deadline. If the fallback stays, adopt the late attachment instead of removing it, and lift the block as soon as it returns.
 - **Severity:** High
+- **Status:** Fixed 2026-11-10 together with §7.1. A package of 3 MB or more (`GameLimits.SharePlay.journalWaitInsteadOfFallbackBytes`) no longer falls back to Messenger when its add times out: it keeps waiting and adopts the late attachment (`waitsForLateAdd` in `RPGSharePlayController+ChunkedTransport.swift`), so the bytes go up once. The limiter lifts its block as soon as the add returns. Smaller packages still fall back. Residual: if a large add outlives even the scaled timeout, the next add in that slot is still `.unavailable` and uses Messenger. Not device-verified.
 
 ### 7.3 Messenger fallback: small chunks sent one at a time, double Base64, one shared queue
 - **Location:** `Modules/GameRPG/SharePlay/SharePlaySingleQueuePackageSender.swift:91, 97-98, 173-227`, `RPGSharePlayController+ChunkedTransport.swift:385-432, 495-499`, `RPGSharePlayController+SessionLifecycle.swift:199-207`
