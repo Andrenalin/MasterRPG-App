@@ -23,14 +23,17 @@ extension GameController {
         }
 
         let playerPins = map.mapPins.filter { $0.isPlayer && $0.characterId != nil }
-        let roomId = mapGameModel.lastActivatedRoomId(for: itemId)
-            ?? map.entries.first(where: \.focused)?.id
-        let room = roomId.flatMap { selectedId in
+        // Opponents come from the last opened room, else the focused room, else the
+        // first room of the map. A map without any room uses every non-player pin.
+        let lastRoom = mapGameModel.lastActivatedRoomId(for: itemId).flatMap { selectedId in
             map.entries.first { $0.id == selectedId }
         }
+        let room = lastRoom
+            ?? map.entries.first(where: \.focused)
+            ?? map.entries.first
         let roomPins = room.map { selectedRoom in
             map.mapPins.filter { !$0.isPlayer && selectedRoom.contains($0.location) }
-        } ?? []
+        } ?? map.mapPins.filter { !$0.isPlayer }
 
         guard !playerPins.isEmpty || !roomPins.isEmpty else { return nil }
         return (playerPins, roomPins)
