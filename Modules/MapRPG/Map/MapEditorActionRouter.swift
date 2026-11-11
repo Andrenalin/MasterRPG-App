@@ -64,7 +64,7 @@ final class MapEditorActionRouter {
         case let .canvasTap(location):
             handleCanvasTap(at: location)
         case let .pencilRoom(polygon):
-            guard session.mapMode == .edit, !session.configuration.isTileEditor else { return }
+            guard session.canEditRoomOutline, !session.configuration.isTileEditor else { return }
             session.clearSelections()
             mapEditController.applyPencilRoom(polygon, editorModel: session)
         case let .needleCoordinatesChanged(entryId):
@@ -104,6 +104,8 @@ final class MapEditorActionRouter {
             let coordinate = session.contentPoint(fromViewport: location)
             mapEditController.addTileCoordinateFromCanvas(coordinate, editorModel: session)
         } else if session.mapMode == .edit {
+            // The player display mode previews the players' view: no new outline points.
+            guard session.canEditRoomOutline else { return }
             mapEditController.releaseAction(
                 at: location,
                 map: map,

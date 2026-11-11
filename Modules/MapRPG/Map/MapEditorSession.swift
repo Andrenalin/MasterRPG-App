@@ -57,6 +57,8 @@ final class MapEditorSession {
     var lastIsHexMap: Bool = false
     var isHexMap: Bool = false
     var displayMode: MapDisplayMode = .master
+    /// Set when the room editor's toolbar switches the display mode; cleared by its overlay.
+    var displayModeAnnouncement: MapDisplayModeAnnouncement?
     var hideCloseButton: Bool = false
 
     // MARK: - Game Mode State
@@ -112,11 +114,25 @@ final class MapEditorSession {
         }
     }
 
+    /// Room outlines (points, needles, pencil strokes) are edited in the editor's game master
+    /// and viewer display modes only. The player display mode previews what players see, so it
+    /// is read-only.
+    var canEditRoomOutline: Bool {
+        mapMode == .edit && displayMode != .player
+    }
+
     func toggleDisplayMode() {
         displayMode = switch displayMode {
         case .master: .player
         case .player: .reader
         case .reader: .master
+        }
+        if mapMode == .edit {
+            displayModeAnnouncement = MapDisplayModeAnnouncement(mode: displayMode)
+        }
+        if !canEditRoomOutline {
+            // The pencil toggle leaves the toolbar with the mode; it must not stay armed.
+            setPencilDrawing(false)
         }
     }
 

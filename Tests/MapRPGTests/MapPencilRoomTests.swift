@@ -191,6 +191,45 @@ struct MapPencilRoomEditorTests {
         #expect(!context.session.roomHitTargetsAreEnabled)
     }
 
+    @Test("The player display mode is read-only: no new outline point, no pencil room")
+    func playerDisplayModeDoesNotEditOutline() throws {
+        let entry = MapEntryModel(
+            id: UUID(), name: "Cellar", content: "",
+            coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 5, y: 5), CGPoint(x: 0, y: 5)]
+        )
+        let context = makeContext(entries: [entry], activeEntryId: entry.id)
+        let root = MapRootModel.preview
+        context.session.installActionRouter(MapEditorActionRouter(
+            session: context.session,
+            editController: root.editController,
+            mapEditController: context.controller,
+            map: try #require(context.session.workingCopy),
+            root: root
+        ))
+
+        // In the game master display mode a tap adds a point.
+        context.session.route(.canvasTap(CGPoint(x: 200, y: 200)))
+        #expect(context.session.editEntries.entries.first?.coordinates.count == 4)
+
+        // Master -> player.
+        #expect(context.session.displayModeAnnouncement == nil)
+        context.session.toggleDisplayMode()
+        #expect(context.session.displayMode == .player)
+        #expect(context.session.displayModeAnnouncement?.mode == .player)
+        #expect(!context.session.canEditRoomOutline)
+        context.session.route(.canvasTap(CGPoint(x: 220, y: 220)))
+        context.session.route(.pencilRoom(polygon))
+
+        #expect(context.session.editEntries.entries.first?.coordinates.count == 4)
+        #expect(context.session.workingCopy?[entry.id].coordinates.count == 4)
+
+        // Player -> viewer edits again.
+        context.session.toggleDisplayMode()
+        #expect(context.session.canEditRoomOutline)
+        context.session.route(.canvasTap(CGPoint(x: 220, y: 220)))
+        #expect(context.session.editEntries.entries.first?.coordinates.count == 5)
+    }
+
     private struct Context {
         let controller: MapEditController
         let session: MapEditorSession

@@ -116,3 +116,36 @@ public struct UseMapToolsTip: Tip {
         MaxDisplayCount(3)
     }
 }
+
+/// Explains the three map display modes right after the map's display-mode button was used for
+/// the first time. Shown once.
+public struct MapDisplayModesTip: Tip {
+    static let displayModeSwitched = Event(id: "map.display-mode-switched.v1")
+
+    public var id: String { "map.display-modes.v1" }
+
+    public var title: Text {
+        Text("Three ways to see the map", bundle: .module)
+    }
+
+    public var message: Text? {
+        Text(
+            "Game Master: all rooms are visible, hidden ones are highlighted.\nPlayer: hidden rooms are covered, exactly as your players see the map.\nViewer: the map is clear, only the room outlines are drawn.",
+            bundle: .module
+        )
+    }
+
+    public var image: Image? {
+        Image(systemName: "rectangle.3.offgrid")
+    }
+
+    public var rules: [Rule] {
+        #Rule(Self.displayModeSwitched) { event in
+            event.donations.count > 0
+        }
+    }
+
+    public var options: [Option] {
+        MaxDisplayCount(1)
+    }
+}

@@ -166,12 +166,14 @@ struct EditToolBarViewModifierToggleDisplayModeButtonView: View {
         Button {
             withAnimation(reduceMotion ? nil : .default) { editorModel.toggleDisplayMode() }
             MasterRPGTips.recordMapToolUsed()
+            MasterRPGTips.recordMapDisplayModeSwitched()
         } label: {
             Image(systemName: editorModel.iconDisplayMode)
                 .contentTransition(.symbolEffect(.replace.byLayer))
                 .accessibilityLabel(Text("Display Mode", bundle: .module))
                 .accessibilityValue(displayModeAccessibilityValue)
         }
+        .popoverTip(MasterRPGTips.mapDisplayModes)
     }
 }
 

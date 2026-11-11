@@ -7,12 +7,12 @@ import SwiftUI
 // Apple Pencil room drawing — see `MapPencilStroke` for the geometry.
 
 extension MapEditorSession {
-    /// Pencil drawing edits room outlines, so it exists in the room editor only. It needs the
-    /// SwiftUI input kinds of iOS 27 to tell the pencil from fingers.
+    /// Pencil drawing edits room outlines, so it exists in the room editor only (not in its player
+    /// preview). It needs the SwiftUI input kinds of iOS 27 to tell the pencil from fingers.
     var canDrawWithPencil: Bool {
 #if os(iOS)
         if #available(iOS 27.0, *) {
-            return mapMode == .edit && !configuration.isTileEditor
+            return canEditRoomOutline && !configuration.isTileEditor
         }
 #endif
         return false

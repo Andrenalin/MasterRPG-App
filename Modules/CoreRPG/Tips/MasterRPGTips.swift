@@ -97,6 +97,7 @@ public enum MasterRPGTips {
     public static let askAI = AskAITip()
     public static let openMapEditor = OpenMapEditorTip()
     public static let useMapTools = UseMapToolsTip()
+    public static let mapDisplayModes = MapDisplayModesTip()
     public static let openAnotherWindow = OpenAnotherWindowTip()
     public static let showJoinCode = ShowJoinCodeTip()
 
@@ -117,6 +118,7 @@ public enum MasterRPGTips {
             askAI,
             openMapEditor,
             useMapTools,
+            mapDisplayModes,
             openAnotherWindow,
             showJoinCode
         ]
@@ -321,6 +323,10 @@ public enum MasterRPGTips {
         await UseMapToolsTip.mapToolUsed.donate()
     }
 
+    public static func donateMapDisplayModeSwitched() async {
+        await MapDisplayModesTip.displayModeSwitched.donate()
+    }
+
     public static func donateWindowOpened() async {
         await OpenAnotherWindowTip.windowOpened.donate()
     }
@@ -356,6 +362,13 @@ public enum MasterRPGTips {
     public static func recordMapToolUsed() {
         Task {
             await donateMapToolUsed()
+        }
+    }
+
+    @MainActor
+    public static func recordMapDisplayModeSwitched() {
+        Task {
+            await donateMapDisplayModeSwitched()
         }
     }
 

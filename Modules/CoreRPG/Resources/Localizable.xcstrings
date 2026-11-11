@@ -1,6 +1,22 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Game Master: all rooms are visible, hidden ones are highlighted.\nPlayer: hidden rooms are covered, exactly as your players see the map.\nViewer: the map is clear, only the room outlines are drawn." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielleiter: Alle Räume sind sichtbar, versteckte sind hervorgehoben.\nSpieler: Versteckte Räume sind verdeckt, genau wie deine Spieler die Karte sehen.\nBetrachter: Die Karte ist klar, nur die Raumumrisse werden gezeichnet."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Game Master: ทุกห้องมองเห็นได้ ห้องที่ซ่อนอยู่จะถูกไฮไลต์\nPlayer: ห้องที่ซ่อนอยู่จะถูกปิดบัง เหมือนที่ผู้เล่นเห็นแผนที่\nViewer: แผนที่ชัดเจน วาดเฉพาะเส้นขอบห้องเท่านั้น"
+          }
+        }
+      }
+    },
     "The change could not be saved. Open MasterRPG to see why." : {
       "comment" : "Error shown by Siri or Shortcuts when an intent changed an item but saving it failed.",
       "localizations" : {
@@ -14,6 +30,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ไม่สามารถบันทึกการเปลี่ยนแปลงได้ เปิด MasterRPG เพื่อดูสาเหตุ"
+          }
+        }
+      }
+    },
+    "Three ways to see the map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drei Arten, die Karte zu sehen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สามวิธีในการดูแผนที่"
           }
         }
       }

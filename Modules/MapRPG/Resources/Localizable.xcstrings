@@ -527,6 +527,22 @@
         }
       }
     },
+    "All rooms are visible, hidden ones are highlighted." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Räume sind sichtbar, versteckte sind hervorgehoben."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทุกห้องมองเห็นได้ ห้องที่ซ่อนอยู่จะถูกไฮไลต์"
+          }
+        }
+      }
+    },
     "Battle map" : {
       "comment" : "Another name users say for this kind of item, so Siri finds it.",
       "localizations" : {
@@ -1298,6 +1314,22 @@
         }
       }
     },
+    "Game Master" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielleiter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมมาสเตอร์"
+          }
+        }
+      }
+    },
     "Health: %lld percent" : {
       "localizations" : {
         "de" : {
@@ -1424,6 +1456,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ซ่อนจากผู้เล่น, ตาย, ไม่ถูกเน้น"
+          }
+        }
+      }
+    },
+    "Hidden rooms are covered, exactly as your players see the map." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versteckte Räume sind verdeckt, genau wie deine Spieler die Karte sehen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ห้องที่ซ่อนอยู่จะถูกปิดบัง เหมือนที่ผู้เล่นเห็นแผนที่"
           }
         }
       }
@@ -2582,6 +2630,22 @@
         }
       }
     },
+    "The map is clear, only the room outlines are drawn." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Karte ist klar, nur die Raumumrisse werden gezeichnet."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่ชัดเจน วาดเฉพาะเส้นขอบห้องเท่านั้น"
+          }
+        }
+      }
+    },
     "The new photo has a different size and shape than the current map. Adapting stretches the rooms and moves the pins to match it, and a hex grid is created again. Or keep them at their current positions?" : {
       "comment" : "Message of the dialog shown when a map gets a new photo with another aspect ratio.",
       "localizations" : {
@@ -2853,6 +2917,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "อัปเดต \"%@\" แล้ว"
+          }
+        }
+      }
+    },
+    "Viewer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Betrachter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ชม"
           }
         }
       }

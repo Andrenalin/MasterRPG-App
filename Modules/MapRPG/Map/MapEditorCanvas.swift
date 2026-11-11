@@ -134,6 +134,9 @@ struct MapEditorCanvas: View {
                 // every transformed map hit target, including selected needles.
                 .zIndex(100)
             }
+            .overlay {
+                MapDisplayModeAnnouncementOverlay(session: session)
+            }
             .coordinateSpace(name: MapViewportCoordinateSpace.name)
             .clipped()
             .onGeometryChange(for: MapViewportMetrics.self) { proxy in
