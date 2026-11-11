@@ -237,6 +237,12 @@ struct EditToolBarViewModifier: ViewModifier {
                         EditToolBarViewModifierRedoButtonView(mapEditController: mapEditController, editorModel: editorModel)
                     }
 
+#if os(iOS)
+                    if editorModel.canDrawWithPencil {
+                        EditToolBarViewModifierPencilDrawButtonView(editorModel: editorModel)
+                    }
+#endif
+
                     EditToolBarViewModifierToggleDisplayModeButtonView(
                         editorModel: editorModel,
                         displayModeAccessibilityValue: displayModeAccessibilityValue

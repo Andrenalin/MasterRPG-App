@@ -9,6 +9,8 @@ enum MapEditorEvent {
     case toggleRoomFocus(UUID)
     case toggleHexGrid
     case canvasTap(CGPoint)
+    /// A finished Apple Pencil outline, as a room polygon in map (content) coordinates.
+    case pencilRoom([CGPoint])
     case needleCoordinatesChanged(UUID)
     /// The pin photo popover was dismissed by the user (Escape, canvas tap).
     case dismissPinPhoto
@@ -61,6 +63,10 @@ final class MapEditorActionRouter {
             toggleHexGrid()
         case let .canvasTap(location):
             handleCanvasTap(at: location)
+        case let .pencilRoom(polygon):
+            guard session.mapMode == .edit, !session.configuration.isTileEditor else { return }
+            session.clearSelections()
+            mapEditController.applyPencilRoom(polygon, editorModel: session)
         case let .needleCoordinatesChanged(entryId):
             handleNeedleCoordinatesChanged(entryId: entryId)
         case .dismissPinPhoto:

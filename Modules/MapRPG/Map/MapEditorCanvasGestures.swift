@@ -34,6 +34,7 @@ struct MapViewportInteractionPlane: View {
                 tapGesture,
                 including: isActive && !session.isPointerInteractionActive ? .all : .none
             )
+            .modifier(MapPencilDrawGestureModifier(session: session))
             .modifier(
                 MapPointerTapGestureModifier(
                     session: session,
@@ -52,17 +53,26 @@ struct MapViewportInteractionPlane: View {
     }
 
 #if !os(tvOS)
-    private var tapGesture: some Gesture {
-        SpatialTapGesture(
-            count: 2,
+    /// A tap that, while the pencil draws, ignores the pencil.
+    private func viewportTap(count: Int) -> SpatialTapGesture {
+#if os(iOS)
+        if #available(iOS 27.0, *), session.isPencilDrawing {
+            return SpatialTapGesture(
+                count: count,
+                coordinateSpace: .named(MapViewportCoordinateSpace.name),
+                inputKinds: session.viewportInputKinds
+            )
+        }
+#endif
+        return SpatialTapGesture(
+            count: count,
             coordinateSpace: .named(MapViewportCoordinateSpace.name)
         )
-            .exclusively(
-                before: SpatialTapGesture(
-                    count: 1,
-                    coordinateSpace: .named(MapViewportCoordinateSpace.name)
-                )
-            )
+    }
+
+    private var tapGesture: some Gesture {
+        viewportTap(count: 2)
+            .exclusively(before: viewportTap(count: 1))
             .onEnded { value in
                 switch value {
                 case .first(let doubleTap):
@@ -129,19 +139,40 @@ struct MapViewportGestureModifier: ViewModifier {
 
 #if !os(tvOS)
     private var viewportGesture: some Gesture {
-        MagnifyGesture(minimumScaleDelta: 0)
-            .simultaneously(
-                with: DragGesture(
-                    minimumDistance: 3,
-                    coordinateSpace: .named(MapViewportCoordinateSpace.name)
-                )
-            )
+        viewportMagnify
+            .simultaneously(with: viewportDrag)
             .updating(interactionTransform) { value, state, _ in
                 state = transientTransform(for: value)
             }
             .onEnded { value in
                 session.viewport.commit(transientTransform(for: value))
             }
+    }
+
+    /// The viewport gestures ignore the pencil while it draws, so it never pans the map.
+    private var viewportMagnify: MagnifyGesture {
+#if os(iOS)
+        if #available(iOS 27.0, *), session.isPencilDrawing {
+            return MagnifyGesture(minimumScaleDelta: 0, inputKinds: session.viewportInputKinds)
+        }
+#endif
+        return MagnifyGesture(minimumScaleDelta: 0)
+    }
+
+    private var viewportDrag: DragGesture {
+#if os(iOS)
+        if #available(iOS 27.0, *), session.isPencilDrawing {
+            return DragGesture(
+                minimumDistance: 3,
+                coordinateSpace: .named(MapViewportCoordinateSpace.name),
+                inputKinds: session.viewportInputKinds
+            )
+        }
+#endif
+        return DragGesture(
+            minimumDistance: 3,
+            coordinateSpace: .named(MapViewportCoordinateSpace.name)
+        )
     }
 
     private func transientTransform(
@@ -164,6 +195,72 @@ struct MapViewportGestureModifier: ViewModifier {
     }
 #endif
 }
+
+/// Apple Pencil room drawing. While the toolbar's draw mode is on, the pencil draws an outline
+/// (live preview in `MapPencilStrokeOverlay`) and a pencil tap adds a single point, while the
+/// viewport gestures ignore the pencil, so fingers keep panning and zooming. Needles and pins
+/// keep their own, closer gestures, so the pencil can still move them.
+struct MapPencilDrawGestureModifier: ViewModifier {
+    let session: MapEditorSession
+
+    func body(content: Content) -> some View {
+#if os(iOS)
+        if #available(iOS 27.0, *) {
+            content
+                .simultaneousGesture(drawGesture, isEnabled: session.isPencilDrawing)
+                .simultaneousGesture(tapGesture, isEnabled: session.isPencilDrawing)
+        } else {
+            content
+        }
+#else
+        content
+#endif
+    }
+
+#if os(iOS)
+    @available(iOS 27.0, *)
+    private var drawGesture: some Gesture {
+        DragGesture(
+            minimumDistance: 3,
+            coordinateSpace: .named(MapViewportCoordinateSpace.name),
+            inputKinds: .pencil
+        )
+            .onChanged { value in
+                if session.pencilStrokeOrigin != value.startLocation {
+                    // The drag only starts after `minimumDistance`; keep where the pencil landed.
+                    session.beginPencilStroke(atViewport: value.startLocation)
+                }
+                session.extendPencilStroke(toViewport: value.location)
+            }
+            .onEnded { value in
+                session.extendPencilStroke(toViewport: value.location)
+                session.finishPencilStroke()
+            }
+    }
+
+    @available(iOS 27.0, *)
+    private var tapGesture: some Gesture {
+        SpatialTapGesture(
+            coordinateSpace: .named(MapViewportCoordinateSpace.name),
+            inputKinds: .pencil
+        )
+            .onEnded { value in
+                session.route(.canvasTap(value.location))
+            }
+    }
+#endif
+}
+
+#if os(iOS)
+extension MapEditorSession {
+    /// The inputs that pan, zoom and double-tap the map while the pencil draws: everything but
+    /// the pencil.
+    @available(iOS 27.0, *)
+    var viewportInputKinds: GestureInputKinds {
+        [.directTouch, .indirectTouch, .pointer]
+    }
+}
+#endif
 
 enum MapViewportGestureSurface {
     case viewport

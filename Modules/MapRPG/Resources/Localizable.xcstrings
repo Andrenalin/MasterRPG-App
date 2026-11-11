@@ -1056,6 +1056,38 @@
         }
       }
     },
+    "Draw map area" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartenbereich zeichnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วาดพื้นที่แผนที่"
+          }
+        }
+      }
+    },
+    "Draw Room with Pencil" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raum mit dem Stift zeichnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วาดห้องด้วยดินสอ"
+          }
+        }
+      }
+    },
     "dungeon" : {
       "localizations" : {
         "de" : {

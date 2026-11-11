@@ -113,6 +113,9 @@ struct MapEditorCanvas: View {
                 )
             }
             .overlay(alignment: .topLeading) {
+                MapPencilStrokeOverlay(session: session, transform: displayedTransform)
+            }
+            .overlay(alignment: .topLeading) {
                 MapLogicalCanvasNeedleLayer(
                     session: session,
                     viewportScale: displayedTransform.scale

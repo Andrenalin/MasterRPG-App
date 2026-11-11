@@ -80,12 +80,20 @@ final class MapEditorSession {
     @ObservationIgnored weak var sharedRootModel: RootModel?
     private var localIsStreaming = true
     var isPointing: Bool = false
+    /// Apple Pencil room drawing (edit mode, iOS): the pencil draws a room outline while fingers
+    /// keep panning and zooming. See `MapEditorSession+Pencil.swift`.
+    var isPencilDrawing = false
+    /// The outline being drawn, sampled in map (content) coordinates.
+    var pencilStroke = MapPencilStroke()
+    /// Where the stroke being drawn landed (viewport coordinates); tells a new stroke from the
+    /// next sample of the current one, so a cancelled stroke cannot leak into the next.
+    @ObservationIgnored var pencilStrokeOrigin: CGPoint?
     var isPointerInteractionActive: Bool {
         mapMode == .gameMaster && isPointing
     }
 
     var roomHitTargetsAreEnabled: Bool {
-        guard displayMode == .master, !isPointerInteractionActive else { return false }
+        guard displayMode == .master, !isPointerInteractionActive, !isPencilDrawing else { return false }
         return switch mapMode {
         case .edit:
             editEntries.entries.isEmpty

@@ -175,6 +175,31 @@ struct EditToolBarViewModifierToggleDisplayModeButtonView: View {
     }
 }
 
+#if os(iOS)
+/// Switches Apple Pencil room drawing on and off: while on, the pencil draws a room outline and
+/// fingers keep panning and zooming.
+struct EditToolBarViewModifierPencilDrawButtonView: View {
+    let editorModel: MapEditorSession
+
+    var body: some View {
+        Toggle(isOn: Binding(
+            get: { editorModel.isPencilDrawing },
+            set: { editorModel.setPencilDrawing($0) }
+        )) {
+            Label {
+                Text("Draw Room with Pencil", bundle: .module)
+            } icon: {
+                Image(systemName: "pencil.tip.crop.circle")
+                    .symbolVariant(editorModel.isPencilDrawing ? .fill : .none)
+            }
+        }
+        .toggleStyle(.button)
+        .labelStyle(.iconOnly)
+        .disabled(!editorModel.canDrawWithPencil)
+    }
+}
+#endif
+
 struct EditToolBarViewModifierHideScaleButtonView: View {
     let hideCloseButton: Bool
     @Binding var hideScales: Bool

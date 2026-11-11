@@ -70,18 +70,45 @@ extension MapEditController {
 
     @MainActor
     func addEntry(editorModel: MapEditorSession) -> UUID? {
+        addEntry(coordinates: [], editorModel: editorModel)
+    }
+
+    /// Adds a room with the given outline and makes it the room being edited.
+    @MainActor
+    private func addEntry(coordinates: [CGPoint], editorModel: MapEditorSession) -> UUID? {
         guard let copy = editorModel.workingCopy else { return nil }
         synchronizeWorkingCopy(editorModel: editorModel)
-        let entry = MapEntryModel.empty
+        var entry = MapEntryModel.empty
+        entry.coordinates = coordinates
         copy.entries.append(entry)
         editController.editorModel.sheetEditorModel.entryId = entry.id
         editorModel.editEntries.resetEntries(mapId: copy.id, entries: [entry])
         synchronizeRoomPresentation(from: copy, editorModel: editorModel)
         recordMutation(
-            String(localized: "Add map area", bundle: .module),
+            coordinates.isEmpty
+                ? String(localized: "Add map area", bundle: .module)
+                : String(localized: "Draw map area", bundle: .module),
             editorModel: editorModel
         )
         return entry.id
+    }
+
+    /// Makes an Apple Pencil outline the shape of the room being edited, or a new room when no
+    /// room is being edited. One undo step either way.
+    @MainActor
+    @discardableResult
+    func applyPencilRoom(_ polygon: [CGPoint], editorModel: MapEditorSession) -> Bool {
+        guard polygon.count >= 3, !editorModel.configuration.isTileEditor else { return false }
+        if var entry = editorModel.editEntries.entries.first {
+            entry.coordinates = polygon
+            editorModel.editEntries.setEntry(entry: entry)
+            editorModel.workingCopy?[entry.id] = entry
+            return recordMutation(
+                String(localized: "Draw map area", bundle: .module),
+                editorModel: editorModel
+            )
+        }
+        return addEntry(coordinates: polygon, editorModel: editorModel) != nil
     }
 
     @MainActor
