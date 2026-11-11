@@ -56,18 +56,6 @@ struct GameSidebarToolbarMenu: View {
                         .symbolVariant(gameScreenModel.isSideMenuVisible ? .fill : .none)
                 }
             }
-
-            Divider()
-
-            if role == .master {
-                Toggle(isOn: battleRoundBinding) {
-                    Label {
-                        Text("Battle Round", bundle: .module)
-                    } icon: {
-                        Image(systemName: "shield.lefthalf.filled")
-                    }
-                }
-            }
         } label: {
             Label {
                 Text("Game View", bundle: .module)
@@ -97,23 +85,6 @@ struct GameSidebarToolbarMenu: View {
             get: { isSidebarVisible },
             set: { isVisible in
                 setGameSidebarVisible(isVisible)
-            }
-        )
-    }
-
-    private var battleRoundBinding: Binding<Bool> {
-        Binding(
-            get: {
-                scenesManager.getSceneState(for: .battleRound).isPresentedInGameMenu
-            },
-            set: { isVisible in
-                withAnimation(accessibilityReduceMotion ? nil : .easeInOut) {
-                    if isVisible {
-                        scenesManager.openWindow(.battleRound)
-                    } else {
-                        scenesManager.dismissWindow(.battleRound)
-                    }
-                }
             }
         )
     }

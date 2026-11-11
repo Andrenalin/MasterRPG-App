@@ -16,6 +16,9 @@ import TabletopKit
 public struct GameTableView: View {
     let root: GameRoot
 
+    /// How far the front ornament is lifted clear of the window's grab handle.
+    private static let handleClearance: CGFloat = 16
+
     /// Handed on to the dice result attachments, which host the dice overlay's own views.
     @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
     @Environment(\.networkActions) private var networkActions
@@ -282,6 +285,10 @@ public struct GameTableView: View {
                     GameTableNoticesView(game: game)
                 }
                 .padding(.top)
+                // Lifts the whole stack off the window's grab handle, which sits at the
+                // front edge just below it; row 1 keeps a fixed position whether or not row 2
+                // (the map toolbar) is shown, because the stack hangs from its top.
+                .offset(y: -Self.handleClearance)
             }
         }
         .task {

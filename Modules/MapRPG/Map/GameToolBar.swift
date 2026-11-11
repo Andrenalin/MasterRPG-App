@@ -70,6 +70,9 @@ struct GameToolBar<Session: GameToolBarSession>: View {
                 if showToolBar {
                     HStack {
                         if isMaster {
+#if os(macOS) || os(visionOS)
+                            GameToolBarBattleRoundButtonView()
+#endif
                             Button {
                                 withAnimation(reduceMotion ? nil : .default) {
                                     model.displayMode = model.displayMode.toggled()
@@ -316,6 +319,33 @@ private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
         }
     }
 }
+
+#if os(macOS) || os(visionOS)
+/// Opens / closes the Battle Round window (iOS keeps it in the game menu).
+private struct GameToolBarBattleRoundButtonView: View {
+    @ScaledMetric private var iconSize: CGFloat = 24
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
+        let isPresented = scenesManager.getSceneState(for: .battleRound).isPresentedInGameMenu
+        Button {
+            if isPresented {
+                scenesManager.dismissWindow(.battleRound)
+            } else {
+                scenesManager.openWindow(.battleRound)
+            }
+        } label: {
+            Image(systemName: "shield.lefthalf.filled")
+                .frame(width: iconSize, height: iconSize)
+        }
+        .selectedRoundButton(
+            title: String(localized: "Battle Round", bundle: .module),
+            module: .map,
+            isSelected: isPresented
+        )
+    }
+}
+#endif
 
 private struct GameToolBarHideScaleButtonView: View {
     /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.

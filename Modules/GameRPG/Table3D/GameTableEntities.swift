@@ -191,7 +191,11 @@ final class PinPawn {
         pinEntity.components.set(PinComponent(pinId: pin.id))
         pinEntity.components.set(InputTargetComponent())
         pinEntity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
-        pinEntity.components.set(HoverEffectComponent())
+        // A uniform glow over the whole pawn while it is looked at or touched. The default
+        // spotlight is a faint feathered spot that disappears on these unlit materials.
+        pinEntity.components.set(HoverEffectComponent(.highlight(
+            HoverEffectComponent.HighlightHoverEffectStyle(color: .white, strength: 1.5)
+        )))
         var accessibility = AccessibilityComponent()
         accessibility.isAccessibilityElement = true
         accessibility.label = LocalizedStringResource("Map pin \(pin.name)", bundle: .module)
