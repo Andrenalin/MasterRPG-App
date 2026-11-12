@@ -6996,7 +6996,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_DEBUG_DYLIB = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -7015,7 +7015,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.DiceRollerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -7042,7 +7042,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -7060,7 +7060,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.DiceRollerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -7086,7 +7086,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				EAGER_LINKING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_DEBUG_DYLIB = YES;
@@ -7102,7 +7102,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGShare;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -7130,7 +7130,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_TESTABILITY = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -7146,7 +7146,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster.RPGShare;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -7344,7 +7344,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				DEVELOPMENT_ASSET_PATHS = "";
 				EAGER_LINKING = YES;
 				ENABLE_APP_SANDBOX = YES;
@@ -7390,7 +7390,7 @@
 					"@executable_path/../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
@@ -7411,7 +7411,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
@@ -7459,7 +7459,7 @@
 					"@executable_path/../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
@@ -7619,7 +7619,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Resources/MasterTV-Debug.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				DEVELOPMENT_ASSET_PATHS = "";
 				EAGER_LINKING = YES;
 				ENABLE_PREVIEWS = YES;
@@ -7645,7 +7645,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
@@ -7664,7 +7664,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Resources/MasterTV-Release.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = NO;
@@ -7692,7 +7692,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = MasterRPG;
@@ -8961,7 +8961,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				EAGER_LINKING = YES;
@@ -9000,7 +9000,7 @@
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -9026,7 +9026,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
-				CURRENT_PROJECT_VERSION = 631;
+				CURRENT_PROJECT_VERSION = 642;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_APP_SANDBOX = YES;
@@ -9066,7 +9066,7 @@
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 3.1;
+				MARKETING_VERSION = 3.2;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = de.AndreTrettin.GameMaster;
 				PRODUCT_NAME = "$(TARGET_NAME)";
