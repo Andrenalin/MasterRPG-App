@@ -3,10 +3,11 @@
 import SwiftUI
 
 public struct GameShareView<Content: View>: View {
-    public init(root: any ItemRootControllable, itemId: UUID, isShareable: Bool = true, @ViewBuilder content: () -> Content = EmptyView.init) {
+    public init(root: any ItemRootControllable, itemId: UUID, isShareable: Bool = true, usesModuleSharingView: Bool = true, @ViewBuilder content: () -> Content = EmptyView.init) {
         self.root = root
         self.itemId = itemId
         self.isShareable = isShareable
+        self.usesModuleSharingView = usesModuleSharingView
         self.content = content()
     }
 
@@ -16,6 +17,10 @@ public struct GameShareView<Content: View>: View {
     /// logic — e.g. a Photo row embedded inside a Map entry, which shares only through
     /// the Map itself. See CODE_AUDIT: Photo-in-Map share toggle.
     let isShareable: Bool
+    /// False renders the standard share button even where the module returns a custom sharing
+    /// view. That view builds on it (e.g. Table adds a generate button) and would otherwise
+    /// replace itself.
+    let usesModuleSharingView: Bool
     let content: Content
 
     @Environment(AppGameStateModel.self) private var appGameStateModel
@@ -37,7 +42,7 @@ public struct GameShareView<Content: View>: View {
                     // Only where this view offers sharing: a Photo embedded in a Map shares through
                     // the Map, so its report row showed player names for a share it doesn't offer.
                     // See CODE_AUDIT_19 §8.1.
-                    if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty || transfer != nil {
+                    if isShareable, sharingType == .share, !replacesShareWithGenerate, !statuses.isEmpty || transfer != nil {
                         PlayerReportRow(statuses: statuses, transfer: transfer)
                             // Informational only: a tap on a control in the content's top-trailing
                             // corner must reach that control, not this caption.
@@ -51,7 +56,7 @@ public struct GameShareView<Content: View>: View {
     /// landed on the button itself. There the players follow the button and the share spans
     /// the row, the layout of the Music row's `SharingActionView`.
     private var showsReportBesideButton: Bool {
-        Content.self == EmptyView.self && isShareable && root.viewControllable.sharingViewType == .share
+        Content.self == EmptyView.self && isShareable && sharingType == .share
     }
 
     /// The game master goes by the players it lists. A player device lists no names: its
@@ -65,15 +70,43 @@ public struct GameShareView<Content: View>: View {
 
     @ViewBuilder
     private func actionBarWithSharing(statuses: [PlayerReportStatus]) -> some View {
-        switch root.viewControllable.sharingViewType {
+        switch sharingType {
         case .none:
             content
+        case .share where replacesShareWithGenerate:
+            HStack(spacing: 8) {
+                if canGenerate {
+                    ItemGenerateButton(root: root, itemId: itemId)
+                }
+                content
+                    .contentShape(.rect)
+            }
         case .share:
             content
                 .shareListItem(isActive: canShare, allReported: allReported(statuses), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
         case .custom:
             root.viewControllable.sharingView(for: itemId)
         }
+    }
+
+    /// A module's custom sharing view replaces the share button of an item row only. Content
+    /// around the button (a sheet's name row) keeps the standard share, which the custom view
+    /// would otherwise drop together with that content.
+    private var sharingType: SharingViewType {
+        let type = root.viewControllable.sharingViewType
+        guard type == .custom else { return type }
+        return usesModuleSharingView && Content.self == EmptyView.self ? .custom : .share
+    }
+
+    /// A sheet header of an item whose module generates (Table) offers Generate instead of
+    /// Share: a table is shared from its row, the sheet generates from it.
+    private var replacesShareWithGenerate: Bool {
+        Content.self != EmptyView.self && root.generationControllable != nil
+    }
+
+    /// The game master generates during a game, like the share button's own condition.
+    private var canGenerate: Bool {
+        isShareable && appGameStateModel.gameModus != .player && appGameStateModel.isGameRunning
     }
 
     var canShare: Bool {

@@ -78,9 +78,18 @@ public struct TableRootSheet: View {
             }
             .navigationVisibility(true)
             .itemGenerationPresentation(
-                root: root,
+                root: generationRoot,
                 selection: $generationSelection
             )
+    }
+}
+
+private extension TableRootSheet {
+    /// A Table opened from another module's sheet (a table link in a Map entry) generates through
+    /// the Table module's root, since this sheet's own module has no generator.
+    var generationRoot: ItemRootController {
+        guard root.generationControllable == nil else { return root }
+        return sheetRootModel.rootController(for: .table) ?? root
     }
 }
 

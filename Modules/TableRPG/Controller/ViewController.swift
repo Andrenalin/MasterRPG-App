@@ -8,12 +8,16 @@ import GeneratorRPG
 import SwiftUI
 
 public struct ViewController: Sendable {
-    public let sharingViewType: SharingViewType = .share
+    public let sharingViewType: SharingViewType = .custom
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
     public let supportsBatchExtraction: Bool = true
 }
 
 extension ViewController: ViewControllable {
+    @MainActor public func sharingView(for itemId: UUID) -> AnyView {
+        AnyView(TableSharingActionView(itemId: itemId).equatable())
+    }
+
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {
         AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }

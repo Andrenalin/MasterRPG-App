@@ -49,7 +49,7 @@ extension LinkController: LinkControllable {
             } else {
                 description = formatInlineDescription(description: item.description, entryCount: item.entries.count)
             }
-            let result = "\(sendAction)\(generateAction)\(showAction) \(description)\(removeAction)"
+            let result = "\(generateAction)\(sendAction)\(showAction) \(description)\(removeAction)"
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
             return text.toggleLink(url: url, with: result)
         }

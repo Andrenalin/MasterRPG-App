@@ -96,6 +96,10 @@ struct LinkControllerTests {
 
         // Then
         #expect(expanded.contains("/generate)"))
+        // Generate comes first, ahead of Share.
+        let generateIndex = try #require(expanded.range(of: "/generate)")?.lowerBound)
+        let shareIndex = try #require(expanded.range(of: "/share)")?.lowerBound)
+        #expect(generateIndex < shareIndex)
         #expect(spy.itemId == firstItem.id)
     }
     

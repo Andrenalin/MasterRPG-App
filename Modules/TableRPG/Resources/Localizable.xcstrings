@@ -553,6 +553,22 @@
         }
       }
     },
+    "Generate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง"
+          }
+        }
+      }
+    },
     "Hide" : {
       "localizations" : {
         "de" : {

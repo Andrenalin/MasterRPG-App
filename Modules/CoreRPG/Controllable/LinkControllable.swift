@@ -36,7 +36,7 @@ public enum LinkType: String, Equatable, Hashable, Sendable, CaseIterable {
         case .share: "square.and.arrow.up.fill"
         case .show: "eye.fill"
         case .favorite: "star.fill"
-        case .generate: "wand.and.stars"
+        case .generate: "gear"
         }
     }
     
