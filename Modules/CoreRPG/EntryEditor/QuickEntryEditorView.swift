@@ -205,7 +205,7 @@ private extension QuickEntryEditorView {
 
         ToolbarItem(placement: .confirmationAction) {
             ControlGroup {
-                Button(role: .confirm) {
+                Button(role: applyRole) {
                     let parsedEntries = createMultiLineEntries(referenceText.input)
                     let entries = editController.merge(itemId: model.id, entries: parsedEntries)
                     model.entries = entries
@@ -223,8 +223,22 @@ private extension QuickEntryEditorView {
                     Image(systemName: "square.and.arrow.down")
                 }
                 .accessibilityLabel(Text("Apply", bundle: .module))
+#if os(macOS)
+                .buttonStyle(.glassProminent)
+                .keyboardShortcut(.return, modifiers: .command)
+#endif
             }
         }
+    }
+
+    /// The `.confirm` role makes Return the window's default action. On macOS the editor is a text
+    /// view where Return starts a new entry line, so Apply must not take it; it is ⌘Return there.
+    var applyRole: ButtonRole? {
+#if os(macOS)
+        nil
+#else
+        .confirm
+#endif
     }
     
     var canShowInspector: Bool {
