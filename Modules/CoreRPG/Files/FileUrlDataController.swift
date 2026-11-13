@@ -254,6 +254,24 @@ public extension FileUrlDataController {
         return exists ?? false
     }
 
+    /// The size in bytes of the file on this device: the staged bytes, the file on disk (an iCloud
+    /// placeholder reports its full size) or the bytes a game peer sent. `nil` when none is here.
+    /// Never downloads: a remote URL counts only once it is cached.
+    @concurrent
+    func byteCount(of fileUrl: FileUrl) async -> Int? {
+        if let data = fileUrl.data { return data.count }
+        if fileUrl.location == .url {
+            let cacheUrl = remoteCacheURL(for: fileUrl)
+            if let size = try? cacheUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize { return size }
+            return peerFiles.data(for: fileUrl.fileId)?.count
+        }
+        let size = await deviceUrl(for: fileUrl) { url -> Int? in
+            guard let url else { return nil }
+            return try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+        }
+        return size ?? peerFiles.data(for: fileUrl.fileId)?.count
+    }
+
     /// Whether the file can be read now without waiting for iCloud: like `hasLocalData(for:)`,
     /// but an iCloud Drive item must also be downloaded. A file that has not downloaded yet
     /// still exists on disk as a dataless placeholder (iOS 17, macOS 14), so `hasLocalData`

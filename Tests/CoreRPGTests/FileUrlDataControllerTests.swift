@@ -278,6 +278,29 @@ struct FileAccessTests {
         #expect(await sut.hasDownloadedData(for: stored))
     }
 
+    @Test("byteCount is the size of the stored file and nil for one that is not here")
+    func byteCountOfStoredAndMissingFile() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "jpg")
+        let fileId = UUID()
+        let data = Data("thumbnail bytes".utf8)
+        var imported = FileUrl(
+            fileId: fileId,
+            url: try #require(URL(string: "Example/image.jpg")),
+            location: .newCloud,
+            module: module,
+            relativeUrl: nil
+        )
+        imported.resetData(data)
+        let stored = try #require(
+            try await sut.createNewFileUrl(fileId: fileId, unconvertedFileUrl: imported, pathExtension: "jpg")
+        )
+        let missing = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
+
+        #expect(await sut.byteCount(of: stored) == data.count)
+        #expect(await sut.byteCount(of: missing) == nil)
+    }
+
     @Test("hasDownloadedData is false for a file that is not on this device")
     func hasDownloadedDataFalseForMissingFile() async throws {
         let module = uniqueModuleName()

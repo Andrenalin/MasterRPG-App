@@ -8302,6 +8302,23 @@
         }
       }
     },
+    "File size: %@" : {
+      "comment" : "Accessibility label of the game master's row that shows only the size of an item's file; %@ is the size, e.g. 5.5 MB.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateigröße: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขนาดไฟล์: %@"
+          }
+        }
+      }
+    },
     "Started" : {
       "comment" : "Download of an item's file began on this device.",
       "localizations" : {

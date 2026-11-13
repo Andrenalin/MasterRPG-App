@@ -32,7 +32,7 @@ struct ViewControllerTests {
         _ = sut.windowViewer(root: root, selection: WindowItemSelection(itemId: itemId))
         _ = sut.gameViewer(root: root)
 
-        #expect(sut.sharingViewType == .share)
+        #expect(sut.sharingViewType == .custom)
         #expect(sut.thumbnailRowViewType == .custom)
         #expect(sut.supportsBatchExtraction)
     }

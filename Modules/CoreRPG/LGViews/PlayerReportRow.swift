@@ -27,13 +27,20 @@ public extension [SharingControlModel] {
 /// checkmark once everyone confirmed. On a player device, which lists no players, it shows
 /// the download of the item's file instead (`transfer`). Shows nothing without either.
 public struct PlayerReportRow: View {
-    public init(statuses: [PlayerReportStatus], transfer: ItemTransferStatus? = nil) {
+    public init(statuses: [PlayerReportStatus], transfer: ItemTransferStatus? = nil, fileByteCount: Int? = nil) {
         self.statuses = statuses
         self.transfer = transfer
+        self.fileByteCount = fileByteCount
     }
 
     let statuses: [PlayerReportStatus]
     let transfer: ItemTransferStatus?
+    /// The size of the item's file, shown on the game master's device during the game.
+    let fileByteCount: Int?
+
+    private var formattedSize: String? {
+        fileByteCount.map { Int64($0).formatted(.byteCount(style: .file)) }
+    }
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     /// Insets of the player report capsule, scaling with Dynamic Type. See CODE_AUDIT_20 §8.7.
@@ -41,16 +48,24 @@ public struct PlayerReportRow: View {
     @ScaledMetric(relativeTo: .caption) private var reportVerticalInset: CGFloat = 3
 
     public var body: some View {
-        if !statuses.isEmpty || transfer != nil {
+        if !statuses.isEmpty || transfer != nil || fileByteCount != nil {
             HStack(spacing: 4) {
                 if statuses.isEmpty, let transfer {
                     TransferStatusText(transfer: transfer)
-                } else {
+                } else if !statuses.isEmpty {
                     Text(attributedNames)
                     if statuses.allSatisfy(\.reported) {
                         Image(systemName: "checkmark")
                             .foregroundStyle(.tint)
                     }
+                }
+                if let formattedSize {
+                    if !statuses.isEmpty {
+                        Text(verbatim: "·")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(verbatim: formattedSize)
+                        .foregroundStyle(.secondary)
                 }
             }
             .font(.caption)
@@ -132,6 +147,9 @@ private extension PlayerReportRow {
                 Text("Download failed", bundle: .module)
             }
         }
+        if statuses.isEmpty, let formattedSize {
+            return Text("File size: \(formattedSize)", bundle: .module)
+        }
         let reportedNames = statuses.filter(\.reported).map(\.name).joined(separator: ", ")
         let missingNames = statuses.filter { !$0.reported }.map(\.name).joined(separator: ", ")
         if missingNames.isEmpty {
@@ -159,5 +177,16 @@ private extension PlayerReportRow {
         PlayerReportStatus(id: .fixture2, name: "Arin Doof", reported: true),
         PlayerReportStatus(id: .fixture3, name: "Zara Mega", reported: false)
     ])
+    .padding()
+}
+
+#Preview("Master with file size") {
+    VStack(alignment: .leading) {
+        PlayerReportRow(statuses: [], fileByteCount: 5_460_000)
+        PlayerReportRow(statuses: [
+            PlayerReportStatus(id: .fixture2, name: "Arin Doof", reported: true),
+            PlayerReportStatus(id: .fixture3, name: "Zara Mega", reported: false)
+        ], fileByteCount: 5_460_000)
+    }
     .padding()
 }

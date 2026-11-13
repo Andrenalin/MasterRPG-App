@@ -28,27 +28,51 @@ public struct GameShareView<Content: View>: View {
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     @Environment(\.sharingControlActions) private var sharingControlActions
 
+    /// The size of the item's file, read on the game master's device while a game runs.
+    @State private var fileByteCount: Int?
+
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
         // button's allReported state and the row below it.
         let statuses = playerReportStatuses
-        if showsReportBesideButton {
-            PlayerReportRow(statuses: statuses, transfer: transfer)
-                .shareListItem(isActive: canShare, allReported: allReported(statuses), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            actionBarWithSharing(statuses: statuses)
-                .overlay(alignment: .topTrailing) {
-                    // Only where this view offers sharing: a Photo embedded in a Map shares through
-                    // the Map, so its report row showed player names for a share it doesn't offer.
-                    // See CODE_AUDIT_19 §8.1.
-                    if isShareable, sharingType == .share, !replacesShareWithGenerate, !statuses.isEmpty || transfer != nil {
-                        PlayerReportRow(statuses: statuses, transfer: transfer)
-                            // Informational only: a tap on a control in the content's top-trailing
-                            // corner must reach that control, not this caption.
-                            .allowsHitTesting(false)
+        Group {
+            if showsReportBesideButton {
+                PlayerReportRow(statuses: statuses, transfer: transfer, fileByteCount: fileByteCount)
+                    .shareListItem(isActive: canShare, allReported: allReported(statuses), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                actionBarWithSharing(statuses: statuses)
+                    .overlay(alignment: .topTrailing) {
+                        // Only where this view offers sharing: a Photo embedded in a Map shares through
+                        // the Map, so its report row showed player names for a share it doesn't offer.
+                        // See CODE_AUDIT_19 §8.1.
+                        if isShareable, sharingType == .share, !replacesShareWithGenerate, !statuses.isEmpty || transfer != nil || fileByteCount != nil {
+                            PlayerReportRow(statuses: statuses, transfer: transfer, fileByteCount: fileByteCount)
+                                // Informational only: a tap on a control in the content's top-trailing
+                                // corner must reach that control, not this caption.
+                                .allowsHitTesting(false)
+                        }
                     }
-                }
+            }
+        }
+        .task(id: FileSizeRequest(itemId: itemId, isShown: showsFileSize)) {
+            fileByteCount = showsFileSize ? await root.gameControllable.fileByteCount(for: itemId) : nil
+        }
+    }
+
+    private struct FileSizeRequest: Equatable {
+        let itemId: UUID
+        let isShown: Bool
+    }
+
+    /// The game master sees the size of a file-backed item (Audio, Pdf, Photo, 3D model) for the
+    /// whole game, shared or not; the players see the download instead.
+    private var showsFileSize: Bool {
+        guard isShareable, sharingType == .share, appGameStateModel.gameModus == .master,
+              appGameStateModel.isGameRunning else { return false }
+        switch root.configurable.module {
+        case .photo, .audio, .pdf, .space: return true
+        default: return false
         }
     }
 

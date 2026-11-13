@@ -49,10 +49,12 @@ struct SharingActionView: View, Equatable {
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
     @State private var waitForSharing: Bool = false
+    /// The size of the track's file, shown on the game master's device during the game.
+    @State private var fileByteCount: Int?
 
     var body: some View {
         if appGameStateModel.isGameRunning {
-            PlayerReportRow(statuses: playerReportStatuses, transfer: transfer)
+            PlayerReportRow(statuses: playerReportStatuses, transfer: transfer, fileByteCount: fileByteCount)
                 .shareListItem(isActive: canShare, allReported: allReported, feedBackEnabled: true, module: .audio, secondActionIcon: playIcon) {
                     shareAudio()
                 } secondAction: {
@@ -64,6 +66,9 @@ struct SharingActionView: View, Equatable {
                     }
                 }
                 .frame(maxWidth: showPlayerReport ? .infinity : nil, alignment: .leading)
+                .task(id: showsFileSize) {
+                    fileByteCount = showsFileSize ? await root.gameController.fileByteCount(for: itemId) : nil
+                }
                 .onChange(of: allReported) { _, newValue in
                     if waitForSharing && newValue {
                         waitForSharing = false
@@ -103,6 +108,11 @@ struct SharingActionView: View, Equatable {
     private var transfer: ItemTransferStatus? {
         guard showPlayerReport, appGameStateModel.gameModus == .player else { return nil }
         return root.gameController.gameModel.transfers[itemId]
+    }
+
+    /// The game master sees the track's file size for the whole game, in the item row.
+    private var showsFileSize: Bool {
+        showPlayerReport && appGameStateModel.gameModus == .master
     }
 
     private var canShare: Bool {

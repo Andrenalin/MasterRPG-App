@@ -362,6 +362,14 @@ public extension GameControllable {
         return await fileUrlDataController.hasDownloadedData(for: fileUrl)
     }
 
+    /// The size in bytes of the item's backing file on this device, `nil` for an item without a
+    /// file or one that is not here. The game master shows it next to the share button.
+    func fileByteCount(for itemId: UUID) async -> Int? {
+        guard let fileUrlDataController = itemControllable.fileUrlDataController,
+              let fileUrl = await itemControllable.item(for: itemId)?.fileUrl else { return nil }
+        return await fileUrlDataController.byteCount(of: fileUrl)
+    }
+
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
         let generation = await gameModel.resetGeneration
         // Version 0 means the model has no version of its own (Dice, Adventure, Generator, …),
