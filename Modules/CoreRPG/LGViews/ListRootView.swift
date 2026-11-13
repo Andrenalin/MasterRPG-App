@@ -178,7 +178,7 @@ private extension ListRootView {
     }
     
     func updateFile(url: URL) {
-        listController.add(type: .item, url: url, root: root)
+        listController.add(type: .item, url: url, root: root, parentId: parentModel?.id)
     }
 
     /// Replaces the row-to-row up/down arrow navigation `List` gave for free. Ignored while

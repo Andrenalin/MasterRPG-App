@@ -100,6 +100,21 @@ extension FolderListControllable {
         toggleFolder(item: item)
     }
 
+    /// Opens the folder or collection `itemId` and every closed ancestor above it, so its
+    /// children are listed. Marks them as opened by the user (`lastIsOpen`), which the next
+    /// list rebuild restores. A folder that has no row in the list yet is skipped.
+    func revealFolder(itemId: UUID?) {
+        guard let itemId else { return }
+        var next = listModel.row(itemId: itemId)
+        var visited = Set<UUID>()
+        while let item = next, visited.insert(item.id).inserted {
+            item.isOpen = true
+            item.lastIsOpen = true
+            item.wasExplicitlyClosed = false
+            next = item.parentId.flatMap { listModel.cacheListModels[$0] }
+        }
+    }
+
     /// Returns true if `itemId` is a closed item that can be expanded or was explicitly closed.
     func canOpenFolder(itemId: UUID?) -> Bool {
         guard let itemId,

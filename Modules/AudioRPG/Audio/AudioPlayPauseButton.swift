@@ -17,8 +17,9 @@ struct AudioPlayPauseButton: View, Equatable {
 
     var body: some View {
         // In a running game the row's share button (`SharingActionView`) plays and pauses,
-        // so this trailing button would be a second play button.
-        if appGameStateModel?.isGameRunning != true {
+        // so this trailing button would be a second play button. Nothing to play without a
+        // file (a new item, or a folder/collection with no playable track).
+        if appGameStateModel?.isGameRunning != true, root.itemController.hasAudio(itemId: itemId) {
             Button {
                 handlePlayPause()
             } label: {

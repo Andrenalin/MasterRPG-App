@@ -384,6 +384,41 @@ struct CloudFolderScanTests {
         #expect(plan.moves.isEmpty)
     }
 
+    @Test("An item whose folder is not in the library moves into the folder of its file")
+    func planMovesOrphanedItemToFileFolder() {
+        // Items sent by a game master keep the id of the master's folder, which this library
+        // does not have: the item is listed nowhere in folder mode and sync said "in sync".
+        let missingFolderId = UUID()
+        let orphan = existing("Kapitel 1", parentId: missingFolderId, file: "Audio Text Roman/Kapitel 1.mp3")
+        let plan = CloudFolderScan.plan(files: [file("Audio Text Roman/Kapitel 1.mp3")], existing: [orphan], module: "audio")
+
+        #expect(plan.folders.map(\.name) == ["Audio Text Roman"])
+        #expect(plan.moves.count == 1)
+        #expect(plan.moves.first?.id == orphan.id)
+        #expect(plan.moves.first?.file == nil, "the file stays where it is, only the item moves")
+        #expect(plan.moves.first?.parentId == plan.folders.first?.id)
+    }
+
+    @Test("An item whose folder is not in the library moves to the root when its file is there")
+    func planMovesOrphanedItemWithRootFileToRoot() {
+        let orphan = existing("Top", parentId: UUID(), file: "Top.mp3")
+        let plan = CloudFolderScan.plan(files: [file("Top.mp3")], existing: [orphan], module: "audio")
+
+        #expect(plan.folders.isEmpty)
+        #expect(plan.moves.map(\.id) == [orphan.id])
+        #expect(plan.moves.first?.parentId == nil)
+    }
+
+    @Test("An orphaned item reuses the folder of its file when the library has it")
+    func planMovesOrphanedItemIntoExistingFolder() {
+        let folder = existing("Audio Text Roman", isFolder: true)
+        let orphan = existing("Kapitel 1", parentId: UUID(), file: "Audio Text Roman/Kapitel 1.mp3")
+        let plan = CloudFolderScan.plan(files: [file("Audio Text Roman/Kapitel 1.mp3")], existing: [folder, orphan], module: "audio")
+
+        #expect(plan.folders.isEmpty)
+        #expect(plan.moves.first?.parentId == folder.id)
+    }
+
     // MARK: - Selection
 
     @Test("Deselected entries are dropped, and with them the new folders only they needed")

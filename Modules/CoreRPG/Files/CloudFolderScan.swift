@@ -349,10 +349,13 @@ enum CloudFolderScan {
         let fileKeys = Set(files.map { key($0.components) })
         for item in existing.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
             guard !item.isTrashed, let components = item.fileComponents, fileKeys.contains(key(components)),
-                  let appFolder = appFolderNames(of: item, in: byId) else { continue }
+                  let placement = appFolderNames(of: item, in: byId) else { continue }
+            let appFolder = placement.names
             let fileFolder = Array(components.dropLast())
-            // By name path: two folders of one name are not a reason to move an item.
-            guard key(appFolder) != key(fileFolder) else { continue }
+            // By name path: two folders of one name are not a reason to move an item. An orphan
+            // is moved even when the names match: its parent id points at nothing, so it is
+            // listed in no folder and has to get a real parent (or the root).
+            guard placement.isOrphaned || key(appFolder) != key(fileFolder) else { continue }
             let target: UUID?
             if fileFolder.isEmpty {
                 target = nil
@@ -411,19 +414,26 @@ enum CloudFolderScan {
         return picks.filter { claimants[key($0.value.components)] == 1 }
     }
 
-    /// The names of the folders `item` is in, from the module root down. `nil` when it sits in
-    /// something that is not a visible folder (a collection, a trashed or missing parent): the
-    /// folder of its file says nothing about where such an item belongs.
-    private static func appFolderNames(of item: CloudScanExistingItem, in byId: [UUID: CloudScanExistingItem]) -> [String]? {
+    /// The names of the folders `item` is in, from the module root down, and whether the chain
+    /// ends in a parent id the library does not have. `nil` when it sits in something that is
+    /// not a visible folder (a collection, a trashed parent): the folder of its file says nothing
+    /// about where such an item belongs.
+    ///
+    /// A parent that does not exist counts as the module root, as in `existingFolderIds`: items
+    /// sent by a game master keep the id of the master's folder, which was not sent along. Such
+    /// an item is listed in no folder, and the sync is how it gets one.
+    private static func appFolderNames(of item: CloudScanExistingItem, in byId: [UUID: CloudScanExistingItem]) -> (names: [String], isOrphaned: Bool)? {
         var names: [String] = []
         var visited: Set<UUID> = [item.id]
         var parentId = item.parentId
         while let id = parentId {
-            guard visited.insert(id).inserted, let parent = byId[id], parent.isFolder, !parent.isTrashed else { return nil }
+            guard visited.insert(id).inserted else { return nil }
+            guard let parent = byId[id] else { return (names.reversed(), true) }
+            guard parent.isFolder, !parent.isTrashed else { return nil }
             names.append(parent.name)
             parentId = parent.parentId
         }
-        return names.reversed()
+        return (names.reversed(), false)
     }
 
     /// The visible folders of the library by name path.

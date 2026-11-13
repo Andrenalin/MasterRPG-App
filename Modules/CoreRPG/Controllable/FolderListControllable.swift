@@ -308,11 +308,15 @@ extension FolderListControllable {
     /// two items. Adds that carry a dropped file queue behind the running one instead: a drop of
     /// several files calls this once per file, and each must become an item.
     /// See CODE_AUDIT_Folder §3.2.
-    func add(type: EditControllerAddType, url: URL?, root: any ItemRootControllable) {
+    ///
+    /// - Parameter parentId: The folder or collection whose detail list the add was triggered
+    ///   from. The root `listModel` has no parent in that case (the folder's children live in
+    ///   `detailListModel`), so without it the new item was filed at root level.
+    func add(type: EditControllerAddType, url: URL?, root: any ItemRootControllable, parentId: UUID? = nil) {
         if url == nil, listModel.addItemTask != nil { return }
 
-        let hasParent = listModel.parentModel != nil
-        let targetParentId = listModel.selectedParentId
+        let hasParent = parentId != nil || listModel.parentModel != nil
+        let targetParentId = parentId ?? listModel.selectedParentId
         let previous = listModel.addItemTask
         let token = UUID()
         listModel.addItemToken = token
@@ -338,6 +342,9 @@ extension FolderListControllable {
             root.editControllable.addItem(itemId: model.id, parentId: targetParentId)
             // Reset parent list filter when adding to folder/collection
             root.folderListControllable.resetFilter()
+            // Open the target folder (and the folders above it) in the list, so the rebuild
+            // below lists the new row and it can be selected there.
+            revealFolder(itemId: targetParentId)
         }
         guard let updatedModel = root.itemControllable.itemSync(for: model.id) else { return }
         listModel.addedModelId = model.id
