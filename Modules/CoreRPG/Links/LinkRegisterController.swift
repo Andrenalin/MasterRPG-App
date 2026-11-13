@@ -103,7 +103,9 @@ public extension LinkRegisterController {
     /// Returns all source items that link to `link` as their destination — used to populate "used by" UI.
     @MainActor func used(for link: ItemRowModel) -> [AffectedItemModel] {
         let keyId = link.itemId
-        let links = model.items[keyId, default: []]
+        // For an entry only the links that point at that entry count. Links to the whole item or to
+        // its other entries do not depend on it, and used to block deleting any entry of a linked item.
+        let links = model.items[keyId, default: []].filter { link.entryId == nil || $0.destination.entryId == link.entryId }
         return links.compactMap {
             guard let rootController = root?.itemRootController(for: $0.source.typeId), let item = rootController.itemControllable.itemSync(for: $0.source.itemId) else {
                 return nil

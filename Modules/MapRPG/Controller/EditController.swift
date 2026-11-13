@@ -478,7 +478,15 @@ extension EditController {
 
 extension EditController {
     @MainActor func merge(itemId: UUID, entries: [MapEntryModel]) -> [MapEntryModel] {
-        entriesMatchedByName(itemId: itemId, entries: entries)
+        entriesKeepingHexGrid(itemId: itemId, entries: entries)
+    }
+
+    /// The edited rooms matched by name, followed by the item's hex grid cells. The editors only
+    /// show and return rooms; replacing the entries with that result alone would delete the grid.
+    @MainActor private func entriesKeepingHexGrid(itemId: UUID, entries: [MapEntryModel]) -> [MapEntryModel] {
+        guard let item = editModel(for: itemId) else { return entries }
+        let rooms = entriesMatchedByName(itemId: itemId, entries: entries.filter { !$0.isHexGrid })
+        return rooms + item.entries.filter { $0.isHexGrid }
     }
 
     /// `forceSave` is intentionally not threaded through: map changes made while a
@@ -487,7 +495,7 @@ extension EditController {
     /// controller (e.g. `addMonsters`), which relies on the same `isGameMode` gate.
     @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
-        var newEntries = entriesMatchedByName(itemId: itemId, entries: entries)
+        var newEntries = entriesKeepingHexGrid(itemId: itemId, entries: entries)
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
         let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }

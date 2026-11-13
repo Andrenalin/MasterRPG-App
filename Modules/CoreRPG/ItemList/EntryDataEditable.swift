@@ -257,7 +257,8 @@ public extension EntryDataEditable {
     /// name. See CODE_AUDIT_Folder §9.10, CODE_AUDIT_Since_3.0.1 §5.1.
     @MainActor func entriesMatchedByName(itemId: UUID, entries: [Model.Entry]) -> [Model.Entry] {
         guard let item = editModel(for: itemId) else { return entries }
-        var available = item.entries
+        // Only what the editor shows can be matched; hidden entries (e.g. a map's hex grid) keep their own identity.
+        var available = editEntries(for: item)
         return entries.map { entry in
             let name = entry.name.withoutLink()
             guard let index = available.firstIndex(where: { $0.name.withoutLink() == name }) else { return entry }

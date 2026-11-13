@@ -86,6 +86,24 @@ struct SheetControllerTests {
         }
     }
 
+    @Test func mapSheetUpdateKeepsHexGridOut() async throws {
+        let root = try await MockRoot.importTestData()
+
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = try #require(root.itemController.itemDataModel.items.first)
+        let rootManager = RootManager(anyRoot: root)
+        let sheet = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: true)
+
+        let item = try #require(root.itemController.itemSync(for: itemId))
+        root.editController.createHexMap(model: item, hexMapScale: 0)
+        try #require(item.entries.contains { $0.isHexGrid })
+
+        sut.update(root: rootManager, sheetModel: sheet, isEditor: true)
+
+        let hexIds = Set(item.entries.filter(\.isHexGrid).map(\.id))
+        #expect(!sheet.entries.contains { $0.source.entryId.map(hexIds.contains) == true })
+    }
+
     @Test func mapSheetWithPhotoInline() async throws {
         let root = try await MockRoot.importTestData()
 

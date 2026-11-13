@@ -100,9 +100,11 @@ extension SheetController: SheetControllable {
             return
         }
         
-        let entryIds = model.entries.map { $0.id }
+        // Hex grid cells are an internal map overlay, never rows of the sheet (see `sheetEntries`).
+        let visibleEntries = model.entries.filter { !$0.isHexGrid }
+        let entryIds = visibleEntries.map { $0.id }
 
-        // Remove deleted entries
+        // Remove deleted entries (and any hex grid row a previous update let in)
         let removedCount = sheetModel.entries.filter { entry in
             guard let entryId = entry.source.entryId else { return false }
             return !entryIds.contains(entryId)
@@ -117,7 +119,7 @@ extension SheetController: SheetControllable {
         var updatedCount = 0
         var createdCount = 0
         
-        for entry in model.entries {
+        for entry in visibleEntries {
             if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
                 unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
                     existingSheetModel.hasChanged = changed

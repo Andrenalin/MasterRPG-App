@@ -343,4 +343,118 @@ struct EditControllerTests {
         #expect(content.localizedStandardContains("RPG://AUDIOS/0/\(sourceItemId.uuidString)"))
     }
 }
+
+// MARK: - Hex grid in the entry editors
+
+@MainActor
+struct HexGridEditorMergeTests {
+    /// A map with real rooms and a hex grid, selected for editing.
+    private func hexMap() async throws -> (root: MapRootModel, item: MapModel) {
+        let root = try await MockRoot.importTestData()
+        let itemId = try #require(root.itemController.itemDataModel.items.first)
+        let item = try #require(root.itemController.itemSync(for: itemId))
+        root.editController.setCurrentItem(to: ItemRowTreeModel(itemId: itemId, typeId: .map))
+        root.editController.createHexMap(model: item, hexMapScale: 0)
+        try #require(item.entries.contains { $0.isHexGrid })
+        return (root, item)
+    }
+
+    @Test func editEntriesHideHexGrid() async throws {
+        let (root, item) = try await hexMap()
+        #expect(!root.editController.editEntries(for: item).contains { $0.isHexGrid })
+    }
+
+    @Test func quickEditorMergeKeepsHexGrid() async throws {
+        let (root, item) = try await hexMap()
+        let hexIds = item.entries.filter(\.isHexGrid).map(\.id)
+        let rooms = root.editController.editEntries(for: item)
+        let edited = rooms.map { MapEntryModel(id: UUID(), name: $0.name, content: $0.content + " changed", coordinates: []) }
+
+        // The editor's live preview, then Apply, which merges the preview's result a second time.
+        let preview = root.editController.merge(itemId: item.id, entries: edited)
+        item.entries = preview
+        _ = root.editController.merge(itemId: item.id, entries: preview, recoverEntries: nil, forceSave: true)
+
+        #expect(item.entries.filter(\.isHexGrid).map(\.id) == hexIds)
+        let roomsAfter = root.editController.editEntries(for: item)
+        #expect(roomsAfter.count == rooms.count)
+        #expect(roomsAfter.allSatisfy { $0.content.hasSuffix(" changed") })
+        // Rooms keep their id, so links to them survive.
+        #expect(roomsAfter.map(\.id) == rooms.map(\.id))
+    }
+
+    /// The quick editor's Apply for a text with one room deleted, as the view runs it: the editor
+    /// works on a copy, so the real map still holds the room when the removal check runs.
+    private func applyDeletingRoom(root: MapRootModel, item: MapModel, deleted: MapEntryModel) -> [ItemRowModel] {
+        let editorCopy = item.copy()
+        let edited = root.editController.editEntries(for: item)
+            .filter { $0.id != deleted.id }
+            .map { MapEntryModel(id: UUID(), name: $0.name, content: $0.content, coordinates: []) }
+        let entries = root.editController.merge(itemId: item.id, entries: edited)
+        editorCopy.entries = entries
+        return root.editController.merge(itemId: item.id, entries: entries, recoverEntries: nil, forceSave: true)
+    }
+
+    /// A link out of the map's first room: the test data holds a single map.
+    private func registerLink(root: MapRootModel, to destination: ItemRowModel, from sourceMap: MapModel) {
+        root.editController.linkRegisterController.register(
+            links: [LinkRegisterModel(name: "link", source: ItemRowModel(itemId: sourceMap.id, entryId: root.editController.editEntries(for: sourceMap)[0].id, typeId: .map), destination: destination)]
+        )
+    }
+
+    @Test func deletingRoomIgnoresLinksToTheWholeMap() async throws {
+        let (root, item) = try await hexMap()
+        registerLink(root: root, to: ItemRowModel(itemId: item.id, typeId: .map), from: item)
+        let deleted = root.editController.editEntries(for: item)[1]
+
+        let removeItems = applyDeletingRoom(root: root, item: item, deleted: deleted)
+
+        #expect(removeItems.isEmpty)
+        #expect(!item.entries.contains { $0.id == deleted.id })
+        #expect(item.entries.contains { $0.isHexGrid })
+    }
+
+    @Test func deletingRoomIgnoresLinksToOtherRooms() async throws {
+        let (root, item) = try await hexMap()
+        let rooms = root.editController.editEntries(for: item)
+        registerLink(root: root, to: ItemRowModel(itemId: item.id, entryId: rooms[2].id, typeId: .map), from: item)
+
+        let removeItems = applyDeletingRoom(root: root, item: item, deleted: rooms[1])
+
+        #expect(removeItems.isEmpty)
+        #expect(!item.entries.contains { $0.id == rooms[1].id })
+    }
+
+    @Test func deletingLinkedRoomAsksBeforeRemoving() async throws {
+        let (root, item) = try await hexMap()
+        let deleted = root.editController.editEntries(for: item)[1]
+        registerLink(root: root, to: ItemRowModel(itemId: item.id, entryId: deleted.id, typeId: .map), from: item)
+
+        let removeItems = applyDeletingRoom(root: root, item: item, deleted: deleted)
+
+        #expect(removeItems.map(\.entryId) == [deleted.id])
+        // Nothing is saved before the user decides.
+        #expect(item.entries.contains { $0.id == deleted.id })
+    }
+
+    @Test func emptyingTheRoomsKeepsHexGrid() async throws {
+        let (root, item) = try await hexMap()
+        let hexIds = item.entries.filter(\.isHexGrid).map(\.id)
+
+        _ = root.editController.merge(itemId: item.id, entries: [], recoverEntries: [], forceSave: true)
+
+        #expect(item.entries.map(\.id) == hexIds)
+    }
+
+    @Test func roomNamedLikeHexCellDoesNotTakeTheCell() async throws {
+        let (root, item) = try await hexMap()
+        let cell = try #require(item.entries.first { $0.isHexGrid })
+        let room = MapEntryModel(id: UUID(), name: cell.name, content: "Room", coordinates: [])
+
+        let merged = root.editController.merge(itemId: item.id, entries: [room])
+
+        #expect(merged.filter { !$0.isHexGrid }.map(\.id) == [room.id])
+        #expect(merged.filter(\.isHexGrid).count == item.entries.filter(\.isHexGrid).count)
+    }
+}
 #endif

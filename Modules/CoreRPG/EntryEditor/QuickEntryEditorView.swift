@@ -107,7 +107,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 
 private extension QuickEntryEditorView {
     private var initialText: String {
-        parser.format(model.entries.map { (name: $0.name, content: $0.content) })
+        parser.format(editController.editEntries(for: model).map { (name: $0.name, content: $0.content) })
     }
 }
 
@@ -299,7 +299,7 @@ private struct QuickEntryEditorEntryListView<EditController: EntryDataEditable, 
 
     var body: some View {
         List {
-            ForEach(model.entries, id: \.id) { entry in
+            ForEach(editController.editEntries(for: model), id: \.id) { entry in
                 EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.folderListControllable.listDisplayModel, searchModel: root.searchModel, resolvedModel: model)
             }
         }
