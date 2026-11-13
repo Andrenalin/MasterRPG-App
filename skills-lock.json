@@ -1,160 +1,160 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "app-intents": {
       "source": "n0an/App-Intents-Agent-Skill",
       "sourceType": "github",
       "skillPath": "app-intents/SKILL.md",
-      "computedHash": "344eb99f9696a5d930dc8bfb52bc49df19300ddf1d97f24c0af1c9c286b4b259"
+      "computedHash": "2c03cb109248801e4ea1276a3dd359be357b954e9a110c4c96d3979fd8edbf89"
     },
     "app-store-screenshots": {
       "source": "ParthJadhav/app-store-screenshots",
       "sourceType": "github",
       "skillPath": "skills/app-store-screenshots/SKILL.md",
-      "computedHash": "f06a3a59823f99b21be0dd21e82575596b48cb404fd19a6a0db4cc37fba6c883"
+      "computedHash": "33889d3ad4e329f404694d46395d7881f4beb0a6012bb09653109823cf13da04"
     },
     "apple-hig-designer": {
       "source": "jamesrochabrun/skills",
       "sourceType": "github",
-      "computedHash": "d6f35edf97a7545d967e4d5bbb5666712d732c9e40328835d8f3f585ae416f0a"
+      "computedHash": ""
     },
     "axiom-foundation-models": {
       "source": "charleswiltgen/axiom",
       "sourceType": "github",
-      "computedHash": "4c72077dbb62a3e4c9883fe90e13522b1cdf6c1b3f94c6f2560b5420205f5244"
+      "computedHash": ""
     },
     "axiom-realitykit": {
       "source": "charleswiltgen/axiom",
       "sourceType": "github",
-      "computedHash": "fdd903f08f4fcfb1b64b3a4fbafc2a01aad541c3f03c8856fa21f282bda459ba"
+      "computedHash": ""
     },
     "axiom-realitykit-diag": {
       "source": "charleswiltgen/axiom",
       "sourceType": "github",
-      "computedHash": "cbe4d9b613dee1737e3c9fd2358a9466037689726d39ec2b39d07598d0984508"
+      "computedHash": ""
     },
     "core-data-expert": {
       "source": "avdlee/core-data-agent-skill",
       "sourceType": "github",
       "skillPath": "core-data-expert/SKILL.md",
-      "computedHash": "b8d2829005b1f2fefbaa8af2ea7d7d64e2fbeca2f2172033176ad0780edc3970"
+      "computedHash": "aa479b69e7ef6bf4ec453c4679c54897e72b66bdc2b62c61b46fdebf3c33d67a"
     },
     "foundation-models-on-device": {
       "source": "affaan-m/everything-claude-code",
       "sourceType": "github",
       "skillPath": "skills/foundation-models-on-device/SKILL.md",
-      "computedHash": "93757445848f9c74a1bc6f173397c10e017d017d9f7888203e9055995be69581"
+      "computedHash": "f04957e96139c3678918bdcbc66e8d524edd6bf847184c5f90b6900dcbaea998"
     },
     "ios-code-audit": {
       "source": "jazzychad/ios-code-audit",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "d8191834ebb34c0e15e67a6d8f4e375afb598a11423164444921ac9375c4f0b1"
+      "computedHash": "58a34b03e7f5038bcef66b7874895b28cd0bb724055508dd38bf50331ccdc703"
     },
     "ios-marketing-capture": {
       "source": "ParthJadhav/ios-marketing-capture",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "d9df42e579d957a8ad4f6c181fe1eb7913fe9f77b46636be046e656f747203f5"
+      "computedHash": "fe0dabd7ab3a0e1ed6f39ebbae8454158409d134458ed33b47b01b3968596018"
     },
     "ipados-design-guidelines": {
       "source": "ehmo/platform-design-skills",
       "sourceType": "github",
-      "computedHash": "d3c6a09efe0c6a74a08a944d4deb78b1a71595a45a4c25f4b8eedb657d16bca8"
+      "computedHash": ""
     },
     "realitykit-visionos-developer": {
       "source": "tomkrikorian/visionosagents",
       "sourceType": "github",
       "skillPath": "skills/realitykit-visionos-developer/SKILL.md",
-      "computedHash": "d429f0a476b52d650f6658cc9b03fe261b9cc75beb95878dba68e01ff7d70cef"
+      "computedHash": "17db9f2750d628363704a65b5dec6f1851cff40699c4811410d763267c79b8f1"
     },
     "spm-build-analysis": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/spm-build-analysis/SKILL.md",
-      "computedHash": "9785f2113e45cd29aedc4c1e7e5763735157ff1e4c99a4ca4a65d4f625814c55"
+      "computedHash": "553f0671cfcde2a32a799e05826f931cab64037067b763f682db45b16609cfb4"
     },
     "swift-concurrency": {
       "source": "avdlee/swift-concurrency-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/swift-concurrency/SKILL.md",
-      "computedHash": "49e4df69412710a0ca320c21a9d26cf4abb6d2c553960cffaceea5a09e3be792"
+      "computedHash": "7977e699ad9eae2cccdb8de7520b5fb7701ed01a6bde52d47263bc30dec09482"
     },
     "swift-focusengine-pro": {
       "source": "mhaviv/Swift-FocusEngine-Agent-Skill",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "81121a59fcc00bf879984a73bfea33fe4b114f25c9f89ab4f83f4d663a6d28fc"
+      "computedHash": "aff5363540452f12153b820afc7c1d9568ed52066666004276fbb1d76ad6fa86"
     },
     "swift-testing-expert": {
       "source": "avdlee/swift-testing-agent-skill",
       "sourceType": "github",
       "skillPath": "swift-testing-expert/SKILL.md",
-      "computedHash": "ee2a73c7148264cb7e0a0819d3063225541e57162353d97707d9fab830d27ba6"
+      "computedHash": "d21b78b1a320b96748144693762293ae9557a82ec574ab40f7037c58b5d6b339"
     },
     "swiftui-expert-skill": {
       "source": "avdlee/swiftui-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/swiftui-expert-skill/SKILL.md",
-      "computedHash": "5388cd2368b525d2906798ac313c70415e971da35670e571e98baf8a7140505f"
+      "computedHash": "187f7d0b9b9103f0935460c1b8060a77131c5ef24fa0d6757f5f5afdd23b7966"
     },
     "tvos-design-guidelines": {
       "source": "ehmo/platform-design-skills",
       "sourceType": "github",
-      "computedHash": "7e8751618b4421617d083191150b6324eaa2bdf03509b3cc846763b770ff5b3f"
+      "computedHash": ""
     },
     "update-swiftui-apis": {
       "source": "avdlee/swiftui-agent-skill",
       "sourceType": "github",
       "skillPath": ".agents/skills/update-swiftui-apis/SKILL.md",
-      "computedHash": "1aebd4401fcaf0bd28f64e6e1332c40d90058e2a89a415536deed3556a2b8f78"
+      "computedHash": "5b0a9b9b8e55535bc0d45b86f1c7c86a439bd9b496fca668373920781ef63c58"
     },
     "visionos-design-guidelines": {
       "source": "ehmo/platform-design-skills",
       "sourceType": "github",
-      "computedHash": "88eaf0e697c6b3bf8dd16dbd1d0618b098c94ad18052f892054d64c16f728eac"
+      "computedHash": ""
     },
     "widgetkit": {
       "source": "dpearson2699/swift-ios-skills",
       "sourceType": "github",
       "skillPath": "skills/widgetkit/SKILL.md",
-      "computedHash": "e6a255aa3c5a7bc70e114aaf9bf6ed24d4156f786ef0bd1c906058638535bd6f"
+      "computedHash": "4196530358732d15a12dce86369eff895b4b0dd9f18f1ed1d2238266cc2a6c1c"
     },
     "widgets": {
       "source": "n0an/Widgets-Agent-Skill",
       "sourceType": "github",
       "skillPath": "widgets/SKILL.md",
-      "computedHash": "161cec00ded4f2aff93eef3ae68270cfb359b969ef6727197d14e4ee06c38e04"
+      "computedHash": "a12798c7341630f75a2fdfb411bcec422a4a9c58a9da08153c6d0390d027514a"
     },
     "xcode-build-benchmark": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/xcode-build-benchmark/SKILL.md",
-      "computedHash": "e132c38adbb8a74e3e0474c0e34566b209fa3bf29532604af97d715b8c721ec8"
+      "computedHash": "0026d31ff5a12d643c32157e36f9b2a68d6cd0ea85e02f43679f6bab9d9aa0ec"
     },
     "xcode-build-fixer": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/xcode-build-fixer/SKILL.md",
-      "computedHash": "7d1c68154af030a24b7420c9f9c7805e6009e0012da34b9a16c0cfef3396b608"
+      "computedHash": "051e56e59fa4d776bdd0422156180dd1603bfdf25b796887c8be958b9f9972f2"
     },
     "xcode-build-orchestrator": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/xcode-build-orchestrator/SKILL.md",
-      "computedHash": "d03e65e314a8fbe0ae0cf7469fa1a4280b5d335a7f163fdc7a7a91dbb0fd1b2b"
+      "computedHash": "66707efe8f2a42a13301ff283a72fdba51a0e36e3671421b5b239df2d3bf0881"
     },
     "xcode-compilation-analyzer": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/xcode-compilation-analyzer/SKILL.md",
-      "computedHash": "9857f081cf044a06f93f382ea1a53c3fe9699ac0d0686abbabea67696c2eff6a"
+      "computedHash": "9e877f07f0cdfe1ab5f12946be3c07984eb100ddd14537fd2d17322913cbe75f"
     },
     "xcode-project-analyzer": {
       "source": "avdlee/xcode-build-optimization-agent-skill",
       "sourceType": "github",
       "skillPath": "skills/xcode-project-analyzer/SKILL.md",
-      "computedHash": "dfe1901df149b68d8869a48143508444605ed8ba20b448d1faec1d6218d58859"
+      "computedHash": "21f80c32cb9b4c44a0e4b51d655be548dead6eab956854d9064b75b2a7d4f69d"
     }
   }
 }
