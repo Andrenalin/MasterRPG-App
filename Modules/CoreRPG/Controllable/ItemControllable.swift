@@ -297,7 +297,9 @@ public extension ItemControllable {
             // A copy: with the game-memory instance itself as the library instance, every later
             // memory-only update of the game changed the library object in place.
             // See CODE_AUDIT_21 §5.31.
-            replace(model: model.copy(), isInsert: true, forceSave: true, syncGameMemory: false)
+            var stored = model.copy()
+            stored.parentId = persistMissingFolders(above: model)
+            replace(model: stored, isInsert: true, forceSave: true, syncGameMemory: false)
             return
         }
         let previousFile = library.fileUrl
@@ -313,6 +315,88 @@ public extension ItemControllable {
         // The game copy keeps what the game shows; only the library is written.
         replace(model: persisted, isInsert: true, forceSave: true, syncGameMemory: false)
         removeFileReplacedFromGame(previousFile, itemId: model.id)
+    }
+
+    /// The folder a new library item goes into. The sender's folders above `model` are matched by
+    /// name, level by level, to the library's own: the item goes into the player's folder of that
+    /// name. A folder the library lacks is stored as the sender has it (same id, name and
+    /// nesting), below the matched one, and listing only what the library holds. Returns the id
+    /// to use as the item's parent: the folder it ends in, or `nil` (the root) when its folder is
+    /// unknown here. The folders list the item and the folders created for it.
+    /// Without this the item was stored under the sender's folder id while the folder itself
+    /// stayed in game memory, so it was listed in no folder after the game.
+    @MainActor private func persistMissingFolders(above model: Model) -> UUID? {
+        guard let parentId = model.parentId else { return nil }
+        // From the item's folder up to the first one the library has by id, or to the root.
+        var chain: [Model] = []
+        var visited: Set<UUID> = [model.id]
+        var knownParentId: UUID?
+        var nextId: UUID? = parentId
+        while let id = nextId {
+            guard visited.insert(id).inserted else { break }
+            if itemSync(for: id, noGame: true) != nil {
+                knownParentId = id
+                break
+            }
+            guard let folder = itemSync(for: id), folder.isFolder else { break }
+            chain.append(folder)
+            nextId = folder.parentId
+        }
+
+        // Outermost first: a folder with the name of the sender's one at the same level is the
+        // player's own; below the first one that is not, everything is new.
+        var resolvedParentId = knownParentId
+        var created: [Model] = []
+        var parentOfCreated: UUID?
+        for folder in chain.reversed() {
+            if created.isEmpty, let own = libraryFolder(named: folder.name, in: resolvedParentId) {
+                resolvedParentId = own.id
+                continue
+            }
+            if created.isEmpty { parentOfCreated = resolvedParentId }
+            created.append(folder)
+            resolvedParentId = folder.id
+        }
+
+        // The folders created for the item list only what the library holds.
+        let createdIds = Set(created.map(\.id))
+        for folder in created {
+            var stored = folder.copy()
+            stored.parentId = parentOfCreated
+            stored.displayState = DisplayStateMask.fullVisible.rawValue
+            stored.entries.removeAll { entry in
+                !createdIds.contains(entry.childId) && entry.childId != model.id && itemSync(for: entry.childId, noGame: true) == nil
+            }
+            replace(model: stored, isInsert: true, forceSave: true, syncGameMemory: false)
+            if let parentOfCreated { listMember(folder.id, in: parentOfCreated) }
+            parentOfCreated = folder.id
+        }
+
+        guard let target = resolvedParentId, itemSync(for: target, noGame: true) != nil else { return nil }
+        listMember(model.id, in: target)
+        return target
+    }
+
+    /// The visible library folder called `name` (compared by Unicode form and case) directly
+    /// below `parentId`, `nil` is the root. The first by id when there are several.
+    @MainActor private func libraryFolder(named name: String, in parentId: UUID?) -> Model? {
+        func key(_ name: String) -> String { name.precomposedStringWithCanonicalMapping.lowercased() }
+        let wanted = key(name)
+        return itemDataModel.items.sorted { $0.uuidString < $1.uuidString }
+            .compactMap { itemSync(for: $0, noGame: true) }
+            .first {
+                $0.isFolder && $0.parentId == parentId
+                    && $0.displayState == DisplayStateMask.fullVisible.rawValue && key($0.name) == wanted
+            }
+    }
+
+    /// Lists `childId` in the library folder `folderId` unless it already does.
+    @MainActor private func listMember(_ childId: UUID, in folderId: UUID) {
+        guard let folder = itemSync(for: folderId, noGame: true),
+              !folder.entries.contains(where: { $0.childId == childId }) else { return }
+        let updated = folder.copy()
+        updated.entries.append(Model.Entry.newChild(id: childId))
+        replace(model: updated, isInsert: false, forceSave: true, syncGameMemory: false)
     }
 
     /// After `persistFromGame` gave a library item the delivered file: removes the file the item
