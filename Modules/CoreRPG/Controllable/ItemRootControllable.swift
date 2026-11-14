@@ -29,6 +29,13 @@ public protocol ItemRootControllable: Sendable {
     var generationControllable: (any ItemGenerationControllable)? { get }
 
     var rootController: ItemRootController { get }
+
+    // The database maintenance every module root shares. Requirements, not only the defaults
+    // below: a root that overrides one (Character repairs its own data in `checkFolders`) is
+    // reached by a call through `any ItemRootControllable` too. See CODE_AUDIT §9.5.
+    func checkFolders(reportModel: ValidateRepairModel) async
+    func validateLinks(reportModel: ValidateRepairModel) async
+    func itemDataCleanup() async
 }
 
 public extension ItemRootControllable {
@@ -48,7 +55,7 @@ public extension ItemRootControllable {
     func itemDataCleanup() async {
         for itemId in itemControllable.itemDataModel.items {
             guard let model = await itemControllable.item(for: itemId) else { continue }
-            if model.displayState == DisplayStateMask.totalHidden.rawValue {
+            if model.isHidden {
                 await editControllable.delete(itemId: model.id)
             }
         }

@@ -15,7 +15,7 @@ extension EditController {
         // editModel returns ValueModel, giving typed access to ValueEntryModel.valueId
         var valueIdOwners: [UUID: [UUID]] = [:]
         for itemId in itemIds {
-            guard let item = editModel(for: itemId), item.displayState != DisplayStateMask.totalHidden.rawValue else { continue }
+            guard let item = editModel(for: itemId), !item.isHidden else { continue }
             for entry in item.entries {
                 guard let valueId = entry.valueId else { continue }
                 valueIdOwners[valueId, default: []].append(itemId)
@@ -24,7 +24,7 @@ extension EditController {
 
         for itemId in itemIds {
             guard let item = itemControllable.itemSync(for: itemId) as? ValueModel,
-                  item.displayState != DisplayStateMask.totalHidden.rawValue else { continue }
+                  !item.isHidden else { continue }
 
             if item.isFolder && item.groupId == nil {
                 repairFolderConstraints(itemId: itemId)
@@ -109,7 +109,7 @@ extension EditController {
         // Repair 1: orphaned parentId — item not present in the folder's entries
         if let parentId = item.parentId {
             let isInFolder = itemControllable.itemSync(for: parentId).map { parent in
-                parent.displayState != DisplayStateMask.totalHidden.rawValue && parent.isFolder && parent.entries.contains { $0.childId == itemId }
+                !parent.isHidden && parent.isFolder && parent.entries.contains { $0.childId == itemId }
             } ?? false
             if !isInFolder {
                 let parentName = itemControllable.nameSync(itemId: parentId)

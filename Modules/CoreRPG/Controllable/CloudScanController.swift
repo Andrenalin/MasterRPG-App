@@ -99,7 +99,7 @@ struct CloudScanController: Sendable {
         let module = itemController.config.module
         let trashed = confirmed.removals.filter { removal in
             guard let item = itemController.itemSync(for: removal.id, noGame: true) else { return false }
-            return item.displayState != DisplayStateMask.totalHidden.rawValue
+            return !item.isHidden
         }
         editController.confirmRemoval(of: trashed.map { ItemRowModel(itemId: $0.id, typeId: module) }, keeping: [])
 

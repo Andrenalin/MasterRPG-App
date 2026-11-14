@@ -33,17 +33,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GeneratorRPG::CharacterGenView
-    @Test("CharacterGenView")
-    func snapshotCharacterGenView() async throws {
-        try await assertPreviewSnapshot("CharacterGenView") {
-            GeneratorRPG.CharacterGenView(
-                value: CharacterGenModel(name: "Mira", information: "A careful ruin scout.", tags: ["scout"]),
-                level: 0
-            )
-        }
-    }
-
     // snapshot-root: GeneratorRPG::GeneratorRootView
     @Test("GeneratorRootView")
     func snapshotGeneratorRootView() async throws {

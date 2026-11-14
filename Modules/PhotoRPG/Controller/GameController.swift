@@ -12,7 +12,6 @@ public protocol PhotoGameControllable: Sendable {
     @MainActor func setMasterVersion(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func isPhotoAvailable(itemId: UUID, for playerId: UUID, masterId: UUID) -> Bool
     @MainActor func markPhotoAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID)
-    @MainActor func markPhotoAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func removePhotoReports(for playerId: UUID)
     /// The photo a show-photo event presented, `nil` until one arrives. See `PhotoGamePresentationModel`.
     @MainActor var presentedPhotoId: UUID? { get }
@@ -40,10 +39,6 @@ public extension PhotoGameControllable where Self: FileVersionGameControllable, 
 
     func markPhotoAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID) {
         markFileAvailable(itemId: itemId, version: version, for: playerIds, masterId: masterId)
-    }
-
-    func markPhotoAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID) {
-        markFileAvailableToCurrentPlayers(itemId: itemId, version: version, masterId: masterId)
     }
 
     func removePhotoReports(for playerId: UUID) {

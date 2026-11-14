@@ -63,6 +63,11 @@ public extension URL {
 /// parent's priority, which put the decode back at User-initiated. `work` runs in a detached
 /// task instead, and the caller waits for its result through a continuation, which escalates
 /// nothing. The caller's cancellation is passed on to that task.
+///
+/// A cancelled caller stays suspended until `work` returns, like any call to a function that
+/// handles cancellation cooperatively: `work` has to check `Task.isCancelled` itself (the decode
+/// helpers do). That wait is the price of keeping the result in order; the forwarding task only
+/// resumes the continuation and holds nothing else. See CODE_AUDIT §3.3.
 public func runAtDefaultPriority<T: Sendable>(_ work: @escaping @Sendable () async -> T) async -> T {
     let task = Task.detached(priority: .medium) { await work() }
     return await withTaskCancellationHandler {

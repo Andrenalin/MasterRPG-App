@@ -38,7 +38,7 @@ extension ExportController: ExportModelBacked {
     var itemControllable: any ItemControllable { itemController }
 
     public func exportingAll() -> ItemModuleIds {
-        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue }])
+        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.isHidden != true }])
 
         if !itemControllable.itemDataModel.isGameMode {
             itemIds.merge(other: audioRoot.exportControllable.exportingAll())

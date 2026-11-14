@@ -44,20 +44,27 @@ public actor ObjectCache<Object: AnyObject & Sendable> {
         
     // MARK: - File Cache
 
-    public func removeFromDisk(for itemId: UUID) {
+    // The disk methods read nothing from the actor, so they run off it: a slow file read or a
+    // JPEG encode must not hold up the memory hits of every module's image cache behind it.
+    // See CODE_AUDIT §3.1.
+
+    @concurrent
+    public nonisolated func removeFromDisk(for itemId: UUID) async {
         let url = fileURL(for: itemId)
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return }
         try? FileManager.default.removeItem(at: url)
     }
 
-    public func loadImageFromDisk(for itemId: UUID) -> AKImage? {
+    @concurrent
+    public nonisolated func loadImageFromDisk(for itemId: UUID) async -> AKImage? {
         let url = fileURL(for: itemId)
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return nil }
         guard let data = try? Data(contentsOf: url) else { return nil }
         return AKImage(data: data)
     }
 
-    public func saveImageToDisk(_ image: AKImage, for itemId: UUID) {
+    @concurrent
+    public nonisolated func saveImageToDisk(_ image: AKImage, for itemId: UUID) async {
         ensureCacheDirectoryExists(for: itemId)
         let url = fileURL(for: itemId)
         
@@ -67,23 +74,23 @@ public actor ObjectCache<Object: AnyObject & Sendable> {
     
     // MARK: - Disk cache helpers
     
-    private var cacheDirectoryURL: URL {
+    private nonisolated var cacheDirectoryURL: URL {
         URL.cachesDirectory.appending(path: "ImageCache", directoryHint: .isDirectory)
     }
 
-    private func subDirURL(for itemId: UUID) -> URL {
+    private nonisolated func subDirURL(for itemId: UUID) -> URL {
         cacheDirectoryURL
             .appending(path: String(itemId.uuidString.suffix(2)))
     }
 
-    private func fileURL(for itemId: UUID) -> URL {
+    private nonisolated func fileURL(for itemId: UUID) -> URL {
         subDirURL(for: itemId)
             .appending(path: itemId.uuidString)
             .appendingPathExtension("jpg")
     }
     
     /// Ensures the cache directory exists.
-    private func ensureCacheDirectoryExists(for itemId: UUID) {
+    private nonisolated func ensureCacheDirectoryExists(for itemId: UUID) {
         let dir = subDirURL(for: itemId)
         if !FileManager.default.fileExists(atPath: dir.path(percentEncoded: false)) {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

@@ -40,11 +40,7 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
-        var result = content
-        for link in links {
-            result = repairLink(link, for: result, for: [.all])
-        }
-        return result
+        repairingOwnModuleLinks(links, in: content)
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {

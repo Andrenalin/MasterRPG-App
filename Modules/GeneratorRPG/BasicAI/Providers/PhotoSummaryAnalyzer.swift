@@ -3,6 +3,7 @@
 #if !os(tvOS)
 
 import CoreGraphics
+import CoreRPG
 import Foundation
 import FoundationModels
 import ImageIO
@@ -239,14 +240,10 @@ public enum PhotoAnalysisImage {
         return context.makeImage()
     }
 
+    /// Goes through the shared downsampler so an image whose header declares more than the pixel
+    /// limits is rejected before anything is decoded. See CODE_AUDIT §6.2.
     private static func thumbnail(from source: CGImageSource, maximumPixelSize: Int) -> CGImage? {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maximumPixelSize,
-            kCGImageSourceShouldCacheImmediately: true
-        ]
-        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+        ImageDownsampler.downsampledImage(from: source, maxPixelSize: CGFloat(maximumPixelSize))
     }
 }
 

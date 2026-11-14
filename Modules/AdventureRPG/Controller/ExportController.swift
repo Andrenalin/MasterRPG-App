@@ -43,7 +43,7 @@ extension ExportController: ExportControllable {
     // hand-listed chain of 10 `.merge(other:)` calls (merge order doesn't matter here,
     // since every sibling contributes disjoint module keys).
     @MainActor public func exportingAll() -> ItemModuleIds {
-        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue }])
+        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.isHidden != true }])
         for sibling in root.siblingModuleRoots {
             itemIds.merge(other: sibling.exportControllable.exportingAll())
         }

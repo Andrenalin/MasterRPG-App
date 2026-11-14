@@ -19,7 +19,7 @@ extension ItemControllable {
                 name: item.name,
                 parentId: item.parentId,
                 isFolder: item.isFolder,
-                isTrashed: item.displayState == DisplayStateMask.totalHidden.rawValue,
+                isTrashed: item.isHidden,
                 fileComponents: fileComponents,
                 contentHash: item.fileUrl?.contentHash
             )
@@ -60,7 +60,7 @@ extension ItemControllable {
         var movedIds: [UUID] = []
         for move in moves {
             guard let item = itemSync(for: move.id, noGame: true),
-                  item.displayState != DisplayStateMask.totalHidden.rawValue else { continue }
+                  !item.isHidden else { continue }
             var model = item.copy()
             model.parentId = move.parentId
             if let file = move.file, let old = item.fileUrl {

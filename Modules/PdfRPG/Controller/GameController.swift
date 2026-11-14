@@ -17,7 +17,6 @@ public protocol PdfGameControllable: Sendable {
     @MainActor func setMasterVersion(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func isPdfAvailable(itemId: UUID, for playerId: UUID, masterId: UUID) -> Bool
     @MainActor func markPdfAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID)
-    @MainActor func markPdfAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func removePdfReports(for playerId: UUID)
 }
 
@@ -47,10 +46,6 @@ public extension PdfGameControllable where Self: FileVersionGameControllable, Li
 
     func markPdfAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID) {
         markFileAvailable(itemId: itemId, version: version, for: playerIds, masterId: masterId)
-    }
-
-    func markPdfAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID) {
-        markFileAvailableToCurrentPlayers(itemId: itemId, version: version, masterId: masterId)
     }
 
     func removePdfReports(for playerId: UUID) {

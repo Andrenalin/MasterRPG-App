@@ -143,7 +143,7 @@ public struct FileBookmarkController: Sendable {
     let priority: TaskPriority
     
     static func name(from module: String) -> String {
-        module[module.startIndex..<module.index(before: module.endIndex)].lowercased() + "Bookmarks"
+        module.dropLast().lowercased() + "Bookmarks"
     }
 }
 

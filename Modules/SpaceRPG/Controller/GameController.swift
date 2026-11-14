@@ -141,7 +141,6 @@ public protocol SpaceGameControllable: Sendable {
     @MainActor func setMasterVersion(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func isSpaceAvailable(itemId: UUID, for playerId: UUID, masterId: UUID) -> Bool
     @MainActor func markSpaceAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID)
-    @MainActor func markSpaceAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID)
     @MainActor func removeSpaceReports(for playerId: UUID)
 
     @MainActor func isValidSpaceTransform(_ data: NetworkCodableDataType) -> Bool
@@ -187,10 +186,6 @@ public extension SpaceGameControllable where Self: FileVersionGameControllable, 
 
     func markSpaceAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID) {
         markFileAvailable(itemId: itemId, version: version, for: playerIds, masterId: masterId)
-    }
-
-    func markSpaceAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID) {
-        markFileAvailableToCurrentPlayers(itemId: itemId, version: version, masterId: masterId)
     }
 
     func removeSpaceReports(for playerId: UUID) {

@@ -382,12 +382,18 @@ public extension ItemControllable {
     @MainActor private func libraryFolder(named name: String, in parentId: UUID?) -> Model? {
         func key(_ name: String) -> String { name.precomposedStringWithCanonicalMapping.lowercased() }
         let wanted = key(name)
-        return itemDataModel.items.sorted { $0.uuidString < $1.uuidString }
-            .compactMap { itemSync(for: $0, noGame: true) }
-            .first {
-                $0.isFolder && $0.parentId == parentId
-                    && $0.displayState == DisplayStateMask.fullVisible.rawValue && key($0.name) == wanted
-            }
+        // The match with the smallest id, found in one pass: sorting every item first made each
+        // folder level cost a sort of the whole library. See CODE_AUDIT §7.2.
+        var match: (id: UUID, model: Model)?
+        for id in itemDataModel.items {
+            guard match == nil || id.uuidString < match?.id.uuidString ?? "",
+                  let candidate = itemSync(for: id, noGame: true),
+                  candidate.isFolder, candidate.parentId == parentId,
+                  candidate.displayState == DisplayStateMask.fullVisible.rawValue,
+                  key(candidate.name) == wanted else { continue }
+            match = (id, candidate)
+        }
+        return match?.model
     }
 
     /// Lists `childId` in the library folder `folderId` unless it already does.

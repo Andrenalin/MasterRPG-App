@@ -31,7 +31,7 @@ public struct ConvertController: Sendable {
         let itemIds = repairIds.map(Array.init) ?? itemController.itemDataModel.items
         for itemId in itemIds {
             guard !Task.isCancelled else { return }
-            guard let item = itemController.itemSync(for: itemId), item.displayState != DisplayStateMask.totalHidden.rawValue else { continue }
+            guard let item = itemController.itemSync(for: itemId), !item.isHidden else { continue }
 
             // Increment progress and yield so @Observable notifies SwiftUI before continuing.
             // Without the yield every update queues up and SwiftUI renders them all at once at the end.

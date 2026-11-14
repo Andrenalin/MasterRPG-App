@@ -254,6 +254,15 @@ public extension LinkControllable {
 public extension LinkControllable {
     @MainActor func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String { content }
 
+    /// `content` with each of `links` that points into this module repaired, in all categories.
+    /// What `repairLinks` does for a module whose content links to no other module. See
+    /// CODE_AUDIT §9.9.
+    @MainActor func repairingOwnModuleLinks(_ links: [LinkReplaceModel], in content: String) -> String {
+        links.reduce(content) { result, link in
+            repairLink(link, for: result, for: [.all])
+        }
+    }
+
     @MainActor func repairLink(_ link: LinkReplaceModel, for content: String, for categories: [ItemListCategory]) -> String {
 
         guard link.module == itemControllable.config.module else { return content }

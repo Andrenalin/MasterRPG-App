@@ -185,32 +185,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::BottomSafetyView
-    @Test("BottomSafetyView")
-    func snapshotBottomSafetyView() async throws {
-        try await assertPreviewSnapshot("BottomSafetyView") {
-            VStack {
-                Text(verbatim: "Content")
-                CoreRPG.BottomSafetyView()
-            }
-        }
-    }
-
-    // snapshot-root: CoreRPG::OptionKeyPressedButton
-    @Test("OptionKeyPressedButton")
-    func snapshotOptionKeyPressedButton() async throws {
-        try await assertPreviewSnapshot("OptionKeyPressedButton") {
-            CoreRPG.OptionKeyPressedButton(action: { _ in }) { isPressed in
-                Label {
-                    Text(verbatim: isPressed ? "Alternate action" : "Primary action")
-                } icon: {
-                    Image(systemName: "option")
-                }
-            }
-            .environment(OptionKeyDownModel())
-        }
-    }
-
     // snapshot-root: CoreRPG::ExportProgressPanelView
     @Test("ExportProgressPanelView")
     func snapshotExportProgressPanelView() async throws {
@@ -642,14 +616,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::ItemDetailPreview
-    @Test("ItemDetailPreview")
-    func snapshotItemDetailPreview() async throws {
-        try await assertPreviewSnapshot("ItemDetailPreview") {
-            CoreRPG.ItemDetailPreview()
-        }
-    }
-
     // snapshot-root: CoreRPG::ItemDetailRootView
     @Test("ItemDetailRootView")
     func snapshotItemDetailRootView() async throws {
@@ -724,14 +690,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     func snapshotCategoryItemRow() async throws {
         try await assertPreviewSnapshot("CategoryItemRow") {
             CoreRPG.CategoryItemRow(category: ItemListCategory.adventure)
-        }
-    }
-
-    // snapshot-root: CoreRPG::ModalCloseButton
-    @Test("ModalCloseButton")
-    func snapshotModalCloseButton() async throws {
-        try await assertPreviewSnapshot("ModalCloseButton") {
-            CoreRPG.ModalCloseButton(dismissAction: {})
         }
     }
 
@@ -1407,16 +1365,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::ColorSchemeSettingsView
-    @Test("ColorSchemeSettingsView")
-    func snapshotColorSchemeSettingsView() async throws {
-        try await assertPreviewSnapshot("ColorSchemeSettingsView") {
-            CoreRPG.ColorSchemeSettingsView()
-                .environment(AppSettingsModel.previewFixture())
-                .environment(\.locale, Locale(identifier: "de"))
-        }
-    }
-
     // snapshot-root: CoreRPG::ColorSchemeView
     @Test("ColorSchemeView")
     func snapshotColorSchemeView() async throws {
@@ -1629,14 +1577,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::SplitContentUnavailable
-    @Test("SplitContentUnavailable")
-    func snapshotSplitContentUnavailable() async throws {
-        try await assertPreviewSnapshot("SplitContentUnavailable") {
-            CoreRPG.SplitContentUnavailable(module: .adventure)
-        }
-    }
-
     // snapshot-root: CoreRPG::GlassEffectContainerView
     @Test("GlassEffectContainerView")
     func snapshotGlassEffectContainerView() async throws {
@@ -1659,27 +1599,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                     Image(systemName: "tray.and.arrow.down")
                 }
             } dropAction: { _, _, _ in }
-            .padding()
-        }
-    }
-
-    // snapshot-root: CoreRPG::FlipView
-    @Test("FlipView")
-    func snapshotFlipView() async throws {
-        try await assertPreviewSnapshot("FlipView") {
-            CoreRPG.FlipView {
-                Label {
-                    Text(verbatim: "Front")
-                } icon: {
-                    Image(systemName: "rectangle.front.fill")
-                }
-            } back: {
-                Label {
-                    Text(verbatim: "Back")
-                } icon: {
-                    Image(systemName: "rectangle.back.fill")
-                }
-            }
             .padding()
         }
     }

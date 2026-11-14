@@ -104,7 +104,7 @@ extension ValueEntryModel {
         get { Double(valueCalculated) ?? 0.0 }
         set {
             if type == .number {
-                valueNumber = Int(newValue)
+                valueNumber = Self.truncatedInt(newValue)
             } else {
                 setValue(from: Self.modifierText(newValue))
             }
@@ -204,10 +204,21 @@ extension ValueEntryModel {
                 let valueTemp = Int(final)
                 return "\(valueTemp)"
             } else {
-                return "\(final)"
+                // Not `"\(final)"`: that prints a small or large value as `1e-05`, which the
+                // calculator cannot read back. See CODE_AUDIT §5.3.
+                return Calculator.formatNumber(final)
             }
         }
         return "0 Error"
+    }
+
+    /// `value` without its fraction. `Int(_:)` traps for NaN, infinity and out-of-range values,
+    /// so those give 0 and the range limits. See CODE_AUDIT §5.4.
+    static func truncatedInt(_ value: Double) -> Int {
+        guard !value.isNaN else { return 0 }
+        if value >= Double(Int.max) { return Int.max }
+        if value <= Double(Int.min) { return Int.min }
+        return Int(value)
     }
     
     var editType: SheetModelEditType {

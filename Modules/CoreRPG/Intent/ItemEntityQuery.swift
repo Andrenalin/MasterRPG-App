@@ -69,7 +69,7 @@ public extension ItemEntityQuery {
     /// already marked for deletion (only `RuleEntity` used to override this).
     /// See CODE_AUDIT_17 §5.12.
     func include(model: Model) -> Bool {
-        model.displayState != DisplayStateMask.totalHidden.rawValue
+        !model.isHidden
     }
 
     func suggestedEntities() async throws -> [Entity] {

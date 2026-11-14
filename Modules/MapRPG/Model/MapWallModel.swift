@@ -106,6 +106,20 @@ public struct MapWallModel: Codable, Equatable, Identifiable, Sendable {
     public static func deterministicID(for sourceIdentifier: String) -> UUID {
         FoundryRuleIdentity.uuid(for: "map-wall:\(sourceIdentifier)")
     }
+
+    /// The wall as a player may hold it. The geometry and restrictions stay because the canvas
+    /// sizes the map from them, but a secret door is sent as the plain wall it looks like, its
+    /// door state is reset, and the imported source data (which can carry the game master's
+    /// flags and notes) is dropped. See CODE_AUDIT §6.1.
+    func redactedForPlayers() -> MapWallModel {
+        var redacted = self
+        if redacted.doorType == .secret {
+            redacted.doorType = .none
+            redacted.doorState = .closed
+        }
+        redacted.rawMetadata = nil
+        return redacted
+    }
 }
 
 /// One self-describing Core Data value keeps wall persistence lightweight while retaining the

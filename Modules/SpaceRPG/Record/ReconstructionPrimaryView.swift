@@ -37,10 +37,10 @@ struct ReconstructionPrimaryView: View {
             )
             .equatable()
             .onAppear {
-                UIApplication.shared.isIdleTimerDisabled = true
+                KeepAwakeModel.shared.acquire(.reconstruction)
             }
             .onDisappear {
-                UIApplication.shared.isIdleTimerDisabled = false
+                KeepAwakeModel.shared.release(.reconstruction)
             }
             .interactiveDismissDisabled()
         }

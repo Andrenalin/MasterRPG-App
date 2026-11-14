@@ -307,7 +307,7 @@ extension CharacterRootModel {
 
     /// Items the repair looks at: neither hidden everywhere nor a special-category item.
     private func isRepairable(_ model: ValueModel) -> Bool {
-        model.displayState != DisplayStateMask.totalHidden.rawValue && model.specialCategory == false
+        !model.isHidden && model.specialCategory == false
     }
 
     /// The items that are a group: every item an entry of a repairable item points to with

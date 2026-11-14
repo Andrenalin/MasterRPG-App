@@ -58,7 +58,8 @@ actor CloudKitOperationCounter {
 
 struct CloudDocumentController: Sendable {
     init(modulePath: String) {
-        self.modulePath = modulePath[modulePath.startIndex..<modulePath.index(before: modulePath.endIndex)].lowercased()
+        // Without the plural "s"; `dropLast()` leaves an empty name empty instead of trapping.
+        self.modulePath = modulePath.dropLast().lowercased()
     }
     
     // e.g.: Pdf
@@ -140,11 +141,27 @@ struct CloudDocumentController: Sendable {
             // then deletes the file for both. Dedupe against the destination root
             // the same way the sibling `move(url:newCategory:)`/`move(url:newName:)`
             // already do. See CODE_AUDIT_17 §5.4.
-            let name = try await suggestedFileName(for: "", filename: filename)
-            let newFilename = try await move(sourceUrl: selectedUrl, destinationFilename: name)
-            return try destinationUrl(filePath: newFilename)
+            //
+            // The free name is only a suggestion: another import can take it before the copy
+            // lands, so the copy never replaces and the next name is tried when it loses the race.
+            // See CODE_AUDIT §5.1.
+            await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.createNameUrl(for:)", file: "CloudDocumentController.swift")
+            var name = try await suggestedFileName(for: "", filename: filename)
+            for attempt in 1...Self.maximumCopyNameAttempts {
+                do {
+                    try await copyWithoutReplacing(from: selectedUrl, to: name)
+                    return try destinationUrl(filePath: name)
+                } catch let error as CocoaError where error.code == .fileWriteFileExists && attempt < Self.maximumCopyNameAttempts {
+                    name = try await suggestedFileName(for: "", filename: Self.increasedFileName(for: name))
+                }
+            }
+            throw CocoaError(.fileWriteFileExists)
         }
     }
+
+    /// Every lost race moves on to a free name, so as many equally named picks at once as there
+    /// are attempts all get one.
+    private static let maximumCopyNameAttempts = 50
 
     /// Copies the picked file file-to-file: reading it into memory first spiked memory for
     /// large audio, USDZ or PDF files. See CODE_AUDIT_19 §7.1.
@@ -180,12 +197,9 @@ struct CloudDocumentController: Sendable {
         guard let sourceUrl = fullUrl(fileUrl: url) else { return nil }
         let destUrl = try destinationUrl(filePath: newPath)
         
-        // Batch directory creation and move into the move operation's coordination
-        try await FileManager.default.updateFile(coordinatingAccessTo: destUrl) { coordDestUrl in
-            let parentDir = coordDestUrl.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
-            try FileManager.default.moveItem(at: sourceUrl, to: coordDestUrl)
-        }
+        // Directory creation and move in one coordinated write of source and destination: the
+        // source is also an iCloud file other processes may touch. See CODE_AUDIT §5.2.
+        try await FileManager.default.moveItem(coordinatingAccessFrom: sourceUrl, to: destUrl, createParentFolder: true)
         
         guard let relativeUrl = URL(string: newPath) else { return nil }
         return (destUrl, relativeUrl)
@@ -218,12 +232,9 @@ struct CloudDocumentController: Sendable {
 
         let destUrl = try destinationUrl(filePath: newPath)
         
-        // Batch directory creation and move into single coordinated operation
-        try await FileManager.default.updateFile(coordinatingAccessTo: destUrl) { coordDestUrl in
-            let parentDir = coordDestUrl.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
-            try FileManager.default.moveItem(at: sourceUrl, to: coordDestUrl)
-        }
+        // Directory creation and move in one coordinated write of source and destination: the
+        // source is also an iCloud file other processes may touch. See CODE_AUDIT §5.2.
+        try await FileManager.default.moveItem(coordinatingAccessFrom: sourceUrl, to: destUrl, createParentFolder: true)
 
         // Built per component, like every other stored path: each name is percent-encoded.
         return (destUrl, nameUrl(fullUrl: destUrl))

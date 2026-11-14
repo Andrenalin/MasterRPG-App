@@ -137,11 +137,6 @@ public extension FileVersionGameControllable {
         rebuildFileReports(masterVersions: [itemId: version], masterId: masterId, only: itemId)
     }
 
-    func markFileAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID) {
-        let players = Set(gameModel.currentPlayers).union([masterId])
-        markFileAvailable(itemId: itemId, version: version, for: Array(players), masterId: masterId)
-    }
-
     func removeFileReports(for playerId: UUID) {
         versionLedger.remove(playerId: playerId)
         gameModel.removePlayerReport(for: playerId)

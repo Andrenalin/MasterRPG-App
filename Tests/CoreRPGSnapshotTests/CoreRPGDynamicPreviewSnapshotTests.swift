@@ -41,19 +41,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::SendControlView
-    @Test("SendControlView")
-    func sendControlView() {
-        assertCoreSnapshot("SendControlView") {
-            SendControlView(
-                controls: .constant([
-                    SharingControlModel(id: .fixture1, name: "Alice", show: true),
-                    SharingControlModel(id: .fixture2, name: "Bob", show: false)
-                ])
-            )
-        }
-    }
-
     // snapshot-root: CoreRPG::AddTagsEditor
     @Test("AddTagsEditor")
     func addTagsEditor() {

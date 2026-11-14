@@ -49,34 +49,3 @@ public final class OptionKeyDownModel: Sendable {
 }
 
 #endif
-
-public struct OptionKeyPressedButton<Content: View>: View {
-    public init(action: @escaping (Bool) -> Void, label: @escaping (Bool) -> Content) {
-        self.action = action
-        self.label = label
-    }
-    
-    let action: (Bool) -> Void
-    let label: (Bool) -> Content
-    
-    @Environment(OptionKeyDownModel.self) private var keyModel
-
-    public var body: some View {
-        Button {
-            action(keyModel.isPressedOptionKey)
-        } label: {
-            label(keyModel.isPressedOptionKey)
-        }
-    }
-}
-
-#Preview {
-    OptionKeyPressedButton(action: { _ in }) { isPressed in
-        Label {
-            Text(verbatim: isPressed ? "Alternate action" : "Primary action")
-        } icon: {
-            Image(systemName: "option")
-        }
-    }
-    .environment(OptionKeyDownModel())
-}

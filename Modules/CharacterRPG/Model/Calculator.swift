@@ -81,37 +81,40 @@ struct Calculator {
 
     @MainActor
     private static func divide(_ input: String) -> (String, Bool) {
-        apply(input, symbol: "/", allowLeadingPlus: false) { $0 / $1 }
+        apply(input, regex: divideRegex) { $0 / $1 }
     }
 
     @MainActor
     private static func multi(_ input: String) -> (String, Bool) {
-        apply(input, symbol: "*", allowLeadingPlus: false) { $0 * $1 }
+        apply(input, regex: multiRegex) { $0 * $1 }
     }
 
     @MainActor
     private static func minus(_ input: String) -> (String, Bool) {
         // Allows a leading "+" before the "-" so double-signed input like "4 +-2" still matches.
-        apply(input, symbol: "-", allowLeadingPlus: true) { $0 - $1 }
+        apply(input, regex: minusRegex) { $0 - $1 }
     }
 
     @MainActor
     private static func plus(_ input: String) -> (String, Bool) {
-        apply(input, symbol: "+", allowLeadingPlus: false) { $0 + $1 }
+        apply(input, regex: plusRegex) { $0 + $1 }
     }
 
+    // The four patterns are built once: a pattern was compiled again for every operator step of
+    // every recalculation. See CODE_AUDIT §7.1.
+    @MainActor private static let divideRegex = makeRegex(symbol: "/", allowLeadingPlus: false)
+    @MainActor private static let multiRegex = makeRegex(symbol: "*", allowLeadingPlus: false)
+    // Allows a leading "+" before the "-" so double-signed input like "4 +-2" still matches.
+    @MainActor private static let minusRegex = makeRegex(symbol: "-", allowLeadingPlus: true)
+    @MainActor private static let plusRegex = makeRegex(symbol: "+", allowLeadingPlus: false)
+
     @MainActor
-    private static func apply(
-        _ input: String,
-        symbol: String,
-        allowLeadingPlus: Bool,
-        operation: (Double, Double) -> Double
-    ) -> (String, Bool) {
+    private static func makeRegex(symbol: String, allowLeadingPlus: Bool) -> Regex<(Substring, Double, Double)> {
         // An always-present `Optionally` sidesteps a result-builder inference failure that
         // shows up when a runtime `if` guards a builder component here; matching an empty
         // string is a harmless no-op, so this behaves identically to omitting it outright.
         let leadingPlus = allowLeadingPlus ? "+" : ""
-        let reg = Regex {
+        return Regex {
             firstOp
             ZeroOrMore {
                 CharacterClass.whitespace
@@ -123,7 +126,14 @@ struct Calculator {
             }
             secondOp
         }
+    }
 
+    @MainActor
+    private static func apply(
+        _ input: String,
+        regex reg: Regex<(Substring, Double, Double)>,
+        operation: (Double, Double) -> Double
+    ) -> (String, Bool) {
         guard let output = input.firstMatch(of: reg) else { return (input, false) }
         let one = output[first]
         let two = output[second]
@@ -137,7 +147,7 @@ struct Calculator {
     /// digits, which is exact for a `Double`: "1/3*3" is 1, not the 0.999 that the default `.number`
     /// style (three fraction digits) rounded to after the first step.
     /// See CODE_AUDIT_22 §5.7, CODE_AUDIT_22a §5.4.
-    private static func formatNumber(_ number: Double) -> String {
+    static func formatNumber(_ number: Double) -> String {
         number.formatted(
             .number
                 .locale(Locale(identifier: "en_US"))

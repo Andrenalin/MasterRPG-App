@@ -9,14 +9,6 @@ public extension Color {
 }
 
 public extension View {
-    func rainbowDebug() -> some View {
-        #if VIEW_DEBUG
-            background(Color.random)
-        #else
-            self
-        #endif
-    }
-
     static func printViewChangesOnlyInDebug() {
         #if DEBUG
             let _ = Self._printChanges()

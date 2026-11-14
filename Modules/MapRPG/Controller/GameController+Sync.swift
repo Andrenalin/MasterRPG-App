@@ -83,11 +83,6 @@ extension GameController {
     }
 
     @MainActor
-    func networkMapGeneration(for itemId: UUID) -> NetworkCodableDataType {
-        Self.mapNetworkData(id: itemId, generation: networkGeneration(for: itemId), data: Data())
-    }
-
-    @MainActor
     func networkPin(itemId: UUID, position: MapPinModel) -> NetworkCodableDataType {
         Self.mapNetworkData(
             id: itemId,

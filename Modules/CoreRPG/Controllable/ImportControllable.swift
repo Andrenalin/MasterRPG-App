@@ -594,8 +594,8 @@ private extension ImportControllable {
             if !policy.writesGameMemory {
                 let merged = finalItem
                 finalItem = itemController.restoringTrashedItem(merged: merged, imported: importableItem)
-                if let restored = finalItem as? any ItemDataAccessible, restored.displayState != DisplayStateMask.totalHidden.rawValue,
-                   itemController.itemSync(for: id, noGame: true)?.displayState == DisplayStateMask.totalHidden.rawValue {
+                if let restored = finalItem as? any ItemDataAccessible, !restored.isHidden,
+                   itemController.itemSync(for: id, noGame: true)?.isHidden == true {
                     // Trashing gave the tags back; restoring takes them again.
                     editControllable.tagController.add(tags: restored.tags, module: itemController.config.module)
                 }

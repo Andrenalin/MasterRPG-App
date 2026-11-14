@@ -335,7 +335,7 @@ public extension FileUrlDataController {
         guard let held = peerFiles.snapshot(for: fileUrl.fileId) else { return nil }
         let pathExtension = fileUrl.rawUrl.pathExtension.isEmpty ? filenameExtension : fileUrl.rawUrl.pathExtension
         let heldUrl = URL.temporaryDirectory
-            .appending(path: "peer-\(fileUrl.fileId.uuidString)-\(held.generation)")
+            .appending(path: "\(PeerFileDataStore.temporaryCopyName(of: fileUrl.fileId))-\(held.generation)")
             .appendingPathExtension(pathExtension)
         if FileManager.default.fileExists(atPath: heldUrl.path(percentEncoded: false)) { return heldUrl }
         return (try? held.data.write(to: heldUrl, options: .atomic)) == nil ? nil : heldUrl

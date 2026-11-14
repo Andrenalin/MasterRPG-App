@@ -251,9 +251,6 @@ public protocol MapGameStorable: Sendable {
     /// to tell whether a map state message would say anything new without
     /// serialising it (the encoded message has no stable byte form).
     @MainActor func mapLiveState(for itemId: UUID) -> MapLiveState
-    /// Envelope carrying only the map's version fingerprint (no payload) — use for comparisons
-    /// instead of `networkMapUpdate`, which serialises every entry and pin. See CODE_AUDIT_17 §7.3.
-    @MainActor func networkMapGeneration(for itemId: UUID) -> NetworkCodableDataType
     @MainActor func saveAll() -> ItemModuleIds
     
     @MainActor func demoNextMap(itemId: UUID, restart: Bool) -> NetworkCodableDataType?

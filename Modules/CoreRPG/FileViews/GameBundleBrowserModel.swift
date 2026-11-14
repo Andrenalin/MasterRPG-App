@@ -88,10 +88,10 @@
 
         @concurrent
         private static func download(_ url: URL) async throws -> URL {
-            let (temporaryUrl, response) = try await URLSession.shared.download(from: url)
-            guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
-                throw URLError(.badServerResponse)
-            }
+            // Capped while it transfers, redirects to non-public hosts refused, the status
+            // checked and a stalled transfer given up after minutes, not the shared session's
+            // days. See CODE_AUDIT §6.3.
+            let temporaryUrl = try await GuardedRemoteDownload.download(from: url, maximumBytes: ByteLimits.maximumSourceFileBytes)
             // The import wants the file name, so keep it in a folder of its own.
             let folder = URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

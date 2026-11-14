@@ -3,8 +3,10 @@
 #if !os(tvOS)
 
 import CoreGraphics
+import CoreRPG
 import Foundation
 import FoundationModels
+import ImageIO
 import RPGResourcesDebug
 import Testing
 
@@ -155,6 +157,59 @@ struct PhotoAnalysisImageTests {
     @Test("Bytes that are not an image give no image")
     func notAnImage() {
         #expect(PhotoAnalysisImage.decode(data: Data("not an image".utf8)) == nil)
+    }
+
+    @Test("A photo that is one pixel over the dimension limit is not decoded, one at the limit is")
+    func declaredOverLimitIsRejected() throws {
+        // Given: two real, tiny PNGs, 16,384 x 1 (the limit) and 16,385 x 1 (over it). See
+        // CODE_AUDIT §6.2.
+        let atLimit = Self.png(width: ImageDownsampler.maximumDeclaredDimension, height: 1)
+        let overLimit = Self.png(width: ImageDownsampler.maximumDeclaredDimension + 1, height: 1)
+        let overSource = try #require(CGImageSourceCreateWithData(overLimit as CFData, nil))
+        #expect(ImageDownsampler.declaredSize(of: overSource) == .overLimits)
+
+        // When / Then
+        #expect(PhotoAnalysisImage.decode(data: atLimit) != nil)
+        #expect(PhotoAnalysisImage.decode(data: overLimit) == nil)
+    }
+
+    /// A valid grayscale PNG of `width` x `height` black pixels. The pixel data is one stored
+    /// (uncompressed) zlib block, so it stays under 64 KB.
+    private static func png(width: Int, height: Int) -> Data {
+        func bigEndian(_ value: UInt32) -> [UInt8] {
+            [UInt8(value >> 24), UInt8((value >> 16) & 0xFF), UInt8((value >> 8) & 0xFF), UInt8(value & 0xFF)]
+        }
+        func crc32(_ bytes: [UInt8]) -> UInt32 {
+            var crc: UInt32 = 0xFFFF_FFFF
+            for byte in bytes {
+                crc ^= UInt32(byte)
+                for _ in 0..<8 {
+                    crc = (crc & 1) == 1 ? (crc >> 1) ^ 0xEDB8_8320 : crc >> 1
+                }
+            }
+            return ~crc
+        }
+        func adler32(_ bytes: [UInt8]) -> UInt32 {
+            var low: UInt32 = 1
+            var high: UInt32 = 0
+            for byte in bytes {
+                low = (low + UInt32(byte)) % 65_521
+                high = (high + low) % 65_521
+            }
+            return (high << 16) | low
+        }
+        func chunk(_ type: String, _ payload: [UInt8]) -> [UInt8] {
+            let body = Array(type.utf8) + payload
+            return bigEndian(UInt32(payload.count)) + body + bigEndian(crc32(body))
+        }
+        let raw = [UInt8](repeating: 0, count: (1 + width) * height)
+        precondition(raw.count <= 65_535)
+        let length = UInt16(raw.count)
+        let zlib: [UInt8] = [0x78, 0x01, 0x01, UInt8(length & 0xFF), UInt8(length >> 8), UInt8(~length & 0xFF), UInt8(~length >> 8)]
+            + raw + bigEndian(adler32(raw))
+        let signature: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        let header = bigEndian(UInt32(width)) + bigEndian(UInt32(height)) + [8, 0, 0, 0, 0]
+        return Data(signature + chunk("IHDR", header) + chunk("IDAT", zlib) + chunk("IEND", []))
     }
 }
 

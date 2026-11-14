@@ -69,7 +69,7 @@ public extension EditControllable {
         guard let fileUrlDataController,
               let item = itemControllable.itemSync(for: itemId, noGame: true),
               let oldFileUrl = item.fileUrl,
-              item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
+              !item.isHidden else { return }
         let path = await folderPath(itemId: itemId)
         let newFileUrl: FileUrl?
         do {

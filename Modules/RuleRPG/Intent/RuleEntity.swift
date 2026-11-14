@@ -116,7 +116,7 @@ struct RuleEntityQuery: ItemEntityQuery {
     func allIds(root: RuleRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: RuleRootModel, id: UUID) -> RuleModel? { root.itemController.itemSync(for: id) }
     func include(model: RuleModel) -> Bool {
-        !model.specialCategory && model.displayState != DisplayStateMask.totalHidden.rawValue
+        !model.specialCategory && !model.isHidden
     }
 
     func suggestedEntities() async throws -> [RuleEntity] {

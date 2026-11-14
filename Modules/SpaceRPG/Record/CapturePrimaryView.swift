@@ -61,10 +61,10 @@ struct CapturePrimaryView: View {
             appModel.setPreviewModelState(shown: showInfo)
         }
         .onAppear(perform: {
-            UIApplication.shared.isIdleTimerDisabled = true
+            KeepAwakeModel.shared.acquire(.capture)
         })
         .onDisappear(perform: {
-            UIApplication.shared.isIdleTimerDisabled = false
+            KeepAwakeModel.shared.release(.capture)
         })
         .id(session.id)
     }

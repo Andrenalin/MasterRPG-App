@@ -79,7 +79,7 @@ public extension ExportModelBacked {
 public extension ExportControllable {
     // Overwritten in specific
     @MainActor func exportingAll() -> ItemModuleIds {
-        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.filter { itemControllable.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue }])
+        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.filter { itemControllable.itemSync(for: $0)?.isHidden != true }])
     }
 
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {

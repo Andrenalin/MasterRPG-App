@@ -21,7 +21,7 @@ extension ExportController: ExportModelBacked {
 
     @MainActor public func exportingAll() -> ItemModuleIds {
         var allIds = photoRoot.exportControllable.exportingAll()
-        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue }]))
+        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.isHidden != true }]))
         return allIds
     }
 

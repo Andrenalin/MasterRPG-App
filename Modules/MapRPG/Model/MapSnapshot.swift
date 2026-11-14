@@ -173,7 +173,7 @@ extension MapSnapshot {
             width: width,
             height: height,
             mapPins: CRDTDataUpdate(wrappedValue: redactedPins, update: mapPins.$update),
-            walls: walls,
+            walls: CRDTDataUpdate(wrappedValue: walls.wrappedValue.map { $0.redactedForPlayers() }, update: walls.$update),
             pinScale: pinScale,
             hexMapScale: hexMapScale,
             scale: scale,

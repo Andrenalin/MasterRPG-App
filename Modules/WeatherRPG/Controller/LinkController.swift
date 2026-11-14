@@ -37,7 +37,7 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != DisplayStateMask.totalHidden.rawValue, let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
 
         if let photoId = replacedItem.photoId {
             if !photoRoot.linkControllable.validateLink(itemId: photoId) {

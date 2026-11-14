@@ -41,7 +41,7 @@ extension ExportController: ExportModelBacked {
     func exportingAll() -> ItemModuleIds {
         ItemModuleIds(dictionary: [
             .rule: itemController.itemDataModel.items.filter {
-                itemController.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue
+                itemController.itemSync(for: $0)?.isHidden != true
             }
         ])
     }

@@ -4,7 +4,9 @@ import Foundation
 import os.log
 
 public extension Logger {
-    static let subsystem = Bundle.main.bundleIdentifier!
+    /// The app's bundle id. A host without one (a command-line tool) falls back to the app's id
+    /// instead of trapping. See CODE_AUDIT §9.14.
+    static let subsystem = Bundle.main.bundleIdentifier ?? "de.AndreTrettin.GameMaster"
 
     static let appIntents = Logger(subsystem: subsystem, category: "AppIntents")
     static let bootStrap = Logger(subsystem: subsystem, category: "BootStrap")
@@ -30,5 +32,4 @@ public extension Logger {
     static let syncDataControllable = Logger(subsystem: subsystem, category: "SyncDataControllable")
     static let tipKit = Logger(subsystem: subsystem, category: "TipKit")
     static let validateRepair = Logger(subsystem: subsystem, category: "ValidateRepair")
-    static let widget = Logger(subsystem: subsystem, category: "widget")
 }

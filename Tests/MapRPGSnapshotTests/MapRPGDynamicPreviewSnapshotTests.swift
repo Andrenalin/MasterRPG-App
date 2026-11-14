@@ -17,19 +17,6 @@ import Testing
 @MainActor
 @Suite(.serialized, .snapshots, .tags(.snapshot))
 struct MapRPGDynamicPreviewSnapshotTests {
-    // snapshot-root: MapRPG::DisplayMapViewer
-    @Test("DisplayMapViewer")
-    func displayMapViewer() async throws {
-        try await assertDynamicSnapshot("DisplayMapViewer") {
-            DisplayMapViewer(
-                image: AKImage(),
-                itemId: MapModel.previewId,
-                entryId: .constant(MapEntryModel.previewId),
-                size: CGSize(width: 320, height: 240)
-            )
-        }
-    }
-
     // snapshot-root: MapRPG::GameToolBar
     @Test("GameToolBar")
     func gameToolBar() async throws {

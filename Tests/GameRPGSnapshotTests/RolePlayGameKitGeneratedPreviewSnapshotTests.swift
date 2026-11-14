@@ -122,16 +122,6 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: RolePlayGameKit::ColorSchemeSettingsView
-    @Test("ColorSchemeSettingsView")
-    func snapshotColorSchemeSettingsView() async throws {
-        try await assertPreviewSnapshot("ColorSchemeSettingsView") { appModel in
-            RolePlayGameKit.ColorSchemeSettingsView()
-                .environment(AppSettingsModel())
-                .environment(\.locale, Locale(identifier: "de"))
-        }
-    }
-
     // snapshot-root: RolePlayGameKit::ColorSchemeView
     @Test("ColorSchemeView")
     func snapshotColorSchemeView() async throws {

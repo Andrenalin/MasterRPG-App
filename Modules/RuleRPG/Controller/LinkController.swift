@@ -141,7 +141,7 @@ extension LinkController: LinkControllable {
     @MainActor
     func validateLinks(on itemId: UUID) {
         guard let inspected = itemController.itemSync(for: itemId),
-              inspected.displayState != DisplayStateMask.totalHidden.rawValue,
+              !inspected.isHidden,
               let replacement = itemController.copy(of: itemId) else { return }
 
         replacement.description = repairLinks(

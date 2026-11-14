@@ -137,6 +137,38 @@ struct ValueEntryModelTests {
         #expect(Calculator.calculate("100000*100000") == 10_000_000_000)
     }
 
+    @Test("A decimal result is plain text the calculator can read back, never exponent form (CODE_AUDIT §5.3)")
+    func decimalResultHasNoExponent() {
+        var sut = setUp()
+        sut.reset(valueType: .decimal)
+
+        for (input, expected) in [("1/100000", 0.00001), ("1/3*3", 1.0), ("10/4", 2.5), ("2000000*3000000", 6_000_000_000_000.0)] {
+            let text = sut.calculate(on: input)
+            #expect(!text.localizedStandardContains("e"), "\(input) gave \(text)")
+            #expect(Calculator.calculate(text) == expected, "\(input) gave \(text)")
+        }
+    }
+
+    @Test("Setting a decimal value on a number entry never traps (CODE_AUDIT §5.4)", arguments: [
+        (Double.nan, 0), (.infinity, Int.max), (-.infinity, Int.min), (1e30, Int.max), (-1e30, Int.min), (7.9, 7), (-7.9, -7)
+    ])
+    func truncatedIntIsTotal(value: Double, expected: Int) {
+        #expect(ValueEntryModel.truncatedInt(value) == expected)
+
+        var sut = setUp()
+        sut.reset(valueType: .number)
+        sut.valueDecimal = value
+        #expect(sut.valueNumber == expected)
+    }
+
+    @Test("Repeated calculations give the same result from the shared patterns")
+    func calculateIsRepeatable() {
+        for _ in 0..<3 {
+            #expect(Calculator.calculate("4 +6 -4* 2+4 *  3") == 14)
+            #expect(Calculator.calculate("4 +-2.0+12") == 14)
+        }
+    }
+
     @Test func calculate() async throws {
         var sut = setUp()
         sut.reset(valueType: .number)

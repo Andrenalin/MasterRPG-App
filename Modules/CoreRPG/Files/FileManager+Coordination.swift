@@ -66,9 +66,14 @@ extension FileManager {
         }
     }
 
-    func moveItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
+    /// Moves a file inside one coordinated write of both locations. `createParentFolder` makes the
+    /// destination's folder first, inside the same coordination.
+    func moveItem(coordinatingAccessFrom fromURL: URL, to toURL: URL, createParentFolder: Bool = false) async throws {
         try await Self.performCoordinatedFileAccess { cancellation in
             try Self.coordinate(cancellation, writingItemAt: fromURL, writingItemAt: toURL) { readURL, writeURL in
+                if createParentFolder {
+                    try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                }
                 try FileManager.default.moveItem(at: readURL, to: writeURL)
             }
         }

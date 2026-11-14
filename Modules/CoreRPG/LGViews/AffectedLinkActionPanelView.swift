@@ -44,7 +44,7 @@ public struct AffectedLinkActionPanelView: View {
             .frame(minHeight: 300)
             // Plural-aware: "Mark for remove N Item" read wrong for any count but one.
             // See CODE_AUDIT_Folder §8.5.
-            .navigationTitle(Text("Mark \(removeEntryList.linkTree.filter { $0.canRemove }.count) items for removal", bundle: .module))
+            .navigationTitle(Text("Mark \(removeEntryList.linkTree.count { $0.canRemove }) items for removal", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .destructiveAction) {
                     Button {
@@ -126,7 +126,7 @@ private extension AffectedLinkActionPanelView {
         if overwrite {
             return false
         }
-        return removeEntryList.linkTree.filter { $0.canRemove }.isEmpty
+        return !removeEntryList.linkTree.contains { $0.canRemove }
     }
     
     /// Item rows use the theme's panel colour; rows of items that link to it use the system red,

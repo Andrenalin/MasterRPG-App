@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
 import AVFoundation
+import CoreRPG
+import ImageIO
 import SwiftUI
 
 #if canImport(AppKit)
@@ -63,18 +65,17 @@ final class AudioPlayerBarViewModel {
         return nil
     }
 
-    private static func artworkImage(from data: Data?) -> Image? {
-        guard let data else { return nil }
-#if canImport(AppKit)
-        if let nsImage = NSImage(data: data) {
-            return Image(nsImage: nsImage)
-        }
-#elseif canImport(UIKit)
-        if let uiImage = UIImage(data: data) {
-            return Image(uiImage: uiImage)
-        }
-#endif
-        return nil
+    /// Longest edge, in pixels, the player bar keeps of the artwork it shows.
+    private static let maximumArtworkPixelSize: CGFloat = 1024
+
+    /// Embedded artwork can be several thousand pixels wide while the bar shows a thumbnail, so
+    /// it is decoded downsampled, and not at all when its header names more than the pixel
+    /// limits. See CODE_AUDIT §8.3.
+    static func artworkImage(from data: Data?) -> Image? {
+        guard let data,
+              let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+              let image = ImageDownsampler.downsampledImage(from: source, maxPixelSize: maximumArtworkPixelSize) else { return nil }
+        return Image(decorative: image, scale: 1)
     }
 
     func toggleMute(audioPlayerModel: AudioPlayerModel) {

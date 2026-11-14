@@ -49,15 +49,11 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
-        var result = content
-        for link in links {
-            result = repairLink(link, for: result, for: [.all])
-        }
-        return result
+        repairingOwnModuleLinks(links, in: content)
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != DisplayStateMask.totalHidden.rawValue, let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
 
         replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
 

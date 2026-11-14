@@ -432,7 +432,7 @@ public func reindexIntentEntities<Entity: IndexedEntity, Model: ItemDataAccessib
     var entities: [Entity] = []
     var notIndexed: [UUID] = []
     for id in ids {
-        if let model = model(id), model.displayState != DisplayStateMask.totalHidden.rawValue, isIndexable(model) {
+        if let model = model(id), !model.isHidden, isIndexable(model) {
             entities.append(makeEntity(model))
         } else {
             notIndexed.append(id)

@@ -462,9 +462,7 @@ extension GameRoot {
         adventureRoot.donateStartGame(of: id)
 #endif
 
-#if !os(macOS)
-        UIApplication.shared.isIdleTimerDisabled = true
-#endif
+        KeepAwakeModel.shared.acquire(.game)
     }
 }
 
@@ -539,17 +537,13 @@ extension GameRoot {
         if mode == .demo {
             await joinGame(for: mode, supporterTier: supporterTier)
 
-#if !os(macOS)
-            UIApplication.shared.isIdleTimerDisabled = true
-#endif
+            KeepAwakeModel.shared.acquire(.game)
         } else if await player.start(to: model, joinCode: joinCode) {
             // A stop during the connect already tore the game down.
             guard generation == stopGeneration else { return }
             await joinGame(for: mode, supporterTier: supporterTier)
 
-#if !os(macOS)
-            UIApplication.shared.isIdleTimerDisabled = true
-#endif
+            KeepAwakeModel.shared.acquire(.game)
         } else {
             await stopGame()
         }
@@ -666,9 +660,7 @@ extension GameRoot {
         gameModel.shareState = GameShareStateModel()
         #endif
 
-#if !os(macOS)
-        UIApplication.shared.isIdleTimerDisabled = false
-#endif
+        KeepAwakeModel.shared.release(.game)
     }
 
     func saveGame() -> ItemModuleIds {

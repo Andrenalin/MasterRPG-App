@@ -90,8 +90,16 @@ final class PeerFileDataStore: Sendable {
         for id in ids { Self.removeTemporaryCopy(of: id) }
     }
 
+    /// The name every temporary copy of a peer's file starts with, so `removeTemporaryCopy` finds
+    /// what `FileUrlDataController.heldPeerFileUrl` wrote. See CODE_AUDIT §9.16.
+    static let temporaryCopyPrefix = "peer-"
+
+    static func temporaryCopyName(of fileId: UUID) -> String {
+        "\(temporaryCopyPrefix)\(fileId.uuidString)"
+    }
+
     private static func removeTemporaryCopy(of fileId: UUID) {
-        let prefix = "peer-\(fileId.uuidString)"
+        let prefix = temporaryCopyName(of: fileId)
         let directory = URL.temporaryDirectory
         guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path(percentEncoded: false)) else { return }
         for name in names where name.hasPrefix(prefix) {

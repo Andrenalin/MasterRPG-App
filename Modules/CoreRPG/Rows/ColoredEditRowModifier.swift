@@ -28,7 +28,6 @@ struct ColoredEditRowViewModifier: ViewModifier {
             .padding(6)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: 12).fill(backgroundColor.opacity(fillOpacity)))
-            .rainbowDebug()
     }
 }
 

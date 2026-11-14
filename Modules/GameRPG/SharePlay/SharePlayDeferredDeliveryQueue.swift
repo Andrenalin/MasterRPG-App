@@ -286,11 +286,6 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         return false
     }
 
-    private static func isEvent(_ key: Key) -> Bool {
-        if case .event = key { return true }
-        return false
-    }
-
     private mutating func remove(_ key: Key) {
         order.removeAll { $0 == key }
         if let entry = entries.removeValue(forKey: key) {

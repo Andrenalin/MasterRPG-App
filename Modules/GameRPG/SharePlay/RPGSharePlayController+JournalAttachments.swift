@@ -21,7 +21,8 @@ extension RPGSharePlayController {
     /// that is still suspended at the deadline is not started again (see `loadJournalAttachment`).
     static func journalAttachmentLoadDeadline(for module: NetworkModules) -> Duration {
         switch module {
-        case .pdf, .space, .audio: .seconds(180)
+        // The same ceiling a Journal add waits for these modules. See CODE_AUDIT §9.16.
+        case .pdf, .space, .audio: GameLimits.SharePlay.journalAddMaximumTimeout
         default: .seconds(30)
         }
     }

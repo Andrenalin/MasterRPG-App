@@ -174,7 +174,7 @@ public extension EditControllable where Model: GroupableModel {
         if let groupId = item.groupId {
             // Hidden with a groupId: orphaned if the parent is gone or deleted.
             let parent = itemControllable.itemSync(for: groupId)
-            return parent == nil || parent?.displayState == DisplayStateMask.totalHidden.rawValue
+            return parent == nil || parent?.isHidden == true
         }
         return true // no parentId, no groupId → phase-1 orphan
     }
@@ -190,7 +190,7 @@ public extension EditControllable where Model: GroupableModel {
         guard let groupId = item.groupId else { return }
         // Clear groupId if the parent is deleted or no longer exists.
         if let groupItem = editModel(for: groupId) {
-            if groupItem.displayState == DisplayStateMask.totalHidden.rawValue {
+            if groupItem.isHidden {
                 item.groupId = nil
             }
         } else {
@@ -604,7 +604,7 @@ public extension EditControllable {
         await recordOperation("EditControllable.delete(itemId:)")
 
         guard let item = await itemControllable.item(for: itemId) as? Model else { return }
-        let isTrashed = item.displayState == DisplayStateMask.totalHidden.rawValue
+        let isTrashed = item.isHidden
         await willDeleteChildren(of: item)
         for entry in item.entries {
             if item.category == .folder {
@@ -614,7 +614,7 @@ public extension EditControllable {
                 // children that are trashed themselves. See CODE_AUDIT_Folder §5.1.
                 guard let child = itemControllable.itemSync(for: entry.childId),
                       child.parentId == item.id,
-                      !isTrashed || child.displayState == DisplayStateMask.totalHidden.rawValue else { continue }
+                      !isTrashed || child.isHidden else { continue }
                 await Task.yield()
                 await delete(itemId: entry.childId, visited: visited)
             } else if !item.specialCategory {
@@ -747,7 +747,7 @@ public extension EditControllable {
     ///   intents). See CODE_AUDIT_Since_3.0.1 §5.2.
     @MainActor func markForDeletion(itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId),
-              item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
+              !item.isHidden else { return }
         // Idempotent: a second pass over an already trashed item removed the tags twice.
         // See CODE_AUDIT_Folder §5.19.
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
@@ -778,7 +778,7 @@ public extension EditControllable {
         // Only trashed items are restored: Cancel in an entry-removal panel passes items that
         // were never trashed, and "restoring" them unhid group-hidden items.
         guard var item = editModel(for: itemId),
-              item.displayState == DisplayStateMask.totalHidden.rawValue else { return }
+              item.isHidden else { return }
         let trashed = DisplayStateMask.totalHidden.rawValue
 
         if item.category == .folder {

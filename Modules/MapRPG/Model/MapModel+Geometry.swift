@@ -301,7 +301,7 @@ extension MapModel {
     func resetEntries() {
         // Inline isHidden: the protocol convenience is @MainActor; this nonisolated
         // model reads its concrete stored property directly (called from didSet).
-        if displayState == DisplayStateMask.totalHidden.rawValue {
+        if isHidden {
             entries.enumerated().forEach { index, _ in
                 entries[index].isShown = false
             }

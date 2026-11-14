@@ -50,21 +50,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::GameConnectionStatusIndicatorView
-    @Test("GameConnectionStatusIndicatorView")
-    func snapshotGameConnectionStatusIndicatorView() async throws {
-        try await assertPreviewSnapshot("GameConnectionStatusIndicatorView") {
-            HStack {
-                GameRPG.GameConnectionStatusIndicatorView(status: .localNetworkConnected)
-                GameConnectionStatusIndicatorView(status: .localNetworkLost)
-                GameConnectionStatusIndicatorView(status: .sharePlayWaiting)
-                GameConnectionStatusIndicatorView(status: .sharePlayConnected)
-                GameConnectionStatusIndicatorView(status: .sharePlayLost)
-            }
-            .padding()
-        }
-    }
-
     // snapshot-root: GameRPG::GameDiceToggleButton
     @Test("GameDiceToggleButton")
     func snapshotGameDiceToggleButton() async throws {
