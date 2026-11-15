@@ -44,10 +44,33 @@ final class PdfSearchModel: Sendable {
     /// of an open item rebuilds the `PDFView` (the document itself is not observed).
     var pdfVersion = 0
     
+    /// Counts the searches the user submitted or an intent started. Observed, so the viewer starts
+    /// the find from SwiftUI (`.task(id:)`) instead of from `updateView`, which must not mutate
+    /// observable state during the update pass. See CODE_AUDIT_26 §8.29.
+    private(set) var searchRequest = 0
+
     func resetSearch() {
-        pdfSearching = false
-        searchText = displaySearchText
+        search(for: displaySearchText)
     }
+
+    /// Starts a new search for `term`; the viewer picks the request up and runs the find.
+    func search(for term: String) {
+        pdfSearching = false
+        searchText = term
+        searchRequest &+= 1
+    }
+
+#if !os(tvOS)
+    /// Starts the find of the current `searchText` on the shown `PDFView`, once per request.
+    func beginFindIfNeeded() {
+        guard !pdfSearching, !searchText.isEmpty,
+              let coordinator = pdfView?.delegate as? PdfWrapperView.Coordinator
+        else { return }
+        pdfSearching = true
+        isSearching = true
+        coordinator.beginSearch(searchText)
+    }
+#endif
     
     func disabledNext() -> Bool {
 #if os(tvOS)

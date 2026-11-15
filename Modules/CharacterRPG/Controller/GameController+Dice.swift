@@ -8,8 +8,28 @@ import Foundation
 // Split out of GameController.swift — see CODE_AUDIT_Character §9.8.
 
 extension GameController {
+    /// The game dice of an entry, read only: safe to call from a view `body`. `nil` until
+    /// `ensureGameDice(itemId:entryId:)` created it for the entry's current dice template.
+    /// See CODE_AUDIT_26 §8.2.
     @MainActor
     func gameDiceId(itemId: UUID, entryId: UUID) -> UUID? {
+        let entry = gameItem(for: itemId)[entryId]
+        guard let diceId = entry.diceId else { return nil }
+        guard entry.type == .number else { return diceId }
+        guard gameDiceModel.gameEntryDiceId[entryId] == diceId else { return nil }
+        return gameDiceModel.gameDiceId[entryId]
+    }
+
+    @MainActor
+    func templateDiceId(itemId: UUID, entryId: UUID) -> UUID? {
+        gameItem(for: itemId)[entryId].diceId
+    }
+
+    /// Creates the entry's game dice if it has none for the current dice template and returns it.
+    /// Mutates observable state, so it is called from a task or a controller, not from `body`.
+    @MainActor
+    @discardableResult
+    func ensureGameDice(itemId: UUID, entryId: UUID) -> UUID? {
         let entry = gameItem(for: itemId)[entryId]
         guard let diceId = entry.diceId else { return nil }
         guard entry.type == .number else { return diceId }
@@ -34,7 +54,12 @@ extension GameController {
         let gameEntryDiceId = gameDiceModel.gameEntryDiceId[key]
         let gameDiceId: UUID?
         if gameEntryDiceId != diceId {
-            // reset
+            // The template changed: the game dice made from the old one is removed instead of
+            // staying in the game store for good. See CODE_AUDIT_26 §8.2.
+            if let superseded = gameDiceModel.gameDiceId[key] {
+                diceRoot.diceGameControllable.removeGameDice(superseded)
+                gameDiceModel.gameDiceId[key] = nil
+            }
             gameDiceModel.gameEntryDiceId[key] = diceId
             gameDiceId = nil
         } else {

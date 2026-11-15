@@ -29,7 +29,7 @@ struct EmptyDropButton: View {
                 }
                 Text(chooseText, bundle: .module)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal)
         }
         .contentShape(.rect)
     }

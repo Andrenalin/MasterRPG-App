@@ -4,8 +4,16 @@ import SwiftUI
 
 @MainActor @Observable
 public final class EditIdentifierModel<Value: Equatable> {
+    /// A binding-backed model reads and writes the binding itself, and an editor that is given one
+    /// is created again on every pass of its parent. A fresh `valueId` each time told the editor
+    /// the edited value had changed and reset what the user was typing, so the id is a constant.
+    /// See CODE_AUDIT_26 §8.15.
+    private static var bindingValueId: UUID {
+        UUID(uuidString: "6D0B1F6E-0A5C-4C3B-9D55-2F4E7A1B8C90") ?? UUID()
+    }
+
     public init(value: Binding<Value>) {
-        self.valueId = UUID()
+        self.valueId = Self.bindingValueId
         self._value = value.wrappedValue
         self.bindingValue = value
     }

@@ -18,7 +18,7 @@ public struct AudioEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
 
 extension AudioEntryModel: EntryDataAccessible {
     public var name: String {
-        get { "Track" }
+        get { String(localized: "Track", bundle: .module) }
         set {}
     }    
     public var content: String {

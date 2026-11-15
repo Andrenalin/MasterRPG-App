@@ -17,6 +17,19 @@ struct EntryListDiceRow: View, Equatable {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // The game dice is created in the task below, never while `body` runs: creating it
+        // writes observable state this body reads. See CODE_AUDIT_26 §8.2.
+        let templateDiceId = root.gameController.gameItem(for: itemId)[entryId].diceId
+        Group {
+            content
+        }
+        .task(id: templateDiceId) {
+            root.gameController.ensureGameDice(itemId: itemId, entryId: entryId)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if let id = root.gameController.gameDiceId(itemId: itemId, entryId: entryId) {
             // Read in `body` (not in a manually re-armed `withObservationTracking`) so
             // SwiftUI re-evaluates this row whenever any entry the formula links to

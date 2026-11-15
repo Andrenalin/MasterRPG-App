@@ -147,9 +147,15 @@ private struct TableRootSheetCloseButton: View {
                 dismiss()
             }
         } label: {
-            Image(systemName: "xmark.circle")
+            // A `Label` with the title hidden, so the title is the accessibility label.
+            // See CODE_AUDIT_26 §8.6.
+            Label {
+                Text("Close", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark.circle")
+            }
+            .labelStyle(.iconOnly)
         }
-        .accessibilityLabel(Text("Close", bundle: .module))
     }
 }
 

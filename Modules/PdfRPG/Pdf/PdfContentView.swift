@@ -22,6 +22,9 @@ struct PdfContentView: View {
             VStack(spacing: 0) {
                 if let pdfDoc = searchModel.pdfDoc {
                     PdfWrapperView(showing: pdfDoc, entry: entry, horizontal: horizontal, searchModel: searchModel)
+                        .task(id: searchModel.searchRequest) {
+                            searchModel.beginFindIfNeeded()
+                        }
                 } else if searchModel.pdfUnavailable {
                     PdfUnavailableView()
                 } else {

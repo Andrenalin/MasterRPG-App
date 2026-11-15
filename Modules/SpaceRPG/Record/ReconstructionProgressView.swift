@@ -73,7 +73,7 @@ struct ReconstructionProgressView: View, Equatable {
         .padding(.bottom, 20)
         .alert(
             Text(
-                "Failed: \(error.map { String(describing: $0) } ?? "")",
+                "Failed: \(error.map(\.localizedDescription) ?? "")",
                 bundle: .module
             ),
             isPresented: $gotError

@@ -494,6 +494,28 @@ struct LinkControllerTests {
         #expect(sut.diceCompareValue(itemId: itemId, entryId: textEntry.id) == nil)
     }
 
+    /// Reading an entry's game dice during a view update must not create it (CODE_AUDIT_26 §8.2):
+    /// `gameDiceId` is read-only, `ensureGameDice` creates once and returns the same dice again.
+    @Test func gameDiceIdReadsWithoutCreatingAndEnsureCreatesOnce() async throws {
+        let root = Self.makeRoot()
+        let edit = root.editController
+        let diceTemplate = Self.addScalingDice(to: root)
+
+        let itemId = await root.itemController.addNew(type: .character)
+        let entry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: "10", diceId: diceTemplate.id)
+        edit.add(entry: entry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        #expect(root.gameController.templateDiceId(itemId: itemId, entryId: entry.id) == diceTemplate.id)
+        #expect(root.gameController.gameDiceId(itemId: itemId, entryId: entry.id) == nil)
+
+        let created = try #require(root.gameController.ensureGameDice(itemId: itemId, entryId: entry.id))
+        #expect(root.gameController.gameDiceId(itemId: itemId, entryId: entry.id) == created)
+        #expect(root.gameController.ensureGameDice(itemId: itemId, entryId: entry.id) == created)
+    }
+
     /// Entry B has an attached dice whose die count scales with B's calculated value
     /// (`DiceModel.addDiceEvery`/`resetDice()`), and B's formula links to entry A.
     /// Covers the first edit (which promotes the character into `gameItemData`) and
@@ -513,7 +535,7 @@ struct LinkControllerTests {
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
 
-        let gameDiceId = try #require(root.gameController.gameDiceId(itemId: itemId, entryId: bEntry.id))
+        let gameDiceId = try #require(root.gameController.ensureGameDice(itemId: itemId, entryId: bEntry.id))
         Self.trackDiceCompareValue(root: root, itemId: itemId, entryId: bEntry.id, gameDiceId: gameDiceId)
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 3)
 
@@ -551,7 +573,7 @@ struct LinkControllerTests {
 
         #expect(root.linkController.diceCompareValue(itemId: itemId, entryId: bEntry.id) == 15)
 
-        let gameDiceId = try #require(root.gameController.gameDiceId(itemId: itemId, entryId: bEntry.id))
+        let gameDiceId = try #require(root.gameController.ensureGameDice(itemId: itemId, entryId: bEntry.id))
         Self.trackDiceCompareValue(root: root, itemId: itemId, entryId: bEntry.id, gameDiceId: gameDiceId)
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1)
 
@@ -582,7 +604,7 @@ struct LinkControllerTests {
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
 
-        let gameDiceId = try #require(root.gameController.gameDiceId(itemId: itemId, entryId: cEntry.id))
+        let gameDiceId = try #require(root.gameController.ensureGameDice(itemId: itemId, entryId: cEntry.id))
         Self.trackDiceCompareValue(root: root, itemId: itemId, entryId: cEntry.id, gameDiceId: gameDiceId)
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1)
 
@@ -608,7 +630,7 @@ struct LinkControllerTests {
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
 
-        let gameDiceId = try #require(root.gameController.gameDiceId(itemId: itemId, entryId: bEntry.id))
+        let gameDiceId = try #require(root.gameController.ensureGameDice(itemId: itemId, entryId: bEntry.id))
         Self.trackDiceCompareValue(root: root, itemId: itemId, entryId: bEntry.id, gameDiceId: gameDiceId)
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 3)
 

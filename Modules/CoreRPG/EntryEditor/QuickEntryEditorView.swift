@@ -203,9 +203,9 @@ private extension QuickEntryEditorView {
             Button(role: .cancel) {
                 navigator.dismiss()
             } label: {
-                Image(systemName: "xmark.circle")
+                Label { Text("Cancel", bundle: .module) } icon: { Image(systemName: "xmark.circle") }
+                    .labelStyle(.iconOnly)
             }
-            .accessibilityLabel(Text("Cancel", bundle: .module))
         }
 
 #if os(macOS)
@@ -246,9 +246,9 @@ private extension QuickEntryEditorView {
                         showAffectedLinksAlert.toggle()
                     }
                 } label: {
-                    Image(systemName: "square.and.arrow.down")
+                    Label { Text("Apply", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
+                        .labelStyle(.iconOnly)
                 }
-                .accessibilityLabel(Text("Apply", bundle: .module))
 #if os(macOS)
                 .buttonStyle(.glassProminent)
                 .keyboardShortcut(.return, modifiers: .command)

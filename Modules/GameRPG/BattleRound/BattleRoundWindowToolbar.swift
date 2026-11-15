@@ -11,6 +11,9 @@ import SwiftUI
 /// Inside the content, as glass buttons next to the cards' drag, drop and
 /// menu gestures, they were part of the combination AppKit asserted on
 /// before it stopped delivering clicks to the window.
+///
+/// The turn shortcuts are Command-Return and Option-Command-Return: Command-Right is the text
+/// field command "move to end of line" in the HP and initiative fields. See CODE_AUDIT_26 §8.18.
 struct BattleRoundWindowToolbar: ToolbarContent {
     let controller: BattleRoundController
     let screenModel: BattleRoundScreenModel
@@ -26,7 +29,7 @@ struct BattleRoundWindowToolbar: ToolbarContent {
             ) {
                 controller.nextAttacker()
             }
-            .keyboardShortcut(.rightArrow, modifiers: .command)
+            .keyboardShortcut(.return, modifiers: .command)
             .help(Text("Next Turn", bundle: .module))
             .disabled(!isRunning)
 
@@ -36,7 +39,7 @@ struct BattleRoundWindowToolbar: ToolbarContent {
             ) {
                 controller.nextRound()
             }
-            .keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+            .keyboardShortcut(.return, modifiers: [.command, .option])
             .help(Text("Next Round", bundle: .module))
             .disabled(!isRunning)
 

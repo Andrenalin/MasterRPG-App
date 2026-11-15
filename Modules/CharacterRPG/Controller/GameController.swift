@@ -85,6 +85,11 @@ public protocol ValueGameStorable: Sendable {
     /// The game dice attached to an entry, the very instance the character sheet's row rolls, or
     /// `nil` when the entry has none. `itemId` is the item that directly contains the entry.
     @MainActor func gameDiceId(itemId: UUID, entryId: UUID) -> UUID?
+    /// The dice template an entry links to; a view re-runs `ensureGameDice` when it changes.
+    @MainActor func templateDiceId(itemId: UUID, entryId: UUID) -> UUID?
+    /// Creates the entry's game dice when it has none for the entry's current dice template (and
+    /// removes the one made from a replaced template). For a view's `.task`, not for `body`.
+    @MainActor @discardableResult func ensureGameDice(itemId: UUID, entryId: UUID) -> UUID?
     /// The calculated number the entry's dice compare against. Reading it in a view's `body`
     /// makes Observation track every entry its formula links to.
     @MainActor func diceCompareValue(itemId: UUID, entryId: UUID) -> Int?
@@ -188,7 +193,7 @@ extension GameController: ValueGameStorable {
             return gameDiceId(itemId: itemId, diceId: diceId)
         }        
         guard let entry = gameItem(for: itemId).entries.first(where: { $0.diceId != nil }) else { return nil }
-        return gameDiceId(itemId: itemId, entryId: entry.id)
+        return ensureGameDice(itemId: itemId, entryId: entry.id)
     }
 
     @MainActor

@@ -20,6 +20,8 @@ struct DetailListView: View {
     let model: AdventureModel
     let folderListController: any FolderListControllable
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
@@ -39,7 +41,7 @@ struct DetailListView: View {
                 await root.donateSiriViewingIntent(for: model.id)
             }
             .onChange(of: model.photoId) {
-                withAnimation { root.editController.editorModel.sheetRootModel?.updateFromRoot() }
+                withAnimation(reduceMotion ? nil : .default) { root.editController.editorModel.sheetRootModel?.updateFromRoot() }
             }
             .sheetAIAssistant(
                 generatorRoot: root.generatorRoot,

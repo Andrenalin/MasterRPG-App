@@ -921,6 +921,15 @@ private extension SpaceViewer {
         // computed on demand from the just-updated yaw/pitch state.
         objectEntity?.transform.rotation = simd_quatf(angle: pitch, axis: .left)
             * simd_quatf(angle: yaw, axis: .upward)
+#else
+        // Elsewhere the camera orbits and nothing derives the entity's rotation from yaw/pitch, so
+        // the accessibility action turns the entity by the same delta, about the world axes.
+        // See CODE_AUDIT_26 §8.34.
+        if let objectEntity {
+            objectEntity.transform.rotation = simd_quatf(angle: pitchDelta, axis: .left)
+                * simd_quatf(angle: yawDelta, axis: .upward)
+                * objectEntity.transform.rotation
+        }
 #endif
     }
 

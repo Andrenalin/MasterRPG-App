@@ -23,7 +23,7 @@ struct BattleRollResults: View {
             ScrollView(.horizontal) {
                 // A plain stack: the model keeps at most
                 // `BattleRoundModel.maximumRollsPerCombatant` rolls here.
-                HStack(spacing: 3) {
+                HStack(spacing: BattleRoundSpacing.extraTight) {
                     ForEach(results) { result in
                         BattleRollResultBadge(result: result, tint: tint)
                     }
@@ -67,8 +67,8 @@ private struct BattleRollResultBadge: View {
                     .accessibilityLabel(Text(outcome.title))
             }
         }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 2)
+        .padding(.horizontal, BattleRoundSpacing.tight)
+        .padding(.vertical, BattleRoundSpacing.extraTight)
         .background(tint.opacity(0.18), in: .capsule)
         .help(
             result.expression.map(Text.init(verbatim:))

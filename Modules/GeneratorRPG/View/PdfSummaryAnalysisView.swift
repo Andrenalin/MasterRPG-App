@@ -23,17 +23,16 @@ public struct PdfSummaryAnalysisView: View {
 
     public var body: some View {
         FoundationBasicView {
-            VStack(spacing: 20) {
+            VStack {
                 if model.isAnalyzing {
                     AnalyzingView(model: model)
                 } else {
                     OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
-                        .padding(.horizontal, 4)
                     AnalyzeButtonView(action: analyze)
                 }
 
                 if let error = model.lastError {
-                    errorView(error)
+                    AnalysisErrorBanner(message: error) { model.clearError() }
                 }
             }
             .padding()
@@ -50,30 +49,6 @@ public struct PdfSummaryAnalysisView: View {
             guard !Task.isCancelled, let content else { return }
             onAnalysisCompleted(content)
         }
-    }
-
-    private func errorView(_ error: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-
-            Text(verbatim: error)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            Button {
-                model.clearError()
-            } label: {
-                Text("Dismiss", bundle: .module)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(Color.red.opacity(0.1))
-        .clipShape(.rect(cornerRadius: 8))
     }
 }
 
@@ -101,7 +76,7 @@ private struct AnalyzingView: View {
     let model: PdfSummaryAnalysisModel
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack {
             ProgressView()
                 .scaleEffect(1.5)
 
@@ -119,7 +94,7 @@ private struct AnalyzingView: View {
             }
 
             if let progress = model.resultModel.analysisProgress {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading) {
                     HStack {
                         Image(systemName: progress.title == nil ? "xmark.circle" : "checkmark.circle.fill")
                             .foregroundStyle(progress.title == nil ? .red : .green)

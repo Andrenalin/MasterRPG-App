@@ -151,6 +151,16 @@ struct MapEditor: View {
             editController.createHexMap(model: map, hexMapScale: session.hexScale)
         }
         .focusedSceneValue(\.editorUndoActions, focusedUndoActions)
+#if os(macOS)
+        .focusedSceneValue(
+            \.viewportZoom,
+            FocusedViewportZoom(
+                zoomIn: { session.viewport.zoom(by: 1.25) },
+                zoomOut: { session.viewport.zoom(by: 0.8) },
+                reset: { session.viewport.reset() }
+            )
+        )
+#endif
         .focusedSceneValue(
             \.selectedModule,
             configuration.mode == .edit

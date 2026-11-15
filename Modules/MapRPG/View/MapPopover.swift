@@ -318,6 +318,16 @@ private struct MapPopoverButtonSize: ViewModifier {
 private struct MapPopoverButtonAppearance: ViewModifier {
     let tint: Color
 
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    /// White symbols sit on this fill: the tint is darkened so they stay readable on a light
+    /// glass panel, and further (and opaque) with Increase Contrast. See CODE_AUDIT_26 §8.23.
+    private var fill: Color {
+        contrast == .increased
+            ? tint.mix(with: .black, by: 0.45)
+            : tint.mix(with: .black, by: 0.25).opacity(0.9)
+    }
+
     func body(content: Content) -> some View {
 #if os(tvOS) || os(visionOS)
         content
@@ -328,7 +338,7 @@ private struct MapPopoverButtonAppearance: ViewModifier {
         content
             .buttonStyle(.plain)
             .foregroundStyle(.white)
-            .background(tint.opacity(0.7), in: .circle)
+            .background(fill, in: .circle)
 #endif
     }
 }

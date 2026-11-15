@@ -28,7 +28,7 @@ public struct PhotoSummaryAnalysisView: View {
 
     public var body: some View {
         VStack {
-            Image(decorative: image, scale: 1)
+            Image(image, scale: 1, label: Text("Photo to analyze", bundle: .module))
                 .resizable()
                 .scaledToFit()
                 .clipShape(.rect(cornerRadius: 12))
@@ -61,7 +61,7 @@ public struct PhotoSummaryAnalysisView: View {
             }
 
             if let error = model.lastError {
-                ErrorBanner(message: error) { model.clearError() }
+                AnalysisErrorBanner(message: error) { model.clearError() }
             }
         }
         .padding()
@@ -140,32 +140,6 @@ private struct CloudToggle: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-}
-
-private struct ErrorBanner: View {
-    let message: String
-    let dismiss: () -> Void
-
-    var body: some View {
-        HStack {
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-
-            Text(verbatim: message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            Button(action: dismiss) {
-                Text("Dismiss", bundle: .module)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(.red.opacity(0.1), in: .rect(cornerRadius: 8))
     }
 }
 

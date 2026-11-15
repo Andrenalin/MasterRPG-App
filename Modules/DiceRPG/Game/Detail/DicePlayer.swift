@@ -9,24 +9,11 @@ struct DicePlayer: View {
 
     @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) var diceDisplayModel
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public var body: some View {
         VStack(alignment: alignment, spacing: 4) {
             ForEach(playerDice) { player in
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: alignment) {
-                        playerButton(playerId: player.id)
-
-                        if !root.gameController.isPlayerHidden(playerId: player.id) {
-                            playerDice(playerId: player.id)
-                        }
-                    }
-                    .animation(
-                        Animation.bouncy.reduced(if: reduceMotion),
-                        value: root.gameController.isPlayerHidden(playerId: player.id)
-                    )
-                }
+                DicePlayerRow(playerId: player.id, alignment: alignment)
             }
         }
     }
@@ -36,9 +23,41 @@ struct DicePlayer: View {
             diceDisplayModel.isEditing || !root.gameController.isPlayerHidden(playerId: $0.id)
         }
     }
+}
 
-    @ViewBuilder
-    private func playerButton(playerId: UUID) -> some View {
+/// One player's button and, unless hidden, the dice they shared.
+private struct DicePlayerRow: View {
+    let playerId: UUID
+    let alignment: HorizontalAlignment
+
+    @Environment(DiceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: alignment) {
+                DicePlayerButton(playerId: playerId)
+
+                if !root.gameController.isPlayerHidden(playerId: playerId) {
+                    DiceBagRow(playerId: playerId)
+                }
+            }
+            .animation(
+                Animation.bouncy.reduced(if: reduceMotion),
+                value: root.gameController.isPlayerHidden(playerId: playerId)
+            )
+        }
+    }
+}
+
+/// The player's name: a toggle that hides or shows their dice while editing, a plain capsule otherwise.
+private struct DicePlayerButton: View {
+    let playerId: UUID
+
+    @Environment(DiceRootModel.self) private var root
+    @Environment(DiceDisplayModel.self) private var diceDisplayModel
+
+    var body: some View {
         if diceDisplayModel.isEditing {
             Button {
                 Task {
@@ -49,8 +68,8 @@ struct DicePlayer: View {
             }
             .accessibilityLabel(
                 root.gameController.isPlayerHidden(playerId: playerId)
-                ? Text("Show \(playerName(playerId: playerId)) dice", bundle: .module)
-                : Text("Hide \(playerName(playerId: playerId)) dice", bundle: .module)
+                ? Text("Show \(playerName) dice", bundle: .module)
+                : Text("Hide \(playerName) dice", bundle: .module)
             )
             .gameOverlayCapsuleControlStyle(
                 isSelected: !root.gameController.isPlayerHidden(playerId: playerId)
@@ -66,25 +85,28 @@ struct DicePlayer: View {
         }
     }
 
-    private func playerName(playerId: UUID) -> String {
+    private var playerName: String {
         DicePlayerLabel.playerName(of: root.gameController.gameItem(for: playerId))
     }
+}
 
-    private func playerDice(playerId: UUID) -> some View {
+/// The dice a player shared, with their last results.
+private struct DiceBagRow: View {
+    let playerId: UUID
+
+    @Environment(DiceRootModel.self) private var root
+
+    var body: some View {
         HStack(alignment: .top, spacing: 0) {
             ForEach(root.gameController.gameItem(for: playerId).dice) { die in
                 VStack {
-                    DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: resultColor(for: die.id, playerId: playerId))
+                    DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: root.gameController.resultColor(for: die.id, itemId: playerId))
                         .padding(4)
                     Spacer()
                 }
                 .frame(height: root.viewController.height(for: root.gameController.gameItem(for: playerId)))
             }
         }
-    }
-
-    private func resultColor(for dieId: UUID, playerId: UUID) -> [Bool] {
-        root.gameController.resultColor(for: dieId, itemId: playerId)
     }
 }
 

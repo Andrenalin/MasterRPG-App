@@ -30,7 +30,7 @@ struct InternalRouteDestinationView: View {
             }
             .presentationDetents([.height(160)])
         case .groupEditor(let ids):
-            GroupEditorView(groupEditorController: GroupEditorController(itemController: root.itemControllable, editController: root.editControllable, ids: ids))
+            GroupEditorRouteView(itemController: root.itemControllable, editController: root.editControllable, ids: ids)
                 .presentationDetents([.medium])
         case .removeAlert:
             AffectedLinkActionPanelView(root: root)

@@ -49,6 +49,9 @@ public protocol EntryDataEditable: EditControllable {
     func hasThumbnailImage(for entry: any EntryDataAccessible) -> Bool
     var additionalEntryViewType: AdditionalEntryViewType { get }
     
+    /// `AnyView` because the module controllers are used as `any EntryDataEditable` and their
+    /// row views differ per module; kept as known debt until the protocol gets an associated
+    /// type or a generic container. See CODE_AUDIT_26 §8.13.
     @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView
     
     @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessible) -> String

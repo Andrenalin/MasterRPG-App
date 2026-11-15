@@ -33,7 +33,7 @@ struct AudioPlayerTimelineView: View {
     }
 
     var body: some View {
-AudioPlayerTimelineLayersView(
+        AudioPlayerTimelineLayersView(
             currentItem: currentItem,
             audioPlayerModel: audioPlayerModel,
             viewModel: viewModel,

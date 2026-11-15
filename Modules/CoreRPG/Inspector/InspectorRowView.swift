@@ -255,7 +255,7 @@ private struct InspectorRowViewFolderChevronView: View {
             } label: {
                 Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                     .imageScale(.small)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.tint)
                     .contentShape(.circle)
                     .frame(minWidth: 44, minHeight: 44)
 #if !os(visionOS)

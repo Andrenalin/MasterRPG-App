@@ -93,7 +93,7 @@ struct Scanner3DRootView: View {
         }
         .alert(
             Text(
-                "Failed: \(appModel.error.map { String(describing: $0) } ?? "")",
+                "Failed: \(appModel.error.map(\.localizedDescription) ?? "")",
                 bundle: .module
             ),
             isPresented: $showErrorAlert,

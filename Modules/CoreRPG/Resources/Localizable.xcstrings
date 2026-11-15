@@ -8492,6 +8492,86 @@
         }
       },
       "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent is larger than the size limit."
+    },
+    "Remove %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบ %@"
+          }
+        }
+      }
+    },
+    "Removes it from the list" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entfernt es aus der Liste"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบออกจากรายการ"
+          }
+        }
+      }
+    },
+    "Zoom In" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergrößern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซูมเข้า"
+          }
+        }
+      }
+    },
+    "Zoom Out" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verkleinern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซูมออก"
+          }
+        }
+      }
+    },
+    "Fit to Window" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An Fenster anpassen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พอดีกับหน้าต่าง"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

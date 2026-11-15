@@ -6970,6 +6970,38 @@
           }
         }
       }
+    },
+    "Clear Saved Game?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gespeichertes Spiel löschen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล้างเกมที่บันทึกไว้หรือไม่?"
+          }
+        }
+      }
+    },
+    "The saved game and its files are removed from all modules. This cannot be undone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das gespeicherte Spiel und seine Dateien werden aus allen Modulen entfernt. Dies kann nicht rückgängig gemacht werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมที่บันทึกไว้และไฟล์ของเกมจะถูกลบออกจากทุกโมดูล การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

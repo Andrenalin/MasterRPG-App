@@ -50,6 +50,13 @@ import Observation
         commit(geometry.fitTransform)
     }
 
+    /// Zooms about the center of the viewport, for menu and keyboard commands. A factor above 1
+    /// zooms in. The scale stays within the geometry's limits.
+    public func zoom(by factor: CGFloat) {
+        let geometry = geometry
+        commit(geometry.magnified(from: state.transform, magnification: factor, anchor: geometry.containerCenter))
+    }
+
     public func configure(_ configuration: ViewportConfiguration) {
         guard configuration != state.configuration else {
             return

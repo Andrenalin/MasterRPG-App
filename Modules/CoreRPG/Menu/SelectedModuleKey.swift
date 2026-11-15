@@ -38,10 +38,26 @@ public struct FocusedUndoActions {
     public let redo: @MainActor () -> Void
 }
 
+/// Zoom commands of the focused canvas (the map editor), for the View menu on macOS and the
+/// keyboard. The canvas has no scroll-wheel zoom API in SwiftUI, so the commands are the
+/// pointer-free way to zoom. See CODE_AUDIT_26 §8.22.
+public struct FocusedViewportZoom {
+    public init(zoomIn: @escaping @MainActor () -> Void, zoomOut: @escaping @MainActor () -> Void, reset: @escaping @MainActor () -> Void) {
+        self.zoomIn = zoomIn
+        self.zoomOut = zoomOut
+        self.reset = reset
+    }
+
+    public let zoomIn: @MainActor () -> Void
+    public let zoomOut: @MainActor () -> Void
+    public let reset: @MainActor () -> Void
+}
+
 public extension FocusedValues {
     @Entry var selectedModule: Binding<NetworkModules>?
     @Entry var listDisplayModel: ListDisplayModel?
     @Entry var moduleListIsFocused: Bool?
     @Entry var selectedSheetEntry: SelectedSheetEntry?
     @Entry var editorUndoActions: FocusedUndoActions?
+    @Entry var viewportZoom: FocusedViewportZoom?
 }

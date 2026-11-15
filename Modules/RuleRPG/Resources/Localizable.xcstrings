@@ -1539,6 +1539,22 @@
           }
         }
       }
+    },
+    "Untitled Section" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abschnitt ohne Titel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่วนที่ไม่มีชื่อ"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

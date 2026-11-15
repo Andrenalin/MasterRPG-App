@@ -169,35 +169,36 @@ private struct SplitNavigationAllTabsView: View {
 
     private func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {
         Tab(value: tab, role: tab.tabRole) {
-            tabView(tab: tab)
+            SplitNavigationPageView(tab: tab, column: $column, preferredCompactColumn: $preferredCompactColumn, appModel: appModel)
                 .moduleTint(tab.module)
                 .environment(appModel.itemRootController(for: tab.module))
         } label: {
             ModuleTabLabel(route: tab)
         }
     }
+}
 
-    @ViewBuilder private func tabView(tab: RootRoute) -> some View {
+/// The page of one tab: a split view with a detail column for the modules that have one, the
+/// module's own navigation stack for the others.
+private struct SplitNavigationPageView: View {
+    let tab: RootRoute
+    @Binding var column: NavigationSplitViewVisibility
+    @Binding var preferredCompactColumn: NavigationSplitViewColumn
+    let appModel: AppModel
+
+    var body: some View {
         if tab.hasDetailView {
-            splitWithDetail(tab: tab)
+            SplitWithDetailView(
+                tab: tab,
+                column: $column,
+                preferredCompactColumn: $preferredCompactColumn,
+                appModel: appModel
+            )
         } else {
-            contentView(tab: tab)
+            ManagedPresentationView(name: tab.title) {
+                tab
+            }
         }
-    }
-
-    @ViewBuilder private func contentView(tab: RootRoute) -> some View {
-        ManagedPresentationView(name: tab.title) {
-            tab
-        }
-    }
-
-    private func splitWithDetail(tab: RootRoute) -> some View {
-        SplitWithDetailView(
-            tab: tab,
-            column: $column,
-            preferredCompactColumn: $preferredCompactColumn,
-            appModel: appModel
-        )
     }
 }
 

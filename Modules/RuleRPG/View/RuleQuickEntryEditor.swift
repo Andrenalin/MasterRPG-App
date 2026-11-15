@@ -174,12 +174,15 @@ private struct RuleQuickEntrySectionEditor: View {
                     Text("Parent Group", bundle: .ruleModule)
                 }
             } header: {
-                Label(
-                    entry.wrappedValue.name.isEmpty
-                        ? "Untitled Section"
-                        : entry.wrappedValue.name,
-                    systemImage: entry.wrappedValue.kind == .group ? "folder" : "doc.text"
-                )
+                Label {
+                    if entry.wrappedValue.name.isEmpty {
+                        Text("Untitled Section", bundle: .ruleModule)
+                    } else {
+                        Text(verbatim: entry.wrappedValue.name)
+                    }
+                } icon: {
+                    Image(systemName: entry.wrappedValue.kind == .group ? "folder" : "doc.text")
+                }
             }
         }
     }

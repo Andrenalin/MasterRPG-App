@@ -16,7 +16,7 @@ struct InlineRowViewer: View, Equatable {
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source
+        lhs.source == rhs.source && lhs.destination == rhs.destination
     }
 }
 

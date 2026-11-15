@@ -139,9 +139,16 @@ public struct ManagedNavigationStack<Content: View>: View {
         @Environment(\.dismiss) private var dismiss
 
         @LazyState private var navigator: Navigator
+        @State private var registration = ChildRegistration()
 
         private let sceneName: String?
         private let content: (Navigator) -> Content
+
+        /// Whether this stack's navigator was added to its parent. A plain reference, not
+        /// observed, so setting it from `body` does not invalidate the view.
+        final class ChildRegistration {
+            var isDone = false
+        }
 
         init(name: String?, sceneName: String?, content: @escaping (Navigator) -> Content) {
             self._navigator = .init(wrappedValue: Navigator(owner: .stack, name: name))
@@ -150,7 +157,13 @@ public struct ManagedNavigationStack<Content: View>: View {
         }
 
         var body: some View {
+            // The child is registered in the first pass (the content below needs its parent
+            // chain at once); later passes only refresh the dismiss action when presentation
+            // changes, instead of writing the navigator tree on every body evaluation.
+            // See CODE_AUDIT_26 §8.7.
             let _ = {
+                guard !registration.isDone else { return }
+                registration.isDone = true
                 parent.addChild(navigator, dismissible: isPresented ? dismiss : nil)
             }()
             NavigationStack(path: Bindable(navigator).path) {
@@ -167,6 +180,9 @@ public struct ManagedNavigationStack<Content: View>: View {
             .modifier(NavigationPresentationModifiers(navigator: navigator))
             .modifier(NavigationSceneStorageModifier(navigator: navigator, name: sceneName))
             .environment(\.navigator, navigator)
+            .onChange(of: isPresented) {
+                parent.addChild(navigator, dismissible: isPresented ? dismiss : nil)
+            }
             .onAppear {
                 navigator.set(current: navigator)
             }

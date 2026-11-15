@@ -115,6 +115,11 @@ public extension EnvironmentValues {
 
 @MainActor
 public protocol ItemGenerationControllable: Sendable {
+    /// Returns `AnyView` on purpose: the controllers are held as `any ItemGenerationControllable`
+    /// by modules that cannot name each other's view types, and a requirement returning
+    /// `some View` would need an associated type that makes the existential unusable there.
+    /// The view is built once per presentation, not per body pass. Known debt, see
+    /// CODE_AUDIT_26 §8.5.
     func generationView(
         itemId: UUID,
         dismissAction: @MainActor @escaping @Sendable () -> Void

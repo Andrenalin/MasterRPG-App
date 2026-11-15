@@ -123,7 +123,9 @@ private struct ContentWidgetMediumContentView: View {
                 Spacer()
                 Text(entry.snapshot.totalCount, format: .number)
                     .bold()
+                    // The number stays the value; the label alone replaced it. See CODE_AUDIT_26 §8.4.
                     .accessibilityLabel(Text(countLabel))
+                    .accessibilityValue(Text(entry.snapshot.totalCount, format: .number))
             }
             Divider()
             if entry.snapshot.items.isEmpty {

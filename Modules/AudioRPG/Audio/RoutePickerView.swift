@@ -21,7 +21,7 @@ import UIKit
 struct RoutePickerView: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView(frame: .zero)
-        view.activeTintColor = .systemTeal
+        view.activeTintColor = UIColor(Color.teal)
         return view
     }
 

@@ -10,7 +10,7 @@ public struct EditorLinkView: View {
         self.editorLinkModel = editorLinkModel
         self.selectedEntryId = selectedEntryId
         self.destinationModule = destinationModule
-        editorLinkModel.preselectedModule = selectedModule
+        self.selectedModule = selectedModule
     }
 
     let root: ItemRootController
@@ -18,6 +18,9 @@ public struct EditorLinkView: View {
     let editorLinkModel: EditorLinkModel
     let selectedEntryId: UUID?
     let destinationModule: NetworkModules?
+    /// Applied in `onAppear`: `init` runs on every parent pass and must not write the model.
+    /// See CODE_AUDIT_26 §8.10.
+    let selectedModule: NetworkModules?
     
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -31,7 +34,7 @@ public struct EditorLinkView: View {
             PickerAllView(editorLinkModel: editorLinkModel)
 
             ManagedNavigationStack(name: "EditorLink") {
-                linkLinkView(module: editorLinkModel.selection)
+                EditorLinkListView(editorLinkModel: editorLinkModel, selectionMode: selectionMode)
             }
             .id(editorLinkModel.selection)
             .frame(maxWidth: .infinity, alignment: .top)
@@ -81,6 +84,7 @@ public struct EditorLinkView: View {
             editorLinkModel.update()
         }
         .onAppear {
+            editorLinkModel.preselectedModule = selectedModule
             guard let preselectedModule = editorLinkModel.preselectedModule else { return }
             withAnimation { editorLinkModel.update(selection: preselectedModule) }
         }
@@ -93,8 +97,16 @@ private extension EditorLinkView {
     var selectionMode: Bool {
         selectedEntryId != nil
     }
-    
-    @ViewBuilder func linkLinkView(module: NetworkModules) -> some View {
+}
+
+/// The list of the selected module, as its own view so the picker above does not re-evaluate
+/// it. See CODE_AUDIT_26 §8.9.
+private struct EditorLinkListView: View {
+    let editorLinkModel: EditorLinkModel
+    let selectionMode: Bool
+
+    var body: some View {
+        let module = editorLinkModel.selection
         if let itemRootController = editorLinkModel.rootManager?.itemRootController(for: module) {
             itemRootController.viewControllable.linkListView(rootController: itemRootController, type: selectionMode ? .selectionInline : .inspector, itemSelectionModel: editorLinkModel.selectionModel(for: module))
         }
@@ -107,16 +119,21 @@ private struct PickerAllView: View {
     var body: some View {
         @Bindable var editorLinkModel = editorLinkModel
 
-        pickerRow(selectionRow: $editorLinkModel.selectionFirstRow, modules: editorLinkModel.firstRow)
+        ModulePickerRow(selection: $editorLinkModel.selectionFirstRow, modules: editorLinkModel.firstRow)
         if !editorLinkModel.secondRow.isEmpty {
-            pickerRow(selectionRow: $editorLinkModel.selectionSecondRow, modules: editorLinkModel.secondRow)
+            ModulePickerRow(selection: $editorLinkModel.selectionSecondRow, modules: editorLinkModel.secondRow)
         }
     }
+}
 
-    private func pickerRow(selectionRow: Binding<NetworkModules?>, modules: [NetworkModules]) -> some View {
-        Picker(selection: selectionRow) {
+private struct ModulePickerRow: View {
+    @Binding var selection: NetworkModules?
+    let modules: [NetworkModules]
+
+    var body: some View {
+        Picker(selection: $selection) {
             ForEach(modules, id: \.self) { module in
-                buttonPicker(module: module)
+                ModulePickerSegment(module: module)
             }
         } label: {
             Text("Module selection", bundle: .module)
@@ -125,8 +142,12 @@ private struct PickerAllView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal)
     }
+}
 
-    private func buttonPicker(module: NetworkModules) -> some View {
+private struct ModulePickerSegment: View {
+    let module: NetworkModules
+
+    var body: some View {
         // Icon-only segment: VoiceOver needs the module name. See CODE_AUDIT_17 §8.3.
         Image(systemName: module.icon)
             .accessibilityLabel(module.title)

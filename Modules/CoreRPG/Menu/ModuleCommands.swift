@@ -21,6 +21,7 @@ public struct ModuleCommands: Commands {
     @FocusedValue(\.moduleListIsFocused) private var moduleListIsFocused: Bool?
     @FocusedValue(\.selectedSheetEntry) private var selectedSheetEntry: SelectedSheetEntry?
     @FocusedValue(\.editorUndoActions) private var editorUndoActions: FocusedUndoActions?
+    @FocusedValue(\.viewportZoom) private var viewportZoom: FocusedViewportZoom?
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
@@ -75,6 +76,28 @@ public struct ModuleCommands: Commands {
                     UndoButton(root: root)
                     RedoButton(root: root)
                 }
+            }
+        }
+        CommandGroup(after: .toolbar) {
+            if selectedModule == root.configurable.module, let viewportZoom {
+                Button {
+                    viewportZoom.zoomIn()
+                } label: {
+                    Text("Zoom In", bundle: .module)
+                }
+                .keyboardShortcut("+", modifiers: .command)
+                Button {
+                    viewportZoom.zoomOut()
+                } label: {
+                    Text("Zoom Out", bundle: .module)
+                }
+                .keyboardShortcut("-", modifiers: .command)
+                Button {
+                    viewportZoom.reset()
+                } label: {
+                    Text("Fit to Window", bundle: .module)
+                }
+                .keyboardShortcut("0", modifiers: .command)
             }
         }
         CommandGroup(before: .sidebar) {

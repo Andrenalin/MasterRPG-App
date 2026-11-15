@@ -46,6 +46,17 @@ final class FoundryImportModel {
 
     var canPrepareReview: Bool { selectedSourceScopeId != nil }
 
+    /// True while the import reads, prepares or writes; the import source picker stays put then, as
+    /// leaving the Foundry page cancels its tasks. See CODE_AUDIT_26 §8.30.
+    var isWorking: Bool {
+        switch loadState {
+        case .loading, .preparingReview, .committing, .finalizing:
+            true
+        case .notStarted, .preflight, .review, .completed, .failed:
+            false
+        }
+    }
+
     var canChooseAnotherSource: Bool {
         switch loadState {
         case .preflight, .review, .completed, .failed:

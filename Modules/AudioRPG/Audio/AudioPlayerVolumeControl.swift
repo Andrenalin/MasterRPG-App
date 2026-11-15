@@ -64,7 +64,7 @@ struct AudioPlayerVolumeControl: View {
         .background {
             AudioPlayerVolumeControlBackgroundView()
         }
-        .contentShape(Rectangle())
+        .contentShape(.rect)
         .volumeControlInteraction(
             isSliderVisible: $isSliderVisible,
             animation: reduceMotion ? nil : Constants.volumeSpring

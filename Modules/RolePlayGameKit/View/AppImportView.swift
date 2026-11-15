@@ -12,6 +12,7 @@ struct AppImportView: View {
 
     let appModel: AppModel
     @State private var selectedSection = ImportSection.masterRPG
+    @State private var foundryModel = FoundryImportModel()
         
     var body: some View {
         VStack {
@@ -42,7 +43,7 @@ struct AppImportView: View {
                 Text("Import Source", bundle: .module)
             }
             .pickerStyle(.segmented)
-            .disabled(appModel.isExclusiveDataMutationActive)
+            .disabled(appModel.isExclusiveDataMutationActive || foundryModel.isWorking)
             .padding()
 
             switch selectedSection {
@@ -67,7 +68,8 @@ struct AppImportView: View {
             case .foundry:
                 FoundryImportView(
                     appModel: appModel,
-                    isSelected: true
+                    isSelected: true,
+                    model: foundryModel
                 )
             }
         }

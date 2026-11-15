@@ -144,7 +144,7 @@ public struct SettingsView: View {
             
             SectionGroupEditorView {
                 Button(role: .destructive) {
-                    withAnimation { showResetJoinCodesAlert.toggle() }
+                    showResetJoinCodesAlert = true
                 } label: {
                     Label {
                         Text("Reset Join Codes", bundle: .module)
@@ -186,7 +186,7 @@ public struct SettingsView: View {
 
             SectionGroupEditorView {
                 Button(role: .destructive) {
-                    withAnimation { showResetAlert.toggle() }
+                    showResetAlert = true
                 } label: {
                     Label {
                         Text("Reset Data", bundle: .module)

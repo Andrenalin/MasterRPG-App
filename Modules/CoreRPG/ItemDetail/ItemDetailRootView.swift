@@ -156,25 +156,31 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable, 
         // shared `DetailFolderList`) silently lost its detail editor.
         if BottomOverlayBar.self == EmptyView.self {
             content
-        } else if showsBottomOverlayBar, let bottomOverlayBarHeight {
-            content
-                .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                    Color.clear
-                        .frame(height: bottomOverlayBarHeight)
-                        .allowsHitTesting(false)
-                }
-                .overlay(alignment: .bottom) { bottomOverlayBar() }
-        } else if showsBottomOverlayBar {
-            content
-                .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                    bottomOverlayBar()
-                        .opacity(0)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
-                }
-                .overlay(alignment: .bottom) { bottomOverlayBar() }
         } else {
+            // One structure whether or not the bar is shown, so the content keeps its identity
+            // (and state) when the flag flips. The inset always has non-empty content — a
+            // zero-height `Color.clear` while hidden — because genuinely empty content collapses
+            // the detail view (see above). See CODE_AUDIT_26 §8.11.
             content
+                .safeAreaInset(edge: .bottom, alignment: .center, spacing: showsBottomOverlayBar ? 12 : 0) {
+                    if !showsBottomOverlayBar {
+                        Color.clear
+                            .frame(height: 0)
+                            .allowsHitTesting(false)
+                    } else if let bottomOverlayBarHeight {
+                        Color.clear
+                            .frame(height: bottomOverlayBarHeight)
+                            .allowsHitTesting(false)
+                    } else {
+                        bottomOverlayBar()
+                            .opacity(0)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    if showsBottomOverlayBar { bottomOverlayBar() }
+                }
         }
     }
 }

@@ -982,6 +982,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** VoiceOver announces "DUNGEON, button" and activating it deletes the tag. Accessibility guideline violation on a destructive action.
 - **Action:** Add an accessibility label/hint such as "Remove <content>" (needs the caller's title) and `role: .destructive`.
 - **Severity:** Medium   **Area:** CoreRPG UI 2
+- **Status:** Fixed 2026-11-15 — `removeItemImage(accessibilityName:)` makes the badge a `Button(role: .destructive)` labelled "Remove <name>" with the hint "Removes it from the list"; `RemoveTagsEditor` passes the tag.
 
 ### 8.2 Game dice instances are created and cached inside view `body`
 - **Location:** Modules/CharacterRPG/View/EntryListDiceRow.swift:20; Modules/CharacterRPG/Controller/GameController+Dice.swift:12-49 (`cachedGameDice` writes `gameDiceModel.gameEntryDiceId` / `gameDiceId` and calls `createGameDice`, which calls `setGame(item:)` in DiceRPG/Controller/GameController.swift:235-242); Modules/CharacterRPG/View/InlineRowViewer.swift:44; Modules/GameRPG/GameViews/QuickDice/QuickDiceSlotView.swift:120
@@ -989,6 +990,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Mutating observable state that the same body just read is the "modifying state during view update" pattern; it forces a second render pass and is order-dependent. When the entry's `diceId` changes, the old game dice stays in `gameModel.itemData` forever (only `removeBattleCharacterCopies` and `resetGameDiceId` clear the maps, neither deletes the dice item), so the game store grows with every re-link. CLAUDE.md asks for view logic in testable models.
 - **Action:** Resolve or create the game dice outside `body` (on game start, on `diceId` change via `.task(id:)`/`onChange`, or in the controller when the entry is edited) and let `body` only read; delete the superseded game dice when the template id changes.
 - **Severity:** Medium   **Area:** CharacterRPG
+- **Status:** Fixed 2026-11-15 — `gameDiceId` is read-only; `ensureGameDice` creates (called from `.task(id: templateDiceId)` in `EntryListDiceRow`/`QuickDiceEntrySlotView` and from `focusDice`); a superseded game dice is removed (`removeGameDice`). Test: `gameDiceIdReadsWithoutCreatingAndEnsureCreatesOnce`.
 
 ### 8.3 AdditionalEntryRow's Equatable ignores the entry and text model its body reads
 - **Location:** Modules/CharacterRPG/View/AdditionalEntryRow.swift:6-83 (`==` at 80-82; icon from `entry` at 69-78); wrapped with `.equatable()` at Modules/CharacterRPG/Controller/EditController.swift:144; caller Modules/CoreRPG/LGViews/EntryEditRow.swift:43-59
@@ -996,6 +998,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** When an entry's type changes (text to number to decimal, or to a group) the row's `entry` struct changes but the views compare equal, so SwiftUI keeps the old value and the type icon can stay stale until the row identity is recreated. The earlier audit fixed the same shape in `InlineRowViewer` (now compares `source` and `destination`) but this row only had its UUID fixed. Not reproduced at runtime.
 - **Action:** Include `entry` (it is `Equatable`) and the identity of `textModel` in `==`, or read the type from the observed model instead of the passed value. Verify with the type picker.
 - **Severity:** Medium   **Area:** CharacterRPG
+- **Status:** Fixed 2026-11-15 — the equality compares entry id, source, the text model identity and the entry's type icon.
 
 ### 8.4 Accessibility label of the content-widget count hides the number
 - **Location:** Sources/DiceRollerWidget/ContentWidgets.swift:121-124
@@ -1003,40 +1006,72 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** VoiceOver reads "characters" instead of "3 characters" for the medium widget.
 - **Action:** Use the number as the value (`accessibilityValue`) or build one combined label "\(count) \(countLabel)".
 - **Severity:** Medium   **Area:** Sources + Resources
+- **Status:** Fixed 2026-11-15 — the count keeps its label and adds the number as `accessibilityValue`.
 
 ### 8.L Low-severity items (31)
 
 - **8.5 ItemGenerationControllable returns AnyView** — Modules/CoreRPG/Model/ItemGeneration.swift:119-124 — _CoreRPG Files/Persistence/Model_. Make the requirement return `some View` via an associated type or a generic container, or document why erasure is required.
+  - **Status:** Documented 2026-11-15 — `AnyView` stays as known debt (doc comment on `generationView`); replacing it needs an associated-type redesign of the protocol.
 - **8.6 Close button uses an image-only label; hard-coded spacing/margins in the table sheet** — Modules/CoreRPG/Sheet/TableRootSheet.swift:104-114 — _CoreRPG Foundry/Sheet_. `Button("Close", systemImage: "xmark.circle", action:)` with `.labelStyle(.iconOnly)`; use default spacing/margins or named constants (already done for the inset).
+  - **Status:** Fixed 2026-11-15 — the close button is a `Label` with an icon-only style.
 - **8.7 Navigator tree is mutated from `body`** — Modules/CoreRPG/Navigator/Views/ManagedNavigationStack.swift:152-155 — _CoreRPG UI 1_. Register the child once (`LazyState` thunk or `.task`/`onAppear`) and keep only the dismissible refresh in a change handler.
+  - **Status:** Partly fixed 2026-11-15 — `CreateNavigationStack` registers its child once (`ChildRegistration`) and refreshes the dismiss action on `isPresented`. `ManagedPresentationView` still adds its child in `body`.
 - **8.8 GroupEditorController (and its model) is created inside a route body** — Modules/CoreRPG/Route/InternalRoute.swift:33 — _CoreRPG UI 1_. Create the model once in `GroupEditorView` via `@State` (initialised from item controller and ids) and keep `GroupEditorController` for saving only.
+  - **Status:** Fixed 2026-11-15 — `GroupEditorRouteView` builds the model lazily (`@LazyState`); the controller takes the model.
 - **8.9 Views split into helper functions instead of View structs (CLAUDE.md rule)** — LGViews/EditorLinkView.swift:97, 116, 129 — _CoreRPG UI 1_. Extract the larger ones (placeholder, thumbnail, picker row, share bar, add-item button) into small structs; share one thumbnail view between the two photo views.
+  - **Status:** Fixed 2026-11-15 — `EditorLinkListView`, `ModulePickerRow` and `ModulePickerSegment` replace the helper functions.
 - **8.10 EditorLinkView.init writes to the observable model** — Modules/CoreRPG/LGViews/EditorLinkView.swift:6-12 — _CoreRPG UI 1_. Apply the preselection once in `onAppear`/`task`; keep `init` free of side effects.
+  - **Status:** Fixed 2026-11-15 — `init` no longer writes the model; the selected module is applied in `onAppear`.
 - **8.11 Item detail root swaps the whole view subtree when `showsBottomOverlayBar` flips** — Modules/CoreRPG/ItemDetail/ItemDetailRootView.swift:157-178 — _CoreRPG UI 2_. Keep one structure (always apply `safeAreaInset`/`overlay`, with a conditional inner content) so the identity is stable.
+  - **Status:** Fixed 2026-11-15 (not visually verified) — one `safeAreaInset` + `overlay` structure, so the subtree is not swapped when the bar flips.
 - **8.12 Image-only buttons use `Image` + `accessibilityLabel` instead of a `Label`** — Modules/CoreRPG/EntryEditor/QuickEntryEditorView.swift:177-183,206-225 — _CoreRPG UI 2_. `Label` with `.labelStyle(.iconOnly)`, as the entry header buttons already do.
+  - **Status:** Fixed 2026-11-15 — Cancel/Apply use `Label` with an icon-only style.
 - **8.13 `AnyView` in protocol surface and sub-folder detail** — Modules/CoreRPG/ItemList/EntryDataEditable.swift:52,159 — _CoreRPG UI 2_. Return `some View` through an associated type or a `@ViewBuilder` on a generic container; accept as known debt if the existential protocol cannot change.
+  - **Status:** Documented 2026-11-15 — as 8.5: `AnyView` is documented on `additionalRowView`.
 - **8.14 Chevron in inspector rows is hard-coded red** — Modules/CoreRPG/Inspector/InspectorRowView.swift:258 — _CoreRPG UI 2_. Use the theme tint or `.secondary`.
+  - **Status:** Fixed 2026-11-15 — the chevron uses `.tint`.
 - **8.15 `TextIntEditor(value:)` and `ToggleEditor(value:)` build a new model, with a new id, on every parent body pass** — Modules/CoreRPG/Editors/TextDoubleEditor.swift:7-11 — _CoreRPG UI 2_. Keep the model in `@State` inside the editor (created once, binding re-attached), or give the binding variant a stable id (for example a fixed UUID).
+  - **Status:** Fixed 2026-11-15 — `EditIdentifierModel(value:)` uses a constant id.
 - **8.16 `FlowLayout` falls back to a 10 pt width and reports the full proposed width** — Modules/CoreRPG/Layout/FlowLayout.swift:14,48 — _CoreRPG UI 2_. Treat an unspecified width as `.infinity`/the sum of widths and return the used width; add a cache for the per-subview sizes (computed twice per layout pass).
+  - **Status:** Fixed 2026-11-15 — `FlowLayout` caches the subview sizes, uses an unspecified width as unlimited and reports the used width.
 - **8.17 A throttled player gets no "locked out" feedback** — Modules/GameRPG/Master/MasterNetworkController+Listener.swift:66-70, Modules/GameRPG/Network/ConnectionAttemptThrottle.s — _GameRPG SharePlay/Network_. Optional: advertise a lockout hint in the player's failure (the player can count its own consecutive bad-code results and show "wait before retrying") instead of changing the master.
+  - **Status:** Not changed 2026-11-15 — optional feedback; no design decision was made.
 - **8.18 Battle Round window shortcuts take over Command-Right in the HP and initiative text fields** — Modules/GameRPG/BattleRound/BattleRoundWindowToolbar.swift:25-41 — _GameRPG Views/Battle/Statistics_. Pick a combination that is not a text-editing command (for example Command-Return / Option-Command-Return) or disable the shortcut while a field is focused.
+  - **Status:** Fixed 2026-11-15 — Next Turn is Command-Return and Next Round Option-Command-Return, so Command-Right stays with the text fields.
 - **8.19 Hard-coded paddings in the roll strip** — Modules/GameRPG/BattleRound/BattleRollResults.swift:27, 56-57 — _GameRPG Views/Battle/Statistics_. Use `BattleRoundSpacing.extraTight/tight`.
+  - **Status:** Fixed 2026-11-15 — `BattleRoundSpacing.extraTight/tight` replace the literals.
 - **8.20 "Clear Saved Game" runs without confirmation** — Modules/GameRPG/SetupViews/SelectedAdventureView.swift:158-190 — _GameRPG Views/Battle/Statistics_. Add a confirmation dialog with a destructive role (the Battle Round "End" already follows this pattern).
+  - **Status:** Fixed 2026-11-15 — Clear Saved Game is destructive and asks for confirmation.
 - **8.21 Hard-coded paddings and spacings across GameViews, SetupViews and Statistics** — about 107 sites, for example Modules/GameRPG/SetupViews/SelectedAdventureView.swift:30-60, Modules/GameRPG/SetupViews/Se — _GameRPG Views/Battle/Statistics_. Introduce one small spacing scale for GameRPG (BattleRoundSpacing generalised) and `@ScaledMetric` for the fixed frames; do it opportunistically when the files are touched.
+  - **Status:** Not changed 2026-11-15 — about 107 sites; to be adjusted when the views are touched (no bulk change without visual checks).
 - **8.22 No scroll-wheel or keyboard zoom for the map on macOS** — Modules/MapRPG/Map/MapEditorCanvasGestures.swift:100-148 — _MapRPG Map_. Confirm menu/keyboard zoom commands exist for macOS; if not add `onScrollGesture`/`⌘+`/`⌘-` through `ViewportModel`.
+  - **Status:** Partly fixed 2026-11-15 — macOS menu commands Zoom In (⌘+), Zoom Out (⌘−) and Fit to Window (⌘0) for the map editor (`FocusedViewportZoom`). SwiftUI has no scroll-wheel zoom API, so none was added.
 - **8.23 Low-contrast white symbols on tinted pin-menu buttons** — Modules/MapRPG/View/MapPopover.swift:366-372 — _MapRPG rest_. Use a darker tint or a contrast-aware foreground, honor `colorSchemeContrast`.
+  - **Status:** Fixed 2026-11-15 — the pin menu fill is darkened (opaque with increased contrast).
 - **8.24 Drop view style deviations (SwiftUI rules)** — Modules/AdventureRPG/View/DropChooseView.swift:32 — _AdventureRPG_. Fix opportunistically when the file is next touched. [[OPEN since CODE_AUDIT_Adventure §8.2] for the shape, rest NEW]
+  - **Status:** Fixed 2026-11-15 — `.rect(cornerRadius:style:)` shape, icon-only `Label` for Remove, default padding in `EmptyDropButton`, Reduce Motion respected in `DetailListView`.
 - **8.25 Minor style deviations** — Modules/AudioRPG/Audio/AudioPlayerTimelineView.swift:36 — _AudioRPG_. Fix opportunistically; leave the `AnyView` until the protocol changes.
+  - **Status:** Fixed 2026-11-15 — indentation, `.rect`, `Color.teal` instead of the UIKit system colour, localized "Track". `AnyView` left as is.
 - **8.26 `InlineRowViewer` equality ignores `destination`** — Modules/DiceRPG/View/InlineRowViewer.swift:22-24 — _DiceRPG_. Compare `destination` as well.
+  - **Status:** Fixed 2026-11-15 — the equality includes `destination`.
 - **8.27 Views split via helper methods instead of View structs** — Modules/DiceRPG/Game/Detail/DicePlayer.swift:46-83 — _DiceRPG_. Extract `DicePlayerRow`, `DicePlayerButton`, `DiceBagRow`.
+  - **Status:** Fixed 2026-11-15 — `DicePlayerRow`, `DicePlayerButton` and `DiceBagRow` replace the helper methods.
 - **8.28 View-layer rule violations (CLAUDE.md)** — View/PdfSummaryAnalysisView.swift:52-70 — _GeneratorRPG_. one shared `AnalysisErrorBanner` struct, convert helpers to structs, drop hard-coded spacing, give the photo an accessibility label (item name).
+  - **Status:** Fixed 2026-11-15 — shared `AnalysisErrorBanner` for the four analysis/extraction views, hard-coded spacing dropped, the photo has an accessibility label ("Photo to analyze"; the view does not know the item name).
 - **8.29 PdfWrapperView.updateView mutates observable state during the SwiftUI update pass** — Modules/PdfRPG/Pdf/PdfWrapperView.swift:99-113 — _PdfRPG + PhotoRPG_. Start the find from `.onChange(of: searchModel.searchText)` / a `.task(id:)` in the SwiftUI view instead of in `updateView`.
+  - **Status:** Fixed 2026-11-15 — the find starts from `.task(id: searchModel.searchRequest)` (`beginFindIfNeeded`), not from `updateView`. Not runtime-verified.
 - **8.30 Foundry import state is lost when the user flips the Import segment** — Modules/RolePlayGameKit/View/AppImportView.swift:48-72 — _RolePlayGameKit_. keep both sections mounted (opacity/`allowsHitTesting`) or hoist the model into `AppImportView`; at minimum disable the picker outside `.notStarted`/`.preflight`.
+  - **Status:** Fixed 2026-11-15 — the Foundry import model lives in `AppImportView`, and the segment picker is disabled while the import reads, prepares or writes (`isWorking`).
 - **8.31 Views built by private methods instead of View structs; one dispatcher computed property** — Modules/RolePlayGameKit/View/SplitNavigation.swift:170-201 — _RolePlayGameKit_. extract small `View` structs (leave `pageTab`, which returns `TabContent`).
+  - **Status:** Fixed 2026-11-15 — `SplitNavigationPageView` replaces the three helper methods.
 - **8.32 Style items: animated alert toggles, hard-coded spacing, tvOS placeholder wiring** — View/SettingsView.swift:146,161,188 — _RolePlayGameKit_. use default spacing and set flags directly; remove the pointless `#if`; give `RootManager` an optional generator root or use its dice-only initializer on tvOS.
+  - **Status:** Partly fixed 2026-11-15 — the alerts are set directly, without animation. No hard-coded spacing was found in the file; the tvOS `RootManager` wiring was not changed.
 - **8.33 English text baked into persisted rule content; one header not localized** — Modules/RuleRPG/View/RuleQuickEntryEditor.swift:~148 — _RuleRPG + WeatherRPG_. Use `Text("Untitled Section", bundle: .ruleModule)` in a label closure; decide whether the stored labels stay English by design and note it.
+  - **Status:** Fixed 2026-11-15 — `Text("Untitled Section", bundle: .ruleModule)` in a label closure. The stored English labels of imported entries stay English by design.
 - **8.34 Accessibility "Rotate/Tilt" actions do nothing on iOS and macOS** — Modules/SpaceRPG/Space/SpaceViewer.swift:881-900 — _SpaceRPG + TableRPG_. Apply the same rotation to the entity on the other platforms (the entity is already normalized and centered), or drop the rotate actions and the yaw/pitch value there.
+  - **Status:** Fixed 2026-11-15 — on iOS/macOS the actions turn the entity by the same delta.
 - **8.35 Raw `String(describing: error)` shown in the reconstruction/scanner alerts** — Modules/SpaceRPG/Record/ReconstructionProgressView.swift:74-78, Modules/SpaceRPG/Record/Scanner3DRootView.swift:94-98 — _SpaceRPG + TableRPG_. Map the known cases to localized messages and fall back to `localizedDescription`.
+  - **Status:** Fixed 2026-11-15 — the alerts use `localizedDescription`.
 
 ## 9. Dead code / duplication / refactor
 

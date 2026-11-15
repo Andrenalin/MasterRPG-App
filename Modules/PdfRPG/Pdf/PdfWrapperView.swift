@@ -93,19 +93,6 @@ struct PdfWrapperView: CustomViewRepresentable {
         pdfView.document?.delegate = context.coordinator
         pdfView.delegate = context.coordinator
         context.coordinator.pdfView = pdfView
-
-        if !searchModel.pdfSearching && !searchModel.searchText.isEmpty {
-            searchModel.pdfSearching = true
-            searchModel.isSearching = true
-            // `beginFindString(_:withOptions:)` searches asynchronously off the main
-            // thread, unlike `findString(_:withOptions:)` (used previously), which
-            // blocks the caller for the full scan — a real hitch on a large,
-            // multi-page rulebook PDF even inside a `Task { @MainActor in }`, since
-            // that only defers scheduling and doesn't move the work off-thread.
-            // Matches arrive one at a time via `Coordinator.didMatchString(_:)`,
-            // finalized in `documentDidEndDocumentFind(_:)`. See CODE_AUDIT_9 §5.4.
-            context.coordinator.beginSearch(searchModel.searchText)
-        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -140,6 +127,12 @@ struct PdfWrapperView: CustomViewRepresentable {
             self.parent = parent
         }
 
+        /// Started by `PdfSearchModel.beginFindIfNeeded()` from the viewer's `.task(id:)`, not from
+        /// `updateView`. See CODE_AUDIT_26 §8.29.
+        /// `beginFindString(_:withOptions:)` searches asynchronously off the main thread, unlike
+        /// `findString(_:withOptions:)` (used previously), which blocks the caller for the full scan,
+        /// a real hitch on a large rulebook PDF. Matches arrive one at a time via
+        /// `didMatchString(_:)`, finalized in `documentDidEndDocumentFind(_:)`. See CODE_AUDIT_9 §5.4.
         @MainActor func beginSearch(_ searchText: String) {
             pdfView?.document?.cancelFindString()
             pendingMatches.withLock { $0.removeAll() }

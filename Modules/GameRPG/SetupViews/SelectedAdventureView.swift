@@ -154,14 +154,34 @@ private struct SelectedAdventureViewImportOrClearButtonView: View {
     let root: GameRoot
 
     @Environment(\.navigator) private var navigator
+    /// Clearing removes the saved game from every module and cannot be undone, so it asks first.
+    /// See CODE_AUDIT_26 §8.20.
+    @State private var isClearConfirmationPresented = false
 
     @ViewBuilder
     var body: some View {
         if hasMapGameItems {
-            Button {
-                clearMapGameItems()
+            Button(role: .destructive) {
+                isClearConfirmationPresented = true
             } label: {
                 Label { Text("Clear Saved Game", bundle: .module) } icon: { Image(systemName: "trash") }
+            }
+            .confirmationDialog(
+                Text("Clear Saved Game?", bundle: .module),
+                isPresented: $isClearConfirmationPresented,
+                titleVisibility: .visible
+            ) {
+                Button(role: .destructive) {
+                    clearMapGameItems()
+                } label: {
+                    Text("Clear Saved Game", bundle: .module)
+                }
+                Button(role: .cancel) {
+                } label: {
+                    Text("Cancel", bundle: .module)
+                }
+            } message: {
+                Text("The saved game and its files are removed from all modules. This cannot be undone.", bundle: .module)
             }
         } else {
             Button {

@@ -117,6 +117,17 @@ private struct QuickDiceEntrySlotView: View {
 
     var body: some View {
         let character = root.characterRoot.valueGameControllable
+        // Created in the task, not while `body` runs. See CODE_AUDIT_26 §8.2.
+        Group {
+            content(character: character)
+        }
+        .task(id: character.templateDiceId(itemId: itemId, entryId: entryId)) {
+            character.ensureGameDice(itemId: itemId, entryId: entryId)
+        }
+    }
+
+    @ViewBuilder
+    private func content(character: any (GameControllable & ValueGameStorable)) -> some View {
         if let gameDiceId = character.gameDiceId(itemId: itemId, entryId: entryId) {
             // Read in `body` so Observation follows every entry the formula links to.
             let linkedValue = character.diceCompareValue(itemId: itemId, entryId: entryId)

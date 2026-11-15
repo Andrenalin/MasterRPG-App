@@ -3,13 +3,16 @@
 import SwiftUI
 
 public extension View {
-    func removeItemImage(isLeading: Bool = false, _ action: @escaping () async -> Void) -> some View {
-        modifier(RemoveItemViewModifier(isLeading: isLeading, action: action))
+    /// - Parameter accessibilityName: what is removed ("Dungeon"); VoiceOver then announces
+    ///   "Remove Dungeon" instead of the bare content. See CODE_AUDIT_26 §8.1.
+    func removeItemImage(isLeading: Bool = false, accessibilityName: String? = nil, _ action: @escaping () async -> Void) -> some View {
+        modifier(RemoveItemViewModifier(isLeading: isLeading, accessibilityName: accessibilityName, action: action))
     }
 }
 
 struct RemoveItemViewModifier: ViewModifier {
     let isLeading: Bool
+    let accessibilityName: String?
     let action: () async -> Void
 
     /// The room left for the badge, scaled with Dynamic Type like the badge symbol itself; the
@@ -17,7 +20,7 @@ struct RemoveItemViewModifier: ViewModifier {
     @ScaledMetric(relativeTo: .body) private var badgeInset: CGFloat = 12
 
     func body(content: Content) -> some View {
-        Button {
+        Button(role: .destructive) {
             Task {
                 await action()
             }
@@ -34,6 +37,10 @@ struct RemoveItemViewModifier: ViewModifier {
                 }
         }
         .buttonStyle(.plain)
+        .applyIf(accessibilityName != nil) {
+            $0.accessibilityLabel(Text("Remove \(accessibilityName ?? "")", bundle: .module))
+        }
+        .accessibilityHint(Text("Removes it from the list", bundle: .module))
     }
 }
 

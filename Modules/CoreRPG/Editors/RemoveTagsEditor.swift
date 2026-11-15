@@ -27,7 +27,7 @@ private struct RemoveTagsListView: View {
                     let tag = keyed.element
                     Text(verbatim: tag)
                         .rowColoredTag(backgroundColor: Color.accentColor)
-                        .removeItemImage {
+                        .removeItemImage(accessibilityName: tag) {
                             remove(tag)
                         }
                         .padding(.top, 8)

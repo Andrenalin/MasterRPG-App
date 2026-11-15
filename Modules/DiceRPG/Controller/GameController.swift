@@ -73,6 +73,8 @@ public protocol DiceGameStorable: Sendable {
         resultCategory: ResultCategory
     ) async throws -> NetworkCodableDataType
     @MainActor func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID
+    /// Removes a game dice made by `createGameDice` once nothing uses it any more.
+    @MainActor func removeGameDice(_ gameDiceId: UUID)
     @MainActor func setFocusDice(on diceId: UUID?) async
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws
     
@@ -233,6 +235,12 @@ extension GameController: DiceGameStorable {
         )
     }
     
+    @MainActor
+    func removeGameDice(_ gameDiceId: UUID) {
+        gameModel.items.removeAll { $0 == gameDiceId }
+        gameModel.itemData[gameDiceId] = nil
+    }
+
     @MainActor
     func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID {
         if let gameDiceId, gameModel.itemData[gameDiceId] != nil {

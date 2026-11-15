@@ -6,6 +6,7 @@ import SwiftUI
 
 private let dropAreaCornerRadius: CGFloat = 24
 private let dropAreaHeight: CGFloat = 128
+private let dropAreaShape: RoundedRectangle = .rect(cornerRadius: dropAreaCornerRadius, style: .continuous)
 
 struct DropChooseView: View {
     let selectionModel: ItemSelectionModel
@@ -29,7 +30,7 @@ struct DropChooseView: View {
         .containerShape(.rect(cornerRadius: dropAreaCornerRadius))
         .background(Color.accentColor.tertiary, in: .rect(cornerRadius: dropAreaCornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: dropAreaCornerRadius, style: .continuous)
+            dropAreaShape
                 .stroke(Color.accentColor.secondary, lineWidth: 2)
         }
         .padding(1)
@@ -39,11 +40,15 @@ struct DropChooseView: View {
                     selectionModel.selection = []
                 }
             } label: {
-                Image(systemName: "minus.circle.fill")
-                    .imageScale(.large)
-                    .foregroundStyle(.white, .red, .red)
+                Label {
+                    Text("Remove", bundle: .module)
+                } icon: {
+                    Image(systemName: "minus.circle.fill")
+                        .imageScale(.large)
+                        .foregroundStyle(.white, .red, .red)
+                }
+                .labelStyle(.iconOnly)
             }
-            .accessibilityLabel(Text("Remove", bundle: .module))
             .borderLessTVButtonStyle()
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(.circle)

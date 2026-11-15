@@ -9,8 +9,9 @@ struct FoundryImportView: View {
 
     let appModel: AppModel
     let isSelected: Bool
+    /// Owned by the import page, so flipping the import source does not drop a prepared review.
+    let model: FoundryImportModel
 
-    @State private var model = FoundryImportModel()
     @State private var showFileImporter = false
     @State private var preparationTask: Task<Void, Never>?
     @State private var commitTask: Task<Void, Never>?
@@ -710,5 +711,5 @@ private extension ExternalImportConflictStatus {
 }
 
 #Preview("Foundry import") {
-    FoundryImportView(appModel: .preview, isSelected: true)
+    FoundryImportView(appModel: .preview, isSelected: true, model: FoundryImportModel())
 }

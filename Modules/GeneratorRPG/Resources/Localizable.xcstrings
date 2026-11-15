@@ -3121,6 +3121,22 @@
           }
         }
       }
+    },
+    "Photo to analyze" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu analysierendes Foto"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปภาพที่จะวิเคราะห์"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

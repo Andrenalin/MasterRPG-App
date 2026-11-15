@@ -32,7 +32,7 @@ public struct TableSummaryAnalysisView: View {
                 }
 
                 if let error = model.lastError {
-                    errorView(error)
+                    AnalysisErrorBanner(message: error) { model.clearError() }
                 }
             }
             .padding()
@@ -41,27 +41,6 @@ public struct TableSummaryAnalysisView: View {
     }
 
     // MARK: - Subviews
-
-    private func errorView(_ error: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-            Text(verbatim: error)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button {
-                model.clearError()
-            } label: {
-                Text("Dismiss", bundle: .module)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(Color.red.opacity(0.1))
-        .clipShape(.rect(cornerRadius: 8))
-    }
 
     // MARK: - Actions
 

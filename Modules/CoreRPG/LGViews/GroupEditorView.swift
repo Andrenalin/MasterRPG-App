@@ -26,6 +26,32 @@ final class GroupEditorModel {
     var tagsPlaceHolder: String
 }
 
+/// The route's group editor. The model is created once (`LazyState`), so the route body, which
+/// runs on every pass of the presenting view, does not rebuild it and lose the user's typing.
+/// See CODE_AUDIT_26 §8.8.
+struct GroupEditorRouteView: View {
+    let itemController: any ItemControllable
+    let editController: any EditControllable
+    let ids: [UUID]
+    @LazyState private var model: GroupEditorModel
+
+    init(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) {
+        self.itemController = itemController
+        self.editController = editController
+        self.ids = ids
+        _model = LazyState(wrappedValue: GroupEditorController.processEditorModel(itemController: itemController, ids: ids))
+    }
+
+    var body: some View {
+        GroupEditorView(groupEditorController: GroupEditorController(
+            itemController: itemController,
+            editController: editController,
+            ids: ids,
+            model: model
+        ))
+    }
+}
+
 struct GroupEditorController {
     @MainActor init(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) {
         self.itemController = itemController
@@ -34,6 +60,15 @@ struct GroupEditorController {
         self.model = GroupEditorController.processEditorModel(itemController: itemController, ids: ids)
     }
     
+    /// With a model built earlier (see `GroupEditorRouteView`): the controller itself is a cheap
+    /// value that can be rebuilt on every pass, the model is not.
+    @MainActor init(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID], model: GroupEditorModel) {
+        self.itemController = itemController
+        self.editController = editController
+        self.ids = ids
+        self.model = model
+    }
+
     let itemController: any ItemControllable
     let editController: any EditControllable
     let ids: [UUID]

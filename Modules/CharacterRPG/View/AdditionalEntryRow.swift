@@ -77,8 +77,19 @@ struct AdditionalEntryRow: View, Equatable {
         return "square.on.square.squareshape.controlhandles"
     }
 
+    /// Compares what the body shows: the icon follows the entry's type and group link, and the
+    /// text follows the text model, so a type change or a new text model redraws the row.
+    /// See CODE_AUDIT_26 §8.3.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.entryId == rhs.entryId
+            && lhs.source == rhs.source
+            && lhs.textModel === rhs.textModel
+            && Self.iconKey(of: lhs.entry) == Self.iconKey(of: rhs.entry)
+    }
+
+    private static func iconKey(of entry: any EntryDataAccessible) -> String {
+        guard let valueEntry = entry as? ValueEntryModel else { return "" }
+        return "\(valueEntry.type.icon)|\(valueEntry.valueId != nil)"
     }
 }
 
