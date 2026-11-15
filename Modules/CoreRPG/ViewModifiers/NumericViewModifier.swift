@@ -23,8 +23,9 @@ struct NumericOnlyViewModifier: ViewModifier {
     }
 
     /// Keeps digits, a minus only as the first character and, when decimals are allowed, the first
-    /// decimal separator; everything else is dropped. See CODE_AUDIT_26 §5.78.
-    static func filtered(_ input: String, includeDecimal: Bool, decimalSeparator: String) -> String {
+    /// decimal separator; everything else is dropped. Pure, so `nonisolated` (the modifier itself
+    /// is main-actor isolated). See CODE_AUDIT_26 §5.78.
+    nonisolated static func filtered(_ input: String, includeDecimal: Bool, decimalSeparator: String) -> String {
         var result = ""
         var hasSeparator = false
         for character in input {
