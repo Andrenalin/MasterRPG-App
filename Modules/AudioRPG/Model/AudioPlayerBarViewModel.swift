@@ -19,29 +19,18 @@ final class AudioPlayerBarViewModel {
     var isVolumeSliderVisible = false
     var albumArtwork: Image?
 
-    private var artworkLoadTask: Task<Void, Never>?
-
-    /// Cancels an in-flight artwork load without starting a new one — call from
-    /// `onDisappear` so a track that's no longer visible doesn't keep loading
-    /// artwork in the background. See CODE_AUDIT_Audio §3.7.
-    func cancelArtworkLoad() {
-        artworkLoadTask?.cancel()
-    }
-
-    func loadAlbumArtwork(for item: PlaylistItem?) {
-        // Cancel any existing load task
-        artworkLoadTask?.cancel()
-
+    /// Loads the artwork of `item`. Awaited from the view's `.task(id:)`, so the system cancels it
+    /// when the track changes or the view goes away: a track that is no longer visible does not
+    /// keep loading artwork in the background. See CODE_AUDIT_Audio §3.7, CODE_AUDIT_26 §4.10.
+    func loadAlbumArtwork(for item: PlaylistItem?) async {
         guard let item else {
             albumArtwork = nil
             return
         }
 
-        artworkLoadTask = Task { [weak self] in
-            let data = await Self.loadArtworkData(url: item.url)
-            guard !Task.isCancelled else { return }
-            self?.albumArtwork = Self.artworkImage(from: data)
-        }
+        let data = await Self.loadArtworkData(url: item.url)
+        guard !Task.isCancelled else { return }
+        albumArtwork = Self.artworkImage(from: data)
     }
 
     /// Metadata parsing and data extraction have no UI dependency — @concurrent keeps

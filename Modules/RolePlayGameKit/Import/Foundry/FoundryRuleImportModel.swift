@@ -156,7 +156,7 @@ final class FoundryImportModel {
 
     func prepareReview(rootManager: RootManager) async {
         guard let selectedUrl, sourceDescriptor != nil, let selectedSourceScopeId else {
-            loadState = .failed("Choose whether this file updates an existing import or creates a new source.")
+            loadState = .failed(String(localized: "Choose whether this file updates an existing import or creates a new source.", bundle: .module))
             return
         }
         let requestedSelectionId = selectionId
@@ -201,7 +201,7 @@ final class FoundryImportModel {
                 reviewSession = session
                 loadState = .review
             } else {
-                loadState = .failed("The selected VTT source is no longer available.")
+                loadState = .failed(String(localized: "The selected VTT source is no longer available.", bundle: .module))
             }
         } catch is CancellationError {
             guard selectionId == requestedSelectionId else { return }
@@ -218,7 +218,7 @@ final class FoundryImportModel {
               let claimIntent = sourceClaimIntent(for: selectedSourceScopeId) else { return }
         let requestedSelectionId = selectionId
         guard let importToken = appModel.beginExternalImport() else {
-            commitError = "Another external import is currently committing. Wait for it to finish and try again."
+            commitError = String(localized: "Another external import is currently committing. Wait for it to finish and try again.", bundle: .module)
             return
         }
         isSourceSelectionLocked = true
@@ -270,7 +270,7 @@ final class FoundryImportModel {
                     proposedScopeID: proposedScopeID
                 )
                 self.selectedSourceScopeId = nil
-                commitError = "Source identity changed while this review was open. Choose its identity and prepare the review again."
+                commitError = String(localized: "Source identity changed while this review was open. Choose its identity and prepare the review again.", bundle: .module)
                 loadState = .preflight
                 return
             }
@@ -297,7 +297,7 @@ final class FoundryImportModel {
             do {
                 try await archiveStore.save(archive)
             } catch {
-                appendArchiveWarning("The RPG data was imported, but its RuleRPG source archive could not be saved: \(error.localizedDescription)")
+                appendArchiveWarning(String(localized: "The RPG data was imported, but its RuleRPG source archive could not be saved: \(error.localizedDescription)", bundle: .module))
             }
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             do {
@@ -306,12 +306,12 @@ final class FoundryImportModel {
                     descriptor: sourceDescriptor
                 )
             } catch {
-                appendArchiveWarning("The RPG data was imported, but its source identity could not be finalized: \(error.localizedDescription)")
+                appendArchiveWarning(String(localized: "The RPG data was imported, but its source identity could not be finalized: \(error.localizedDescription)", bundle: .module))
             }
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             loadState = .completed
         } catch is CancellationError {
-            commitError = "Import was cancelled and its changes were rolled back."
+            commitError = String(localized: "Import was cancelled and its changes were rolled back.", bundle: .module)
             loadState = .review
         } catch {
             commitError = error.localizedDescription
@@ -407,7 +407,7 @@ final class FoundryImportModel {
         loadState = .preflight
         await prepareReview(rootManager: rootManager)
         if loadState == .review {
-            commitError = "This source was claimed by another import while the review was open. Its IDs were remapped to the canonical source; review the changes and commit again."
+            commitError = String(localized: "This source was claimed by another import while the review was open. Its IDs were remapped to the canonical source; review the changes and commit again.", bundle: .module)
         }
     }
 

@@ -23,7 +23,7 @@ struct DetailEditorView: View {
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: rootModel,
-                headerTitle: String(localized: "Values", bundle: .module).localizedString,
+                headerTitle: String(localized: "Values", bundle: .module),
                 linkTypes: LinkCharacterModuleTransferable.self
             )
         }

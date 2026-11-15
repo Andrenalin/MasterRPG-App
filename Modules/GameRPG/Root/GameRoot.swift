@@ -296,7 +296,7 @@ public final class GameRoot {
     }
 
     var gameMasterName: String {
-        String(localized: "GameMaster", bundle: .module).localizedString
+        String(localized: "GameMaster", bundle: .module)
     }
 
     /// Sends the game master's change of a photo shown over the map, in order with the other

@@ -28,7 +28,7 @@ extension FoundryMappingState {
             pattern: #"^\s*[0-9]*[dD][0-9]+(?:\s*(?:\+\s*[0-9]*[dD][0-9]+|[+-]\s*[0-9]+(?:\.[0-9]+)?))*\s*$"#
         )
         guard supportedGrammar?.firstMatch(in: formula, range: range)?.range == range else {
-            warnings.append("Roll formula ‘\(formula)’ uses Foundry syntax that is not exactly representable; it remains text in the raw archive.")
+            warnings.append(String(localized: "Roll formula ‘\(formula)’ uses Foundry syntax that is not exactly representable; it remains text in the raw archive.", bundle: .module))
             return nil
         }
 
@@ -38,13 +38,13 @@ extension FoundryMappingState {
         for match in matches {
             guard let sidesRange = Range(match.range(at: 2), in: formula),
                   let sides = Int(formula[sidesRange]), sides > 0 else {
-                warnings.append("Roll formula ‘\(formula)’ contains an invalid die and remains text in the raw archive.")
+                warnings.append(String(localized: "Roll formula ‘\(formula)’ contains an invalid die and remains text in the raw archive.", bundle: .module))
                 return nil
             }
             let count: Int
             if let countRange = Range(match.range(at: 1), in: formula), !countRange.isEmpty {
                 guard let parsedCount = Int(formula[countRange]), (1...100).contains(parsedCount) else {
-                    warnings.append("Roll formula ‘\(formula)’ exceeds the supported limit of 100 dice and remains text in the raw archive.")
+                    warnings.append(String(localized: "Roll formula ‘\(formula)’ exceeds the supported limit of 100 dice and remains text in the raw archive.", bundle: .module))
                     return nil
                 }
                 count = parsedCount
@@ -59,12 +59,12 @@ extension FoundryMappingState {
             }
         }
         guard !dice.isEmpty else {
-            warnings.append("Roll formula ‘\(formula)’ is preserved as text because it has no directly representable dice.")
+            warnings.append(String(localized: "Roll formula ‘\(formula)’ is preserved as text because it has no directly representable dice.", bundle: .module))
             return nil
         }
         let modifier = simpleModifier(formula)
         guard modifier.isFinite else {
-            warnings.append("Roll formula ‘\(formula)’ has a modifier outside the supported numeric range and remains text in the raw archive.")
+            warnings.append(String(localized: "Roll formula ‘\(formula)’ has a modifier outside the supported numeric range and remains text in the raw archive.", bundle: .module))
             return nil
         }
         let id = stableID("\(sourceID)#dice")
@@ -92,9 +92,7 @@ extension FoundryMappingState {
         let valueCount = nodes.reduce(0) { $0 + $1.valueCount }
         let maximumPresentedValues = 500
         if valueCount > maximumPresentedValues {
-            warnings.append(
-                "\(sourceID) has \(valueCount) system fields; the display projection includes the first \(maximumPresentedValues) and the archive retains all fields."
-            )
+            warnings.append(String(localized: "\(sourceID) has \(valueCount) system fields; the display projection includes the first \(maximumPresentedValues) and the archive retains all fields.", bundle: .module))
         }
         var remainingValues = maximumPresentedValues
         return projectedValueEntries(

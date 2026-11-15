@@ -49,9 +49,7 @@ extension FoundryMappingState {
         let attachment: ExternalImportAttachment
         if module == .photo || module == .audio {
             guard let normalizationPlan else {
-                warnings.append(
-                    "Foundry media \(resource.logicalPath) has no safe raster or audio conversion and was not projected."
-                )
+                warnings.append(String(localized: "Foundry media \(resource.logicalPath) has no safe raster or audio conversion and was not projected.", bundle: .module))
                 return id
             }
             attachment = ExternalImportAttachment(
@@ -123,7 +121,7 @@ extension FoundryMappingState {
         )
         guard self.module(for: resource.logicalPath) == module
             || (module == .audio && contextualPlan?.kind == .audio) else {
-            warnings.append("Foundry media reference \(path) is not a \(module.token) resource and was not projected into that module.")
+            warnings.append(String(localized: "Foundry media reference \(path) is not a \(module.token) resource and was not projected into that module.", bundle: .module))
             return nil
         }
         return createAsset(resource, module: module)

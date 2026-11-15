@@ -72,7 +72,7 @@ extension EditController {
         }
         Logger.editController.info("[Repair] Folder '\(item.name, privacy: .private)': entries now \(afterNames, privacy: .private)")
 
-        save(updated: item, message: String(localized: "Repair folder", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Repair folder", bundle: .module))
     }
 
     @MainActor private func repairCollectionConstraints(itemId: UUID) {
@@ -99,7 +99,7 @@ extension EditController {
 
         Logger.editController.warning("[Repair] Collection '\(item.name, privacy: .private)': removed \(before - item.entries.count) invalid children \(removedNames, privacy: .private)")
 
-        save(updated: item, message: String(localized: "Repair collection", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Repair collection", bundle: .module))
     }
 
     @MainActor private func repairCharacterItemConstraints(itemId: UUID) {
@@ -137,7 +137,7 @@ extension EditController {
                 if target.groupId == itemId, let groupItem = editModel(for: valueId) {
                     groupItem.parentId = nil
                     groupItem.displayState = DisplayStateMask.groupHidden.rawValue
-                    save(updated: groupItem, message: String(localized: "Repair group item", bundle: .module).localizedString)
+                    save(updated: groupItem, message: String(localized: "Repair group item", bundle: .module))
                     return entry
                 }
 
@@ -158,7 +158,7 @@ extension EditController {
         }
 
         if changed {
-            save(updated: item, message: String(localized: "Repair character item", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Repair character item", bundle: .module))
         }
     }
 
@@ -186,7 +186,7 @@ extension EditController {
         if (groupItem.parentId, groupItem.groupId, groupItem.displayState) != before {
             save(
                 updated: groupItem,
-                message: String(localized: "Repairing group item", bundle: .module).localizedString
+                message: String(localized: "Repairing group item", bundle: .module)
             )
         }
         guard let owners, owners.count > 1 else { return }
@@ -209,6 +209,6 @@ extension EditController {
         let groupItemName = itemControllable.nameSync(itemId: groupItemId)
 
         Logger.editController.warning("[Repair] GroupItem '\(groupItemName, privacy: .private)': removed duplicate reference from '\(oldOwner.name, privacy: .private)'")
-        save(updated: oldOwner, message: String(localized: "Repair group item", bundle: .module).localizedString)
+        save(updated: oldOwner, message: String(localized: "Repair group item", bundle: .module))
     }
 }

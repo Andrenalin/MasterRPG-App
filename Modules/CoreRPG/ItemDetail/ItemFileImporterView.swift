@@ -101,7 +101,7 @@ private struct FilePathDisplayView: View {
         if !isInitial {
             HStack {
                 Text(displayedFileURL ??
-                     String(localized: "No file is set", bundle: .module).localizedString)
+                     String(localized: "No file is set", bundle: .module))
                     .font(.callout)
             }
             .padding(labelPadding)

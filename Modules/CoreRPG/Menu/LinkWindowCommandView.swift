@@ -6,7 +6,7 @@ import SwiftUI
 
 public struct LinkWindowCommandView: View {
     public init(networkModule: NetworkModules, scenesManager: ScenesManager, key: AKKeyEquivalent, isAlt: Bool = false) {
-        self.title = "\(networkModule.title) Link"
+        self.title = String(localized: "\(networkModule.title) Link", bundle: .module)
         self.icon = networkModule.icon
         self.windowId = isAlt ? networkModule.linkAltWindowId : networkModule.linkWindowId
         self.scenesManager = scenesManager
@@ -36,8 +36,7 @@ public struct LinkWindowCommandView: View {
     
     var titleWindow: String {
         guard isAlt else { return title }
-        let newTitle = String(localized: "New", bundle: .module).localizedString
-        return newTitle + " " + title
+        return String(localized: "New \(title)", bundle: .module)
     }
 }
 

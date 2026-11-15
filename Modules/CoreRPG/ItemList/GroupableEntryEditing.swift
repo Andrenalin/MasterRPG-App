@@ -16,7 +16,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         reset(hidden: true, itemId: groupId)
         guard var group = editModel(for: groupId) else { return groupId }
         group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+        save(updated: group, message: String(localized: "prepare group", bundle: .module))
         var entry = Model.Entry.empty
         entry.name = group.name
         entry.groupItemId = groupId
@@ -37,7 +37,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
             groupId = existingItemId
             existingGroup.groupId = itemId
             existingGroup.isGroupHiddenToggle = true
-            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module).localizedString)
+            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module))
             item.entries[index].name = existingGroup.name
             item.entries[index].content = existingGroup.description
         } else {
@@ -47,10 +47,10 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
             group.name = item.entries[index].name.withoutLink()
             group.description = item.entries[index].content
             group.groupId = itemId
-            save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+            save(updated: group, message: String(localized: "prepare group", bundle: .module))
         }
         item.entries[index].groupItemId = groupId
-        save(updated: item, message: String(localized: "Convert to group", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Convert to group", bundle: .module))
         return groupId
     }
 
@@ -77,7 +77,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         guard var group = editModel(for: itemId) else { return nil }
         group.groupId = targetId
         group.isGroupHiddenToggle = true
-        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+        save(updated: group, message: String(localized: "prepare group", bundle: .module))
 
         // The entry mirrors the item's name and description, as `convertToGroup` does: editing
         // the entry writes both back to the item.

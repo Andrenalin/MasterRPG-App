@@ -677,14 +677,14 @@ private struct FoundryImportFailureView: View {
 private extension FoundryArtifactKind {
     var title: String {
         switch self {
-        case .systemPackage: "Foundry system package"
-        case .modulePackage: "Foundry module package"
-        case .worldPackage: "Foundry world package"
-        case .exportedDocument: "Foundry JSON document"
-        case .documentDatabase: "Foundry document database"
-        case .universalVTT: "Universal VTT map"
-        case .masterRPGBridge: "MasterRPG Foundry bridge"
-        case .unknown: "Unknown"
+        case .systemPackage: String(localized: "Foundry system package", bundle: .module)
+        case .modulePackage: String(localized: "Foundry module package", bundle: .module)
+        case .worldPackage: String(localized: "Foundry world package", bundle: .module)
+        case .exportedDocument: String(localized: "Foundry JSON document", bundle: .module)
+        case .documentDatabase: String(localized: "Foundry document database", bundle: .module)
+        case .universalVTT: String(localized: "Universal VTT map", bundle: .module)
+        case .masterRPGBridge: String(localized: "MasterRPG Foundry bridge", bundle: .module)
+        case .unknown: String(localized: "Unknown", bundle: .module)
         }
     }
 }
@@ -692,9 +692,9 @@ private extension FoundryArtifactKind {
 private extension ExternalImportDecision {
     var title: String {
         switch self {
-        case .skip: "Skip"
-        case .merge: "Merge"
-        case .replace: "Replace"
+        case .skip: String(localized: "Skip", bundle: .module)
+        case .merge: String(localized: "Merge", bundle: .module)
+        case .replace: String(localized: "Replace", bundle: .module)
         }
     }
 }

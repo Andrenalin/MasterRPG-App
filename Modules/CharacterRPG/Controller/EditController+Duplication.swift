@@ -20,7 +20,7 @@ extension EditController {
                 let memberCopyId = await duplicate(itemId: member.id, withCopy: false)
                 if let memberCopy = folderEditModel(for: memberCopyId, scope: .library) {
                     memberCopy.parentId = parentId
-                    saveFolderEdit(memberCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString, scope: .library)
+                    saveFolderEdit(memberCopy, message: String(localized: "Duplicate child", bundle: .module), scope: .library)
                 }
                 return memberCopyId
             }
@@ -31,7 +31,7 @@ extension EditController {
         if !original.isFolder, original.category.isCollection,
            let copyCollection = folderEditModel(for: copyId, scope: .library) {
             copyCollection.entries = original.entries.map { Model.Entry.newChild(id: $0.childId) }
-            saveFolderEdit(copyCollection, message: String(localized: "Fix collection entries", bundle: .module).localizedString, scope: .library)
+            saveFolderEdit(copyCollection, message: String(localized: "Fix collection entries", bundle: .module), scope: .library)
         }
 
         placeDuplicate(copyId, of: original)

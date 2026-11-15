@@ -21,7 +21,7 @@ import Foundation
         model.description = text.trimmingCharacters(in: .whitespacesAndNewlines)
         model.photoId = photoIds.first
 
-        let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos", bundle: .module).localizedString, content: photoLinks.joined(separator: ", "))
+        let entry = AdventureEntryModel(id: UUID(), name: String(localized: "Photos", bundle: .module), content: photoLinks.joined(separator: ", "))
         model.entries.append(entry)
 
         // Snapshot on the MainActor; only the Sendable value crosses into the context.

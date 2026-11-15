@@ -55,7 +55,7 @@ struct WeatherStormEditor: View {
             guard let item = editController.editModel(for: itemId) else { return }
             if value != item.rainDirection {
                 item.rainDirection = value
-                editController.save(updated: item, message: String(localized: "toggle rain direction", bundle: .module).localizedString)
+                editController.save(updated: item, message: String(localized: "toggle rain direction", bundle: .module))
             }
         }
     }

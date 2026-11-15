@@ -77,7 +77,7 @@ struct GroupEditorController {
         // (matching the "Different Tags" placeholder), and starting from a mix would risk
         // silently introducing tags to items that never had them. See CODE_AUDIT_EditItem §5.6.
         let sharedTags = tagsIsDifferent ? [] : (tags ?? [])
-        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module).localizedString, descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module).localizedString, tags: sharedTags, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module).localizedString)
+        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module), descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module), tags: sharedTags, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module))
     }
 
     @MainActor func save() {

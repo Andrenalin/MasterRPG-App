@@ -36,7 +36,7 @@ extension FoundryMappingState {
                 resourcesByCanonicalPath[path] = resource
             } else {
                 ambiguousResourceCanonicalPaths.insert(path)
-                warnings.append("Packaged resource path \(path) is duplicated and will not be attached automatically.")
+                warnings.append(String(localized: "Packaged resource path \(path) is duplicated and will not be attached automatically.", bundle: .module))
             }
         }
         for (alias, candidates) in aliasCandidates {
@@ -45,7 +45,7 @@ extension FoundryMappingState {
                 resourcesByAlias[alias] = resource
             } else {
                 ambiguousResourceAliases.insert(alias)
-                warnings.append("Packaged resource alias \(alias) matches multiple files and will not be attached automatically.")
+                warnings.append(String(localized: "Packaged resource alias \(alias) matches multiple files and will not be attached automatically.", bundle: .module))
             }
         }
     }
@@ -125,7 +125,7 @@ extension FoundryMappingState {
             if candidates.count == 1, let destination = candidates.first {
                 actorsByDocumentID[documentID] = destination
             } else {
-                warnings.append("Actor id \(documentID) is ambiguous across Foundry collections; bare token links to it remain unresolved.")
+                warnings.append(String(localized: "Actor id \(documentID) is ambiguous across Foundry collections; bare token links to it remain unresolved.", bundle: .module))
             }
         }
         for (alias, candidates) in destinationCandidates {
@@ -133,7 +133,7 @@ extension FoundryMappingState {
             if candidates.count == 1, let destination = candidates.first {
                 targetsByFoundryUUID[alias] = destination
             } else {
-                warnings.append("Foundry reference \(alias) is ambiguous across collections and remains unresolved.")
+                warnings.append(String(localized: "Foundry reference \(alias) is ambiguous across collections and remains unresolved.", bundle: .module))
             }
         }
     }
@@ -208,9 +208,7 @@ extension FoundryMappingState {
         }
 
         for (key, candidates) in folderAliases where candidates.count > 1 {
-            warnings.append(
-                "Foundry folder id \(key.foundryID) is ambiguous across collections for \(key.module.token); only canonical in-collection links were resolved."
-            )
+            warnings.append(String(localized: "Foundry folder id \(key.foundryID) is ambiguous across collections for \(key.module.token); only canonical in-collection links were resolved.", bundle: .module))
         }
     }
 
@@ -285,7 +283,7 @@ extension FoundryMappingState {
         var candidate: String? = parentFoundryID
         while let current = candidate {
             guard visited.insert(current).inserted else {
-                warnings.append("Foundry folder hierarchy contains a cycle at \(folder.name); it was placed at the root.")
+                warnings.append(String(localized: "Foundry folder hierarchy contains a cycle at \(folder.name); it was placed at the root.", bundle: .module))
                 return nil
             }
             candidate = declarationsByID[current]?.parentID

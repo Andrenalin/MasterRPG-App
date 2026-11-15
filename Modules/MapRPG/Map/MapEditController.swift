@@ -62,7 +62,7 @@ extension MapEditController {
         updated.mapPins = copy.mapPins
         editController.save(
             updated: updated,
-            message: String(localized: "map updated", bundle: .module).localizedString
+            message: String(localized: "map updated", bundle: .module)
         )
     }
 

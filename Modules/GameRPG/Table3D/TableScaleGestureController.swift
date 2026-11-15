@@ -64,12 +64,20 @@ final class TableScaleGestureController {
     /// SwiftUI cancels it automatically when the view disappears.
     func start() async {
         guard HandTrackingProvider.isSupported else {
-            Logger.sharePlay.debug("Hand tracking not supported on this device")
+            Logger.gameTable.debug("Hand tracking not supported on this device")
             return
         }
 
         let session = ARKitSession()
         let handTracking = HandTrackingProvider()
+
+        // The person already said no: skip quietly instead of running a session that fails on every
+        // table open. `run` asks for the permission when it is still undecided.
+        let authorization = await session.queryAuthorization(for: [.handTracking])
+        if authorization[.handTracking] == .denied {
+            Logger.gameTable.debug("Hand tracking is not allowed; the pinch-to-scale gesture is off")
+            return
+        }
 
         do {
             try await session.run([handTracking])
@@ -79,7 +87,7 @@ final class TableScaleGestureController {
                 processHandAnchor(update.anchor)
             }
         } catch {
-            Logger.sharePlay.error("Hand tracking session error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            Logger.gameTable.error("Hand tracking session error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

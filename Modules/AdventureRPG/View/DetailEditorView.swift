@@ -17,7 +17,7 @@ struct DetailEditorView: View {
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: rootModel,
-                headerTitle: String(localized: "Sections", bundle: .module).localizedString,
+                headerTitle: String(localized: "Sections", bundle: .module),
                 linkTypes: LinkAdventureModuleTransferable.self
             )
         }

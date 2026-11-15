@@ -50,7 +50,7 @@ extension FoundryMappingState {
             for folder in compendium.folders {
                 try await cooperativeCheckpoint()
                 guard foldersByID[folder.id] == nil else {
-                    warnings.append("Rule compendium \(packName) contains duplicate folder id \(folder.id); the first folder was retained.")
+                    warnings.append(String(localized: "Rule compendium \(packName) contains duplicate folder id \(folder.id); the first folder was retained.", bundle: .module))
                     continue
                 }
                 foldersByID[folder.id] = folder
@@ -87,7 +87,7 @@ extension FoundryMappingState {
                 } else {
                     parentID = packFolderID
                     if let missingFolderID = rule.folderID, !missingFolderID.isEmpty {
-                        warnings.append("Rule \(rule.name) references missing folder \(missingFolderID) in \(packName); it was placed at the compendium root.")
+                        warnings.append(String(localized: "Rule \(rule.name) references missing folder \(missingFolderID) in \(packName); it was placed at the compendium root.", bundle: .module))
                     }
                 }
                 let scopedRuleID = stableID("rule#\(rule.id)")
@@ -121,7 +121,7 @@ extension FoundryMappingState {
             return fallback
         }
         guard projectedFolderIDs[parentFoundryID] != nil else {
-            warnings.append("Rule folder \(folder.name) references missing parent \(parentFoundryID) in \(packName); it was placed at the compendium root.")
+            warnings.append(String(localized: "Rule folder \(folder.name) references missing parent \(parentFoundryID) in \(packName); it was placed at the compendium root.", bundle: .module))
             return fallback
         }
 
@@ -129,7 +129,7 @@ extension FoundryMappingState {
         var candidate: String? = parentFoundryID
         while let current = candidate {
             guard visited.insert(current).inserted else {
-                warnings.append("Rule folder hierarchy in \(packName) contains a cycle at \(folder.name); it was placed at the compendium root.")
+                warnings.append(String(localized: "Rule folder hierarchy in \(packName) contains a cycle at \(folder.name); it was placed at the compendium root.", bundle: .module))
                 return fallback
             }
             candidate = foldersByID[current]?.parentID

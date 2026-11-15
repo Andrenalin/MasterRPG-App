@@ -59,17 +59,17 @@ enum FoundryMediaNormalizationError: Error, Equatable, LocalizedError, Sendable 
     var errorDescription: String? {
         switch self {
         case .invalidImage:
-            "The Foundry image could not be decoded as a supported raster image."
+            String(localized: "The Foundry image could not be decoded as a supported raster image.", bundle: .module)
         case .vectorImage:
-            "Vector images cannot be imported as RPG media."
+            String(localized: "Vector images cannot be imported as RPG media.", bundle: .module)
         case .jpegEncodingFailed:
-            "The Foundry image could not be converted to JPEG."
+            String(localized: "The Foundry image could not be converted to JPEG.", bundle: .module)
         case .audioExportUnavailable:
-            "The Foundry audio format cannot be converted to MPEG-4 audio on this device."
+            String(localized: "The Foundry audio format cannot be converted to MPEG-4 audio on this device.", bundle: .module)
         case .invalidAudio:
-            "The Foundry audio could not be converted to MPEG-4 audio."
+            String(localized: "The Foundry audio could not be converted to MPEG-4 audio.", bundle: .module)
         case .emptyAudioOutput:
-            "The converted Foundry audio is empty."
+            String(localized: "The converted Foundry audio is empty.", bundle: .module)
         }
     }
 }

@@ -89,7 +89,7 @@ public extension EditControllable {
         guard var item = editModel(for: itemId) else { return }
         guard item.category != category else { return }
         item.category = category
-        save(updated: item, message: String(localized: "Change to \(category.title)", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Change to \(category.title)", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func reset(description: String, itemId: UUID, forceSave: Bool = false) {
@@ -97,14 +97,14 @@ public extension EditControllable {
         guard item.description != description else { return }
         item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: item.id, text: item.description.markDownText())
-        save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
     }
     
     @MainActor func reset(displayState: Int, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.displayState != displayState else { return }
         item.displayState = displayState
-        save(updated: item, message: String(localized: "Change Display", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Change Display", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func reset(name: String, itemId: UUID, forceSave: Bool = false) {
@@ -112,7 +112,7 @@ public extension EditControllable {
         guard item.name != name else { return }
         item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
-        save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
         // A folder's name is part of its descendants' file paths. Renaming it left their files
         // under the old name. Only when the rename is persisted. See CODE_AUDIT_Folder §5.30.
         if item.isFolder, forceSave || !itemControllable.itemDataModel.isGameMode {
@@ -130,21 +130,21 @@ public extension EditControllable {
         let removedTags = Array(Set(item.tags).subtracting(sortedTags))
         updateTags(addedTags: addedTags, removedTags: removedTags)
         item.tags = sortedTags
-        save(updated: item, message: String(localized: "Changed tags", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Changed tags", bundle: .module), forceSave: forceSave)
     }
     
     @MainActor func reset(hidden: Bool, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.isGroupHiddenToggle != hidden else { return }
         item.isGroupHiddenToggle = hidden
-        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func reset(fileUrl: FileUrl?, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.fileUrl != fileUrl else { return }
         item.fileUrl = fileUrl
-        save(updated: item, message: String(localized: "Change file", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Change file", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor private func updateTags(addedTags: [String], removedTags: [String]) {
@@ -183,7 +183,7 @@ public extension EditControllable where Model: GroupableModel {
         guard var item = editModel(for: itemId) else { return }
         guard item.groupId != nil else { return }
         item.groupId = nil
-        save(updated: item, message: String(localized: "Repair orphan", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Repair orphan", bundle: .module))
     }
 
     @MainActor func willRestore(item: inout Model) {
@@ -280,7 +280,7 @@ public extension EditControllable {
             if let unique = FolderEntryMerge.deduplicated(folderItem.entries, id: \.id, childId: \.childId) {
                 folderItem.entries = unique
             }
-            save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module).localizedString)
+            save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module))
         }
     }
     
@@ -310,7 +310,7 @@ public extension EditControllable {
         item.entries = entries
 
         reset(displayState: DisplayStateMask.groupHidden.rawValue, itemId: childId, forceSave: forceSave)
-        save(updated: item, message: String(localized: "Add groupped item", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Add groupped item", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func removeGroup(itemId: UUID, childId: UUID) {
@@ -321,7 +321,7 @@ public extension EditControllable {
         item.entries = entries
         
         reset(displayState: DisplayStateMask.fullVisible.rawValue, itemId: childId)
-        save(updated: item, message: String(localized: "Remove groupped item", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Remove groupped item", bundle: .module))
     }
 }
 
@@ -374,7 +374,7 @@ public extension EditControllable {
         if let unique = FolderEntryMerge.deduplicated(item.entries, id: \.id, childId: \.childId) {
             item.entries = unique
         }
-        save(updated: item, message: String(localized: "update folder", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "update folder", bundle: .module))
     }
 }
 
@@ -422,14 +422,14 @@ extension EditControllable {
             if parentItem.category == .item {
                 item.displayState <=> 1
             }
-            saveFolderEdit(item, message: String(localized: "Added parent", bundle: .module).localizedString, scope: scope)
+            saveFolderEdit(item, message: String(localized: "Added parent", bundle: .module), scope: scope)
             shouldCheckForMove = true
         }
 
         if parentItem.category != .item {
             parentItem.entries <=> entries
         }
-        saveFolderEdit(parentItem, message: String(localized: "Added item", bundle: .module).localizedString, scope: scope)
+        saveFolderEdit(parentItem, message: String(localized: "Added item", bundle: .module), scope: scope)
 
         if shouldCheckForMove {
             movedFileTree(itemId: itemId)
@@ -711,7 +711,7 @@ public extension EditControllable {
         }
         guard let copyFolder = folderEditModel(for: copyFolderId, scope: .library) else { return }
         copyFolder.entries = newEntries
-        saveFolderEdit(copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString, scope: .library)
+        saveFolderEdit(copyFolder, message: String(localized: "Duplicate folder", bundle: .module), scope: .library)
     }
 
     /// Duplicates `model` and its attached file (if any), without its folder members.
@@ -752,7 +752,7 @@ public extension EditControllable {
         // See CODE_AUDIT_Folder §5.19.
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
         item.displayState = DisplayStateMask.totalHidden.rawValue
-        save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Delete", bundle: .module), forceSave: forceSave)
         IntentDonations.forget(itemId: itemId, module: itemControllable.config.module)
     }
 
@@ -794,7 +794,7 @@ public extension EditControllable {
                     keptEntries.removeAll { $0.childId == child.id }
                     if child.parentId == item.id {
                         child.parentId = nil
-                        save(updated: child, message: String(localized: "Restore parent", bundle: .module).localizedString)
+                        save(updated: child, message: String(localized: "Restore parent", bundle: .module))
                     }
                 } else if child.parentId != item.id {
                     keptEntries.removeAll { $0.childId == child.id }
@@ -813,14 +813,14 @@ public extension EditControllable {
                 item.parentId = nil
                 if let parentItem, parentItem.entries.contains(where: { $0.childId == item.id }) {
                     parentItem.entries.removeAll { $0.childId == item.id }
-                    save(updated: parentItem, message: String(localized: "Restore item", bundle: .module).localizedString)
+                    save(updated: parentItem, message: String(localized: "Restore item", bundle: .module))
                 }
             }
         }
 
         tagController.add(tags: item.tags, module: itemControllable.config.module)
         item.displayState = DisplayStateMask.fullVisible.rawValue
-        save(updated: item, message: String(localized: "Restore item", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Restore item", bundle: .module))
     }
 
     @MainActor func removeItem(offsets: IndexSet, itemId: UUID) {
@@ -854,7 +854,7 @@ public extension EditControllable {
             }
         }
         // For non-folder containers (collections), just remove from entries (no need to modify children)
-        saveFolderEdit(item, message: String(localized: "Delete item", bundle: .module).localizedString, scope: .library)
+        saveFolderEdit(item, message: String(localized: "Delete item", bundle: .module), scope: .library)
     }
 
     @MainActor func moveItems(source: IndexSet, destination: Int, itemId: UUID) {
@@ -862,7 +862,7 @@ public extension EditControllable {
         var entries = item.entries
         entries.move(fromOffsets: source, toOffset: destination)
         item.entries = entries
-        saveFolderEdit(item, message: String(localized: "Move entries", bundle: .module).localizedString, scope: .library)
+        saveFolderEdit(item, message: String(localized: "Move entries", bundle: .module), scope: .library)
     }
 
     /// Moves the member shown by row `rowId` to the position of the member shown by
@@ -887,7 +887,7 @@ public extension EditControllable {
         var entries = updatedModel.entries
         entries.removeAll(where: { $0.id == entryId})
         updatedModel.entries = entries
-        save(updated: updatedModel, message: String(localized: "Delete Entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: updatedModel, message: String(localized: "Delete Entry", bundle: .module), forceSave: forceSave)
     }
 }
 
@@ -932,7 +932,7 @@ public extension EditControllable {
 
     @MainActor func save(updated: any Observable) {
         guard let updated = updated as? Model else { return }
-        save(with: String(localized: "update from sync", bundle: .module).localizedString, currentModel: updated)
+        save(with: String(localized: "update from sync", bundle: .module), currentModel: updated)
     }
 
     @MainActor func save(updated: Model, message: String, forceSave: Bool = false) {

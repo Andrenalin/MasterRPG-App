@@ -146,13 +146,13 @@ private struct RemoveFromParentButton: View {
     }
 
     private var destinationTitle: String {
-        guard let parent else { return String(localized: "Unknown", bundle: .module).localizedString }
+        guard let parent else { return String(localized: "Unknown", bundle: .module) }
         guard parent.isFolder else { return parent.category.title }
-        var toName = String(localized: "Root", bundle: .module).localizedString
+        var toName = String(localized: "Root", bundle: .module)
         if oneUp, let parentId = parent.parentId, let parentParent = root.itemControllable.itemSync(for: parentId) {
             toName = parentParent.name
         }
-        return String(localized: "\(parent.name) to \(toName)", bundle: .module).localizedString
+        return String(localized: "\(parent.name) to \(toName)", bundle: .module)
     }
 }
 

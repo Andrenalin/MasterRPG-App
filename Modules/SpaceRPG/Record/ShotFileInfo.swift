@@ -9,7 +9,6 @@ Value type for holding the various info about a particular snapshot file.
 
 import Foundation
 import SwiftUI
-import UIKit
 
 struct ShotFileInfo {
     let fileUrl: URL

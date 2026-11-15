@@ -252,7 +252,7 @@ extension CharacterRootModel {
                     // Only a changed group item is saved, so a repair run does not move the sync
                     // clocks of unchanged data. See CODE_AUDIT_23 §5.21.
                     if (valueItem.groupId, valueItem.parentId, valueItem.displayState) != before {
-                        editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module).localizedString)
+                        editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module))
                     }
                 }
 
@@ -288,7 +288,7 @@ extension CharacterRootModel {
             if model.entries != entries {
                 guard let item = editController.editModel(for: id) else { continue }
                 item.entries = entries
-                editController.save(updated: item, message: String(localized: "update entries", bundle: .module).localizedString)
+                editController.save(updated: item, message: String(localized: "update entries", bundle: .module))
             }
             if !groupItemIds.contains(model.id) {
                 editController.repairPhotoList(itemId: model.id)

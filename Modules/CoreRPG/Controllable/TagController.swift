@@ -28,7 +28,7 @@ public struct TagController: Sendable {
     @MainActor public func setup(context: NSManagedObjectContext?) {
         guard let context else { return }
         model.context = context
-        let missingTagTitle = String(localized: "Not set", bundle: .module).localizedString
+        let missingTagTitle = String(localized: "Not set", bundle: .module)
         
         Task(priority: .userInitiated) { [model] in
             let groupedTags = await context.perform {

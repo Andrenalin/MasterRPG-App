@@ -260,19 +260,19 @@ extension FoundryMappingState {
             directTokens + nestedTokens,
             levels: levels,
             initialLevel: initialLevel,
-            kind: "Token"
+            kind: String(localized: "Token", bundle: .module)
         )
         let wallsByLevel = try await assignLevelMembership(
             directWalls + nestedWalls,
             levels: levels,
             initialLevel: initialLevel,
-            kind: "Wall"
+            kind: String(localized: "Wall", bundle: .module)
         )
         let ambientSoundsByLevel = try await assignLevelMembership(
             directAmbientSounds + nestedAmbientSounds,
             levels: levels,
             initialLevel: initialLevel,
-            kind: "Ambient sound"
+            kind: String(localized: "Ambient sound", bundle: .module)
         )
 
         for level in levels {
@@ -550,7 +550,7 @@ extension FoundryMappingState {
             name: "Source (never executed)",
             content: inertCodeBlock(command)
         )]
-        add(model, module: .adventure, sourceID: document.id, warnings: ["Macro code is stored as text and is never executed."])
+        add(model, module: .adventure, sourceID: document.id, warnings: [String(localized: "Macro code is stored as text and is never executed.", bundle: .module)])
     }
 
     func mapChatTranscript(_ collection: FoundryDocumentCollection) {

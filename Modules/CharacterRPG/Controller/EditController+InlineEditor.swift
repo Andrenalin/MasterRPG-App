@@ -70,7 +70,7 @@ extension EditController {
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {
-        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update decimal", bundle: .module).localizedString) { entry in
+        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update decimal", bundle: .module)) { entry in
             guard let resolved = resolvedBaseAndCurrent(for: entry) else {
                 guard entry.valueDecimal != decimal else { return false }
                 entry.valueDecimal = decimal
@@ -84,7 +84,7 @@ extension EditController {
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {
-        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update number", bundle: .module).localizedString) { entry in
+        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update number", bundle: .module)) { entry in
             guard let resolved = resolvedBaseAndCurrent(for: entry) else {
                 guard entry.valueNumber != number else { return false }
                 entry.valueNumber = number
@@ -100,7 +100,7 @@ extension EditController {
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool) {
-        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update Selection", bundle: .module).localizedString) { entry in
+        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update Selection", bundle: .module)) { entry in
             guard entry.valueSelected != selected else { return false }
             entry.toggleSelection()
             return true
@@ -108,7 +108,7 @@ extension EditController {
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, value: String) {
-        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update value", bundle: .module).localizedString) { entry in
+        applyEntryUpdate(itemId: itemId, entryId: entryId, message: String(localized: "Update value", bundle: .module)) { entry in
             guard entry.value != value else { return false }
             entry.value = value
             return true

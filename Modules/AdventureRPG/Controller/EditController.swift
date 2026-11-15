@@ -179,13 +179,13 @@ extension EditController {
     @MainActor func add(diceId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Dice", bundle: .module))
     }
 
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Changed Photo", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Changed Photo", bundle: .module))
     }
 }
 

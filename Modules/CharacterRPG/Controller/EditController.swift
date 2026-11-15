@@ -71,7 +71,7 @@ extension EditController: SheetEditTypeControllable {
         guard let item = editModel(for: itemId), let valueType = ValueEntryModel.ValueType(editType: editType) else { return }
         guard item[entryId].type != valueType else { return }
         item[entryId].type = valueType
-        save(updated: item, message: String(localized: "Change Value Type", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Value Type", bundle: .module))
     }
 }
 
@@ -151,7 +151,7 @@ extension EditController {
         let linkText = " " + LinkBuilder.markdown(name: link, module: module, itemId: itemId, entryId: entryId)
         entry.name = linkText
         editModel[destinationEntryId] = entry
-        save(updated: editModel, message: String(localized: "Add Link", bundle: .module).localizedString)
+        save(updated: editModel, message: String(localized: "Add Link", bundle: .module))
     }
     
     @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
@@ -169,13 +169,13 @@ extension EditController {
                 entry.type = .number
             }
             item[destinationEntryId] = entry
-            save(updated: item, message: String(localized: "Add Dice", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Add Dice", bundle: .module))
         case .pdf:
             var entry = item[destinationEntryId]
             if entry.type != .text {
                 entry.type = .text
                 item[destinationEntryId] = entry
-                save(updated: item, message: String(localized: "Change Value Type", bundle: .module).localizedString)
+                save(updated: item, message: String(localized: "Change Value Type", bundle: .module))
             }
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         case .value:
@@ -183,7 +183,7 @@ extension EditController {
             if entry.type != .number && entry.type != .decimal {
                 entry.type = .number
                 item[destinationEntryId] = entry
-                save(updated: item, message: String(localized: "Change Value Type", bundle: .module).localizedString)
+                save(updated: item, message: String(localized: "Change Value Type", bundle: .module))
             }
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, separator: "+")
         default:
@@ -200,7 +200,7 @@ extension EditController {
         guard entry.diceId != nil else { return }
         entry.diceId = nil
         item[entryId] = entry
-        save(updated: item, message: String(localized: "Remove Dice", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Remove Dice", bundle: .module))
     }
 
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
@@ -238,13 +238,13 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         item.photos <=> selection.map { $0.itemId }
         item.photoId <=> item.photos.first
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
     }
     
     @MainActor func add(diceId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Dice", bundle: .module))
     }
     
     /// Clears the item's own dice. Unlike `removeDice(itemId:entryId:)`, which unlinks an entry's
@@ -252,7 +252,7 @@ extension EditController {
     @MainActor func removeDice(itemId: UUID) {
         guard let item = editModel(for: itemId), item.diceId != nil else { return }
         item.diceId = nil
-        save(updated: item, message: String(localized: "Remove Dice", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Remove Dice", bundle: .module))
     }
 
     /// Restores the rule `add(selection:)` keeps: the portrait (`photoId`) is the first photo of the list.
@@ -268,14 +268,14 @@ extension EditController {
             guard let first = item.photos.first else { return }
             item.photoId = first
         }
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
     }
 
     @MainActor func removePhotos(itemId: UUID) async {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = nil
         item.photos.removeAll()
-        save(updated: item, message: String(localized: "remove photos", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "remove photos", bundle: .module))
     }
 
     // `addNewGroup`, `convertToGroup`, `canBecomeGroup`, `groupFolders`, `parentFolder`,
@@ -288,7 +288,7 @@ extension EditController {
         reset(hidden: true, itemId: groupId, forceSave: forceSave)
         guard let group = editModel(for: groupId) else { return groupId }
         group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
         var entry = Model.Entry.empty
         entry.name = group.name
         entry.valueId = groupId
@@ -304,7 +304,7 @@ extension EditController {
         let newType = termineType(content: content, currentType: old)
         if old != newType {
             item[entryId].type = newType
-            save(updated: item, message: String(localized: "update value type", bundle: .module).localizedString, forceSave: forceSave)
+            save(updated: item, message: String(localized: "update value type", bundle: .module), forceSave: forceSave)
         }
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true, forceSave: forceSave)
         guard let valueId = item[entryId].valueId else { return }
@@ -371,7 +371,7 @@ extension EditController {
         item.description = wrapper.description
         save(
             updated: item,
-            message: String(localized: "Add from Generator", bundle: .module).localizedString,
+            message: String(localized: "Add from Generator", bundle: .module),
             forceSave: forceSave
         )
         for entry in wrapper.entries.first?.entries ?? [] {

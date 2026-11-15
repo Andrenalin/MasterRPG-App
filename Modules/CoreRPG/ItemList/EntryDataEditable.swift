@@ -149,7 +149,7 @@ public extension EntryDataEditable {
         content.append(linkText)
         entry.content = content
         item[destinationEntryId] = entry
-        save(updated: item, message: String(localized: "Add Link", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Add Link", bundle: .module))
     }
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
@@ -189,7 +189,7 @@ public extension EntryDataEditable {
     private func add(entry: Model.Entry, into item: Model, index: Int? = nil, forceSave: Bool = false) {
         let validatedIndex = index ?? editEntries(for: item).count
         item.entries.insert(entry, at: validatedIndex)
-        save(updated: item, message: String(localized: "Add entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Add entry", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func copy(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
@@ -203,7 +203,7 @@ public extension EntryDataEditable {
         let duplicate = item[entryId].duplicate()
         item.entries.append(duplicate)
         let name = String(duplicate.name.prefix(16))
-        save(updated: item, message: String(localized: "Copy entry \(name)", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Copy entry \(name)", bundle: .module), forceSave: forceSave)
         return duplicate.id
     }
 
@@ -223,7 +223,7 @@ public extension EntryDataEditable {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         item.entries.remove(at: index)
-        save(updated: item, message: String(localized: "Remove entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Remove entry", bundle: .module), forceSave: forceSave)
     }
 
     /// Convenience overload preserving every pre-existing 2-argument call site
@@ -297,7 +297,7 @@ public extension EntryDataEditable {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString, forceSave: forceSave)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module), forceSave: forceSave)
             return []
         }
         return itemRowModels
@@ -356,14 +356,14 @@ public extension EntryDataEditable {
         if changed {
             cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(itemId: item.id, entry: item[entryId]))
         }
-        save(updated: item, message: String(localized: "Edit entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Edit entry", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func move(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         let entries = entryIds.compactMap { id in item.entries.first { $0.id == id }}
         item.entries = entries
-        save(updated: item, message: String(localized: "Reorder entries", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Reorder entries", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func move(itemId: UUID, entryId: UUID, up: Bool, forceSave: Bool = false) {
@@ -376,7 +376,7 @@ public extension EntryDataEditable {
             guard index < item.entries.count - 1 else { return }
             item.entries.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
         }
-        save(updated: item, message: String(localized: up ? "Move entry up" : "Move entry down", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: up ? "Move entry up" : "Move entry down", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel, forceSave: Bool = false) -> Bool {
@@ -384,8 +384,8 @@ public extension EntryDataEditable {
         guard let otherItem = editModel(for: itemId), let index = otherItem.entries.firstIndex(where: { $0.id == entryId }) else { return false }
         let entry = otherItem.entries.remove(at: index)
         item.entries.append(entry)
-        save(updated: otherItem, message: String(localized: "remove entry", bundle: .module).localizedString, forceSave: forceSave)
-        save(updated: item, message: String(localized: "add entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: otherItem, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
+        save(updated: item, message: String(localized: "add entry", bundle: .module), forceSave: forceSave)
         return true
     }
 
@@ -396,8 +396,8 @@ public extension EntryDataEditable {
         let entry = item[sourceEntryId]
         item.entries.removeAll(where: { $0.id == sourceEntryId })
         group.entries.append(entry)
-        save(updated: item, message: String(localized: "remove entry", bundle: .module).localizedString, forceSave: forceSave)
-        save(updated: group, message: String(localized: "move entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
+        save(updated: group, message: String(localized: "move entry", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? { nil }
@@ -408,8 +408,8 @@ public extension EntryDataEditable {
         let entry = group[sourceEntryId]
         group.entries.removeAll(where: { $0.id == sourceEntryId })
         parentItem.entries.append(entry)
-        save(updated: group, message: String(localized: "remove entry", bundle: .module).localizedString, forceSave: forceSave)
-        save(updated: parentItem, message: String(localized: "move entry out", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: group, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
+        save(updated: parentItem, message: String(localized: "move entry out", bundle: .module), forceSave: forceSave)
     }
 }
 

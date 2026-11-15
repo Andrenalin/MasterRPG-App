@@ -155,7 +155,7 @@ struct CharacterAddEntryControl: View {
         item.entries.append(entry)
         root.editController.save(
             updated: item,
-            message: String(localized: "Add entry", bundle: .module).localizedString,
+            message: String(localized: "Add entry", bundle: .module),
             forceSave: true
         )
         // Reconcile the live game view's own SheetRootModel — this bypassed

@@ -17,7 +17,22 @@ extension RPGSharePlayController {
 
     // MARK: - Session lifecycle (start / join / stop)
 
+    /// Whether this platform may use `GroupActivities`. The tvOS targets carry no
+    /// `com.apple.developer.group-session` entitlement (and the activity is not offered on
+    /// Apple TV), so there the sessions are never started or observed. See CODE_AUDIT_26 §4.15.
+    static var supportsGroupSessions: Bool {
+#if os(tvOS)
+        false
+#else
+        true
+#endif
+    }
+
     func startSharing(with name: String?, image: AKImage?) {
+        guard Self.supportsGroupSessions else {
+            Logger.sharePlay.debug("SharePlay is not available on this platform")
+            return
+        }
         Logger.sharePlay.debug("Start Sharing state: \(self.printState(), privacy: .public)")
         #if os(macOS)
             if let image {
@@ -91,6 +106,10 @@ extension RPGSharePlayController {
     }
 
     func startSessionObserver(token observerToken: SharePlaySessionObserverToken) {
+        guard Self.supportsGroupSessions else {
+            Logger.sharePlay.debug("SharePlay sessions are not observed on this platform")
+            return
+        }
         // Store in joinTask (not tasks) so reset() does not cancel it.
         // The for-await loop stays alive across session invalidations and picks
         // up the next session automatically when the player re-joins the call.

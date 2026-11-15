@@ -32,7 +32,7 @@ struct ContextMenuMultiController {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return "" }
         if selection.count > 1 {
-            return "\(model.name) and \(selection.count - 1) more"
+            return String(localized: "\(model.name) and \(selection.count - 1) more", bundle: .module)
         } else {
             return model.name
         }

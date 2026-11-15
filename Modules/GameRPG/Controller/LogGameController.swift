@@ -25,8 +25,12 @@ struct LogGameController: Sendable {
     /// `maximumVisibleMessages` are ever shown.
     static let maximumRetainedMessages = 300
 
+    static var unknownPlayerText: String {
+        String(localized: "Unknown Player", bundle: .module)
+    }
+
     static var noPlayersText: String {
-        String(localized: "No Players", bundle: .module).localizedString
+        String(localized: "No Players", bundle: .module)
     }
     
 #if DEBUG
@@ -251,7 +255,7 @@ struct LogGameController: Sendable {
     }
 
     private func namedPlayers(for players: [UUID], namesById: [UUID: String]) -> String {
-        players.map { namesById[$0] ?? "Unknown Player" }.joined(separator: ", ")
+        players.map { namesById[$0] ?? Self.unknownPlayerText }.joined(separator: ", ")
     }
 
     @MainActor

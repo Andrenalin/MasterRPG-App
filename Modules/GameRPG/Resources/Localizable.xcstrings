@@ -6922,6 +6922,22 @@
           }
         }
       }
+    },
+    "Unknown Player" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekannter Spieler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้เล่นที่ไม่รู้จัก"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

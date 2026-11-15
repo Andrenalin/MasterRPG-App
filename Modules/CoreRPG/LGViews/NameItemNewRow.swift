@@ -40,7 +40,7 @@ struct NameItemNewRow: View, Equatable {
     }
     
     public var nameNotSet: String {
-        String(localized: "Untitled", bundle: .module).localizedString
+        String(localized: "Untitled", bundle: .module)
     }
 }
 

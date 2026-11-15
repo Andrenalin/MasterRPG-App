@@ -159,7 +159,7 @@ extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
         shareWithNextSend(itemId)
     }
 
@@ -212,7 +212,7 @@ extension EditController {
         mapEditModel.photoReplacement = nil
         guard let item = editModel(for: replacement.itemId) else { return }
         item.resetImage(with: replacement.photoId, size: replacement.imageSize, degrees: replacement.degrees, adaptContent: adaptContent, previousImage: replacement.previousImage)
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
         shareWithNextSend(replacement.itemId)
     }
 
@@ -228,7 +228,7 @@ extension EditController {
         let updatedBorderThickness: CGFloat = CGFloat(borderThickness)
         if item.displayConfig.borderThickness != updatedBorderThickness {
             item.displayConfig.borderThickness = updatedBorderThickness
-            save(updated: item, message: String(localized: "Change border thickness", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Change border thickness", bundle: .module))
         }
     }
 
@@ -236,7 +236,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.hasBorder != hasBorder {
             item.displayConfig.hasBorder = hasBorder
-            save(updated: item, message: String(localized: "toggle border", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "toggle border", bundle: .module))
         }
     }
 
@@ -244,7 +244,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.border.color != borderColor {
             item.displayConfig.border.color = borderColor
-            save(updated: item, message: String(localized: "Change border color", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Change border color", bundle: .module))
         }
     }
     
@@ -252,7 +252,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.color != coverColor {
             item.displayConfig.color = coverColor
-            save(updated: item, message: String(localized: "Change cover color", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Change cover color", bundle: .module))
         }
     }
     
@@ -260,7 +260,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.tileCoordinates != tileCoordinates {
             item.displayConfig.tileCoordinates = tileCoordinates
-            save(updated: item, message: String(localized: "Change tile coordinates", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Change tile coordinates", bundle: .module))
         }
     }
 }
@@ -423,7 +423,7 @@ extension EditController {
             validatedIndex = model.mapPins.count
         }
         model.mapPins.insert(pin, at: validatedIndex)
-        save(updated: model, message: String(localized: "Added pin", bundle: .module).localizedString)
+        save(updated: model, message: String(localized: "Added pin", bundle: .module))
     }
 
 }
@@ -512,7 +512,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module))
             return []
         }
         return itemRowModels

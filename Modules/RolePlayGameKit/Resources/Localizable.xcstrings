@@ -3092,6 +3092,1158 @@
           }
         }
       }
+    },
+    "%@ %@ names unknown level %@; it remains only in the raw archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ nennt das unbekannte Level %@; es bleibt nur im Roharchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ %@ อ้างอิงเลเวล %@ ที่ไม่รู้จัก และจะอยู่ในไฟล์เก็บถาวรดิบเท่านั้น"
+          }
+        }
+      }
+    },
+    "%@ has %lld system fields; the display projection includes the first %lld and the archive retains all fields." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hat %lld Systemfelder; die Anzeige enthält die ersten %lld, das Archiv behält alle Felder."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ มีฟิลด์ระบบ %lld ฟิลด์ การแสดงผลรวมเฉพาะ %lld ฟิลด์แรก และไฟล์เก็บถาวรจะเก็บทุกฟิลด์ไว้"
+          }
+        }
+      }
+    },
+    "Actor id %@ is ambiguous across Foundry collections; bare token links to it remain unresolved." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Akteur-ID %@ ist in den Foundry-Sammlungen nicht eindeutig; einfache Token-Links darauf bleiben ungelöst."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสตัวละคร %@ กำกวมระหว่างคอลเลกชันของ Foundry ลิงก์โทเคนเปล่าที่ชี้ไปยังรหัสนี้จึงยังไม่ถูกแก้ไข"
+          }
+        }
+      }
+    },
+    "Actors and characters" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akteure und Charaktere"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละครและตัวแสดง"
+          }
+        }
+      }
+    },
+    "Adventures" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัย"
+          }
+        }
+      }
+    },
+    "Ambient sound" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umgebungsgeräusch"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสียงบรรยากาศ"
+          }
+        }
+      }
+    },
+    "Another external import is currently committing. Wait for it to finish and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein anderer externer Import wird gerade übernommen. Warte, bis er fertig ist, und versuche es erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังบันทึกการนำเข้าภายนอกอื่นอยู่ โปรดรอจนเสร็จแล้วลองอีกครั้ง"
+          }
+        }
+      }
+    },
+    "Cards and decks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karten und Decks"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การ์ดและสำรับ"
+          }
+        }
+      }
+    },
+    "Chat history" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chatverlauf"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ประวัติแชต"
+          }
+        }
+      }
+    },
+    "Chat messages were excluded from both projection and the RuleRPG source archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chatnachrichten wurden weder in die Projektion noch in das RuleRPG-Quellarchiv übernommen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อความแชตถูกแยกออกจากทั้งการแสดงผลและไฟล์เก็บถาวรต้นฉบับของ RuleRPG"
+          }
+        }
+      }
+    },
+    "Choose whether this file updates an existing import or creates a new source." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle, ob diese Datei einen bestehenden Import aktualisiert oder eine neue Quelle anlegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกว่าไฟล์นี้จะอัปเดตการนำเข้าที่มีอยู่หรือสร้างแหล่งข้อมูลใหม่"
+          }
+        }
+      }
+    },
+    "Combats" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kämpfe"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การต่อสู้"
+          }
+        }
+      }
+    },
+    "Foundry JSON document" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundry-JSON-Dokument"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เอกสาร JSON ของ Foundry"
+          }
+        }
+      }
+    },
+    "Foundry document database" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundry-Dokumentendatenbank"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฐานข้อมูลเอกสารของ Foundry"
+          }
+        }
+      }
+    },
+    "Foundry folder hierarchy contains a cycle at %@; it was placed at the root." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Foundry-Ordnerhierarchie enthält bei %@ einen Zyklus; der Ordner wurde in die Wurzel gelegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลำดับชั้นโฟลเดอร์ของ Foundry มีการวนซ้ำที่ %@ จึงวางไว้ที่รากแทน"
+          }
+        }
+      }
+    },
+    "Foundry folder id %@ is ambiguous across collections for %@; only canonical in-collection links were resolved." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Foundry-Ordner-ID %@ ist für %@ in mehreren Sammlungen nicht eindeutig; nur kanonische Links innerhalb der Sammlung wurden aufgelöst."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสโฟลเดอร์ %@ ของ Foundry กำกวมระหว่างคอลเลกชันสำหรับ %@ จึงแก้ไขเฉพาะลิงก์มาตรฐานภายในคอลเลกชันเท่านั้น"
+          }
+        }
+      }
+    },
+    "Foundry media %@ has no safe raster or audio conversion and was not projected." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für das Foundry-Medium %@ gibt es keine sichere Raster- oder Audio-Konvertierung; es wurde nicht übernommen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สื่อ Foundry %@ ไม่มีการแปลงภาพราสเตอร์หรือเสียงที่ปลอดภัย จึงไม่ได้นำมาแสดง"
+          }
+        }
+      }
+    },
+    "Foundry media reference %@ is not a %@ resource and was not projected into that module." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Foundry-Medienreferenz %@ ist keine %@-Ressource und wurde nicht in dieses Modul übernommen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การอ้างอิงสื่อ Foundry %@ ไม่ใช่ทรัพยากรของ %@ จึงไม่ได้นำไปใส่ในโมดูลนั้น"
+          }
+        }
+      }
+    },
+    "Foundry module package" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundry-Modulpaket"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจโมดูลของ Foundry"
+          }
+        }
+      }
+    },
+    "Foundry reference %@ is ambiguous across collections and remains unresolved." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Foundry-Referenz %@ ist in mehreren Sammlungen nicht eindeutig und bleibt ungelöst."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การอ้างอิง Foundry %@ กำกวมระหว่างคอลเลกชันและยังไม่ถูกแก้ไข"
+          }
+        }
+      }
+    },
+    "Foundry system package" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundry-Systempaket"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจระบบของ Foundry"
+          }
+        }
+      }
+    },
+    "Foundry world package" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foundry-Weltpaket"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แพ็กเกจโลกของ Foundry"
+          }
+        }
+      }
+    },
+    "Import was cancelled and its changes were rolled back." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Import wurde abgebrochen und seine Änderungen wurden zurückgesetzt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิกการนำเข้าและย้อนการเปลี่ยนแปลงกลับแล้ว"
+          }
+        }
+      }
+    },
+    "Items and values" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gegenstände und Werte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไอเท็มและค่า"
+          }
+        }
+      }
+    },
+    "Journals" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Journale"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บันทึกเหตุการณ์"
+          }
+        }
+      }
+    },
+    "Macro code is stored as text and is never executed." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Makrocode wird als Text gespeichert und nie ausgeführt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โค้ดมาโครถูกเก็บเป็นข้อความและจะไม่ถูกรันเด็ดขาด"
+          }
+        }
+      }
+    },
+    "Macros as text" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Makros als Text"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มาโครเป็นข้อความ"
+          }
+        }
+      }
+    },
+    "MasterRPG Foundry bridge" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Foundry-Brücke"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สะพานเชื่อม Foundry ของ MasterRPG"
+          }
+        }
+      }
+    },
+    "Merge" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zusammenführen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รวม"
+          }
+        }
+      }
+    },
+    "One or more level elevations were invalid or out of range and were omitted from map projections." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine oder mehrere Level-Höhen waren ungültig oder außerhalb des Bereichs und wurden in den Kartenprojektionen weggelassen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ความสูงของเลเวลอย่างน้อยหนึ่งรายการไม่ถูกต้องหรืออยู่นอกช่วง จึงถูกละไว้จากการแสดงแผนที่"
+          }
+        }
+      }
+    },
+    "One or more scenes had invalid or out-of-range dimensions and remain only in the RuleRPG source archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine oder mehrere Szenen hatten ungültige oder außerhalb des Bereichs liegende Abmessungen und bleiben nur im RuleRPG-Quellarchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฉากอย่างน้อยหนึ่งฉากมีขนาดไม่ถูกต้องหรืออยู่นอกช่วง และจะอยู่ในไฟล์เก็บถาวรต้นฉบับของ RuleRPG เท่านั้น"
+          }
+        }
+      }
+    },
+    "One or more tokens had invalid or out-of-range geometry and were omitted from map projections." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein oder mehrere Token hatten eine ungültige oder außerhalb des Bereichs liegende Geometrie und wurden in den Kartenprojektionen weggelassen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โทเคนอย่างน้อยหนึ่งรายการมีรูปทรงไม่ถูกต้องหรืออยู่นอกช่วง จึงถูกละไว้จากการแสดงแผนที่"
+          }
+        }
+      }
+    },
+    "One or more walls had invalid or out-of-range geometry or restriction values and were omitted from map projections." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine oder mehrere Wände hatten eine ungültige oder außerhalb des Bereichs liegende Geometrie oder Einschränkungswerte und wurden in den Kartenprojektionen weggelassen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำแพงอย่างน้อยหนึ่งรายการมีรูปทรงหรือค่าข้อจำกัดไม่ถูกต้องหรืออยู่นอกช่วง จึงถูกละไว้จากการแสดงแผนที่"
+          }
+        }
+      }
+    },
+    "Packaged media" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitgelieferte Medien"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สื่อที่มากับแพ็กเกจ"
+          }
+        }
+      }
+    },
+    "Packaged resource alias %@ matches multiple files and will not be attached automatically." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Alias %@ der mitgelieferten Ressource passt auf mehrere Dateien und wird nicht automatisch angehängt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นามแฝงทรัพยากร %@ ตรงกับหลายไฟล์ จึงจะไม่แนบให้อัตโนมัติ"
+          }
+        }
+      }
+    },
+    "Packaged resource path %@ is duplicated and will not be attached automatically." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Pfad %@ der mitgelieferten Ressource ist doppelt vorhanden und wird nicht automatisch angehängt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พาธทรัพยากร %@ ซ้ำกัน จึงจะไม่แนบให้อัตโนมัติ"
+          }
+        }
+      }
+    },
+    "Playlists and sounds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabelisten und Klänge"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพลย์ลิสต์และเสียง"
+          }
+        }
+      }
+    },
+    "Replace" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ersetzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แทนที่"
+          }
+        }
+      }
+    },
+    "Roll formula ‘%@’ contains an invalid die and remains text in the raw archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wurfformel „%@“ enthält einen ungültigen Würfel und bleibt Text im Roharchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สูตรทอยเต๋า ‘%@’ มีลูกเต๋าที่ไม่ถูกต้อง และจะเป็นข้อความในไฟล์เก็บถาวรดิบ"
+          }
+        }
+      }
+    },
+    "Roll formula ‘%@’ exceeds the supported limit of 100 dice and remains text in the raw archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wurfformel „%@“ überschreitet das unterstützte Limit von 100 Würfeln und bleibt Text im Roharchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สูตรทอยเต๋า ‘%@’ เกินขีดจำกัด 100 ลูกที่รองรับ และจะเป็นข้อความในไฟล์เก็บถาวรดิบ"
+          }
+        }
+      }
+    },
+    "Roll formula ‘%@’ has a modifier outside the supported numeric range and remains text in the raw archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wurfformel „%@“ hat einen Modifikator außerhalb des unterstützten Zahlenbereichs und bleibt Text im Roharchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สูตรทอยเต๋า ‘%@’ มีตัวปรับค่านอกช่วงตัวเลขที่รองรับ และจะเป็นข้อความในไฟล์เก็บถาวรดิบ"
+          }
+        }
+      }
+    },
+    "Roll formula ‘%@’ is preserved as text because it has no directly representable dice." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wurfformel „%@“ bleibt als Text erhalten, weil sie keine direkt darstellbaren Würfel enthält."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สูตรทอยเต๋า ‘%@’ ถูกเก็บเป็นข้อความเพราะไม่มีลูกเต๋าที่แสดงได้โดยตรง"
+          }
+        }
+      }
+    },
+    "Roll formula ‘%@’ uses Foundry syntax that is not exactly representable; it remains text in the raw archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Wurfformel „%@“ verwendet Foundry-Syntax, die nicht exakt darstellbar ist; sie bleibt Text im Roharchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สูตรทอยเต๋า ‘%@’ ใช้ไวยากรณ์ของ Foundry ที่แสดงได้ไม่ตรงทั้งหมด และจะเป็นข้อความในไฟล์เก็บถาวรดิบ"
+          }
+        }
+      }
+    },
+    "Roll tables and dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wurftabellen und Würfel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตารางทอยและลูกเต๋า"
+          }
+        }
+      }
+    },
+    "Rule %@ references missing folder %@ in %@; it was placed at the compendium root." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Regel %@ verweist auf den fehlenden Ordner %@ in %@; sie wurde in die Wurzel des Kompendiums gelegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กฎ %@ อ้างอิงโฟลเดอร์ %@ ที่ไม่มีอยู่ใน %@ จึงวางไว้ที่รากของคอมเพนเดียม"
+          }
+        }
+      }
+    },
+    "Rule compendium %@ contains duplicate folder id %@; the first folder was retained." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Regelkompendium %@ enthält die Ordner-ID %@ doppelt; der erste Ordner wurde behalten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คอมเพนเดียมกฎ %@ มีรหัสโฟลเดอร์ %@ ซ้ำกัน จึงเก็บโฟลเดอร์แรกไว้"
+          }
+        }
+      }
+    },
+    "Rule folder %@ references missing parent %@ in %@; it was placed at the compendium root." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Regelordner %@ verweist auf den fehlenden übergeordneten Ordner %@ in %@; er wurde in die Wurzel des Kompendiums gelegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โฟลเดอร์กฎ %@ อ้างอิงโฟลเดอร์แม่ %@ ที่ไม่มีอยู่ใน %@ จึงวางไว้ที่รากของคอมเพนเดียม"
+          }
+        }
+      }
+    },
+    "Rule folder hierarchy in %@ contains a cycle at %@; it was placed at the compendium root." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Regelordner-Hierarchie in %@ enthält bei %@ einen Zyklus; der Ordner wurde in die Wurzel des Kompendiums gelegt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลำดับชั้นโฟลเดอร์กฎใน %@ มีการวนซ้ำที่ %@ จึงวางไว้ที่รากของคอมเพนเดียม"
+          }
+        }
+      }
+    },
+    "Rules and system content" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regeln und Systeminhalte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กฎและเนื้อหาระบบ"
+          }
+        }
+      }
+    },
+    "Scene %@ names unknown initial level %@; the first source level is used instead." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Szene %@ nennt das unbekannte Startlevel %@; stattdessen wird das erste Quelllevel verwendet."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฉาก %@ ระบุเลเวลเริ่มต้น %@ ที่ไม่รู้จัก จึงใช้เลเวลแรกของต้นฉบับแทน"
+          }
+        }
+      }
+    },
+    "Scenes, levels, tokens, and walls" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Szenen, Level, Token und Wände"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฉาก เลเวล โทเคน และกำแพง"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überspringen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้าม"
+          }
+        }
+      }
+    },
+    "Source identity changed while this review was open. Choose its identity and prepare the review again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Quellenidentität hat sich geändert, während diese Prüfung offen war. Wähle die Identität und bereite die Prüfung erneut vor."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อมูลระบุแหล่งที่มาเปลี่ยนไปขณะเปิดการตรวจทานนี้ โปรดเลือกข้อมูลระบุอีกครั้งแล้วเตรียมการตรวจทานใหม่"
+          }
+        }
+      }
+    },
+    "The Foundry audio could not be converted to MPEG-4 audio." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Audio konnte nicht in MPEG-4-Audio umgewandelt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถแปลงเสียงของ Foundry เป็นเสียง MPEG-4 ได้"
+          }
+        }
+      }
+    },
+    "The Foundry audio format cannot be converted to MPEG-4 audio on this device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Audioformat kann auf diesem Gerät nicht in MPEG-4-Audio umgewandelt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อุปกรณ์นี้ไม่สามารถแปลงรูปแบบเสียงของ Foundry เป็นเสียง MPEG-4 ได้"
+          }
+        }
+      }
+    },
+    "The Foundry image could not be converted to JPEG." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Bild konnte nicht in JPEG umgewandelt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถแปลงรูปภาพของ Foundry เป็น JPEG ได้"
+          }
+        }
+      }
+    },
+    "The Foundry image could not be decoded as a supported raster image." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Foundry-Bild konnte nicht als unterstütztes Rasterbild dekodiert werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถถอดรหัสรูปภาพของ Foundry เป็นภาพราสเตอร์ที่รองรับได้"
+          }
+        }
+      }
+    },
+    "The RPG data was imported, but its RuleRPG source archive could not be saved: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die RPG-Daten wurden importiert, aber das zugehörige RuleRPG-Quellarchiv konnte nicht gesichert werden: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้าข้อมูล RPG แล้ว แต่ไม่สามารถบันทึกไฟล์เก็บถาวรต้นฉบับของ RuleRPG ได้: %@"
+          }
+        }
+      }
+    },
+    "The RPG data was imported, but its source identity could not be finalized: %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die RPG-Daten wurden importiert, aber die Quellenidentität konnte nicht abgeschlossen werden: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้าข้อมูล RPG แล้ว แต่ไม่สามารถยืนยันข้อมูลระบุแหล่งที่มาได้: %@"
+          }
+        }
+      }
+    },
+    "The converted Foundry audio is empty." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das umgewandelte Foundry-Audio ist leer."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสียง Foundry ที่แปลงแล้วว่างเปล่า"
+          }
+        }
+      }
+    },
+    "The selected VTT source is no longer available." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die ausgewählte VTT-Quelle ist nicht mehr verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แหล่งข้อมูล VTT ที่เลือกไม่พร้อมใช้งานอีกต่อไป"
+          }
+        }
+      }
+    },
+    "This source was claimed by another import while the review was open. Its IDs were remapped to the canonical source; review the changes and commit again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Quelle wurde von einem anderen Import übernommen, während die Prüfung offen war. Ihre IDs wurden der kanonischen Quelle zugeordnet; prüfe die Änderungen und übernimm sie erneut."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แหล่งข้อมูลนี้ถูกการนำเข้าอื่นใช้ไปขณะเปิดการตรวจทาน รหัสของมันถูกจับคู่ใหม่กับแหล่งข้อมูลหลัก โปรดตรวจทานการเปลี่ยนแปลงแล้วบันทึกอีกครั้ง"
+          }
+        }
+      }
+    },
+    "Token" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Token"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โทเคน"
+          }
+        }
+      }
+    },
+    "Universal VTT" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Universal VTT"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Universal VTT"
+          }
+        }
+      }
+    },
+    "Universal VTT light definitions are preserved for a future spatial-light model." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Universal-VTT-Lichtdefinitionen bleiben für ein künftiges räumliches Lichtmodell erhalten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำนิยามแสงของ Universal VTT ถูกเก็บไว้สำหรับโมเดลแสงเชิงพื้นที่ในอนาคต"
+          }
+        }
+      }
+    },
+    "Universal VTT lights have no MapRPG runtime equivalent and remain in the raw archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Universal-VTT-Lichter haben in MapRPG keine Laufzeit-Entsprechung und bleiben im Roharchiv."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสงของ Universal VTT ไม่มีสิ่งที่เทียบเท่าขณะรันใน MapRPG และจะอยู่ในไฟล์เก็บถาวรดิบ"
+          }
+        }
+      }
+    },
+    "Universal VTT map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Universal-VTT-Karte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่ Universal VTT"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekannt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ทราบ"
+          }
+        }
+      }
+    },
+    "User documents and common ownership identifiers were excluded from the RuleRPG source archive." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzerdokumente und übliche Besitzerkennungen wurden aus dem RuleRPG-Quellarchiv ausgeschlossen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เอกสารผู้ใช้และตัวระบุความเป็นเจ้าของทั่วไปถูกแยกออกจากไฟล์เก็บถาวรต้นฉบับของ RuleRPG"
+          }
+        }
+      }
+    },
+    "Users and ownership metadata" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzer und Besitzer-Metadaten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ใช้และข้อมูลเมตาความเป็นเจ้าของ"
+          }
+        }
+      }
+    },
+    "Vector images cannot be imported as RPG media." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vektorbilder können nicht als RPG-Medien importiert werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถนำเข้าภาพเวกเตอร์เป็นสื่อ RPG ได้"
+          }
+        }
+      }
+    },
+    "Wall" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wand"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำแพง"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

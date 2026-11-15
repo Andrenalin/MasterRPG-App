@@ -36,6 +36,8 @@ public struct ItemHeaderEditorView: View {
     @State private var attributedInformation: AttributedString
     @State private var category: ItemListCategory
     @State private var tags: [String]
+    /// Triggers the save haptic (`sensoryFeedback` fires when its trigger changes).
+    @State private var saveCount = 0
 
     private var isNameValid: Bool {
         !String(attributedName.characters).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -58,9 +60,12 @@ public struct ItemHeaderEditorView: View {
         .padding()
         .modifier(ItemHeaderEditorPlacement(dismissAction: dismissAction))
         .preference(key: ItemHeaderEditorPresentedPreferenceKey.self, value: true)
+        .sensoryFeedback(.success, trigger: saveCount)
         .task {
 #if !os(tvOS)
             try? await Task.sleep(for: EditorFocus.autoFocusDelay)
+            // A cancelled sleep (the editor went away) must not move focus.
+            guard !Task.isCancelled else { return }
             currentFocus = .name
 #endif
         }
@@ -85,12 +90,13 @@ public struct ItemHeaderEditorView: View {
             forceSave: true
         )
 
-#if os(iOS)
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-#endif
+        saveCount += 1
 
-        dismissAction()
+        // The haptic is driven by a view update, so the editor must still be on screen for it:
+        // dismiss one short beat later instead of in the same update.
+        delayedTask(.settleDelay) {
+            dismissAction()
+        }
     }
 }
 

@@ -64,7 +64,7 @@ struct DetailEditorView: View {
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: sheetRootModel,
-                headerTitle: String(localized: "Bookmarks", bundle: .module).localizedString,
+                headerTitle: String(localized: "Bookmarks", bundle: .module),
                 linkTypes: LinkPdfModuleTransferable.self
             )
         }

@@ -12,6 +12,9 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     
     @State private var isDropTargeted: Bool = false
     @State private var isSaving: Bool = false
+    /// Counters that trigger the drop haptics (`sensoryFeedback` fires when its trigger changes).
+    @State private var dropCount = 0
+    @State private var dropSettledCount = 0
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     /// Optional: the editor is also shown where no window size is set; links can be dropped there.
@@ -35,15 +38,15 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
                 EntryEditorHeaderSaveButtonView(isSaving: isSaving, save: save)
             }
         }
+        .sensoryFeedback(.impact(weight: .medium), trigger: isSaving) { _, saving in saving }
+        .sensoryFeedback(.impact(weight: .medium), trigger: dropCount)
+        .sensoryFeedback(.success, trigger: dropSettledCount)
     }
 
     func save() {
         guard !isSaving else { return }
         isSaving = true
-#if os(iOS)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-#endif
-        
+
         editModel.resetNameText()
         editModel.resetText()
 
@@ -78,11 +81,8 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     // MARK: - Actions
     
     private func handleDrop(items: [LinkType]) {
-        // Enhancement 3: Add haptic feedback on drop
-#if os(iOS)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-#endif
-        
+        dropCount += 1
+
         editModel.resetNameText()
         editModel.resetText()
         editController.update(
@@ -106,12 +106,10 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
             )
         }
         
-        // Enhancement 3: Success haptic after drop
-#if os(iOS)
+        // Success haptic once the drop has settled.
         delayedTask(.settleDelay) {
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            dropSettledCount += 1
         }
-#endif
     }
 }
 

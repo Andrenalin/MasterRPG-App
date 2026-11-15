@@ -65,7 +65,7 @@ extension FoundryMappingState {
             if let level = matchingLevel(requested, in: levels) {
                 return level
             }
-            warnings.append("Scene \(scene.name) names unknown initial level \(requested); the first source level is used instead.")
+            warnings.append(String(localized: "Scene \(scene.name) names unknown initial level \(requested); the first source level is used instead.", bundle: .module))
         }
 
         // `embeddedDocuments` is sorted for stable presentation. Preserve Foundry's source-array
@@ -94,7 +94,7 @@ extension FoundryMappingState {
             if let explicitIdentifier {
                 target = matchingLevel(explicitIdentifier, in: levels)
                 if target == nil {
-                    warnings.append("\(kind) \(child.document.name) names unknown level \(explicitIdentifier); it remains only in the raw archive.")
+                    warnings.append(String(localized: "\(kind) \(child.document.name) names unknown level \(explicitIdentifier); it remains only in the raw archive.", bundle: .module))
                     rawOnlyDocumentIDs.insert(child.document.id)
                 }
             } else {

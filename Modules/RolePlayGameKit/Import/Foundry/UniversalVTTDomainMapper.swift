@@ -68,7 +68,7 @@ struct UniversalVTTDomainMapper {
             id: mapID,
             name: sourceName,
             description: "Imported Universal VTT map.\(lightDescription)",
-            tags: ["Universal VTT"],
+            tags: [String(localized: "Universal VTT", bundle: .module)],
             category: .dungeon,
             photoId: photoID,
             width: width,
@@ -93,11 +93,11 @@ struct UniversalVTTDomainMapper {
             provenance: provenance,
             warnings: document.lights.isEmpty
                 ? []
-                : ["Universal VTT lights have no MapRPG runtime equivalent and remain in the raw archive."]
+                : [String(localized: "Universal VTT lights have no MapRPG runtime equivalent and remain in the raw archive.", bundle: .module)]
         )
         let warnings = document.lights.isEmpty
             ? []
-            : ["Universal VTT light definitions are preserved for a future spatial-light model."]
+            : [String(localized: "Universal VTT light definitions are preserved for a future spatial-light model.", bundle: .module)]
         let batch = ExternalImportBatch(
             id: FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#batch"),
             title: sourceName,

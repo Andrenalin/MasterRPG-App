@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import AVFoundation
-import Combine
 import CoreRPG
 import SwiftUI
 
@@ -109,7 +108,8 @@ public final class AudioPlayerModel: Sendable {
     var isInitialized = false
     var player = AVPlayer()
 
-    private(set) var subscriptions = Set<AnyCancellable>()
+    /// The tasks that follow the player (status, track end). Cancelled with the player they watch.
+    private(set) var observationTasks: [Task<Void, Never>] = []
     @ObservationIgnored var timeObserver: Any? = nil
     @ObservationIgnored var seekTask: Task<Void, Never>?
     /// The running `loadAndPlay`, replaced (and cancelled) by the next one. See CODE_AUDIT_21 §3.4.
@@ -118,14 +118,14 @@ public final class AudioPlayerModel: Sendable {
     /// `GameController.loadRemainingTracks`.
     @ObservationIgnored var remainingTracksTask: Task<Void, Never>?
     
-    func add(subscriptions: Set<AnyCancellable>) {
-        self.subscriptions = self.subscriptions.union(subscriptions)
+    func add(observationTasks: [Task<Void, Never>]) {
+        self.observationTasks.append(contentsOf: observationTasks)
     }
 
     /// Ends the playback observers, which are bound to the player they were created for.
-    func removeSubscriptions() {
-        subscriptions.forEach { $0.cancel() }
-        subscriptions = []
+    func removeObservationTasks() {
+        observationTasks.forEach { $0.cancel() }
+        observationTasks = []
     }
 
 }

@@ -38,41 +38,41 @@ extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
     }
     
     @MainActor func reset(cloudThickness: Cloud.Thickness, itemId: UUID) {
         reset(
             \.cloudThickness, value: cloudThickness, itemId: itemId,
-            message: String(localized: "change cloud thickness", bundle: .module).localizedString
+            message: String(localized: "change cloud thickness", bundle: .module)
         )
     }
 
     @MainActor func reset(stormType: Storm.Contents, itemId: UUID) {
         reset(
             \.stormType, value: stormType, itemId: itemId,
-            message: String(localized: "change storm type", bundle: .module).localizedString
+            message: String(localized: "change storm type", bundle: .module)
         )
     }
 
     @MainActor func reset(lightningFrequency: Double, itemId: UUID) {
         reset(
             \.lightningFrequency, value: lightningFrequency, itemId: itemId,
-            message: String(localized: "change lightning frequency", bundle: .module).localizedString
+            message: String(localized: "change lightning frequency", bundle: .module)
         )
     }
 
     @MainActor func reset(lightningMaxBolts: Double, itemId: UUID) {
         reset(
             \.lightningMaxBolts, value: lightningMaxBolts, itemId: itemId,
-            message: String(localized: "change lightning max bolts", bundle: .module).localizedString
+            message: String(localized: "change lightning max bolts", bundle: .module)
         )
     }
 
     @MainActor func reset(lightningForkProbability: Double, itemId: UUID) {
         reset(
             \.lightningForkProbability, value: lightningForkProbability, itemId: itemId,
-            message: String(localized: "change lightning fork probability", bundle: .module).localizedString
+            message: String(localized: "change lightning fork probability", bundle: .module)
         )
     }
 

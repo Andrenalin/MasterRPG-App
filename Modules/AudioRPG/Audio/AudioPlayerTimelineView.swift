@@ -85,10 +85,7 @@ private struct AudioPlayerTimelineLayersView: View {
             }
             .modifier(AudioPlayerTimelineHoverRevealModifier(viewModel: viewModel))
             .task(id: currentItem?.id) {
-                viewModel.loadAlbumArtwork(for: currentItem)
-            }
-            .onDisappear {
-                viewModel.cancelArtworkLoad()
+                await viewModel.loadAlbumArtwork(for: currentItem)
             }
     }
 }

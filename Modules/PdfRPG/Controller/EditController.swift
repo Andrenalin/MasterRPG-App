@@ -55,7 +55,7 @@ extension EditController {
         item.entries.append(entry)
         save(
             updated: item,
-            message: String(localized: "Added Bookmark", bundle: .module).localizedString
+            message: String(localized: "Added Bookmark", bundle: .module)
         )
     }
     
@@ -64,7 +64,7 @@ extension EditController {
         if let nameWord = content.split(separator: " ").first {
             name = String(nameWord)
         } else {
-            name = String(localized: "Unnamed", bundle: .module).localizedString
+            name = String(localized: "Unnamed", bundle: .module)
         }
         return PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: page, bounds: bounds, displayState: DisplayStateMask.fullVisible.rawValue)
     }
@@ -125,7 +125,7 @@ extension EditController {
         
         save(
             updated: item,
-            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module).localizedString
+            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module)
         )
     }
 }

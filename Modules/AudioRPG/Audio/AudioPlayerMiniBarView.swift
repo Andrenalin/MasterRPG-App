@@ -31,10 +31,7 @@ public struct AudioPlayerMiniBarView: View {
         .padding(.horizontal)
         .frame(maxWidth: showsMetadata ? .infinity : nil)
         .task(id: root.audioPlayerModel.currentItem?.id) {
-            viewModel.loadAlbumArtwork(for: root.audioPlayerModel.currentItem)
-        }
-        .onDisappear {
-            viewModel.cancelArtworkLoad()
+            await viewModel.loadAlbumArtwork(for: root.audioPlayerModel.currentItem)
         }
     }
 }

@@ -36,20 +36,20 @@ enum FoundryImportCategory: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .actors: "Actors and characters"
-        case .items: "Items and values"
-        case .rules: "Rules and system content"
-        case .scenes: "Scenes, levels, tokens, and walls"
-        case .journals: "Journals"
-        case .tables: "Roll tables and dice"
-        case .playlists: "Playlists and sounds"
-        case .cards: "Cards and decks"
-        case .adventures: "Adventures"
-        case .combats: "Combats"
-        case .chat: "Chat history"
-        case .users: "Users and ownership metadata"
-        case .macros: "Macros as text"
-        case .assets: "Packaged media"
+        case .actors: String(localized: "Actors and characters", bundle: .module)
+        case .items: String(localized: "Items and values", bundle: .module)
+        case .rules: String(localized: "Rules and system content", bundle: .module)
+        case .scenes: String(localized: "Scenes, levels, tokens, and walls", bundle: .module)
+        case .journals: String(localized: "Journals", bundle: .module)
+        case .tables: String(localized: "Roll tables and dice", bundle: .module)
+        case .playlists: String(localized: "Playlists and sounds", bundle: .module)
+        case .cards: String(localized: "Cards and decks", bundle: .module)
+        case .adventures: String(localized: "Adventures", bundle: .module)
+        case .combats: String(localized: "Combats", bundle: .module)
+        case .chat: String(localized: "Chat history", bundle: .module)
+        case .users: String(localized: "Users and ownership metadata", bundle: .module)
+        case .macros: String(localized: "Macros as text", bundle: .module)
+        case .assets: String(localized: "Packaged media", bundle: .module)
         }
     }
 
@@ -165,13 +165,13 @@ enum FoundryGeometryWarning: Hashable {
     var message: String {
         switch self {
         case .scene:
-            "One or more scenes had invalid or out-of-range dimensions and remain only in the RuleRPG source archive."
+            String(localized: "One or more scenes had invalid or out-of-range dimensions and remain only in the RuleRPG source archive.", bundle: .module)
         case .token:
-            "One or more tokens had invalid or out-of-range geometry and were omitted from map projections."
+            String(localized: "One or more tokens had invalid or out-of-range geometry and were omitted from map projections.", bundle: .module)
         case .wall:
-            "One or more walls had invalid or out-of-range geometry or restriction values and were omitted from map projections."
+            String(localized: "One or more walls had invalid or out-of-range geometry or restriction values and were omitted from map projections.", bundle: .module)
         case .levelElevation:
-            "One or more level elevations were invalid or out of range and were omitted from map projections."
+            String(localized: "One or more level elevations were invalid or out of range and were omitted from map projections.", bundle: .module)
         }
     }
 }
@@ -303,10 +303,10 @@ final class FoundryMappingState {
         }
 
         if !selectedCategories.contains(.chat) {
-            warnings.append("Chat messages were excluded from both projection and the RuleRPG source archive.")
+            warnings.append(String(localized: "Chat messages were excluded from both projection and the RuleRPG source archive.", bundle: .module))
         }
         if !selectedCategories.contains(.users) {
-            warnings.append("User documents and common ownership identifiers were excluded from the RuleRPG source archive.")
+            warnings.append(String(localized: "User documents and common ownership identifiers were excluded from the RuleRPG source archive.", bundle: .module))
         }
         warnings.append(contentsOf: package.diagnostics.map(\.message))
         let batch = ExternalImportBatch(

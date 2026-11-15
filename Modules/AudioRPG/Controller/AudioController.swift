@@ -390,7 +390,7 @@ extension AudioController: AudioPlayerSessionDelegate {
     @MainActor
     func resetMediaService() {
         removeTimeObserver()
-        model.removeSubscriptions()
+        model.removeObservationTasks()
         model.seekTask?.cancel()
         model.playbackGeneration += 1
         model.player = AVPlayer()
