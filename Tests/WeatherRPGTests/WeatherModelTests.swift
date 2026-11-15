@@ -50,5 +50,32 @@ struct WeatherModelTests {
         #expect(sut.isSame(a) == true)
         #expect(m1.isSame(m2) == true)
     }
+
+    // CODE_AUDIT_26 §5.42
+    @Test func renamingDoesNotMoveTheWeatherStamp() async throws {
+        let sut = try await setUp()
+        let incoming = sut.duplicate()
+        incoming.name = "Renamed"
+        let stamp = sut.weatherUpdate_.wrappedValue
+
+        let changed = sut.replace(with: incoming)
+
+        #expect(changed)
+        #expect(sut.name == "Renamed")
+        #expect(sut.weatherUpdate_.wrappedValue == stamp)
+    }
+
+    @Test func changingAWeatherValueMovesTheWeatherStamp() async throws {
+        let sut = try await setUp()
+        let incoming = sut.duplicate()
+        incoming.rainIntensity = 80.0
+        let stamp = sut.weatherUpdate_.wrappedValue
+
+        let changed = sut.replace(with: incoming)
+
+        #expect(changed)
+        #expect(sut.rainIntensity == 80.0)
+        #expect(sut.weatherUpdate_.wrappedValue != stamp)
+    }
 }
 #endif

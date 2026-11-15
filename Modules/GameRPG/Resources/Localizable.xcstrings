@@ -6938,6 +6938,38 @@
           }
         }
       }
+    },
+    "No Games in This Range" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Spiele in diesem Zeitraum"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีเกมในช่วงเวลานี้"
+          }
+        }
+      }
+    },
+    "Choose a longer date range to see earlier games." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle einen längeren Zeitraum, um frühere Spiele zu sehen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกช่วงเวลาที่นานขึ้นเพื่อดูเกมก่อนหน้า"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

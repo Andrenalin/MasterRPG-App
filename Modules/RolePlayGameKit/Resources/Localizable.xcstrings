@@ -4244,6 +4244,70 @@
           }
         }
       }
+    },
+    "Be careful, this removes all items, links and tags from the database. The files themselves in local, appCloud and iCloud storage are not deleted." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei vorsichtig! Dies löscht alle Einträge, Verknüpfungen und Tags aus der Datenbank. Die Dateien selbst im Lokalen, AppCloud und iCloud Ordner werden nicht gelöscht."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ระวัง! การดำเนินการนี้จะลบรายการ ลิงก์ และแท็กทั้งหมดออกจากฐานข้อมูล ส่วนไฟล์ในพื้นที่จัดเก็บ Local, appCloud และ iCloud จะไม่ถูกลบ"
+          }
+        }
+      }
+    },
+    "The data has been reset." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Daten wurden zurückgesetzt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ตข้อมูลแล้ว"
+          }
+        }
+      }
+    },
+    "Another operation is changing the data. Try again when it has finished." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein anderer Vorgang ändert gerade die Daten. Versuche es erneut, wenn er abgeschlossen ist."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การดำเนินการอื่นกำลังเปลี่ยนแปลงข้อมูลอยู่ ลองอีกครั้งเมื่อเสร็จสิ้น"
+          }
+        }
+      }
+    },
+    "There is no photo to save. Choose another module to save the text." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es gibt kein Foto zum Speichern. Wähle ein anderes Modul, um den Text zu speichern."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีรูปภาพให้บันทึก เลือกโมดูลอื่นเพื่อบันทึกข้อความ"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

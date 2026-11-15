@@ -627,6 +627,45 @@ extension ConvertControllerRepairTests {
         #expect(afterOwner2.entries.allSatisfy { $0.valueId != groupItemId })
     }
 
+    /// CODE_AUDIT_26 §5.30: the owner recorded in `groupId` keeps the group, whatever the list order.
+    @Test("GroupItem referenced by two owners stays with the recorded owner even when it is second in item order")
+    func groupItem_doubleOwnership_recordedOwnerKeepsGroupWhenSecond() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        // The decoy comes first in item order, the real owner second.
+        let decoyId = await root.itemController.addNew(type: .item)
+        let realOwnerId = await root.itemController.addNew(type: .item)
+        let items = root.itemController.itemDataModel.items
+        try #require(items.firstIndex(of: decoyId) ?? Int.max < items.firstIndex(of: realOwnerId) ?? Int.min)
+
+        let entryId = await root.editController.addNewGroup(itemId: realOwnerId)
+        let realOwner = root.itemController.itemOrEmpty(for: realOwnerId)
+        let groupItemId = try #require(realOwner.entries.first(where: { $0.id == entryId })?.valueId)
+        #expect(root.itemController.itemOrEmpty(for: groupItemId).groupId == realOwnerId)
+
+        let decoy = root.itemController.itemOrEmpty(for: decoyId)
+        decoy.entries.append(ValueEntryModel(id: UUID(), name: "DuplicateRef", type: .text, value: "", valueId: groupItemId))
+        root.itemController.replace(model: decoy, isInsert: false)
+
+        root.editController.repairCharacterConstraints()
+
+        #expect(root.itemController.itemOrEmpty(for: realOwnerId).entries.contains { $0.valueId == groupItemId })
+        #expect(root.itemController.itemOrEmpty(for: decoyId).entries.allSatisfy { $0.valueId != groupItemId })
+        #expect(root.itemController.itemOrEmpty(for: groupItemId).groupId == realOwnerId)
+    }
+
+    @Test("The recorded owner wins over list order only when it still references the group")
+    func authoritativeOwnerChoice() {
+        let first = UUID()
+        let second = UUID()
+        let stale = UUID()
+        #expect(EditController.authoritativeOwner(recordedOwner: second, owners: [first, second]) == second)
+        #expect(EditController.authoritativeOwner(recordedOwner: stale, owners: [first, second]) == first)
+        #expect(EditController.authoritativeOwner(recordedOwner: nil, owners: [first, second]) == first)
+        #expect(EditController.authoritativeOwner(recordedOwner: second, owners: []) == nil)
+    }
+
     @Test("GroupItem with a single owner is preserved unchanged")
     func groupItem_singleOwnership_preserved() async throws {
         let root = try await MockRoot.importTestData()

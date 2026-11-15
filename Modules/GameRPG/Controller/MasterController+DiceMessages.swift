@@ -61,7 +61,8 @@ extension MasterController {
                let resultCategory {
                 root.tableRoot.tableGameControllable.addResult(
                     resultCategory,
-                    diceResult: diceResult
+                    diceResult: diceResult,
+                    senderId: model.sender.id
                 )
             }
         }

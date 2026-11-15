@@ -3089,6 +3089,22 @@
           }
         }
       }
+    },
+    "Skipped: no text to analyze" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersprungen: kein Text zum Analysieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้าม: ไม่มีข้อความให้วิเคราะห์"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

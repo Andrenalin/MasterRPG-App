@@ -80,6 +80,21 @@ public final class SearchModel: Sendable {
         tagTask?.cancel()
     }
     
+    /// The text search a search-field entry stands for. An entry that starts with "@" is a tag
+    /// lookup (suggestions), not a text search, so it does not filter by text.
+    static func searchText(forField field: String) -> String {
+        field.starts(with: "@") ? "" : field
+    }
+
+    /// Picks a tag suggestion: it becomes a filter token (once) and the field is cleared.
+    func select(token: SearchTags) {
+        if !selectedTokens.contains(token) {
+            selectedTokens.append(token)
+        }
+        searchFieldText = ""
+        searchTags = []
+    }
+
     func updateTagSuggestions() {
         guard searchFieldText.starts(with: "@") else {
             searchTags = []

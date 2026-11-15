@@ -36,6 +36,9 @@ final class ShareExtensionSaveController {
             throw ShareExtensionError.contextNotAvailable
         }
 
+        guard ShareExtensionError.canSave(to: module, imageCount: images.count) else {
+            throw ShareExtensionError.noPhotoToSave
+        }
         let photoController = ShareImportPhotoController()
         // The photo files are written to iCloud Drive before their items are saved. When
         // anything after that fails, they are removed again and the unsaved rows are dropped:

@@ -85,6 +85,41 @@ public extension EditControllable {
         reset(tags: tags, itemId: id, forceSave: forceSave)
     }
 
+    /// Changes name, description and tags as one edit: one save and one undo step, so no sync can
+    /// pick up a half-applied item. `nil` leaves that property unchanged.
+    @MainActor func reset(name: String?, description: String?, tags: [String]?, itemId: UUID, forceSave: Bool = false) {
+        guard var item = editModel(for: itemId) else { return }
+        var changed = false
+        if let name, item.name != name {
+            item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
+            changed = true
+        }
+        if let description, item.description != description {
+            item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            editorModel.cacheItemListModel.reset(cacheType: .description, itemId: item.id, text: item.description.markDownText())
+            changed = true
+        }
+        if let tags {
+            let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
+            if item.tags != sortedTags {
+                let addedTags = Array(Set(sortedTags).subtracting(item.tags))
+                let removedTags = Array(Set(item.tags).subtracting(sortedTags))
+                updateTags(addedTags: addedTags, removedTags: removedTags)
+                item.tags = sortedTags
+                changed = true
+            }
+        }
+        guard changed else { return }
+        save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
+        // A folder's name is part of its descendants' file paths (see `reset(name:itemId:)`).
+        if name != nil, item.isFolder, forceSave || !itemControllable.itemDataModel.isGameMode {
+            for childId in item.entries.map(\.childId) where itemControllable.itemSync(for: childId, noGame: true)?.parentId == item.id {
+                movedFileTree(itemId: childId)
+            }
+        }
+    }
+
     @MainActor func reset(category: ItemListCategory, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.category != category else { return }

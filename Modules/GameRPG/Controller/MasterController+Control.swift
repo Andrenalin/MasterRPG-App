@@ -88,12 +88,15 @@ extension MasterController {
             controllable.gameModel.setCurrent(players: players)
         }
 
-        var playerNames = gameRoster.players.filter { $0.type != .observer }.map { $0.name }.sorted()
+        let rolePlayers = gameRoster.players.filter { $0.type != .observer }
+        var playerNames = rolePlayers.map { $0.name }.sorted()
+        var dicePlayerIds = Set(rolePlayers.map(\.id))
         if asProxy {
             playerNames.append(gameConfig.master.name)
             playerNames.sort()
+            dicePlayerIds.insert(gameConfig.master.id)
         }
-        root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
+        root.diceRoot.diceGameControllable.resetPlayerDice(keepingSenders: dicePlayerIds, names: playerNames)
         if !asProxy {
             // The connected players plus the game master's table players; a table player whose
             // Character a connected player plays waits until that player leaves.

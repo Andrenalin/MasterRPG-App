@@ -5,9 +5,11 @@ import DiceRPG
 import Foundation
 
 public protocol TableGameStorable: Sendable {
+    /// `senderId` is the player who rolled; a roll handed to one player only counts from them.
     @MainActor func addResult(
         _ result: ResultCategory,
-        diceResult: DiceResultModel
+        diceResult: DiceResultModel,
+        senderId: UUID?
     )
     @MainActor func isTableAvailable(itemId: UUID, version: Int) -> Bool
     func receiveTable(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool
@@ -110,12 +112,14 @@ extension GameController: GameControllable {
 extension GameController: TableGameStorable {
     @MainActor public func addResult(
         _ result: ResultCategory,
-        diceResult: DiceResultModel
+        diceResult: DiceResultModel,
+        senderId: UUID?
     ) {
         guard result.module == .table else { return }
         if generationSessionStore.consume(
             category: result,
-            diceResult: diceResult
+            diceResult: diceResult,
+            senderId: senderId
         ) {
             return
         }

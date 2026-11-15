@@ -70,3 +70,13 @@ extension AKImage {
     }
 }
 #endif
+
+/// The cover tile of a map: a piece of the map canvas, which shows the photo rotated by its degrees.
+/// See CODE_AUDIT_26 §5.24.
+enum MapTileImage {
+    /// `rect` (canvas coordinates) cut out of `image` rotated by `degrees`; `nil` when the rotation
+    /// fails or `rect` lies outside the canvas.
+    static func crop(_ image: AKImage, degrees: Double, to rect: CGRect) -> AKImage? {
+        image.rotated(byDegrees: degrees)?.cropping(to: rect)
+    }
+}

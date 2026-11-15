@@ -90,7 +90,10 @@ public protocol DiceGameStorable: Sendable {
     /// The dice every other player last shared, as the dice overlay lists them, hidden or not.
     @MainActor var sharedPlayerDice: [DiceModel] { get }
     @MainActor func validateForValue(diceId: UUID, compareValue: Int?)
-    @MainActor func resetPlayerDice(to playerIds: [String])
+    /// Keeps only the dice of the players that remain. A die is known by the device that shared it
+    /// (`senderIds`); one whose sender is not known (a proxy's own roll) by the player's `names`.
+    /// Display names alone cannot tell two players called "Alex" apart. See CODE_AUDIT_26 §5.17.
+    @MainActor func resetPlayerDice(keepingSenders senderIds: Set<UUID>, names: [String])
 }
 
 struct GameController: Sendable {
@@ -176,7 +179,11 @@ extension GameController: DiceGameStorable {
             gameModel.items.insert(model.id, at: 0)
         }
         let item = gameItem(for: itemId)
-        item.resultCategory = resultCategory
+        // A roll that names no category keeps the one the dice already has.
+        // See CODE_AUDIT_26 §5.34.
+        if let resultCategory {
+            item.resultCategory = resultCategory
+        }
         let diceResult = result(itemId: itemId)
         return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: diceResult.encodeData())
     }
@@ -280,9 +287,13 @@ extension GameController: DiceGameStorable {
     }
     
     @MainActor
-    func resetPlayerDice(to playerNames: [String]) {
-        diceGameModel.playerDice = playerNames.compactMap { name in
-            diceGameModel.playerDice.first { $0.name == name }
+    func resetPlayerDice(keepingSenders senderIds: Set<UUID>, names: [String]) {
+        let knownNames = Set(names)
+        diceGameModel.playerDice = diceGameModel.playerDice.filter { dice in
+            if let senderId = diceGameModel.playerDiceSenders[dice.id] {
+                return senderIds.contains(senderId)
+            }
+            return knownNames.contains(dice.name)
         }
         let activeDiceIDs = Set(diceGameModel.playerDice.map(\.id))
         diceGameModel.playerSupporterTiers = diceGameModel.playerSupporterTiers.filter {

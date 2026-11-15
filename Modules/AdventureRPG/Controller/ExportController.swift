@@ -69,6 +69,12 @@ extension ExportController: ExportControllable {
                 photoIds.insert(photoId)
             }
 
+            // The dice attached to the adventure travels with it, like its photo; it is not
+            // GM-only. See CODE_AUDIT_26 §5.25.
+            if let diceId = item.diceId, resolvedRootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
+                diceIds.insert(diceId)
+            }
+
             // The Characters the game master puts at the table travel with the adventure.
             for tablePlayer in item.tablePlayers
             where resolvedRootManager.characterRoot.linkControllable.validateLink(itemId: tablePlayer.characterId) {

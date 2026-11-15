@@ -275,6 +275,18 @@ extension WeatherModel: nonisolated ItemDataAccessible {
         }
     }
 
+    /// Whether any value that the weather stamp covers differs.
+    @MainActor func hasDifferentWeather(than other: WeatherModel) -> Bool {
+        time != other.time
+            || cloudThickness != other.cloudThickness
+            || stormType != other.stormType
+            || rainAngle != other.rainAngle
+            || rainIntensity != other.rainIntensity
+            || lightningFrequency != other.lightningFrequency
+            || lightningMaxBolts != other.lightningMaxBolts
+            || lightningForkProbability != other.lightningForkProbability
+    }
+
     @MainActor public func replace(with model: WeatherModel) -> Bool {
         guard self != model else { return false }
         name_ <=> model.name_
@@ -282,7 +294,11 @@ extension WeatherModel: nonisolated ItemDataAccessible {
         tags_ <=> model.tags_
         category_ <=> model.category_
         displayState <=> model.displayState
-        weatherUpdate_.wrappedValue = UUID()
+        // The stamp says "weather settings changed now": only a changed weather value moves it,
+        // not a rename, a tag or a move into a folder. See CODE_AUDIT_26 §5.42.
+        if hasDifferentWeather(than: model) {
+            weatherUpdate_.wrappedValue = UUID()
+        }
         time <=> model.time
         cloudThickness <=> model.cloudThickness
         stormType <=> model.stormType

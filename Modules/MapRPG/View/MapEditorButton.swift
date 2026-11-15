@@ -13,12 +13,7 @@ struct MapEditorButton: View {
 
     var body: some View {
         Button {
-#if os(visionOS) || os(macOS)
-            root.editController.editorModel.sheetEditorModel.itemId = model.id
-            scenesManager.openWindow(.mapEditor)
-#else
-            navigator.navigate(to: MapEditorRoute.mapEditor(model.id))
-#endif
+            MapEditorKind.map.open(model: model, root: root, navigator: navigator, scenesManager: scenesManager)
             MasterRPGTips.recordMapEditorOpened()
         } label: {
             Label {

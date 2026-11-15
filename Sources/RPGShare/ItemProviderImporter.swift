@@ -12,6 +12,14 @@ struct ImageItem: Identifiable, Hashable {
     var imageData: Data
 }
 
+/// What loading one kind of shared content produced, and how many shared items could not be used.
+struct LoadResult<Value: Sendable>: Sendable {
+    var values: [Value] = []
+    /// Items that failed to load or were dropped (for example by the payload budget). Shown to the
+    /// person instead of being lost silently. See CODE_AUDIT_26 §5.46.
+    var skippedCount = 0
+}
+
 @MainActor
 final class ItemProviderImporter {
     enum Error: Swift.Error {
@@ -19,60 +27,53 @@ final class ItemProviderImporter {
         case failedToLoad
     }
     
-    func loadImages(from items: [NSItemProvider]) async throws -> [ImageItem] {
+    func loadImages(from items: [NSItemProvider]) async throws -> LoadResult<ImageItem> {
         let permissibleTypes: [UTType] = [.image, .url]
         let providersAndTypes = Self.providersAndTypes(from: items, permissibleTypes: permissibleTypes)
 
-        var images: [ImageItem] = []
+        var result = LoadResult<ImageItem>()
         var totalPayloadSize = 0
-        for (provider, type) in providersAndTypes {
+        for (index, (provider, type)) in providersAndTypes.enumerated() {
             try Task.checkCancellation()
             // Caps total in-flight payload across multiple shared attachments — the Share
             // Extension's tight (~120MB) memory budget is shared across every image held in
             // `images`, not just the largest one. See CODE_AUDIT §6.3.
             guard totalPayloadSize < Self.maximumTotalImagePayloadSize else {
                 logger.warning("\(#function): dropping remaining image(s); total payload budget reached")
+                result.skippedCount += providersAndTypes.count - index
                 break
             }
             do {
                 let image = try await Self.loadImage(provider: provider, type: type)
                 totalPayloadSize += image.imageData.count
-                images.append(image)
+                result.values.append(image)
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 logger.error("\(#function): \(error)")
+                result.skippedCount += 1
             }
         }
-
-        guard !images.isEmpty else {
-            let error = Error.noItems
-            logger.warning("\(#function): \(error)")
-            throw error
-        }
-
-        return images
+        return result
     }
 
-    func loadTexts(from items: [NSItemProvider]) async throws -> [String] {
+    func loadTexts(from items: [NSItemProvider]) async throws -> LoadResult<String> {
         let permissibleTypes: [UTType] = [.text, .plainText]
         let providersAndTypes = Self.providersAndTypes(from: items, permissibleTypes: permissibleTypes)
 
-        var texts: [String] = []
+        var result = LoadResult<String>()
         for (provider, type) in providersAndTypes {
             try Task.checkCancellation()
             do {
-                texts.append(try await Self.loadText(provider: provider, type: type))
+                result.values.append(try await Self.loadText(provider: provider, type: type))
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 logger.error("\(#function): \(error)")
+                result.skippedCount += 1
             }
         }
-
-        guard !texts.isEmpty else {
-            let error = Error.noItems
-            logger.warning("\(#function): \(error)")
-            throw error
-        }
-
-        return texts
+        return result
     }
 }
 

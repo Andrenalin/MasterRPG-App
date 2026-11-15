@@ -37,6 +37,8 @@ struct SharingView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var errorMessage: String?
+    /// Shared items that could not be read; shown above the content.
+    @State private var skippedItemCount = 0
     @State private var containerSize: CGSize = .zero
 
     private let performsInitialization: Bool
@@ -126,14 +128,31 @@ struct SharingView: View {
         ScrollView {
             VStack(spacing: 12) {
                 SharingHeader(cancelAction: close)
-                
+
+                if skippedItemCount > 0 {
+                    Label {
+                        Text("\(skippedItemCount) shared items could not be read and were left out.", bundle: .main)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
+                    .foregroundStyle(.orange)
+                    .font(.footnote)
+                }
+
                 ModuleChooserView(model: moduleChooserModel)
                 
                 PhotoSection(imageList: imageListModel, size: size)
                 
                 SharingInput(model: inputModel)
 
-                SharingSaveButtonView(inputModel: inputModel, saveContent: saveContent)
+                SharingSaveButtonView(
+                    inputModel: inputModel,
+                    canSave: ShareExtensionError.canSave(
+                        to: moduleChooserModel.currentModule,
+                        imageCount: imageListModel.images.count
+                    ),
+                    saveContent: saveContent
+                )
 
                 Spacer(minLength: 0)
             }
@@ -179,22 +198,35 @@ struct SharingView: View {
     @MainActor
     private func extractItems() async {
         let importer = ItemProviderImporter()
-        
+        var skipped = 0
+
         // Load images
         if let images = try? await importer.loadImages(from: itemProviders) {
-            imageListModel.images = images
-            moduleChooserModel.hasPhotos = !images.isEmpty
+            imageListModel.images = images.values
+            moduleChooserModel.hasPhotos = !images.values.isEmpty
+            skipped += images.skippedCount
         }
-        
+
         // Load text
+        var hasText = false
         if let texts = try? await importer.loadTexts(from: itemProviders) {
-            let joined = texts.joined(separator: "\n")
-            let firstWord = joined.components(separatedBy: CharacterSet.whitespacesAndNewlines).first ?? ""
-            inputModel.name = firstWord
-            inputModel.text = joined
+            hasText = !texts.values.isEmpty
+            skipped += texts.skippedCount
+            if hasText {
+                let joined = texts.values.joined(separator: "\n")
+                let firstWord = joined.components(separatedBy: CharacterSet.whitespacesAndNewlines).first ?? ""
+                inputModel.name = firstWord
+                inputModel.text = joined
+            }
+        }
+
+        skippedItemCount = skipped
+        // Nothing could be read at all: say so instead of showing an empty form.
+        if imageListModel.images.isEmpty, !hasText {
+            errorMessage = String(localized: "The shared items could not be read.", bundle: .main)
         }
     }
-    
+
     // MARK: - Save Action
     
     @MainActor
@@ -249,6 +281,8 @@ private struct SharingLoadingView: View {
 
 private struct SharingSaveButtonView: View {
     let inputModel: InputModel
+    /// `false` when the chosen module has nothing to save, such as Photo with no image.
+    let canSave: Bool
     let saveContent: () async -> Void
 
     var body: some View {
@@ -264,7 +298,7 @@ private struct SharingSaveButtonView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
-        .disabled(inputModel.name.isEmpty)
+        .disabled(inputModel.name.isEmpty || !canSave)
     }
 }
 

@@ -17,22 +17,24 @@ public struct SearchListController {
 
 extension SearchListController: SearchRootControllable {
     public func results(text: String) async -> [SearchResult] {
-        await searchController.listSearchResults(
+        let results = await searchController.listSearchResults(
             searchText: text,
             listMode: listDisplayModel.listMode,
             displayMode: listDisplayModel.displayMode,
             focusId: listDisplayModel.listMode == .folder ? searchModel.filterId : nil
         )
+        return applyingSelectedTags(to: results, itemControllable: searchController.itemControllable)
     }
 
     /// Scoped view for `performDetailSearch`: folder mode to return the parent's children.
     public func scopedResults(text: String, focusId: UUID) async -> [SearchResult] {
-        await searchController.listSearchResults(
+        let results = await searchController.listSearchResults(
             searchText: text,
             listMode: .folder,
             displayMode: listDisplayModel.displayMode,
             focusId: focusId
         )
+        return applyingSelectedTags(to: results, itemControllable: searchController.itemControllable)
     }
 
     /// Sync expansion: folder/collection children only (list search never expands item entries).
@@ -83,12 +85,13 @@ public struct SearchLinkController {
 
 extension SearchLinkController: SearchRootControllable {
     public func results(text: String) async -> [SearchResult] {
-        await searchController.inspectorSearchResults(
+        let results = await searchController.inspectorSearchResults(
             searchText: text,
             listMode: listDisplayModel.listMode,
             displayMode: listDisplayModel.displayMode,
             focusId: searchModel.filterId
         )
+        return applyingSelectedTags(to: results, itemControllable: searchController.itemControllable)
     }
 
     /// Scoped view for `performDetailSearch`: always uses list mode so that per-module overrides
@@ -97,12 +100,13 @@ extension SearchLinkController: SearchRootControllable {
     /// The folder mode toggle in the inspector header does NOT apply here — the focused view
     /// always shows the focal item with its entries/children regardless of listMode.
     public func scopedResults(text: String, focusId: UUID) async -> [SearchResult] {
-        await searchController.inspectorSearchResults(
+        let results = await searchController.inspectorSearchResults(
             searchText: text,
             listMode: .list,
             displayMode: listDisplayModel.displayMode,
             focusId: focusId
         )
+        return applyingSelectedTags(to: results, itemControllable: searchController.itemControllable)
     }
 
     /// Sync expansion: folder/collection children OR item entries (inspector).

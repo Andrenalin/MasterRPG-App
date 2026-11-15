@@ -158,8 +158,11 @@ extension MapEditorSession {
 
     // MARK: - Helper Methods
 
+    /// The topmost room under `location`. The cells of a hex grid are appended last and cover the
+    /// whole map, so they are skipped: a pin dropped on a hex map belongs to the room it sits in,
+    /// and a cell would lose its content on the next rescale. See CODE_AUDIT_26 §5.22.
     func entry(for location: CGPoint, in _: MapModel) -> MapEntryModel? {
-        entries.roomNodes.last { $0.path.contains(location) }?.entry
+        entries.roomNodes.last { !$0.entry.isHexGrid && $0.path.contains(location) }?.entry
     }
 
     // MARK: - Pointer (game mode)

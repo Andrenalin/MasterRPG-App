@@ -623,6 +623,9 @@ struct TableGenerationControllerTests {
             checked: true
         )
 
+        // The occurrence waits for the player's roll (CODE_AUDIT_26 §5.44).
+        model.root.isAwaitingPlayerRoll = true
+
         // When
         let consumed = root.generationSessionStore.consume(
             category: ResultCategory(
@@ -639,6 +642,31 @@ struct TableGenerationControllerTests {
         #expect(model.root.lastRoll == 5)
         #expect(model.summary?.name == "Weapon")
         #expect(model.summary?.value == "Sword")
+    }
+
+    @Test("A roll nobody waits for does not change the generation (CODE_AUDIT_26 §5.44)")
+    func unsolicitedRollIsIgnored() {
+        // Given
+        let root = makeRoot()
+        let first = TableEntryModel.fixture(id: .fixture2, name: "1-3", content: "Mace")
+        let second = TableEntryModel.fixture(id: .fixture3, name: "4-6", content: "Sword")
+        let table = TableModel(id: .fixture1, name: "Weapon", tableType: .dice, entries: [first, second])
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+        root.generationSessionStore.register(model)
+        let dice = DiceModel(id: .fixture4, name: "d6", dice: [DieModel(id: .fixture5, die: .six)])
+        let diceResult = DiceResultModel(diceModel: dice, result: .rolled, values: "5", sum: 5, checked: true)
+
+        // When
+        let consumed = root.generationSessionStore.consume(
+            category: ResultCategory(id: model.id, childId: model.root.id, module: .table),
+            diceResult: diceResult,
+            senderId: UUID()
+        )
+
+        // Then
+        #expect(!consumed)
+        #expect(model.root.selectedEntryId == nil)
     }
 
     @Test("A hand-edited outcome overrides the generated summary value")

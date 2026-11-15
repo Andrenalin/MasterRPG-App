@@ -210,6 +210,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** One transient fetch error followed by any tag edit wipes that module's tag suggestions on every device; counts drift after a slow first fetch. Rare, but silent and replicated.
 - **Action:** Mirror the link register: track `hydrationFailed`, retry the fetch before saving, skip the save while it is failing; merge by adding persisted counts only for tags not touched in memory (or apply hydration before accepting edits).
 - **Severity:** Medium   **Area:** CoreRPG Controllable/Import/Links
+- **Status:** Fixed 2026-11-15 — `TagController` tracks `isHydrated`/`hydrationFailed`; `savePendingTags` hydrates first, retries after a failure and skips the save while it fails; hydrated tags merge with in-memory deltas. Test `TagControllerHydrationTests`.
 
 ### 5.10 download(fileUrl:) passes a percent-encoded path as a file path
 - **Location:** Modules/CoreRPG/Files/FileUrlDataController+Create.swift:511-519 (feeds CloudDocumentController.download(filePath:) at Modules/CoreRPG/Files/CloudDocumentController.swift:127-131 and fullUrl(filePath:) at :87-89); callers Modules/PdfRPG/Controller/ItemController.swift:43, Modules/CoreRPG/Controllable/ImageCacheControllable.swift:174
@@ -217,6 +218,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Verified with a scratch program: `append(path: "Map%20Name%20%C3%A9.png")` yields a path whose file name literally contains `%20`. For any `.newCloud` file whose name has a space, accent, `#`, `?` or other encoded character, the explicit iCloud download request targets a non-existent file and throws (Pdf logs an error, the image cache swallows it with `try?`). Every other call site uses `path(percentEncoded: false)` or `pathComponents`. The later coordinated read still pulls the bytes, so the effect is a missing prefetch plus error logs, not data loss.
 - **Action:** Resolve through `cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)` (decoded components) instead of the absolute string, and add a test with a name containing a space and a non-ASCII character (no test calls `download(fileUrl:)` today).
 - **Severity:** Medium   **Area:** CoreRPG Files/Persistence/Model
+- **Status:** Fixed 2026-11-15 — `CloudDocumentController.downloadUrl(for:)`/`download(fileUrl:)` resolve through decoded path components; `FileUrlDataController.download(fileUrl:)` uses them. Test `CloudDownloadPathTests`.
 
 ### 5.11 CloudContainerCache caches a nil container for the whole session
 - **Location:** Modules/CoreRPG/App/CloudContainerCache.swift:38-55; consumers Modules/CoreRPG/App/AppGroup.swift:80-82 (`preferredRootUrl`)
@@ -224,6 +226,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** `preferredRootUrl` then falls back to the App Group container for the whole run. File-backed modules (Audio/Pdf/Photo/Space) look up their relative paths there, so iCloud files seem missing and new imports are written to a root that the next launch (with the container resolved) no longer reads. The token-less case is rightly cached (a sign-in posts the notification); the token-present case has no such signal.
 - **Action:** Do not cache a nil result when an identity token exists (retry on the next read or after a short delay), or at least invalidate on `didBecomeActive`.
 - **Severity:** Medium   **Area:** CoreRPG Files/Persistence/Model
+- **Status:** Fixed 2026-11-15 — `CloudContainerCache` retries a nil container (with an iCloud identity) after 5 s (`missingSince`); injectable for tests. Test `CloudContainerCacheTests`.
 
 ### 5.12 Scene state is one value per SceneId although viewer windows are multi-instance
 - **Location:** Modules/CoreRPG/ScenesManager/ScenesManager.swift:145-170, 218-233; Modules/CoreRPG/ScenesManager/Modifiers/SceneTrackerModifier.swift:44-76; Sources/MasterRPG/Window/WindowViewerList.swift:70-85
@@ -231,6 +234,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Open two Photo viewer windows (same `viewerId`) and close one: the state becomes `.closed` while the other is still open. The menu toggle then shows "closed", and `openWindow(_:)` / `openWindow(for:)` open yet another window instead of treating the module as open. On macOS and iPadOS a background scene of one window flips the shared state the same way.
 - **Action:** Count open windows per scene (increment on first `.active`, decrement on disappear) and derive `.opened/.closed` from the count, or key the trackers by a per-window token.
 - **Severity:** Medium   **Area:** CoreRPG UI 1
+- **Status:** Fixed 2026-11-15 — `ScenesManager` counts windows per scene id (`windowBecameActive`/`windowEnded`); `onDismiss` runs only when the last window ends. Tests in `ScenesManagerObservationTests`.
 
 ### 5.13 CachePhotoView drops file changes during a load and can erase a cached image
 - **Location:** Modules/CoreRPG/LGViews/CachePhotoView.swift:28-31, 69-93
@@ -238,6 +242,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Replacing a photo's file (or a file becoming available) while the previous decode is running leaves the old or placeholder image until something else forces a reload. A transient `nil` result overwrites a good cached image, which `ThumbnailRowPhotoView` explicitly guards against ("A transient read/cancellation must not erase a thumbnail").
 - **Action:** Use `.task(id: model.fileUrl)` like `ThumbnailRowPhotoView` (structured, cancelled and restarted on change) and only publish non-nil results.
 - **Severity:** Medium   **Area:** CoreRPG UI 1
+- **Status:** Fixed 2026-11-15 — `CachePhotoView` loads with `.task(id: fileUrl)`, publishes only non-nil results and sets `lastFileUrl` after success. View-level, no unit test.
 
 ### 5.14 Tag search tokens are never applied to the search
 - **Location:** Modules/CoreRPG/LGViewModifiers/SearchItemListViewModifier.swift:20-56; Modules/CoreRPG/Model/SearchModel.swift:19, 83-106; Modules/CoreRPG/Controllable/FolderListControllable.swift:69-99
@@ -245,6 +250,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The search field's prompt promises "Search or use @ for tags"; choosing a suggestion shows a token chip but the list is not filtered. Unverified at runtime, but the code path has no filter step. Removing one token of several does not refresh either (`guard selectedTokens.isEmpty`).
 - **Action:** Decide: either feed `selectedTokens` into `searchRootControllable.results(text:)` (tag filter) and refresh on every token change, or remove the tokens, suggestions, `updateTagSuggestions` and the `@` prompt. Add a test for the chosen behaviour.
 - **Severity:** Medium   **Area:** CoreRPG UI 1
+- **Status:** Fixed 2026-11-15 — tag tokens now filter (user decision): `SearchTagFilter` applied in `SearchListController`/`SearchLinkController`; an "@" entry is a tag lookup; any token change re-runs the search. Test `SearchTagFilterTests`.
 
 ### 5.15 `move(itemId:entryIds:)` replaces the entry list with only the ids it is given
 - **Location:** Modules/CoreRPG/ItemList/EntryDataEditable.swift:362-367 (callers Modules/CoreRPG/Sheet/SheetRootModel+ContextMenu.swift:25,49)
@@ -252,6 +258,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Data loss path on reorder if the sheet's entry list is ever a subset of the item's entries (not confirmed for every module; sheets that filter by search call `updateFilteredEntries` after, which suggests the list is complete today). The O(n^2) `first` lookup is also repeated per id.
 - **Action:** Keep entries missing from `entryIds` (append them in their old relative order) and build a dictionary for the lookup; add a test with a hidden entry.
 - **Severity:** Medium   **Area:** CoreRPG UI 2
+- **Status:** Fixed 2026-11-15 — `EntryOrder.reordered` keeps entries that are not listed; `move(itemId:entryIds:)` uses it. Test `EntryOrderTests`.
 
 ### 5.16 Failed map photo load: state assignments are immediately undone and the load retries on every sync
 - **Location:** Modules/GameRPG/Table3D/GameTableModel+MapSync.swift:124-134 (and `clearBoardImage` at Modules/GameRPG/Table3D/GameTableModel+Broadcast.swift:40-47)
@@ -259,6 +266,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** `updateFogOfWar` sees `metadata?.version != currentPhotoVersion` and calls `loadMapPhoto` -> `fetchPhotoImage` again on every remote map update, pin move and fog toggle while the photo is missing (a player whose photo file has not arrived). Each retry is an async cache/disk lookup, and `fogSignature` stays `nil`.
 - **Action:** Either drop the two dead assignments and document "retry on every sync" as intended, or keep the failed photo id/version after `clearBoardImage` (reorder) and retry only when the photo item changes, like `failedPinPhotos` does for pin photos.
 - **Severity:** Medium   **Area:** GameRPG Table3D
+- **Status:** Fixed 2026-11-15 (documented, not changed) — the dead assignments are removed; retry on every sync is kept on purpose (a failed photo can arrive later) and documented in `GameTableModel+MapSync`. No observable change, so no test.
 
 ### 5.17 Player-dice reset keys on display names and breaks with two players of the same name
 - **Location:** Modules/DiceRPG/Controller/GameController.swift:290-301 (callee); Modules/GameRPG/Controller/MasterController+Control.swift:83-88 and Modules/GameRPG/Controller/PlayerController+Control.swift:86-87 (callers)
@@ -266,6 +274,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** With players A and B both named "Alex" the list becomes [dieB, dieB]: A's die is lost, B's appears twice with the same id (duplicate `ForEach` identity in `DicePlayer`), and `playerSupporterTiers`/`playerDiceSenders` are pruned for A's die. The callers also disagree on the list: the master excludes observers, the player passes every `controls` name (observers and hidden players included, plus the master's name), so the two devices prune differently.
 - **Action:** Reset by sender id (`playerDiceSenders`) instead of by name, using the roster ids; make master and player build the same list. Add a test with two same-named players (`GameControllerTests` only covers distinct names).
 - **Severity:** Medium   **Area:** GameRPG Controllers
+- **Status:** Fixed 2026-11-15 — `resetPlayerDice(keepingSenders:names:)` keys on sender ids (name only as fallback for unknown senders) and keeps order. Tests in `DiceRPGTests/GameControllerTests`.
 
 ### 5.18 Version-mismatch notices are claimed once per app run, never reset between games
 - **Location:** Modules/GameRPG/Network/GameNetworkControllerModel.swift:130-148, Modules/GameRPG/Network/GameNetworkController+PlayerDelegate.swift:48-66, Modules/GameRPG/Network/GameNetworkController.swift:147-166 (resets only `playerRoutes`), Modules/GameRPG/Root/GameRoot.swift:87-88 (controller created once per app run)
@@ -273,6 +282,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** after the first "update the app" mismatch (or the first notice sent to a master), a second game in the same app run against an incompatible peer shows no alert and sends no notice, so the user sees a join that silently does nothing, which is exactly what the notice exists to prevent. `versionNoticeConnectionIds` also grows by one UUID per incompatible connection for the life of the process (tiny, but unbounded).
 - **Action:** Clear the three claim sets in `GameNetworkController.stopGame()` (or on `startMasterGame`/`startPlayerGame`) next to `playerRoutes.reset()`.
 - **Severity:** Medium   **Area:** GameRPG SharePlay/Network
+- **Status:** Fixed 2026-11-15 — `GameNetworkControllerModel.resetVersionNotices()` runs from `stopGame()`. Test `VersionNoticeResetTests`.
 
 ### 5.19 Dashboard hides its filters when the selected range has no games
 - **Location:** Modules/GameRPG/Statistics/View/GameStatisticsDashboardView.swift:243-266 (filter only in the final `else`), Modules/GameRPG/Statistics/Model/GameStatisticsTypes.swift:234 (default `.lastSixMonths`), Modules/GameRPG/Statistics/View/GameStatisticsCustomizationView.swift (no range control)
@@ -280,6 +290,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A user whose last counted game is older than 6 months (or who picked "30 Days" and then did not play for a month) sees sample data as if they had none, and cannot widen the range to see their real statistics. The persisted configuration keeps the narrow range.
 - **Action:** Show the filter bar above the placeholder whenever any stored game exists (or when the range is not `.allTime`), and use an "no games in this range" empty state instead of the sample dashboard in that case.
 - **Severity:** Medium   **Area:** GameRPG Views/Battle/Statistics
+- **Status:** Fixed 2026-11-15 — `GameStatisticsDashboardConfiguration.emptyState` keeps the filter bar and shows a "No Games in This Range" state for limited ranges (strings de/th). Tests `GameStatisticsEmptyStateTests`.
 
 ### 5.20 Remote dice timestamp is used as the event time and moves session/participant activity
 - **Location:** Modules/GameRPG/Statistics/Controller/GameStatisticsController.swift:28 (`diceResult?.timestamp ?? occurredAt`), Modules/GameRPG/Statistics/Controller/GameStatisticsDataController.swift:199-205, 207-208, 356-357, 28
@@ -287,6 +298,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A peer with a skewed clock (or a crafted payload) with a future timestamp pushes `session.lastActivityAt` and `durationSeconds` into the future, makes `synchronizeParticipants` skip later (earlier-dated) updates for that sender (`date >= previousActivity` guard), and postpones launch recovery of an interrupted session (`date - lastActivity >= idleAge` stays false). The finish path recomputes duration from the real end date, so the visible damage is mostly limited to the roster/connected-time and interrupted sessions.
 - **Action:** Clamp the event time to the local receipt time (`min(timestamp, occurredAt)`), or ignore the payload timestamp for session/participant bookkeeping.
 - **Severity:** Medium   **Area:** GameRPG Views/Battle/Statistics
+- **Status:** Fixed 2026-11-15 — `GameStatisticsController.eventTime(reported:receivedAt:)` clamps a remote timestamp to the receipt time. Tests in `GameStatisticsControllerTests`.
 
 ### 5.21 Cancelling or swipe-dismissing "Save and Quit" still quits the game
 - **Location:** Modules/GameRPG/GameViews/MasterGameScreen.swift:49-60, 95-99 (`showExport` -> `endGame()`), Modules/CoreRPG/FileViews/ExportProgressPanelView.swift:59-62, 66-76 (Cancel calls `finishAction()`; `.onDisappear` cancels the export)
@@ -294,6 +306,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A game master who picks "Save and Quit", then cancels the export (or the save dialog) because the destination was wrong, loses the running game and the unsaved game state without a further prompt. The alert's own "Cancel" is one step earlier and does not help here.
 - **Action:** End the game only when the export finished successfully (`finishedAction` after `.finished`); on cancel or failure close the sheet and keep the game running. Decide whether a failed save should offer "Quit anyway".
 - **Severity:** Medium   **Area:** GameRPG Views/Battle/Statistics
+- **Status:** Fixed 2026-11-15 — `ExportPanelResult` (`finished`/`cancelled`/`failed`) is reported through `onResult`; `MasterGameScreen` ends the game only for `endsSaveAndQuit`. A failed or cancelled save keeps the game running (my default; no "Quit anyway"). Test `ExportPanelResultTests`.
 
 ### 5.22 `entry(for:in:)` returns hex-grid cells, so pin drops on a hex map are attributed to a cell, not a room
 - **Location:** Modules/MapRPG/Map/MapEditorSession+Content.swift:161-163; callers MapEditController+Pins.swift:50 (edit drop), MapEditor.swift:299 (game drop), MapEditorActionRouter.swift:337-343 (editor character action)
@@ -301,6 +314,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** In the editor, `appendCharacterLinks` then writes the character link into the hex cell's `content` (MapEditController+Rooms.swift:128-158), not the room the pin sits in; hex cells get new ids on every rescale, so the link silently vanishes. The real room is never found on a hex map.
 - **Action:** Skip `isHexGrid` nodes in `entry(for:in:)` (or add a second lookup for hex), prefer topmost non-hex room; add a test with a hex grid plus a room.
 - **Severity:** Medium   **Area:** MapRPG Map
+- **Status:** Fixed 2026-11-15 — `MapEditorSession.entry(for:in:)` skips hex cells. Test in `MapEditorCharacterLinkTests`.
 
 ### 5.23 "Edit Tile" toolbar button opens the full map editor, and on macOS/visionOS does not select the map
 - **Location:** Modules/MapRPG/View/EditTileButton.swift:12-25; compare Modules/MapRPG/View/MapEditorButton.swift:13-19 and Modules/MapRPG/View/DisplayConfigEditor.swift:188-194
@@ -308,6 +322,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The button next to "Map Editor" in the detail toolbar is a second copy of the map editor button. On macOS and visionOS the window's `MapEditWindow` reads `sheetEditorModel.itemId`, so it shows whatever item was set last (or "No map item is selected"), which can be a different map than the one the user clicked.
 - **Action:** Route to `mapTileEditor` / `.mapTileEditor` and set the item id exactly as `DisplayConfigEditor.TileCoordinatesView` does; better, make both call one shared helper.
 - **Severity:** Medium   **Area:** MapRPG rest
+- **Status:** Fixed 2026-11-15 — `MapEditorLauncher` (`MapEditorKind.map/.tile`) opens the right editor and selects the map on all platforms; `EditTileButton`, `MapEditorButton`, `DisplayConfigEditor` use it. Test `MapEditorLauncherTests`.
 
 ### 5.24 Cover-tile preview ignores the photo rotation and races on map switch
 - **Location:** Modules/MapRPG/View/DisplayConfigEditor.swift:79-92 (`loadTileImage`)
@@ -315,6 +330,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** On a rotated map the thumbnail shows another area than the tile; after a fast switch it can show the wrong map's tile.
 - **Action:** Use `.task(id:)` (auto-cancel), rotate through the same helper as `CacheController` (or use the thumbnail source, `useGame: false`), and downsample.
 - **Severity:** Medium   **Area:** MapRPG rest
+- **Status:** Partly fixed 2026-11-15 — `MapTileImage.crop` applies the rotation and the preview loads with `.task(id:)` (no race on map switch). Downsampling of the preview source not done. Test `MapTileImageTests`.
 
 ### 5.25 Adventure `diceId` is never exported
 - **Location:** Modules/AdventureRPG/Controller/ExportController.swift:63-76 (photoId and tablePlayers handled, diceId not); compare Modules/CharacterRPG/Controller/ExportController.swift:50-52 and Modules/MapRPG/Controller/ExportController.swift:65,111
@@ -322,6 +338,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A single-adventure .gmz or shared package arrives with a `diceId` pointing at nothing, and `validateLinks` later clears it (LinkController.swift:116-120), so the GM's attached dice is silently lost on the receiving device. (For the players audience it may be deliberately GM-only; the code does not say.)
 - **Action:** Insert `item.diceId` (after `validateLink`) into `diceIds`, skipping it when `ExportAudience.current == .players` if it is meant to be GM-only; document the decision.
 - **Severity:** Medium   **Area:** AdventureRPG
+- **Status:** Fixed 2026-11-15 — Adventure `ExportController` always exports `diceId` (user decision). Test `exportingIncludesTheAttachedDice`.
 
 ### 5.26 Group entry edits write the raw entry name into the group item
 - **Location:** Modules/AdventureRPG/Controller/EditController.swift:95-103 (`update(itemId:entryId:name:content:forceSave:)`); compare Modules/CharacterRPG/Controller/EditController.swift:310-313 (`name.withoutLink()`) and Modules/CoreRPG/ItemList/GroupableEntryEditing.swift:49 (also strips)
@@ -329,6 +346,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** If the editor hands that link text back as `name`, the group adventure's own name becomes `[Name](RPG://ADVENTURES/...)`, a self-referencing link in its title, in lists and in Spotlight. Not reproduced; there is no test of `update` on a group entry in AdventureRPGTests.
 - **Action:** Use `name.withoutLink()` for the group item (as Character does) and add a test with a group entry whose name carries the link form.
 - **Severity:** Medium   **Area:** AdventureRPG
+- **Status:** Fixed 2026-11-15 — group entry edits write `name.withoutLink()`. Test in `AdventureRPGTests/EditControllerTests`.
 
 ### 5.27 `diceId` merges by direction instead of by timestamp
 - **Location:** Modules/AdventureRPG/Model/AdventureModel.swift:95 (`public var diceId: UUID?`), :204 (`diceId: other.diceId`), :313 (`diceId <=> model.diceId`); compare Modules/TableRPG/Model/TableModel.swift:186 (`diceId_` is a CRDT there)
@@ -336,6 +354,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** With two devices, an older copy arriving as `other` reverts the dice the GM just set or cleared on the newer device; which side wins depends on import direction, not on who edited last.
 - **Action:** Make `diceId` a `CRDT<UUID?>` (decode with an epoch-stamped default like `noTablePlayers` for old files and add a nullable Core Data column or reuse the existing string), or document that it is intentionally last-importer-wins.
 - **Severity:** Medium   **Area:** AdventureRPG
+- **Status:** Documented 2026-11-15 (no change, user decision) — `diceId` stays last-importer-wins (no CRDT, no schema change); documented on the model. Test `mergeTakesTheIncomingDice` pins the behaviour.
 
 ### 5.28 Play link on a playlist item outside a game stops the music and plays nothing
 - **Location:** Modules/AudioRPG/Controller/LinkController.swift:37-41, Modules/AudioRPG/Controller/AudioController.swift:201-221
@@ -343,6 +362,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** `add(audio:replace: true)` empties the playlist, replaces the AVPlayer item with nil and clears Now Playing; `set(currentId:)` then finds nothing and `preparePlay` bails. Tapping the play link of a playlist (folder-like audio item) in an adventure text silences the current music and starts nothing. The game branch (`requestPlay`) and the row/toolbar buttons (`playItem` -> `GameController.play`) resolve playlists, so only this path is wrong.
 - **Action:** Route the link through `AudioRootModel.toggleItem`/`playItem` (or `GameController.play`) instead of `loadAndPlay`; additionally make `add(replace:)` keep the running player when `requests` is empty.
 - **Severity:** Medium   **Area:** AudioRPG
+- **Status:** Partly fixed 2026-11-15 — the non-game play link of a playlist loads its tracks and plays through `LinkActionTasks`. Not changed: `add(audio:replace:)` keeping the player when the list is empty (existing tests rely on it clearing). Test `playLinkOfAPlaylistLoadsItsTracks`.
 
 ### 5.29 Intent start and playlist-row removal ignore the "can control game audio" gate
 - **Location:** Modules/AudioRPG/Root/AudioRootModel+Playback.swift:135-141 (`startPlayback`), 159-164 (`remove`); every other entry point folds in `IntentGameContext.canControlGameAudio()` (lines 18, 50, 64, 83, 110, 122, 147)
@@ -350,6 +370,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** On a player device with audio sharing off the game drops the player's play command (doc on `canControlGameAudio`, CODE_AUDIT_Audio2 §5.14), so "Play <audio>" through Siri/Shortcuts does nothing while the dialog still answers "Playing ...". The pause that `remove` sends is dropped the same way.
 - **Action:** Apply the same `&& IntentGameContext.canControlGameAudio()` fold at the top of both functions (and add a case to `AudioIntentGameTests`).
 - **Severity:** Medium   **Area:** AudioRPG
+- **Status:** Fixed 2026-11-15 — `startPlayback` and `remove` fold in `IntentGameContext.canControlGameAudio()`. Tests in `AudioIntentGameTests`.
 
 ### 5.30 Group-item repair keeps the first referencing entry, not the owner named by groupId
 - **Location:** Modules/CharacterRPG/Controller/EditController+Repair.swift:165-196 (owner choice 170-177, stripping other owners 192-195, `removeOld` 198-213); the only test is Tests/CharacterRPGTests/ConvertControllerRepairTests.swift:601-624
@@ -357,6 +378,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** If two Characters reference one group item (CloudKit merge, import, duplicate bug) and the real owner (matching `groupId`) is not first in item order, "Validate Folders" moves the group to the other character and removes the group entry from the real owner's sheet. The user loses a group row from the sheet they built, and the outcome depends on list order. The existing test is titled "non-authoritative owner" but passes only because the real owner is created first.
 - **Action:** When `groupItem.groupId` is one of `owners`, keep it and strip the others; fall back to `owners.first` only otherwise. Add a test where the `groupId` owner comes second in item order.
 - **Severity:** Medium   **Area:** CharacterRPG
+- **Status:** Fixed 2026-11-15 — `authoritativeOwner(recordedOwner:owners:)`: the owner recorded in `groupId` wins while it still references the group; the others are stripped. Tests in `ConvertControllerRepairTests`.
 
 ### 5.31 Share-extension characters get photos but no portrait
 - **Location:** Modules/CharacterRPG/Controller/CharacterDataController.swift:10-25 (`model.photos = photoIds`, `photoId` never set); consumers use `photoId`: Modules/CharacterRPG/Controller/SheetController.swift:42, View/ThumbnailPhotoRow.swift:14, Controller/GameController.swift:202; caller Sources/RPGShare/ShareExtensionSaveController.swift:102-103; test Tests/CharacterRPGTests/DataControllerTests.swift:132-153 asserts `photos` only
@@ -364,6 +386,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The new character shows no thumbnail, no portrait in the sheet and no player-pin photo until a manual photo edit or a Validate Folders run (`repairPhotoList`) fixes it.
 - **Action:** Set `model.photoId = photoIds.first` in `addNewValue` and extend the test to assert it.
 - **Severity:** Medium   **Area:** CharacterRPG
+- **Status:** Fixed 2026-11-15 — `CharacterDataController.addNewValue` sets `photoId = photoIds.first`. Tests in `CharacterRPGTests/DataControllerTests`.
 
 ### 5.32 A d3 built from text or a number is `.number(3)`, not `.three`
 - **Location:** Modules/DiceRPG/Model/RawDie.swift:143-164 (`Sides.sides(_:)` has no `case 3`), against :195 (decoder maps 3 to `.three`); callers Modules/DiceRPG/Controller/DataController.swift:147, Modules/DiceRPG/Model/DieModel.swift:210, Modules/DiceRPG/Model/DiceExpression.swift:57,68, Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper+DiceAndValues.swift:57
@@ -371,6 +394,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** After every Core Data reload (`dice(from:)` uses `RawDie(text:)`) a bag d3 turns into `.number(3)`, whose `colorCodes` is only `[.G]` and whose `name(for:)` returns the d20 image "D20G-1", so the die silently shows a d20 face. `RawDice.addDie` merges counters by `sides ==`, so "d3" from the editor plus "d3" from an expression is shown as "d3+d3". `DieModel.isSame` (die == die) reports a change between a local and a synced d3.
 - **Action:** Add `case 3: return .three` to `sides(_:)` (or normalise in `RawDie.init`). Add a text -> RawDie -> text -> RawDie round trip test for every named side count.
 - **Severity:** Medium   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — `RawDie.init(_ sides:)` normalises `.number(n)` via `Sides.sides(n)` (the `case 3` in `sides(_:)` already existed). Tests in `RawDieCodingTests`.
 
 ### 5.33 Roll haptic fires up to three times per roll and the first is always an error
 - **Location:** Modules/DiceRPG/Game/Detail/DiceGameActionBar.swift:47-56; Modules/DiceRPG/Controller/GameController+PlayerDice.swift:86-113 (`rollDice` resets first, rolls 0.1 s later); Modules/DiceRPG/Game/Detail/DieViewerView.swift:54-65 (rotation reset 0.6 s later writes `dice` again)
@@ -378,6 +402,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** When the previous roll had results, every tap plays an error haptic at once, then the real outcome, then the same outcome again. The CODE_AUDIT_Dice §5.6 fix (watch `dice`) made the haptic fire, but on the wrong set of changes. Reading only; not device-verified.
 - **Action:** Trigger the haptic from the roll itself (in the button action / `rollFunction` after the results exist) or compare `results` only and skip the all-empty state; ignore rotation-only changes.
 - **Severity:** Medium   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — `DiceRollFeedback` watches the results only and ignores the all-empty state. Tests `DiceRollFeedbackTests`.
 
 ### 5.34 Tapping a single die replaces the dice's result category with a generic one
 - **Location:** Modules/DiceRPG/Game/Detail/DiceRoll.swift:50-54 (`ResultCategory(id: itemId, module: .dice)`); Modules/DiceRPG/Controller/GameController.swift:172-182 (`createDiceResult` stores the category on the model); compare Modules/DiceRPG/Controller/GameController+PlayerDice.swift:118-124 (`shareRoll` keeps `resultCategory ?? item.resultCategory`)
@@ -385,6 +410,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** After one tap on an individual die in the overlay, later rolls of the whole set (which fall back to `item.resultCategory`) and the shared result are attributed to the dice module instead of the character. `ResultCategory` is what the table and battle round use to associate a roll with its participant (see DiceSnapshot.resultCategory doc), so initiative/health-style rolls stop landing on the character.
 - **Action:** Use the same `shareRoll(of:networkActions:)` path as `rollDie(_:of:networkActions:)` (keeps the stored category) and do not overwrite `item.resultCategory` when none is passed.
 - **Severity:** Medium   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — `DiceRoll.rollDice` shares through `gameController.shareRoll(of:networkActions:)`; `createDiceResult` keeps the stored `resultCategory`. Test `resultKeepsTheStoredCategory`.
 
 ### 5.35 Rolling a library dice outside a game mutates the synced model
 - **Location:** Modules/CoreRPG/Controllable/GenericGameController.swift:27-29 (`gameItem(for:)` falls back to the library item); Modules/DiceRPG/Controller/GameController+DiceResult.swift:213-243 (`reset(for:)`, `roll(die:for:)`); Modules/DiceRPG/View/DiceInline.swift:21-30; Modules/DiceRPG/Root/DetailRootView.swift:20-26; Modules/DiceRPG/Controller/LinkController.swift:18; Modules/DiceRPG/Intent/DiceIntents.swift:122-127
@@ -392,6 +418,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** `DiceModel.merge` arbitrates every plain field (modifier, compare, coup, reroll, ...) by `mergedDice.update`. A roll made after another device's edit but before that edit syncs gives the local copy the newer stamp, so the remote change to modifier/coup/rerolls loses the merge. Roll results also appear in the dice list thumbnails and in `isSame` comparisons. Not verified end to end (depends on the offline timing), the mutation itself is verified by reading.
 - **Action:** Roll on a game copy (`createGameDice`) or clear results without touching `dice_` (keep results outside the CRDT value); at minimum make the roll not bump the update marker.
 - **Severity:** Medium   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — `DiceModel.setRolledDice(_:)` writes the rolled state without moving the `dice_` update marker. Tests `rollKeepsTheUpdateMarker`/`editMovesTheMarker`.
 
 ### 5.36 Photo analysis reports "Apple Intelligence is not available" for every fallback-class on-device error while PCC is disabled
 - **Location:** Modules/GeneratorRPG/BasicAI/Providers/PhotoSummaryAnalyzer.swift:70-83
@@ -399,6 +426,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** `PRIVATE_CLOUD_COMPUTE_ENTITLED` is defined nowhere (grep of pbxproj/xcconfig/Package: no match), so this is the shipped configuration. A guardrail trip or rate limit on a perfectly available device shows "Apple Intelligence is not available. Photo analysis requires it." and the user is sent to Settings for nothing.
 - **Action:** when PCC is off, rethrow the mapped on-device error (generationFailed with the error text, or a dedicated case carrying the `PhotoAnalysisFallbackReason.explanation`), keep `modelUnavailable` only for `.onDeviceUnavailable`/`.visionUnsupported`. Add a test with an injected failing on-device closure.
 - **Severity:** Medium   **Area:** GeneratorRPG
+- **Status:** Fixed 2026-11-15 — `PhotoSummaryAnalyzer.cloudFallbackFailure(...)`: with PCC off, a model-caused failure (guardrail, context, language, limits) keeps its own explanation; only an unavailable/image-blind model reads as `modelUnavailable`. Tests `PhotoAnalysisCloudFallbackFailureTests`.
 
 ### 5.37 Batch apply appends the description on every run and replaces tags, as three separate edits
 - **Location:** Modules/GeneratorRPG/View/BatchTextSummaryExtractionView.swift:240-251
@@ -406,6 +434,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** running the batch twice on the same item duplicates the generated paragraph; curated tags are lost without a prompt; three resets mean three saves/undo steps and a window where a CloudKit sync can upload a half-applied item. Items with empty text are marked `.completed` without being analysed (line 218-221), which hides that nothing was done.
 - **Action:** skip the append when the description already ends with the generated text (or replace a marked generated block), merge tags instead of replacing, apply in one edit, and show a distinct "skipped" status.
 - **Severity:** Medium   **Area:** GeneratorRPG
+- **Status:** Fixed 2026-11-15 — `BatchSummaryMerge` (description appended once, tags merged), one `reset(name:description:tags:itemId:)` edit, a distinct "skipped" status for items without text (string de/th). Tests `BatchSummaryMergeTests`.
 
 ### 5.38 Pdf viewer does not reload when the item's file is replaced in place
 - **Location:** Modules/PdfRPG/Root/ViewerRootView.swift:90-111 (task), Modules/PdfRPG/Pdf/PdfSearchModel.swift:30-36, Modules/CoreRPG/Controllable/ItemControllable.swift:243-250
@@ -413,6 +442,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Replacing the file of a PDF that is open (second window on macOS/visionOS, shared game PDF updated by the GM, sync from another device) leaves the old pages on screen until the viewer is reopened. Unverified at runtime.
 - **Action:** Key the task and the `.id` on `model.version` / `fileUrl_.update` instead of the reference, and make the document change an observed state change.
 - **Severity:** Medium   **Area:** PdfRPG + PhotoRPG
+- **Status:** Fixed 2026-11-15 — load task and `PDFView` identity keyed on `PdfViewerLoadKey(id, version)`; `PdfSearchModel.pdfVersion` is observed. Test `PdfViewerLoadKeyTests`; the in-place reload itself is unverified at runtime.
 
 ### 5.39 ImagePresentationView tears down its per-frame sync on onDisappear but only sets it up in make
 - **Location:** Modules/PhotoRPG/Space/ImagePresentationView.swift:73-96 (setup in `make`), 112-120 (teardown in `.onDisappear`)
@@ -420,6 +450,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** If the view disappears and reappears without being rebuilt (a tab/ornament/scene change inside the window), the window stops being re-fitted every frame and the weather/foreground attachment is never placed again (`placeForeground` returns early with `foregroundEntity == nil`). visionOS only, unverified on device. Also `frameSyncContinuation` / `sceneUpdateSubscription` are written to `@State` directly in `make`, while `cacheAvailableBounds` documents that this pattern warns, and a second `make` overwrites the old task without cancelling it.
 - **Action:** Move set-up into `.onAppear`/a `.task` paired with the teardown, or tie teardown to the RealityView's own lifetime; cancel the previous task before replacing it.
 - **Severity:** Medium   **Area:** PdfRPG + PhotoRPG
+- **Status:** Fixed 2026-11-15 — `ImagePresentationFrameSync` owns the subscription, stream and task (start cancels the previous run); disappear stops it, and the `RealityView` update closure restarts it on appear (`FrameSyncLifecycle`). Test `FrameSyncLifecycleTests` (rule only); visionOS behaviour not verified on device.
 
 ### 5.40 Foundry mapper truncates resource paths at `#` and `?` and silently drops colliding assets
 - **Location:** Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper+SharedHelpers.swift:212-220 (`canonicalResourcePath`); used by +Indexes.swift:27, +Assets.swift:32-34 (`createAsset` key and `stableID("asset#...")`), +Assets.swift:147
@@ -427,6 +458,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** packaged files `tokens/Token #1.webp` and `tokens/Token #2.webp` both canonicalise to `tokens/Token`. `createAsset` keys `resourceIDs` and the stable asset id on that string, so the second file returns the first file's id and is never imported (`if let existing = resourceIDs[key] { return existing }`), with no warning; the index step reports them only as an "ambiguous path" for lookups. Every reference to the second token then points at the first image. Names with `#` or `?` are common in VTT token packs.
 - **Action:** stop stripping query/fragment from `logicalPath` (strip only from references found inside documents, and cut before decoding as the normalizer does); make `createAsset` warn when two distinct resources collide; add a mapper-level test with `#` and `?` file names.
 - **Severity:** Medium   **Area:** RolePlayGameKit
+- **Status:** Fixed 2026-11-15 — `canonicalResourcePath` no longer cuts at `#`/`?` for package paths (new `canonicalReferencePath` cuts first, decodes second for document references); media plans for package paths use `plan(forPackagedPath:)`; `createAsset` warns on a path collision. Test `filesWithFragmentCharactersStayDistinct`.
 
 ### 5.41 Reset Data takes no data-mutation lock and its alert overstates what is deleted
 - **Location:** Modules/RolePlayGameKit/View/SettingsView.swift:196-211; Modules/RolePlayGameKit/Model/AppModel.swift:318-320; Modules/AdventureRPG/Root/AdventureRootModel.swift:277-284; Modules/CoreRPG/Controllable/ItemControllable+Sync.swift:44-80
@@ -434,6 +466,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Reset can be tapped while an import or Validate sheet is mid-run and interleaves a batch delete with that bulk writer's in-memory graph and its final save; the confirmation text promises a file deletion that does not happen (or the comment is stale). It is the app's most destructive action and gives no completion feedback.
 - **Action:** take the exclusive-mutation token (show the busy message if refused) and defer saves around the reset; make alert text and behaviour agree; show a completion state.
 - **Severity:** Medium   **Area:** RolePlayGameKit
+- **Status:** Fixed 2026-11-15 — `AppModel.resetData()` takes the exclusive mutation token and defers saves, returns `DataResetOutcome` (`completed`/`busy`); the alert says the files are not deleted; the footer shows the result (strings de/th). Tests `AppModelResetDataTests`.
 
 ### 5.42 `replace(with:)` bumps `weatherUpdate` on every change, even when no weather value changed
 - **Location:** Modules/WeatherRPG/Model/WeatherModel.swift:332 (`weatherUpdate_.wrappedValue = UUID()`), Modules/WeatherRPG/Model/WeatherModel+Sync.swift:8-30 (`merge` takes all weather fields from whichever side has the newer stamp), applied by Modules/CoreRPG/Controllable/ItemControllable.swift:250 and :745
@@ -441,6 +474,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The weather values (time, clouds, storm, lightning, photo) merge as one block by this stamp. A device that only renames an item from an older weather snapshot gets a newer stamp than another device's later weather edit, and on the next CloudKit merge its stale values win (lost update). Applying a synced model also re-stamps the in-memory copy, which is persisted with the next unrelated save.
 - **Action:** Only bump the stamp when one of the weather fields actually differs from `model` (or adopt `model.weatherUpdate_` with `<=>` and let `EditController` stamp on weather edits).
 - **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Status:** Fixed 2026-11-15 — the stamp moves only when a weather value differs (`hasDifferentWeather`). Tests in `WeatherModelTests`.
 
 ### 5.43 Quick editor: a new section moved above a same-named one produces two entries with the same id
 - **Location:** Modules/RuleRPG/Controller/EditController.swift:97-140 (`mergeEntries`), called from :84-88 and :146-170; reorder at Modules/RuleRPG/View/RuleQuickEntryEditor.swift:27
@@ -448,6 +482,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Add a section named "Notes" while a "Notes" section exists, drag the new one above the old one, Save: the result holds two entries with the existing id (new content under the old id, plus the old entry). Duplicate ids break `ForEach` identity, `item[entryId]`, link targets and `changedLinkRegisterModels` (the dictionaries keep the first). Any importer that hands entries in a different order than `existing` can hit it too.
 - **Action:** Match by id for all imported entries first, then run the name fallback only for the leftovers against existing entries that no id match claimed; add a regression test for the reordered case.
 - **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Status:** Fixed 2026-11-15 — `mergeEntries` matches ids for all imported entries first, then the name fallback for leftovers. Test `reorderedNewEntryDoesNotDuplicateIds`.
 
 ### 5.44 Player dice result is applied to the generation tree without checking the pending-roll state
 - **Location:** Modules/TableRPG/Model/TableGenerationSessionStore.swift:23-49; caller Modules/GameRPG/Controller/MasterController+DiceMessages.swift:58-66; pending state set at Modules/TableRPG/View/TableGenerationOccurrenceHeaderView.swift:172-176
@@ -455,6 +490,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** With "Share to all", every player's roll re-applies and re-selects the entry (last roll wins); a player who re-rolls, or whose roll arrives after the GM rolled locally/reset/cancelled, silently changes the GM's already decided table result and rebuilds the child tree (discarding nested choices).
 - **Action:** Accept a result only while the occurrence is awaiting a roll and (if `awaitingPlayerId != nil`) the sender matches; otherwise treat it as a plain dice-log entry (return false). This needs the sender id passed through `addResult`.
 - **Severity:** Medium   **Area:** SpaceRPG + TableRPG
+- **Status:** Fixed 2026-11-15 — `TableGenerationSessionStore.accepts(...)`: a result counts only while the occurrence awaits a roll and, when handed to one player, only from that player; the sender id is passed through `addResult`. Tests `TableGenerationSessionStoreTests`.
 
 ### 5.45 3D objects are still not shown on tvOS and the game-mode affordance is an invisible no-op
 - **Location:** Modules/SpaceRPG/Controller/ViewController.swift:42-50 (tvOS `gameViewer`), Modules/SpaceRPG/View/SpaceQuickLook.swift:21-57 (`loader()` empty outside visionOS; `selected` never assigned, so `.quickLookPreview($selected)` can never present), Modules/SpaceRPG/Root/ViewerRootView.swift:14-18 (empty `VStack` on tvOS), Modules/SpaceRPG/Space/SpaceViewer.swift:7 (whole type `#if !os(tvOS)`)
@@ -462,6 +498,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A GM revealing a 3D object to a tvOS player shows a blank game screen with no explanation.
 - **Action:** Decide the tvOS behaviour: either show an explicit "3D objects are not shown on Apple TV" state (and hide the affordance in `ViewerRootView`), or render the model preview via QuickLook/thumbnail. Remove the dead `selected` state.
 - **Severity:** Medium   **Area:** SpaceRPG + TableRPG   **Status:** [OPEN since CODE_AUDIT_Space §8.2]
+- **Status:** Fixed 2026-11-15 — tvOS shows `SpaceUnsupportedView` ("3D Objects Are Not Shown on Apple TV", de/th) in the game viewer and `ViewerRootView`; the dead `SpaceQuickLook.selected`/`quickLookPreview` is removed (the `dismiss` parameter stays for the call sites). View-level, no unit test.
 
 ### 5.46 Share extension accepts files it cannot read and drops failures silently
 - **Location:** Sources/RPGShare/Info.plist:9-16 (`NSExtensionActivationSupportsFileWithMaxCount` = 1); Sources/RPGShare/SharingView.swift:181-196 (`try?` on both loads); Sources/RPGShare/ItemProviderImporter.swift:24-31 (per-item failures only logged, remaining photos silently dropped when the 60 MiB budget is hit)
@@ -469,6 +506,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Sharing a PDF opens a normal-looking form with no preview and empty fields; the user can type a name and "Save" an Adventure/Character that contains none of what they shared. Sharing 8 photos where 3 fail or exceed the budget saves 5 without any notice.
 - **Action:** Restrict the activation rule to what is handled (image/text predicate form), and when nothing could be loaded or some items were dropped, show a message ("N of M items could not be added") instead of an empty form.
 - **Severity:** Medium   **Area:** Sources + Resources
+- **Status:** Fixed 2026-11-15 (not run on a device) — `NSExtensionActivationSupportsFileWithMaxCount` removed (text and image rules cover what the importer reads); the importer returns `LoadResult` with a skipped count, and the sharing view shows a notice or, when nothing is readable, an error (strings de/th). Extension code is not in a test target.
 
 ### 5.47 Save to the Photo module with no images reports success and saves nothing
 - **Location:** Sources/RPGShare/ShareExtensionSaveController.swift:86-87 (`case .photo: break`); Sources/RPGShare/SharingView.swift:259-268 (Save only requires a non-empty name); Sources/RPGShare/ModuleChooserView.swift:13 (`.photo` always selectable)
@@ -476,6 +514,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The shared text is silently lost; the user believes a photo item exists.
 - **Action:** Disable Save (or hide `.photo`) while `images` is empty, or throw a "no photo to save" error.
 - **Severity:** Medium   **Area:** Sources + Resources
+- **Status:** Fixed 2026-11-15 — `ShareExtensionError.canSave(to:imageCount:)` disables Save for Photo without images and `saveContent` throws `noPhotoToSave`. Tests `ShareExtensionSaveRuleTests`.
 
 ### 5.48 Dice widget shows only the first die of a multi-dice roll
 - **Location:** Sources/DiceRollerWidget/DiceRollerWidgetView.swift:153-195; Modules/DiceRPG/Widget/DiceConfiguration.swift:53-62 (`DiceWidgetDice.init(_ diceSnapshot:)` keeps `dice.first`'s sides and last face)
@@ -483,6 +522,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The widget picture contradicts the roll (face 4 shown, total 14); the total is never shown visually in the small/medium layouts.
 - **Action:** Show `lastRoll.sum` as text next to the die (and the notation as the name); keep the die image only for single-die rolls.
 - **Severity:** Medium   **Area:** Sources + Resources
+- **Status:** Fixed 2026-11-15 — `DiceWidgetDice` records `dieCount` (optional, old data reads as one die) and names an unnamed multi-dice roll by its notation; the widget shows the total as text for multi-dice rolls. Tests `DiceWidgetDiceTests`.
 
 ### 5.L Low-severity items (94)
 

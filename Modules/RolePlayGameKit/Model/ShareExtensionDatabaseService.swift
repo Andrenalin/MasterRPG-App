@@ -99,6 +99,8 @@ public enum ShareExtensionError: LocalizedError {
     case databaseError(CoreDataInitError)
     case contextNotAvailable
     case moduleNotSupported
+    /// Photo was chosen but nothing shared could be read as a photo.
+    case noPhotoToSave
     
     public var errorDescription: String? {
         switch self {
@@ -122,6 +124,17 @@ public enum ShareExtensionError: LocalizedError {
                 localized: "The selected module is not supported in the share extension.",
                 bundle: .module
             )
+        case .noPhotoToSave:
+            return String(
+                localized: "There is no photo to save. Choose another module to save the text.",
+                bundle: .module
+            )
         }
+    }
+
+    /// Whether saving into `module` has anything to save. Saving to Photo with no image would
+    /// otherwise close as if it worked and lose the shared text. See CODE_AUDIT_26 §5.47.
+    public static func canSave(to module: NetworkModules, imageCount: Int) -> Bool {
+        module != .photo || imageCount > 0
     }
 }

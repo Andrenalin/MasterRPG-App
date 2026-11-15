@@ -222,6 +222,38 @@
           }
         }
       }
+    },
+    "%lld shared items could not be read and were left out." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld geteilte Elemente konnten nicht gelesen werden und wurden ausgelassen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถอ่านรายการที่แชร์ %lld รายการและข้ามไป"
+          }
+        }
+      }
+    },
+    "The shared items could not be read." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die geteilten Elemente konnten nicht gelesen werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถอ่านรายการที่แชร์ได้"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

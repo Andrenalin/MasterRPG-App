@@ -31,32 +31,17 @@ struct ImagePresentationView<Foreground: View>: View {
     @Environment(PhotoRootModel.self) private var root
     @Environment(AppNavigationModel.self) private var navigationModel
 
-    /// Keeps the entity's position/scale synced to the window on every
-    /// RealityKit-rendered frame, not only when SwiftUI happens to
-    /// re-invoke `RealityView`'s `update` closure. `update` only fires when
-    /// `GeometryReader3D`'s geometry or another observed dependency changes
-    /// — a window that has stopped being dragged produces no such change, so
-    /// the entity is left frozen on whatever transform the *last* frame of
-    /// the drag produced. On visionOS 26.5, `content.convert(...)` can
-    /// momentarily report degenerate bounds mid-drag (the same class of
-    /// RealityKit-engine-timing issue already worked around in
-    /// `SpaceViewer.attachCloseButtonIfNeeded` — see that method's own doc);
-    /// freezing on one of those frames scales/positions the spatial-3D image
-    /// outside its valid parallax viewing volume, so RealityKit renders
-    /// nothing there and `UserSettingsViewModifier`'s `theme.backgroundGradient`
-    /// (sitting behind this `RealityView` in the window) shows through as a
-    /// black gradient. `SceneEvents.Update` is posted by RealityKit's own
-    /// per-frame engine tick, so resyncing there can't get stuck on a stale
-    /// SwiftUI-driven frame the way `update` alone can.
-    @State private var sceneUpdateSubscription: EventSubscription?
-
-    /// Feeds `syncPresentation()` calls triggered by `sceneUpdateSubscription` to a
-    /// single long-lived consumer `Task` instead of spawning a fresh unstructured
-    /// `Task` on every RealityKit engine tick (~90Hz on visionOS) — see that
-    /// subscription's own doc. `.bufferingNewest(1)` coalesces bursts of ticks into
-    /// the latest signal rather than queuing every one. See CODE_AUDIT §7.1.
-    @State private var frameSyncContinuation: AsyncStream<Void>.Continuation?
-    @State private var frameSyncTask: Task<Void, Never>?
+    /// Keeps the entity's position/scale synced to the window on every RealityKit-rendered
+    /// frame, not only when SwiftUI re-invokes `RealityView`'s `update` closure: a window that
+    /// has stopped being dragged produces no such change, so the entity would stay on whatever
+    /// transform the last frame of the drag produced. On visionOS 26.5 `content.convert(...)`
+    /// can momentarily report degenerate bounds mid-drag; freezing on one of those frames
+    /// scales/positions the spatial-3D image outside its valid parallax viewing volume, so
+    /// RealityKit renders nothing there and the theme gradient behind this view shows through.
+    /// `SceneEvents.Update` is posted by RealityKit's own per-frame tick, so resyncing there
+    /// cannot get stuck on a stale SwiftUI-driven frame. It runs while the view is visible: it
+    /// stops on disappear and the `update` closure starts it again on appear.
+    @State private var frameSync = ImagePresentationFrameSync()
 
     /// The window's bounds in RealityKit scene space, refreshed synchronously
     /// from `content.convert(...)` inside `make`/`update` — `content` there
@@ -80,23 +65,21 @@ struct ImagePresentationView<Foreground: View>: View {
                     model.foregroundEntity = foregroundEntity
                     placeForeground(in: availableBounds)
                 }
-                // `SceneEvents.Update` isn't MainActor-isolated, and
-                // `model.contentEntity` lives on `model`'s `@MainActor`
-                // isolation — hop through the coalescing stream above before
-                // touching it, mirroring `SpaceViewer.attachCloseButtonIfNeeded`'s
-                // own subscription for the same reason.
-                let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
-                frameSyncContinuation = continuation
-                frameSyncTask = Task { @MainActor in
-                    for await _ in stream {
-                        syncPresentation()
+                frameSync.start(content: &content) { syncPresentation() }
+            } update: { content, attachments in
+                let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
+                // Reading `isVisible` makes SwiftUI call this closure again on appear: the sync was
+                // stopped on disappear and `make` does not run again.
+                if frameSync.isVisible, frameSync.needsRestart {
+                    frameSync.start(content: &content) { syncPresentation() }
+                    if hasForeground, model.foregroundEntity == nil,
+                       let foregroundEntity = attachments.entity(for: Self.foregroundAttachmentId) {
+                        if foregroundEntity.parent == nil {
+                            content.add(foregroundEntity)
+                        }
+                        model.foregroundEntity = foregroundEntity
                     }
                 }
-                sceneUpdateSubscription = content.subscribe(to: SceneEvents.Update.self) { _ in
-                    continuation.yield()
-                }
-            } update: { content, _ in
-                let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
                 syncPresentation(boundsInMeters: availableBounds)
                 cacheAvailableBounds(availableBounds)
             } attachments: {
@@ -113,6 +96,7 @@ struct ImagePresentationView<Foreground: View>: View {
                 await model.createAndShowSpatial3DImage(root: root)
             }
             .onAppear {
+                frameSync.appeared()
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {
                     Logger.photoSpace.error("Unable to get the window scene. Unable to set the resizing restrictions.")
                     return
@@ -121,12 +105,7 @@ struct ImagePresentationView<Foreground: View>: View {
                 windowScene.requestGeometryUpdate(.Vision(resizingRestrictions: .uniform))
             }
             .onDisappear {
-                // The RealityKit subscription keeps firing (and holding the content) until it
-                // is cancelled. See CODE_AUDIT_18 §3.19.
-                sceneUpdateSubscription?.cancel()
-                sceneUpdateSubscription = nil
-                frameSyncContinuation?.finish()
-                frameSyncTask?.cancel()
+                frameSync.disappeared()
                 model.foregroundEntity = nil
                 model.foregroundPlacementGate.reset()
             }

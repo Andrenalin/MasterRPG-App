@@ -8,6 +8,29 @@ import Synchronization
 final class CloudContainerCache: Sendable {
     static let shared = CloudContainerCache()
 
+    /// How long a missing container is believed while an iCloud identity exists. The system
+    /// documents that `url(forUbiquityContainerIdentifier:)` can return nil while the container is
+    /// still being provisioned (first launch after sign-in), and nothing signals when it is ready,
+    /// so the lookup is retried after this interval. See CODE_AUDIT_26 §5.11.
+    static let retryInterval: Duration = .seconds(5)
+
+    private let hasIdentity: @Sendable () -> Bool
+    private let resolveContainer: @Sendable () -> URL?
+    private let retryInterval: Duration
+    private let now: @Sendable () -> ContinuousClock.Instant
+
+    init(
+        hasIdentity: @escaping @Sendable () -> Bool = { FileManager.default.ubiquityIdentityToken != nil },
+        resolveContainer: @escaping @Sendable () -> URL? = { FileManager.default.url(forUbiquityContainerIdentifier: FileManager.cloudContainerIdentifier) },
+        retryInterval: Duration = CloudContainerCache.retryInterval,
+        now: @escaping @Sendable () -> ContinuousClock.Instant = { .now }
+    ) {
+        self.hasIdentity = hasIdentity
+        self.resolveContainer = resolveContainer
+        self.retryInterval = retryInterval
+        self.now = now
+    }
+
     private enum Resolution: Sendable {
         case unresolved
         case resolved(URL?)
@@ -18,6 +41,9 @@ final class CloudContainerCache: Sendable {
         /// Bumped by `invalidate()`. A resolve that started before the bump must not store its
         /// (old-identity) result. See CODE_AUDIT_19 §3.8.
         var generation = 0
+        /// When a nil container was stored although an iCloud identity exists; such a result is
+        /// retried after `retryInterval` instead of being believed for the whole run.
+        var missingSince: ContinuousClock.Instant?
     }
 
     private let state = Mutex(State())
@@ -41,12 +67,13 @@ final class CloudContainerCache: Sendable {
             // spares callers (tests, a device without iCloud) the system call, which waits on a
             // lower-QoS thread of the system's own. A later sign-in posts
             // `NSUbiquityIdentityDidChange`, which invalidates this result.
-            let url: URL? = FileManager.default.ubiquityIdentityToken == nil
-                ? nil
-                : FileManager.default.url(forUbiquityContainerIdentifier: FileManager.cloudContainerIdentifier)
+            let hasIdentity = hasIdentity()
+            let url: URL? = hasIdentity ? resolveContainer() : nil
+            let resolvedAt = now()
             state.withLock { state in
                 guard state.generation == generation else { return }
                 state.resolution = .resolved(url)
+                state.missingSince = (hasIdentity && url == nil) ? resolvedAt : nil
             }
             return url
         }
@@ -55,8 +82,11 @@ final class CloudContainerCache: Sendable {
     /// The cached resolution, or `nil` when none is stored (the wrapped value may itself be nil).
     private var cachedUrl: CachedUrl? {
         state.withLock { state in
-            if case .resolved(let url) = state.resolution { return CachedUrl(value: url) }
-            return nil
+            guard case .resolved(let url) = state.resolution else { return nil }
+            if url == nil, let missingSince = state.missingSince, now() - missingSince >= retryInterval {
+                return nil
+            }
+            return CachedUrl(value: url)
         }
     }
 
@@ -86,6 +116,7 @@ final class CloudContainerCache: Sendable {
     func invalidate() {
         state.withLock { state in
             state.resolution = .unresolved
+            state.missingSince = nil
             state.generation += 1
         }
     }

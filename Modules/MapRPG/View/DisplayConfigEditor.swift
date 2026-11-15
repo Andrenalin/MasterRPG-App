@@ -40,11 +40,12 @@ struct DisplayConfigEditor: View {
 #if !os(tvOS)
             resetColor()
             updateToggleValue()
-            loadTileImage()
 #endif
         }
-        .onChange(of: model.displayConfig.tileCoordinates) {
-            loadTileImage()
+        // Structured: a slow result for the previous map or tile is cancelled, never assigned.
+        // See CODE_AUDIT_26 §5.24.
+        .task(id: TilePreviewKey(mapId: model.id, photoId: model.photoId, coordinates: model.displayConfig.tileCoordinates)) {
+            await loadTileImage()
         }
     }
     
@@ -74,21 +75,26 @@ struct DisplayConfigEditor: View {
         tileImage = nil
     }
     
-    private func loadTileImage() {
-        guard !model.displayConfig.tileCoordinates.isEmpty,
-              model.displayConfig.tileCoordinates.count == 4,
-              let photoId = model.photoId else {
+    private func loadTileImage() async {
+        guard model.displayConfig.tileCoordinates.count == 4,
+              let photoId = model.photoId,
+              let tileRect = model.displayConfig.tileCoordinates.bounds else {
             tileImage = nil
             return
         }
-        
-        Task {
-            if let (fullImage, _) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: true),
-               let tileRect = model.displayConfig.tileCoordinates.bounds {
-                tileImage = fullImage.cropping(to: tileRect)
-            }
-        }
+        let mapId = model.id
+        // The library photo, as the editor shows it (not the running game's copy).
+        guard let (fullImage, degrees) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: false),
+              !Task.isCancelled, mapId == model.id else { return }
+        tileImage = MapTileImage.crop(fullImage, degrees: degrees, to: tileRect)
     }
+}
+
+/// What the cover-tile preview depends on; `.task(id:)` restarts when it changes.
+private struct TilePreviewKey: Hashable {
+    let mapId: UUID
+    let photoId: UUID?
+    let coordinates: [CGPoint]
 }
 
 #if !os(tvOS)
@@ -186,12 +192,7 @@ private struct TileCoordinatesView: View {
                 Spacer()
 
                 Button {
-#if os(visionOS) || os(macOS)
-                    root.editController.editorModel.sheetEditorModel.itemId = model.id
-                    scenesManager.openWindow(.mapTileEditor)
-#else
-                    navigator.navigate(to: MapEditorRoute.mapTileEditor(model.id))
-#endif
+                    MapEditorKind.tile.open(model: model, root: root, navigator: navigator, scenesManager: scenesManager)
                 } label: {
                     Label {
                         Text("Edit cover tile", bundle: .module)

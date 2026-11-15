@@ -2,6 +2,7 @@
 
 #if canImport(Testing)
 import CoreRPG
+import DiceRPG
 import Foundation
 import Testing
 
@@ -321,6 +322,49 @@ struct GameStatisticsControllerTests {
         #expect(event(type: .update, action: .mapPin).kind == .message)
     }
 
+    @Test("A reported dice time is never later than the moment the roll was received (CODE_AUDIT_26 §5.20)")
+    func eventTimeIsClampedToReceipt() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        #expect(GameStatisticsController.eventTime(reported: nil, receivedAt: now) == now)
+        #expect(GameStatisticsController.eventTime(reported: now.addingTimeInterval(3_600 * 24 * 365), receivedAt: now) == now)
+        #expect(GameStatisticsController.eventTime(reported: now.addingTimeInterval(-30), receivedAt: now) == now.addingTimeInterval(-30))
+    }
+
+    @MainActor
+    @Test("A dice message from a clock in the future is booked at its receipt time")
+    func diceEventDraftUsesReceiptTime() {
+        let sender = GameSenderModel(id: UUID(), role: .player, name: "Skewed", characterId: nil)
+        let received = Date(timeIntervalSince1970: 1_800_000_000)
+        let result = DiceResultModel(
+            diceModel: DiceSnapshot(DiceModel(id: UUID(), name: "d20", dice: [])),
+            result: .rolled,
+            values: "7",
+            sum: 7,
+            checked: true,
+            timeStamp: received.addingTimeInterval(86_400)
+        )
+        let message = GameNetworkModel(
+            counter: 1,
+            proxyCounter: 0,
+            type: .update,
+            subType: .generic,
+            masterId: UUID(),
+            sender: sender,
+            data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0, data: result.encodeData())
+        )
+
+        let draft = GameStatisticsController().eventDraft(
+            for: message,
+            sessionId: UUID(),
+            localParticipantId: UUID(),
+            direction: .incoming,
+            origin: .direct(nil),
+            occurredAt: received
+        )
+
+        #expect(draft.occurredAt == received)
+    }
+
     @Test("preview data demonstrates the dashboard without persistence")
     func createsDashboardPreview() throws {
         // Given
@@ -391,4 +435,28 @@ struct GameStatisticsControllerTests {
         UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, finalByte))
     }
 }
+
+@Suite("Game statistics empty state")
+struct GameStatisticsEmptyStateTests {
+    @Test("A limited date range without games keeps the filters and does not pretend there is no data (CODE_AUDIT_26 §5.19)",
+          arguments: [GameStatisticsDateRange.lastThirtyDays, .lastSixMonths, .lastYear])
+    func limitedRangeShowsNoGamesInRange(range: GameStatisticsDateRange) {
+        var configuration = GameStatisticsDashboardConfiguration.default
+        configuration.dateRange = range
+        #expect(configuration.emptyState == .noGamesInRange)
+    }
+
+    @Test("All Time without games is the sample dashboard")
+    func allTimeShowsTheSample() {
+        var configuration = GameStatisticsDashboardConfiguration.default
+        configuration.dateRange = .allTime
+        #expect(configuration.emptyState == .sample)
+    }
+
+    @Test("The default range is limited, so a long break no longer hides the filters")
+    func defaultRangeIsLimited() {
+        #expect(GameStatisticsDashboardConfiguration.default.emptyState == .noGamesInRange)
+    }
+}
+
 #endif

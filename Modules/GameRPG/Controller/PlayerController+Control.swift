@@ -84,6 +84,9 @@ extension PlayerController {
             controllable.gameModel.currentPlayers = sortedPlayers
         }
         let playerNames = root.gameModel.gameControl.controls.map { $0.name }.sorted()
-        root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
+        root.diceRoot.diceGameControllable.resetPlayerDice(
+            keepingSenders: Set(root.gameModel.gameControl.controls.map(\.id) + [root.gameModel.gameConfig.master.id]),
+            names: [root.gameModel.gameConfig.master.name] + playerNames
+        )
     }
 }

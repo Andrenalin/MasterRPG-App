@@ -173,7 +173,18 @@ private struct DiceResultView: View {
                         .frame(width: 70, height: 70)
                 }
 
-                dieImageView(result.dice, size: 64)
+                if result.dice.isSingleDie {
+                    dieImageView(result.dice, size: 64)
+                } else {
+                    // Several dice: the total, not the first die's face.
+                    Text(verbatim: result.sum.formatted(.number))
+                        .font(.largeTitle)
+                        .bold()
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                        .frame(width: 64, height: 64)
+                        .unredacted()
+                }
             }
             .widgetAccentable() // Mark the entire result as accentable content
 

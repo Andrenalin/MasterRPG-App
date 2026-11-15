@@ -2,17 +2,31 @@
 
 import SwiftUI
 
+/// How an export panel was closed. See CODE_AUDIT_26 §5.21.
+public enum ExportPanelResult: Sendable, Equatable {
+    /// The export was written (and moved to its destination).
+    case finished
+    /// The user cancelled, dismissed the panel or cancelled the file mover.
+    case cancelled
+    /// The export failed.
+    case failed
+
+    /// Whether "Save and Quit" goes on to quit the game: only after the game was saved.
+    public var endsSaveAndQuit: Bool { self == .finished }
+}
+
 public struct ExportProgressPanelView: View {
     /// Lets this panel's own presentation animation settle before the export work begins,
     /// rather than starting mid-transition. See CODE_AUDIT §9.14.
     private static let exportStartPresentationDelay: Duration = .seconds(0.5)
-    public init(exportController: any ExportControllable, showOptions: Bool = false, isSaveGame: Bool = false, saveGameName: String? = nil, exporter: @escaping () -> ItemModuleIds, finishedAction: @escaping () -> Void = {}) {
+    public init(exportController: any ExportControllable, showOptions: Bool = false, isSaveGame: Bool = false, saveGameName: String? = nil, exporter: @escaping () -> ItemModuleIds, finishedAction: @escaping () -> Void = {}, onResult: @escaping (ExportPanelResult) -> Void = { _ in }) {
         self.exportController = exportController
         self.showOptions = showOptions
         self.isSaveGame = isSaveGame
         self.saveGameName = saveGameName
         self.exporter = exporter
         self.finishAction = finishedAction
+        self.onResult = onResult
         self._outcome = State(wrappedValue: showOptions ? .notStarted : .running)
     }
 
@@ -22,6 +36,8 @@ public struct ExportProgressPanelView: View {
     let saveGameName: String?
     let exporter: () -> (ItemModuleIds)
     let finishAction: () -> Void
+    /// Called once when the panel closes, with how it ended.
+    let onResult: (ExportPanelResult) -> Void
 
     @Environment(\.navigator) private var navigator
 
@@ -30,6 +46,7 @@ public struct ExportProgressPanelView: View {
     @State private var exportTask: Task<Void, any Error>?
     @State private var saveUrl: URL?
     @State private var outcome: ExportOutcome = .running
+    @State private var hasReported = false
 
     public var body: some View {
         NavigationStack {
@@ -49,6 +66,8 @@ public struct ExportProgressPanelView: View {
                 // A system-gesture dismissal must not leave a detached export writing with no
                 // UI owner (a no-op once the export has finished). See CODE_AUDIT_16 §3.5.
                 exportTask?.cancel()
+                // A swipe-down dismissal never presses a button: it still has to say how it ended.
+                report(outcome.panelResult ?? .cancelled)
             }
 #if !os(tvOS)
             .fileMover(isPresented: $showExporter, file: saveUrl) { result in
@@ -64,6 +83,7 @@ public struct ExportProgressPanelView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
                         exportTask?.cancel()
+                        report(.cancelled)
                         navigator.dismiss()
                         finishAction()
                     } label: {
@@ -74,6 +94,7 @@ public struct ExportProgressPanelView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) {
+                        report(outcome.panelResult ?? .cancelled)
                         navigator.dismiss()
                         finishAction()
                     } label: {
@@ -88,12 +109,28 @@ public struct ExportProgressPanelView: View {
     // `private` would hide this from the sibling extracted subview structs below (private
     // nested-type access only extends to this declaration and same-file extensions of it,
     // not to unrelated top-level types) — `fileprivate` keeps it scoped to this file only.
-    fileprivate enum ExportOutcome: Equatable {
+    enum ExportOutcome: Equatable {
         case notStarted
         case running
         case finished
         case cancelled
         case failed(String)
+
+        /// How the panel ended when it closes in this state; `nil` while nothing has ended it.
+        var panelResult: ExportPanelResult? {
+            switch self {
+            case .finished: .finished
+            case .cancelled: .cancelled
+            case .failed: .failed
+            case .notStarted, .running: nil
+            }
+        }
+    }
+
+    private func report(_ result: ExportPanelResult) {
+        guard !hasReported else { return }
+        hasReported = true
+        onResult(result)
     }
 }
 

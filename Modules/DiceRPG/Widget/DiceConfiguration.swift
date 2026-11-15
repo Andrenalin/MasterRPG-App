@@ -43,21 +43,28 @@ private enum AppGroupCodableStore {
 // MARK: - Compact Widget Snapshot
 
 public struct DiceWidgetDice: Codable, Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, sides: Int, face: Int? = nil) {
+    public init(id: UUID, name: String, sides: Int, face: Int? = nil, dieCount: Int? = nil) {
         self.id = id
         self.name = name
         self.sides = sides
         self.face = face
+        self.dieCount = dieCount
     }
 
     public init(_ diceSnapshot: DiceSnapshot) {
         let firstDie = diceSnapshot.dice.first
         let sides = firstDie?.die.max ?? 20
+        let count = max(diceSnapshot.dice.count, 1)
+        // An unnamed multi-dice roll is named by its notation ("3D6"), not by its first die.
+        let notation = count > 1 && diceSnapshot.dice.allSatisfy({ $0.die.max == sides })
+            ? "\(count)D\(sides)"
+            : "D\(sides)"
         self.init(
             id: diceSnapshot.id,
-            name: diceSnapshot.name.isEmpty ? "D\(sides)" : diceSnapshot.name,
+            name: diceSnapshot.name.isEmpty ? notation : diceSnapshot.name,
             sides: sides,
-            face: firstDie?.result.last
+            face: firstDie?.result.last,
+            dieCount: count
         )
     }
 
@@ -65,6 +72,14 @@ public struct DiceWidgetDice: Codable, Identifiable, Equatable, Hashable, Sendab
     public var name: String
     public var sides: Int
     public var face: Int?
+    /// Number of dice in the roll; `nil` for data saved before it was recorded (one die).
+    public var dieCount: Int?
+
+    /// A single die can be drawn with its face. Several dice have no one face that matches the
+    /// total, so the widget shows the total as text. See CODE_AUDIT_26 §5.48.
+    public var isSingleDie: Bool {
+        (dieCount ?? 1) <= 1
+    }
 
     public var displayFace: Int {
         face ?? sides

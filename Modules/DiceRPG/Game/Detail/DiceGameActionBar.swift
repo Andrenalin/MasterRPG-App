@@ -50,7 +50,11 @@ struct DiceGameActionBar: View {
                         // previously watched a property a roll never changes,
                         // so the compare-value haptic never fired. See
                         // CODE_AUDIT §5.6.
-                        .onChange(of: root.gameController.gameItem(for: itemId).dice) {
+                        // Only the results count: the clearing reset before a roll is "not rolled"
+                        // (it played an error haptic first) and the rotation reset 0.6 s later
+                        // changed `.dice` a third time. See CODE_AUDIT_26 §5.33.
+                        .onChange(of: DiceRollFeedback.results(of: root.gameController.gameItem(for: itemId).dice)) { _, results in
+                            guard DiceRollFeedback.isRolled(results) else { return }
                             lastRollChecked = root.gameController.result(itemId: itemId).checked
                             rollFeedbackCount += 1
                         }

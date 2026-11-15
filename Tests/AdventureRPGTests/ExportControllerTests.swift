@@ -3,7 +3,7 @@
 #if canImport(Testing)
 import CoreRPG
 import Foundation
-import DiceRPG
+@testable import DiceRPG
 import AudioRPG
 import MapRPG
 import PdfRPG
@@ -114,6 +114,28 @@ struct ExportControllerTests {
         #expect(adventureIds.contains(itemId))
         #expect(adventureIds.contains(groupId))
         #expect(!adventureIds.contains(notConnected))
+    }
+
+    /// CODE_AUDIT_26 §5.25: the dice attached to an adventure travels with it.
+    @Test func exportingIncludesTheAttachedDice() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let sut = root.exportController
+        let diceId = UUID()
+        let strayDiceId = UUID()
+        root.diceRoot.itemController.replace(model: DiceModel(id: diceId, name: "Attached", dice: []), isInsert: true)
+        root.diceRoot.itemController.replace(model: DiceModel(id: strayDiceId, name: "Stray", dice: []), isInsert: true)
+        let adventure = AdventureModel(id: UUID(), name: "Quest", diceId: diceId)
+        root.itemController.replace(model: adventure, isInsert: true)
+        let gone = AdventureModel(id: UUID(), name: "Dangling", diceId: UUID())
+        root.itemController.replace(model: gone, isInsert: true)
+
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: [adventure.id], module: .adventure))
+        #expect(ids.ids[.dice] == [diceId])
+
+        let danglingIds = sut.exporting(itemIds: ItemModuleIds(ids: [gone.id], module: .adventure))
+        #expect(danglingIds.ids[.dice, default: []].isEmpty, "a dice that no longer exists is not exported")
     }
 }
 #endif

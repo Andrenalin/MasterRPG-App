@@ -43,7 +43,7 @@ public extension ViewController {
     @MainActor @ViewBuilder func gameViewer(root: SpaceRootModel) -> some View {
         if let currentItemId = root.gameController.gameModel.currentItemId {
 #if os(tvOS)
-            SpaceQuickLook(root: root, item: ItemSelection(itemId: currentItemId, entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
+            SpaceUnsupportedView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 #elseif os(visionOS)
             SpaceQuickLook(root: root, item: ItemSelection(itemId: currentItemId, entryId: nil), startLoading: true, gameMode: true, dismiss: nil)

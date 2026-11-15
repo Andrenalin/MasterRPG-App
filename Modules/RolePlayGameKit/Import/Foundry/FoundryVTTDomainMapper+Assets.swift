@@ -30,7 +30,13 @@ extension FoundryMappingState {
     @discardableResult
     func createAsset(_ resource: FoundryPackageResource, module: NetworkModules) -> UUID {
         let key = ResourceKey(module: module, path: canonicalResourcePath(resource.logicalPath))
-        if let existing = resourceIDs[key] { return existing }
+        if let existing = resourceIDs[key] {
+            if let first = resourceSources[key], first != resource {
+                warnings.append(String(localized: "Packaged resources \(first.logicalPath) and \(resource.logicalPath) have the same path and only the first was imported.", bundle: .module))
+            }
+            return existing
+        }
+        resourceSources[key] = resource
         let id = stableID("asset#\(module.token)#\(key.path)")
         resourceIDs[key] = id
         let sourceFilename = resource.logicalPath.split(separator: "/").last.map(String.init)
@@ -41,7 +47,7 @@ extension FoundryMappingState {
         default: nil
         }
         let normalizationPlan = FoundryMediaNormalizer.plan(
-            for: resource.logicalPath,
+            forPackagedPath: resource.logicalPath,
             expectedKind: expectedMediaKind
         )
         let filename = normalizationPlan?.suggestedFilename
@@ -116,7 +122,7 @@ extension FoundryMappingState {
             return nil
         }
         let contextualPlan = FoundryMediaNormalizer.plan(
-            for: resource.logicalPath,
+            forPackagedPath: resource.logicalPath,
             expectedKind: module == .audio ? .audio : nil
         )
         guard self.module(for: resource.logicalPath) == module
@@ -133,7 +139,7 @@ extension FoundryMappingState {
               let module = module(for: resource.logicalPath),
               resource.location == .packaged else { return nil }
         let id = createAsset(resource, module: module)
-        let name = FoundryMediaNormalizer.plan(for: resource.logicalPath)?.suggestedFilename
+        let name = FoundryMediaNormalizer.plan(forPackagedPath: resource.logicalPath)?.suggestedFilename
             ?? resource.logicalPath.split(separator: "/").last.map {
                 FoundryTextDecoder.decodedText(String($0))
             }
@@ -141,20 +147,26 @@ extension FoundryMappingState {
         return markdownLink(name: name, module: module, itemId: id)
     }
 
+    /// The packaged resource a document reference points to. A reference can be a URL, so
+    /// `Token%20%231.webp?v=2` finds `Token #1.webp`; an unencoded `Token #1.webp` is tried as a
+    /// whole first, because the `#` is then part of the name and not a fragment.
     func resource(matching path: String) -> FoundryPackageResource? {
-        let canonicalPath = canonicalResourcePath(path)
-        if let exact = resourcesByCanonicalPath[canonicalPath] {
-            return exact
-        }
-        if ambiguousResourceCanonicalPaths.contains(canonicalPath) {
-            return nil
-        }
-        let alias = resourceAlias(path)
-        if let resource = resourcesByAlias[alias] {
-            return resource
-        }
-        if ambiguousResourceAliases.contains(alias) {
-            return nil
+        for (canonicalPath, alias) in [
+            (canonicalResourcePath(path), resourceAlias(path)),
+            (canonicalReferencePath(path), referenceAlias(path)),
+        ] {
+            if let exact = resourcesByCanonicalPath[canonicalPath] {
+                return exact
+            }
+            if ambiguousResourceCanonicalPaths.contains(canonicalPath) {
+                return nil
+            }
+            if let resource = resourcesByAlias[alias] {
+                return resource
+            }
+            if ambiguousResourceAliases.contains(alias) {
+                return nil
+            }
         }
         return nil
     }

@@ -125,10 +125,10 @@ extension GameTableModel {
         let (image, degrees) = await photoRoot.fetchPhotoImage(for: photoId, useGame: true) ?? (nil, 0)
         guard !Task.isCancelled else { return }
         guard let image else {
-            currentPhotoId = photoId
-            currentMapImage = nil
-            currentMapDegrees = 0
-            currentPhotoVersion = metadata?.version
+            // Deliberately remembers nothing about the failed photo: the board stays empty
+            // (`currentMapImage == nil`), and every later sync retries the load. That retry is how a
+            // photo file that arrives after the map is noticed, since its metadata can be known
+            // before its bytes are. See CODE_AUDIT_26 §5.16.
             clearBoardImage()
             Logger.gameTable.error("Failed to load photo for the current map")
             return

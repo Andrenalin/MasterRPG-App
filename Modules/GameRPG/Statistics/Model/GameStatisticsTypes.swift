@@ -242,6 +242,21 @@ struct GameStatisticsDashboardConfiguration: Codable, Hashable, Sendable {
     var visibleSections: [GameStatisticsSection] {
         sectionOrder.filter { !hiddenSections.contains($0) }
     }
+
+    /// What the dashboard shows when the selected range holds no game. A range narrower than
+    /// "All Time" may simply miss the games that exist, so it says so and keeps the filters
+    /// reachable; only "All Time" without a game is a dashboard that has nothing yet (the sample).
+    /// See CODE_AUDIT_26 §5.19.
+    var emptyState: GameStatisticsEmptyState {
+        dateRange == .allTime ? .sample : .noGamesInRange
+    }
+}
+
+enum GameStatisticsEmptyState: Sendable {
+    /// No game was ever recorded: the sample dashboard explains what the statistics will show.
+    case sample
+    /// No game in a limited range; a wider range may have some.
+    case noGamesInRange
 }
 
 // MARK: - Draft Types (Recording Input)

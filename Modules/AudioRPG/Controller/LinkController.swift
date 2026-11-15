@@ -35,8 +35,17 @@ extension LinkController: LinkControllable {
                         return text.toggleLink(url: playUrl, with: "share audio", replace: true)
                     }
                 } else {
-                    let isPlaying = audioController.model.isPlaying && audioController.model.currentId == itemId
-                    audioController.loadAndPlay(id: itemId)
+                    // The item's own playlist plays, as the row and toolbar buttons do: a playlist item
+                    // has no file, its tracks are its entries, so loading only the item itself would
+                    // stop the music and start nothing. See CODE_AUDIT_26 §5.28.
+                    let isPlaying = gameController.isPlayingPlaylist(id: itemId)
+                    if isPlaying {
+                        audioController.pause()
+                    } else {
+                        LinkActionTasks.run {
+                            try await gameController.play(id: itemId, shouldPlay: true)
+                        }
+                    }
                     return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                 }
             }

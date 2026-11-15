@@ -3045,6 +3045,38 @@
           }
         }
       }
+    },
+    "3D Objects Are Not Shown on Apple TV" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3D-Objekte werden auf dem Apple TV nicht angezeigt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วัตถุ 3 มิติไม่แสดงบน Apple TV"
+          }
+        }
+      }
+    },
+    "The Game Master revealed a 3D object. Open it on an iPhone, iPad, Mac or Apple Vision Pro." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Spielleiter hat ein 3D-Objekt gezeigt. Öffne es auf einem iPhone, iPad, Mac oder Apple Vision Pro."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้ดำเนินเกมแสดงวัตถุ 3 มิติ เปิดดูได้บน iPhone, iPad, Mac หรือ Apple Vision Pro"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

@@ -241,6 +241,28 @@ struct RuleModelTests {
         #expect(merged[0].content == "new")
     }
 
+    /// CODE_AUDIT_26 §5.43: a new "Notes" dragged above the existing "Notes" must not take the
+    /// existing entry's identity and leave the existing entry in the result a second time.
+    @Test("A new entry listed before a same-named existing one keeps ids unique")
+    func reorderedNewEntryDoesNotDuplicateIds() throws {
+        // Given
+        let existingID = try #require(UUID(uuidString: "3D1C7B52-0A44-4E0B-8E8D-4F6B2C7A9D10"))
+        let newID = try #require(UUID(uuidString: "9E2F5A61-7B3C-4D88-A1F0-5C6D7E8F9A21"))
+        let existing = [RuleEntryModel.fixture(id: existingID, name: "Notes", content: "old", kind: .value)]
+        let imported = [
+            RuleEntryModel.fixture(id: newID, name: "Notes", content: "new", kind: .value),
+            RuleEntryModel.fixture(id: existingID, name: "Notes", content: "old", kind: .value)
+        ]
+
+        // When
+        let merged = EditController.mergeEntries(existing: existing, imported: imported)
+
+        // Then
+        #expect(merged.map(\.id) == [newID, existingID])
+        #expect(Set(merged.map(\.id)).count == merged.count)
+        #expect(merged.map(\.content) == ["new", "old"])
+    }
+
     @Test("Stable versions and localized search include source metadata and sections")
     func versionAndFiltering() {
         // Given

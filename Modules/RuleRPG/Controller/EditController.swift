@@ -87,41 +87,61 @@ extension EditController: EntryDataEditable {
         return Self.mergeEntries(existing: item.entries, imported: entries)
     }
 
+    /// Merges imported entries into the existing ones, keeping the identity of entries that are
+    /// still there.
+    ///
+    /// Two passes: every imported entry first claims the existing entry with its own id. Only the
+    /// leftovers then try the name + kind + parent fallback, and only against existing entries no
+    /// id match claimed. In a single pass a new entry listed before the existing entry it
+    /// resembles took that entry's identity through the fallback, and the existing entry (same id)
+    /// then appeared a second time. See CODE_AUDIT_26 §5.43.
     static func mergeEntries(
         existing: [RuleEntryModel],
         imported: [RuleEntryModel]
     ) -> [RuleEntryModel] {
         var matchedExistingIndices: Set<Int> = []
         var importedToExistingIds: [UUID: UUID] = [:]
+        var idMatches: [Int: Int] = [:]
 
-        return imported.map { sourceEntry in
+        for (importedIndex, entry) in imported.enumerated() {
+            guard let existingIndex = existing.indices.first(where: {
+                !matchedExistingIndices.contains($0) && existing[$0].id == entry.id
+            }) else { continue }
+            matchedExistingIndices.insert(existingIndex)
+            idMatches[importedIndex] = existingIndex
+            importedToExistingIds[entry.id] = existing[existingIndex].id
+        }
+
+        return imported.enumerated().map { importedIndex, sourceEntry in
             var importedEntry = sourceEntry
             if let parentId = importedEntry.parentId,
                let remappedParentId = importedToExistingIds[parentId] {
                 importedEntry.parentId = remappedParentId
             }
 
-            let stableIdentityIndex = existing.indices.first {
-                !matchedExistingIndices.contains($0) && existing[$0].id == importedEntry.id
+            let matchedIndex: Int?
+            if let idMatch = idMatches[importedIndex] {
+                matchedIndex = idMatch
+            } else {
+                // Compared without link markup, as `entriesMatchedByName` does: a name that only
+                // gained a link is the same entry. See CODE_AUDIT_Since_3.0.1 §5.1.
+                let importedName = importedEntry.name.withoutLink()
+                let hierarchyFallbackIndices = existing.indices.filter {
+                    !matchedExistingIndices.contains($0) &&
+                    existing[$0].name.withoutLink() == importedName &&
+                    existing[$0].kind == importedEntry.kind &&
+                    existing[$0].parentId == importedEntry.parentId
+                }
+                matchedIndex = hierarchyFallbackIndices.count == 1 ? hierarchyFallbackIndices[0] : nil
+                if let matchedIndex {
+                    matchedExistingIndices.insert(matchedIndex)
+                }
             }
-            // Compared without link markup, as `entriesMatchedByName` does: a name that only
-            // gained a link is the same entry. See CODE_AUDIT_Since_3.0.1 §5.1.
-            let importedName = importedEntry.name.withoutLink()
-            let hierarchyFallbackIndices = existing.indices.filter {
-                !matchedExistingIndices.contains($0) &&
-                existing[$0].name.withoutLink() == importedName &&
-                existing[$0].kind == importedEntry.kind &&
-                existing[$0].parentId == importedEntry.parentId
-            }
-            let matchedIndex = stableIdentityIndex ?? (
-                hierarchyFallbackIndices.count == 1 ? hierarchyFallbackIndices[0] : nil
-            )
             guard let matchedIndex else {
                 importedToExistingIds[sourceEntry.id] = importedEntry.id
                 return importedEntry
             }
 
-            matchedExistingIndices.insert(matchedIndex)
             var mergedEntry = existing[matchedIndex]
             importedToExistingIds[sourceEntry.id] = mergedEntry.id
             mergedEntry.name = importedEntry.name

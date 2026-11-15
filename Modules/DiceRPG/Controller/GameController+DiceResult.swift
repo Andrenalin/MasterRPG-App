@@ -228,9 +228,10 @@ extension GameController {
     
     @MainActor
     func reset(for itemId: UUID) {
-        gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
+        let item = gameItem(for: itemId)
+        item.setRolledDice(item.dice.map { die in
             die.resetResults()
-        }
+        })
     }
     
     /// `playsSound` is off for a die tossed on the 3D table, which makes its own sound there.
@@ -244,13 +245,17 @@ extension GameController {
         }
 
         let item = gameItem(for: itemId)
-        if let die, let index = item.dice.firstIndex(where: { $0.id == die.id }) {
-            gameItem(for: itemId).dice[index] = die.roll(rerollOptions: item.rerollOptions)
+        // Rolled state does not move the update marker (also for a library set rolled outside a
+        // game, which is the stored model itself). See CODE_AUDIT_26 §5.35.
+        var rolledDice = item.dice
+        if let die, let index = rolledDice.firstIndex(where: { $0.id == die.id }) {
+            rolledDice[index] = die.roll(rerollOptions: item.rerollOptions)
         } else {
-            gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
+            rolledDice = rolledDice.map { die in
                 die.roll(rerollOptions: item.rerollOptions)
             }
         }
+        item.setRolledDice(rolledDice)
         // A plain `Task { }` inherits the caller's isolation —
         // since this call is made from @MainActor `roll(die:for:)`,
         // `nonisolated` alone was not actually keeping this off the main

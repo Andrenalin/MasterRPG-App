@@ -361,8 +361,7 @@ public extension EntryDataEditable {
 
     @MainActor func move(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
-        let entries = entryIds.compactMap { id in item.entries.first { $0.id == id }}
-        item.entries = entries
+        item.entries = EntryOrder.reordered(item.entries, by: entryIds, id: \.id)
         save(updated: item, message: String(localized: "Reorder entries", bundle: .module), forceSave: forceSave)
     }
 
@@ -439,5 +438,30 @@ public extension EntryDataEditable {
             linkModel.reset(text: nameText)
         }
         return linkModel
+    }
+}
+
+
+/// The order an entry list takes when the sheet hands back the ids it shows. See CODE_AUDIT_26 §5.15.
+enum EntryOrder {
+    /// `entries` in the order of `ids`. An entry whose id is not in `ids` (a hidden or group-hidden
+    /// entry the sheet does not list) is kept, after the listed ones in its old relative order; an
+    /// id that names no entry, or repeats, is ignored.
+    static func reordered<Entry>(_ entries: [Entry], by ids: [UUID], id: (Entry) -> UUID) -> [Entry] {
+        var byId: [UUID: Entry] = [:]
+        for entry in entries where byId[id(entry)] == nil {
+            byId[id(entry)] = entry
+        }
+        var placed: Set<UUID> = []
+        var result: [Entry] = []
+        for entryId in ids {
+            guard let entry = byId[entryId], placed.insert(entryId).inserted else { continue }
+            result.append(entry)
+        }
+        // Entries the ids did not name, in their old order.
+        for entry in entries where !placed.contains(id(entry)) {
+            result.append(entry)
+        }
+        return result
     }
 }

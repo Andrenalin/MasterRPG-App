@@ -91,6 +91,23 @@ private extension MapEditorCharacterLinkTests {
         let session: MapEditorSession
     }
 
+    @Test("On a hex map the room under a point is the room, not the hex cell above it (CODE_AUDIT_26 §5.22)")
+    func entryLookupSkipsHexCells() throws {
+        // Given: a room and a hex cell that covers the whole map and is appended last.
+        let room = MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: rectangle(origin: .zero))
+        let cell = MapEntryModel(
+            id: UUID(), name: "Cell", content: "",
+            coordinates: [CGPoint(x: -10, y: -10), CGPoint(x: 390, y: -10), CGPoint(x: 390, y: 390), CGPoint(x: -10, y: 390)],
+            isHexGrid: true
+        )
+        let map = makeMap(entries: [room, cell])
+        let context = makeContext(map: map)
+
+        // Then
+        #expect(context.session.entry(for: CGPoint(x: 50, y: 50), in: map)?.id == room.id)
+        #expect(context.session.entry(for: CGPoint(x: 300, y: 300), in: map) == nil, "outside every room only a cell is there")
+    }
+
     func makeContext(map: MapModel) -> Context {
         let root = MapRootModel.previewFixture(models: [map])
         root.editController.setCurrentItem(model: map)

@@ -70,5 +70,15 @@ struct AdventureModelTests{
         #expect(sut.isSame(a) == false)
         #expect(m1.isSame(m2) == true)
     }
+
+    /// CODE_AUDIT_26 §5.27: the attached dice is last-importer-wins on purpose.
+    @Test func mergeTakesTheIncomingDice() async throws {
+        let local = AdventureModel(id: UUID(), name: "Quest", diceId: UUID())
+        let incoming = AdventureModel(id: local.id, name: "Quest", diceId: UUID())
+        let cleared = AdventureModel(id: local.id, name: "Quest", diceId: nil)
+
+        #expect(local.merge(incoming).diceId == incoming.diceId)
+        #expect(local.merge(cleared).diceId == nil)
+    }
 }
 #endif

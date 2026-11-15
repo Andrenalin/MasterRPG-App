@@ -279,6 +279,13 @@ public final class AppModel: Sendable {
     }
 }
  
+/// How a Reset Data request ended.
+public enum DataResetOutcome: Sendable, Equatable {
+    case completed
+    /// Another import, repair or reset holds the data-mutation token; nothing was changed.
+    case busy
+}
+
 // MARK: - Maintenance
 
 extension AppModel {
@@ -315,8 +322,18 @@ extension AppModel {
         endExclusiveDataMutation(token)
     }
 
-    public func resetData() async {
+    /// Clears the database. Takes the exclusive data-mutation token and defers saves like import and
+    /// repair do, so a reset cannot interleave with a bulk writer's in-memory graph and final save.
+    /// The files themselves are not deleted. See CODE_AUDIT_26 §5.41.
+    @discardableResult
+    public func resetData() async -> DataResetOutcome {
+        guard let mutationToken = beginExclusiveDataMutation() else { return .busy }
+        let saveDeferral = beginSaveDeferral()
         await adventureRoot.resetData()
+        endSaveDeferral(saveDeferral)
+        await save()
+        endExclusiveDataMutation(mutationToken)
+        return .completed
     }
     
     public func save() async {

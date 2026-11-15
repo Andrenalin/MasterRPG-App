@@ -40,6 +40,9 @@ final class PdfSearchModel: Sendable {
     var pdfUnavailable = false
 #endif
     var pdfId = UUID()
+    /// Version of the file the shown document was loaded from. Observed, so replacing the file
+    /// of an open item rebuilds the `PDFView` (the document itself is not observed).
+    var pdfVersion = 0
     
     func resetSearch() {
         pdfSearching = false
@@ -77,4 +80,13 @@ final class PdfSearchModel: Sendable {
         setSearchMatch?(matches, currentIndex)
 #endif
     }
+}
+
+
+/// What identifies one loaded pdf in the viewer: the item and the version of its file. The load
+/// task and the `PDFView` are keyed on it, so a file replaced in place reloads (the model is a
+/// class that is mutated in place, its reference never changes).
+struct PdfViewerLoadKey: Hashable {
+    let id: UUID
+    let version: Int
 }

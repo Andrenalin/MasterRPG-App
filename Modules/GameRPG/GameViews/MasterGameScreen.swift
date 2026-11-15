@@ -56,6 +56,13 @@ struct MasterGameScreen: View {
                     root.saveGame()
                 } finishedAction: {
                     gameScreenModel.showExport = false
+                } onResult: { result in
+                    // "Save and Quit" quits once the game is saved. A cancelled or failed save
+                    // keeps the game running, so a wrong destination does not cost the game.
+                    // See CODE_AUDIT_26 §5.21.
+                    if result.endsSaveAndQuit {
+                        endGame()
+                    }
                 }
             }
         }
@@ -91,11 +98,6 @@ struct MasterGameScreen: View {
             // `stopGame()` coalesces concurrent callers (see GameRoot.stopGameTask).
             guard root.gameModel.gameConfig.state != .stopped else { return }
             endGame()
-        }
-        .onChange(of: gameScreenModel.showExport, initial: false) { old, new in
-            if old == true && new == false {
-                endGame()
-            }
         }
         .persistGameDiceVisibility(
             gameScreenModel: gameScreenModel,

@@ -45,6 +45,37 @@ struct AudioIntentGameTests {
         try await body()
     }
 
+    // MARK: Audio sharing off (CODE_AUDIT_26 §5.29)
+
+    @Test("With audio sharing off a start by intent and a removal send nothing to the game")
+    func gateFoldsIntoStartAndRemove() async throws {
+        let previous = IntentGameContext.canControlGameAudio
+        defer { IntentGameContext.canControlGameAudio = previous }
+        IntentGameContext.canControlGameAudio = { false }
+        let (root, tracks) = Self.playingRoot()
+        let sent = AudioPlaybackActionsTests.Sent()
+
+        // The game would drop these from a player that may not control the audio.
+        try? await root.startPlayback(id: UUID(), isGameRunning: true, networkActions: sent.actions)
+        root.remove(id: tracks[1].id, isGameRunning: true, networkActions: sent.actions)
+
+        #expect(sent.requests.isEmpty)
+    }
+
+    @Test("With audio control allowed both still go through the game")
+    func gateOpenKeepsSendingToTheGame() async throws {
+        let previous = IntentGameContext.canControlGameAudio
+        defer { IntentGameContext.canControlGameAudio = previous }
+        IntentGameContext.canControlGameAudio = { true }
+        let (root, tracks) = Self.playingRoot()
+        let sent = AudioPlaybackActionsTests.Sent()
+
+        try await root.startPlayback(id: UUID(), isGameRunning: true, networkActions: sent.actions)
+        root.remove(id: tracks[1].id, isGameRunning: true, networkActions: sent.actions)
+
+        #expect(sent.requests.count == 2)
+    }
+
     // MARK: In a game
 
     @Test("Pause by Siri pauses every player")

@@ -143,6 +143,15 @@ final class GameNetworkControllerModel {
         return !hasSentVersionNotice
     }
 
+    /// Forgets what was already said, so a later game against an incompatible peer is told again.
+    /// A game ends here; the controller itself lives for the whole app run.
+    /// See CODE_AUDIT_26 §5.18.
+    func resetVersionNotices() {
+        versionNoticeConnectionIds = []
+        hasSentVersionNotice = false
+        reportedMismatches = []
+    }
+
     /// Whether `mismatch` is news to the person at this device.
     func claimMismatchReport(_ mismatch: GameVersionMismatch) -> Bool {
         reportedMismatches.insert(mismatch).inserted

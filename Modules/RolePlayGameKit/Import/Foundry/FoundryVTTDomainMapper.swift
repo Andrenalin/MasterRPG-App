@@ -248,6 +248,8 @@ final class FoundryMappingState {
     var folderIDs: [FolderKey: Set<UUID>] = [:]
     var folderAliases: [FolderAliasKey: Set<UUID>] = [:]
     var resourceIDs: [ResourceKey: UUID] = [:]
+    /// The first resource projected for a key, to tell a repeated call from a path collision.
+    var resourceSources: [ResourceKey: FoundryPackageResource] = [:]
     var resourcesByCanonicalPath: [String: FoundryPackageResource] = [:]
     var resourcesByAlias: [String: FoundryPackageResource] = [:]
     var ambiguousResourceCanonicalPaths: Set<String> = []

@@ -194,7 +194,7 @@ extension FoundryMappingState {
     }
 
     func module(for path: String) -> NetworkModules? {
-        if let plan = FoundryMediaNormalizer.plan(for: path) {
+        if let plan = FoundryMediaNormalizer.plan(forPackagedPath: path) {
             return switch plan.kind {
             case .image: .photo
             case .audio: .audio
@@ -207,20 +207,34 @@ extension FoundryMappingState {
         }
     }
 
-    /// Canonical lookup keeps path case intact. Foundry packages can be authored on a
-    /// case-sensitive file system, so a case-folded path is only safe as a secondary alias.
+    /// Canonical key of a path inside the package (`logicalPath`, `packagePath`): a zip entry
+    /// path, not a URL. `#` and `?` are ordinary file name characters there (`Token #1.webp`), so
+    /// nothing is cut. Path case stays intact: packages can be authored on a case-sensitive file
+    /// system, so a case-folded path is only safe as a secondary alias.
     func canonicalResourcePath(_ path: String) -> String {
-        let decoded = path.removingPercentEncoding ?? path
-        let noQuery = decoded.split(separator: "?", maxSplits: 1).first.map(String.init) ?? decoded
-        return noQuery.split(separator: "#", maxSplits: 1).first
-            .map(String.init)?
-            .replacing("\\", with: "/")
+        normalizedResourcePath(path.removingPercentEncoding ?? path)
+    }
+
+    /// Canonical key of a reference found inside a document, which may be a URL: the query and
+    /// fragment are cut first, the percent-decoding comes second (so an encoded `%23` stays part
+    /// of the name), as `FoundryMediaNormalizer.canonicalPath` does.
+    func canonicalReferencePath(_ path: String) -> String {
+        let cut = path.prefix { $0 != "?" && $0 != "#" }
+        let text = String(cut)
+        return normalizedResourcePath(text.removingPercentEncoding ?? text)
+    }
+
+    private func normalizedResourcePath(_ path: String) -> String {
+        path.replacing("\\", with: "/")
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            ?? ""
     }
 
     func resourceAlias(_ path: String) -> String {
         canonicalResourcePath(path).lowercased()
+    }
+
+    func referenceAlias(_ path: String) -> String {
+        canonicalReferencePath(path).lowercased()
     }
 
     func actorCategory(_ subtype: String?) -> ItemListCategory {

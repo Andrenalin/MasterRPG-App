@@ -92,6 +92,11 @@ public final class AdventureModel: nonisolated Identifiable {
     }
     var photoId_: CRDT<UUID?>
     
+    /// The dice attached to the adventure. Deliberately a plain value, not a CRDT register: a merge
+    /// takes the incoming side's value (last importer wins), unlike `photoId`, `name` or `tags`,
+    /// which are arbitrated by timestamp. Making it a register needs a new Core Data attribute (and
+    /// a CloudKit schema deploy), which was judged not worth it for a rarely changed link.
+    /// See CODE_AUDIT_26 §5.27.
     public var diceId: UUID?
 
     public var entries: [AdventureEntryModel] {

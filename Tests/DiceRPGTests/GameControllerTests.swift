@@ -99,7 +99,7 @@ struct GameControllerTests {
         let playerDiceA = DiceModel(id: UUID(), name: "A", dice: [])
         let playerDiceB = DiceModel(id: UUID(), name: "B", dice: [])
         sut.diceGameModel.playerDice = [playerDiceA, playerDiceB]
-        sut.resetPlayerDice(to: ["B"])
+        sut.resetPlayerDice(keepingSenders: [], names: ["B"])
         #expect(sut.diceGameModel.playerDice.map(\.name) == ["B"])
 
         await sut.resetCompareValue(of: dice.id, value: 9)
@@ -334,6 +334,90 @@ struct GameControllerTests {
         // Without a compare option any positive sum is a success, as before.
         item.compareOption = .off
         #expect(sut.calculate(itemId: dice.id).checked)
+    }
+
+    @Test("A reset keeps both of two same-named players' dice when it names them by sender id (CODE_AUDIT_26 §5.17)")
+    func resetKeepsNamesakesApart() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        dice.dice = GameControllerTests.diceResult(values: [[2], [3], [4]])
+        let data = await sut.createDiceResult(for: dice.id, resultCategory: nil)
+        let alexA = UUID()
+        let alexB = UUID()
+        let leaver = UUID()
+        _ = sut.addGameDiceResult(data: data, name: "Alex", supporterTier: .none, isGameMaster: false, senderId: alexA)
+        _ = sut.addGameDiceResult(data: data, name: "Alex", supporterTier: .none, isGameMaster: false, senderId: alexB)
+        _ = sut.addGameDiceResult(data: data, name: "Robin", supporterTier: .none, isGameMaster: false, senderId: leaver)
+        let before = sut.diceGameModel.playerDice.map(\.id)
+        #expect(before.count == 3)
+        let leaverDie = try #require(sut.diceGameModel.playerDiceSenders.first { $0.value == leaver }?.key)
+
+        sut.resetPlayerDice(keepingSenders: [alexA, alexB], names: ["Alex", "Alex"])
+
+        let after = sut.diceGameModel.playerDice.map(\.id)
+        #expect(Set(after).count == 2, "no die appears twice")
+        #expect(Set(after) == Set(before).subtracting([leaverDie]))
+        #expect(Set(sut.diceGameModel.playerDiceSenders.values) == [alexA, alexB])
+        #expect(Set(sut.diceGameModel.playerSupporterTiers.keys) == Set(after))
+    }
+
+    @Test("A roll without a known sender is kept by the player's name")
+    func resetKeepsUnknownSenderByName() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        dice.dice = GameControllerTests.diceResult(values: [[2], [3], [4]])
+        let data = await sut.createDiceResult(for: dice.id, resultCategory: nil)
+        _ = sut.addGameDiceResult(data: data, name: "Host", supporterTier: .none, isGameMaster: false)
+        _ = sut.addGameDiceResult(data: data, name: "Gone", supporterTier: .none, isGameMaster: false, senderId: UUID())
+
+        sut.resetPlayerDice(keepingSenders: [], names: ["Host"])
+
+        #expect(sut.diceGameModel.playerDice.map(\.name) == ["Host"])
+    }
+
+    @Test("A roll without a category keeps the one the dice carries (CODE_AUDIT_26 §5.34)")
+    func resultKeepsTheStoredCategory() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        let characterCategory = ResultCategory(id: UUID(), module: .value)
+        dice.dice = GameControllerTests.diceResult(values: [[2], [3], [4]])
+
+        _ = await sut.createDiceResult(for: dice.id, resultCategory: characterCategory)
+        let data = await sut.createDiceResult(for: dice.id, resultCategory: nil)
+
+        #expect(sut.gameItem(for: dice.id).resultCategory == characterCategory)
+        let shared = try #require(DiceResultModel.decodeData(of: data.data))
+        #expect(shared.diceModel.resultCategory == characterCategory)
+    }
+
+    @Test("Rolling a library dice outside a game leaves its update marker alone (CODE_AUDIT_26 §5.35)")
+    func rollKeepsTheUpdateMarker() async throws {
+        let root = DiceRootModel.testRoot()
+        await root.itemController.resetData()
+        let sut = root.gameController
+        let library = DiceModel(id: UUID(), name: "Library", dice: GameControllerTests.diceResult(values: [[], [], []]))
+        root.itemController.replace(model: library, isInsert: true)
+        let stored = try #require(root.itemController.itemSync(for: library.id))
+        let marker = stored.dice_.update
+
+        sut.rollDice(itemId: library.id, rollSynced: true)
+
+        let rolled = try #require(root.itemController.itemSync(for: library.id))
+        #expect(rolled.dice.allSatisfy { !$0.result.isEmpty }, "the roll happened")
+        #expect(rolled.dice_.update == marker, "but it is not an edit")
+        sut.reset(for: library.id)
+        #expect(rolled.dice.allSatisfy { $0.result.isEmpty })
+        #expect(rolled.dice_.update == marker)
+    }
+
+    @Test("A real edit of the dice still moves the marker")
+    func editMovesTheMarker() {
+        let model = DiceModel(id: UUID(), name: "Edited", dice: GameControllerTests.diceResult(values: [[], [], []]))
+        let marker = model.dice_.update
+
+        model.dice.removeLast()
+
+        #expect(model.dice_.update != marker)
     }
 
     @Test func reorder() async throws {

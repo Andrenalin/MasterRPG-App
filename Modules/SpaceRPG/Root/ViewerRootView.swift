@@ -14,7 +14,9 @@ struct ViewerRootView: View {
 
     var body: some View {
         VStack {
-#if !os(tvOS)
+#if os(tvOS)
+            SpaceUnsupportedView()
+#else
             SpaceViewer(root: root, id: model.id, isModal: configuration.addToolbar)
                 .id(model.id)
 #endif

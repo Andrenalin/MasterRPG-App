@@ -167,13 +167,17 @@ extension EditController {
         let before = (groupItem.parentId, groupItem.groupId, groupItem.displayState)
         groupItem.parentId = nil // groups always on root level / no relationship to folders
 
-        let owners = valueIdOwners[itemId]
-        let firstOwnerId = owners?.first
-        if groupItem.groupId != firstOwnerId {
+        let owners = valueIdOwners[itemId] ?? []
+        // The owner already recorded in `groupId` keeps the group when it still references it; the
+        // first referencing item (in list order) only takes over when it does not. Otherwise a
+        // repair moved the group away from the character that owns it, depending on list order.
+        // See CODE_AUDIT_26 §5.30.
+        let chosenOwnerId = Self.authoritativeOwner(recordedOwner: groupItem.groupId, owners: owners)
+        if groupItem.groupId != chosenOwnerId {
             if let oldOwnerId = groupItem.groupId {
                 removeOld(groupItemId: itemId, valueId: oldOwnerId)
             }
-            groupItem.groupId = firstOwnerId
+            groupItem.groupId = chosenOwnerId
         }
         if groupItem.groupId == nil {
             // An item that no longer belongs to any group becomes a normal, visible top-level
@@ -189,10 +193,16 @@ extension EditController {
                 message: String(localized: "Repairing group item", bundle: .module)
             )
         }
-        guard let owners, owners.count > 1 else { return }
-        for ownerId in owners.dropFirst() {
+        guard owners.count > 1 else { return }
+        for ownerId in owners where ownerId != chosenOwnerId {
             removeOld(groupItemId: itemId, valueId: ownerId)
         }
+    }
+
+    /// The owner a group item keeps when `owners` all reference it.
+    static func authoritativeOwner(recordedOwner: UUID?, owners: [UUID]) -> UUID? {
+        if let recordedOwner, owners.contains(recordedOwner) { return recordedOwner }
+        return owners.first
     }
 
     @MainActor private func removeOld(groupItemId: UUID, valueId: UUID) {

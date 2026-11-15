@@ -152,6 +152,21 @@ struct DataControllerTests {
         #expect(model.description == "Keeps the watch")
         #expect(model.category == .entry)
         #expect(model.photos == photoIds)
+        #expect(model.photoId == photoIds.first)
+    }
+
+    @Test func characterDataControllerWithoutPhotosHasNoPortrait() async throws {
+        let store = try PersistentTestStore(bundles: [
+            CoreRPG.Resources.bundle,
+            CharacterRPG.Resources.bundle
+        ])
+
+        await CharacterDataController().addNewValue(context: store.context, name: "Scribe", text: "", photoIds: [])
+
+        let dataController = DataController(context: store.context, token: NetworkModules.value.token)
+        let model = try #require(try await dataController.fetch().first)
+        #expect(model.photoId == nil)
+        #expect(model.photos.isEmpty)
     }
 }
 

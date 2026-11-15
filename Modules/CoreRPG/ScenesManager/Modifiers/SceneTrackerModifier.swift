@@ -32,6 +32,10 @@ private struct SceneTrackerModifier: ViewModifier {
     /// The scene identifier to track
     let trackedScene: SceneId
     
+    /// This window's own identity: scene state is derived from the windows that are active, not
+    /// written by whichever window changed last. See CODE_AUDIT_26 §5.12.
+    @State private var windowToken = UUID()
+
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.scenePhase) private var scenePhase
     
@@ -44,13 +48,13 @@ private struct SceneTrackerModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onDisappear {
-                scenesManager.dismissWindow(trackedScene, closed: true)
+                scenesManager.windowEnded(windowToken, for: trackedScene)
             }
             .onChange(of: scenePhase, initial: true) {
                 switch scenePhase {
                 case .active:
                     Logger.scenesManager.info("SceneTrackerModifier: scenePhase \(trackedScene.rawValue) is active - setting state to opened")
-                    scenesManager.setSceneState(.opened, for: trackedScene)
+                    scenesManager.windowBecameActive(windowToken, for: trackedScene)
                     self.trackSceneActivation()
                 case .background:
 #if os(macOS)
@@ -66,8 +70,9 @@ private struct SceneTrackerModifier: ViewModifier {
                     }
 #endif
                     Logger.scenesManager.info("SceneTrackerModifier: scenePhase \(trackedScene.rawValue) is background - setting state to closed")
-                    scenesManager.setSceneState(.closed, for: trackedScene)
-                    self.trackSceneDeactivation()
+                    if scenesManager.windowEnded(windowToken, for: trackedScene) {
+                        self.trackSceneDeactivation()
+                    }
                 case .inactive:
                     Logger.scenesManager.info("SceneTrackerModifier: scenePhase \(trackedScene.rawValue) is inactive")
                 @unknown default:

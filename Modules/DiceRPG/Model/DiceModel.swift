@@ -121,6 +121,16 @@ public final class DiceModel: nonisolated Identifiable {
     }
     var dice_: CRDTDataUpdate<[DieModel]>
 
+    /// Writes rolled state (results, rotation) without moving the dice's update marker. A roll is
+    /// not an edit: `merge` arbitrates every plain field by the marker, so a roll made on a library
+    /// set after another device's edit but before it synced would otherwise win the merge and undo
+    /// that edit. See CODE_AUDIT_26 §5.35.
+    @MainActor
+    func setRolledDice(_ rolled: [DieModel]) {
+        guard dice_.wrappedValue != rolled else { return }
+        dice_ = CRDTDataUpdate(wrappedValue: rolled, update: dice_.$update)
+    }
+
     public var sumUp: Bool = true
     public var modifier: Double = 0.0
     public var percentDice: Bool = false

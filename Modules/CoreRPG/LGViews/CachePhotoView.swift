@@ -15,6 +15,9 @@ public struct CachePhotoView: View {
 
     @State private var lastFileUrl: FileUrl?
     @State private var isLoading: Bool = false
+    /// Identifies the load that owns `isLoading`, so a cancelled load that finishes late cannot
+    /// clear the spinner of the load that replaced it.
+    @State private var loadToken = UUID()
 
     public var body: some View {
         VStack {
@@ -27,8 +30,10 @@ public struct CachePhotoView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
-        .onChange(of: model.fileUrl, initial: true) {
-            initImage()
+        // Structured: cancelled with the view and restarted when the file changes, like
+        // `ThumbnailRowPhotoView`. See CODE_AUDIT_26 §5.13.
+        .task(id: model.fileUrl) {
+            await loadImage()
         }
     }
 }
@@ -64,32 +69,32 @@ private extension CachePhotoView {
         }
     }
 
-    func initImage() {
-        guard !isLoading && (lastFileUrl != model.fileUrl || cachedImage == nil) else { return }
+    func loadImage() async {
+        guard lastFileUrl != model.fileUrl || cachedImage == nil else { return }
+        let token = UUID()
+        loadToken = token
         isLoading = true
-        lastFileUrl = model.fileUrl
-        loadImage()
-    }
-
-    func loadImage() {
-        // Default priority, not `.userInitiated`: the awaited ImageIO decode inherits the task's
-        // priority and waits on ImageIO's own Default-QoS threads, which the system reports as a
-        // priority inversion.
-        Task(priority: .medium) {
-            let fileId = model.id
-            if highResolution {
-                await cacheController.photoId(for: fileId, item: model, shouldDownload: false)
-            } else {
-                await cacheController.thumbnailId(for: fileId, item: model)
-            }
-            let newImage = highResolution ? await cacheController.photo(for: fileId) : await cacheController.thumbnail(for: fileId)
-            if highResolution {
-                cacheController.setCachedImage(newImage, for: fileId)
-            } else {
-                cacheController.setCachedThumbnail(newImage, for: fileId)
-            }
-            isLoading = false
+        defer {
+            if loadToken == token { isLoading = false }
         }
+        let fileId = model.id
+        let fileUrl = model.fileUrl
+        if highResolution {
+            await cacheController.photoId(for: fileId, item: model, shouldDownload: false)
+        } else {
+            await cacheController.thumbnailId(for: fileId, item: model)
+        }
+        guard !Task.isCancelled else { return }
+        let newImage = highResolution ? await cacheController.photo(for: fileId) : await cacheController.thumbnail(for: fileId)
+        guard !Task.isCancelled else { return }
+        // A transient read failure must not erase an image that is already cached.
+        guard let newImage else { return }
+        if highResolution {
+            cacheController.setCachedImage(newImage, for: fileId)
+        } else {
+            cacheController.setCachedThumbnail(newImage, for: fileId)
+        }
+        lastFileUrl = fileUrl
     }
 }
 

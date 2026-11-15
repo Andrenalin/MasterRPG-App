@@ -173,6 +173,29 @@ struct EditControllerTests {
         #expect(sut.canBecomeGroup(itemId: groupItemId) == false)
     }
 
+    /// CODE_AUDIT_26 §5.26: the sheet hands a group entry's name back in link form.
+    @Test func updatingAGroupEntryKeepsTheGroupNamePlain() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let groupId = try #require(item.entries.first(where: { $0.id == entryId })?.adventureId)
+        let linkedName = root.itemController.itemOrEmpty(for: groupId).url(linkNumber: 0)
+        #expect(linkedName.contains("RPG://"))
+
+        sut.update(itemId: itemId, entryId: entryId, name: linkedName, content: "Group text", forceSave: false)
+        sut.update(itemId: itemId, entryId: entryId, name: "Plain Name", content: "Group text", forceSave: false)
+
+        let group = root.itemController.itemOrEmpty(for: groupId)
+        #expect(group.name == "Plain Name")
+        #expect(group.description == "Group text")
+
+        sut.update(itemId: itemId, entryId: entryId, name: "[Linked Name](RPG://ADVENTURES/0/\(groupId.uuidString))", content: "Group text", forceSave: false)
+        #expect(root.itemController.itemOrEmpty(for: groupId).name == "Linked Name")
+    }
+
     // MARK: - moveIntoGroup
 
     @Test func moveIntoGroupAddsEntryAndHidesTheItem() async throws {

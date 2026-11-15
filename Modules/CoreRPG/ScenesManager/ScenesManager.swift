@@ -161,6 +161,39 @@ import OSLog
         box.state = state
     }
     
+    /// The windows of each scene that are currently on screen, by tracker token. The viewer scenes
+    /// are multi-instance (`openWindow(_:selection:)` opens a further window when one is open), so
+    /// the scene is `.opened` while at least one window is active and only `.closed` when the last
+    /// one is gone. See CODE_AUDIT_26 §5.12.
+    @ObservationIgnored private var activeWindows: [SceneId: Set<UUID>] = [:]
+
+    /// A window of `scene` became active.
+    public func windowBecameActive(_ token: UUID, for scene: SceneId) {
+        activeWindows[scene, default: []].insert(token)
+        setSceneState(.opened, for: scene)
+    }
+
+    /// A window of `scene` went away (disappeared or moved to the background).
+    /// - Returns: `true` when it was the last window, so the scene is now `.closed`.
+    @discardableResult
+    public func windowEnded(_ token: UUID, for scene: SceneId) -> Bool {
+        activeWindows[scene]?.remove(token)
+        if activeWindows[scene]?.isEmpty ?? true {
+            activeWindows[scene] = nil
+            setSceneState(.closed, for: scene)
+            return true
+        }
+        // Another window is still open: a state set to `.closing` by an earlier dismissal of the
+        // scene no longer describes it.
+        storeSceneState(.opened, for: scene)
+        return false
+    }
+
+    /// The number of windows of `scene` that are active.
+    public func activeWindowCount(for scene: SceneId) -> Int {
+        activeWindows[scene]?.count ?? 0
+    }
+
     /// Gets the current state of a window.
     ///
     /// - Parameter scene: The scene identifier to check

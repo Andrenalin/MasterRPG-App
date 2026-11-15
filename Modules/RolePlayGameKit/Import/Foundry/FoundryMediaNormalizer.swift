@@ -81,7 +81,22 @@ enum FoundryMediaNormalizer {
         for sourcePath: String,
         expectedKind: FoundryMediaNormalizationPlan.Kind? = nil
     ) -> FoundryMediaNormalizationPlan? {
-        let canonicalPath = canonicalPath(sourcePath)
+        plan(fileName: canonicalPath(sourcePath), expectedKind: expectedKind)
+    }
+
+    /// The plan for a file inside the package, whose path is a zip entry and not a URL: `#` and
+    /// `?` are part of the name (`Token #1.webp`), nothing is cut off. See CODE_AUDIT_26 §5.40.
+    static func plan(
+        forPackagedPath path: String,
+        expectedKind: FoundryMediaNormalizationPlan.Kind? = nil
+    ) -> FoundryMediaNormalizationPlan? {
+        plan(fileName: path.removingPercentEncoding ?? path, expectedKind: expectedKind)
+    }
+
+    private static func plan(
+        fileName canonicalPath: String,
+        expectedKind: FoundryMediaNormalizationPlan.Kind?
+    ) -> FoundryMediaNormalizationPlan? {
         let sourceURL = URL(filePath: canonicalPath)
         let filenameExtension = sourceURL.pathExtension.lowercased()
         let stem = sourceURL.deletingPathExtension().lastPathComponent

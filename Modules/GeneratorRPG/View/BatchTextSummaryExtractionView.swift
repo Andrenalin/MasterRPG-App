@@ -9,11 +9,37 @@ private enum BatchItemStatus: Sendable {
     case pending
     case analyzing
     case completed
+    /// The item has no text to analyze; nothing was changed.
+    case skipped
     case failed(String)
 }
 
+/// How a generated summary joins the item's existing text. Pure, so running the batch twice on an
+/// item gives the same result as running it once.
+enum BatchSummaryMerge {
+    /// The existing description with the generated one added once. An existing description that
+    /// already contains the generated text is left alone.
+    static func description(existing: String, generated: String) -> String {
+        let trimmedExisting = existing.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedGenerated = generated.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedGenerated.isEmpty else { return trimmedExisting }
+        guard !trimmedExisting.isEmpty else { return trimmedGenerated }
+        guard !trimmedExisting.contains(trimmedGenerated) else { return trimmedExisting }
+        return "\(trimmedExisting)\n\n\(trimmedGenerated)"
+    }
+
+    /// The existing tags plus the generated ones, without duplicates (compared ignoring case).
+    static func tags(existing: [String], generated: [String]) -> [String] {
+        var result = existing
+        for tag in generated where !result.contains(where: { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }) {
+            result.append(tag)
+        }
+        return result
+    }
+}
+
 /// Batch AI-extraction view: processes multiple items sequentially using on-device AI.
-/// Apply rules: title if name is empty, description appended, tags replaced.
+/// Apply rules: title if name is empty, description appended once, tags merged.
 public struct BatchTextSummaryExtractionView: View {
 
     let module: NetworkModules
@@ -126,6 +152,9 @@ public struct BatchTextSummaryExtractionView: View {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .contentTransition(.symbolEffect(.automatic))
+        case .skipped:
+            Image(systemName: "minus.circle")
+                .foregroundStyle(.secondary)
         case .failed:
             Image(systemName: "xmark.circle.fill")
                 .foregroundStyle(.red)
@@ -142,6 +171,10 @@ public struct BatchTextSummaryExtractionView: View {
             EmptyView()
         case .completed:
             Text("Done", bundle: .module)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .skipped:
+            Text("Skipped: no text to analyze", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         case .failed(let error):
@@ -211,7 +244,7 @@ public struct BatchTextSummaryExtractionView: View {
             guard !Task.isCancelled else { return }
             let entriesText = await itemController.compactText(for: id)
             guard !entriesText.isEmpty else {
-                statuses[id] = .completed
+                statuses[id] = .skipped
                 continue
             }
             statuses[id] = .analyzing
@@ -232,15 +265,14 @@ public struct BatchTextSummaryExtractionView: View {
     }
 
     private func applyResult(_ result: TableSummaryAnalysis, to itemId: UUID) {
-        if let item = itemController.itemSync(for: itemId),
-           item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            editController.reset(name: result.title, itemId: itemId)
-        }
-        let existing = itemController.itemSync(for: itemId)?.description ?? ""
-        let trimmed = existing.trimmingCharacters(in: .whitespacesAndNewlines)
-        let newDescription = trimmed.isEmpty ? result.description : "\(trimmed)\n\n\(result.description)"
-        editController.reset(description: newDescription, itemId: itemId)
-        editController.reset(tags: result.tags, itemId: itemId)
+        guard let item = itemController.itemSync(for: itemId) else { return }
+        let needsName = item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        editController.reset(
+            name: needsName ? result.title : nil,
+            description: BatchSummaryMerge.description(existing: item.description, generated: result.description),
+            tags: BatchSummaryMerge.tags(existing: item.tags, generated: result.tags),
+            itemId: itemId
+        )
     }
 }
 

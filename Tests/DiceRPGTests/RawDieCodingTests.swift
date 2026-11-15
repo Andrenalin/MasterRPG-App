@@ -34,6 +34,33 @@ struct RawDieCodingTests {
         #expect(try JSONDecoder().decode(RawDie.Sides.self, from: data) == .three)
     }
 
+    /// CODE_AUDIT_26 §5.32: every way of building a die gives the named case for a named count.
+    @Test("A die built from text, a count or its own text is the same die", arguments: [2, 3, 4, 6, 8, 10, 12, 20])
+    func namedSidesAreOneDie(count: Int) {
+        let fromText = RawDie(text: "d\(count)")
+        let fromCount = RawDie(.number(count))
+        let roundTrip = RawDie(text: fromText.text)
+
+        #expect(fromText == fromCount)
+        #expect(fromText == roundTrip)
+        #expect(fromText.sides == RawDie.Sides.sides(count))
+        #expect(fromText.colorCodes == roundTrip.colorCodes)
+    }
+
+    @Test("A d3 from a count has the d3 colours and name, not the d20 fallback")
+    func threeFromACountIsAThree() {
+        let die = RawDie(.number(3))
+        #expect(die.sides == .three)
+        #expect(die.colorCodes == RawDie.three.colorCodes)
+        #expect(die == .three)
+    }
+
+    @Test("An unnamed count stays a number")
+    func unnamedCountStaysANumber() {
+        #expect(RawDie(.number(7)).sides == .number(7))
+        #expect(RawDie(text: "d7").sides == .number(7))
+    }
+
     @Test("Other sides round-trip unchanged", arguments: [
         RawDie.Sides.two, .four, .six, .eight, .ten, .twelve, .twenty, .number(7), .number(100)
     ])

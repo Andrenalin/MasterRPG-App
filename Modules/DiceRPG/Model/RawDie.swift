@@ -50,7 +50,14 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
     public let sides: Sides
 
     public init(_ sides: Sides = .twenty) {
-        self.sides = sides
+        // `.number(3)` and `.three` are one die: the case a count names is the one it is built
+        // with, from text, from code (Siri, the widget) and from decoded data alike. Otherwise a d3
+        // is not `==` the bag's d3 and shows a d20 face after a reload. See CODE_AUDIT_26 §5.32.
+        if case let .number(count) = sides {
+            self.sides = Sides.sides(count)
+        } else {
+            self.sides = sides
+        }
     }
 
     public init(text: String) {

@@ -62,6 +62,7 @@ public struct PhotoSummaryAnalyzer: Sendable {
             availability: onDeviceModel.availability,
             capabilities: onDeviceModel.capabilities
         )
+        var onDeviceError: (any Error)?
 
         if fallbackReason == nil {
             do {
@@ -72,22 +73,17 @@ public struct PhotoSummaryAnalyzer: Sendable {
                     throw Self.mapped(error)
                 }
                 fallbackReason = reason
+                onDeviceError = error
             }
         }
 
-        guard let reason = fallbackReason else {
-            throw PhotoSummaryAnalysisError.modelUnavailable
-        }
-        guard Self.isPrivateCloudComputeEnabled else {
-            throw PhotoSummaryAnalysisError.modelUnavailable
-        }
-        switch cloudConsent {
-        case .allowed:
-            break
-        case .undecided:
-            throw PhotoSummaryAnalysisError.cloudConsentRequired(reason)
-        case .denied:
-            throw PhotoSummaryAnalysisError.cloudDeclined(reason)
+        if let failure = Self.cloudFallbackFailure(
+            reason: fallbackReason,
+            onDeviceError: onDeviceError,
+            cloudEnabled: Self.isPrivateCloudComputeEnabled,
+            consent: cloudConsent
+        ) {
+            throw failure
         }
 
         let analysis = try await analyze(image: image, outputLanguage: outputLanguage, using: .privateCloud)
@@ -162,6 +158,35 @@ public struct PhotoSummaryAnalyzer: Sendable {
         - A description of what is visible, in 2 to 3 sentences
         - 3 to 5 specific tags in \(outputLanguage): what kind of image it is, what the main subject is, and the specific creatures, places, objects or mood you can see
         """
+    }
+
+    /// The error that ends the analysis before the cloud is tried, or `nil` when the cloud may run.
+    ///
+    /// Without the cloud (not entitled in this build) a failure the on-device model itself caused,
+    /// for example a guardrail or an oversized context, keeps its own explanation. Only an
+    /// unavailable or image-blind model reads as "Apple Intelligence is not available".
+    static func cloudFallbackFailure(
+        reason: PhotoAnalysisFallbackReason?,
+        onDeviceError: (any Error)?,
+        cloudEnabled: Bool,
+        consent: PhotoCloudConsent
+    ) -> (any Error)? {
+        guard let reason else {
+            return PhotoSummaryAnalysisError.modelUnavailable
+        }
+        guard cloudEnabled else {
+            switch reason {
+            case .onDeviceUnavailable, .visionUnsupported:
+                return PhotoSummaryAnalysisError.modelUnavailable
+            case .contextTooLarge, .guardrail, .unsupportedLanguage, .onDeviceLimited:
+                return onDeviceError.map(mapped) ?? PhotoSummaryAnalysisError.cloudDeclined(reason)
+            }
+        }
+        switch consent {
+        case .allowed: return nil
+        case .undecided: return PhotoSummaryAnalysisError.cloudConsentRequired(reason)
+        case .denied: return PhotoSummaryAnalysisError.cloudDeclined(reason)
+        }
     }
 
     private static func mapped(_ error: any Error) -> any Error {

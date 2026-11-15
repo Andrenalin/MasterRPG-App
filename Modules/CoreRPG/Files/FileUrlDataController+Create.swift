@@ -512,7 +512,7 @@ public extension FileUrlDataController {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.download(fileUrl:)", file: "FileUrlDataController.swift")
         
         if fileUrl.location == .newCloud {
-            try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)
+            try await cloudDocumentController.download(fileUrl: fileUrl.rawUrl)
         } else if fileUrl.location == .url {
             _ = try await ensureRemoteCache(for: fileUrl)
         }

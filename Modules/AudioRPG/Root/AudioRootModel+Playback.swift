@@ -133,6 +133,9 @@ extension AudioRootModel {
     /// else here. Unlike `playOrRequest` it is not a toggle.
     @MainActor
     func startPlayback(id: UUID, isGameRunning: Bool, networkActions: NetworkActions?) async throws {
+        // A player whose audio sharing is off has its play command dropped by the game; the intent
+        // must not answer "Playing" for nothing. See CODE_AUDIT_26 §5.29.
+        let isGameRunning = isGameRunning && IntentGameContext.canControlGameAudio()
         if isGameRunning {
             networkActions?.game(AudioPlayRequest(id: id, shouldPlay: true).command, .playAudio, nil)
         } else {
@@ -157,6 +160,7 @@ extension AudioRootModel {
     /// Removes the item from the play list. In a game, removing the playing one first asks the
     /// game to pause it, so the other devices stop with this one.
     func remove(id: UUID, isGameRunning: Bool, networkActions: NetworkActions?) {
+        let isGameRunning = isGameRunning && IntentGameContext.canControlGameAudio()
         if isGameRunning, audioController.model.isPlaying, audioController.model.currentId == id {
             networkActions?.game(gameController.requestPlay(id: id), .playAudio, nil)
         }

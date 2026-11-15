@@ -115,7 +115,7 @@ extension GameController {
     
     /// Sends a dice set's current result to the game, as every roll does.
     @MainActor
-    private func shareRoll(of itemId: UUID, networkActions: NetworkActions?, resultCategory: ResultCategory? = nil) {
+    func shareRoll(of itemId: UUID, networkActions: NetworkActions?, resultCategory: ResultCategory? = nil) {
         guard let networkActions else { return }
         Task {
             let sendedResult = resultCategory ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.config.module)

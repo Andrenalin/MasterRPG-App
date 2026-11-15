@@ -9,6 +9,15 @@ struct GameStatisticsController: Sendable {
     /// Roles whose games are never recorded: an observer or proxy only relays someone else's game.
     static let uncountedRoles: Set<GameStatisticRole> = [.observer, .proxy]
 
+    /// The time an event is booked at. A dice roll carries the clock of the device that rolled it;
+    /// a skewed or forged future time would push the session's last activity and duration ahead
+    /// and make later updates of that player look stale, so it never passes the local receipt
+    /// time. See CODE_AUDIT_26 §5.20.
+    static func eventTime(reported: Date?, receivedAt: Date) -> Date {
+        guard let reported else { return receivedAt }
+        return min(reported, receivedAt)
+    }
+
     func eventDraft(
         for model: GameNetworkModel,
         sessionId: UUID,
@@ -25,7 +34,7 @@ struct GameStatisticsController: Sendable {
         return GameStatisticEventDraft(
             id: UUID(),
             sessionId: sessionId,
-            occurredAt: diceResult?.timestamp ?? occurredAt,
+            occurredAt: Self.eventTime(reported: diceResult?.timestamp, receivedAt: occurredAt),
             kind: kind,
             direction: direction,
             origin: GameStatisticOrigin(origin),

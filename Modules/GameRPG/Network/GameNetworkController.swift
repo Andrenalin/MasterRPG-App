@@ -163,6 +163,7 @@ extension GameNetworkController {
             model.setLocalPlayers(to: false)
         }
         model.playerRoutes.reset()
+        model.resetVersionNotices()
     }
 }
 

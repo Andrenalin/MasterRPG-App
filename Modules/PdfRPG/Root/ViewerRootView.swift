@@ -36,7 +36,7 @@ struct ViewerRootView: View {
 #if !os(tvOS)
             PdfContentView(searchModel: searchModel, horizontal: false, entry: entry)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .id(searchModel.pdfId)
+                .id(PdfViewerLoadKey(id: searchModel.pdfId, version: searchModel.pdfVersion))
                 .overlay {
                     if searchModel.isSearching {
                         ProgressView()
@@ -90,14 +90,18 @@ struct ViewerRootView: View {
         // in-flight PDF decode automatically if `model` changes again or the view goes
         // away, rather than leaving an orphaned Task decoding in the background.
         // See CODE_AUDIT_Pdf §3.4.
-        .task(id: model) {
+        // Keyed on the file version, not the (in-place mutated) model reference: a replaced file
+        // reloads. See CODE_AUDIT_26 §5.38.
+        .task(id: PdfViewerLoadKey(id: model.id, version: model.version)) {
             let id = model.id
+            let version = model.version
             guard model.url != nil else {
 #if !os(tvOS)
                 searchModel.pdfDoc = nil
                 searchModel.pdfUnavailable = false
 #endif
                 searchModel.pdfId = model.id
+                searchModel.pdfVersion = version
                 return
             }
 #if !os(tvOS)
@@ -108,6 +112,7 @@ struct ViewerRootView: View {
             searchModel.pdfUnavailable = doc == nil
             withAnimation(reduceMotion ? nil : .default) {
                 searchModel.pdfId = id
+                searchModel.pdfVersion = version
             }
 #endif
         }

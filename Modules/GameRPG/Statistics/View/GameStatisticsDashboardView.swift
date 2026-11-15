@@ -299,10 +299,24 @@ private struct GameStatisticsDashboardContent: View {
                     }
                     .controlSize(.large)
                 } else if model.summary.sessionCount == 0 {
-                    GameStatisticsPreviewDashboardView(
-                        summary: previewSummary,
-                        collectionEnabled: model.isCollectionEnabled
-                    )
+                    switch model.configuration.emptyState {
+                    case .sample:
+                        GameStatisticsPreviewDashboardView(
+                            summary: previewSummary,
+                            collectionEnabled: model.isCollectionEnabled
+                        )
+                    case .noGamesInRange:
+                        GameStatisticsFilterView(configuration: $model.configuration)
+                        ContentUnavailableView {
+                            Label {
+                                Text("No Games in This Range", bundle: .module)
+                            } icon: {
+                                Image(systemName: "calendar.badge.exclamationmark")
+                            }
+                        } description: {
+                            Text("Choose a longer date range to see earlier games.", bundle: .module)
+                        }
+                    }
                 } else {
                     GameStatisticsFilterView(configuration: $model.configuration)
                     GameStatisticsHighlightsView(summary: model.summary)

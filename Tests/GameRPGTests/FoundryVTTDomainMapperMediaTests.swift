@@ -74,6 +74,34 @@ struct FoundryVTTDomainMapperMediaTests {
         #expect(mapped.unsupportedResources == [vectorResource])
     }
 
+    // CODE_AUDIT_26 §5.40: the path of a packaged file is a zip entry, not a URL. Cut at `#`,
+    // `Token #1.webp` and `Token #2.webp` shared one key and the second file was never imported.
+    @Test("Packaged files with # and ? in their names are all imported")
+    func filesWithFragmentCharactersStayDistinct() async throws {
+        // Given
+        let first = resource(path: "tokens/Token #1.webp")
+        let second = resource(path: "tokens/Token #2.webp")
+        let third = resource(path: "tokens/Who?.png")
+        let sourceData = try #require(Data(base64Encoded:
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+R0YdWQAAAABJRU5ErkJggg=="
+        ))
+        let package = makePackage(resources: [first, second, third])
+
+        // When
+        let mapped = try await FoundryVTTDomainMapper().map(
+            package: package,
+            sourceURL: URL(filePath: "/tmp/foundry-token-names-test.zip"),
+            sourceScopeID: UUID(),
+            selectedCategories: [.assets],
+            resourceLoader: { _ in sourceData }
+        )
+        let photoNames = mapped.batch.items.filter { $0.module == .photo }.map(\.name).sorted()
+
+        // Then
+        #expect(photoNames == ["Token #1.jpg", "Token #2.jpg", "Who?.jpg"])
+        #expect(mapped.batch.items.filter { $0.module == .photo }.count == 3)
+    }
+
     @Test("Playlist and ambient audio contexts import WebM and MP4 without unsupported warnings")
     func importsContextDependentAudio() async throws {
         // Given

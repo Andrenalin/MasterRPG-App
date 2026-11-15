@@ -32,6 +32,7 @@ public struct SettingsView: View {
 #endif
     
     @State private var showResetAlert = false
+    @State private var resetOutcome: DataResetOutcome?
     @State private var isThemePickerPresented = false
 
     @State private var showResetJoinCodesAlert = false
@@ -201,18 +202,36 @@ public struct SettingsView: View {
                     Button(role: .destructive) {
                         let localStore = store
                         Task {
-                            await localStore.resetData()
+                            let outcome = await localStore.resetData()
+                            withAnimation { resetOutcome = outcome }
                         }
                     } label: {
                         Text("Reset", bundle: .module)
                     }
                 } message: {
-                    Text("Be careful, this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched.", bundle: .module)
+                    Text("Be careful, this removes all items, links and tags from the database. The files themselves in local, appCloud and iCloud storage are not deleted.", bundle: .module)
                 }
             } header: {
                 Text("Reset", bundle: .module)
             } footer: {
-                Text("Be careful, this removes all data and resets the database.", bundle: .module)
+                switch resetOutcome {
+                case .completed:
+                    Label {
+                        Text("The data has been reset.", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                    .foregroundStyle(.green)
+                case .busy:
+                    Label {
+                        Text("Another operation is changing the data. Try again when it has finished.", bundle: .module)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
+                    .foregroundStyle(.orange)
+                case nil:
+                    Text("Be careful, this removes all data and resets the database.", bundle: .module)
+                }
             }
         }
         .themedListSurface()

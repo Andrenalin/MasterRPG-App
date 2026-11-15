@@ -124,6 +124,20 @@ struct CloudDocumentController: Sendable {
         }
     }
 
+    /// The file `fileUrl` (a stored, possibly percent-encoded URL such as `/Map%20Name.png`) names
+    /// below the module folder. Resolved through its decoded components: handing the encoded string
+    /// to `fullUrl(filePath:)` would encode its `%` a second time. See CODE_AUDIT_26 §5.10.
+    func downloadUrl(for fileUrl: URL) throws -> URL {
+        guard let url = fullUrl(fileUrl: fileUrl) else { throw CocoaError(.fileNoSuchFile) }
+        return url
+    }
+
+    func download(fileUrl: URL) async throws {
+        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(fileUrl:)", file: "CloudDocumentController.swift")
+
+        try await FileManager.default.download(coordinatingAccessAt: downloadUrl(for: fileUrl))
+    }
+
     func download(filePath: String) async throws {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(filePath:)", file: "CloudDocumentController.swift")
         

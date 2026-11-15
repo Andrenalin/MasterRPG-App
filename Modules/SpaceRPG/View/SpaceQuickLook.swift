@@ -3,20 +3,15 @@
 import CoreRPG
 import SwiftUI
 
-#if !os(tvOS)
-import QuickLook
-#endif
-
 struct SpaceQuickLook: View {
     let root: SpaceRootModel
     let item: ItemSelection
     let startLoading: Bool
     let gameMode: Bool
+    /// Kept for the call sites; the preview that called it was never presented.
     let dismiss: (() -> Void)?
         
     @Environment(ScenesManager.self) private var scenesManager
-    
-    @State private var selected: URL?
     
     var body: some View {
         ImageOverlayButton(
@@ -31,13 +26,6 @@ struct SpaceQuickLook: View {
         .onChange(of: startLoading, initial: true) {
             guard startLoading == true else { return }
             loader()
-        }
-#if !os(tvOS)
-        .quickLookPreview($selected)
-#endif
-        .onChange(of: selected, initial: false) {
-            guard selected == nil else { return }
-            dismiss?()
         }
     }
     

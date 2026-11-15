@@ -95,7 +95,9 @@ extension EditController {
     @MainActor public func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         if let adventureId = item[entryId].adventureId {
-            reset(name: name, itemId: adventureId, forceSave: forceSave)
+            // The sheet shows a group entry as a link to its group item; its own name must not become
+            // that link. See CODE_AUDIT_26 §5.26.
+            reset(name: name.withoutLink(), itemId: adventureId, forceSave: forceSave)
             reset(description: content, itemId: adventureId, forceSave: forceSave)
         } else {
             updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)

@@ -94,6 +94,44 @@ struct LinkControllerTests {
         try await Task.sleep(for: .milliseconds(1))
     }
 
+    /// CODE_AUDIT_26 §5.28: the play link of a playlist item loads the playlist's tracks.
+    @Test func playLinkOfAPlaylistLoadsItsTracks() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.linkController
+        let source = try #require(root.itemController.itemDataModel.items.first {
+            root.itemController.itemSync(for: $0)?.fileUrl != nil
+        })
+        let fileUrl = try #require(root.itemController.itemSync(for: source)?.fileUrl)
+        let audio = try #require(await root.itemController.fileUrlDataController?.loadData(for: fileUrl))
+
+        var trackIds: [UUID] = []
+        for number in 1...2 {
+            let id = UUID()
+            let url = URL.temporaryDirectory.appending(path: "playlist-link-\(id.uuidString).m4a")
+            try audio.write(to: url)
+            let trackUrl = FileUrl(fileId: id, url: url, location: .local, module: NetworkModules.audio.token, relativeUrl: nil)
+            root.itemController.replace(model: AudioModel(id: id, name: "Track \(number)", fileUrl: trackUrl), isInsert: true)
+            trackIds.append(id)
+        }
+        let playlistId = UUID()
+        root.itemController.replace(
+            model: AudioModel(id: playlistId, name: "Playlist", entries: trackIds.map { AudioEntryModel(id: UUID(), audioId: $0) }),
+            isInsert: true
+        )
+        let link = sut.generateLink(itemId: playlistId)
+        let withActions = sut.toggleTextLink(linkNumber: 0, itemId: playlistId, entryId: nil, command: nil, in: link, shareResult: nil, toggler: nil, editAction: nil)
+
+        let result = sut.toggleTextLink(linkNumber: LinkType.play.linkNumberAddition, itemId: playlistId, entryId: nil, command: LinkType.play.rawValue, in: withActions, shareResult: nil, toggler: nil, editAction: nil)
+        #expect(result.contains("playing"))
+
+        // The load runs on a task of its own.
+        for _ in 0..<100 where root.audioController.model.playList.count < trackIds.count {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(root.audioController.model.playList.map(\.id) == trackIds)
+        #expect(root.audioController.model.playListRootId == playlistId)
+    }
+
     private func toggler() -> ((UUID, NetworkModules) async -> Void) {
         { _, _ in }
     }

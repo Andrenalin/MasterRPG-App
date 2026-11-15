@@ -24,8 +24,7 @@ struct SearchItemListViewModifier: ViewModifier {
                 ForEach(searchModel.searchTags) { suggestion in
                     Button {
                         withAnimation {
-                            searchModel.selectedTokens.append(suggestion)
-                            searchModel.searchFieldText = ""
+                            searchModel.select(token: suggestion)
                             listControllable.resetFilter()
                         }
                     } label: {
@@ -41,16 +40,16 @@ struct SearchItemListViewModifier: ViewModifier {
                 searchModel.searchFieldText <=> searchModel.searchText
             }
             .onChange(of: searchModel.searchFieldText) {
-                guard searchModel.searchFieldText.starts(with: "@") == false || searchModel.searchFieldText.count > 1 else {
-                    return
-                }
-                withAnimation { searchModel.searchText = searchModel.searchFieldText }
+                // "@dra" looks up tags to pick; only other entries are searched as text.
+                searchModel.updateTagSuggestions()
+                let text = SearchModel.searchText(forField: searchModel.searchFieldText)
+                withAnimation { searchModel.searchText = text }
             }
             .onChange(of: searchModel.searchText) {
                 updateSearch()
             }
             .onChange(of: searchModel.selectedTokens) {
-                guard searchModel.selectedTokens.isEmpty else { return }
+                // Every added or removed token changes the filter.
                 updateSearch()
             }
     }
@@ -60,7 +59,10 @@ struct SearchItemListViewModifier: ViewModifier {
             listControllable.resetFilter()
             listControllable.cacheListItemModel.reset(search: listControllable.searchModel.searchText)
             listControllable.searchModel.updateTagSuggestions()
-            listControllable.searchModel.searchFieldText <=> listControllable.searchModel.searchText
+            // A "@…" entry is being typed as a tag lookup; the text search it stands for is empty.
+            if !listControllable.searchModel.searchFieldText.starts(with: "@") {
+                listControllable.searchModel.searchFieldText <=> listControllable.searchModel.searchText
+            }
         }
         // The single search pipeline owns the debounce + cancellation now.
         listControllable.scheduleSearch()
