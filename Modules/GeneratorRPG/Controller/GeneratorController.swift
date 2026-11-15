@@ -131,6 +131,7 @@ struct GeneratorController: Sendable {
         Add hooks to other possible outcomes or story threads.
         Keep responses concise unless the game master asks for detail.
         Preserve the language used by the game master.
+        \(UntrustedPromptText.instruction)
     """
 
     @MainActor var availability: Bool {
@@ -387,6 +388,15 @@ struct GeneratorController: Sendable {
     }
 }
 
+extension GeneratorController {
+    /// The prompt part for the sheet index: empty without an index, otherwise a heading and the
+    /// index as fenced material.
+    static func sheetIndexSection(_ sheetIndex: String) -> String {
+        guard !sheetIndex.isEmpty else { return "" }
+        return "\n\nExisting sheet entries (for consistency only — do NOT summarize or answer from these; always generate NEW content):\n\(UntrustedPromptText.fenced(sheetIndex))"
+    }
+}
+
 private extension GeneratorController {
     // MARK: Prompt & Sheet Building
 
@@ -438,10 +448,9 @@ private extension GeneratorController {
 
         // Sheet entry names can originate from untrusted Foundry VTT import data, so this
         // stays in the prompt: rather than being folded into instructions:. See CODE_AUDIT §6.3.
-        let sheetIndex = compactSheetIndex(from: rootSheetModel)
-        if !sheetIndex.isEmpty {
-            result += "\n\nExisting sheet entries (for consistency only — do NOT summarize or answer from these; always generate NEW content):\n\(sheetIndex)"
-        }
+        // The index goes in the fenced material block with the block markers removed, so an
+        // imported entry name cannot close it or pose as an instruction. See CODE_AUDIT_26 §6.15.
+        result += Self.sheetIndexSection(compactSheetIndex(from: rootSheetModel))
         return result
     }
     

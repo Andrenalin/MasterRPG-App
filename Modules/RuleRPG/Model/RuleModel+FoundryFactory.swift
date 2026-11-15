@@ -38,7 +38,7 @@ public extension RuleModel {
         return RuleModel(
             id: id ?? rule.masterRPGID,
             name: FoundryTextDecoder.decodedText(rule.name),
-            description: readableText(fromHTML: rule.descriptionHTML),
+            description: inertParagraphs(readableText(fromHTML: rule.descriptionHTML)),
             tags: generatedTags,
             category: .rules,
             entries: generatedEntries,
@@ -87,7 +87,7 @@ public extension RuleModel {
         return RuleModel(
             id: id,
             name: FoundryTextDecoder.decodedText(name),
-            description: readableText(fromHTML: descriptionHTML),
+            description: inertParagraphs(readableText(fromHTML: descriptionHTML)),
             tags: orderedUnique(tags + [subtype, "Foundry VTT"]),
             category: .rules,
             entries: values,
@@ -131,7 +131,7 @@ extension RuleModel {
         })
 
         result.append(contentsOf: rule.embeddedRules.map { embedded in
-            var sections = [readableText(fromHTML: embedded.descriptionHTML)]
+            var sections = [inertParagraphs(readableText(fromHTML: embedded.descriptionHTML))]
                 .filter { !$0.isEmpty }
             let values = embedded.values.map {
                 "- **\(inert(FoundryTextDecoder.decodedText($0.path))):** \(inert(presentation($0.value)))"
@@ -199,6 +199,31 @@ extension RuleModel {
             result.insert("\\", at: index)
         }
         return result
+            .replacing("](", with: "]\u{200B}(")
+            .replacing("://", with: ":\u{200B}//")
+    }
+
+    /// `inert` for text with several lines: every line is neutralized on its own and the line
+    /// and paragraph breaks stay, so a description keeps its paragraphs but cannot form a link,
+    /// an item link or a block of its own. Values only go through `linkInert`, so a bonus like `+2`
+    /// stays as it is. Names are not passed through it: they are shown as
+    /// plain text, never as markdown, and escaping would print the backslashes. See
+    /// CODE_AUDIT_26 §6.16.
+    static func inertParagraphs(_ text: String) -> String {
+        text
+            .replacing("\r\n", with: "\n")
+            .replacing("\r", with: "\n")
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { inert(String($0)) }
+            .joined(separator: "\n")
+    }
+
+    /// Values keep their text as it is, a leading `+` or `-` of a bonus included, and only lose
+    /// what can turn them into a link: `](` and `://` are split by a zero-width space, so neither
+    /// a web link nor one of the app's own item links can form. Line breaks stay. See
+    /// CODE_AUDIT_26 §6.16.
+    static func linkInert(_ text: String) -> String {
+        text
             .replacing("](", with: "]\u{200B}(")
             .replacing("://", with: ":\u{200B}//")
     }
@@ -311,7 +336,7 @@ extension RuleModel {
                         for: "\(sourceIdentifier)#value#\(pathIdentity)"
                     ),
                     name: FoundryTextDecoder.decodedText(node.component),
-                    content: presentation(value),
+                    content: linkInert(presentation(value)),
                     kind: .value,
                     parentId: parentId
                 ))
@@ -329,7 +354,7 @@ extension RuleModel {
                         for: "\(sourceIdentifier)#value#\(pathIdentity)#own"
                     ),
                     name: "value",
-                    content: presentation(value),
+                    content: linkInert(presentation(value)),
                     kind: .value,
                     parentId: groupId
                 ))

@@ -102,6 +102,44 @@ struct GameControllerTests {
         try await sut.play(id: playlistId, shouldPlay: false)
     }
 
+    // CODE_AUDIT_26 §6.13
+    @Test("An unknown item nobody holds anymore leaves no report entry behind")
+    func emptyReportsOfUnknownItemsArePruned() async throws {
+        let root = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let playerId = UUID()
+        let unknownItems = (0..<50).map { _ in UUID() }
+        func apply(_ list: AudioListRequest) {
+            sut.applyAudioList(
+                data: NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: list.encodeData()),
+                for: playerId,
+                authoritative: false
+            )
+        }
+
+        apply(AudioListRequest(list: unknownItems, players: [:]))
+        #expect(unknownItems.allSatisfy { sut.gameModel.playerReports[$0] == [playerId] })
+
+        // The player drops them all: nothing holds them and this device does not know them.
+        apply(AudioListRequest(list: [], players: [:]))
+
+        #expect(unknownItems.allSatisfy { sut.gameModel.playerReports[$0] == nil })
+    }
+
+    @Test("Pruning keeps empty reports of items this device knows")
+    func knownItemsKeepTheirEmptyReport() {
+        let known = UUID()
+        let unknown = UUID()
+        let holder = UUID()
+
+        let pruned = GameController.prunedReports([known: [], unknown: [], UUID(): [holder]], knownItems: [known])
+
+        #expect(pruned[known] == [])
+        #expect(pruned[unknown] == nil)
+        #expect(pruned.count == 2)
+    }
+
     @Test("Player report statuses follow each player's report of what the playlist needs to start")
     func playerReportStatusesFollowReports() async throws {
         let root = AudioRootModel.testRoot()

@@ -31,7 +31,7 @@ extension Navigator {
         guard verbosity.rawValue >= configuration.verbosity.rawValue else {
             return
         }
-        logger(.init(verbosity: .info, navigator: id, navigatorName: name, event: event, timestamp: Date()))
+        logger(.init(verbosity: verbosity, navigator: id, navigatorName: name, event: event, timestamp: Date()))
     }
 }
 

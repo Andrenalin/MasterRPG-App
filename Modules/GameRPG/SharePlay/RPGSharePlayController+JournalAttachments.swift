@@ -195,6 +195,8 @@ extension RPGSharePlayController {
         // Nothing says how large an attachment is before it is loaded, so a participant's load
         // reserves the largest size from its budget and gives back what it did not use.
         // The game master's own files are not counted. See CODE_AUDIT_Game_Shareplay §6.2.
+        // `isMaster` is what the attachment's metadata claims: no authenticated source exists, so
+        // the exemption can be claimed by any participant. Accepted, see `journalLoadBudget`.
         let senderId = metadata.sender.id
         let countsAgainstBudget = !metadata.sender.isMaster
         var reservedBytes = 0

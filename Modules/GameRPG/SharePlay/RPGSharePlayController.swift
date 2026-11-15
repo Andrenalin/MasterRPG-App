@@ -88,6 +88,14 @@ final class RPGSharePlayController {
     /// The bytes of Journal attachments one participant has had loaded per minute. Kept apart
     /// from `inboundByteBudget`, which counts Messenger packages.
     /// See CODE_AUDIT_Game_Shareplay §6.2.
+    ///
+    /// The budget is keyed by the sender the attachment's own metadata names, and a sender that
+    /// names itself the game master is not counted (`loadJournalAttachment`). A Journal attachment
+    /// carries no authenticated source (`GroupSessionJournal.Attachment` exposes no participant),
+    /// so a participant can claim to be the master and skip the budget. Accepted: players are
+    /// trusted by design, and what such a claim could load is bounded by the per-message limit
+    /// and the ledger's one attachment per module (CODE_AUDIT_26 §6.12, decided 2026-11-15). If
+    /// the API ever names the sender, key and count every load by that identity.
     var journalLoadBudget = SharePlayInboundByteBudget()
 
     // Kept alive through session resets so the player can re-join automatically

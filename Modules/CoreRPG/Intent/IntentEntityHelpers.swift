@@ -196,6 +196,19 @@ public struct IntentFileTypeError: Error, CustomLocalizedStringResourceConvertib
     }
 }
 
+/// The file passed to a Create intent is larger than the app opens on behalf of an item.
+public struct IntentFileSizeError: Error, CustomLocalizedStringResourceConvertible {
+    public init() {}
+
+    public var localizedStringResource: LocalizedStringResource {
+        LocalizedStringResource(
+            "The file is too large.",
+            bundle: .module,
+            comment: "Error shown by Siri or Shortcuts when the file passed to a Create intent is larger than the size limit."
+        )
+    }
+}
+
 /// The file passed to a Create intent could not be stored with the new item.
 public struct IntentFileStoreError: Error, CustomLocalizedStringResourceConvertible {
     public init() {}
@@ -214,13 +227,30 @@ public struct IntentFileStoreError: Error, CustomLocalizedStringResourceConverti
 /// the module holds, so a wrong file leaves no empty item behind. The bytes are read off the
 /// caller's actor: a Create intent runs on the main actor, and the file can be a large audio,
 /// PDF or USDZ file. See CODE_AUDIT_AppIntents2 §4.4, CODE_AUDIT_Since_3.0.1 §3.2.
-public func intentFileData(_ file: IntentFile?, allowedTypes: [UTType]) async throws -> Data? {
+///
+/// A file above `maximumBytes` throws `IntentFileSizeError`. A file on disk is measured before it
+/// is read, so a huge file is never loaded into memory; bytes the caller passed in memory are
+/// measured as they are. See CODE_AUDIT_26 §6.10.
+public func intentFileData(
+    _ file: IntentFile?,
+    allowedTypes: [UTType],
+    maximumBytes: Int = ByteLimits.maximumSourceFileBytes
+) async throws -> Data? {
     guard let file else { return nil }
     let type = file.type ?? UTType(filenameExtension: URL(filePath: file.filename).pathExtension)
     guard let type, allowedTypes.contains(where: { type.conforms(to: $0) }) else {
         throw IntentFileTypeError()
     }
-    return try await runOffCallerExecutor { file.data }
+    return try await runOffCallerExecutor { () throws -> Data in
+        if let url = file.fileURL,
+           let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+           size > maximumBytes {
+            throw IntentFileSizeError()
+        }
+        let data = file.data
+        guard data.count <= maximumBytes else { throw IntentFileSizeError() }
+        return data
+    }
 }
 
 /// Stores the file of a just-created item through `store`, which reports whether it worked. When it

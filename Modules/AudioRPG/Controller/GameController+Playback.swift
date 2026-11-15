@@ -300,7 +300,18 @@ extension GameController: AudioGameStorable {
                 gameModel.playerReports[itemId] = players
             }
         }
+        // The per-message cap bounds one list, not the sum of many: an item nobody holds and this
+        // device does not know leaves no entry behind. See CODE_AUDIT_26 §6.13.
+        gameModel.playerReports = Self.prunedReports(
+            gameModel.playerReports,
+            knownItems: Set(itemController.itemDataModel.items)
+        )
         return true
+    }
+
+    /// `reports` without the items that no player holds and that are not in `knownItems`.
+    static func prunedReports(_ reports: [UUID: [UUID]], knownItems: Set<UUID>) -> [UUID: [UUID]] {
+        reports.filter { !$0.value.isEmpty || knownItems.contains($0.key) }
     }
     
     @MainActor

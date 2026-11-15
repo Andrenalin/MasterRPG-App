@@ -52,6 +52,29 @@ struct IntentFileIntakeTests {
         }
     }
 
+    // CODE_AUDIT_26 §6.10
+    @Test("A file above the size limit is rejected, one at the limit is read")
+    func sizeLimit() async throws {
+        let file = IntentFile(data: bytes, filename: "rules.pdf", type: .pdf)
+        #expect(try await intentFileData(file, allowedTypes: [.pdf], maximumBytes: 3) == bytes)
+        await #expect(throws: IntentFileSizeError.self) {
+            try await intentFileData(file, allowedTypes: [.pdf], maximumBytes: 2)
+        }
+    }
+
+    @Test("A file on disk is measured before it is read")
+    func sizeLimitOnDisk() async throws {
+        let url = URL.temporaryDirectory.appending(path: "\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try bytes.write(to: url)
+        let file = IntentFile(fileURL: url, filename: "rules.pdf", type: .pdf)
+
+        await #expect(throws: IntentFileSizeError.self) {
+            try await intentFileData(file, allowedTypes: [.pdf], maximumBytes: 2)
+        }
+        #expect(try await intentFileData(file, allowedTypes: [.pdf], maximumBytes: 3) == bytes)
+    }
+
     @Test("A module that holds no file takes none")
     func moduleWithoutFiles() async {
         let file = IntentFile(data: bytes, filename: "rules.pdf", type: .pdf)

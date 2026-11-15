@@ -107,6 +107,9 @@ private struct ContentWidgetSmallContentView: View {
     }
 }
 
+/// The names are the point of the widget, so they are shown on the Home Screen. Where the system
+/// redacts private content (a locked device in StandBy, for one) `privacySensitive()` hides them
+/// and the count stays. See CODE_AUDIT_26 §6.17.
 private struct ContentWidgetMediumContentView: View {
     let entry: ContentWidgetEntry
 
@@ -140,6 +143,7 @@ private struct ContentWidgetMediumContentView: View {
                             HStack {
                                 Text(verbatim: item.name)
                                     .lineLimit(1)
+                                    .privacySensitive()
                                 Spacer()
                                 Image(systemName: "chevron.forward")
                                     .foregroundStyle(.secondary)

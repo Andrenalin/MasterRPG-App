@@ -146,7 +146,7 @@ public final class AppModel: Sendable {
                 restorationKey: "game.1.0.14",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
-                verbosity: .info,
+                verbosity: AppModel.navigatorVerbosity,
                 autoDestinationMode: true
             )
         )
@@ -155,7 +155,7 @@ public final class AppModel: Sendable {
                 restorationKey: "editor.1.0.14",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
-                verbosity: .info,
+                verbosity: AppModel.navigatorVerbosity,
                 autoDestinationMode: true
             )
         )
@@ -164,7 +164,7 @@ public final class AppModel: Sendable {
                 restorationKey: "search.1.0.14",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
-                verbosity: .info,
+                verbosity: AppModel.navigatorVerbosity,
                 autoDestinationMode: true
             )
         )
@@ -173,7 +173,7 @@ public final class AppModel: Sendable {
                 restorationKey: "settings.1.0.13",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
-                verbosity: .info,
+                verbosity: AppModel.navigatorVerbosity,
                 autoDestinationMode: true
             )
         )
@@ -274,8 +274,21 @@ public final class AppModel: Sendable {
 #endif
     }
     
+    /// Navigation events describe destinations and routes, which can carry the names of items.
+    /// They are logged in debug builds only, and never as public text, so a release build writes
+    /// none of it to the unified log. See CODE_AUDIT_26 §6.11.
+    static var navigatorVerbosity: NavigationEvent.Verbosity {
+#if DEBUG
+        .info
+#else
+        .none
+#endif
+    }
+
     static func navigatorLogger(event: NavigationEvent) -> Void {
-        Logger.bootStrap.info("\(event.description, privacy: .public)")
+#if DEBUG
+        Logger.bootStrap.info("\(event.description, privacy: .private)")
+#endif
     }
 }
  

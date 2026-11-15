@@ -39,6 +39,14 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
         return snapshot
     }
 
+    /// Writes the snapshot the content widgets show, into the app group.
+    ///
+    /// Only items that are fully visible and not a special category are published, at most four,
+    /// and only their names and ids. That is a deliberate product decision: the widgets exist to
+    /// show and open the person's own characters and adventures from the Home Screen, so the
+    /// names are readable there like any other widget's text. The widget marks them
+    /// `privacySensitive()`, so the system hides them where it redacts private content. Anyone
+    /// who does not want names on the Home Screen does not add the widget. See CODE_AUDIT_26 §6.17.
     @MainActor
     public static func publish(module: NetworkModules, from dataModel: ItemDataModel) {
         let visibleItems = dataModel.items.compactMap { itemId -> ContentWidgetItem? in

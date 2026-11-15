@@ -74,7 +74,8 @@ nonisolated public struct NavigationConfiguration {
             // `print`, so navigation events are filterable/redactable like
             // every other subsystem's logging. See CODE_AUDIT §5.5.
             #if DEBUG
-            Logger.navigation.debug("\($0.description, privacy: .public)")
+            // Destinations and routes can carry item names; never public. See CODE_AUDIT_26 §6.11.
+            Logger.navigation.debug("\($0.description, privacy: .private)")
             #endif
         },
         executionDelay: TimeInterval = 0.3,

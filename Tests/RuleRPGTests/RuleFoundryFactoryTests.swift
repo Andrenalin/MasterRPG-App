@@ -27,6 +27,28 @@ struct RuleFoundryFactoryTests {
         #expect(RuleModel.inert("a\n# inline") == "a # inline")
     }
 
+    /// CODE_AUDIT_26 §6.16: descriptions keep their paragraphs, values keep their text.
+    @Test("Descriptions and values cannot form a link, descriptions keep paragraphs, bonuses stay")
+    func descriptionsAndValuesCannotLink() {
+        let description = RuleModel.inertParagraphs("First [x](https://example.com)\r\n\r\n# Second *bold*")
+        #expect(!description.contains("]("))
+        #expect(!description.contains("://"))
+        #expect(description.split(separator: "\n", omittingEmptySubsequences: false).count == 3)
+        #expect(description.hasSuffix("\\# Second \\*bold\\*"))
+
+        #expect(RuleModel.linkInert("+2") == "+2")
+        #expect(RuleModel.linkInert("-3") == "-3")
+        #expect(RuleModel.linkInert("a\nb") == "a\nb")
+        #expect(!RuleModel.linkInert("[open](masterrpg://item/1)").contains("]("))
+        #expect(!RuleModel.linkInert("[open](masterrpg://item/1)").contains("://"))
+
+        let entries = RuleModel.hierarchicalValues(
+            [FoundryRuleValue(path: "bonus", value: .string("[go](https://example.com)"))],
+            sourceIdentifier: "test"
+        )
+        #expect(entries.allSatisfy { !$0.content.contains("](") })
+    }
+
     @Test("Typed Foundry rules retain provenance and their lossless payload")
     func typedRuleMapping() throws {
         // Given

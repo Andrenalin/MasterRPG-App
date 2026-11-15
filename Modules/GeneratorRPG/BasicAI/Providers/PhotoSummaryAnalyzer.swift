@@ -28,18 +28,31 @@ public struct PhotoSummaryAnalyzer: Sendable {
         public let model: PhotoAnalysisModel
     }
 
-    /// Whether this build may use Private Cloud Compute.
+    /// Whether this process may use Private Cloud Compute.
     ///
     /// Creating a `PrivateCloudComputeLanguageModel` in a process without the managed entitlement
     /// `com.apple.developer.private-cloud-compute` is a fatal error, not a thrown one. The
-    /// entitlement needs Apple's approval, so the cloud path stays off until the app has it and the
-    /// GeneratorRPG target defines the `PRIVATE_CLOUD_COMPUTE_ENTITLED` compilation condition.
+    /// entitlement needs Apple's approval, so the cloud path stays off until the app has it, the
+    /// GeneratorRPG target defines the `PRIVATE_CLOUD_COMPUTE_ENTITLED` compilation condition and
+    /// the host has the entitlement (read from the code signature on macOS, declared by the host
+    /// elsewhere). See `PrivateCloudComputeGate`.
     public static var isPrivateCloudComputeEnabled: Bool {
 #if PRIVATE_CLOUD_COMPUTE_ENTITLED
-        true
+        let compileTimeFlag = true
 #else
-        false
+        let compileTimeFlag = false
 #endif
+        return PrivateCloudComputeGate.isEnabled(
+            compileTimeFlag: compileTimeFlag,
+            processEntitlement: PrivateCloudComputeGate.processEntitlement(),
+            hostDeclaration: PrivateCloudComputeGate.isHostDeclaredEntitled
+        )
+    }
+
+    /// Called once at launch by a host app that carries the Private Cloud Compute entitlement.
+    /// Hosts without it, such as an extension that links the module, do not call it.
+    public static func declareHostPrivateCloudComputeEntitlement(_ entitled: Bool) {
+        PrivateCloudComputeGate.declareHost(entitled: entitled)
     }
 
     private let instructions: String

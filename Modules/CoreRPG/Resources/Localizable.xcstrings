@@ -8475,6 +8475,23 @@
           }
         }
       }
+    },
+    "The file is too large." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datei ist zu groß."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ใหญ่เกินไป"
+          }
+        }
+      },
+      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent is larger than the size limit."
     }
   },
   "version" : "1.3"
