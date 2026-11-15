@@ -7,6 +7,43 @@
 
 import SwiftUI
 
+/// A small seedable generator, so a bolt shared with another device grows with the same random
+/// jitter and forks as on the device that struck it.
+struct LightningRandom: RandomNumberGenerator {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    /// SplitMix64.
+    mutating func next() -> UInt64 {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var value = state
+        value = (value ^ (value >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        value = (value ^ (value >> 27)) &* 0x94D0_49BB_1331_11EB
+        return value ^ (value >> 31)
+    }
+}
+
+/// One lightning strike as every device draws it: where the main bolt starts across the width,
+/// and the seed of its random shape. `id` tells two identical strikes apart for `onChange`.
+struct LightningBoltSpec: Equatable, Sendable {
+    let id = UUID()
+    /// The start position across the view, from 0 (left) to 1 (right).
+    let startFraction: Double
+    let seed: UInt64
+
+    init(startFraction: Double, seed: UInt64) {
+        self.startFraction = startFraction.isFinite ? min(max(startFraction, 0), 1) : 0.5
+        self.seed = seed
+    }
+
+    static func random() -> LightningBoltSpec {
+        LightningBoltSpec(startFraction: .random(in: 0 ... 1), seed: .random(in: .min ... .max))
+    }
+}
+
 class Lightning {
     enum LightningState {
         case waiting, preparing, striking, fading
@@ -41,6 +78,10 @@ class Lightning {
     var lastUpdate = Date.now
     var flashOpacity = 0.0
 
+    /// The strike being prepared or drawn. Its seed drives the bolt's jitter and forks.
+    private var spec = LightningBoltSpec.random()
+    private var random = LightningRandom(seed: 0)
+
     var maximumBolts: Int
     var forkProbability: Int
 
@@ -58,7 +99,8 @@ class Lightning {
             break
 
         case .preparing:
-            let startPosition = CGPoint(x: Double.random(in: Self.boltStartRange(width: size.width)), y: 0)
+            let range = Self.boltStartRange(width: size.width)
+            let startPosition = CGPoint(x: range.lowerBound + spec.startFraction * (range.upperBound - range.lowerBound), y: 0)
             let newBolt = LightningBolt(start: startPosition, width: 5, angle: Angle.degrees(270).radians)
             bolts.append(newBolt)
             state = .striking
@@ -71,8 +113,8 @@ class Lightning {
                 guard var lastPoint = bolt.points.last else { continue }
 
                 for _ in 0 ..< 5 {
-                    let endX = lastPoint.x + (speed * cos(bolt.angle) + Double.random(in: Self.jitterRange))
-                    let endY = lastPoint.y - (speed * sin(bolt.angle) + Double.random(in: Self.jitterRange))
+                    let endX = lastPoint.x + (speed * cos(bolt.angle) + Double.random(in: Self.jitterRange, using: &random))
+                    let endY = lastPoint.y - (speed * sin(bolt.angle) + Double.random(in: Self.jitterRange, using: &random))
                     lastPoint = CGPoint(x: endX, y: endY)
                     bolt.points.append(lastPoint)
                 }
@@ -80,8 +122,8 @@ class Lightning {
                 if lastPoint.y < size.height {
                     hasFinishedStriking = false
 
-                    if bolts.count < maximumBolts, Int.random(in: 0 ..< 100) < forkProbability {
-                        let newAngle = Double.random(in: -Self.forkAngleSpread ... Self.forkAngleSpread) - .pi / 2
+                    if bolts.count < maximumBolts, Int.random(in: 0 ..< 100, using: &random) < forkProbability {
+                        let newAngle = Double.random(in: -Self.forkAngleSpread ... Self.forkAngleSpread, using: &random) - .pi / 2
                         let newBolt = LightningBolt(start: lastPoint, width: bolt.width * 0.75, angle: newAngle)
                         bolts.append(newBolt)
                     }
@@ -116,9 +158,14 @@ class Lightning {
         }
     }
 
-    func strike() {
-        guard state == .waiting else { return }
+    /// Starts a strike unless one is already running. Returns whether it started.
+    @discardableResult
+    func strike(_ spec: LightningBoltSpec = .random()) -> Bool {
+        guard state == .waiting else { return false }
+        self.spec = spec
+        random = LightningRandom(seed: spec.seed)
         state = .preparing
+        return true
     }
 
     func stop() {

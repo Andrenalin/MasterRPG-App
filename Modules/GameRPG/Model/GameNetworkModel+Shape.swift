@@ -134,7 +134,8 @@ extension GameNetworkModel {
     var carriesAsset: Bool {
         guard data.carriesAsset else { return false }
         if type == .reveal || type == .store { return true }
-        return type == .update && subType == .generic && data.type != .map
+        // A Weather's `.update/.generic` is a lightning strike: a small event, never a package.
+        return type == .update && subType == .generic && data.type != .map && data.type != .weather
     }
 }
 

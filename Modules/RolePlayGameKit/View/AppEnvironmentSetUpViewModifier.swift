@@ -79,6 +79,7 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
             .environment(\.mapActions, appModel.mapRoot.mapActions)
             .environment(\.routeActions, appModel.routeActions)
             .environment(\.networkActions, appModel.gameRoot.networkActions)
+            .environment(\.isGamePlayer, appModel.gameRoot.isGamePlayer)
             .environment(\.quickDiceSlots, appModel.gameRoot.quickDiceSlots)
             .environment(\.generateMapAction, appModel.gameRoot.generateMapAction)
             .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)

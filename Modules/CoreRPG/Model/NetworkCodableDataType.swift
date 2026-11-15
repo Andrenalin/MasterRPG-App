@@ -6,6 +6,11 @@ import SwiftUI
 public extension EnvironmentValues {
     @Entry var networkActions: NetworkActions? = nil
 
+    /// True on a device that joined a running game as a player or observer. It is false for the
+    /// game master and outside a game. Views use it to turn off what only the game master does,
+    /// such as striking a weather's lightning for everyone.
+    @Entry var isGamePlayer: Bool = false
+
     /// True only while an actual SharePlay `GroupSession` is active for the
     /// current game. Unlike `networkActions` — present for solo, local-network,
     /// *and* SharePlay sessions alike — this specifically gates behavior that

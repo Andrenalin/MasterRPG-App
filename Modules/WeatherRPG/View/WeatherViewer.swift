@@ -11,10 +11,13 @@ struct WeatherViewer: View {
     @Binding var isAnimating: Bool
 
     @Environment(WeatherRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(\.isGamePlayer) private var isGamePlayer
     @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     @State private var lightningTrigger = 0
+    @State private var incomingBolt: LightningBoltSpec?
     @State private var animationTrace: PerformanceTrace.Interval?
 
     /// Shared "time of day" keyframe schedule for every gradient below, so the
@@ -74,7 +77,13 @@ struct WeatherViewer: View {
             }
 
             if isAnimating || useGame {
-                WeatherEffectLayers(model: model, lightningTrigger: lightningTrigger)
+                WeatherEffectLayers(
+                    model: model,
+                    lightningTrigger: lightningTrigger,
+                    incomingBolt: incomingBolt,
+                    onLightningTap: shareLightning,
+                    isLightningTapEnabled: !isGamePlayer
+                )
             }
         }
         .frame(width: containerSize.width, height: containerSize.height)
@@ -104,6 +113,10 @@ struct WeatherViewer: View {
         .onAppear {
             updatePerformanceTrace(isActive: isAnimating || useGame)
         }
+        .onChange(of: root.receivedLightning) { _, received in
+            guard useGame, let strike = received?.strike, strike.weatherId == model.id else { return }
+            incomingBolt = strike.bolt
+        }
         .onChange(of: isAnimating) { _, isAnimating in
             updatePerformanceTrace(isActive: isAnimating || useGame)
         }
@@ -112,6 +125,14 @@ struct WeatherViewer: View {
             animationTrace = nil
             isAnimating = false
         }
+    }
+
+    /// Shares a strike a tap started with the players. A player's tap is turned off; the game
+    /// also drops a player's weather message.
+    private func shareLightning(_ bolt: LightningBoltSpec) {
+        guard useGame, let networkActions else { return }
+        let strike = WeatherLightningStrike(weatherId: model.id, bolt: bolt)
+        networkActions.game(strike.networkData, .generic, nil)
     }
 
     private func updatePerformanceTrace(isActive: Bool) {
@@ -153,6 +174,7 @@ struct WeatherViewer: View {
 
     private var canTriggerLightning: Bool {
         (isAnimating || useGame)
+        && !isGamePlayer
         && !accessibilityReduceMotion
         && !accessibilityDimFlashingLights
     }

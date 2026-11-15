@@ -28,3 +28,20 @@ extension MasterController {
         }
     }
 }
+
+// MARK: - Lightning
+
+extension MasterController {
+    /// Sends a lightning strike the game master made on the weather on screen to every player.
+    /// A strike is an event: it is not replayed to a device that joins later.
+    func sendLightning(_ message: NetworkCodableDataType) async {
+        guard !asProxy,
+              message.type == .weather,
+              let strike = WeatherLightningStrike.decodeData(of: message.data),
+              strike.isValid,
+              strike.weatherId == message.id,
+              root.weatherRoot.gameControllable.gameModel.currentItemId == strike.weatherId
+        else { return }
+        await send(type: .update, subtype: .generic, updated: strike.networkData)
+    }
+}

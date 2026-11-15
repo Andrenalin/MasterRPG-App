@@ -18,8 +18,12 @@ import WeatherRPG
 
 extension MasterController {
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
-        // Weather is immutable during a game. It is presented and requested via
-        // reveal messages only; live update messages are not supported yet.
+        // Weather is immutable during a game. It is presented and requested via reveal messages
+        // only; its one live message is the game master's lightning strike (`.generic`).
+        if message.type == .weather, actionType == .generic {
+            await sendLightning(message)
+            return
+        }
         guard message.type != .table, message.type != .weather else { return }
         // Character/Value updates have no general in-game protocol — the
         // player join handshake has its own exchange elsewhere, and the only

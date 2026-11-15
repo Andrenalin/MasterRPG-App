@@ -211,6 +211,12 @@ public final class GameRoot {
     public var isSharePlayActive: Bool { gameModel.isSharePlayActive }
     #endif
 
+    /// Whether this device joined a running game as a player or observer; see
+    /// `EnvironmentValues.isGamePlayer`.
+    public var isGamePlayer: Bool {
+        gameModel.playerController != nil && !gameModel.gameConfig.isMaster
+    }
+
     public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
         guard let store = self?.gameModel.masterController else { return }
         self?.scheduleNetworkAction {

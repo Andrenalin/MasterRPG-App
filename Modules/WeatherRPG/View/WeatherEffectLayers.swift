@@ -9,6 +9,12 @@ import SwiftUI
 struct WeatherEffectLayers: View {
     let model: WeatherModel
     let lightningTrigger: Int
+    /// A strike another device shared.
+    var incomingBolt: LightningBoltSpec? = nil
+    /// Called when a tap on the lightning layer starts a strike.
+    var onLightningTap: ((LightningBoltSpec) -> Void)? = nil
+    /// Whether a tap on the lightning layer strikes.
+    var isLightningTapEnabled = true
     /// The depth between two layers, in points toward the viewer. Zero stacks them flat.
     var layerSpacing: CGFloat = 0
 
@@ -28,7 +34,10 @@ struct WeatherEffectLayers: View {
                 frequency: model.lightningFrequency,
                 maximumBolts: WeatherLimits.count(model.lightningMaxBolts, in: WeatherLimits.lightningMaxBolts),
                 forkProbability: WeatherLimits.count(model.lightningForkProbability, in: WeatherLimits.lightningForkProbability),
-                trigger: lightningTrigger
+                trigger: lightningTrigger,
+                incomingBolt: incomingBolt,
+                onTap: onLightningTap,
+                isTapEnabled: isLightningTapEnabled
             )
             .weatherLayerDepth(layerSpacing * 2)
 

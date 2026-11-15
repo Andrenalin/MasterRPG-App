@@ -12,6 +12,12 @@ struct LightningView: View {
     let maximumBolts: Int
     let forkProbability: Int
     let trigger: Int
+    /// A strike another device shared; drawn as sent, at this view's width.
+    let incomingBolt: LightningBoltSpec?
+    /// Called with the strike a tap (or `trigger`) just started, so it can be shared.
+    let onTap: ((LightningBoltSpec) -> Void)?
+    /// Whether a tap strikes. Off for a player in a game: only the game master strikes.
+    let isTapEnabled: Bool
 
     // Boxed in @State so in-flight bolts survive `WeatherViewer.body`
     // re-evaluations triggered by unrelated model changes instead of resetting
@@ -24,7 +30,7 @@ struct LightningView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        Button(action: strike) {
+        Button(action: tap) {
             TimelineView(.animation(paused: shouldSuppressLightning)) { timeline in
                 Canvas { context, size in
                     guard !shouldSuppressLightning else { return }
@@ -47,6 +53,7 @@ struct LightningView: View {
             }
         }
         .buttonStyle(.plain)
+        .allowsHitTesting(isTapEnabled)
         .accessibilityHidden(true)
         // Hidden from accessibility, so it must not take focus either: on Apple TV the focus
         // engine could land on this invisible full-screen control. See CODE_AUDIT_20 §8.8.
@@ -59,11 +66,15 @@ struct LightningView: View {
             // trigger at all (matches the previous `timer.upstream.connect().cancel()`
             // behavior). See CODE_AUDIT_9 §4.2.
             if frequency >= 1 {
-                PeriodicStrikeTrigger(interval: 60.0 / frequency, action: strike)
+                PeriodicStrikeTrigger(interval: 60.0 / frequency) { strike() }
             }
         }
         .onChange(of: trigger) {
-            strike()
+            tap()
+        }
+        .onChange(of: incomingBolt) { _, incomingBolt in
+            guard let incomingBolt else { return }
+            strike(incomingBolt)
         }
         .onChange(of: shouldSuppressLightning) { _, shouldSuppressLightning in
             if shouldSuppressLightning {
@@ -82,12 +93,18 @@ struct LightningView: View {
         frequency: Double = 0.0,
         maximumBolts: Int = 4,
         forkProbability: Int = 20,
-        trigger: Int = 0
+        trigger: Int = 0,
+        incomingBolt: LightningBoltSpec? = nil,
+        onTap: ((LightningBoltSpec) -> Void)? = nil,
+        isTapEnabled: Bool = true
     ) {
         self.frequency = frequency
         self.maximumBolts = maximumBolts
         self.forkProbability = forkProbability
         self.trigger = trigger
+        self.incomingBolt = incomingBolt
+        self.onTap = onTap
+        self.isTapEnabled = isTapEnabled
         _lightning = State(initialValue: Lightning(maximumBolts: maximumBolts, forkProbability: forkProbability))
     }
 
@@ -95,9 +112,22 @@ struct LightningView: View {
         accessibilityReduceMotion || accessibilityDimFlashingLights
     }
 
-    private func strike() {
+    /// A strike that starts on its own (the periodic cadence) or arrives from another device.
+    private func strike(_ spec: LightningBoltSpec = .random()) {
         guard !shouldSuppressLightning else { return }
-        lightning.strike()
+        lightning.strike(spec)
+    }
+
+    /// A strike the user asked for. It is shared when it starts here, or when this device
+    /// suppresses flashing: the receiving devices apply their own accessibility settings, and
+    /// a game master's setting must not take the strike away from the players.
+    private func tap() {
+        let spec = LightningBoltSpec.random()
+        if shouldSuppressLightning {
+            onTap?(spec)
+        } else if lightning.strike(spec) {
+            onTap?(spec)
+        }
     }
 }
 

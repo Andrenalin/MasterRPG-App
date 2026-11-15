@@ -13,6 +13,16 @@ extension PlayerController {
             await handleMapPhotoPresentation(model)
             return nil
         }
+        if model.type == .update, model.subType == .generic {
+            // A lightning strike on the weather on screen; only the game master sends it.
+            guard model.sender.isMaster,
+                  model.data.type == .weather,
+                  let strike = WeatherLightningStrike.decodeData(of: model.data.data),
+                  strike.weatherId == model.data.id
+            else { return nil }
+            root.weatherRoot.receiveLightning(strike)
+            return nil
+        }
         if model.type == .update, model.subType == .tableWeather {
             // The weather on the 3D table; only the game master sends it.
             guard model.sender.isMaster else { return nil }
@@ -21,7 +31,7 @@ extension PlayerController {
         }
 
         // Weather is immutable during a game. Presentation and request answers use reveal
-        // messages; live update messages are intentionally ignored.
+        // messages; its only live update is the lightning strike above.
         return try await answerHeldItem(
             model,
             reveal: { try await revealWeather(model) },

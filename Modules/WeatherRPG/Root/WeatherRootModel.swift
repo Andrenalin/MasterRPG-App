@@ -110,6 +110,9 @@ public final class WeatherRootModel {
 
     public let config: ModuleConfiguration
     @MainActor public var navigationModel: ModuleNavigationModel
+    /// The last lightning strike the game master shared. A viewer draws it when it is for its
+    /// weather.
+    public private(set) var receivedLightning: ReceivedLightningStrike?
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
     public let removeEntryListModel: RemoveEntryListModel
@@ -182,6 +185,12 @@ extension WeatherRootModel {
 
 
 public extension WeatherRootModel {
+    /// Shows the game master's lightning strike on every viewer of its weather.
+    func receiveLightning(_ strike: WeatherLightningStrike) {
+        guard strike.isValid else { return }
+        receivedLightning = ReceivedLightningStrike(strike: strike)
+    }
+
     /// A weather of the running game, such as the one shown on the game table: from game
     /// memory, else the library.
     func gameWeather(itemId: UUID) -> WeatherModel {
