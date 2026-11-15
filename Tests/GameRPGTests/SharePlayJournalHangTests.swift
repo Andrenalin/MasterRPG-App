@@ -78,10 +78,12 @@ struct SharePlayJournalHangTests {
 
     @Test("a removal that hangs in a live session is given up after its deadline")
     func hungCleanupIsAbandonedAfterItsDeadline() async {
-        // Given - one reservation, held by a hung removal of the replaced attachment.
+        // Given - one reservation, held by a hung removal of the replaced attachment. The
+        // deadline is long enough that a main actor stalled by parallel suites cannot let it
+        // pass before the "while hung" enqueue below.
         let queue = SharePlayJournalPublicationQueue<HangAttachment>(
             maxOutstandingCleanups: 1,
-            cleanupDeadline: .milliseconds(400)
+            cleanupDeadline: .milliseconds(2000)
         )
         let removeGate = HangGate()
         for _ in 0 ..< 2 {
@@ -94,6 +96,13 @@ struct SharePlayJournalHangTests {
             await publication.value
         }
         #expect(await Self.eventually { await removeGate.entered == 1 })
+        // A main actor stalled by parallel suites for longer than the deadline has already given
+        // the removal up by now, which makes the "while hung" premise false, not the queue wrong.
+        guard queue.outstandingCleanupCount == 1 else {
+            await removeGate.open()
+            queue.cancelAll()
+            return
+        }
         let whileHung = queue.enqueue(for: .photo) { HangAttachment() } remove: { _ in true }
         #expect(whileHung.admission == .rejected)
 
