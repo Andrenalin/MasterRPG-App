@@ -95,5 +95,25 @@ struct ExportControllerTests {
         #expect(adventureIds!.contains(newId))
         #expect(!adventureIds!.contains(notConnected))
     }
+
+    /// CODE_AUDIT_26 §5.3: the hidden group adventure an entry stands for travels with its parent.
+    @Test func exportingFollowsGroupEntries() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+
+        let sut = root.exportController
+        let itemId = await root.itemController.addNew(type: .item)
+        let groupId = await root.itemController.addNew(type: .item)
+        let notConnected = await root.itemController.addNew(type: .item)
+        let entry = AdventureEntryModel(id: UUID(), name: "Group", content: "copy", adventureId: groupId)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
+
+        let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .adventure))
+
+        let adventureIds = try #require(ids.ids[.adventure])
+        #expect(adventureIds.contains(itemId))
+        #expect(adventureIds.contains(groupId))
+        #expect(!adventureIds.contains(notConnected))
+    }
 }
 #endif

@@ -202,12 +202,16 @@ extension WeatherModel: nonisolated Comparable {
 }
 
 extension WeatherModel: nonisolated ItemLinkRegistrable {
+    @MainActor public var linkRegisterModels: [LinkRegisterModel] {
+        changedLinkRegisterModels(oldValue: .empty).added
+    }
+
     @MainActor public func changedLinkRegisterModels(oldValue: WeatherModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
         var added: [LinkRegisterModel] = []
         var removed: [LinkRegisterModel] = []
         
         if oldValue.photoId != photoId {
-            let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
+            let modelSource = ItemRowModel(itemId: id, typeId: .weather)
             if let photoId {
                 added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
             }

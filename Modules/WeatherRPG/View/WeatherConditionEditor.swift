@@ -14,19 +14,31 @@ struct WeatherConditionEditor: View {
     @Environment(WeatherRootModel.self) private var root
 
     @State private var cloudEditModel: EditIdentifierModel<Cloud.Thickness> = EditIdentifierModel(value: .none)
+    @State private var timeEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0)
 
     var body: some View {
         Section {
-            WeatherTimeEditor(model: model)
+            WeatherTimeEditor(editModel: timeEditModel)
             WeatherCloudsEditor(model: cloudEditModel)
         } header: {
             WeatherSectionHeader(titleKey: "Weather", bundle: .module)
         }
         .onChange(of: model.id, initial: true) {
             syncCloudModel()
+            syncTimeModel()
         }
         .onChange(of: model.cloudThickness) {
             syncCloudModel()
+        }
+        .onChange(of: model.time) {
+            syncTimeModel()
+        }
+    }
+
+    private func syncTimeModel() {
+        let editController = root.editController
+        timeEditModel.reset(valueId: model.id, value: model.time) { itemId, value in
+            editController.reset(time: value, itemId: itemId)
         }
     }
 
@@ -43,7 +55,7 @@ struct WeatherConditionEditor: View {
 /// computed properties share the parent's invalidation boundary, dedicated `View` structs
 /// don't. See CODE_AUDIT_9 §8.1.
 private struct WeatherTimeEditor: View {
-    @Bindable var model: WeatherModel
+    @Bindable var editModel: EditIdentifierModel<Double>
 
     var body: some View {
         LabeledContent {
@@ -51,7 +63,11 @@ private struct WeatherTimeEditor: View {
             Text(formattedTime)
 #else
             HStack {
-                Slider(value: $model.time)
+                // Edits a draft, saved when the drag ends: the model itself is only written through
+                // the edit controller. See CODE_AUDIT_26 §5.7.
+                Slider(value: $editModel.value) { isEditing in
+                    if !isEditing { editModel.save() }
+                }
                     .accessibilityLabel(Text("Time", bundle: .module))
                     .accessibilityValue(Text(verbatim: formattedTime))
                 Text(formattedTime)
@@ -64,7 +80,7 @@ private struct WeatherTimeEditor: View {
 
     private var formattedTime: String {
         let start = Calendar.current.startOfDay(for: Date.now)
-        let advanced = start.addingTimeInterval(model.time * 24 * 60 * 60)
+        let advanced = start.addingTimeInterval(editModel.value * 24 * 60 * 60)
         return advanced.formatted(date: .omitted, time: .shortened)
     }
 }

@@ -34,7 +34,7 @@ extension GameController {
         let sumResult = sumResult(itemId: itemId)
         result.sum = sumResult
 
-        result.checked = sumResult > 0
+        result.checked = isChecked(item: item, sum: sumResult)
 
         if coup(for: itemId) {
             result.result = .coup
@@ -43,6 +43,16 @@ extension GameController {
         return result
     }
     
+    /// Whether a roll with this `sum` counts as a success. With "Add dice" on, the compare value is
+    /// spent per die (`maxValuePerDice`) and a sum above 0 is a success. Otherwise a "Check for"
+    /// option compares the sum with the value; without one any positive sum succeeds.
+    /// See CODE_AUDIT_26 §5.5.
+    @MainActor
+    func isChecked(item: DiceModel, sum: Int) -> Bool {
+        guard item.sumUp, item.addDiceEvery == 0, item.compareOption != .off else { return sum > 0 }
+        return item.compareOption.check(value: Double(sum), against: item.compareValue)
+    }
+
     @MainActor
     func sumResult(itemId: UUID) -> Int {
         sumResult(of: gameItem(for: itemId))

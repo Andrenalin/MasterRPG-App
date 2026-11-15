@@ -15,12 +15,14 @@ struct WeatherStormEditor: View {
 
     @State private var stormEditModel: EditIdentifierModel<Storm.Contents> = EditIdentifierModel(value: .none)
     @State private var directionEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
+    @State private var intensityEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0)
+    @State private var angleEditModel: EditIdentifierModel<Double> = EditIdentifierModel(value: 0)
 
     var body: some View {
         Section {
             WeatherStormPrecipitationEditor(model: stormEditModel)
-            WeatherStormRainIntensityEditor(model: model)
-            WeatherStormRainAngleEditor(model: model)
+            WeatherStormRainIntensityEditor(editModel: intensityEditModel)
+            WeatherStormRainAngleEditor(editModel: angleEditModel)
             WeatherStormRainDirectionEditor(
                 model: directionEditModel,
                 icon: model.rainDirection ? "chevron.right" : "chevron.left"
@@ -31,6 +33,14 @@ struct WeatherStormEditor: View {
         .onChange(of: model.id, initial: true) {
             syncStormModel()
             syncDirectionModel()
+            syncIntensityModel()
+            syncAngleModel()
+        }
+        .onChange(of: model.rainIntensity) {
+            syncIntensityModel()
+        }
+        .onChange(of: model.rainAngle) {
+            syncAngleModel()
         }
         .onChange(of: model.stormType) {
             syncStormModel()
@@ -44,6 +54,20 @@ struct WeatherStormEditor: View {
         let editController = root.editController
         stormEditModel.reset(valueId: model.id, value: model.stormType) { itemId, value in
             editController.reset(stormType: value, itemId: itemId)
+        }
+    }
+
+    private func syncIntensityModel() {
+        let editController = root.editController
+        intensityEditModel.reset(valueId: model.id, value: model.rainIntensity) { itemId, value in
+            editController.reset(rainIntensity: value, itemId: itemId)
+        }
+    }
+
+    private func syncAngleModel() {
+        let editController = root.editController
+        angleEditModel.reset(valueId: model.id, value: model.rainAngle) { itemId, value in
+            editController.reset(rainAngle: value, itemId: itemId)
         }
     }
 
@@ -75,17 +99,19 @@ private struct WeatherStormPrecipitationEditor: View {
 }
 
 private struct WeatherStormRainIntensityEditor: View {
-    @Bindable var model: WeatherModel
+    @Bindable var editModel: EditIdentifierModel<Double>
 
     var body: some View {
         LabeledContent {
 #if os(tvOS)
-            Text(model.rainIntensity, format: .number.precision(.fractionLength(0)))
+            Text(editModel.value, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $model.rainIntensity, in: 0 ... 1000)
+            Slider(value: $editModel.value, in: 0 ... 1000) { isEditing in
+                if !isEditing { editModel.save() }
+            }
                 .accessibilityLabel(Text("Intensity", bundle: .module))
                 .accessibilityValue(
-                    Text(model.rainIntensity, format: .number.precision(.fractionLength(0)))
+                    Text(editModel.value, format: .number.precision(.fractionLength(0)))
                 )
 #endif
         } label: {
@@ -95,18 +121,20 @@ private struct WeatherStormRainIntensityEditor: View {
 }
 
 private struct WeatherStormRainAngleEditor: View {
-    @Bindable var model: WeatherModel
+    @Bindable var editModel: EditIdentifierModel<Double>
 
     var body: some View {
         LabeledContent {
 #if os(tvOS)
-            Text(model.rainAngle, format: .number.precision(.fractionLength(0)))
+            Text(editModel.value, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $model.rainAngle, in: -90 ... 90)
+            Slider(value: $editModel.value, in: -90 ... 90) { isEditing in
+                if !isEditing { editModel.save() }
+            }
                 .accessibilityLabel(Text("Angle", bundle: .module))
                 .accessibilityValue(
                     Text(
-                        verbatim: "\(model.rainAngle.formatted(.number.precision(.fractionLength(0))))°"
+                        verbatim: "\(editModel.value.formatted(.number.precision(.fractionLength(0))))°"
                     )
                 )
 #endif

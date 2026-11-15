@@ -250,4 +250,39 @@ struct FileReplacementTests {
         #expect(try fileUrl(of: itemId, in: root) == old)
         #expect(try text(of: old, in: root) == "old")
     }
+
+    // MARK: - During a running game (CODE_AUDIT_26 §5.1)
+
+    @Test("A file picked during a game is stored on the library item before the old file goes")
+    func fileReplacedDuringAGameIsPersisted() async throws {
+        let root = try await makeRoot()
+        let (itemId, old) = try await addItem(text: "old", in: root)
+        root.itemController.itemDataModel.isGameMode = true
+        let picked = try pickedFile(text: "new")
+        defer { try? FileManager.default.removeItem(at: picked) }
+
+        let replaced = await root.editController.resetFile(url: picked, itemId: itemId)
+
+        #expect(replaced)
+        let library = try fileUrl(of: itemId, in: root)
+        defer { remove(old, library, in: root) }
+        #expect(try text(of: library, in: root) == "new")
+        #expect(try location(of: library, in: root) != location(of: old, in: root))
+        #expect(try text(of: old, in: root) == nil)
+    }
+
+    @Test("Data written during a game without forceSave leaves the library item a file that exists")
+    func dataWithoutForceSaveLeavesTheLibraryFileInPlace() async throws {
+        let root = try await makeRoot()
+        let (itemId, old) = try await addItem(text: "old", in: root)
+        root.itemController.itemDataModel.isGameMode = true
+
+        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "")
+
+        // The new data is written under the item's own name, in place of the old file, so the
+        // library item still names a file that exists.
+        let library = try fileUrl(of: itemId, in: root)
+        defer { remove(old, library, in: root) }
+        #expect(try text(of: library, in: root) != nil)
+    }
 }

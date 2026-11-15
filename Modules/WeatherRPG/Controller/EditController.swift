@@ -55,6 +55,27 @@ extension EditController {
         )
     }
 
+    @MainActor func reset(time: Double, itemId: UUID) {
+        reset(
+            \.time, value: time, itemId: itemId,
+            message: String(localized: "change time", bundle: .module)
+        )
+    }
+
+    @MainActor func reset(rainIntensity: Double, itemId: UUID) {
+        reset(
+            \.rainIntensity, value: rainIntensity, itemId: itemId,
+            message: String(localized: "change rain intensity", bundle: .module)
+        )
+    }
+
+    @MainActor func reset(rainAngle: Double, itemId: UUID) {
+        reset(
+            \.rainAngle, value: rainAngle, itemId: itemId,
+            message: String(localized: "change rain angle", bundle: .module)
+        )
+    }
+
     @MainActor func reset(lightningFrequency: Double, itemId: UUID) {
         reset(
             \.lightningFrequency, value: lightningFrequency, itemId: itemId,

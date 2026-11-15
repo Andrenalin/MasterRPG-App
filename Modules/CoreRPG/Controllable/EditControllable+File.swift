@@ -99,9 +99,12 @@ public extension EditControllable {
     /// Returns whether the item has the requested file afterwards. A caller that owns the
     /// source (the 3D scanner and its scan folder) must keep it when this is `false`.
     /// See CODE_AUDIT_21 §5.21.
-    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal = .delete) async -> Bool {
+    /// `forceSave` (the default) stores the new file on the library item also during a running
+    /// game: the replaced file is deleted, so a reference that only reached game memory would
+    /// point at a deleted file once the game ends. See CODE_AUDIT_26 §5.1.
+    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = true) async -> Bool {
         let result = await enqueueFileOperation(itemId: itemId) {
-            await replaceFile(url: url, itemId: itemId, replaced: replaced)
+            await replaceFile(url: url, itemId: itemId, replaced: replaced, forceSave: forceSave)
         }.result
         return (try? result.get()) ?? false
     }
@@ -128,7 +131,7 @@ public extension EditControllable {
 
     /// The body of `resetFile(url:itemId:replaced:)`; callers that already run inside a queued
     /// file operation for `itemId` call this directly.
-    @MainActor private func replaceFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal) async -> Bool {
+    @MainActor private func replaceFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal, forceSave: Bool) async -> Bool {
         guard let fileUrlDataController, let item = editModel(for: itemId) else { return false }
 
         // Check if we have an existing file
@@ -148,8 +151,9 @@ public extension EditControllable {
         guard let url else {
             // The file was removed, not replaced.
             if let replacedFileUrl {
-                fileUrlDataController.delete(replacedFileUrl, keepingStoredFile: replaced == .keep || itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId))
-                reset(fileUrl: nil, itemId: itemId)
+                // Reset first: the stored file goes only once the library item no longer names it.
+                reset(fileUrl: nil, itemId: itemId, forceSave: forceSave)
+                fileUrlDataController.delete(replacedFileUrl, keepingStoredFile: replaced == .keep || itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) || isStillReferencedByLibraryItem(replacedFileUrl, itemId: itemId))
             }
             return true
         }
@@ -174,9 +178,9 @@ public extension EditControllable {
                 fileUrlDataController.delete(updatedFileUrl)
                 return false
             }
-            reset(fileUrl: updatedFileUrl, itemId: itemId)
+            reset(fileUrl: updatedFileUrl, itemId: itemId, forceSave: forceSave)
             if let replacedFileUrl {
-                if replaced == .delete, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
+                if replaced == .delete, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId), !isStillReferencedByLibraryItem(replacedFileUrl, itemId: itemId) {
                     await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: updatedFileUrl)
                 }
                 if updatedFileUrl.location == .url {
@@ -243,7 +247,7 @@ public extension EditControllable {
             if replacedFileUrl != nil {
                 // Already inside this item's queued file operation; calling the queued
                 // `resetFile(url:itemId:)` here would wait on itself.
-                _ = await replaceFile(url: nil, itemId: itemId, replaced: replaced)
+                _ = await replaceFile(url: nil, itemId: itemId, replaced: replaced, forceSave: forceSave)
             }
             return
         }
@@ -274,8 +278,18 @@ public extension EditControllable {
         }
         await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: true)
         reset(fileUrl: fileUrl, itemId: itemId, forceSave: forceSave)
-        if replaced == .delete, let replacedFileUrl, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
+        if replaced == .delete, let replacedFileUrl, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId), !isStillReferencedByLibraryItem(replacedFileUrl, itemId: itemId) {
             await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: fileUrl)
         }
+    }
+
+    /// Whether the permanent library copy of `itemId` still names the stored file of `fileUrl`.
+    /// During a game without `forceSave` the new file reaches only game memory, so the library
+    /// item keeps pointing at the replaced file, which must then stay on disk. A file the library
+    /// item no longer references is safe to delete. See CODE_AUDIT_26 §5.1.
+    @MainActor private func isStillReferencedByLibraryItem(_ fileUrl: FileUrl, itemId: UUID) -> Bool {
+        guard let fileUrlDataController,
+              let libraryFileUrl = itemControllable.itemSync(for: itemId, noGame: true)?.fileUrl else { return false }
+        return fileUrlDataController.isSameStoredFile(libraryFileUrl, fileUrl)
     }
 }

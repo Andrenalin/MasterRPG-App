@@ -79,7 +79,9 @@ private struct WeatherLightningFrequencyEditor: View {
 #if os(tvOS)
             Text(model.lightningFrequency, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $editModel.value, in: 0 ... 100)
+            Slider(value: $editModel.value, in: 0 ... 100) { isEditing in
+                if !isEditing { editModel.save() }
+            }
                 .accessibilityLabel(Text("Frequency", bundle: .module))
                 .accessibilityValue(
                     Text(editModel.value, format: .number.precision(.fractionLength(0)))
@@ -87,9 +89,6 @@ private struct WeatherLightningFrequencyEditor: View {
 #endif
         } label: {
             Text("Frequency", bundle: .module)
-        }
-        .onSignificantChange(of: editModel.value) {
-            editModel.save()
         }
     }
 }
@@ -103,7 +102,9 @@ private struct WeatherLightningMaxBoltsEditor: View {
 #if os(tvOS)
             Text(model.lightningMaxBolts, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $editModel.value, in: 0 ... 10)
+            Slider(value: $editModel.value, in: 0 ... 10, step: 1) { isEditing in
+                if !isEditing { editModel.save() }
+            }
                 .accessibilityLabel(Text("Max Bolts", bundle: .module))
                 .accessibilityValue(
                     Text(editModel.value, format: .number.precision(.fractionLength(0)))
@@ -111,9 +112,6 @@ private struct WeatherLightningMaxBoltsEditor: View {
 #endif
         } label: {
             Text("Max Bolts", bundle: .module)
-        }
-        .onSignificantChange(of: editModel.value) {
-            editModel.save()
         }
     }
 }
@@ -127,7 +125,9 @@ private struct WeatherLightningForkEditor: View {
 #if os(tvOS)
             Text(model.lightningForkProbability, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $editModel.value, in: 0 ... 100)
+            Slider(value: $editModel.value, in: 0 ... 100) { isEditing in
+                if !isEditing { editModel.save() }
+            }
                 .accessibilityLabel(Text("Fork %", bundle: .module))
                 .accessibilityValue(
                     Text(editModel.value / 100, format: .percent.precision(.fractionLength(0)))
@@ -136,29 +136,5 @@ private struct WeatherLightningForkEditor: View {
         } label: {
             Text("Fork %", bundle: .module)
         }
-        .onSignificantChange(of: editModel.value) {
-            editModel.save()
-        }
-    }
-}
-
-private struct SignificantChangeModifier: ViewModifier {
-    let value: Double
-    var threshold: Double = 1
-    let onSignificantChange: () -> Void
-
-    func body(content: Content) -> some View {
-        content.onChange(of: value) { oldValue, newValue in
-            guard abs(oldValue - newValue) >= threshold else { return }
-            onSignificantChange()
-        }
-    }
-}
-
-private extension View {
-    /// Runs `action` when `value` changes by at least `threshold`, collapsing the
-    /// repeated "debounce tiny slider jitter, then save" pattern used by this editor's sliders.
-    func onSignificantChange(of value: Double, threshold: Double = 1, perform action: @escaping () -> Void) -> some View {
-        modifier(SignificantChangeModifier(value: value, threshold: threshold, onSignificantChange: action))
     }
 }

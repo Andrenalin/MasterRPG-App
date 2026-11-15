@@ -310,6 +310,32 @@ struct GameControllerTests {
         #expect(max == 20)
     }
     
+    @Test func compareOptionDecidesTheCheckWithoutAddDice() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        let item = sut.gameItem(for: dice.id)
+        item.addDiceEvery = 0
+        item.sumUp = true
+        item.modifier = 0
+        item.coupValues = []
+        item.fumbleValues = []
+        item.rerollOptions = []
+        item.compareOption = .lowerEqual
+        item.compareValue = 15
+        item.dice = [DieModel(id: GameControllerTests.dieUUID1, die: .twenty, rotation: 0, result: [12], displayState: 3)]
+        #expect(sut.calculate(itemId: dice.id).checked)
+
+        item.dice = [DieModel(id: GameControllerTests.dieUUID1, die: .twenty, rotation: 0, result: [18], displayState: 3)]
+        #expect(!sut.calculate(itemId: dice.id).checked)
+
+        item.compareOption = .equalHigher
+        #expect(sut.calculate(itemId: dice.id).checked)
+
+        // Without a compare option any positive sum is a success, as before.
+        item.compareOption = .off
+        #expect(sut.calculate(itemId: dice.id).checked)
+    }
+
     @Test func reorder() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController

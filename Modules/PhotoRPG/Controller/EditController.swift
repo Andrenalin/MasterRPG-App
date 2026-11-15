@@ -70,14 +70,16 @@ extension EditController {
         // See CODE_AUDIT_21 §7.10.
         let data = await Self.encodedJPEG(image)
 #endif
-        try await resetFile(data: data, itemId: itemId, path: "", replaced: replaced)
+        // The editor stores the photo on the library item also during a game: the replaced file
+        // is deleted. See CODE_AUDIT_26 §5.1.
+        try await resetFile(data: data, itemId: itemId, path: "", replaced: replaced, forceSave: true)
     }
 
     /// Stores the picked or dropped image `data` as the item's photo. Returns `false` when the
     /// data is no image. Decoding and encoding run off the main actor, and the image is decoded
     /// at most at the size the app shows images at; the library and drop paths used to decode
     /// and re-encode at full resolution on the main actor. See CODE_AUDIT_21 §7.10.
-    func resetPhoto(data: Data, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = false) async throws -> Bool {
+    func resetPhoto(data: Data, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = true) async throws -> Bool {
         guard let jpeg = await Self.importedJPEG(from: data) else { return false }
         try await resetFile(data: jpeg, itemId: itemId, path: "", replaced: replaced, forceSave: forceSave)
         return true

@@ -146,6 +146,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** GM replaces a photo/PDF/3D file of an item in the editor while a game runs -> the new file is only in game memory, the old file is removed from disk/iCloud; when the game ends (game memory dropped) the library item references a deleted file (data loss). Only the Intents path passes `forceSave: true` (writeFile) and knows about this; `resetFile(url:)` has no forceSave parameter at all and FileImporterView/ItemDetailContentView/InlineImporterView do not gate on `isGameMode`. Not reproduced at runtime.
 - **Action:** In game mode either persist the new file on the library item (`persistFileUrl`, as `copyFile` and `movedFileTree` already do) or skip deleting the old file until the library item references the new one; add a `forceSave` parameter to `resetFile(url:)`. Add a test with `isGameMode = true`.
 - **Severity:** High   **Area:** CoreRPG Controllable/Import/Links
+- **Status:** Fixed 2026-11-15 — `resetFile(url:)`/`replaceFile` take `forceSave` (default true), the reset happens before the delete, and every delete is guarded by `isStillReferencedByLibraryItem`, so a file the library item still points at is never removed during a game. `resetPhoto` persists too. Tests: `FileReplacementTests` (game mode).
 
 ### 5.2 `TableRollRange` reads "00" as 0, so d100 rows such as "96-00" never match rolls 97-100
 - **Location:** Modules/CoreRPG/Text/TableRollRange.swift:12-23 (consumers Modules/TableRPG/Controller/TableGenerationController.swift:241-254, Modules/TableRPG/Controller/GameController.swift:139-148, Modules/CoreRPG/Links/QuickLinkScanner.swift:35)
@@ -153,6 +154,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A rolled 97-100 on a "96-00" row finds no entry (the row only matches 0...96, which earlier rows already claim), so the roll result is empty in the live roll UI and in game mode for the most common table size. Imported tables from PDFs hit this directly.
 - **Action:** Treat an all-zero token with length >= 2 as the die maximum (100, or 10 for "0" on a d10 if the table size is known); restrict digits to ASCII (`isASCII && isNumber`); add table-driven tests ("1-5", "96-00", "00", "7", en/em dash, "5 – 10", "*12*").
 - **Severity:** High   **Area:** CoreRPG Foundry/Sheet
+- **Status:** Fixed 2026-11-15 — an all-zero token of two or more zeros is the die maximum ("96-00" → 96...100, "00" → 100, "00-09" → 0...9); only ASCII digits count. New `TableRollRangeTests`.
 
 ### 5.3 Export and game reveal do not follow group entries (entry.adventureId)
 - **Location:** Modules/AdventureRPG/Controller/ExportController.swift:63-128 (BFS visit closure); Modules/CoreRPG/ItemList/GroupableEntryEditing.swift:14-60 (how groups are created, entry content is only a copy of the description); Modules/CoreRPG/Controllable/GameControllable.swift:300 (reveal uses `exporting(ids:)`); compare Modules/CharacterRPG/Controller/ExportController.swift:70-72 (adds `entry.valueId` to the BFS)
@@ -160,6 +162,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Revealing or sharing a single adventure (game `createGameData`, single-item .gmz export, "send to player") ships the parent without its group children. On the receiving device `SheetController.entryNameDescription` (SheetController.swift:34-39) resolves the missing group to an empty model, so the group entry shows blank name and text. `exportingAll` is unaffected (groups are only groupHidden, not totalHidden) and `ExportControllerTests` only covers link-based children, which is why nothing caught it.
 - **Action:** Add `entry.adventureId` (when it resolves via `itemSync`) to `childIds` in the visit closure, and add a test mirroring Character's group-export test (export one adventure with a group entry, expect the group id in the result).
 - **Severity:** High   **Area:** AdventureRPG
+- **Status:** Fixed 2026-11-15 — the BFS visit closure adds `entry.adventureId` when it resolves. Test `exportingFollowsGroupEntries`.
 
 ### 5.4 Dice bag in the editor appends the same die (same id) on every tap
 - **Location:** Modules/DiceRPG/View/DiceBag.swift:11-22 (static catalog with fixed ids) and :56-60 (`root.editController.add(die: die, ...)`); Modules/DiceRPG/Controller/EditController.swift:14-19 (`editModel.dice.append(die)` with no `duplicate()`)
@@ -167,6 +170,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** Everything keys on die id: `ForEach(model.dice)` in `DiceViewer` (duplicate identities), `remove(die:)`/`resetDie`/`roll(die:)` use `firstIndex(where: id)` so tapping the second die removes, rolls or resets the first one, `GameController.resultColor`/`diceSuccess` look up by die id so all duplicates show the first die's success colours, and `DieViewerView`'s rotation reset writes into the first die. The duplicate ids only disappear after a reload because `DataController.dice(from:)` hands out new UUIDs (so the bug heals on relaunch or a CloudKit refresh, which hides it in testing). The CODE_AUDIT_Dice §7.2 fix (making the catalog `static`) made the ids stable across redraws, which also made repeated taps within a session collide.
 - **Action:** In `DiceBag` (or `EditController.add(die:)`) store `die.duplicate()`/a fresh-id copy. Add a test that two `add(die:)` calls with the same input give distinct ids.
 - **Severity:** High   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — `EditController.add(die:)` stores `die.duplicate()` (fresh id), so the catalog die can be added any number of times. Test `addingTheSameCatalogDieTwiceKeepsDistinctIds`.
 
 ### 5.5 The compare option and value are never evaluated unless "Add dice" is on
 - **Location:** Modules/DiceRPG/Controller/GameController+DiceResult.swift:37 (`checked = sumResult > 0`) and :147-155 (`maxValuePerDice`); Modules/DiceRPG/Dice/DiceOptionEditor.swift:26-32; Modules/DiceRPG/Model/DiceModel.swift:184-197 (`CompareValue.check(value:against:)`, no caller in Modules, Sources or Tests)
@@ -174,6 +178,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A d20 with "Check for <= 15" and no Add dice shows `...<=15 ∑12 ✅` for every roll: the result text, the checkmark in `DiceGameResult`/`DicePlayer`, the Quick Dice value button tint, the success/failure haptic, the widget's `checked` and the statistics event (`GameStatisticsController`) all say success. The git history shows `check(value:against:)` once existed for exactly this and was orphaned.
 - **Action:** Decide the intended semantics. Either evaluate `compareOption.check(...)` against the sum (or per die) when `addDiceEvery == 0` and use it for `checked`, or hide the "Check for" section unless Add dice is active, then delete the dead method. Add a test with a compare-only dice (existing tests only cover the `addDiceEvery` set-up).
 - **Severity:** High   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — decision: compare the sum. New `GameController.isChecked(item:sum:)`: with `sumUp`, no Add dice and a Check-for option, `checked` is `compareOption.check(sum, compareValue)` (so `CompareValue.check` has a caller again); with Add dice (compare spent per die) or no option it stays `sum > 0`. Test `compareOptionDecidesTheCheckWithoutAddDice`.
 
 ### 5.6 Weather-to-Photo link is registered under the Adventure module and is dropped by every link validation
 - **Location:** Modules/WeatherRPG/Model/WeatherModel.swift:208-219 (`changedLinkRegisterModels`, source `ItemRowModel(itemId: id, typeId: .adventure)`); no `linkRegisterModels` override, so the protocol default `[]` applies (Modules/CoreRPG/Links/LinkRegisterListModel.swift:117-118); consumers Modules/WeatherRPG/Controller/LinkController.swift:48 (`resetLinkRegister`), Modules/CoreRPG/Links/LinkRegisterController.swift:110, :133, Modules/CoreRPG/Controllable/LinkControllable.swift:322-327
@@ -181,6 +186,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** `LinkRegisterController.used(for:)` resolves the source item in the Adventure module with a Weather id, gets nil and drops the row, so deleting or trashing a Photo shows no "used by Weather" warning. `repairLinks(for:)` calls the Adventure module's `validateLinks(on:)` with the Weather id, so a Weather whose Photo was deleted keeps a dangling `photoId`. `LinkController.validateLinks` ends in `resetLinkRegister(replacedItem)`, which clears the source's registered links and re-registers `[]`, so a Validate/Repair pass removes even a correctly registered Weather photo link. A weather imported from a file also never registers its photo.
 - **Action:** Use `.weather` as the source type, add `linkRegisterModels` as `changedLinkRegisterModels(oldValue: .empty).added` like Table does, and let the next `validateLinks` pass re-register existing rows (the clear is keyed by source id, so rows saved with the wrong type are removed by it). Extend `Tests/WeatherRPGTests/LinkControllerTests.swift` to assert the source type and that `validateLinks` keeps a valid photo link.
 - **Severity:** High   **Area:** RuleRPG + WeatherRPG
+- **Status:** Fixed 2026-11-15 — source type is `.weather`, `linkRegisterModels` added (as Table). Test `photoLinkRegistersWithWeatherSource`.
 
 ### 5.7 Time, rain intensity and rain angle sliders edit the live model and are never saved
 - **Location:** Modules/WeatherRPG/View/WeatherConditionEditor.swift:55-70 (`Slider(value: $model.time)`); Modules/WeatherRPG/View/WeatherStormEditor.swift:96-107 (`$model.rainIntensity`), :110-125 (`$model.rainAngle`); model source Modules/WeatherRPG/Route/WeatherRoute.swift:66 (`itemSync`, the stored instance)
@@ -188,6 +194,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** The change is visible at once, but it never goes through `replace(with:)`, so no Core Data write, no CloudKit sync, no `weatherUpdate` stamp, no undo and no game-memory/library separation (it edits the library item during a game). If nothing else is edited afterwards the value is lost on relaunch; if another property is saved later, `editModel(for:)` copies the mutated live item and persists the old slider edit by accident. Reasoned from code; please drag the Time slider, relaunch and compare.
 - **Action:** Route the three sliders through `EditIdentifierModel` plus `editController.reset(...)` like the lightning sliders (add the missing `reset(time:)`, `reset(rainIntensity:)`, `reset(rainAngle:)` overloads), saving on the end of the drag.
 - **Severity:** High   **Area:** RuleRPG + WeatherRPG
+- **Status:** Fixed 2026-11-15 — time, rain intensity and rain angle edit an `EditIdentifierModel` draft and save through new `reset(time:)`/`reset(rainIntensity:)`/`reset(rainAngle:)` when the drag ends (the viewer updates at drag end, not live). Test `WeatherEditControllerTests`.
 
 ### 5.8 Lightning sliders save only when one change event jumps by 1 or more
 - **Location:** Modules/WeatherRPG/View/WeatherThunderEditor.swift:150-170 (`SignificantChangeModifier`), used at :95, :113, :131
@@ -195,6 +202,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A normal drag of the Max Bolts slider (range 0-10, about 0.03 per point) or a slow drag of Frequency/Fork (0-100) produces deltas far below 1, so the new value is never saved; the slider shows the new value until the view resyncs, then snaps back to the stored one. Only fast swipes persist.
 - **Action:** Save when the drag ends (`Slider(onEditingChanged:)`) or compare against the last saved value; use a step of 1 for the bolt count, which is a whole number anyway.
 - **Severity:** High   **Area:** RuleRPG + WeatherRPG
+- **Status:** Fixed 2026-11-15 — the lightning sliders save when the drag ends (`Slider` editing callback); `SignificantChangeModifier` removed; Max Bolts uses step 1. Test `WeatherEditControllerTests` (sub-1 changes persist).
 
 ### 5.9 Tag register has no hydration-failure guard and can overwrite in-memory edits when it loads
 - **Location:** Modules/CoreRPG/Controllable/TagController.swift:26-60 (`setup`), 134-189 (`savePendingTags`)

@@ -13,7 +13,9 @@ extension EditController {
     ///   Add Die intent). See CODE_AUDIT_Since_3.0.1 §5.2.
     @MainActor func add(die: DieModel, itemId: UUID, forceSave: Bool = false) {
         guard let editModel = editModel(for: itemId) else { return }
-        editModel.dice.append(die)
+        // A die of its own: the dice bag hands out its catalog dice, and three taps on "d20" must not
+        // put three dice with one id into the model. See CODE_AUDIT_26 §5.4.
+        editModel.dice.append(die.duplicate())
         save(updated: editModel, message: String(localized: "Add \(die.name)", bundle: .module), forceSave: forceSave)
     }
 

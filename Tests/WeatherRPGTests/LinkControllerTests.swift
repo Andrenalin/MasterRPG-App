@@ -170,6 +170,23 @@ struct LinkControllerTests {
         #expect(root.itemControllable.linkRegisterController.model.items[photoId, default: []].isEmpty)
     }
 
+    // MARK: - Register source type
+
+    @Test("the photo link is registered with the weather as its source and a full list is available")
+    func photoLinkRegistersWithWeatherSource() async throws {
+        let weather = WeatherModel.empty
+        let photoId = UUID()
+        weather.photoId = photoId
+
+        let models = weather.linkRegisterModels
+        #expect(models.count == 1)
+        #expect(models.first?.source == ItemRowModel(itemId: weather.id, typeId: .weather))
+        #expect(models.first?.destination == ItemRowModel(itemId: photoId, typeId: .photo))
+
+        let changed = weather.changedLinkRegisterModels(oldValue: .empty)
+        #expect(changed.added.allSatisfy { $0.source.typeId == .weather })
+    }
+
     private func toggler() -> ((UUID, NetworkModules) async -> Void) {
         { _, _ in }
     }

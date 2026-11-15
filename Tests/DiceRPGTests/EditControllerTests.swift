@@ -8,6 +8,23 @@ import Testing
 
 @MainActor
 struct EditControllerTests {
+    @Test func addingTheSameCatalogDieTwiceKeepsDistinctIds() async throws {
+        let root = DiceRootModel.testRoot()
+        await root.itemController.resetData()
+        let sut = root.editController
+        let itemId = UUID()
+        let catalogDie = DieModel(id: UUID(), die: .twenty)
+        root.itemController.replace(model: DiceModel(id: itemId, name: "Bag", dice: []), isInsert: true)
+
+        sut.add(die: catalogDie, itemId: itemId)
+        sut.add(die: catalogDie, itemId: itemId)
+
+        let ids = root.itemController.itemOrEmpty(for: itemId).dice.map(\.id)
+        #expect(ids.count == 2)
+        #expect(Set(ids).count == 2)
+        #expect(!ids.contains(catalogDie.id))
+    }
+
     @Test func diceOptionsCanBeAddedRemovedAndReset() async throws {
         let root = DiceRootModel.testRoot()
         await root.itemController.resetData()
@@ -29,9 +46,14 @@ struct EditControllerTests {
         _ = sut.linkRegisterController
 
         sut.add(die: extraDie, itemId: itemId)
-        #expect(root.itemController.itemOrEmpty(for: itemId).dice.map(\.id) == [baseDie.id, extraDie.id])
+        let added = root.itemController.itemOrEmpty(for: itemId).dice
+        #expect(added.count == 2)
+        #expect(added.first?.id == baseDie.id)
+        let addedDie = try #require(added.last)
+        #expect(addedDie.id != extraDie.id)
+        #expect(addedDie.die == extraDie.die)
 
-        sut.remove(die: extraDie, itemId: itemId)
+        sut.remove(die: addedDie, itemId: itemId)
         #expect(root.itemController.itemOrEmpty(for: itemId).dice.map(\.id) == [baseDie.id])
 
         sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId)

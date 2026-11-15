@@ -82,6 +82,13 @@ extension ExportController: ExportControllable {
             }
 
             var childIds: [UUID] = []
+            // The hidden group adventure an entry stands for travels with it: its entry text is
+            // only a copy, the receiver reads name and text from the group. See CODE_AUDIT_26 §5.3.
+            for entry in item.entries {
+                if let groupId = entry.adventureId, itemController.itemSync(for: groupId) != nil {
+                    childIds.append(groupId)
+                }
+            }
             let links = item.entries.flatMap { LinkReplaceController.links(for: $0.content) }
 
             links.forEach {
