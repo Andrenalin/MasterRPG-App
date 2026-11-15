@@ -289,15 +289,16 @@ extension GameTableModel {
             pendingThumbnailTasks[removedId] = nil
         }
         pendingPinPhotoIds = pendingPinPhotoIds.filter { keptIds.contains($0.key) }
+        pendingPinLoadTokens = pendingPinLoadTokens.filter { keptIds.contains($0.key) }
         failedPinPhotos = failedPinPhotos.filter { keptIds.contains($0.key) }
         for removedId in pinPhotoRetryTasks.keys where !keptIds.contains(removedId) {
             pinPhotoRetryTasks[removedId]?.cancel()
             pinPhotoRetryTasks[removedId] = nil
         }
         for (pinId, photoId) in photoLoads {
-            guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
+            guard let token = beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
             let task = Task { [weak self] in
-                await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)
+                await self?.loadPinThumbnail(pinId: pinId, photoId: photoId, token: token)
             }
             trackThumbnailTask(for: pinId, task)
         }

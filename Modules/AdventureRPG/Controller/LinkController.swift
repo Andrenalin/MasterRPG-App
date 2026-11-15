@@ -65,7 +65,7 @@ extension LinkController: LinkControllable {
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
-            Task {
+            LinkActionTasks.run {
                 await toggler?(itemId, itemControllable.config.module)
             }
             return text
@@ -88,17 +88,21 @@ extension LinkController: LinkControllable {
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
-            result = resolvedRootManager.audioRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .table, .value])
-            result = resolvedRootManager.mapRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.ruleRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.spaceRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.characterRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = resolvedRootManager.weatherRoot.linkControllable.repairLink(link, for: result, for: [.all])
-            result = repairLink(link, for: result, for: [.all])
+            // Each module's `repairLink` ignores a link of another module, so only the one that owns
+            // the link is asked. See CODE_AUDIT_Adventure §7.1, CODE_AUDIT_26 §3.10.
+            switch link.module {
+            case .audio: result = resolvedRootManager.audioRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .dice: result = resolvedRootManager.diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .table, .value])
+            case .map: result = resolvedRootManager.mapRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .pdf: result = resolvedRootManager.pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .photo: result = resolvedRootManager.photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .rule: result = resolvedRootManager.ruleRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .space: result = resolvedRootManager.spaceRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .table: result = resolvedRootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .value: result = resolvedRootManager.characterRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            case .weather: result = resolvedRootManager.weatherRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            default: result = repairLink(link, for: result, for: [.all])
+            }
         }
         return result
     }

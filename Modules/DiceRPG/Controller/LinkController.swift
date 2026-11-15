@@ -24,16 +24,11 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: rollUrl, with: gameController.resultText(itemId: itemId), replace: true)
             }
             guard command == LinkType.share.rawValue else { return text }
-            Task {
+            LinkActionTasks.run {
                 guard let shareResult else { return }
-                do {
-                    let result = try await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory)
-                    shareResult.networkActions?.game(result, .show, nil)
-                } catch {
-                    // `try?` previously discarded this error with no trace —
-                    // a failed share silently did nothing. See CODE_AUDIT §5.8.
-                    Logger.linkController.error("Dice: failed to share game data for \(itemId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                }
+                // A failed share is logged by `LinkActionTasks`. See CODE_AUDIT §5.8.
+                let result = try await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory)
+                shareResult.networkActions?.game(result, .show, nil)
             }
             return text
         } else {

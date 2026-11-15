@@ -194,7 +194,7 @@ public extension LinkControllable {
             return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
         }
         if command == LinkType.show.rawValue {
-            Task {
+            LinkActionTasks.run {
                 await toggler?(itemId, itemControllable.config.module)
             }
             return text
@@ -212,7 +212,7 @@ public extension LinkControllable {
     @MainActor
     func autoToggleAndRemoveAction(linkNumber: Int, itemId: UUID, entryId: UUID?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?, removeActionSpacing: String = " ") -> String {
         if let toggler, entryId == nil, editAction == nil {
-            Task {
+            LinkActionTasks.run {
                 await toggler(itemId, itemControllable.config.module)
             }
         }

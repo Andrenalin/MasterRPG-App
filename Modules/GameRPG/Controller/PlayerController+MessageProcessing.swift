@@ -287,7 +287,7 @@ extension PlayerController {
                 if let response {
                     await sendUpstream(model: response)
                 }
-                await root.statisticsModel.record(
+                root.statisticsModel.record(
                     event.model,
                     direction: .incoming,
                     origin: event.origin

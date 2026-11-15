@@ -133,7 +133,7 @@ extension PlayerController {
         _ = root.applyOwnSpaceTransform(networkData)
 
         let origin: GameMessageOrigin = root.gameModel.gameType == .proxy ? .proxy(nil) : .direct(nil)
-        await root.statisticsModel.record(networkData, direction: .outgoing, origin: origin)
+        root.statisticsModel.record(networkData, direction: .outgoing, origin: origin)
 
         await sendUpstream(model: networkData)
         if relayToProxyClients,
@@ -161,7 +161,7 @@ extension PlayerController {
             asMaster: false,
             data: source.data
         )
-        await root.statisticsModel.record(
+        root.statisticsModel.record(
             remapped,
             direction: .outgoing,
             origin: .proxy(connectionId)

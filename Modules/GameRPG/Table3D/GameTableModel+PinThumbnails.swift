@@ -64,12 +64,15 @@ extension GameTableModel {
     }
 
     /// Loads the pin's photo thumbnail (2D pin pipeline) onto the 3D token.
-    func loadPinThumbnail(pinId: UUID, photoId: UUID) async {
+    func loadPinThumbnail(pinId: UUID, photoId: UUID, token: UUID) async {
         defer {
             // Only the load that is still current for this pin may clear its bookkeeping: a newer
-            // load for a different photo has already replaced `pendingPinPhotoIds[pinId]` and
-            // `pendingThumbnailTasks[pinId]`, and must keep both.
-            if pendingPinPhotoIds[pinId] == photoId {
+            // load has already replaced `pendingPinPhotoIds[pinId]`, `pendingPinLoadTokens[pinId]` and
+            // `pendingThumbnailTasks[pinId]`, and must keep them. The token names the load itself;
+            // matching on the photo id alone let a cancelled load of photo X clear the bookkeeping of
+            // a newer load of the same photo X. See CODE_AUDIT_26 §3.5.
+            if pendingPinLoadTokens[pinId] == token {
+                pendingPinLoadTokens[pinId] = nil
                 pendingPinPhotoIds[pinId] = nil
                 pendingThumbnailTasks[pinId] = nil
             }
@@ -106,11 +109,15 @@ extension GameTableModel {
         pawn.loadedPhotoId = photoId
     }
 
-    func beginPinPhotoLoad(pinId: UUID, photoId: UUID) -> Bool {
+    /// Starts the bookkeeping of a thumbnail load and returns the token that load must present to
+    /// `loadPinThumbnail`, or `nil` when the pin is already loading this photo or it failed unchanged.
+    func beginPinPhotoLoad(pinId: UUID, photoId: UUID) -> UUID? {
         guard pendingPinPhotoIds[pinId] != photoId,
-              failedPinPhotos[pinId] != pinPhotoLoadAttempt(photoId: photoId) else { return false }
+              failedPinPhotos[pinId] != pinPhotoLoadAttempt(photoId: photoId) else { return nil }
+        let token = UUID()
         pendingPinPhotoIds[pinId] = photoId
-        return true
+        pendingPinLoadTokens[pinId] = token
+        return token
     }
 
     /// Records the thumbnail-load `Task` spawned for `pinId`, cancelling any

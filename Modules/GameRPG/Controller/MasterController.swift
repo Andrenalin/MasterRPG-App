@@ -32,6 +32,9 @@ final class MasterController {
     /// `MasterController+Control.swift`'s `resetPlayers()`/`stop()`, a
     /// different file from this declaration.
     var resetPlayersTask: Task<Void, Never>?
+    /// Every `resetPlayers` task that has not finished, so `stop()` cancels the whole chain and not
+    /// only the newest link. See CODE_AUDIT_26 §3.7.
+    var queuedResetPlayersTasks: [UUID: Task<Void, Never>] = [:]
 
     /// Bounded per-item retry after `deliverPendingAudio` fails to
     /// prepare a missing player's copy (e.g. a transient export error).

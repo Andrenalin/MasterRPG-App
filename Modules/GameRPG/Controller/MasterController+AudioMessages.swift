@@ -375,7 +375,7 @@ extension MasterController {
             return false
         }
         let message = outgoingMessage(type: .store, subtype: .show, updated: reference)
-        await root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
+        root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
         await store.sendPresentation(message, missingPlayers: players, isSuperseded: isSuperseded) { package }
         return true
     }

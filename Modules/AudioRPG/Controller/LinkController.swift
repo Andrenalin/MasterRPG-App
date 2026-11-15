@@ -29,7 +29,7 @@ extension LinkController: LinkControllable {
                         shareResult.networkActions?.game(gameController.requestPlay(id: itemId), .playAudio, nil)
                         return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                     } else {
-                        Task {
+                        LinkActionTasks.run {
                             await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                         }
                         return text.toggleLink(url: playUrl, with: "share audio", replace: true)
@@ -41,7 +41,7 @@ extension LinkController: LinkControllable {
                 }
             }
             guard command == LinkType.share.rawValue else { return text }
-            Task {
+            LinkActionTasks.run {
                 await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
             }
             return text

@@ -467,7 +467,13 @@ private enum GeneratorTaskWait {
             await task.value
             gate.open()
         }
-        await gate.wait()
+        // A cancelled waiter stops waiting at once instead of after the task or the timeout.
+        // See CODE_AUDIT_26 §3.14.
+        await withTaskCancellationHandler {
+            await gate.wait()
+        } onCancel: {
+            gate.open()
+        }
         timer.cancel()
     }
 }

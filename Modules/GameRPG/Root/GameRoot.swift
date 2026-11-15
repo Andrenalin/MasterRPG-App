@@ -591,6 +591,8 @@ extension GameRoot {
     // both
     func stopGame() async {
         stopGeneration += 1
+        // Link actions (share/show from a text link) still running belong to the game that ends.
+        LinkActionTasks.cancelAll()
         // Coalesce concurrent callers onto the single in-flight teardown instead of running
         // it twice (or racing a fresh `startGame` — see `awaitInFlightStop()`).
         if let stopGameTask {

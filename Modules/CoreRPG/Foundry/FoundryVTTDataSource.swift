@@ -47,10 +47,11 @@ enum FoundryVTTDataSource: Sendable {
             return
         } else {
             try Task.checkCancellation()
+            let stamp = FoundryZIPArchive.SourceStamp(url: url)
             let data = try Data(contentsOf: url, options: .mappedIfSafe)
             try Task.checkCancellation()
             self = .archive(
-                try FoundryZIPArchive(data: data, limits: limits),
+                try FoundryZIPArchive(data: data, limits: limits, sourceStamp: stamp),
                 sourceSHA256: foundrySHA256(data)
             )
         }

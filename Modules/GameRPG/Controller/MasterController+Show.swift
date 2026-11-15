@@ -56,7 +56,7 @@ extension MasterController {
 
         let message = outgoingMessage(type: .reveal, subtype: .show, updated: reference)
         gameModel.latestShownCounter = message.counter
-        await root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
+        root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
         await store.sendPresentation(
             message,
             missingPlayers: playersMissing(reference),

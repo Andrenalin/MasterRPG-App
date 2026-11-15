@@ -131,34 +131,40 @@ extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {}
 extension AdventureEntityQuery: EntityPropertyQuery {
     public typealias ComparatorMappingType = Predicate<AdventureEntity>
 
-    public nonisolated(unsafe) static let properties = QueryProperties {
-        Property(\AdventureEntity.$name) {
-            ContainsComparator { searchValue in
-                #Predicate<AdventureEntity> { $0.name.localizedStandardContains(searchValue) }
+    /// Built per access instead of held in a `nonisolated(unsafe)` static, so no unchecked shared
+    /// state is left behind. See CODE_AUDIT_26 §3.11.
+    public nonisolated static var properties: QueryProperties {
+        QueryProperties {
+            Property(\AdventureEntity.$name) {
+                ContainsComparator { searchValue in
+                    #Predicate<AdventureEntity> { $0.name.localizedStandardContains(searchValue) }
+                }
+                EqualToComparator { searchValue in
+                    #Predicate<AdventureEntity> { $0.name == searchValue }
+                }
             }
-            EqualToComparator { searchValue in
-                #Predicate<AdventureEntity> { $0.name == searchValue }
+            Property(\AdventureEntity.$description) {
+                ContainsComparator { searchValue in
+                    #Predicate<AdventureEntity> { $0.description.localizedStandardContains(searchValue) }
+                }
             }
-        }
-        Property(\AdventureEntity.$description) {
-            ContainsComparator { searchValue in
-                #Predicate<AdventureEntity> { $0.description.localizedStandardContains(searchValue) }
+            Property(\AdventureEntity.$tags) {
+                ContainsComparator { searchValue in
+                    #Predicate<AdventureEntity> { entity in entity.tags.contains { tag in tag.localizedStandardContains(searchValue) } }
+                }
             }
-        }
-        Property(\AdventureEntity.$tags) {
-            ContainsComparator { searchValue in
-                #Predicate<AdventureEntity> { entity in entity.tags.contains { tag in tag.localizedStandardContains(searchValue) } }
-            }
-        }
-        Property(\AdventureEntity.$isFolder) {
-            EqualToComparator { searchValue in
-                #Predicate<AdventureEntity> { $0.isFolder == searchValue }
+            Property(\AdventureEntity.$isFolder) {
+                EqualToComparator { searchValue in
+                    #Predicate<AdventureEntity> { $0.isFolder == searchValue }
+                }
             }
         }
     }
 
-    public nonisolated(unsafe) static let sortingOptions = SortingOptions {
-        SortableBy(\AdventureEntity.$name)
+    public nonisolated static var sortingOptions: SortingOptions {
+        SortingOptions {
+            SortableBy(\AdventureEntity.$name)
+        }
     }
 
     public nonisolated static var findIntentDescription: IntentDescription? {

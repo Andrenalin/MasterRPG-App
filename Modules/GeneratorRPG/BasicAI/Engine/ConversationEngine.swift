@@ -285,6 +285,11 @@ private extension ConversationEngine {
             let summary = try await generateConversationSummary()
             promptWithContext = createNewSession(with: summary, userMessage: userMessage)
         } catch {
+            // A cancelled caller must not reset the shared session another call may be using.
+            // See CODE_AUDIT_26 §3.13.
+            if error is CancellationError || Task.isCancelled {
+                throw error
+            }
             createFreshSessionAfterOverflow()
 
             if let overflowResetMessage = trimmedOverflowResetMessage() {

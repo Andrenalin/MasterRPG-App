@@ -20,16 +20,13 @@ extension LinkController: LinkControllable {
             }
             guard command == LinkType.share.rawValue else { return text }
             guard let shareResult else { return text }
-            Task {
+            LinkActionTasks.run {
                 if shareResult.gameModus == .master {
                     await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                 } else {
-                    do {
-                        let result = try await gameController.createGameData(for: itemId)
-                        shareResult.networkActions?.game(result, .generic, nil)
-                    } catch {
-                        Logger.linkController.error("Space: failed to create game data to share for item \(itemId.uuidString, privacy: .public): \(String(describing: error))")
-                    }
+                    // A failure is logged by `LinkActionTasks`.
+                    let result = try await gameController.createGameData(for: itemId)
+                    shareResult.networkActions?.game(result, .generic, nil)
                 }
             }
             return text

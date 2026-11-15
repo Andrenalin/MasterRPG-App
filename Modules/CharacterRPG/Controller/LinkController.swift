@@ -33,8 +33,9 @@ extension LinkController: LinkControllable {
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task {
-                    try? await Task.sleep(for: Self.linkToggleDelay)
+                LinkActionTasks.run {
+                    // A cancelled action (the game ended) must not toggle after the delay.
+                    try await Task.sleep(for: Self.linkToggleDelay)
                     await toggler(itemId, itemController.config.module)
                 }
             }

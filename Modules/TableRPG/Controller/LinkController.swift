@@ -26,11 +26,9 @@ extension LinkController: LinkControllable {
             case LinkType.generate.rawValue:
                 shareResult?.generationAction(itemId)
             case LinkType.share.rawValue:
-                // Fire-and-forget is intentional here: `share(id:)` and
-                // `shareId` cannot throw, and the call site is a synchronous
-                // text-link toggle with nowhere to hold a cancellable Task
-                // handle. See CODE_AUDIT_Table §3.3.
-                Task {
+                // The call site is a synchronous text-link toggle; `LinkActionTasks` holds the
+                // task so a game end can cancel it. See CODE_AUDIT_Table §3.3.
+                LinkActionTasks.run {
                     await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
                 }
             default:

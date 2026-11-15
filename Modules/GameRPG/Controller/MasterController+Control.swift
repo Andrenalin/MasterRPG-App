@@ -33,6 +33,8 @@ extension MasterController {
         await messagePipeline.cancelAll()
         resetPlayersTask?.cancel()
         resetPlayersTask = nil
+        queuedResetPlayersTasks.values.forEach { $0.cancel() }
+        queuedResetPlayersTasks.removeAll()
         removeAudioLoopReplay()
         removeAudioPrefetch()
         clearPendingAudioPlays()
@@ -57,12 +59,18 @@ extension MasterController {
     /// broadcast sequence (and any it was queued behind) has fully run.
     func resetPlayers() async {
         let previous = resetPlayersTask
+        let taskId = UUID()
         let task = Task { @MainActor [weak self] in
             await previous?.value
-            guard let self, !Task.isCancelled else { return }
+            guard let self, !Task.isCancelled else {
+                self?.queuedResetPlayersTasks[taskId] = nil
+                return
+            }
             await self.performResetPlayers()
+            queuedResetPlayersTasks[taskId] = nil
         }
         resetPlayersTask = task
+        queuedResetPlayersTasks[taskId] = task
         await task.value
     }
 

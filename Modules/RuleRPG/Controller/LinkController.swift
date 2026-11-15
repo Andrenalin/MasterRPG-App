@@ -102,10 +102,10 @@ extension LinkController: LinkControllable {
                     remove: true
                 )
             }
-            Task {
-                if command != LinkType.share.rawValue {
-                    await toggler?(itemId, .rule)
-                }
+            // The share command has nothing to do for a rule: no task for it.
+            guard command != LinkType.share.rawValue else { return text }
+            LinkActionTasks.run {
+                await toggler?(itemId, .rule)
             }
             return text
         }

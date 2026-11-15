@@ -186,6 +186,9 @@ final class GameTableModel: Sendable {
     var currentPhotoVersion: Int?
     /// The photo each pin is currently loading a thumbnail for.
     var pendingPinPhotoIds: [UUID: UUID] = [:]
+    /// Names the load behind `pendingPinPhotoIds[pinId]`, so a finished load clears only its own
+    /// bookkeeping. See CODE_AUDIT_26 §3.5.
+    var pendingPinLoadTokens: [UUID: UUID] = [:]
     /// The photo, and the state of its item, whose thumbnail load last failed for a pin. Not retried
     /// until the pin's photo or that item's state changes (e.g. the file reaches a player later).
     var failedPinPhotos: [UUID: PinPhotoLoadAttempt] = [:]
@@ -240,6 +243,7 @@ final class GameTableModel: Sendable {
 
     isolated deinit {
         pendingThumbnailTasks.values.forEach { $0.cancel() }
+        pinPhotoRetryTasks.values.forEach { $0.cancel() }
         fogOfWarTask?.cancel()
         mapChangeTask?.cancel()
 #if os(visionOS)

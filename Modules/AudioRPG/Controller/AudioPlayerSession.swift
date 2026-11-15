@@ -18,6 +18,9 @@ final class AudioPlayerSessionModel: Sendable {
     private(set) var audioSessionObservers: [Task<Void, Never>] = []
     private(set) var wasPlaying = false
     private(set) var configureTask: Task<Void, Never>?
+    /// The last queued `setActive`/`setInactive`: each new change waits for it, so the session
+    /// ends in the state of the last request. See CODE_AUDIT_26 §3.12.
+    private(set) var sessionChangeTask: Task<Void, Never>?
     /// Whether this session activated the audio session and has not given it back.
     private(set) var isActive = false
     /// Bumped by every interruption that begins: a resume that waited for the session to
@@ -38,6 +41,10 @@ final class AudioPlayerSessionModel: Sendable {
 
     func reset(configureTask: Task<Void, Never>?) {
         self.configureTask = configureTask
+    }
+
+    func reset(sessionChangeTask: Task<Void, Never>?) {
+        self.sessionChangeTask = sessionChangeTask
     }
 
     func reset(isActive: Bool) {
@@ -99,7 +106,7 @@ final class AudioPlayerSession: Sendable {
 #if !os(macOS)
         await waitUntilConfigured()
         guard !model.isActive else { return }
-        await setActive()
+        await enqueueSessionChange(active: true).value
         model.reset(isActive: true)
 #endif
     }
@@ -110,13 +117,32 @@ final class AudioPlayerSession: Sendable {
 #if !os(macOS)
         guard model.isActive, model.configureTask == nil else { return }
         model.reset(isActive: false)
-        Task { await setInactive() }
+        enqueueSessionChange(active: false)
 #endif
     }
 }
 
 private extension AudioPlayerSession {
 #if !os(macOS)
+    /// Queues a session (de)activation behind the one before it. `setActive`/`setInactive` are
+    /// `@concurrent`, so two bare tasks could run in either order and leave the session in the
+    /// state of the one that finished last.
+    @MainActor
+    @discardableResult
+    func enqueueSessionChange(active: Bool) -> Task<Void, Never> {
+        let previous = model.sessionChangeTask
+        let task = Task {
+            await previous?.value
+            if active {
+                await setActive()
+            } else {
+                await setInactive()
+            }
+        }
+        model.reset(sessionChangeTask: task)
+        return task
+    }
+
     func setCategory() {
         do {
             // `.longFormAudio` route sharing (instead of `.default` policy +

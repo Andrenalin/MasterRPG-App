@@ -21,6 +21,9 @@
         private(set) var downloadedFile: URL?
 
         @ObservationIgnored private var downloadTask: Task<Void, Never>?
+        /// Names the download in flight. A cancelled download that is replaced by a new one finishes
+        /// later and must not clear the new one's task or status. See CODE_AUDIT_26 §3.4.
+        @ObservationIgnored private var downloadToken: UUID?
 
         init() {
             let decider = GameBundleNavigationDecider()
@@ -66,10 +69,13 @@
         func startDownload(of url: URL) {
             guard downloadTask == nil else { return }
             status = .downloading(url.lastPathComponent)
+            let token = UUID()
+            downloadToken = token
             downloadTask = Task { [weak self] in
                 let result = await Result { try await Self.download(url) }
-                guard let self else { return }
+                guard let self, downloadToken == token else { return }
                 downloadTask = nil
+                downloadToken = nil
                 switch result {
                 case .success(let fileUrl):
                     status = .idle
@@ -83,6 +89,7 @@
         func cancelDownload() {
             downloadTask?.cancel()
             downloadTask = nil
+            downloadToken = nil
             if isDownloading { status = .idle }
         }
 

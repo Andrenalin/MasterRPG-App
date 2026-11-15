@@ -122,7 +122,7 @@ extension MasterController {
         }
 
         let deliveryOrigin = origin ?? connectionId.map { asProxy ? .proxy($0) : .direct($0) }
-        await root.statisticsModel.record(
+        root.statisticsModel.record(
             message,
             direction: .outgoing,
             origin: deliveryOrigin ?? (asProxy ? .proxy(nil) : .direct(nil))

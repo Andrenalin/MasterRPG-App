@@ -33,7 +33,36 @@ struct FoundryZIPArchive: Sendable {
         static let localFileHeaderSize = 30
     }
 
+    /// The file a memory-mapped `archiveData` reads from, with its size and modification date at
+    /// open. The mapping reads the file's pages on demand, so a file truncated or replaced during
+    /// the import must be noticed before an entry is read from it. See CODE_AUDIT_26 §3.3.
+    struct SourceStamp: Sendable, Equatable {
+        let url: URL
+        let fileSize: Int?
+        let modificationDate: Date?
+
+        init(url: URL) {
+            self.url = url
+            let values = Self.currentValues(of: url)
+            fileSize = values?.fileSize
+            modificationDate = values?.contentModificationDate
+        }
+
+        var isUnchanged: Bool {
+            guard let values = Self.currentValues(of: url) else { return false }
+            return values.fileSize == fileSize && values.contentModificationDate == modificationDate
+        }
+
+        /// Read through a fresh `URL`: a `URL` value caches the resource values it has read, so
+        /// the same instance would report the size and date of the first read forever.
+        private static func currentValues(of url: URL) -> URLResourceValues? {
+            let fresh = URL(filePath: url.path(percentEncoded: false))
+            return try? fresh.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        }
+    }
+
     private let archiveData: Data
+    private let sourceStamp: SourceStamp?
     private let entries: [Entry]
     private let entriesByPath: [String: Entry]
 
@@ -41,7 +70,8 @@ struct FoundryZIPArchive: Sendable {
         entries.map(\.path)
     }
 
-    init(data: Data, limits: FoundryImportLimits = .default) throws {
+    init(data: Data, limits: FoundryImportLimits = .default, sourceStamp: SourceStamp? = nil) throws {
+        self.sourceStamp = sourceStamp
         guard data.count <= limits.maximumArchiveSize else {
             throw FoundryImportError.fileTooLarge(data.count)
         }
@@ -189,6 +219,9 @@ struct FoundryZIPArchive: Sendable {
 
     func data(forPath path: String) throws -> Data? {
         guard let entry = entriesByPath[path] else { return nil }
+        if let sourceStamp, !sourceStamp.isUnchanged {
+            throw FoundryImportError.invalidArchive("The source file changed during the import.")
+        }
 
         let payloadOffset = try Self.payloadOffset(for: entry, in: archiveData)
         let compressedData = archiveData.subdata(in: payloadOffset..<(payloadOffset + entry.compressedSize))

@@ -21,7 +21,7 @@ extension LinkController: LinkControllable {
                 return handled
             }
             guard command == LinkType.share.rawValue else { return text }
-            Task {
+            LinkActionTasks.run {
                 await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
             }
             return text

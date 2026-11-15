@@ -31,7 +31,7 @@ extension LinkController: LinkControllable {
                 return handled
             }
             guard command == LinkType.share.rawValue else { return text }
-            Task {
+            LinkActionTasks.run {
                 await shareResult?.networkActions?.shareId(root.gameController.shareMap(id: itemId))
             }
             return text
@@ -88,7 +88,7 @@ extension LinkController: LinkControllable {
 
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
         if photoRoot.linkControllable.validateLink(itemId: photoId) {
-            Task {
+            LinkActionTasks.run {
                 await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
             }
         } else {

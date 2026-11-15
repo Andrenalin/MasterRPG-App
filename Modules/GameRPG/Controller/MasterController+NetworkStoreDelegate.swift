@@ -203,7 +203,7 @@ extension MasterController {
         if asProxy {
             let success = await processAsProxy(receivedModel, connectionId: event.connectionId)
             if success {
-                await root.statisticsModel.record(receivedModel, direction: .incoming, origin: event.origin)
+                root.statisticsModel.record(receivedModel, direction: .incoming, origin: event.origin)
             }
             return success
         }
@@ -223,7 +223,7 @@ extension MasterController {
         // An acknowledgement that answers no message this game sent says nothing.
         if model.subType == .ok, !recordDeliveryReceipt(model) {
             Logger.networking.debug("MasterController: Ignored uncorrelated acknowledgement from \(model.sender.id, privacy: .public)")
-            await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+            root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
             return true
         }
 
@@ -253,14 +253,14 @@ extension MasterController {
                     playerId: requestedData.carriesAsset ? nil : model.sender.id
                 )
             }
-            await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+            root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
             return true
         } catch is CancellationError {
             return false
         } catch let unavailable as AssetRequestUnavailable {
             Logger.networking.error("MasterController: Cannot serve the request for \(model.data.type.token, privacy: .public) \(model.data.id, privacy: .public): \(String(describing: unavailable), privacy: .public); answering failed")
             await answerAssetRequestFailed(model, origin: event.origin)
-            await root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
+            root.statisticsModel.record(model, direction: .incoming, origin: event.origin)
             return true
         } catch {
             // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.

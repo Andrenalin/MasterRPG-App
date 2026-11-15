@@ -119,30 +119,18 @@ final class GameStatisticsModel: Sendable {
         }
     }
 
-    /// Fire-and-forget on purpose: persistence latency (a Core Data
-    /// duplicate-check fetch plus insert) must never be serialized into the
-    /// latency of the game message that triggered it, including small,
-    /// latency-sensitive ones like `.mapPin`/`.spaceTransform`. The actual
-    /// work runs in a detached child task this function does not await, so
-    /// every existing `await ...record(...)` call site returns almost
-    /// immediately without needing to change. See CODE_AUDIT_Game §7.1.
+    /// Buffers the event synchronously; the persistence (a Core Data duplicate-check fetch plus
+    /// insert) never runs in the latency of the game message that triggered it, including small,
+    /// latency-sensitive ones like `.mapPin`/`.spaceTransform`: the buffer is written by the timer
+    /// flush (`scheduleFlush`) or, when it fills, by a flush task this function does not await.
+    /// Synchronous so a call neither suspends nor allocates a task per game message.
+    /// See CODE_AUDIT_Game §7.1, CODE_AUDIT_26 §3.8.
     func record(
         _ model: GameNetworkModel,
         direction: GameStatisticDirection,
         origin: GameMessageOrigin,
         at date: Date = .now
-    ) async {
-        Task { [weak self] in
-            await self?.recordAndPersist(model, direction: direction, origin: origin, at: date)
-        }
-    }
-
-    private func recordAndPersist(
-        _ model: GameNetworkModel,
-        direction: GameStatisticDirection,
-        origin: GameMessageOrigin,
-        at date: Date
-    ) async {
+    ) {
         guard isCollectionEnabled,
               context != nil,
               let activeSessionID,
@@ -170,7 +158,9 @@ final class GameStatisticsModel: Sendable {
         }
 
         if pendingEvents.count >= Self.maximumBufferedEvents {
-            await flushPendingEvents()
+            Task { [weak self] in
+                await self?.flushPendingEvents()
+            }
         } else {
             scheduleFlush()
         }
