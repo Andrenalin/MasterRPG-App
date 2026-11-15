@@ -184,7 +184,9 @@ extension GameController: DiceGameStorable {
         if let resultCategory {
             item.resultCategory = resultCategory
         }
-        let diceResult = result(itemId: itemId)
+        // A roll shares the dice and the result, not the game master's notes on the dice.
+        // See CODE_AUDIT_26 §6.8.
+        let diceResult = result(itemId: itemId).reducedForSharing()
         return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: diceResult.encodeData())
     }
     

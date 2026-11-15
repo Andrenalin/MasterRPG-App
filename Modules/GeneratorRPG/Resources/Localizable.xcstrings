@@ -3105,6 +3105,22 @@
           }
         }
       }
+    },
+    "Updated %lld items: %lld names filled, %lld tags added." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld Elemente aktualisiert: %2$lld Namen ergänzt, %3$lld Tags hinzugefügt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดต %1$lld รายการ: เติมชื่อ %2$lld รายการ เพิ่มแท็ก %3$lld แท็ก"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

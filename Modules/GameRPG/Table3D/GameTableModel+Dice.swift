@@ -29,6 +29,9 @@ extension GameTableModel {
     /// A die the sheet has not rolled yet is mirrored as `TableDieValue.unrolled`, so no other
     /// seat shows a result for it. A die tossed by hand got its value from the sheet already (see
     /// `rollTossedDie(_:)`) and stays where it landed until the sheet gives it another one.
+    ///
+    /// The mirrored dice are public to every seat: "Share master dice" / "Share player dice" gate
+    /// the result popover, not the table (decided in CODE_AUDIT_26 §6.4).
     func applyDiceRoll(_ diceModel: DiceModel) {
         mirroredSheet = nil
         guard let seat = localSeat,

@@ -26,6 +26,12 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
     }
 
     func masterReceived(data: Data?, for connectionId: ConnectionController.ID) async {
+        // Before anything is decoded: one connection cannot make this device decode an
+        // unbounded number of large frames. See CODE_AUDIT_26 §6.6.
+        if let data, await !model.admitsLanFrame(byteCount: data.count, from: connectionId) {
+            Logger.networking.error("GameNetworkController: Dropped a \(data.count, privacy: .public) byte frame from \(connectionId, privacy: .public): over the inbound byte budget")
+            return
+        }
         guard let gameData = await GameNetworkModel.decodedOffMain(of: data) else {
             Logger.networking.debug("GameNetworkController: Master Received invalid game data from \(connectionId)")
             await handleUndecodable(data, from: connectionId)

@@ -144,7 +144,7 @@ extension MapSnapshot {
 
 extension MapSnapshot {
     /// Strips GM-only content before this snapshot crosses the wire to a
-    /// non-master peer: the name and text of hidden rooms, and every hidden pin (a shown monster
+    /// non-master peer: the description and tags, the name and text of hidden rooms, and every hidden pin (a shown monster
     /// inside a hidden room counts as hidden). A hidden pin is
     /// left out entirely (as in the live `mapState`), so its name, portrait, character link,
     /// position and even its existence stay on the master until it is shown. Client-side
@@ -160,11 +160,18 @@ extension MapSnapshot {
             return redacted
         }
         let redactedPins = mapPins.wrappedValue.filter { $0.isVisibleToPlayers(hiddenBy: entries.wrappedValue) }
+        // The description is the game master's notes field (spoilers, hints about secret rooms)
+        // and the tags are their own filing; neither is shown to players, so neither is sent.
+        // The name stays. See CODE_AUDIT_26 §6.7.
+        var redactedDescription = description
+        redactedDescription.wrappedValue = ""
+        var redactedTags = tags
+        redactedTags.wrappedValue = []
         return MapSnapshot(
             id: id,
             name: name,
-            description: description,
-            tags: tags,
+            description: redactedDescription,
+            tags: redactedTags,
             category: category,
             displayState: displayState,
             entries: CRDTDataUpdate(wrappedValue: redactedEntries, update: entries.$update),

@@ -21,7 +21,7 @@ struct TableSummaryAnalyzer {
 
         let truncated = FoundationModelInputLimiter.limitedText(entriesText, maxCharacters: maxCharacters)
 
-        let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language."
+        let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language.\n" + UntrustedPromptText.instruction
         let session = LanguageModelSession(instructions: activeInstructions)
         session.prewarm()
 
@@ -66,7 +66,7 @@ struct TableSummaryAnalyzer {
         Output language: \(outputLanguage)
 
         Table entries:
-        \(text)
+        \(UntrustedPromptText.fenced(text))
 
         Provide in \(outputLanguage):
         - A clear title for this table

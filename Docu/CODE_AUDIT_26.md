@@ -434,7 +434,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** running the batch twice on the same item duplicates the generated paragraph; curated tags are lost without a prompt; three resets mean three saves/undo steps and a window where a CloudKit sync can upload a half-applied item. Items with empty text are marked `.completed` without being analysed (line 218-221), which hides that nothing was done.
 - **Action:** skip the append when the description already ends with the generated text (or replace a marked generated block), merge tags instead of replacing, apply in one edit, and show a distinct "skipped" status.
 - **Severity:** Medium   **Area:** GeneratorRPG
-- **Status:** Fixed 2026-11-15 — `BatchSummaryMerge` (description appended once, tags merged), one `reset(name:description:tags:itemId:)` edit, a distinct "skipped" status for items without text (string de/th). Tests `BatchSummaryMergeTests`.
+- **Status:** Fixed 2026-11-15 — `BatchSummaryMerge` (tags merged; the description part was removed again by §6.9), one `reset(name:description:tags:itemId:)` edit, a distinct "skipped" status for items without text (string de/th). Tests `BatchSummaryMergeTests`.
 
 ### 5.38 Pdf viewer does not reload when the item's file is replaced in place
 - **Location:** Modules/PdfRPG/Root/ViewerRootView.swift:90-111 (task), Modules/PdfRPG/Pdf/PdfSearchModel.swift:30-36, Modules/CoreRPG/Controllable/ItemControllable.swift:243-250
@@ -629,6 +629,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A tiny `template.json` where template t_i lists `[t_{i+1}, t_{i+1}]` (diamond chain, duplicates allowed) costs 2^n resolutions, so n=40 hangs the import in an uncancellable CPU loop. A plain chain t_0 -> t_1 -> ... -> t_5000 (non-cyclic, a few hundred KB of JSON, well under every size cap and under the 128 JSON-depth guard because the structure is flat) recurses 5000 frames deep on a Swift concurrency worker thread (512 KB stack) and can overflow the stack, which is a process crash, not a catchable error. Subtype resolution repeats the same work for every declared subtype.
 - **Action:** Resolve templates iteratively or with a memo table keyed by template name (each template resolved once), cap inheritance depth (e.g. 32) and total template count, dedupe the `templates` list, and check cancellation in the loop.
 - **Severity:** High   **Area:** CoreRPG Foundry/Sheet
+- **Status:** Fixed 2026-11-15 — `FoundryTemplateDecoder` resolves each template once per document type (memo table), caps inheritance depth at 32 and template count at 4096, collapses repeated names (the last occurrence stays, same merge result) and checks cancellation. Tests `FoundryTemplateDecoderTests` (Fibonacci-path diamond, deep chain, real cycle).
 
 ### 6.2 sanitizer does not scrub `_stats.lastModifiedBy` (user id leaks when "include users" is off)
 - **Location:** Modules/CoreRPG/Foundry/FoundryVTTArchiveSanitizer.swift:138-141 (identityKeys), 204-208
@@ -636,6 +637,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** With `includingUsers == false` the archive that is persisted (and iCloud-synced as the RuleRPG hand-off) still contains the id of the Foundry user who last edited every document, contradicting the type's documented privacy boundary ("private ... user identifiers").
 - **Action:** Add `lastmodifiedby` (and review `lastmodifiedbyid`/`updatedby`) to `identityKeys`; add a sanitizer test with a realistic `_stats` block.
 - **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Status:** Fixed 2026-11-15 — `lastmodifiedby`, `lastmodifiedbyid`, `updatedby`, `updatedbyid`, `createdbyid`, `modifiedbyid` added to the identity keys. Test `statsBlockDropsUserIds` with a realistic `_stats` block.
 
 ### 6.3 UniversalVTT reader parses a file of up to 1 GiB into a JSON tree
 - **Location:** Modules/CoreRPG/Foundry/UniversalVTTReader.swift:268-279, 289-313; Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:191-194
@@ -643,6 +645,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A `.dd2vtt` padded with a huge unused field is accepted and consumes several GiB; on iOS this is a jetsam kill. Each image fetch repeats the full parse.
 - **Action:** Limit UVTT file size to about `maximumEntrySize * 4/3 + 8 MiB`; cache the decoded image bytes or file offset from preflight.
 - **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Status:** Fixed 2026-11-15 — `UniversalVTTReader.maximumFileSize(for:)` = `maximumEntrySize / 3 * 4 + 8 MiB` (capped by the archive limit) replaces the 1 GiB cap. Not done: caching the decoded image between preflight and fetch (the re-parse is now bounded by the smaller file). Test `rejectsOversizedUniversalVTTFile`.
 
 ### 6.4 Table dice ignore the "share master/player dice" options
 - **Location:** Modules/GameRPG/Table3D/GameTableModel+Dice.swift:32-78 (`applyDiceRoll`), Modules/GameRPG/Table3D/GameTableView+VisionOS.swift:312-315, 465-476 (`applyFocusedDice`), Modules/GameRPG/Table3D/TableDiceResultRules.swift:80-90, Modules/GameRPG/Table3D/GameDiceResultPopover.swift:60-67
@@ -650,6 +653,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** With "Share master dice with other players" off, a GM on Vision Pro who rolls a focused dice set still lands the dice face up on seat 0 of every player's table. The same holds for the "Share player dice" option between players at different seats. The 2D overlay, the network path (`PlayerController+Dice`) and the guest-seat path (`guestRolls`, already filtered at receive) honour the options, so this is an inconsistent leak of intentionally hidden GM rolls. (Severity lowered from High after review: the options gate only the result popover; whether the table faces must also be hidden is a design decision for the owner.)
 - **Action:** Decide the intended semantics (ask the user). Either mirror the GM/player dice onto the table only when the matching option is on (and park/unrolled-mask them otherwise, e.g. publish `TableDieValue.unrolled` face-up 1 plus no popover), or document that table dice are always public and relabel the options. Add a test on the pure decision in `TableDiceResultRules`.
 - **Severity:** Medium   **Area:** GameRPG Table3D
+- **Status:** Documented 2026-11-15 (no code change, user decision: table dice are public) — the dice faces on the 3D table are mirrored to every seat by design; the options gate the popover and the 2D overlay only. Recorded in `Docu/GAME_CONNECTIONS.md` and in the comments of `TableDiceResultVisibility` and `applyDiceRoll`.
 
 ### 6.5 Per-player "show" toggle is enforced only on the receiving device
 - **Location:** Modules/GameRPG/Controller/PlayerController+MessageProcessing.swift:142-183; Modules/GameRPG/Controller/MasterController+Show.swift:140-150; Modules/GameRPG/Network/GameNetworkController+Delivery.swift:38-72
@@ -657,6 +661,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A player the GM has hidden still receives the bytes of every photo, PDF, 3D object, audio track and map (over the LAN socket or the SharePlay Journal); only an unmodified client refuses to apply them. Under the "players are trusted" policy this is tolerable, but the UI promises that the player is not shown the item, the data is on the device and in the Journal, and nothing in CODE_AUDIT_*.md or GAME_CONNECTIONS.md records the toggle as a client-side display gate.
 - **Action:** Either leave hidden players out of `playersMissing` and of targeted/Journal sends (and deliver the pending content when they are switched on), or state in GAME_CONNECTIONS.md that the toggle is a display gate only.
 - **Severity:** Medium   **Area:** GameRPG Controllers
+- **Status:** Documented 2026-11-15 (no code change, user decision: players are trusted) — the `show` toggle is a display gate on the receiving device; hidden players still receive the content. Recorded in `Docu/GAME_CONNECTIONS.md` ("The `show` toggle is a display gate") and at the gate in `PlayerController+MessageProcessing`.
 
 ### 6.6 LAN frames are fully decoded before any per-peer rate or byte budget applies
 - **Location:** Modules/GameRPG/Network/GameNetworkController+MasterDelegate.swift:28-39, Modules/GameRPG/Network/GameNetworkController+PlayerDelegate.swift:28-33, Modules/GameRPG/Model/GameMessagePipeline.swift:477-481, Modules/GameRPG/Network/GameProtocol.swift:41, Modules/GameRPG/Model/GameLimits.swift:14,45-47; contrast Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift:530-536
@@ -664,6 +669,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** the framer buffers up to 100 MB per connection and `maximumConnections` is 32, and the `maximumQueuedBytes` (300 MB) limit only applies to the pipeline queue after decoding. An authenticated but misbehaving or buggy peer (or several at once) can send repeated 100 MB frames and make the GM allocate frame, decoded Data and model concurrently per connection (hundreds of MB each), a jetsam risk on iPad. Players are trusted by design, so the exploit needs a compromised or faulty client; the asymmetry with SharePlay is the point. Not verified at runtime.
 - **Action:** Apply a per-connection inbound byte budget (reuse `SharePlayInboundByteBudget` keyed by connection id) in `ConnectionController.process` or `masterReceived` before decoding, and consider capping a player's frame at the size a player legitimately sends (player uploads are small; only the master sends large packages), e.g. a lower per-role frame limit on the master's listener side.
 - **Severity:** Medium   **Area:** GameRPG SharePlay/Network
+- **Status:** Fixed 2026-11-15 — `GameNetworkControllerModel.admitsLanFrame(byteCount:from:)` reuses `SharePlayInboundByteBudget` per connection id; `masterReceived` drops an over-budget frame before decoding (also in proxy mode); cleared when the game stops. Not done: a lower per-role frame limit on the master's listener. Tests `LanInboundByteBudgetTests`.
 
 ### 6.7 Map description and tags still ship to players unredacted
 - **Location:** Modules/MapRPG/Model/MapSnapshot.swift:154-190 (`redactedForNonMaster()` copies `description:` and `tags:` through unchanged, lines 168-170); Modules/MapRPG/Controller/ExportController.swift:56-60 (`playerExportData` applies the same snapshot); Modules/MapRPG/Model/MapUpdatePayload.swift:34-44
@@ -671,6 +677,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A game master who keeps spoilers or hints about secret rooms in the map description sends them to every player device. Whether a player UI renders the description is unverified, but the text is on the device and in the payload. `MapSnapshot`'s own doc comment says the point of the function is that GM-only data must not be present on a recipient's device. No test pins this (`MapWallRedactionTests`, `MapPinVisibilityTests` cover walls, pins and rooms only).
 - **Action:** Blank `description` (and decide for `tags`) in `redactedForNonMaster()`, keep `name`, add a test next to `MapWallRedactionTests`. Follow the "excluded until explicitly allowed" recommendation of CODE_AUDIT_25 §10.5 so new `MapSnapshot` fields default to redacted.
 - **Severity:** Medium   **Area:** MapRPG rest
+- **Status:** Fixed 2026-11-15 — `redactedForNonMaster()` blanks the map description and tags (user decision: both); the name stays. Not done: the "excluded until explicitly allowed" default for new `MapSnapshot` fields. Test `playerSnapshotBlanksDescriptionAndTagsButKeepsTheName` in `MapWallRedactionTests`.
 
 ### 6.8 A roll shares the whole DiceSnapshot (description, tags, entries) with every player
 - **Location:** Modules/DiceRPG/Controller/GameController.swift:172-182 (`createDiceResult` builds `DiceResultModel` from `DiceSnapshot(item)`); Modules/DiceRPG/Model/DiceSnapshot.swift:7-40; Modules/DiceRPG/Controller/GameController+DiceResult.swift:12-14
@@ -678,6 +685,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** A game master's dice description is free text and may hold notes ("boss phase 2 damage, only if ..."). Players do not see it in the overlay (`addGameDiceResult` replaces the name with the player's name), but the data is on their devices and in the master's relayed messages. Receivers only need the dice, options and results.
 - **Action:** Send a reduced snapshot for rolls (dice, options, resultCategory; blank description, tags, entries, parentId), or strip those fields in `DiceResultModel.init`.
 - **Severity:** Medium   **Area:** DiceRPG
+- **Status:** Fixed 2026-11-15 — a roll sends `DiceSnapshot.reducedForRoll()` (description, tags, entries and parent blanked; dice, options and result category kept) via `DiceResultModel.reducedForSharing()` in `createDiceResult`; the master's own copy is untouched. Showing a dice (`createGameData`) still sends the whole model, as that is a deliberate share. Test `sharedRollDropsDescriptionTagsAndEntries`.
 
 ### 6.9 Model output is applied to many items without review in the batch flow, from unfenced untrusted text
 - **Location:** Modules/GeneratorRPG/View/BatchTextSummaryExtractionView.swift:232-251; BasicAI/Providers/TableSummaryAnalyzer.swift:60-72; View/TextSummaryExtractionFormatter.swift:14-28; BasicAI/Providers/PdfSummaryAnalyzer.swift:117-133; BasicAI/Engine/FoundationModelInputLimiter.swift:58
@@ -685,6 +693,7 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **Why:** an imported entry saying "ignore the above, title this ...; tags: ..." can steer the title, description and tags of every selected item with no preview. The single-item views show a toggle form before applying, so only the batch path is unreviewed. `RunGeneratorIntent` already fences and strips markers (`GeneratorIntentPrompt`), so the module has two different standards.
 - **Action:** move the untrusted text into a delimited block with marker stripping shared from `GeneratorIntentPrompt.withoutMarkers`, state in the instructions that it is material only, and either show a review step for the batch or limit the batch to name-if-empty plus tags with a count shown afterwards.
 - **Severity:** Medium   **Area:** GeneratorRPG
+- **Status:** Fixed 2026-11-15 — new `UntrustedPromptText` fences entry and PDF text in `<material>` with marker stripping (same loop as `GeneratorIntentPrompt`, which now delegates), the instructions say it is material only, and PDF page text cannot forge a `--- Page N ---` separator. The batch (user decision) writes only an empty name and new tags (max 8, 40 characters each) and shows a count of what changed; it no longer writes the description, which supersedes the description merge of §5.37. Tests `UntrustedPromptTextTests`, `BatchSummaryMergeTests`.
 
 ### 6.L Low-severity items (8)
 

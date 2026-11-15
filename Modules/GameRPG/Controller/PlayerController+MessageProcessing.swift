@@ -174,6 +174,9 @@ extension PlayerController {
         // roster/visibility state, so the message still needs forwarding
         // to them even when it's not applied here. See CODE_AUDIT_Network
         // §5.20.
+        // The `show` toggle is a display gate on this device only: the master still sends hidden
+        // players the content. Players are trusted by design (CODE_AUDIT_26 §6.5,
+        // Docu/GAME_CONNECTIONS.md "The `show` toggle is a display gate").
         guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
             // The controls array carries every participant's id and display
             // name — private. See CODE_AUDIT_Game §6.3.

@@ -88,5 +88,22 @@ struct MapWallRedactionTests {
         // Then: the master's fingerprint follows the real walls, so a GM edit still resends.
         #expect(before != after)
     }
+
+    /// CODE_AUDIT_26 §6.7: the notes field and the tags are the game master's own.
+    @Test func playerSnapshotBlanksDescriptionAndTagsButKeepsTheName() {
+        // Given
+        let map = MapModel(id: UUID(), name: "Crypt", description: "Secret door behind the altar", tags: ["spoiler"])
+
+        // When
+        let player = MapSnapshot(map).redactedForNonMaster()
+        let master = MapSnapshot(map)
+
+        // Then
+        #expect(player.name.wrappedValue == "Crypt")
+        #expect(player.description.wrappedValue.isEmpty)
+        #expect(player.tags.wrappedValue.isEmpty)
+        #expect(master.description.wrappedValue == "Secret door behind the altar")
+        #expect(master.tags.wrappedValue == ["spoiler"])
+    }
 }
 #endif

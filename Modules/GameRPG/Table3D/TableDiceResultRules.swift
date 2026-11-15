@@ -75,6 +75,10 @@ enum TableDiceRest {
 }
 
 /// Who sees which seat's dice result.
+///
+/// This gates the result popover only. The dice themselves (faces and orientation) are mirrored
+/// to every seat regardless: table dice are public by design, like dice on a real table. See
+/// CODE_AUDIT_26 §6.4 and `Docu/GAME_CONNECTIONS.md`.
 enum TableDiceResultVisibility {
     /// Players always see their own result and the game master sees every result this device
     /// has. Another seat's result follows the game's sharing options, which gate the same dice

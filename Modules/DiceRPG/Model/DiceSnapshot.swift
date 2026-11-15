@@ -109,6 +109,41 @@ public extension DiceSnapshot {
         )
     }
 
+    /// The snapshot a roll puts on the network: the dice, their options and the result category,
+    /// without the game master's description, tags, entries and folder. A receiver needs only the
+    /// dice to show the roll; the free text can hold notes ("boss phase 2 damage, only if ...").
+    /// See CODE_AUDIT_26 §6.8.
+    func reducedForRoll() -> DiceSnapshot {
+        var blankDescription = description_
+        blankDescription.wrappedValue = ""
+        var blankTags = tags_
+        blankTags.wrappedValue = []
+        return DiceSnapshot(
+            id: id,
+            name: name_,
+            description: blankDescription,
+            tags: blankTags,
+            category: category_,
+            displayState: displayState,
+            dice: dice_,
+            sumUp: sumUp,
+            modifier: modifier,
+            percentDice: percentDice,
+            compareOption: compareOption,
+            compareValue: compareValue,
+            coupValues: coupValues,
+            coupOnlyOnFirstDie: coupOnlyOnFirstDie,
+            fumbleValues: fumbleValues,
+            fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie,
+            rerollOptions: rerollOptions,
+            reorderDice: reorderDice,
+            addDiceEvery: addDiceEvery,
+            resultCategory: resultCategory,
+            entries: CRDTDataUpdate(wrappedValue: [], update: entries_.$update),
+            parentId: nil
+        )
+    }
+
     /// Nonisolated on purpose: DiceModel's initializers only initialize stored state.
     func makeModel() -> DiceModel {
         makeModel(withId: id)

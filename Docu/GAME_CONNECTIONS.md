@@ -556,6 +556,32 @@ This prevents ordinary player-origin fan-out messages from changing other player
 state. The main exceptions are dice rolls and 3D transforms, which are intended
 to be visible live.
 
+#### The `show` toggle is a display gate, not an access control
+
+The game master's per-player `show` switch (`controls[].show`) is enforced only
+here, on the receiving device. The master does not leave a hidden player out of
+`playersMissing` or out of the sends and Journal entries of a shown item, so a
+hidden player's device still receives the bytes of the photos, PDFs, 3D objects,
+audio tracks and maps (over the LAN socket or the SharePlay Journal); an
+unmodified client refuses to apply them and shows nothing. This is deliberate:
+players are trusted by design (CODE_AUDIT_26 §6.5, decided 2026-11-15), and
+holding content back and delivering it when a player is switched on would add a
+second delivery path for every module. Do not describe the toggle as keeping data
+off a player's device. If that guarantee is ever needed, hidden players must be
+left out of `playersMissing` and the targeted/Journal sends, with the pending
+content delivered when they are switched on.
+
+#### Table dice are public to every seat
+
+The 3D game table (visionOS `GameTableModel.applyDiceRoll`) mirrors the dice of
+the master and of each player to every seat, value and orientation, without
+looking at the "Share master dice" / "Share player dice" options. Those options
+gate the result popover and the 2D dice overlay (`TableDiceResultVisibility`),
+not the dice faces on the table. This is deliberate (CODE_AUDIT_26 §6.4, decided
+2026-11-15): a die lying on the shared table is visible to everyone sitting at
+it, like a real table. A game master who must keep a roll hidden does not roll it
+on the table.
+
 `targetId` filtering happens first. Only the addressee processes a targeted
 message. A host still forwards a message addressed to another participant to its
 local proxy clients because the actual addressee may be behind that proxy server.

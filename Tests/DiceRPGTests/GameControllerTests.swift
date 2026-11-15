@@ -361,6 +361,32 @@ struct GameControllerTests {
         #expect(Set(sut.diceGameModel.playerSupporterTiers.keys) == Set(after))
     }
 
+    @Test("A shared roll carries the dice but not the master's notes (CODE_AUDIT_26 §6.8)")
+    func sharedRollDropsDescriptionTagsAndEntries() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        dice.dice = GameControllerTests.diceResult(values: [[2], [3], [4]])
+        dice.parentId = UUID()
+        dice.entries = [ChildEntryModel(id: UUID(), childId: UUID())]
+
+        let data = await sut.createDiceResult(for: dice.id, resultCategory: nil)
+        let shared = try #require(DiceResultModel.decodeData(of: data.data))
+
+        #expect(shared.diceModel.description_.wrappedValue.isEmpty)
+        #expect(shared.diceModel.tags_.wrappedValue.isEmpty)
+        #expect(shared.diceModel.entries_.wrappedValue.isEmpty)
+        #expect(shared.diceModel.parentId == nil)
+        // What a receiver needs stays.
+        #expect(shared.diceModel.name_.wrappedValue == dice.name)
+        #expect(shared.diceModel.dice.count == 3)
+        #expect(shared.diceModel.compareOption == dice.compareOption)
+        #expect(shared.diceModel.compareValue == dice.compareValue)
+        #expect(shared.values == "2|3|4")
+        // The game master's own copy keeps its notes.
+        #expect(!sut.gameItem(for: dice.id).description.isEmpty)
+        #expect(!sut.gameItem(for: dice.id).tags.isEmpty)
+    }
+
     @Test("A roll without a known sender is kept by the player's name")
     func resetKeepsUnknownSenderByName() async throws {
         let (root, dice) = await GameControllerTests.setupDice()

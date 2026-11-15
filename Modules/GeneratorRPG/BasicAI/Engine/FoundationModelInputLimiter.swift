@@ -49,7 +49,7 @@ struct FoundationModelInputLimiter {
 
         var combined = ""
         for (pageNumber, pageText) in pages.prefix(maxPages) where !pageText.isEmpty {
-            let pageBlock = "--- Page \(pageNumber) ---\n\(pageText)\n\n"
+            let pageBlock = "--- Page \(pageNumber) ---\n\(UntrustedPromptText.pageText(pageText))\n\n"
             if combined.count + pageBlock.count > maxCharacters {
                 let remaining = maxCharacters - combined.count
                 if remaining > 0 {

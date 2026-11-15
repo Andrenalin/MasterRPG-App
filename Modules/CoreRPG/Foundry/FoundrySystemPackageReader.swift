@@ -415,7 +415,22 @@ private struct FoundryManifestDecoder {
 
 // MARK: - Template Decoding
 
-private struct FoundryTemplateDecoder {
+struct FoundryTemplateDecoder {
+    /// Longest inheritance chain accepted. Real systems nest a handful of levels; a chain of
+    /// thousands recursed one stack frame per level and could overflow the worker's stack.
+    /// See CODE_AUDIT_26 §6.1.
+    static let maximumInheritanceDepth = 32
+    /// Most templates one `template.json` may declare.
+    static let maximumTemplateCount = 4_096
+
+    /// The list without repeated names. The last occurrence stays: merging a template twice gives
+    /// the same result as merging it once at its last position, and a repeated name would
+    /// otherwise double the work of every level above it.
+    static func deduplicated(_ names: [String]) -> [String] {
+        var seen: Set<String> = []
+        return names.reversed().filter { seen.insert($0).inserted }.reversed()
+    }
+
     func decode(_ template: FoundryJSONValue) throws -> [FoundryRuleSchema] {
         guard let root = template.objectValue else {
             throw FoundryImportError.invalidArchive("template.json is not an object.")
@@ -424,16 +439,23 @@ private struct FoundryTemplateDecoder {
         for documentType in root.keys.sorted() {
             guard let document = root[documentType]?.objectValue else { continue }
             let templates = document["templates"]?.objectValue ?? [:]
+            guard templates.count <= Self.maximumTemplateCount else {
+                throw FoundryImportError.invalidArchive("template.json declares more than \(Self.maximumTemplateCount) templates.")
+            }
+            // Each template is resolved once for the whole document type, however many
+            // templates and subtypes list it.
+            var memo: [String: [String: FoundryJSONValue]] = [:]
             let declaredTypes = document["types"]?.arrayValue?.compactMap(\.stringValue) ?? []
             for subtype in declaredTypes.sorted() {
                 guard let subtypeValue = document[subtype], let subtypeObject = subtypeValue.objectValue else { continue }
-                let inherited = subtypeObject["templates"]?.arrayValue?.compactMap(\.stringValue) ?? []
+                let inherited = Self.deduplicated(subtypeObject["templates"]?.arrayValue?.compactMap(\.stringValue) ?? [])
                 var resolved: [String: FoundryJSONValue] = [:]
                 for templateName in inherited {
                     let inheritedValue = try resolveTemplate(
                         named: templateName,
                         templates: templates,
-                        stack: []
+                        stack: [],
+                        memo: &memo
                     )
                     resolved = deepMerge(resolved, inheritedValue)
                 }
@@ -457,22 +479,30 @@ private extension FoundryTemplateDecoder {
     func resolveTemplate(
         named name: String,
         templates: [String: FoundryJSONValue],
-        stack: Set<String>
+        stack: Set<String>,
+        memo: inout [String: [String: FoundryJSONValue]]
     ) throws -> [String: FoundryJSONValue] {
+        try Task.checkCancellation()
+        if let cached = memo[name] { return cached }
         guard !stack.contains(name) else {
             throw FoundryImportError.invalidArchive("template.json contains an inheritance cycle at \(name).")
+        }
+        guard stack.count < Self.maximumInheritanceDepth else {
+            throw FoundryImportError.invalidArchive("template.json nests templates deeper than \(Self.maximumInheritanceDepth) levels at \(name).")
         }
         guard let value = templates[name], let object = value.objectValue else {
             throw FoundryImportError.invalidArchive("template.json references missing template \(name).")
         }
         var nextStack = stack
         nextStack.insert(name)
-        let inherited = object["templates"]?.arrayValue?.compactMap(\.stringValue) ?? []
+        let inherited = Self.deduplicated(object["templates"]?.arrayValue?.compactMap(\.stringValue) ?? [])
         var result: [String: FoundryJSONValue] = [:]
         for parent in inherited {
-            result = deepMerge(result, try resolveTemplate(named: parent, templates: templates, stack: nextStack))
+            result = deepMerge(result, try resolveTemplate(named: parent, templates: templates, stack: nextStack, memo: &memo))
         }
-        return deepMerge(result, object.filter { $0.key != "templates" })
+        result = deepMerge(result, object.filter { $0.key != "templates" })
+        memo[name] = result
+        return result
     }
 
     func deepMerge(

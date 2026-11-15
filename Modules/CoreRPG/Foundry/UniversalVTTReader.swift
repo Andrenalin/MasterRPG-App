@@ -264,13 +264,23 @@ extension UniversalVTTReader {
     }
 }
 
+extension UniversalVTTReader {
+    /// The largest `.uvtt`/`.dd2vtt` file accepted. The only large legitimate member is the base64
+    /// image (at most `maximumEntrySize` decoded, a third more encoded); the rest is a few
+    /// kilobytes of walls and lights. The archive cap (1 GiB) let a file padded with an unused
+    /// field be parsed into a JSON tree of several GiB, a jetsam kill on iOS. See CODE_AUDIT_26 §6.3.
+    static func maximumFileSize(for limits: FoundryImportLimits) -> Int {
+        min(limits.maximumArchiveSize, limits.maximumEntrySize / 3 * 4 + 8 * ByteUnit.mebibyte)
+    }
+}
+
 private extension UniversalVTTReader {
     static func boundedData(from url: URL, limits: FoundryImportLimits) throws -> Data {
         try Task.checkCancellation()
         let values = try url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
         guard values.isRegularFile == true,
               let size = values.fileSize,
-              size <= limits.maximumArchiveSize else {
+              size <= maximumFileSize(for: limits) else {
             throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
         }
         let data = try Data(contentsOf: url, options: .mappedIfSafe)

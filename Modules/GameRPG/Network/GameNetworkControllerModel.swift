@@ -147,9 +147,21 @@ final class GameNetworkControllerModel {
     /// A game ends here; the controller itself lives for the whole app run.
     /// See CODE_AUDIT_26 §5.18.
     func resetVersionNotices() {
+        lanInboundByteBudget.reset()
         versionNoticeConnectionIds = []
         hasSentVersionNotice = false
         reportedMismatches = []
+    }
+
+    /// Bytes each LAN connection made this device decode within the current window. A frame is
+    /// decoded from up to 100 MB of JSON before any check of who sent it; SharePlay had this
+    /// budget since CODE_AUDIT_21 §6.5 and the LAN path did not. See CODE_AUDIT_26 §6.6.
+    private var lanInboundByteBudget = SharePlayInboundByteBudget()
+
+    /// Whether a frame of `byteCount` bytes from `connectionId` may be decoded: `false` once the
+    /// connection is over its per-minute budget, and the frame is dropped undecoded.
+    func admitsLanFrame(byteCount: Int, from connectionId: UUID, now: ContinuousClock.Instant = .now) -> Bool {
+        lanInboundByteBudget.admit(byteCount, from: connectionId, now: now)
     }
 
     /// Whether `mismatch` is news to the person at this device.

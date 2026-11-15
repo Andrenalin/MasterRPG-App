@@ -55,7 +55,7 @@ struct PdfSummaryAnalyzer: Sendable {
         await resultModel.setPageProgress(PdfAnalysisProgress(currentPage: pageLimit, totalPages: pageLimit))
 
         do {
-            let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language."
+            let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language.\n" + UntrustedPromptText.instruction
             let session = LanguageModelSession(instructions: activeInstructions)
             session.prewarm()
 
@@ -122,7 +122,7 @@ struct PdfSummaryAnalyzer: Sendable {
         Total pages in document: \(pageCount)
         Content (text of the first \(maxPages) pages, shortened to about \(maxCharacters) characters; each page starts with its page number):
 
-        \(text)
+        \(UntrustedPromptText.fenced(text))
 
         Provide in \(outputLanguage) a structured summary analysis including:
         - The document title

@@ -52,6 +52,39 @@ public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifia
 }
 
 public extension DiceResultModel {
+    /// The result as it is sent to the game: the same roll with a reduced snapshot. See
+    /// `DiceSnapshot.reducedForRoll()`, CODE_AUDIT_26 §6.8.
+    func reducedForSharing() -> DiceResultModel {
+        var reduced = DiceResultModel(
+            diceModel: diceModel.reducedForRoll(),
+            result: result,
+            values: values,
+            sum: sum,
+            checked: checked,
+            timeStamp: timestamp ?? Date.now
+        )
+        reduced = reduced.with(id: id, timestamp: timestamp)
+        return reduced
+    }
+}
+
+extension DiceResultModel {
+    fileprivate func with(id: UUID, timestamp: Date?) -> DiceResultModel {
+        DiceResultModel(id: id, diceModel: diceModel, result: result, values: values, sum: sum, checked: checked, timestamp: timestamp)
+    }
+
+    fileprivate init(id: UUID, diceModel: DiceSnapshot, result: DiceResult, values: String, sum: Int, checked: Bool, timestamp: Date?) {
+        self.id = id
+        self.diceModel = diceModel
+        self.result = result
+        self.values = values
+        self.sum = sum
+        self.checked = checked
+        self.timestamp = timestamp
+    }
+}
+
+public extension DiceResultModel {
     /// Bounds for a roll another device reports. The master cannot re-roll a player's dice, but
     /// it can refuse absurd values (forged sums, oversized payloads, hundreds of dice) that
     /// would otherwise set initiative or trigger a table outcome. See CODE_AUDIT_15 §5.9.

@@ -254,6 +254,56 @@ struct FoundryVTTArchiveSanitizerTests {
         )
     }
 
+    // CODE_AUDIT_26 §6.2: Foundry v11/v12 documents name the last editor in `_stats`.
+    @Test("The _stats block drops every user id and keeps the version stamps")
+    func statsBlockDropsUserIds() throws {
+        let userId = "USER-ID-MUST-BE-SCRUBBED"
+        let actor = document(
+            id: "foundry://world/test/collection/actors/Actor/actor-1",
+            documentID: "actor-1",
+            type: .actor,
+            rawData: .object([
+                "_id": .string("actor-1"),
+                "_stats": .object([
+                    "coreVersion": .string("12.331"),
+                    "systemId": .string("dnd5e"),
+                    "createdTime": .integer(1_700_000_000_000),
+                    "modifiedTime": .integer(1_700_000_100_000),
+                    "lastModifiedBy": .string(userId),
+                    "createdBy": .string(userId),
+                    "updatedBy": .string(userId),
+                ]),
+            ])
+        )
+        let package = FoundryVTTImportPackage(
+            kind: .world,
+            manifestPath: nil,
+            manifest: nil,
+            collections: [collection(id: "actors", type: .actor, documents: [actor])],
+            resources: [],
+            diagnostics: [],
+            statistics: .init(
+                collectionCount: 1,
+                topLevelDocumentCount: 1,
+                embeddedDocumentCount: 0,
+                folderCount: 0,
+                unknownFieldCount: 0,
+                documentCounts: [:]
+            )
+        )
+
+        let sanitized = FoundryVTTArchiveSanitizer.sanitize(package, includingChat: false, includingUsers: false)
+
+        let raw = try #require(sanitized.documents.first?.rawData)
+        #expect(raw.value(at: "_stats.lastModifiedBy") == nil)
+        #expect(raw.value(at: "_stats.createdBy") == nil)
+        #expect(raw.value(at: "_stats.updatedBy") == nil)
+        #expect(raw.value(at: "_stats.coreVersion")?.stringValue == "12.331")
+        #expect(raw.value(at: "_stats.systemId")?.stringValue == "dnd5e")
+        let encoded = String(decoding: try JSONEncoder().encode(raw), as: UTF8.self)
+        #expect(!encoded.contains(userId))
+    }
+
     @Test("Normalization retains raw array values that were not represented as documents")
     func normalizationKeepsUnrepresentedEmbeddedValues() throws {
         // Given

@@ -136,7 +136,10 @@ private struct State {
 
 private extension State {
     static let identityKeys = Set([
-        "author", "authorid", "createdby", "modifiedby", "owner", "owners", "ownership",
+        "author", "authorid", "createdby", "createdbyid", "modifiedby", "modifiedbyid",
+        // Foundry v11+ writes the last editor into `_stats.lastModifiedBy`. See CODE_AUDIT_26 §6.2.
+        "lastmodifiedby", "lastmodifiedbyid", "updatedby", "updatedbyid",
+        "owner", "owners", "ownership",
         "permission", "permissions", "playerowner", "playerowners", "userid", "whisper",
     ])
 

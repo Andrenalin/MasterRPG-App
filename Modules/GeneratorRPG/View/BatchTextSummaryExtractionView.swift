@@ -14,32 +14,65 @@ private enum BatchItemStatus: Sendable {
     case failed(String)
 }
 
-/// How a generated summary joins the item's existing text. Pure, so running the batch twice on an
-/// item gives the same result as running it once.
+/// What the batch writes into an item from a generated summary. Pure, so it is tested.
+///
+/// The batch applies model output to many items with no review, and the text it was generated
+/// from can come from an import or a shared campaign. So it only fills an empty name and adds
+/// tags, a bounded and visible change, and never writes the description; the person sees a
+/// count of what changed afterwards. See CODE_AUDIT_26 §6.9.
 enum BatchSummaryMerge {
-    /// The existing description with the generated one added once. An existing description that
-    /// already contains the generated text is left alone.
-    static func description(existing: String, generated: String) -> String {
-        let trimmedExisting = existing.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedGenerated = generated.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedGenerated.isEmpty else { return trimmedExisting }
-        guard !trimmedExisting.isEmpty else { return trimmedGenerated }
-        guard !trimmedExisting.contains(trimmedGenerated) else { return trimmedExisting }
-        return "\(trimmedExisting)\n\n\(trimmedGenerated)"
+    static let maximumTitleLength = 100
+    static let maximumGeneratedTags = 8
+    static let maximumTagLength = 40
+
+    struct Change: Equatable {
+        /// The name to write, `nil` when the item already has one.
+        var name: String?
+        /// The full tag list to write, `nil` when nothing is added.
+        var tags: [String]?
+        var addedTagCount: Int
+
+        var isEmpty: Bool { name == nil && tags == nil }
     }
 
-    /// The existing tags plus the generated ones, without duplicates (compared ignoring case).
-    static func tags(existing: [String], generated: [String]) -> [String] {
-        var result = existing
-        for tag in generated where !result.contains(where: { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }) {
-            result.append(tag)
+    static func change(
+        existingName: String,
+        existingTags: [String],
+        generatedTitle: String,
+        generatedTags: [String]
+    ) -> Change {
+        var name: String?
+        if existingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let title = String(generatedTitle.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumTitleLength))
+            if !title.isEmpty { name = title }
         }
-        return result
+        let added = newTags(existing: existingTags, generated: generatedTags)
+        return Change(
+            name: name,
+            tags: added.isEmpty ? nil : existingTags + added,
+            addedTagCount: added.count
+        )
+    }
+
+    /// The generated tags that are new: trimmed, not empty or oversized, not already there
+    /// (compared ignoring case), at most `maximumGeneratedTags`.
+    static func newTags(existing: [String], generated: [String]) -> [String] {
+        var known = existing
+        var added: [String] = []
+        for raw in generated {
+            guard added.count < maximumGeneratedTags else { break }
+            let tag = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !tag.isEmpty, tag.count <= maximumTagLength,
+                  !known.contains(where: { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }) else { continue }
+            known.append(tag)
+            added.append(tag)
+        }
+        return added
     }
 }
 
 /// Batch AI-extraction view: processes multiple items sequentially using on-device AI.
-/// Apply rules: title if name is empty, description appended once, tags merged.
+/// Apply rules (see `BatchSummaryMerge`): title if the name is empty, new tags added; the description is never written.
 public struct BatchTextSummaryExtractionView: View {
 
     let module: NetworkModules
@@ -50,6 +83,11 @@ public struct BatchTextSummaryExtractionView: View {
     @State private var selectedLanguage: OutputLanguage = .forCurrentLocale()
     @State private var statuses: [UUID: BatchItemStatus] = [:]
     @State private var isRunning = false
+    /// What the batch changed, shown when it has run.
+    @State private var changedItems = 0
+    @State private var filledNames = 0
+    @State private var addedTags = 0
+    @State private var hasRun = false
     /// Owned so Cancel/dismiss stops the batch instead of it continuing to analyze and
     /// write into items after the sheet is gone. See CODE_AUDIT_18 §3.6.
     @State private var batchTask: Task<Void, Never>?
@@ -87,6 +125,14 @@ public struct BatchTextSummaryExtractionView: View {
                     }
                     if let progress = resultModel.analysisProgress, isRunning {
                         analysisProgressSection(progress)
+                    }
+                    if hasRun, !isRunning {
+                        Section {
+                            Text(
+                                "Updated \(changedItems) items: \(filledNames) names filled, \(addedTags) tags added.",
+                                bundle: .module
+                            )
+                        }
                     }
                 }
                 .themedListSurface()
@@ -232,6 +278,10 @@ public struct BatchTextSummaryExtractionView: View {
     private func runBatch() {
         guard !isRunning, !ids.isEmpty else { return }
         isRunning = true
+        hasRun = true
+        changedItems = 0
+        filledNames = 0
+        addedTags = 0
         batchTask = Task {
             await performBatch()
             isRunning = false
@@ -266,13 +316,17 @@ public struct BatchTextSummaryExtractionView: View {
 
     private func applyResult(_ result: TableSummaryAnalysis, to itemId: UUID) {
         guard let item = itemController.itemSync(for: itemId) else { return }
-        let needsName = item.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        editController.reset(
-            name: needsName ? result.title : nil,
-            description: BatchSummaryMerge.description(existing: item.description, generated: result.description),
-            tags: BatchSummaryMerge.tags(existing: item.tags, generated: result.tags),
-            itemId: itemId
+        let change = BatchSummaryMerge.change(
+            existingName: item.name,
+            existingTags: item.tags,
+            generatedTitle: result.title,
+            generatedTags: result.tags
         )
+        guard !change.isEmpty else { return }
+        editController.reset(name: change.name, description: nil, tags: change.tags, itemId: itemId)
+        changedItems += 1
+        if change.name != nil { filledNames += 1 }
+        addedTags += change.addedTagCount
     }
 }
 

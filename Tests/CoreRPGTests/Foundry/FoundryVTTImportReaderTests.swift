@@ -635,6 +635,26 @@ struct FoundryVTTImportReaderTests {
         }
     }
 
+    // CODE_AUDIT_26 §6.3: the file cap follows the image cap, not the 1 GiB archive cap.
+    @Test("A Universal VTT file much larger than its image allows is refused before it is parsed")
+    func rejectsOversizedUniversalVTTFile() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let limits = FoundryImportLimits(maximumArchiveSize: ByteUnit.gibibyte, maximumEntrySize: 3 * ByteUnit.mebibyte)
+        let cap = UniversalVTTReader.maximumFileSize(for: limits)
+        #expect(cap == 3 * ByteUnit.mebibyte / 3 * 4 + 8 * ByteUnit.mebibyte)
+        #expect(cap < ByteUnit.gibibyte)
+
+        let url = directory.appending(path: "padded.dd2vtt")
+        let padding = String(repeating: "x", count: cap)
+        let json = ##"{"resolution":{"map_origin":{"x":0,"y":0},"map_size":{"x":20,"y":10},"pixels_per_grid":50},"line_of_sight":[],"portals":[],"lights":[],"unused":"\##(padding)","image":"\##(validPNGHeader().base64EncodedString())"}"##
+        try Data(json.utf8).write(to: url)
+
+        await #expect(throws: FoundryImportError.self) {
+            _ = try await UniversalVTTReader(limits: limits).read(from: url)
+        }
+    }
+
     @Test("Bounds geometry, portals, and lights with one aggregate element budget")
     func boundsUniversalVTTElements() async throws {
         let directory = try temporaryDirectory()
