@@ -193,8 +193,8 @@ struct CheckFoldersGroupDiceAndPhotoTests {
         #expect(after.photos == [photoId])
     }
 
-    @Test("An item that is no group is still given the dice of its first entry")
-    func plainItemIsStillBackfilledFromEntries() async throws {
+    @Test("An item that is no group is not given the dice of its first entry")
+    func plainItemIsNotBackfilledFromEntries() async throws {
         let root = try await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
         let entryDiceId = UUID()
@@ -204,7 +204,9 @@ struct CheckFoldersGroupDiceAndPhotoTests {
 
         await root.checkFolders(reportModel: ValidateRepairModel())
 
-        #expect(root.itemController.itemOrEmpty(for: itemId).diceId == entryDiceId)
+        // The entry's dice belongs to the entry; validation no longer copies it to the item.
+        // See CODE_AUDIT_26 §5.107.
+        #expect(root.itemController.itemOrEmpty(for: itemId).diceId == nil)
     }
 
     @Test("A group nested in a group loses its dice and photo too")

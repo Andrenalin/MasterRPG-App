@@ -42,6 +42,14 @@ extension MasterController {
         guard !model.isAcknowledgement else { return nil }
 
         if model.isAssetRequest {
+            // Only the map on show is served: a request for any other map id (a stale one, or a
+            // made-up one) must not mark that map as unshared or send its package.
+            // See CODE_AUDIT_26 §5.82.
+            guard model.data.id == gameModel.latestShownMapId
+                    || model.data.id == root.mapRoot.gameControllable.gameModel.currentItemId else {
+                Logger.networking.debug("MasterController: Map request for \(model.data.id, privacy: .public) ignored, it is not the map on show")
+                return nil
+            }
             // A paused "Share Map" keeps the map private: the package is captured from the live
             // game map and carries what was revealed privately. The player asks again when
             // sharing resumes and the content and state go out.

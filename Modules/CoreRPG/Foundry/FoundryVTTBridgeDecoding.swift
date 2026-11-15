@@ -20,6 +20,9 @@ struct FoundryBridgeDecoder {
               let data = try source.data(forPath: selectedPath) else {
             throw FoundryImportError.unsupportedSource
         }
+        // Before the decode and hash, not after: an oversized file must not be read in full first.
+        // See CODE_AUDIT_26 §5.60.
+        guard data.count <= limits.maximumRuleDataSize else { throw FoundryImportError.fileTooLarge(data.count) }
         let contents = try decodeContents(data, retainingAssetPaths: [])
         let header = contents.header
         guard let sourceObject = header["source"]?.objectValue else {
@@ -54,7 +57,6 @@ struct FoundryBridgeDecoder {
                 .append(record)
         }
         var budget = FoundryVTTReadBudget(encodedBytes: data.count, decodedBytes: data.count, recordCount: 0)
-        guard data.count <= limits.maximumRuleDataSize else { throw FoundryImportError.fileTooLarge(data.count) }
         var collections: [FoundryDocumentCollection] = []
         var diagnostics = contents.diagnostics
         for groupKey in grouped.keys.sorted(by: {
@@ -318,14 +320,23 @@ extension FoundryBridgeDecoder {
                     assets[path] = decoded
                 }
             case "assetReference":
+                // A malformed reference is skipped with a diagnostic instead of ending the whole
+                // import; the asset stays unresolved. See CODE_AUDIT_26 §5.61.
                 guard let rawPath = object["path"]?.stringValue,
-                      let status = object["status"]?.stringValue else {
-                    throw FoundryImportError.invalidArchive("Bridge asset reference at line \(lineIndex + 1) is incomplete.")
+                      let status = object["status"]?.stringValue,
+                      let path = try? normalizeReferencePath(rawPath, status: status) else {
+                    if diagnostics.count < diagnosticLimit {
+                        diagnostics.append(FoundryImportDiagnostic(
+                            severity: .warning,
+                            code: "invalid-bridge-asset-reference",
+                            message: "Skipped the bridge asset reference at line \(lineIndex + 1): it is incomplete or its path is invalid."
+                        ))
+                    } else {
+                        omittedDiagnosticCount += 1
+                    }
+                    continue
                 }
-                references.append(FoundryBridgeAssetReference(
-                    path: try normalizeReferencePath(rawPath, status: status),
-                    status: status
-                ))
+                references.append(FoundryBridgeAssetReference(path: path, status: status))
                 guard references.count <= limits.maximumDocumentCount else {
                     throw FoundryImportError.tooManyDocuments(references.count)
                 }

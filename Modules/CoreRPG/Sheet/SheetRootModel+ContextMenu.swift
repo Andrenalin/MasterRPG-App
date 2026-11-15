@@ -19,8 +19,15 @@ extension SheetRootModel {
                   entry.source.itemId == entryModel.source.itemId &&
                   entry.source.entryId == entryModel.source.entryId
               }) else { return }
-        let newIndex = up ? index - 1 : index + 2
-        guard newIndex >= 0, newIndex <= parentModel.entries.count else { return }
+        // The neighbour is the previous or next row that is an entry: linked sheets share
+        // `entries` but have no entry id and are not part of the stored order.
+        // See CODE_AUDIT_26 §5.63.
+        let entryIndices = parentModel.entries.indices.filter { parentModel.entries[$0].source.entryId != nil }
+        guard let position = entryIndices.firstIndex(of: index) else { return }
+        let neighbourPosition = up ? position - 1 : position + 1
+        guard entryIndices.indices.contains(neighbourPosition) else { return }
+        let neighbourIndex = entryIndices[neighbourPosition]
+        let newIndex = up ? neighbourIndex : neighbourIndex + 1
         parentModel.entries.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex)
         editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId }, forceSave: persistsEdits)
         if !searchText.isEmpty {

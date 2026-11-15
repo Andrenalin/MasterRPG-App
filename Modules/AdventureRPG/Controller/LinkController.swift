@@ -135,6 +135,13 @@ extension LinkController: LinkControllable {
         for entry in inspectedItem.entries {
             var validatedEntry = entry
 
+            // A group entry whose hidden adventure is gone points at nothing: the group link is
+            // cleared. See CODE_AUDIT_26 §5.98.
+            if let groupId = entry.adventureId, itemController.itemSync(for: groupId) == nil {
+                Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .private) --> group \(groupId, privacy: .public) is gone. Group link removed, no recovery possible.")
+                validatedEntry.adventureId = nil
+            }
+
             let links = LinkReplaceController.links(for: entry.content)
             validatedEntry.content = repairLinks(links, in: validatedEntry.content)
 
@@ -173,6 +180,18 @@ extension LinkController {
         var linkIds: [UUID] = []
         if module == .photo, let id = item.photoId {
             linkIds.append(id)
+        }
+        // The item-level dice and the table players' Characters are links of the item as well.
+        // See CODE_AUDIT_26 §5.97.
+        if module == .dice, let id = item.diceId {
+            linkIds.append(id)
+        }
+        if module == .value {
+            linkIds.append(contentsOf: item.tablePlayers.map(\.characterId))
+        }
+        // A group entry stands for a hidden adventure whose own links count as well.
+        for groupId in item.entries.compactMap(\.adventureId) {
+            linkIds.append(contentsOf: collectLinks(of: module, from: groupId, visited: visited))
         }
         item.entries.forEach {
             let links = LinkReplaceController.links(for: $0.content)

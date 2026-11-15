@@ -58,8 +58,12 @@ public struct ExportProgressPanelView: View {
             .padding()
             .navigationTitle(Text("Exporting", bundle: .module))
             .navigationBarTitleDisplayModeAll(.inline)
-            .task {
-                guard outcome != .notStarted else { return }
+            // Owned by the view: runs at appear when no options are shown and again when the
+            // option screen starts the export, and is cancelled with the panel. The id is only
+            // "options shown", so later outcome changes do not restart or cancel it.
+            // See CODE_AUDIT_26 §5.66.
+            .task(id: outcome == .notStarted) {
+                guard outcome == .running else { return }
                 await startExport()
             }
             .onDisappear {
@@ -75,7 +79,15 @@ public struct ExportProgressPanelView: View {
                 case .success:
                     outcome = .finished
                 case .failure(let error):
-                    outcome = error is CancellationError ? .cancelled : .failed(error.localizedDescription)
+                    // Closing the destination picker is a cancel, not a failure; the temporary
+                    // export file is removed then.
+                    let userCancelled = error is CancellationError || (error as? CocoaError)?.code == .userCancelled
+                    if userCancelled {
+                        if let saveUrl { try? FileManager.default.removeItem(at: saveUrl) }
+                        outcome = .cancelled
+                    } else {
+                        outcome = .failed(error.localizedDescription)
+                    }
                 }
             }
 #endif
@@ -215,9 +227,6 @@ private struct ExportProgressPanelOptionView: View {
         VStack(spacing: 20) {
             Button {
                 outcome = .running
-                Task {
-                    await startExport()
-                }
             } label: {
                 Text("Start export", bundle: .module)
             }

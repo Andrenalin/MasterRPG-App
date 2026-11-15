@@ -136,6 +136,8 @@ extension MasterController {
         Logger.networking.debug("MasterController: Lost Player for \(connectionId, privacy: .public)")
         guard let playerId = store.model.playerRoutes.remove(connectionId: connectionId) else { return }
         gameModel.forget(playerId: playerId)
+        // A player who left no longer joins a running audio play. See CODE_AUDIT_26 §5.84.
+        lateAudioPlayers.remove(playerId)
         root.audioRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
         root.photoRoot.photoGameControllable.removePhotoReports(for: playerId)
         root.pdfRoot.pdfGameControllable.removePdfReports(for: playerId)
@@ -211,6 +213,13 @@ extension MasterController {
         if !receivedModel.sender.isMaster, receivedModel.sender.role != .notSet {
             if root.gameModel.add(playerId: receivedModel.sender.id, playerModel: receivedModel.sender.playerModel, sharingModel: SharingControlModel(id: receivedModel.sender.id, name: receivedModel.sender.name, show: true)) {
                 await resetPlayers()
+            }
+            // The roster add awaited: the connection may have been lost meanwhile, and the
+            // side effects below (pins, bindings) must not run for a lost player.
+            // See CODE_AUDIT_26 §5.85.
+            guard store.model.playerRoutes.isBound(event.origin, to: receivedModel.sender.id) else {
+                Logger.networking.debug("MasterController: Dropped message from a connection lost while it was processed \(receivedModel.counter, privacy: .public)")
+                return true
             }
         }
 

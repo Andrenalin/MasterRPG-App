@@ -61,7 +61,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
     /// See CODE_AUDIT_21 §6.7.
     static func boundedResults(_ results: [Int], die: RawDie) -> [Int] {
         let highest = die.max
-        return results.prefix(maximumResultCount).map { Swift.min(Swift.max($0, 0), highest) }
+        return results.suffix(maximumResultCount).map { Swift.min(Swift.max($0, 0), highest) }
     }
 
     public init(from decoder: any Decoder) throws {

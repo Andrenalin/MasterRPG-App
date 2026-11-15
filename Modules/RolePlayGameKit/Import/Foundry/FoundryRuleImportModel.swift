@@ -460,9 +460,12 @@ final class FoundryImportModel {
 
 extension FoundryPackageTextResource {
     var isLicenseDocument: Bool {
-        path.localizedStandardContains("license")
-            || path.localizedStandardContains("copying")
-            || path.localizedStandardContains("ogl")
+        // Whole words of the last path component ("OGL.txt", "LICENSE-2.0.md"), not a substring:
+        // "ogl" also sits in "Goblin" and "Mogli". See CODE_AUDIT_26 §5.127.
+        let name = path.split(separator: "/").last.map(String.init) ?? path
+        let words = name.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init)
+        let licenseWords: Set = ["license", "licenses", "licence", "copying", "ogl", "notice"]
+        return words.contains { licenseWords.contains($0) }
     }
 }
 

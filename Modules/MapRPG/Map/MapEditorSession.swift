@@ -90,6 +90,13 @@ final class MapEditorSession {
     /// Where the stroke being drawn landed (viewport coordinates); tells a new stroke from the
     /// next sample of the current one, so a cancelled stroke cannot leak into the next.
     @ObservationIgnored var pencilStrokeOrigin: CGPoint?
+    /// A pencil stroke is being drawn. The finger viewport gestures are off meanwhile: they would move
+    /// the displayed transform under the stroke, which samples with the committed one.
+    /// See CODE_AUDIT_26 §5.92.
+    var isPencilStrokeActive: Bool {
+        isPencilDrawing && !pencilStroke.points.isEmpty
+    }
+
     var isPointerInteractionActive: Bool {
         mapMode == .gameMaster && isPointing
     }

@@ -154,7 +154,10 @@ public struct InAppController {
                 await fetchActiveTransactions()
                 await transaction.finish()
                 model.message = nil
-            case .success(.unverified):
+            case .success(.unverified(let transaction, _)):
+                // Nothing is granted, but an unfinished transaction is delivered again at every
+                // launch (as in the update loop). See CODE_AUDIT_26 §5.128.
+                await transaction.finish()
                 model.message = String(
                     localized: "A purchase could not be verified.",
                     bundle: .module

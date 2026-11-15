@@ -15,21 +15,29 @@ struct NumericOnlyViewModifier: ViewModifier {
         // `onReceive(Just(text))`, which re-fired on every body evaluation. See
         // CODE_AUDIT_17 §4.4.
         .onChange(of: text) { _, newValue in
-            var numbers = "-0123456789"
-            let decimalSeparator: String = Locale.current.decimalSeparator ?? "."
-            if includeDecimal {
-                numbers += decimalSeparator
-            }
-            if newValue.components(separatedBy: decimalSeparator).count - 1 > 1 {
-                let filtered = newValue
-                text = String(filtered.dropLast())
-            } else {
-                let filtered = newValue.filter { numbers.contains($0) }
-                if filtered != newValue {
-                    text = filtered
-                }
+            let filtered = Self.filtered(newValue, includeDecimal: includeDecimal, decimalSeparator: Locale.current.decimalSeparator ?? ".")
+            if filtered != newValue {
+                text = filtered
             }
         }
+    }
+
+    /// Keeps digits, a minus only as the first character and, when decimals are allowed, the first
+    /// decimal separator; everything else is dropped. See CODE_AUDIT_26 §5.78.
+    static func filtered(_ input: String, includeDecimal: Bool, decimalSeparator: String) -> String {
+        var result = ""
+        var hasSeparator = false
+        for character in input {
+            if character.isASCII, character.isNumber {
+                result.append(character)
+            } else if character == "-", result.isEmpty {
+                result.append(character)
+            } else if includeDecimal, String(character) == decimalSeparator, !hasSeparator {
+                hasSeparator = true
+                result.append(character)
+            }
+        }
+        return result
     }
 }
 

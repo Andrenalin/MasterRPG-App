@@ -153,6 +153,11 @@ extension AudioController {
                 try? FileManager.default.removeItem(at: item.url)
             }
             model.playList = []
+            // `currentItem` is a stored reference to a row of the dropped list: left behind it
+            // points at a deleted track and breaks `currentIndex`, `hasNext` and `hasPrev` when
+            // the new load fails or is discarded. See CODE_AUDIT_26 §5.99.
+            model.currentItem = nil
+            model.isPlaying = false
             // A game play names the new playlist's root right after this.
             model.playListRootId = nil
             model.isPlaybackComplete = false
@@ -173,7 +178,7 @@ extension AudioController {
             return AudioTrackLoader.Request(
                 id: item.id,
                 title: item.name,
-                subtitle: item.description.isEmpty ? PlaylistItem.defaultArtistName : item.description,
+                subtitle: PlaylistItem.subtitle(fromDescription: item.description),
                 fileUrl: fileUrl
             )
         }

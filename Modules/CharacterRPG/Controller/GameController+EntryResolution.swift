@@ -169,7 +169,7 @@ extension GameController {
               let number = resolvedNumber(entry.value) else {
             return entry.value
         }
-        return number == number.rounded() ? "\(Int(number))" : "\(number)"
+        return Calculator.formatNumber(number)
     }
 
     @MainActor

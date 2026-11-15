@@ -501,7 +501,8 @@ public struct GameTableView: View {
                           let value = die.result.last else { return nil }
                     return .init(isD20: isD20, value: value)
                 },
-                isGameMaster: root.gameModel.isTableGuestMaster(senderId: senderId)
+                isGameMaster: root.gameModel.isTableGuestMaster(senderId: senderId),
+                senderId: senderId
             )
         }
     }

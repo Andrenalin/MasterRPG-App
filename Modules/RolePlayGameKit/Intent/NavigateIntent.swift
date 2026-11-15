@@ -24,7 +24,9 @@ public struct NavigateIntent: AppIntent {
     public init() {}
     
     public func perform() async throws -> some IntentResult {
-        await appModel.routeToModule(navigationOption.module)
+        // Waits for the database to be ready when the intent launched the app, instead of routing
+        // into a window that is not mounted yet. See CODE_AUDIT_26 §5.129.
+        await appModel.routeToModuleWhenReady(navigationOption.module)
         return .result()
     }
 }

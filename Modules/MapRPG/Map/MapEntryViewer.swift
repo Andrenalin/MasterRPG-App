@@ -184,15 +184,12 @@ final class MapEntryViewerModel {
               case var entry = entries[entryIndex],
               point.coordinateIndex >= 0,
               point.coordinateIndex < entry.coordinates.count else { return }
-        let insertionIndex = point.coordinateIndex + 1 < entry.coordinates.count
-            ? point.coordinateIndex + 1
-            : 0
-        var newCoordinate = entry.coordinates[insertionIndex]
-        if insertionIndex == 0 {
-            newCoordinate = newCoordinate + CGPoint(x: 50, y: 50)
-        } else {
-            newCoordinate = newCoordinate - (newCoordinate - point.coordinate) / 2
-        }
+        // After the last point the room closes back to the first: the new point sits halfway
+        // between them and goes to the end of the list, the other indices stay.
+        // See CODE_AUDIT_26 §5.91.
+        let insertionIndex = point.coordinateIndex + 1
+        let nextCoordinate = entry.coordinates[insertionIndex < entry.coordinates.count ? insertionIndex : 0]
+        let newCoordinate = nextCoordinate - (nextCoordinate - point.coordinate) / 2
         entry.coordinates.insert(newCoordinate, at: insertionIndex)
         entries[entryIndex] = entry
         roomNodeById[entryId]?.update(entry: entry)

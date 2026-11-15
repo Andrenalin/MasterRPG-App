@@ -35,17 +35,7 @@ public struct CloudKitSyncStatusView: View {
                 .padding()
 
             case .succeeded:
-                if let lastSync = lastSync, Date().timeIntervalSince(lastSync) < 60 {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text("Synced with iCloud", bundle: .module)
-                            .font(.headline)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .transition(.scale.combined(with: .opacity))
-                }
+                SyncedBadgeView(lastSync: lastSync)
 
             case .failed(let error):
                 HStack(spacing: 12) {
@@ -82,4 +72,35 @@ public struct CloudKitSyncStatusView: View {
         
     }
     .preferredColorScheme(.dark)
+}
+
+/// The "Synced" badge, shown for a minute after the last sync and gone after that: it hides itself
+/// when the minute is over instead of staying until something else re-renders the view.
+/// See CODE_AUDIT_26 §5.74.
+private struct SyncedBadgeView: View {
+    let lastSync: Date?
+
+    private static let visibleDuration: Duration = .seconds(60)
+
+    @State private var isExpired = false
+
+    var body: some View {
+        if let lastSync, !isExpired, Date.now.timeIntervalSince(lastSync) < 60 {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("Synced with iCloud", bundle: .module)
+                    .font(.headline)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .transition(.scale.combined(with: .opacity))
+            .task(id: lastSync) {
+                let remaining = max(0, 60 - Date.now.timeIntervalSince(lastSync))
+                try? await Task.sleep(for: .seconds(remaining))
+                guard !Task.isCancelled else { return }
+                withAnimation { isExpired = true }
+            }
+        }
+    }
 }

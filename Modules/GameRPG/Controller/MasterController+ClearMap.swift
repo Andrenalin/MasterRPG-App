@@ -27,6 +27,7 @@ extension MasterController {
         let message = outgoingMessage(type: .reveal, subtype: .show, updated: reference)
         // A show whose package is still being built is over now.
         gameModel.latestShownCounter = message.counter
+        gameModel.latestShownMapId = nil
         root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
         await store.sendPlayer(data: message)
     }

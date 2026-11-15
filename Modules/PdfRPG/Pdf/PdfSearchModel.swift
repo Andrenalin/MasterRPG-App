@@ -60,6 +60,16 @@ final class PdfSearchModel: Sendable {
         searchRequest &+= 1
     }
 
+    /// Ends the search: drops the matches, resets the position and removes the highlights from
+    /// the shown page. See CODE_AUDIT_26 §5.119.
+    func endSearch() {
+        matches = []
+        currentIndex = 0
+#if !os(tvOS)
+        pdfView?.highlightedSelections = nil
+#endif
+    }
+
 #if !os(tvOS)
     /// Starts the find of the current `searchText` on the shown `PDFView`, once per request.
     func beginFindIfNeeded() {

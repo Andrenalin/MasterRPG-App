@@ -1,11 +1,24 @@
 // @copyright André Trettin
 
 import AVFoundation
+import CoreRPG
 import Foundation
 
 struct PlaylistItem: Equatable, Hashable, Identifiable, Sendable {
     /// Fallback subtitle for tracks with no item description to use instead (and the artist the lock screen shows).
     static let defaultArtistName = "MasterRPG"
+
+    /// The subtitle the player bar and the lock screen show for an item description: its first line
+    /// as plain text, shortened. The whole description (markdown links, several paragraphs) does
+    /// not belong into the system's Now Playing. See CODE_AUDIT_26 §5.102.
+    static func subtitle(fromDescription description: String) -> String {
+        let firstLine = description.withoutLink()
+            .split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty } ?? ""
+        guard !firstLine.isEmpty else { return defaultArtistName }
+        return String(firstLine.prefix(80))
+    }
 
     let id: UUID
     let url: URL

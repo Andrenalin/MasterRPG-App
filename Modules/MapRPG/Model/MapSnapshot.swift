@@ -151,6 +151,12 @@ extension MapSnapshot {
     /// `isShown` checks only ever suppressed *rendering* — the underlying data was otherwise
     /// fully present on every recipient's device the moment a map package or content update
     /// arrived, defeating fog-of-war. See CODE_AUDIT §6.1, CODE_AUDIT_22a §6.2.
+    ///
+    /// Invariant: blanking a hidden room's `name` and `content` goes through the `@CRDT` setters, so
+    /// the blank text carries a fresh timestamp and would win a CRDT merge against the master's
+    /// older real text. It is only safe because the receive paths for a map package and for a
+    /// reveal import with `ImportMode.overwrite` (not a merge), which replaces the blank text.
+    /// Do not send a redacted snapshot through a merging path. See CODE_AUDIT_26 §5.95.
     func redactedForNonMaster() -> MapSnapshot {
         let redactedEntries = entries.wrappedValue.map { entry -> MapEntryModel in
             var redacted = entry

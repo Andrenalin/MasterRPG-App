@@ -26,6 +26,9 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         self.canAdd = canAdd
         self.editType = editType
         self.showHeader = showHeader
+        // A row created while a search is active (or any later reconcile) restores to the state it
+        // was created with. See CODE_AUDIT_26 §5.62.
+        self.lastIsShown = isShown
     }
 
     /// Stable identity for this occurrence in a sheet tree.

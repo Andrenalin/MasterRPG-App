@@ -20,7 +20,9 @@ public enum ImportItemRepair {
     }
 
     public static func normalizedTags(legacyCategory: ItemListCategory, tags: [String]) -> [String] {
-        ([legacyCategory.title] + tags)
-            .sorted { $0.localizedCompare($1) == .orderedAscending }
+        let title = legacyCategory.title
+        // Not added twice when the item already carries the title. See CODE_AUDIT_26 §5.54.
+        let all = tags.contains(title) ? tags : [title] + tags
+        return all.sorted { $0.localizedCompare($1) == .orderedAscending }
     }
 }

@@ -80,12 +80,19 @@ public final class ItemGameModel {
         }
     }
     
+    /// Idempotent: an id that is already listed is not listed twice. See CODE_AUDIT_26 §5.50.
     func append(itemId: UUID, item: ModelType) {
-        items.append(itemId)
+        if !items.contains(itemId) {
+            items.append(itemId)
+        }
         itemData[itemId] = item
     }
 
+    /// Idempotent: an id that is already listed moves to the front instead of being listed twice.
     func insert(itemId: UUID, item: ModelType) {
+        if let index = items.firstIndex(of: itemId) {
+            items.remove(at: index)
+        }
         items.insert(itemId, at: 0)
         itemData[itemId] = item
     }

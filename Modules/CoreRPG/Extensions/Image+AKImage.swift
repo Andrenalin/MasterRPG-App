@@ -376,7 +376,7 @@ public extension AKImage {
             return result.nsImage
 #else
             let image = result.uiImage
-            return removeWhiteBackground ? image.removeWhiteBackground() : image
+            return removeWhiteBackground ? await image.removeWhiteBackground() : image
 #endif
         } catch let error {
             Logger.cacheController.error("QLThumbnail failed \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")

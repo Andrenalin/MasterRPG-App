@@ -9,7 +9,7 @@ struct InspectorRowView: View {
     let type: LinkRootType
     let showListModeControls: Bool
 
-    @Binding var showDetails: Bool
+    @Binding var detailsRequest: Int
     @Binding var showDetailsView: (any NavigationDestination)?
 
     @Environment(ScenesManager.self) private var scenesManager
@@ -142,7 +142,7 @@ struct InspectorRowView: View {
         } else {
             showDetailsView = root.folderLinkControllable.viewerDestination(for: item.source.itemId)
         }
-        showDetails.toggle()
+        detailsRequest += 1
 #endif
     }
 
@@ -291,7 +291,7 @@ private struct InspectorRowViewFolderChevronView: View {
         selectionModel: ItemSelectionModel(),
         type: .inspector,
         showListModeControls: true,
-        showDetails: .constant(false),
+        detailsRequest: .constant(0),
         showDetailsView: .constant(nil)
     )
     .environment(ScenesManager())

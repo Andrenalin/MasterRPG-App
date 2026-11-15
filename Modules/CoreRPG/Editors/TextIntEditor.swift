@@ -35,7 +35,7 @@ public struct TextIntEditor: View {
 
     public var body: some View {
         HStack {
-            TextIntEditorTextField(model: model, title: title, prompt: prompt, bundle: bundle, text: $text, focusState: $focusState)
+            TextIntEditorTextField(model: model, title: title, prompt: prompt, bundle: bundle, range: range, text: $text, focusState: $focusState)
                 .frame(maxWidth: 64, alignment: .leading)
 
             TextIntEditorSlider(model: model, title: title, bundle: bundle, range: range)
@@ -63,6 +63,7 @@ private struct TextIntEditorTextField: View {
     let title: LocalizedStringKey
     let prompt: LocalizedStringKey
     let bundle: Bundle?
+    let range: ClosedRange<Double>
     @Binding var text: String
     var focusState: FocusState<Bool>.Binding
 
@@ -80,8 +81,9 @@ private struct TextIntEditorTextField: View {
             .submitLabel(.next)
             .focused(focusState)
             .onSubmit {
+                // A typed value stays inside the editor's range, like the slider. See CODE_AUDIT_26 §5.111.
                 if let value = Int(text) {
-                    model.value <=> Double(value)
+                    model.value <=> min(max(Double(value), range.lowerBound), range.upperBound)
                 }
                 model.save()
             }

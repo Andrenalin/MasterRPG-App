@@ -11,12 +11,18 @@ typealias EditController = GenericEditController<DiceModel>
 extension EditController {
     /// - Parameter forceSave: `true` adds the die to the library dice also during a game (the
     ///   Add Die intent). See CODE_AUDIT_Since_3.0.1 §5.2.
-    @MainActor func add(die: DieModel, itemId: UUID, forceSave: Bool = false) {
-        guard let editModel = editModel(for: itemId) else { return }
+    ///   Returns whether the die was added: a set holds at most `DiceModel.maximumDecodedDiceCount`
+    ///   dice (more would be cut when the set is decoded), so the bag and the intent are refused
+    ///   at the limit. See CODE_AUDIT_26 §5.112.
+    @discardableResult
+    @MainActor func add(die: DieModel, itemId: UUID, forceSave: Bool = false) -> Bool {
+        guard let editModel = editModel(for: itemId),
+              editModel.dice.count < DiceModel.maximumDecodedDiceCount else { return false }
         // A die of its own: the dice bag hands out its catalog dice, and three taps on "d20" must not
         // put three dice with one id into the model. See CODE_AUDIT_26 §5.4.
         editModel.dice.append(die.duplicate())
         save(updated: editModel, message: String(localized: "Add \(die.name)", bundle: .module), forceSave: forceSave)
+        return true
     }
 
     @MainActor func remove(die: DieModel, itemId: UUID) {
@@ -98,7 +104,9 @@ extension EditController {
     
     @MainActor func reset(modifier: Double, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
-        item.modifier <=> modifier
+        // The modifier is a whole number everywhere it is used; a fraction is rounded here.
+        // See CODE_AUDIT_26 §5.111.
+        item.modifier <=> (modifier.isFinite ? modifier.rounded() : 0)
         save(updated: item, message: String(localized: "Changed modifier", bundle: .module))
     }
     

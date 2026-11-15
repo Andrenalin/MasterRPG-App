@@ -35,8 +35,12 @@ extension GameController {
     
     @MainActor
     func isPlayerHidden(playerId: UUID) -> Bool {
-        let name = gameItem(for: playerId).name
-        return diceGameModel.hiddenPlayers.contains { $0 == name }
+        diceGameModel.hiddenPlayers.contains(hiddenKey(for: playerId))
+    }
+
+    @MainActor
+    private func hiddenKey(for playerId: UUID) -> UUID {
+        diceGameModel.playerDiceSenders[playerId] ?? playerId
     }
 
     @MainActor
@@ -46,11 +50,11 @@ extension GameController {
     
     @MainActor
     func toggleHidden(playerId: UUID) async {
-        let name = gameItem(for: playerId).name
-        if let hiddenIndex = diceGameModel.hiddenPlayers.firstIndex(where: { $0 == name }) {
-            diceGameModel.hiddenPlayers.remove(at: hiddenIndex)
+        let key = hiddenKey(for: playerId)
+        if diceGameModel.hiddenPlayers.contains(key) {
+            diceGameModel.hiddenPlayers.remove(key)
         } else {
-            diceGameModel.hiddenPlayers.append(name)
+            diceGameModel.hiddenPlayers.insert(key)
         }
     }
 }

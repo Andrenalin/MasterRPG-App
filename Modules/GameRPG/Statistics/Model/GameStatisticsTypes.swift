@@ -239,6 +239,49 @@ struct GameStatisticsDashboardConfiguration: Codable, Hashable, Sendable {
 
     static let `default` = GameStatisticsDashboardConfiguration()
 
+    private enum CodingKeys: String, CodingKey {
+        case dateRange, granularity, metric, direction, sectionOrder, hiddenSections
+    }
+
+    /// Tolerant of older and newer saved data: a missing field keeps its default, an unknown case
+    /// is dropped, and a section the saved order does not know is appended. A dashboard saved by a
+    /// newer version must not reset the whole configuration. See CODE_AUDIT_26 §5.86.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = GameStatisticsDashboardConfiguration()
+        dateRange = (try? container.decodeIfPresent(GameStatisticsDateRange.self, forKey: .dateRange)) ?? defaults.dateRange
+        granularity = (try? container.decodeIfPresent(GameStatisticsGranularity.self, forKey: .granularity)) ?? defaults.granularity
+        metric = (try? container.decodeIfPresent(GameStatisticsMetric.self, forKey: .metric)) ?? defaults.metric
+        direction = (try? container.decodeIfPresent(GameStatisticDirection.self, forKey: .direction)) ?? nil
+        let savedOrder = ((try? container.decodeIfPresent([Int].self, forKey: .sectionOrder)) ?? nil) ?? []
+        var order: [GameStatisticsSection] = []
+        for raw in savedOrder {
+            if let section = GameStatisticsSection(rawValue: raw), !order.contains(section) {
+                order.append(section)
+            }
+        }
+        order += GameStatisticsSection.allCases.filter { !order.contains($0) }
+        sectionOrder = order
+        let savedHidden = ((try? container.decodeIfPresent([Int].self, forKey: .hiddenSections)) ?? nil) ?? []
+        hiddenSections = Set(savedHidden.compactMap(GameStatisticsSection.init(rawValue:)))
+    }
+
+    init(
+        dateRange: GameStatisticsDateRange = .lastSixMonths,
+        granularity: GameStatisticsGranularity = .week,
+        metric: GameStatisticsMetric = .duration,
+        direction: GameStatisticDirection? = nil,
+        sectionOrder: [GameStatisticsSection] = GameStatisticsSection.allCases,
+        hiddenSections: Set<GameStatisticsSection> = []
+    ) {
+        self.dateRange = dateRange
+        self.granularity = granularity
+        self.metric = metric
+        self.direction = direction
+        self.sectionOrder = sectionOrder
+        self.hiddenSections = hiddenSections
+    }
+
     var visibleSections: [GameStatisticsSection] {
         sectionOrder.filter { !hiddenSections.contains($0) }
     }
@@ -354,6 +397,8 @@ struct GameStatisticEventSnapshot: Identifiable, Hashable, Sendable {
     let direction: GameStatisticDirection
     let origin: GameStatisticOrigin
     let actorName: String
+    /// The participant that sent the message; `nil` for events recorded without one.
+    let actorId: UUID?
     let module: NetworkModules
     let outcome: GameStatisticDiceOutcome
     let quantity: Int
@@ -621,6 +666,7 @@ extension GameStatisticEventSnapshot {
         kind: GameStatisticEventKind = .diceRolled,
         direction: GameStatisticDirection = .outgoing,
         origin: GameStatisticOrigin = .localNetwork,
+        actorId: UUID? = GameStatisticsFixture.participantId,
         module: NetworkModules = .dice,
         outcome: GameStatisticDiceOutcome = .critical,
         quantity: Int = 1,
@@ -634,6 +680,7 @@ extension GameStatisticEventSnapshot {
             direction: direction,
             origin: origin,
             actorName: "Test Hero",
+            actorId: actorId,
             module: module,
             outcome: outcome,
             quantity: quantity,

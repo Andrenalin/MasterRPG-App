@@ -45,9 +45,27 @@ public final class KeepAwakeModel {
     private var owners: Set<Owner> = []
     private let apply: @MainActor (Bool) -> Void
 
+    @MainActor
     public static func applyToApplication(_ keepsAwake: Bool) {
 #if canImport(UIKit) && !os(watchOS)
         UIApplication.shared.isIdleTimerDisabled = keepsAwake
+#elseif os(macOS)
+        // macOS has no idle timer flag: a process activity keeps the display from sleeping
+        // while a game runs. See CODE_AUDIT_26 §5.58.
+        if keepsAwake {
+            guard displayActivity == nil else { return }
+            displayActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.idleDisplaySleepDisabled, .userInitiated],
+                reason: "A game is running"
+            )
+        } else if let displayActivity {
+            ProcessInfo.processInfo.endActivity(displayActivity)
+            Self.displayActivity = nil
+        }
 #endif
     }
+
+#if os(macOS)
+    @MainActor private static var displayActivity: NSObjectProtocol?
+#endif
 }

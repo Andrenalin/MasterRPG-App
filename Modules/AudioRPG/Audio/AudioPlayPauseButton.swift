@@ -46,7 +46,10 @@ struct AudioPlayPauseButton: View, Equatable {
     // MARK: - Computed Properties
     
     private var isCurrentlyPlaying: Bool {
-        root.audioPlayerModel.currentId == itemId && root.audioPlayerModel.isPlaying
+        // A playlist item is not a track: it plays when one of its tracks does.
+        // See CODE_AUDIT_26 §5.104.
+        (root.audioPlayerModel.currentId == itemId && root.audioPlayerModel.isPlaying)
+            || root.gameController.isPlayingPlaylist(id: itemId)
     }
     
     private var iconName: String {

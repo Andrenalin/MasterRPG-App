@@ -33,7 +33,13 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return UUID() }
 
         let groupId: UUID
-        if let existingItemId, var existingGroup = editModel(for: existingItemId) {
+        if let existingItemId, editModel(for: existingItemId) != nil {
+            // A hidden group has no folder, as in `moveIntoGroup`; the folder would keep listing
+            // it. See CODE_AUDIT_26 §5.73.
+            if editModel(for: existingItemId)?.parentId != nil {
+                removeItemFromParent(itemId: existingItemId, oneUp: false, moveFiles: false)
+            }
+            guard var existingGroup = editModel(for: existingItemId) else { return UUID() }
             groupId = existingItemId
             existingGroup.groupId = itemId
             existingGroup.isGroupHiddenToggle = true

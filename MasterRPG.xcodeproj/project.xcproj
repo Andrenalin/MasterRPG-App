@@ -1674,6 +1674,8 @@
         "EAGER_LINKING[config=Debug]": "YES",
         "ENABLE_APP_SANDBOX": "YES",
         "ENABLE_DEBUG_DYLIB[config=Debug]": "YES",
+        "ENABLE_HARDENED_RUNTIME": "YES",
+        "ENABLE_OUTGOING_NETWORK_CONNECTIONS": "YES",
         "ENABLE_TESTABILITY[config=Release]": "NO",
         "ENABLE_USER_SELECTED_FILES": "readonly",
         "GCC_C_LANGUAGE_STANDARD": "gnu17",

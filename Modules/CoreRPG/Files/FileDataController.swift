@@ -81,7 +81,8 @@ public extension FileDataController {
         return true
     }
 
-    func save() async {
+    @discardableResult
+    func save() async -> Bool {
         let encoder = JSONCoding.encoder
         let mappedData = await model.data.compactMap { entry -> DataModel? in
             if let encodedData = try? encoder.encode(entry) {
@@ -91,7 +92,7 @@ public extension FileDataController {
         }
         let writtenIds = Set(mappedData.map(\.id))
         let kept = await model.undecodable.filter { !writtenIds.contains($0.id) }
-        await persistence.save(data: mappedData + kept)
+        return await persistence.save(data: mappedData + kept)
     }
 }
 

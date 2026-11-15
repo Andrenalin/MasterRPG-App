@@ -10,6 +10,9 @@ public enum RootRoute: Hashable, Codable {
     /// visionOS' `SplitVisionNavigation` stores its route under its own, older key on purpose:
     /// existing scenes keep their state under it, so it must not be renamed. See CODE_AUDIT_19 §9.8.
     static let visionSceneStorageKey = "GameRoute"
+    /// The editor window's own key: it shares neither the tab selection nor the restored route
+    /// of the main window. See CODE_AUDIT_26 §5.124.
+    static let editorSceneStorageKey = "EditorRoute"
     /// The first route of a new scene.
     static var defaultRoute: RootRoute { .game }
     /// The first route of a new scene in `TabSidebar`, which has no Game tab.

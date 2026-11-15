@@ -3,6 +3,15 @@
 import SwiftUI
 
 struct ItemGenerationPresentationModifier: ViewModifier {
+    /// Generation presents a window or sheet that tvOS does not have. See CODE_AUDIT_26 §5.69.
+    private static var isSupported: Bool {
+#if os(tvOS)
+        false
+#else
+        true
+#endif
+    }
+
     let root: any ItemRootControllable
     @Binding var selection: WindowItemSelection?
 
@@ -15,7 +24,7 @@ struct ItemGenerationPresentationModifier: ViewModifier {
                 \.itemGenerationAction,
                 ItemGenerationAction(
                     id: .module(root.configurable.module),
-                    isEnabled: root.generationControllable != nil,
+                    isEnabled: Self.isSupported && root.generationControllable != nil,
                     present: present(itemId:)
                 )
             )

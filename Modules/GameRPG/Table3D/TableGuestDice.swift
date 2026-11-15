@@ -21,6 +21,9 @@ struct TableGuestRoll: Equatable {
     let dice: [Die]
     /// The game master's roll, whose result follows the master's dice sharing option.
     var isGameMaster = false
+    /// The sender's id, the last sort key: two guests with the same name and dice count keep a
+    /// stable order on every device. See CODE_AUDIT_26 §5.80.
+    var senderId: UUID?
 }
 
 enum TableGuestDice {
@@ -45,7 +48,7 @@ enum TableGuestDice {
         var nextD20 = 0
         var nextD6 = 0
         return rolls
-            .sorted { ($0.name, $0.dice.count) < ($1.name, $1.dice.count) }
+            .sorted { ($0.name, $0.dice.count, $0.senderId?.uuidString ?? "") < ($1.name, $1.dice.count, $1.senderId?.uuidString ?? "") }
             .compactMap { roll in
                 // A group's dice lie in the order of the roll, d20 and d6 mixed as the set has them.
                 var dice: [Die] = []

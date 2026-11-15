@@ -115,7 +115,12 @@ struct TableGenerationRootView: View {
         Task {
             let itemId = await controller.addOutcomeToCharacter(session: session)
             guard let itemId else {
-                closeSession()
+                // Keep the panel and the edited sheet open: closing here threw the outcome away
+                // without a word. See CODE_AUDIT_26 §5.135.
+                model.errorMessage = String(
+                    localized: "Could not save the result as a value.",
+                    bundle: .module
+                )
                 return
             }
             controller.discardOutcomeSession(model: model)
@@ -145,6 +150,10 @@ struct TableGenerationRootView: View {
               let payload = SheetItemTransfer(sheet: session.sheetRootModel.sheetModel),
               let data = payload.encodeData()
         else {
+            model.errorMessage = String(
+                localized: "Could not send the result to the player.",
+                bundle: .module
+            )
             return
         }
         networkActions?.game(

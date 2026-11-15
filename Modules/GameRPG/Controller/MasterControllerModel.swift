@@ -39,6 +39,9 @@ final class MasterControllerModel {
     /// The counter of the newest item the game master showed. A show whose package is still
     /// being built when a newer one starts is superseded. See CODE_AUDIT_Game_Shareplay §5.29.
     var latestShownCounter = 0
+    /// The map the game master showed last (`nil` after a cleared map). A map asset request is
+    /// answered for it and for the map on show only. See CODE_AUDIT_26 §5.82.
+    var latestShownMapId: UUID?
     /// The delivery namespace of this game's message log. A restarted game counts from one
     /// again and must not complete a row of the game before it.
     let deliverySessionId = UUID()

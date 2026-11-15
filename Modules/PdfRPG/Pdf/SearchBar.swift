@@ -21,7 +21,7 @@ struct SearchBar: View {
                 .onChange(of: isSearching) {
                     guard !isSearching else { return }
                     withAnimation(reduceMotion ? nil : .default) {
-                        searchModel.matches = []
+                        searchModel.endSearch()
                     }
                 }
         }

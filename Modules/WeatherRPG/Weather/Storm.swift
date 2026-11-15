@@ -49,6 +49,9 @@ public class Storm {
         // Clamped: after a long pause (background, a sheet) a minutes-long step would move every
         // drop off the wrap range for many frames. See CODE_AUDIT_23 §5.17.
         let delta = min(max(date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970, 0), 0.1)
+        // A zero-width size (a layout pass before the first measure) would make the divisor
+        // infinite or NaN. See CODE_AUDIT_26 §5.131.
+        guard size.width > 0 else { return }
         let divisor = size.height / size.width
 
         for drop in drops {

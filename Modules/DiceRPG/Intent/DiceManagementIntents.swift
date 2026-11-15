@@ -93,7 +93,9 @@ struct AddDieToDiceIntent: AppIntent {
         try requiredIntentModel($target, prompt: DiceIntentSupport.targetPrompt, in: root)
         let die = DieModel(id: UUID(), die: diceType.rawDie)
         try requireOutsideGame([target.id], in: root)
-        root.editController.add(die: die, itemId: target.id, forceSave: true)
+        guard root.editController.add(die: die, itemId: target.id, forceSave: true) else {
+            throw DiceBagFullError()
+        }
         try await root.itemController.saveForIntent()
 
         // The updated dice is returned so a shortcut can go on with it.
@@ -236,5 +238,12 @@ extension IntentDiceType {
 #if os(iOS)
 extension SearchDiceIntent: TargetContentProvidingIntent {}
 #endif
+
+/// The dice already holds as many dice as a set can keep.
+struct DiceBagFullError: LocalizedError {
+    var errorDescription: String? {
+        String(localized: "This dice set is full. Remove a die before adding another.", bundle: .module)
+    }
+}
 
 #endif

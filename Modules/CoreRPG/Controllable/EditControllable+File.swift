@@ -163,8 +163,7 @@ public extension EditControllable {
 
         // Re-read: a name typed while the awaits above ran must not be replaced by the file name.
         if editModel(for: itemId)?.name.isEmpty == true {
-            let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
-            let name = url.lastPathComponent.replacing(ext, with: "")
+            let name = url.deletingPathExtension().lastPathComponent
             reset(name: name, itemId: itemId)
         }
 

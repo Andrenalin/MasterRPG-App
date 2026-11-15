@@ -525,7 +525,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 selectionModel: ItemSelectionModel(),
                 type: .inspector,
                 showListModeControls: true,
-                showDetails: .constant(false),
+                detailsRequest: .constant(0),
                 showDetailsView: .constant(nil)
             )
         }

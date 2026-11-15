@@ -134,6 +134,7 @@ final class PinPawn {
         let healthColor: Color
         let name: String
         let isShown: Bool
+        let color: Color
     }
     private var appliedVisual: AppliedVisual?
 
@@ -290,7 +291,8 @@ final class PinPawn {
             hiddenForMaster: hiddenForMaster,
             healthColor: healthColor,
             name: pin.name,
-            isShown: pin.isShown
+            isShown: pin.isShown,
+            color: pin.color
         )
         guard visual != appliedVisual else { return }
         appliedVisual = visual
@@ -311,6 +313,13 @@ final class PinPawn {
         var highlightMaterial = UnlitMaterial()
         highlightMaterial.color = .init(tint: GameTablePlatformColor(ringColor))
         highlightModel.model?.materials = [highlightMaterial]
+        // Without a photo the face shows the pin's own colour, which can be edited after the
+        // token was created. See CODE_AUDIT_26 §5.81.
+        if loadedPhotoId == nil {
+            var faceMaterial = UnlitMaterial()
+            faceMaterial.color = .init(tint: GameTablePlatformColor(pin.color))
+            photoPlane.model?.materials = [faceMaterial]
+        }
         highlightModel.isEnabled = true
         deathMarkModels.forEach { $0.isEnabled = pin.isDead }
         if hiddenForMaster {

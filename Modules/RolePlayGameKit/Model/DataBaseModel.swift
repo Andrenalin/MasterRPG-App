@@ -115,6 +115,11 @@ public final class DataBaseModel {
     }
     
     private func finishSetup() {
+        // A successful retry after "delete database" must not keep the earlier error.
+        // See CODE_AUDIT_26 §5.121.
+        hasError = false
+        errorMessage = nil
+        canRecover = false
         let error = (hasCloudKit ? cloudPersistence?.model.error : localPersistence?.model.error) ?? .none
         coreDataInitModel = hasCloudKit ? cloudPersistence?.model : localPersistence?.model
         switch error {

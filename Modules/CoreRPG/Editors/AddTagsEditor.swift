@@ -43,7 +43,6 @@ private struct AddTagInputView: View {
                 }
 #if os(iOS) || os(visionOS)
                 .textInputAutocapitalization(.never)
-                .textContentType(.name)
 #endif
                 .autocorrectionDisabled()
                 .focused(focusState)
@@ -71,7 +70,7 @@ private struct AddTagInputView: View {
                 .buttonSizing(.fitted)
                 .buttonBorderShape(.circle)
                 .controlSize(.large)
-                .disabled(currentTag.isEmpty)
+                .disabled(currentTag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
     }
@@ -79,8 +78,17 @@ private struct AddTagInputView: View {
 
 private extension AddTagsEditor {
     func addCurrentTag() {
-        let tag = currentTag.localizedUppercase
-        guard !tags.contains(where: { $0 == tag }) else { return }
+        // Trimmed before the empty and duplicate checks, so " dungeon" and "DUNGEON" are one tag and
+        // blank input adds nothing. See CODE_AUDIT_26 §5.77.
+        let tag = currentTag.trimmingCharacters(in: .whitespacesAndNewlines).localizedUppercase
+        guard !tag.isEmpty else {
+            currentTag = ""
+            return
+        }
+        guard !tags.contains(where: { $0 == tag }) else {
+            currentTag = ""
+            return
+        }
         var updatedTags = tags
         updatedTags.append(tag)
         updatedTags = updatedTags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })

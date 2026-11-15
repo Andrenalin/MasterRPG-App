@@ -164,6 +164,9 @@ public extension ItemControllable {
         // can find the item and queue a fresh upsert for it while the deletion below awaits.
         // Removing it last left that window open for the whole delete. See CODE_AUDIT_Folder §3.9.
         itemDataModel.resetModel(id: item.id)
+        if config.module == .value {
+            UserDefaultsQuickDiceSlotStore.forget(characterId: itemId)
+        }
         // Until this delete is through, sync does not bring the id back. See CODE_AUDIT_21 §5.31.
         itemDataModel.deletingIds.insert(itemId)
         defer { itemDataModel.deletingIds.remove(itemId) }

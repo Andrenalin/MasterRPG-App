@@ -1763,6 +1763,38 @@
           }
         }
       }
+    },
+    "Could not save the result as a value." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Ergebnis konnte nicht als Wert gespeichert werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถบันทึกผลลัพธ์เป็นค่าได้"
+          }
+        }
+      }
+    },
+    "Could not send the result to the player." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Ergebnis konnte nicht an den Spieler gesendet werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถส่งผลลัพธ์ให้ผู้เล่นได้"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

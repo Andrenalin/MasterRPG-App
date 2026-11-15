@@ -7,20 +7,19 @@ struct AddItemButton: View {
     let root: any ItemRootControllable
     let routeActions: RouteActions
 
+    /// Ignores a second press while an item is being created.
+    @State private var isCreating = false
+
     var body: some View {
         Button {
-            Task {
-                guard let item = await root.editControllable.addNew(type: .item) else { return }
-                routeActions.routePage(root.configurable.module, item.id, nil)
+            addItemAndRoute(type: .item, root: root, routeActions: routeActions, isCreating: $isCreating) {
                 await MasterRPGTips.donateItemCreated()
-                if let rootManager = root.rootManager {
-                    MasterRPGTips.refreshEligibility(rootManager: rootManager)
-                }
             }
         } label: {
             Label { Text("New \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }
         }
         .keyboardShortcut("n", modifiers: .command)
+        .disabled(isCreating)
     }
 }
 

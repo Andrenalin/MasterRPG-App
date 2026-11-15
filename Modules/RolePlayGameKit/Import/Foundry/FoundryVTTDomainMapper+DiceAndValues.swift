@@ -49,6 +49,12 @@ extension FoundryMappingState {
             } else {
                 count = 1
             }
+            // The total per formula is capped too, not only each term (`100d6 + 100d6 + ...`).
+            // See CODE_AUDIT_26 §5.126.
+            guard dice.count + count <= 100 else {
+                warnings.append(String(localized: "Roll formula ‘\(formula)’ exceeds the supported limit of 100 dice and remains text in the raw archive.", bundle: .module))
+                return nil
+            }
             for index in 0..<count {
                 dice.append(DieModel(
                     id: stableID("\(sourceID)#die#\(match.range.location)#\(index)"),

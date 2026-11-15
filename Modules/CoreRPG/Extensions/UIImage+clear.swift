@@ -5,14 +5,17 @@ import UIKit
 import CoreGraphics
 
 extension UIImage {
-    public func removeWhiteBackground() -> UIImage? {
+    /// `@concurrent`: the pixel loop leaves the caller's actor. See CODE_AUDIT_26 §5.75.
+    @concurrent
+    public func removeWhiteBackground() async -> UIImage? {
         guard let cgImage = self.cgImage else { return nil }
 
         let width = cgImage.width
         let height = cgImage.height
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bytesPerRow = width * 4 // 4 bytes per pixel (RGBA)
-        let bitmapInfo = CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue // ARGB
+        // 32-bit little-endian, alpha first: the bytes in memory are B, G, R, A.
+        let bitmapInfo = CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.premultipliedFirst.rawValue
 
         guard let context = CGContext(data: nil,
                                       width: width,
@@ -29,11 +32,11 @@ extension UIImage {
 
         for y in 0..<height {
             for x in 0..<width {
-                let offset = (y * width + x) * 4 // ARGB
-                let alpha = pixelBuffer[offset + 0]
-                let red = pixelBuffer[offset + 1]
-                let green = pixelBuffer[offset + 2]
-                let blue = pixelBuffer[offset + 3]
+                let offset = (y * width + x) * 4 // BGRA in memory
+                let blue = pixelBuffer[offset + 0]
+                let green = pixelBuffer[offset + 1]
+                let red = pixelBuffer[offset + 2]
+                let alpha = pixelBuffer[offset + 3]
 
                 // Check if the pixel is close to white (you can adjust the threshold)
                 if red > 254 && green > 254 && blue > 254 && alpha > 200 {

@@ -916,13 +916,17 @@ public extension EditControllable {
 // MARK: - New Entry Editor
 
 public extension EditControllable {
-    @MainActor func removeEntry(source: ItemRowModel, forceSave: Bool = false) {
-        guard source.typeId == itemControllable.config.module, let entryId = source.entryId, let updatedModel = editModel(for: source.itemId) else { return }
+    /// Whether the entry was removed; a caller that mirrors the change in a view model does so only
+    /// then. See CODE_AUDIT_26 §5.64.
+    @discardableResult
+    @MainActor func removeEntry(source: ItemRowModel, forceSave: Bool = false) -> Bool {
+        guard source.typeId == itemControllable.config.module, let entryId = source.entryId, let updatedModel = editModel(for: source.itemId) else { return false }
 
         var entries = updatedModel.entries
         entries.removeAll(where: { $0.id == entryId})
         updatedModel.entries = entries
         save(updated: updatedModel, message: String(localized: "Delete Entry", bundle: .module), forceSave: forceSave)
+        return true
     }
 }
 

@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import os.log
 
 struct DiceInline: View {
     let itemId: UUID
@@ -55,22 +56,14 @@ struct DiceInline: View {
                     if !player {
                         ForEach(players) { player in
                             Button {
-                                Task {
-                                    if let result = try? await root.gameController.createGameData(for: itemId, resultCategory: resultCategory) {
-                                        networkActions?.game(result, .show, player.id)
-                                    }
-                                }
+                                shareResult(to: player.id)
                             } label: {
                                 Label { Text("Share to \(player.name)", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
                             }
                         }
                         
                         Button {
-                            Task {
-                                if let result = try? await root.gameController.createGameData(for: itemId, resultCategory: resultCategory) {
-                                    networkActions?.game(result, .show, nil)
-                                }
-                            }
+                            shareResult(to: nil)
                         } label: {
                             Label { Text("Share to all", bundle: .module) } icon: { Image(systemName: "square.and.arrow.up") }
                         }
@@ -117,6 +110,19 @@ struct DiceInline: View {
 
     private var rollShareTitle: LocalizedStringKey {
         networkActions != nil ? "Roll" : "Roll & Share"
+    }
+
+    /// Sends the dice result to one player (or everyone for `nil`); a failure is logged, as the link
+    /// path does, instead of leaving the menu entry without any effect. See CODE_AUDIT_26 §5.113.
+    private func shareResult(to playerId: UUID?) {
+        Task {
+            do {
+                let result = try await root.gameController.createGameData(for: itemId, resultCategory: resultCategory)
+                networkActions?.game(result, .show, playerId)
+            } catch {
+                Logger.linkController.error("DiceInline: Failed to share dice \(itemId, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            }
+        }
     }
 
     private func rollAndShareDiceResult() {

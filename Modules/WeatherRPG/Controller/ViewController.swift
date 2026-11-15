@@ -76,7 +76,7 @@ public extension ViewController {
 #endif
 
     @MainActor func viewer(root: WeatherRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: itemId), configuration: ViewerConfiguration(closeButton: dismissAction != nil), dismissAction: dismissAction)
+        ViewerRootView(model: root.itemController.itemOrEmpty(for: itemId), configuration: configuration, dismissAction: dismissAction)
     }
     
     @MainActor func windowViewer(root: WeatherRootModel, selection: WindowItemSelection) -> some View {

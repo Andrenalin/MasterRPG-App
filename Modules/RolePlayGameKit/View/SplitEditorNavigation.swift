@@ -5,7 +5,7 @@ import SwiftUI
 import TipKit
 
 struct SplitEditorNavigation: View {
-    @State private var storedTab: RootRoute = .pdfs
+    @SceneStorage(RootRoute.editorSceneStorageKey) private var storedTab: RootRoute = .pdfs
     
     @Environment(AppModel.self) private var appModel
     @Environment(ScenesManager.self) private var scenesManager

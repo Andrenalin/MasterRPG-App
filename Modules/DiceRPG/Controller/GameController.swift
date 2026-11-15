@@ -13,7 +13,10 @@ final class DiceGameModel {
     init() {}
     
     let audioPlayer: AVPlayer = AVPlayer()
-    var hiddenPlayers: [String] = []
+    /// The players whose dice are hidden, by sender id (the dice id for a set without a known
+    /// sender), not by display name: two players with one name hide separately.
+    /// See CODE_AUDIT_26 §5.109.
+    var hiddenPlayers: Set<UUID> = []
     var playerDice: [DiceModel] = []
     /// The device that shared each of `playerDice` (dice id to sender id).
     var playerDiceSenders: [UUID: UUID] = [:]

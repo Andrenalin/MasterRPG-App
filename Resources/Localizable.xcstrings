@@ -684,6 +684,38 @@
           }
         }
       }
+    },
+    "Nothing to Show" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts anzuzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีอะไรให้แสดง"
+          }
+        }
+      }
+    },
+    "Choose an item to open it in this window." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle ein Objekt, um es in diesem Fenster zu öffnen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกรายการเพื่อเปิดในหน้าต่างนี้"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

@@ -355,12 +355,10 @@ extension FoundryMappingState {
     }
 
     func inertCodeBlock(_ source: String) -> String {
-        let longestBacktickRun = source.split(separator: "`", omittingEmptySubsequences: false)
-            .dropLast()
-            .reduce(0) { longest, _ in max(longest, 1) }
-        // Four backticks safely contain normal triple-backtick source. If a future macro contains
-        // a longer fence, extend the delimiter until it cannot terminate the block.
-        var fenceLength = max(4, longestBacktickRun + 1)
+        // Four backticks safely contain normal triple-backtick source. If a macro contains a
+        // longer run, extend the delimiter until it cannot terminate the block.
+        // See CODE_AUDIT_26 §5.126.
+        var fenceLength = 4
         while source.contains(String(repeating: "`", count: fenceLength)) {
             fenceLength += 1
         }

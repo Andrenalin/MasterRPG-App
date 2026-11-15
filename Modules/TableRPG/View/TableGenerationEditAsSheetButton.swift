@@ -55,6 +55,9 @@ struct TableGenerationEditAsSheetButton: View {
             controller.beginEditingOutcomeSheet(model: model)
             Task {
                 try? await Task.sleep(for: Self.transitionBeat)
+                // The panel may have closed or the session been dropped during the beat; the flag
+                // alone would show the sheet footer without a session. See CODE_AUDIT_26 §5.134.
+                guard !Task.isCancelled, model.outcomeEditingSession != nil else { return }
                 withAnimation(reduceMotion ? nil : .smooth) {
                     model.isEditingOutcomeSheet = true
                 }

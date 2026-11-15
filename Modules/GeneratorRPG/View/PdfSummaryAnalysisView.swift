@@ -43,8 +43,11 @@ public struct PdfSummaryAnalysisView: View {
     // MARK: - Subviews
 
     private func analyze() {
-        guard !model.isAnalyzing else { return }
+        // `isAnalyzing` is only set once the task runs, so a second tap before that would start a
+        // second analysis; the task handle is the guard. See CODE_AUDIT_26 §5.116.
+        guard !model.isAnalyzing, analysisTask == nil else { return }
         analysisTask = Task {
+            defer { analysisTask = nil }
             let content = await model.analyzeWithProgress(from: pdfDocument, outputLanguage: selectedLanguage.englishName)
             guard !Task.isCancelled, let content else { return }
             onAnalysisCompleted(content)

@@ -141,6 +141,16 @@ private func foundationLabEstimateStructuredTokens(_ content: GeneratedContent) 
 }
 
 private extension Transcript {
+    /// The kept window must start with a prompt: a response, tool call or tool output without the
+    /// prompt that caused it is an orphan the model session may reject or misread.
+    /// See CODE_AUDIT_26 §5.115.
+    static func droppingLeadingNonPrompts<S: Sequence>(_ entries: S) -> [Transcript.Entry] where S.Element == Transcript.Entry {
+        Array(entries.drop { entry in
+            if case .prompt = entry { return false }
+            return true
+        })
+    }
+
     func foundationLabEstimatedTokenBudgetWindow(
         instructions: Transcript.Entry?,
         conversation: [Transcript.Entry],
@@ -161,7 +171,7 @@ private extension Transcript {
             usedTokens += entryTokens
         }
 
-        return base + Array(selectedConversation.reversed())
+        return base + Self.droppingLeadingNonPrompts(selectedConversation.reversed())
     }
 
     @available(iOS 26.4, macOS 26.4, visionOS 26.4, *)
@@ -189,7 +199,7 @@ private extension Transcript {
 
         while low < high {
             let mid = (low + high + 1) / 2
-            let recentEntries = Array(conversation.suffix(mid))
+            let recentEntries = Self.droppingLeadingNonPrompts(conversation.suffix(mid))
             let candidate = base + recentEntries
 
             guard let tokens = try? await model.tokenCount(for: candidate) else {
@@ -203,6 +213,6 @@ private extension Transcript {
             }
         }
 
-        return base + Array(conversation.suffix(low))
+        return base + Self.droppingLeadingNonPrompts(conversation.suffix(low))
     }
 }

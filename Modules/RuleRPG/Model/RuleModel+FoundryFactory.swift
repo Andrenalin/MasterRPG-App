@@ -407,9 +407,12 @@ extension RuleModel {
     static func presentation(_ value: FoundryJSONValue) -> String {
         switch value {
         case .string(let value): return FoundryTextDecoder.plainText(fromHTML: value)
-        case .integer(let value): return value.formatted()
-        case .unsignedInteger(let value): return value.formatted()
-        case .number(let value): return value.formatted(.number)
+        // Stored content must not depend on the importing device: no locale separators, no
+        // grouping and the full precision of the number (`.number` rounds to 3 decimals).
+        // See CODE_AUDIT_26 §5.130.
+        case .integer(let value): return String(value)
+        case .unsignedInteger(let value): return String(value)
+        case .number(let value): return String(value)
         case .bool(let value): return value ? "true" : "false"
         case .null: return "null"
         case .array(let values): return values.map(presentation).joined(separator: ", ")

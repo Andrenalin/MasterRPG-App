@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import os.log
 
 public struct GameShareView<Content: View>: View {
     public init(root: any ItemRootControllable, itemId: UUID, isShareable: Bool = true, usesModuleSharingView: Bool = true, @ViewBuilder content: () -> Content = EmptyView.init) {
@@ -157,8 +158,13 @@ public struct GameShareView<Content: View>: View {
             if appGameStateModel.gameModus == .master {
                 await networkActions?.shareId(root.gameControllable.share(id: itemId))
             } else {
-                if let result = try? await root.gameControllable.createGameData(for: itemId) {
+                // A failure is logged instead of dropped: the share button then does nothing
+                // visible. See CODE_AUDIT_26 §5.68.
+                do {
+                    let result = try await root.gameControllable.createGameData(for: itemId)
                     networkActions?.game(result, .generic, nil)
+                } catch {
+                    Logger.networking.error("GameShareView: Failed to prepare \(root.configurable.module.token, privacy: .public) \(itemId, privacy: .public) for sharing: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 }
             }
         }

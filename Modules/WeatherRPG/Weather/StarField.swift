@@ -54,7 +54,9 @@ class StarField {
             change(size: size)
         }
         guard !deterministic else { return }
-        let delta = date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970
+        // Clamped like the rain: a long pause (background, a sheet) or a clock change must not
+        // throw the layer far off its wrap range. See CODE_AUDIT_26 §5.131.
+        let delta = min(max(date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970, 0), 0.1)
 
         for star in stars {
             star.x -= delta * 2

@@ -25,7 +25,9 @@ public struct LinkItemListView: View {
     let parentModel: (any ItemDataAccessible)?
 
     @State private var scrollPosition: UUID?
-    @State private var showDetails: Bool = false
+    /// Counts the requests to open the details in `showDetailsView`; a counter, not a toggled flag,
+    /// so every request is a change. See CODE_AUDIT_26 §5.76.
+    @State private var detailsRequest = 0
     @State private var showDetailsView: (any NavigationDestination)? = nil
     @State private var generationSelection: WindowItemSelection?
     
@@ -63,7 +65,7 @@ public struct LinkItemListView: View {
                         selectionModel: selectionModel,
                         parentModel: parentModel,
                         scrollPosition: $scrollPosition,
-                        showDetails: $showDetails,
+                        detailsRequest: $detailsRequest,
                         showDetailsView: $showDetailsView
                     )
                 }
@@ -129,7 +131,7 @@ public struct LinkItemListView: View {
                             .navigationVisibility(false)
                     }
             }
-            .onChange(of: showDetails) {
+            .onChange(of: detailsRequest) {
                 guard let showDetailsView else { return }
                 navigator.navigate(to: showDetailsView, method: .push)
             }
@@ -166,7 +168,7 @@ private struct LinkItemListViewContentView: View {
     let parentModel: (any ItemDataAccessible)?
 
     @Binding var scrollPosition: UUID?
-    @Binding var showDetails: Bool
+    @Binding var detailsRequest: Int
     @Binding var showDetailsView: (any NavigationDestination)?
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
@@ -205,7 +207,7 @@ private struct LinkItemListViewContentView: View {
                             selectionModel: selectionModel,
                             type: type,
                             showListModeControls: parentModel == nil,
-                            showDetails: $showDetails,
+                            detailsRequest: $detailsRequest,
                             showDetailsView: $showDetailsView
                         )
 

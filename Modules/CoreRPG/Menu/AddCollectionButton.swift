@@ -7,15 +7,13 @@ struct AddCollectionButton: View {
     let root: any ItemRootControllable
     let routeActions: RouteActions
 
+    /// Ignores a second press while a collection is being created.
+    @State private var isCreating = false
+
     var body: some View {
         Button {
-            Task {
-                guard let item = await root.editControllable.addNew(type: .collection) else { return }
-                routeActions.routePage(root.configurable.module, item.id, nil)
+            addItemAndRoute(type: .collection, root: root, routeActions: routeActions, isCreating: $isCreating) {
                 await MasterRPGTips.donateContentOrganized()
-                if let rootManager = root.rootManager {
-                    MasterRPGTips.refreshEligibility(rootManager: rootManager)
-                }
             }
         } label: {
             Label {
@@ -25,7 +23,7 @@ struct AddCollectionButton: View {
             }
         }
         .keyboardShortcut("n", modifiers: [.command, .shift, .option])
-        .disabled(root.folderListControllable.listDisplayModel.isListMode)
+        .disabled(root.folderListControllable.listDisplayModel.isListMode || isCreating)
     }
 }
 

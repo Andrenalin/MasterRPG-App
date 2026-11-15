@@ -65,6 +65,12 @@ public struct UserDefaultsQuickDiceSlotStore: QuickDiceSlotStoring {
         defaults.set(data, forKey: key)
     }
 
+    /// Removes the saved slots of a character that no longer exists, so the defaults do not keep
+    /// the keys of deleted characters for good. See CODE_AUDIT_26 §5.59.
+    public static func forget(characterId: UUID, defaults: UserDefaults = .standard) {
+        defaults.removeObject(forKey: key(for: characterId))
+    }
+
     private static func key(for characterId: UUID) -> String {
         "quickDiceSlots.\(characterId.uuidString)"
     }

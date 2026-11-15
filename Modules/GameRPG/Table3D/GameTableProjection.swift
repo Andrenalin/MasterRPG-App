@@ -269,7 +269,9 @@ extension GameTableModel {
             mapModel: mapModel,
             mapImage: currentMapImage,
             degrees: currentMapDegrees,
-            isGameMaster: isGameMaster,
+            // The rendering flag: a game master previewing as a player sees what a player sees
+            // (no hidden pins, no fogged monsters). See CODE_AUDIT_26 §5.79.
+            isGameMaster: renderIsGameMaster,
             activeAttackerPinId: activeAttackerPinId,
             healthPercent: healthPercent(for:)
         )

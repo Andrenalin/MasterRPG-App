@@ -287,7 +287,8 @@ extension AdventureModel: nonisolated ItemDataAccessible {
     public func filter(filter: String, includeEntries: Bool) -> Bool {
         guard !filter.isEmpty else { return true }
         guard !(name.localizedStandardContains(filter) || description.localizedStandardContains(filter)) else { return true }
-        guard specialCategory == false else { return false }
+        // Entry-only matches count only when the caller asked for entries. See CODE_AUDIT_26 §5.96.
+        guard includeEntries, specialCategory == false else { return false }
         return entries.contains {
             $0.filter(with: filter)
         }

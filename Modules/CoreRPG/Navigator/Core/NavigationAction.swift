@@ -86,8 +86,12 @@ nonisolated public struct NavigationAction: Hashable {
 extension NavigationAction {
 
     /// Action allows user to construct actions on the fly
+    ///
+    /// Each action built here gets its own name: equality and hashing use the name, so two
+    /// different closures would otherwise compare equal under the creator's function name.
+    /// See CODE_AUDIT_26 §5.67.
     @MainActor public static func action(handler: @escaping (Navigator) -> NavigationReceiveResumeType) -> NavigationAction {
-        .init(action: handler)
+        .init("action-\(UUID().uuidString)", action: handler)
     }
 
     /// Dismisses all presented views.

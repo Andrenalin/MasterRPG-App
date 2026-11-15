@@ -12,6 +12,7 @@ extension MasterController: MasterNetworkProxyControllerDelegate {
         Logger.networking.debug("MasterController: Lost Proxy for \(connectionId, privacy: .public)")
         if let playerId = store.model.playerRoutes.remove(connectionId: connectionId) {
             gameModel.forget(playerId: playerId)
+            lateAudioPlayers.remove(playerId)
         }
     }
 

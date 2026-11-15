@@ -106,7 +106,19 @@ struct GameStatisticsController: Sendable {
         let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionId) }
         let participants = dataSet.participants.filter { countedSessionIDs.contains($0.sessionId) }
         let totalDuration = sessions.reduce(0) { $0 + $1.duration }
-        let diceEvents = events.filter { $0.kind == .diceRolled }
+        // Dice statistics count the person's own rolls only: the table's dice (every roll the
+        // game master receives) would otherwise count as their own. A session without a recorded
+        // local participant falls back to "not received". See CODE_AUDIT_26 §5.88.
+        let localParticipants = Set(participants.filter(\.isLocal).map { LocalParticipantKey(sessionId: $0.sessionId, participantId: $0.participantId) })
+        let sessionsWithLocalParticipant = Set(localParticipants.map(\.sessionId))
+        let diceEvents = events.filter { event in
+            guard event.kind == .diceRolled else { return false }
+            if sessionsWithLocalParticipant.contains(event.sessionId) {
+                guard let actorId = event.actorId else { return false }
+                return localParticipants.contains(LocalParticipantKey(sessionId: event.sessionId, participantId: actorId))
+            }
+            return event.direction != .incoming
+        }
 
         return GameStatisticsSummary(
             sessionCount: sessions.count,
@@ -143,6 +155,11 @@ struct GameStatisticsController: Sendable {
             network: networkPoints(events: events),
             recentSessions: Array(sessions.sorted { $0.startedAt > $1.startedAt }.prefix(10))
         )
+    }
+
+    private struct LocalParticipantKey: Hashable {
+        let sessionId: UUID
+        let participantId: UUID
     }
 
     private func eventKind(for model: GameNetworkModel, diceResult: DiceResultModel?) -> GameStatisticEventKind {

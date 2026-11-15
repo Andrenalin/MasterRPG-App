@@ -122,12 +122,15 @@ public extension EntryDataEditable {
     var canAddGroups: Bool { false }
     var canConvertGroups: Bool { false }
 
+    /// The default has no group support and returns an id that belongs to nothing; callers check
+    /// `canAddGroups` first (the sheet does in `addNewGroup(in:)`). See CODE_AUDIT_26 §5.71.
     @MainActor func addNewGroup(itemId: UUID) async -> UUID {
         UUID() // Default implementation does nothing, returns empty UUID
     }
 
     @MainActor func canBecomeGroup(itemId: UUID) -> Bool { false }
 
+    /// As `addNewGroup`: callers check `canConvertGroups` first.
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
         UUID() // Default implementation does nothing, returns empty UUID
     }
@@ -339,20 +342,26 @@ public extension EntryDataEditable {
         
         let links = linkRegisterController.linkRegisterModel(in: content, for: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
         var seenIds: Set<UUID> = []
-        var newContent = content
+        // The n-th occurrence of a link text belongs to the n-th link with that text, so each link
+        // searches on from where the previous one with the same text was found. Replacements are
+        // collected against `content` and applied back to front, so no range goes stale.
+        // See CODE_AUDIT_26 §5.72.
+        var searchStart: [String: String.Index] = [:]
+        var replacements: [(range: Range<String.Index>, text: String)] = []
         for link in links {
-            guard seenIds.contains(link.id) else {
-                seenIds.insert(link.id)
-                continue
-            }
+            let isDuplicate = !seenIds.insert(link.id).inserted
+            guard let oldLinkText = link.markDown else { continue }
+            let start = searchStart[oldLinkText] ?? content.startIndex
+            guard let range = content.range(of: oldLinkText, range: start..<content.endIndex) else { continue }
+            searchStart[oldLinkText] = range.upperBound
+            guard isDuplicate else { continue }
             let newLink = link.duplicate()
-            guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
-            // `.replacing(_:with:subrange:)` was tried here first but discovered (via a
-            // failing test) to replace every occurrence in the whole string, silently
-            // ignoring `subrange`, in this Swift toolchain — not a scoped search at all.
-            // `replaceSubrange(_:with:)` unambiguously replaces only this exact range.
-            newContent.replaceSubrange(range, with: newLink.markDown ?? oldLinkText)
+            replacements.append((range, newLink.markDown ?? oldLinkText))
             linkRegisterController.register(links: [newLink])
+        }
+        var newContent = content
+        for replacement in replacements.reversed() {
+            newContent.replaceSubrange(replacement.range, with: replacement.text)
         }
         changed = changed || item[entryId].content != newContent
         item[entryId].content <=> newContent

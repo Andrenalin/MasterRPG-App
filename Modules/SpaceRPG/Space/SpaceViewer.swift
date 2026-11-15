@@ -166,6 +166,12 @@ struct SpaceViewer: View {
                     }
             )
         }
+        .onChange(of: scenesManager.getSceneState(for: .spaceViewer)) { _, newState in
+            // The immersive space closed after the handoff: this window shows the object again
+            // (it reloads its file). See CODE_AUDIT_26 §5.136.
+            guard handedOffToImmersive, newState == .closed else { return }
+            handedOffToImmersive = false
+        }
         .onChange(of: immersiveSpaceDisplacement) {
             // A defensive re-check for SharePlay starting (or realigning) after
             // the model already loaded. `applySharedPlacementIfNeeded` no longer
@@ -511,6 +517,11 @@ private extension SpaceViewer {
             // changes to the previously-displayed entity since it was torn down immediately.
             // See CODE_AUDIT §5.19.
             await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: id, entryId: nil))
+            // The open can fail; the window must not stay on "Moved to Immersive Space" with its
+            // object gone. See CODE_AUDIT_26 §5.136.
+            if scenesManager.getSceneState(for: .spaceViewer) == .closed {
+                handedOffToImmersive = false
+            }
         }
     }
 

@@ -1871,6 +1871,22 @@
           }
         }
       }
+    },
+    "The audio could not be played. Its file may not be downloaded yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Audio konnte nicht abgespielt werden. Möglicherweise ist die Datei noch nicht geladen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถเล่นเสียงได้ ไฟล์อาจยังไม่ได้ดาวน์โหลด"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

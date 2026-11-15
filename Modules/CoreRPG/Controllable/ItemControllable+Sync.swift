@@ -116,6 +116,9 @@ public extension ItemControllable {
         // O(n) set membership instead of an O(n·m) nested `.contains` scan — this runs on
         // every full CloudKit sync reconciliation. See CODE_AUDIT_EditItem §7.1.
         let sortedModelIds = Set(sortedModels.map(\.id))
+        // The ids known before the first suspension: an item added while this reconciliation
+        // awaits is in neither the fetch nor the unsaved ids read below. See CODE_AUDIT_26 §5.49.
+        let idsBeforeAwait = Set(itemDataModel.items)
         // Locally created items whose insert is still queued are not in the store yet; they
         // are not deletions. See CODE_AUDIT_18 §5.2.
         let unsavedInsertIds = unsavedBeforeFetch.union(await dataControllable?.unsavedInsertIds() ?? [])
@@ -153,7 +156,9 @@ public extension ItemControllable {
         }
         // Unsaved local inserts are kept in `itemData` above; keep them listed too, or they
         // vanish from lists, exports and link lookups until relaunch. See CODE_AUDIT_19 §5.12.
-        updatedItems += itemDataModel.items.filter { unsavedInsertIds.contains($0) && !sortedModelIds.contains($0) }
+        updatedItems += itemDataModel.items.filter {
+            !sortedModelIds.contains($0) && (unsavedInsertIds.contains($0) || !idsBeforeAwait.contains($0))
+        }
         itemDataModel.resetItems(updatedItems)
         itemDataModel.publishContentWidgetSnapshot()
         // The initial load and a reconciliation change items without a save. See CODE_AUDIT_AppIntents §7.1.

@@ -37,6 +37,9 @@ struct SharingView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var errorMessage: String?
+    /// A failed save: shown as an alert over the form, which keeps the person's input.
+    /// See CODE_AUDIT_26 §5.140.
+    @State private var saveErrorMessage: String?
     /// Shared items that could not be read; shown above the content.
     @State private var skippedItemCount = 0
     @State private var containerSize: CGSize = .zero
@@ -75,7 +78,7 @@ struct SharingView: View {
     var body: some View {
         Group {
             if isLoading {
-                SharingLoadingView()
+                SharingLoadingView(cancelAction: close)
             } else if let errorMessage {
                 errorView(message: errorMessage)
             } else {
@@ -91,6 +94,19 @@ struct SharingView: View {
         .task {
             guard performsInitialization else { return }
             await initialize()
+        }
+        .alert(
+            Text("Error", bundle: .main),
+            isPresented: Binding(
+                get: { saveErrorMessage != nil },
+                set: { if !$0 { saveErrorMessage = nil } }
+            )
+        ) {
+            Button(role: .cancel) { } label: {
+                Text("Close", bundle: .main)
+            }
+        } message: {
+            Text(verbatim: saveErrorMessage ?? "")
         }
     }
     
@@ -214,7 +230,12 @@ struct SharingView: View {
             skipped += texts.skippedCount
             if hasText {
                 let joined = texts.values.joined(separator: "\n")
-                let firstWord = joined.components(separatedBy: CharacterSet.whitespacesAndNewlines).first ?? ""
+                // Trimmed first: text that starts with whitespace gave an empty name (and so a
+                // disabled Save button). The name is capped like a title. See CODE_AUDIT_26 §5.138.
+                let firstWord = joined
+                    .split(whereSeparator: \.isWhitespace)
+                    .first
+                    .map { String($0.prefix(80)) } ?? ""
                 inputModel.name = firstWord
                 inputModel.text = joined
             }
@@ -252,7 +273,7 @@ struct SharingView: View {
             
         } catch {
             os.Logger.bootStrap.error("Failed to save content: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            saveErrorMessage = error.localizedDescription
             isSaving = false
         }
     }
@@ -267,6 +288,10 @@ struct SharingView: View {
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
 private struct SharingLoadingView: View {
+    /// The sheet is not dismissable by swipe, so loading needs its own way out.
+    /// See CODE_AUDIT_26 §5.139.
+    let cancelAction: () -> Void
+
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -274,6 +299,12 @@ private struct SharingLoadingView: View {
             Text("Loading…", bundle: .main)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
+            Button {
+                cancelAction()
+            } label: {
+                Text("Cancel", bundle: .main)
+            }
+            .frame(minHeight: 44)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -62,6 +62,9 @@ public final class AppModel: Sendable {
     @ObservationIgnored private var saveDeferralTokens: Set<UUID> = []
 
     var saveIsDeferred: Bool { !saveDeferralTokens.isEmpty }
+
+    /// Set once the launch cleanup ran, so a view appearing again does not run it again.
+    @ObservationIgnored var didCleanDatabaseThisLaunch = false
     var isExclusiveDataMutationActive: Bool {
         DataMutationCoordinator.shared.isActive
     }
@@ -354,7 +357,15 @@ extension AppModel {
         await adventureRoot.save()
     }
     
+    /// Removes hidden items and leftovers once per launch. Holds the data-mutation token, and is
+    /// skipped (to be retried by the next appearance) while an import, repair or reset is
+    /// running. See CODE_AUDIT_26 §5.123.
     public func cleanDatabase() async {
+        guard !didCleanDatabaseThisLaunch,
+              let mutationToken = beginExclusiveDataMutation()
+        else { return }
+        didCleanDatabaseThisLaunch = true
+        defer { endExclusiveDataMutation(mutationToken) }
         for step in moduleFolderRepairSteps {
             await step.root.itemDataCleanup()
             // Files a game of the previous run left behind. See CODE_AUDIT_21 §5.14.

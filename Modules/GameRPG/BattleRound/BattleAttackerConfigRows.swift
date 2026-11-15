@@ -187,6 +187,12 @@ private struct BattleValueConfigRow: View {
             isInvalid = true
             return
         }
+        // Focus loss commits too: an unchanged value must not write (and broadcast) again.
+        // See CODE_AUDIT_26 §5.87.
+        guard value != currentValue else {
+            isInvalid = false
+            return
+        }
         switch kind {
         case .initiative: controller.setInitiative(combatant.id, value)
         case .hitPoints: controller.setHitPoints(combatant.id, value)

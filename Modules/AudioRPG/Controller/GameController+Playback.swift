@@ -6,6 +6,13 @@ import Foundation
 import Observation
 import os.log
 
+/// The audio of a play command could not be loaded, so nothing plays.
+struct AudioPlaybackUnavailableError: LocalizedError {
+    var errorDescription: String? {
+        String(localized: "The audio could not be played. Its file may not be downloaded yet.", bundle: .module)
+    }
+}
+
 extension GameController: AudioGameStorable {
     @MainActor
     func play(id: UUID, shouldPlay: Bool) async throws {
@@ -62,6 +69,12 @@ extension GameController: AudioGameStorable {
             generation: generation,
             coordinationId: request.coordinationId
         )
+        // Nothing of the playlist could be loaded (an iCloud file that is offline, a failed copy),
+        // and no pause or newer play took over: the caller, an intent among them, must not report
+        // that it plays. See CODE_AUDIT_26 §5.100.
+        if audioController.model.playListRootId != id, audioController.model.playbackGeneration == generation {
+            throw AudioPlaybackUnavailableError()
+        }
     }
 
     /// Replaces the playlist with the one of `id`: only the track to start is copied before it

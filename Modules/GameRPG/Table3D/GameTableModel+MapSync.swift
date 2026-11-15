@@ -221,7 +221,7 @@ extension GameTableModel {
     /// checked everywhere a mutation is permission-gated) stays untouched by the local preview.
     /// Reader and player both preview as fog-limited today; the 3D board has no separate "full view
     /// without GM overlays" render path the way the 2D map's reader mode does.
-    private var renderIsGameMaster: Bool {
+    var renderIsGameMaster: Bool {
         isGameMaster && displayMode != .player
     }
 

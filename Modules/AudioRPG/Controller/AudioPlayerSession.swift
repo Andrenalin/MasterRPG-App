@@ -247,6 +247,9 @@ private extension AudioPlayerSession {
         let type = AVAudioSession.InterruptionType(rawValue: typeRaw)
         if type == .began {
             _ = model.beginInterruptionGeneration()
+            // The system deactivated the session; the next play must activate it again.
+            // See CODE_AUDIT_26 §5.101.
+            model.reset(isActive: false)
             model.reset(wasPlaying: model.delegate?.beginInterruption() ?? false)
         } else if let optionsRaw,
                   AVAudioSession.InterruptionOptions(rawValue: optionsRaw).contains(.shouldResume) {

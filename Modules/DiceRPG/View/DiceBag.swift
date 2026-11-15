@@ -63,6 +63,8 @@ struct DiceBag: View {
                     .padding(4)
             }
             .accessibilityLabel(Text("Add \(die.die.text) die", bundle: .module))
+            // The set is full: more dice would be cut when it is decoded. See CODE_AUDIT_26 §5.112.
+            .disabled(model.dice.count >= DiceModel.maximumDecodedDiceCount)
             .frame(minWidth: 44, minHeight: 44)
             .borderLessTVButtonStyle()
         }

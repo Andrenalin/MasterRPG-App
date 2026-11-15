@@ -100,7 +100,11 @@ public final class WeatherRootModel {
         )
         editorLinkModel.rootManager = rootManager
 
+        // Both dropped first: a call without a context must not keep syncing the old context.
+        // See CODE_AUDIT_26 §5.133.
         syncTask?.cancel()
+        syncTask = nil
+        syncDataController = nil
         if let dataControllable = itemController.itemDataModel.dataController, let context {
             let controller = EntitySyncDataController(context: context, dataControllable: dataControllable, itemController: itemController, entity: RPGWeather.entity())
             syncDataController = controller

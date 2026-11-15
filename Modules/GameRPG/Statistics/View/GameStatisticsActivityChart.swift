@@ -8,6 +8,15 @@ struct GameStatisticsActivityChart: View {
     let metric: GameStatisticsMetric
     @State private var selectedDate: Date?
 
+    /// The bucket the selection falls into: the latest bucket that starts at or before the
+    /// selected date, so a week or month bucket answers for every day of it, not only its first
+    /// day. See CODE_AUDIT_26 §5.89.
+    private var selectedBucketDate: Date? {
+        guard let selectedDate else { return nil }
+        let dates = points.map(\.date)
+        return dates.filter { $0 <= selectedDate }.max() ?? dates.min()
+    }
+
     var body: some View {
         GameStatisticsChartCard(
             title: String(localized: "Activity", bundle: .module),
@@ -43,8 +52,7 @@ struct GameStatisticsActivityChart: View {
                             : point.sessionCount.formatted()
                     )
 
-                    if let selectedDate,
-                       Calendar.autoupdatingCurrent.isDate(point.date, inSameDayAs: selectedDate) {
+                    if let selectedBucketDate, point.date == selectedBucketDate {
                         PointMark(
                             x: .value(String(localized: "Selected Date", bundle: .module), point.date),
                             y: .value(metric.title, point.value(for: metric))

@@ -39,6 +39,12 @@ struct TableSummaryAnalyzer {
                 let progress = TableSummaryAnalysisProgress(content)
                 await resultModel.setAnalysisProgress(progress)
             }
+        } catch is CancellationError {
+            // A cancelled analysis stays a cancellation; it is not a "generation failed" message.
+            // See CODE_AUDIT_26 §5.114.
+            throw CancellationError()
+        } catch let error as PdfSummaryAnalysisError {
+            throw error
         } catch let error as LanguageModelSession.GenerationError {
             throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
         } catch {
@@ -127,6 +133,6 @@ struct TableSummaryAnalyzer {
     private static let defaultInstructions = """
     Analyze RPG table entries (random tables, encounter tables, loot tables, etc.).
     Extract a clear title, concise description, and relevant tags.
-    Be precise and use the same language as the entries.
+    Be precise.
     """
 }

@@ -77,7 +77,21 @@ struct WindowViewerList: Scene {
         WindowGroup("\(module.title) Viewer", id: module.viewerWindowId, for: WindowItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { _ in
                 ManagedNavigationStack(name: "\(module.title) Viewer") {
-                    content(selection ?? WindowItemSelection(itemId: UUID()))
+                    // A window opened without a selection has nothing to show; it used to open
+                    // a random item id. See CODE_AUDIT_26 §5.142.
+                    if let selection {
+                        content(selection)
+                    } else {
+                        ContentUnavailableView {
+                            Label {
+                                Text("Nothing to Show", bundle: .main)
+                            } icon: {
+                                Image(systemName: "doc.questionmark")
+                            }
+                        } description: {
+                            Text("Choose an item to open it in this window.", bundle: .main)
+                        }
+                    }
                 }
                 .sceneTracker(for: SceneId.viewerId(for: module))
                 .modifier(WindowViewerSetUpViewModifier(model: model, module: module))

@@ -109,6 +109,12 @@ struct PdfSummaryAnalyzer: Sendable {
                 tags: tags,
                 sections: sections
             )
+        } catch is CancellationError {
+            // A cancelled analysis stays a cancellation; it is not a "generation failed" message.
+            // See CODE_AUDIT_26 §5.114.
+            throw CancellationError()
+        } catch let error as PdfSummaryAnalysisError {
+            throw error
         } catch let error as LanguageModelSession.GenerationError {
             throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
         } catch {
@@ -203,6 +209,6 @@ struct PdfSummaryAnalyzer: Sendable {
     document too. Never use generic tags that fit every RPG document, such as "RPG", "Setting", \
     "System", "Genre" or "Role-playing game", and never write a label before a value \
     ("Genre: Fantasy"); write only the value ("Fantasy").
-    Be precise and factual, use document language. Don't change it.
+    Be precise and factual.
     """
 }

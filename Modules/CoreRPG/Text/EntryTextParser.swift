@@ -74,47 +74,59 @@ public struct EntryTextParser {
     public func removeLineBreaks(from text: String) -> String {
         var blocks: [String] = []
         var currentTitle: String = ""
-        var currentContent: String = ""
+        var contentLines: [String] = []
+
+        func flush() {
+            guard !currentTitle.isEmpty else { return }
+            var block = currentTitle
+            let content = Self.joinedParagraphLines(contentLines)
+            if !content.isEmpty {
+                block.append("\n\(content)")
+            }
+            blocks.append(block)
+        }
 
         normalizeLineEndings(text)
             .split(separator: "\n", omittingEmptySubsequences: false)
             .forEach { line in
                 if line.isEmpty {
-                    if !currentTitle.isEmpty {
-                        var block = currentTitle
-                        if !currentContent.isEmpty {
-                            block.append("\n\(currentContent)")
-                        }
-                        blocks.append(block)
-                    }
+                    flush()
                     currentTitle = ""
-                    currentContent = ""
+                    contentLines = []
                 } else {
-                    var processedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let processedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
                     if currentTitle.isEmpty {
                         currentTitle.append(processedLine)
                     } else {
-                        // Handle hyphenated line breaks
-                        if processedLine.last == "-" {
-                            processedLine = String(processedLine.dropLast())
-                        } else {
-                            processedLine.append(" ")
-                        }
-                        currentContent.append(processedLine)
+                        contentLines.append(processedLine)
                     }
                 }
             }
 
-        // Add final block if present
-        if !currentTitle.isEmpty {
-            var block = currentTitle
-            if !currentContent.isEmpty {
-                block.append("\n\(currentContent)")
-            }
-            blocks.append(block)
-        }
+        flush()
 
         return blocks.joined(separator: "\n\n")
+    }
+
+    /// Joins the wrapped lines of one paragraph with single spaces. A hyphen at the end of a line
+    /// is dropped, and the word joined, only when the next line continues in lowercase; a real
+    /// hyphen ("well-", "-year") stays. See CODE_AUDIT_26 §5.65.
+    private static func joinedParagraphLines(_ lines: [String]) -> String {
+        var result = ""
+        for line in lines where !line.isEmpty {
+            if result.isEmpty {
+                result = line
+                continue
+            }
+            if result.last == "-", line.first?.isLowercase == true {
+                result.removeLast()
+                result.append(line)
+            } else {
+                result.append(" ")
+                result.append(line)
+            }
+        }
+        return result
     }
 
     /// Format entries back to multi-line text

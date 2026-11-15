@@ -59,6 +59,7 @@ struct SharingActionView: View, Equatable {
                     shareAudio()
                 } secondAction: {
                     if allReported {
+                        waitForSharing = false
                         networkActions?.game(root.gameController.requestPlay(id: itemId), .playAudio, nil)
                     } else {
                         waitForSharing = true
@@ -68,6 +69,15 @@ struct SharingActionView: View, Equatable {
                 .frame(maxWidth: showPlayerReport ? .infinity : nil, alignment: .leading)
                 .task(id: showsFileSize) {
                     fileByteCount = showsFileSize ? await root.gameController.fileByteCount(for: itemId) : nil
+                }
+                // The wish to play after sharing expires; a play that fires long after the tap, when
+                // the last player finally reports, would surprise the table. The task is also
+                // cancelled when the row disappears. See CODE_AUDIT_26 §5.105.
+                .task(id: waitForSharing) {
+                    guard waitForSharing else { return }
+                    try? await Task.sleep(for: .seconds(30))
+                    guard !Task.isCancelled else { return }
+                    waitForSharing = false
                 }
                 .onChange(of: allReported) { _, newValue in
                     if waitForSharing && newValue {

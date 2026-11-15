@@ -45,7 +45,7 @@ struct MapViewportInteractionPlane: View {
                 MapViewportGestureModifier(
                     session: session,
                     interactionTransform: interactionTransform,
-                    isEnabled: isActive && !session.isPointerInteractionActive,
+                    isEnabled: isActive && !session.isPointerInteractionActive && !session.isPencilStrokeActive,
                     surface: surface
                 )
             )
@@ -203,6 +203,20 @@ struct MapViewportGestureModifier: ViewModifier {
 struct MapPencilDrawGestureModifier: ViewModifier {
     let session: MapEditorSession
 
+    /// True while the draw gesture runs. Its reset fires when the gesture ends *or is cancelled*
+    /// (a system interruption never calls `onEnded`), so an unfinished outline does not stay on the
+    /// canvas. See CODE_AUDIT_26 §5.93.
+    @GestureState private var isDrawing: Bool
+
+    init(session: MapEditorSession) {
+        self.session = session
+        _isDrawing = GestureState(wrappedValue: false, reset: { _, _ in
+            Task { @MainActor in
+                session.discardUnfinishedPencilStroke()
+            }
+        })
+    }
+
     func body(content: Content) -> some View {
 #if os(iOS)
         if #available(iOS 27.0, *) {
@@ -225,6 +239,9 @@ struct MapPencilDrawGestureModifier: ViewModifier {
             coordinateSpace: .named(MapViewportCoordinateSpace.name),
             inputKinds: .pencil
         )
+            .updating($isDrawing) { _, state, _ in
+                state = true
+            }
             .onChanged { value in
                 if session.pencilStrokeOrigin != value.startLocation {
                     // The drag only starts after `minimumDistance`; keep where the pencil landed.

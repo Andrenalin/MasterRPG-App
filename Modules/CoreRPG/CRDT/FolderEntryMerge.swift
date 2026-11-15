@@ -33,11 +33,12 @@ public enum FolderEntryMerge {
             }
         }
         let sorted = byId.values.sorted { lhs, rhs in
-            switch name(lhs).localizedCompare(name(rhs)) {
-            case .orderedAscending: true
-            case .orderedDescending: false
-            case .orderedSame: id(lhs).uuidString < id(rhs).uuidString
-            }
+            // Locale-independent, so every device orders a merged folder alike (a localized
+            // compare would differ per device language). See CODE_AUDIT_26 §5.53.
+            let lhsName = name(lhs)
+            let rhsName = name(rhs)
+            if lhsName == rhsName { return id(lhs).uuidString < id(rhs).uuidString }
+            return lhsName.compare(rhsName, options: [.literal]) == .orderedAscending
         }
         guard let childId else { return sorted }
         var seenChildren: Set<UUID> = []

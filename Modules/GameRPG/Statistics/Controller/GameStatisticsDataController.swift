@@ -529,6 +529,7 @@ struct GameStatisticsDataController: Sendable {
             direction: GameStatisticDirection(rawValue: event.directionRaw) ?? .local,
             origin: GameStatisticOrigin(rawValue: event.originRaw) ?? .local,
             actorName: event.actorName ?? "",
+            actorId: event.actorID,
             module: NetworkModules(rawValue: Int(event.moduleRaw)) ?? .none,
             outcome: GameStatisticDiceOutcome(rawValue: event.outcomeRaw) ?? .none,
             quantity: Int(event.quantity),

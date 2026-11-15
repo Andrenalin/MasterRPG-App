@@ -285,6 +285,7 @@ public extension ImportControllable {
                                 continue
                             }
                             guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !policy.isUntrustedSource, peerPolicy: peerPolicy) else {
+                                await recordProcessedItems(importModel, count: 1)
                                 continue
                             }
                             var fileWrite: ImportedFileWrite?
@@ -332,10 +333,12 @@ public extension ImportControllable {
 
             try Task.checkCancellation()
             if let peerPolicy, !peerFolderItems.isEmpty {
-                for folder in await admitPeerFolders(peerFolderItems, policy: peerPolicy) {
+                let admitted = await admitPeerFolders(peerFolderItems, policy: peerPolicy)
+                for folder in admitted {
                     deferredFolderItems.append(folder)
                     importedIds.insert(folder.id)
                 }
+                await recordProcessedItems(importModel, count: max(0, peerFolderItems.count - admitted.count))
             }
             for deferredFolderItem in deferredFolderItems {
                 let applied = await applyImportedItem(
@@ -484,9 +487,18 @@ private extension ImportControllable {
         importModel.isImportRunning = false
     }
 
+    /// Counts items the import finished without applying them, so the progress reaches its total.
+    @MainActor
+    private func recordProcessedItems(_ importModel: ItemDataImportModel, count: Int) {
+        importModel.importedItems += count
+    }
+
     @MainActor
     private func recordFailedItem(_ importModel: ItemDataImportModel) {
         importModel.failedItems += 1
+        // A failed item is processed too, or the progress never reaches the total.
+        // See CODE_AUDIT_26 §5.52.
+        importModel.importedItems += 1
     }
 
     // MARK: - Item Application
@@ -566,6 +578,7 @@ private extension ImportControllable {
         // game memory left to go to, and must not fall through to the library.
         guard !policy.writesGameMemory || itemController.itemDataModel.isGameMode else {
             Logger.importController.info("Import dropped an item of a game package that arrived after the game ended module=\(itemController.config.module.rawValue, privacy: .public)")
+            importModel.importedItems += 1
             return false
         }
         let normalizedImportedItem = itemController.normalizedImportedItem(from: importedItem)

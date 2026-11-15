@@ -122,7 +122,7 @@ private struct SplitNavigationAllTabsView: View {
             } header: {
                 Text("Library", bundle: .module)
             }
-            .customizationID("Tab.Libaray")
+            .customizationID("Tab.Library")
             .defaultVisibility(.hidden, for: .tabBar)
 
 

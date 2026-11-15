@@ -94,11 +94,13 @@ extension AudioEntity: URLRepresentableEntity {
 
 extension AudioEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
+        // `.audio`, not a fixed format: the stored file can be MP3, WAV, M4A or any other audio, and
+        // labelling it all MPEG-4 audio misleads the receiver. See CODE_AUDIT_26 §5.106.
         // Exports the actual stored audio file — matching the fix applied
         // to PdfEntity/PhotoEntity/SpaceEntity (see CODE_AUDIT §5.2); this
         // type previously only offered a plain-text Name/Description export
         // and never attempted a real-file representation at all.
-        FileRepresentation(exportedContentType: .mpeg4Audio) { @MainActor item in
+        FileRepresentation(exportedContentType: .audio) { @MainActor item in
             guard let url = await item.root.itemController.loadableUrl(itemId: item.id) else {
                 throw AudioEntityAssetUnavailableError()
             }

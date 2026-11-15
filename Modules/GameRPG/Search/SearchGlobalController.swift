@@ -29,12 +29,15 @@ struct SearchGlobalController {
             // Assigning nil still cancels any in-flight search via `currentTask`'s `didSet`.
             model.currentTask = nil
             model.results = [:]
+            model.isSearching = false
             return
         }
 
         let searchTask = Task { @MainActor in
             model.isSearching = true
-            defer { model.isSearching = false }
+            // A superseded (cancelled) search leaves the flag to the search that replaced it, so
+            // the spinner does not flicker off between two searches. See CODE_AUDIT_26 §5.90.
+            defer { if !Task.isCancelled { model.isSearching = false } }
 
             // Small delay to debounce rapid typing — reuses CoreRPG's shared debounce constant
             // rather than a second, drifting copy of the same value. See CODE_AUDIT §9.14.
@@ -42,7 +45,10 @@ struct SearchGlobalController {
 
             guard !Task.isCancelled else { return }
 
-            model.results = await searchAllItems()
+            let results = await searchAllItems()
+            // The older term's results must not replace the newer term's.
+            guard !Task.isCancelled else { return }
+            model.results = results
         }
 
         // Assigning cancels any previous in-flight search via `didSet`.

@@ -10,7 +10,7 @@ extension SheetRootModel {
             sheetModel.aiGeneratedEntries.removeAll { $0 === entryModel }
             return
         }
-        entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source, forceSave: persistsEdits)
+        guard entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source, forceSave: persistsEdits) == true else { return }
         // Use source identifiers to match and remove
         parentModel.entries.removeAll(where: { entry in
             entry.source.itemId == entryModel.source.itemId &&
@@ -54,7 +54,7 @@ extension SheetRootModel {
     }
 
     @MainActor func addNewGroup(in sheetModel: SheetModel) async -> UUID? {
-        guard let editable = entryDataEditable(for: sheetModel.source) else { return nil }
+        guard let editable = entryDataEditable(for: sheetModel.source), editable.canAddGroups else { return nil }
         let entryId = await editable.addNewGroup(itemId: sheetModel.source.itemId)
 
         editorModel.itemId = sheetModel.source.itemId
@@ -77,6 +77,9 @@ extension SheetRootModel {
     }
 
     @MainActor func convertEntryToGroup(source: ItemRowModel, existingItemId: UUID?) async -> (any ItemDataAccessible)? {
+        // No `canConvertGroups` check here: the default `convertToGroup` creates nothing, so the
+        // result below is `nil` for an editor without group support, and the menus already offer
+        // the action only where `canConvertGroups` is true. See CODE_AUDIT_26 §5.71.
         guard let entryId = source.entryId,
               let editable = entryDataEditable(for: source) else { return nil }
         let groupId = await editable.convertToGroup(itemId: source.itemId, entryId: entryId, existingItemId: existingItemId)

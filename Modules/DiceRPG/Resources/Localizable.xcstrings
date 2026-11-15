@@ -3382,6 +3382,22 @@
           }
         }
       }
+    },
+    "This dice set is full. Remove a die before adding another." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Würfelset ist voll. Entferne einen Würfel, bevor du einen weiteren hinzufügst."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชุดลูกเต๋านี้เต็มแล้ว นำลูกเต๋าออกก่อนเพิ่มลูกใหม่"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

@@ -182,6 +182,10 @@ extension MapModel: nonisolated ItemDiffComparable {
         }
     }
 
+    /// A cheap fingerprint of the map scales only: the sum of two scalars, so two different
+    /// scale pairs can collide and a change of content other than the scales does not move it. It
+    /// is a re-request trigger, not an identity; content changes are told apart by
+    /// `MapUpdatePayload.contentVersion(of:)`. See CODE_AUDIT_26 §5.94.
     public var version: Int {
         // Must be identical across processes and devices: the master sends this
         // version with a reveal reference, and a player re-requests the full map

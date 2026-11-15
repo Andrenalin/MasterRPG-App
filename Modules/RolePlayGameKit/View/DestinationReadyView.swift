@@ -71,7 +71,6 @@ struct DestinationReadyView: View {
                 switch kind {
                 case .firstLaunch:
                     Button {
-                        appModel.settingsModel.firstLaunch = false
                         let isGerman = locale.identifier.hasPrefix("de")
                         // The follow-up alert reports the real result once the import has
                         // finished (which also lets this alert's dismissal complete first),
@@ -79,6 +78,9 @@ struct DestinationReadyView: View {
                         Task { @MainActor in
                             do {
                                 try await appModel.installExampleData(isGerman: isGerman)
+                                // Only a successful install ends the first launch; a failed one
+                                // offers the example data again next time. CODE_AUDIT_26 §5.122.
+                                appModel.settingsModel.firstLaunch = false
                                 activeAlert = .dataInstalled
                             } catch {
                                 activeAlert = .dataInstallFailed(error.localizedDescription)

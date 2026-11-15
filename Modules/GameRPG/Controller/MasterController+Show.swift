@@ -61,6 +61,7 @@ extension MasterController {
 
         let message = outgoingMessage(type: .reveal, subtype: .show, updated: reference)
         gameModel.latestShownCounter = message.counter
+        if reference.type == .map { gameModel.latestShownMapId = reference.id }
         root.statisticsModel.record(message, direction: .outgoing, origin: .direct(nil))
         await store.sendPresentation(
             message,

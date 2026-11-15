@@ -61,7 +61,9 @@ class CloudGroup {
             clouds.forEach { $0.change(size: size) }
             lastSize = size
         }
-        let delta = date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970
+        // Clamped like the rain: a long pause (background, a sheet) or a clock change must not
+        // throw the layer far off its wrap range. See CODE_AUDIT_26 §5.131.
+        let delta = min(max(date.timeIntervalSince1970 - lastUpdate.timeIntervalSince1970, 0), 0.1)
 
         for cloud in clouds {
             cloud.position.x -= delta * cloud.speed

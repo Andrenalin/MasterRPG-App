@@ -68,8 +68,10 @@ extension FilePersistenceController {
                 // Treating an undecodable file as "empty" would let the next save overwrite it and
                 // lose everything that was still recoverable; keep it aside instead.
                 // See CODE_AUDIT_15 §5.5.
-                let backupUrl = loadUrl.appendingPathExtension("corrupt")
-                try? FileManager.default.removeItem(at: backupUrl)
+                // A timestamped name: a second corrupt file must not replace the first backup, which
+                // may be the only copy that is still recoverable. See CODE_AUDIT_26 §5.57.
+                let stamp = Date.now.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false).timeSeparator(.omitted).dateSeparator(.omitted))
+                let backupUrl = loadUrl.appendingPathExtension("corrupt-\(stamp)")
                 try? FileManager.default.moveItem(at: loadUrl, to: backupUrl)
                 Logger.filePersistenceController.error("Stored file is undecodable, kept as \(backupUrl.lastPathComponent, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 return []
@@ -80,17 +82,23 @@ extension FilePersistenceController {
         }
     }
 
+    /// Whether the store was written. A failure is logged and shown through the persistence
+    /// banner, so a lost write is not silent. See CODE_AUDIT_26 §5.56.
+    @discardableResult
     @concurrent
-    func save(data: [DataModel]) async {
+    func save(data: [DataModel]) async -> Bool {
         guard type != .memory else {
             await model.setCache(update: data)
-            return
+            return true
         }
         let saveUrl = fileUrl
         do {
             try FilePersistenceController.saveModel(data: data, into: saveUrl)
+            return true
         } catch {
             Logger.filePersistenceController.error("Error saving data \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+            await PersistenceIssueCenter.shared.recordFileError(error)
+            return false
         }
     }
 

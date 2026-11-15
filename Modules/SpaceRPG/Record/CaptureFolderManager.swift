@@ -116,7 +116,9 @@ final class CaptureFolderManager {
             return nil
         }
 
-        let timestamp = Date().formatted(.iso8601)
+        // The second alone named two scans started within it the same folder (the second one
+        // would silently reuse and mix into the first). See CODE_AUDIT_26 §5.137.
+        let timestamp = "\(Date().formatted(.iso8601))-\(UUID().uuidString.prefix(8))"
         let newCaptureDir = capturesFolder
             .appending(path: timestamp, directoryHint: .isDirectory)
 

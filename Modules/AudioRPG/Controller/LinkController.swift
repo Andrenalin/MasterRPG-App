@@ -25,7 +25,8 @@ extension LinkController: LinkControllable {
 
                 if let shareResult, shareResult.showGame {
                     if gameController.allPlayersReported(for: itemId) {
-                        let isPlaying = audioController.model.isPlaying
+                        // Whether this item plays, not whether anything does. See CODE_AUDIT_26 §5.103.
+                        let isPlaying = gameController.isPlayingPlaylist(id: itemId)
                         shareResult.networkActions?.game(gameController.requestPlay(id: itemId), .playAudio, nil)
                         return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                     } else {

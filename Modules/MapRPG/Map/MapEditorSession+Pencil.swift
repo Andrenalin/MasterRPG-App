@@ -46,6 +46,14 @@ extension MapEditorSession {
         )
     }
 
+    /// Drops an outline whose gesture ended without lifting the pencil normally (cancelled).
+    /// A finished stroke has already cleared itself, so this is then a no-op.
+    func discardUnfinishedPencilStroke() {
+        guard !pencilStroke.points.isEmpty || pencilStrokeOrigin != nil else { return }
+        pencilStroke.removeAll()
+        pencilStrokeOrigin = nil
+    }
+
     /// Lifts the pencil: the outline becomes the room's shape, unless it is too small for a room.
     func finishPencilStroke() {
         defer {

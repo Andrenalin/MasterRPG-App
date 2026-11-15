@@ -12,16 +12,8 @@ struct AddFolderButton: View {
 
     var body: some View {
         Button {
-            guard !isCreating else { return }
-            isCreating = true
-            Task {
-                defer { isCreating = false }
-                guard let item = await root.editControllable.addNew(type: .folder) else { return }
-                routeActions.routePage(root.configurable.module, item.id, nil)
+            addItemAndRoute(type: .folder, root: root, routeActions: routeActions, isCreating: $isCreating) {
                 await MasterRPGTips.donateContentOrganized()
-                if let rootManager = root.rootManager {
-                    MasterRPGTips.refreshEligibility(rootManager: rootManager)
-                }
             }
         } label: {
             Label {

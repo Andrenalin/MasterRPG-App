@@ -16,6 +16,12 @@ public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
         "\(title)-\(content)"
     }
 
+    /// Two entries with the same text are equal; the random `id` only identifies the instance.
+    /// See CODE_AUDIT_26 §5.118.
+    public static func == (lhs: BlockEntryGenModel, rhs: BlockEntryGenModel) -> Bool {
+        lhs.title == rhs.title && lhs.content == rhs.content
+    }
+
     public init(title: String, content: String) {
         self.title = title
         self.content = content

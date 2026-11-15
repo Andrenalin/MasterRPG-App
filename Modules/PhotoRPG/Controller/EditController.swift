@@ -81,7 +81,10 @@ extension EditController {
     @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {
         guard let item = editModel(for: itemId) else { return false }
         guard let fileUrl = item.fileUrl else { return false }
-        return !(fileUrl.fileExtension == itemControllable.config.filenameExtension || fileUrl.fileExtension == "jpeg")
+        // Case-insensitive: "IMG.JPG" is a JPEG too. See CODE_AUDIT_26 §5.120.
+        let fileExtension = (fileUrl.fileExtension ?? "").lowercased()
+        let jpegExtensions: Set = [itemControllable.config.filenameExtension.lowercased(), "jpg", "jpeg", "jpe"]
+        return !jpegExtensions.contains(fileExtension)
     }
 
     func loadImage(cacheType: CacheItemListModel.CacheType, item: Model, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {

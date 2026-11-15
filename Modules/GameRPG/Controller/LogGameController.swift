@@ -101,8 +101,16 @@ struct LogGameController: Sendable {
     @MainActor
     func beginDeliverySession(_ sessionID: UUID) {
         guard currentSessionID != sessionID else { return }
-        gameModel.logs.removeAll()
-        gameModel.logData.removeAll()
+        // Notes made before the first send have no session yet (the legacy one): they are
+        // notices for this device, not rows of a previous game, and stay.
+        // See CODE_AUDIT_26 §5.83.
+        let keptNotes = gameModel.logs.filter { counter in
+            guard let log = gameModel.logData[counter] else { return false }
+            return log.note != nil && log.messageID.sessionID == GameDeliveryMessageID.legacySessionID
+        }
+        let keptData = gameModel.logData.filter { keptNotes.contains($0.key) }
+        gameModel.logs = keptNotes
+        gameModel.logData = keptData
     }
 
     /// Records a master send together with the exact recipients that can

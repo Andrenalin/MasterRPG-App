@@ -293,12 +293,8 @@ extension CharacterRootModel {
             if !groupItemIds.contains(model.id) {
                 editController.repairPhotoList(itemId: model.id)
             }
-            // A group item must stay without a dice, so it is not given one from its entries.
-            guard model.diceId == nil, !groupItemIds.contains(model.id) else { continue }
-            let entry = model.entries.first {
-                $0.diceId != nil
-            }
-            editController.add(diceId: entry?.diceId, itemId: model.id)
+            // No item-level dice is assigned here: one the user removed stays removed, and a group
+            // item must stay without a dice anyway. See CODE_AUDIT_26 §5.107.
         }
 
         let cc = ConvertController(itemController: itemController, editController: editController)
