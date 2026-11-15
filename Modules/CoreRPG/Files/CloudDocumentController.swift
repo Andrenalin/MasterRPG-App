@@ -261,13 +261,30 @@ extension CloudDocumentController {
     }
     
     func suggestedFileName(for path: String, filename: String) async throws -> String {
-        let url = try destinationUrl(filePath: path + "/" + filename)
-        let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
-        if exists {
-            let newFilename = CloudDocumentController.increasedFileName(for: filename)
-            return try await suggestedFileName(for: path, filename: newFilename)
+        // The folder is listed once and the first free `name-N` is picked in memory; the
+        // coordinated check of the chosen name stays as the guard against a name taken since
+        // the listing (the next pass lists again). See CODE_AUDIT_26 §7.33.
+        var candidate = filename
+        while true {
+            let taken = takenFileNames(in: path)
+            while taken.contains(candidate) {
+                candidate = CloudDocumentController.increasedFileName(for: candidate)
+            }
+            let url = try destinationUrl(filePath: path + "/" + candidate)
+            let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
+            guard exists else { return candidate }
+            candidate = CloudDocumentController.increasedFileName(for: candidate)
+            // The name exists although the listing did not show it: skip it and list again.
         }
-        return filename
+    }
+
+    /// The names in the folder at `path`, empty when the folder does not exist yet.
+    private func takenFileNames(in path: String) -> Set<String> {
+        guard let folderUrl = path.isEmpty ? moduleUrl : try? destinationUrl(filePath: path),
+              let names = try? FileManager.default.contentsOfDirectory(atPath: folderUrl.path(percentEncoded: false)) else {
+            return []
+        }
+        return Set(names)
     }
 
     static func increasedFileName(for filename: String) -> String {

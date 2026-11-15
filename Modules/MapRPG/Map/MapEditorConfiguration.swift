@@ -72,7 +72,7 @@ final class MapEditorSelectionStore {
 @MainActor @Observable
 final class MapRoomStore {
     init(mapId: UUID, passiveEntries: [MapEntryModel]) {
-        passive = MapEntryViewerModel(mapId: mapId, entries: passiveEntries)
+        passive = MapEntryViewerModel(mapId: mapId, entries: passiveEntries, tracksNeedles: false)
         active = MapEntryViewerModel(mapId: mapId, entries: [])
     }
 

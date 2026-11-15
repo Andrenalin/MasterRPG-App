@@ -122,18 +122,41 @@ enum FoundryAssetPathCollector {
         case .array(let values):
             for child in values { collect(child, into: &result) }
         case .string(let string):
-            for reference in [string] + htmlAttributeReferences(in: string) {
-                let encodedPath = reference
-                    .split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
-                    .split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)[0]
-                let path = String(encodedPath).removingPercentEncoding ?? String(encodedPath)
-                if pathExtensions.contains(URL(filePath: path).pathExtension.lowercased()) {
-                    result.insert(reference)
+            // Most strings are names or prose: one that has no `.` cannot be a media path and one
+            // that has no `<` has no tag to scan, so neither is split or turned into a URL.
+            // See CODE_AUDIT_26 §7.37.
+            let hasDot = string.utf8.contains(0x2e)
+            let hasTag = string.utf8.contains(0x3c)
+            guard hasDot || hasTag else { return }
+            if hasDot { insertIfMediaPath(string, into: &result) }
+            if hasTag {
+                for reference in htmlAttributeReferences(in: string) {
+                    insertIfMediaPath(reference, into: &result)
                 }
             }
         default:
             break
         }
+    }
+
+    private static func insertIfMediaPath(_ reference: String, into result: inout Set<String>) {
+        let encodedPath = reference
+            .split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
+            .split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)[0]
+        let path = String(encodedPath).removingPercentEncoding ?? String(encodedPath)
+        if pathExtensions.contains(pathExtension(of: path)) {
+            result.insert(reference)
+        }
+    }
+
+    /// The lowercased extension of the last path component, as `URL.pathExtension` reads it
+    /// (none for a leading dot alone), without building a `URL`.
+    static func pathExtension(of path: String) -> String {
+        var component = path.split(separator: "/", omittingEmptySubsequences: true).last ?? Substring()
+        // `URL(filePath:)` ignores a trailing slash, which the split above drops already.
+        guard let dot = component.lastIndex(of: "."), dot != component.startIndex else { return "" }
+        component = component[component.index(after: dot)...]
+        return component.lowercased()
     }
 
     /// Extracts only `src` and `href` attribute values from tag text. This deliberately does not
@@ -240,6 +263,10 @@ enum FoundryPackageResourceResolver {
         limits: FoundryImportLimits
     ) throws -> [FoundryPackageResource] {
         var packagedBytes = 0
+        // Size and hash per package path: several logical paths (or the same asset referenced
+        // twice) read, inflate and hash a file once, and its bytes count once toward the batch
+        // limit. See CODE_AUDIT_26 §7.38.
+        var resolvedByPackagePath: [String: (byteCount: Int, sha256: String)] = [:]
         return try assetPaths.map { logicalPath in
             if isRemote(logicalPath) {
                 return FoundryPackageResource(
@@ -256,18 +283,29 @@ enum FoundryPackageResourceResolver {
                 packageID: packageID,
                 basePath: basePath
             ) where contains(candidate) {
+                if let known = resolvedByPackagePath[candidate] {
+                    return FoundryPackageResource(
+                        logicalPath: logicalPath,
+                        packagePath: candidate,
+                        location: .packaged,
+                        byteCount: known.byteCount,
+                        sha256: known.sha256
+                    )
+                }
                 guard let resolvedData = try data(candidate) else { continue }
                 let (next, overflow) = packagedBytes.addingReportingOverflow(resolvedData.count)
                 guard !overflow, next <= limits.maximumResourceBatchSize else {
                     throw FoundryImportError.fileTooLarge(overflow ? Int.max : next)
                 }
                 packagedBytes = next
+                let sha256 = foundrySHA256(resolvedData)
+                resolvedByPackagePath[candidate] = (resolvedData.count, sha256)
                 return FoundryPackageResource(
                     logicalPath: logicalPath,
                     packagePath: candidate,
                     location: .packaged,
                     byteCount: resolvedData.count,
-                    sha256: foundrySHA256(resolvedData)
+                    sha256: sha256
                 )
             }
             return FoundryPackageResource(

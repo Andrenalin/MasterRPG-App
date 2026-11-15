@@ -126,7 +126,7 @@ struct MapPassiveRoomCanvas: View {
             }
 
         case (.fog, .player):
-            drawFog(for: snapshots.filter { !$0.isShown }, in: &context)
+            drawFog(for: snapshots.filter { !$0.isShown }, visible: Self.visibleContentRect(transform: transform, viewportSize: viewportSize), in: &context)
 
         case (.base, .player), (.fog, .master), (.fog, .reader):
             break
@@ -156,7 +156,7 @@ struct MapPassiveRoomCanvas: View {
         )
     }
 
-    private func drawFog(for snapshots: [MapRoomSnapshot], in context: inout GraphicsContext) {
+    private func drawFog(for snapshots: [MapRoomSnapshot], visible: CGRect, in context: inout GraphicsContext) {
         guard !snapshots.isEmpty else { return }
 
         let coveragePlan = MapFogCoveragePlan(snapshots: snapshots)
@@ -175,7 +175,7 @@ struct MapPassiveRoomCanvas: View {
         for snapshot in coveragePlan.snapshots {
             // A pathological room must not disable the selected tile for every
             // other room. Fall back only for the room that cannot be planned.
-            guard let drawPlan = tilePlanner.drawPlan(for: snapshot) else {
+            guard let drawPlan = tilePlanner.drawPlan(for: snapshot, visibleRect: visible) else {
                 context.fill(snapshot.path, with: .color(displayConfig.color))
                 continue
             }
@@ -246,20 +246,41 @@ struct MapRoomHitLayer: View {
     let session: MapEditorSession
     let isEnabled: Bool
     var excludingEntryId: UUID? = nil
+    /// The part of the map content whose rooms get a hit target (see `hitCullingRect`).
+    /// `.infinite` keeps a target for every room.
+    var visibleContentRect: CGRect = .infinite
     let interactionTransform: GestureState<ViewportTransform?>
 
     var body: some View {
         if isEnabled {
-            ForEach(rooms.roomNodes) { node in
-                if node.id != excludingEntryId {
-                    MapRoomHitTarget(
-                        node: node,
-                        session: session,
-                        interactionTransform: interactionTransform
-                    )
-                }
+            ForEach(visibleNodes) { node in
+                MapRoomHitTarget(
+                    node: node,
+                    session: session,
+                    interactionTransform: interactionTransform
+                )
             }
         }
+    }
+
+    /// One gesture view per room used to exist for all of them, up to 20,000 on a hex map.
+    /// See CODE_AUDIT_26 §7.11.
+    private var visibleNodes: [MapRoomNode] {
+        rooms.roomNodes.filter { $0.id != excludingEntryId && $0.bounds.intersects(visibleContentRect) }
+    }
+
+    /// The visible content rect snapped outward to steps of half its size, plus one step on every
+    /// side: it stays the same while the map is panned a little, so the layer does not rebuild its
+    /// targets on every frame of a pan, and a room that scrolls into view already has its target.
+    static func hitCullingRect(transform: ViewportTransform, viewportSize: CGSize) -> CGRect {
+        let visible = MapPassiveRoomCanvas.visibleContentRect(transform: transform, viewportSize: viewportSize)
+        let step = max(visible.width, visible.height) / 2
+        guard !visible.isInfinite, step.isFinite, step > 0 else { return .infinite }
+        let minX = floor(visible.minX / step) * step - step
+        let minY = floor(visible.minY / step) * step - step
+        let maxX = ceil(visible.maxX / step) * step + step
+        let maxY = ceil(visible.maxY / step) * step + step
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 }
 
@@ -391,9 +412,17 @@ struct MapFogTilePlanner {
     let tileRectangle: CGRect
     let maximumTilesPerRoom: Int
 
-    func drawPlan(for snapshot: MapRoomSnapshot) -> MapFogTileDrawPlan? {
+    /// - Parameter visibleRect: when given, only the tiles that reach into it are drawn. The
+    ///   budget is still decided on the whole room, so a room is tiled or solid whatever is
+    ///   visible, and the 2D and 3D maps agree. See CODE_AUDIT_26 §7.53.
+    func drawPlan(for snapshot: MapRoomSnapshot, visibleRect: CGRect? = nil) -> MapFogTileDrawPlan? {
         guard let origins = tileOrigins(covering: snapshot.bounds) else { return nil }
-        return MapFogTileDrawPlan(snapshot: snapshot, columns: origins.columns, rows: origins.rows)
+        guard let visibleRect, !visibleRect.isInfinite else {
+            return MapFogTileDrawPlan(snapshot: snapshot, columns: origins.columns, rows: origins.rows)
+        }
+        let columns = origins.columns.filter { $0 + tileRectangle.width >= visibleRect.minX && $0 <= visibleRect.maxX }
+        let rows = origins.rows.filter { $0 + tileRectangle.height >= visibleRect.minY && $0 <= visibleRect.maxY }
+        return MapFogTileDrawPlan(snapshot: snapshot, columns: columns, rows: rows)
     }
 
     /// The tile lattice's column and row origins covering `bounds`, or `nil` (solid fog) when

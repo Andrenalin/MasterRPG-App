@@ -76,6 +76,7 @@ struct MapEditorCanvas: View {
                 MapLogicalCanvasHitAndOrdinaryPins(
                     session: session,
                     viewportScale: displayedTransform.scale,
+                    roomHitCullingRect: MapRoomHitLayer.hitCullingRect(transform: displayedTransform, viewportSize: viewportSize),
                     interactionTransform: $interactionTransform
                 )
                 .modifier(MapLogicalTransformModifier(transform: displayedTransform))

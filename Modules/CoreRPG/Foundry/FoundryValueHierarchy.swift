@@ -82,7 +82,9 @@ private extension FoundryValueHierarchy {
                 self.value = value
                 return
             }
-            var child = children[component] ?? NodeBuilder()
+            // Taken out of the dictionary before it is changed: a copy held there would force the
+            // child's own dictionary to be copied on the first insert. See CODE_AUDIT_26 §7.36.
+            var child = children.removeValue(forKey: component) ?? NodeBuilder()
             child.insert(value, at: components.dropFirst())
             children[component] = child
         }

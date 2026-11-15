@@ -10,6 +10,23 @@ import UniformTypeIdentifiers
 struct ImageItem: Identifiable, Hashable {
     let id = UUID()
     var imageData: Data
+    /// A preview at about the size the share sheet shows it, made once here. The sheet used to
+    /// decode the stored JPEG (up to 4096 px, about 50 MB of bitmap) in every pass of a cell's
+    /// body. See CODE_AUDIT_26 §7.25.
+    let preview: CGImage?
+
+    init(imageData: Data) {
+        self.imageData = imageData
+        preview = CGImageSourceCreateWithData(imageData as CFData, nil).flatMap {
+            ImageDownsampler.downsampledImage(from: $0, maxPixelSize: Self.previewPixelSize)
+        }
+    }
+
+    private static let previewPixelSize: CGFloat = 1_200
+
+    // Identity only: the animation of the list compared the whole image data of every item.
+    static func == (lhs: ImageItem, rhs: ImageItem) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 /// What loading one kind of shared content produced, and how many shared items could not be used.
@@ -100,10 +117,22 @@ private extension ItemProviderImporter {
     }
 
     nonisolated static func loadImage(provider: NSItemProvider, type: UTType) async throws -> ImageItem {
+        // An image is taken as a file first: the provider writes it to disk and it is downsampled
+        // from there. Handed over as `Data` or through `loadDataRepresentation`, a 100+ MB original
+        // is in memory whole before any check, which kills the extension at ~120 MB.
+        // See CODE_AUDIT_26 §7.24.
+        if type == .image, let fileUrl = try await copyOfFileRepresentation(provider: provider, type: type) {
+            defer { try? FileManager.default.removeItem(at: fileUrl) }
+            let data = try await imageData(fromFile: fileUrl)
+            try Task.checkCancellation()
+            return ImageItem(imageData: data)
+        }
         let item = try await loadItem(provider: provider, type: type)
         try Task.checkCancellation()
 
         if case .data(let data) = item {
+            // Checked before anything decodes it; the file path above applies the same cap.
+            guard data.count <= maximumSourceFileByteSize else { throw Error.failedToLoad }
             // Off the caller's executor: under approachable concurrency this nonisolated
             // function runs on the caller's actor (the main actor here), and decoding an image
             // above the raw-size cap would hitch the extension's UI. See CODE_AUDIT_Folder §3.12.
@@ -263,6 +292,42 @@ private extension ItemProviderImporter {
         // can still give the type's data; this used to end in `noItems` and the share showed
         // no photo. See CODE_AUDIT_21 §5.27.
         return .data(try await loadDataRepresentation(provider: provider, type: type))
+    }
+
+    /// A copy of the file the provider writes for `type`, or `nil` when it offers none. The
+    /// provider's own file disappears when the handler returns, so it is copied to a temporary
+    /// file the caller removes. Cancelling the task cancels the provider's `Progress`.
+    nonisolated static func copyOfFileRepresentation(provider: NSItemProvider, type: UTType) async throws -> URL? {
+        guard provider.hasItemConformingToTypeIdentifier(type.identifier) else { return nil }
+        let progress = Mutex<Progress?>(nil)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL?, any Swift.Error>) in
+                let loading = provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, error in
+                    guard let url else {
+                        // No file for this type: the caller goes on with the other ways to load it.
+                        continuation.resume(returning: nil)
+                        _ = error
+                        return
+                    }
+                    let copy = FileManager.default.temporaryDirectory
+                        .appending(path: "RPGShare-\(UUID().uuidString)")
+                        .appendingPathExtension(url.pathExtension)
+                    do {
+                        try FileManager.default.copyItem(at: url, to: copy)
+                        continuation.resume(returning: copy)
+                    } catch {
+                        continuation.resume(returning: nil)
+                    }
+                }
+                let cancelled = progress.withLock { stored in
+                    stored = loading
+                    return Task.isCancelled
+                }
+                if cancelled { loading.cancel() }
+            }
+        } onCancel: {
+            progress.withLock { $0 }?.cancel()
+        }
     }
 
     /// The provider's data for `type`. `NSItemProvider` offers this only with a completion

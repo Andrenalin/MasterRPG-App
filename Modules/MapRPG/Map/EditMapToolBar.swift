@@ -295,13 +295,20 @@ private extension EditToolBarViewModifier {
 
     var subtitleName: String {
         guard let mapModel = editorModel.workingCopy else { return "" }
-        let entries = editController.editEntries(for: mapModel)
+        // Counted in place: the title is read on every toolbar evaluation, and a filtered
+        // array of the entries was built each time. See CODE_AUDIT_26 §7.54.
+        let entryCount = mapModel.entries.count { !$0.isHexGrid }
         guard let entryId = editController.editorModel.sheetEditorModel.entryId else {
-            return String(localized: "\(entries.count) Entries", bundle: .module)
+            return String(localized: "\(entryCount) Entries", bundle: .module)
         }
-        let current = entries.firstIndex(where: { $0.id == entryId })
-            .map { "\($0 + 1)/" } ?? ""
-        return "\(mapModel[entryId].name) \(current)\(entries.count)"
+        var position: Int?
+        var seen = 0
+        for entry in mapModel.entries where !entry.isHexGrid {
+            seen += 1
+            if entry.id == entryId { position = seen; break }
+        }
+        let current = position.map { "\($0)/" } ?? ""
+        return "\(mapModel[entryId].name) \(current)\(entryCount)"
     }
 
     var isSharedMap: Bool {

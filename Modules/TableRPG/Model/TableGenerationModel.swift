@@ -216,8 +216,18 @@ final class TableGenerationModel: Identifiable {
         return combinedValue(for: selected)
     }
 
+    /// A depth-first search that stops at the match, without flattening the whole tree first.
+    /// The flattened lists themselves are not cached: the tree is small and changes on every
+    /// selection. See CODE_AUDIT_26 §7.64.
     func occurrence(id: UUID) -> TableGenerationOccurrence? {
-        occurrences.first { $0.id == id }
+        func find(_ occurrence: TableGenerationOccurrence) -> TableGenerationOccurrence? {
+            if occurrence.id == id { return occurrence }
+            for child in occurrence.children {
+                if let found = find(child) { return found }
+            }
+            return nil
+        }
+        return find(root)
     }
 
     /// Also used by `TableGenerationController.beginEditingOutcomeSheet(model:)`

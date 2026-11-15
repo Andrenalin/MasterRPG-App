@@ -56,6 +56,10 @@ final class MasterController {
     /// track: both outside the game master's action chain. Declared here for the same reason as
     /// `audioPlayRetryTasks`. See CODE_AUDIT_Audio2 §7.4.
     var audioDeliveryTask: Task<Void, Never>?
+    /// The deliveries a joining player's list and a failed import ask for. Each runs in a task of
+    /// its own, so an export never holds the serial message pipeline, and none replaces the
+    /// delivery of the pending play. See CODE_AUDIT_26 §7.8.
+    var audioJoinDeliveryTasks: [UUID: Task<Void, Never>] = [:]
     var audioPrefetchTask: Task<Void, Never>?
     /// The look-ahead that waits for the players still loading the current track, and the task
     /// that lets it go on after `audioPrefetchHold`. See CODE_AUDIT_Game_Photo_Audio §5.1.

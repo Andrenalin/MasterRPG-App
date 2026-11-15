@@ -85,7 +85,11 @@ public struct WallclockTimestamp<ActorID: Hashable & Comparable>: Identifiable, 
     ///   - lhs: The first timestamp.
     ///   - rhs: The second timestamp.
     public static func < (lhs: WallclockTimestamp, rhs: WallclockTimestamp) -> Bool {
-        (lhs.clock, lhs.id) < (rhs.clock, rhs.id)
+        // The id strings are only built on a clock tie, which is rare: the tuple comparison
+        // allocated both for every comparison. The tie order is unchanged, the order of the
+        // description strings, so replicas on older versions order a tie alike. See §7.30.
+        if lhs.clock != rhs.clock { return lhs.clock < rhs.clock }
+        return lhs.id < rhs.id
     }
 
     /// Create a new Lamport timestamp with the actor identity you provide.

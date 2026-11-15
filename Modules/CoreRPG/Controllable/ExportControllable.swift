@@ -126,16 +126,27 @@ public extension ExportControllable {
     @MainActor func exportingFolder(results: inout Set<UUID>) -> Set<UUID> {
         // Phase 1: promote folders bottom-up — a folder is promoted when ALL its valid children are in results.
         // Processing bottom-up via queue ensures a promoted inner folder triggers its parent check.
+        // Each folder's still-missing children are collected once (`pending`) and shrink as the
+        // children are popped, so a folder with thousands of members is not re-scanned per member.
+        // See CODE_AUDIT_26 §7.26.
+        var pending: [UUID: Set<UUID>] = [:]
         var queue: [UUID] = Array(results)
         while !queue.isEmpty {
             let id = queue.removeLast()
             guard let item = itemControllable.itemSync(for: id),
                   let parentId = item.parentId,
-                  !results.contains(parentId),
-                  let parent = itemControllable.itemSync(for: parentId),
-                  parent.isFolder else { continue }
-            let validChildIds = parent.entries.map { $0.childId }.filter { itemControllable.itemSync(for: $0) != nil }
-            guard validChildIds.allSatisfy({ results.contains($0) }) else { continue }
+                  !results.contains(parentId) else { continue }
+            if pending[parentId] == nil {
+                guard let parent = itemControllable.itemSync(for: parentId), parent.isFolder else { continue }
+                var missing: Set<UUID> = []
+                for entry in parent.entries where !results.contains(entry.childId)
+                    && itemControllable.itemSync(for: entry.childId) != nil {
+                    missing.insert(entry.childId)
+                }
+                pending[parentId] = missing
+            }
+            pending[parentId]?.remove(id)
+            guard pending[parentId]?.isEmpty == true else { continue }
             results.insert(parentId)
             queue.append(parentId)
         }
@@ -171,6 +182,7 @@ public extension ExportControllable {
     /// `visit`, so every call site's dedup check could be dropped once extracted.
     @MainActor func bfsExportResults(seedIds: [UUID], visit: (UUID) -> [UUID]?) -> Set<UUID> {
         var checkIds = seedIds
+        var queued = Set(seedIds)
         var results: Set<UUID> = []
         while !checkIds.isEmpty {
             let id = checkIds.removeLast()
@@ -183,7 +195,7 @@ public extension ExportControllable {
                 continue
             }
             results.insert(id)
-            for childId in childIds where !(results.contains(childId) || checkIds.contains(childId)) {
+            for childId in childIds where queued.insert(childId).inserted {
                 checkIds.append(childId)
             }
         }
@@ -292,7 +304,17 @@ public extension ExportControllable {
         do {
             _ = try fileManager.replaceItemAt(destination, withItemAt: finished)
         } catch {
-            try Data(contentsOf: finished).write(to: destination, options: .atomic)
+            // Stream the finished export into the existing file in chunks instead of loading it
+            // whole into memory; the destination is overwritten in place, as a picked file
+            // whose folder is not writable cannot be removed and recreated. See §7.28.
+            let reader = try FileHandle(forReadingFrom: finished)
+            defer { try? reader.close() }
+            let writer = try FileHandle(forWritingTo: destination)
+            defer { try? writer.close() }
+            try writer.truncate(atOffset: 0)
+            while let chunk = try reader.read(upToCount: 1_048_576), !chunk.isEmpty {
+                try writer.write(contentsOf: chunk)
+            }
         }
     }
 

@@ -44,7 +44,7 @@ final class LinkHighLightLocations {
     }
 }
 
-struct LinkLayoutMeasurement: Sendable {
+struct LinkLayoutMeasurement: Sendable, Equatable {
     let link: LinkReplaceModel
     let runId: Int
     let rect: CGRect

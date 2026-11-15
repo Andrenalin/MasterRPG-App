@@ -209,6 +209,10 @@ extension RuleModel: ItemDiffComparable {
         entries == other.entries
     }
 
+    /// The version on the wire, from what a player holds: the raw Foundry payload is left out.
+    /// A package for players does not carry it (see `ExportController.playerExportData`), so the
+    /// master's and a player's copy must agree without it, and the digest no longer encodes
+    /// hundreds of KB of source JSON on every availability check. See CODE_AUDIT_26 §7.21.
     public var version: Int {
         StableVersionDigest.digest(CanonicalRuleContent(self))
     }
@@ -391,7 +395,6 @@ private struct CanonicalRuleContent: Codable, Sendable {
     let displayState: Int
     let entries: [RuleEntryModel]
     let sourceMetadata: RuleSourceMetadata
-    let sourcePayload: RuleSourcePayload?
     let parentId: UUID?
 
     @MainActor
@@ -404,7 +407,6 @@ private struct CanonicalRuleContent: Codable, Sendable {
         displayState = model.displayState
         entries = model.entries
         sourceMetadata = model.sourceMetadata
-        sourcePayload = model.sourcePayload
         parentId = model.parentId
     }
 }

@@ -19,11 +19,14 @@ struct RuleQuickEntryEditor: View {
 
     var body: some View {
         ManagedNavigationStack(name: "RuleSectionEditor") {
+            // Built once for all rows; see `RuleEntryTree.ParentGroupLookup`.
+            let lookup = RuleEntryTree.ParentGroupLookup(entries: entries)
             List {
                 ForEach(entries) { entry in
                     RuleQuickEntrySectionEditor(
                         entryId: entry.id,
-                        entries: $entries
+                        entries: $entries,
+                        lookup: lookup
                     )
                 }
                 .onDelete(perform: removeEntries)
@@ -127,14 +130,12 @@ struct RuleQuickEntryEditor: View {
 private struct RuleQuickEntrySectionEditor: View {
     let entryId: UUID
     @Binding var entries: [RuleEntryModel]
+    let lookup: RuleEntryTree.ParentGroupLookup
 
     var body: some View {
-        if let index = entries.firstIndex(where: { $0.id == entryId }) {
+        if let index = lookup.index(of: entryId), entries.indices.contains(index) {
             let entry = $entries[index]
-            let parentGroups = RuleEntryTree.validParentGroups(
-                for: entryId,
-                in: entries
-            )
+            let parentGroups = lookup.validParentGroups(for: entryId)
 
             Section {
                 TextField(

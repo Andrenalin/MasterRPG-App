@@ -132,7 +132,8 @@ private extension FoundrySystemPackageReader {
             try Task.checkCancellation()
             let packPath = try FoundryPackagePath.join(basePath, pack.path)
             let packPrefix = packPath.hasSuffix("/") ? packPath : packPath + "/"
-            let tablePaths = source.paths
+            let packPaths = source.paths(withPrefix: packPrefix)
+            let tablePaths = packPaths
                 .filter { $0.hasPrefix(packPrefix) && $0.lowercased().hasSuffix(".ldb") }
                 .sorted()
             guard !tablePaths.isEmpty else {
@@ -142,7 +143,7 @@ private extension FoundrySystemPackageReader {
                 throw FoundryImportError.unsupportedLevelDBTableSet(pack: pack.name, tableCount: tablePaths.count)
             }
 
-            let logPaths = source.paths
+            let logPaths = packPaths
                 .filter { path in
                     guard path.hasPrefix(packPrefix), path.lowercased().hasSuffix(".log") else { return false }
                     return URL(filePath: path).deletingPathExtension().lastPathComponent.allSatisfy(\.isNumber)

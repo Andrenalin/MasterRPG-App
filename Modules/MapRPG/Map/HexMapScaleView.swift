@@ -16,6 +16,9 @@ struct HexMapScaleView: View {
     let onScaleEditingChanged: (Bool) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The grid is rebuilt when the slider is released, not on every tick of a drag: a rebuild
+    /// regenerates up to 20,000 cells. See CODE_AUDIT_26 §7.12.
+    @State private var isEditingScale = false
 
     init(
         model: MapEditorSession,
@@ -62,12 +65,21 @@ struct HexMapScaleView: View {
             Slider(
                 value: $model.hexScale,
                 in: MapEditorScaleRanges.hexScale,
-                onEditingChanged: onScaleEditingChanged
+                onEditingChanged: { isEditing in
+                    isEditingScale = isEditing
+                    if !isEditing {
+                        onScaleChanged(model.hexScale)
+                    }
+                    onScaleEditingChanged(isEditing)
+                }
             ) {
                 Text("Hex Scale", bundle: .module)
             }
+            // A change outside a drag (VoiceOver's adjust action, a key press) has no release.
             .onChange(of: model.hexScale) {
-                onScaleChanged(model.hexScale)
+                if !isEditingScale {
+                    onScaleChanged(model.hexScale)
+                }
             }
             .accessibilityValue(model.hexScale.formatted(.number.precision(.fractionLength(0))))
             .labelsHidden()

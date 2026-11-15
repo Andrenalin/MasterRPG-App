@@ -48,12 +48,15 @@ final class PeerFileDataStore: Sendable {
     }
 
     func hold(_ data: Data, for fileId: UUID) {
-        let evicted = state.withLock { state -> [UUID] in
+        // The replaced bytes are compared with the new ones after the lock is released: a
+        // byte-wise comparison of two large files must not block every other reader. §7.32.
+        let (evicted, previousData) = state.withLock { state -> ([UUID], Data?) in
             var evicted: [UUID] = []
+            var previousData: Data?
             if let previous = state.entries.removeValue(forKey: fileId) {
                 state.totalBytes -= previous.data.count
                 state.order.removeAll { $0 == fileId }
-                if previous.data != data { evicted.append(fileId) }
+                previousData = previous.data
             }
             while state.totalBytes + data.count > maximumBytes, let oldest = state.order.first {
                 state.order.removeFirst()
@@ -66,8 +69,9 @@ final class PeerFileDataStore: Sendable {
             state.entries[fileId] = Entry(data: data, generation: state.nextGeneration)
             state.order.append(fileId)
             state.totalBytes += data.count
-            return evicted
+            return (evicted, previousData)
         }
+        if let previousData, previousData != data { Self.removeTemporaryCopy(of: fileId) }
         for id in evicted { Self.removeTemporaryCopy(of: id) }
     }
 

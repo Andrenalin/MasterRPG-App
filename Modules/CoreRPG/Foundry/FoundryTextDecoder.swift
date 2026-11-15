@@ -20,18 +20,12 @@ public enum FoundryTextDecoder {
     public static func plainText(fromHTML source: String?) -> String {
         guard var source, !source.isEmpty else { return "" }
 
-        let substitutions = [
-            (#"(?is)<!--.*?-->"#, ""),
-            (#"(?is)<\s*(script|style|template|noscript)\b[^>]*>.*?<\s*/\s*\1\s*>"#, ""),
-            (#"(?i)<\s*(?:br|hr)\b[^>]*>"#, "\n"),
-            (
-                #"(?i)<\s*/\s*(?:address|article|aside|blockquote|dd|div|dl|dt|fieldset|figcaption|figure|footer|form|h[1-6]|header|li|main|nav|ol|p|pre|section|table|tbody|td|tfoot|th|thead|tr|ul)\s*>"#,
-                "\n\n"
-            ),
-            (#"(?is)<\s*/?\s*[A-Za-z][^>]*>"#, ""),
-        ]
-        for (pattern, replacement) in substitutions {
-            guard let expression = try? NSRegularExpression(pattern: pattern) else { continue }
+        // The two lazy patterns (comments, script-like blocks) scanned to the end of the text for
+        // every unterminated opener, which is quadratic; the linear scanner below looks for each
+        // closer at most once per name. The other patterns are compiled once. See
+        // CODE_AUDIT_26 §7.4.
+        source = removingNonVisibleBlocks(from: source)
+        for (expression, replacement) in markupSubstitutions {
             let range = NSRange(source.startIndex..<source.endIndex, in: source)
             source = expression.stringByReplacingMatches(
                 in: source,
@@ -45,6 +39,148 @@ public enum FoundryTextDecoder {
 }
 
 private extension FoundryTextDecoder {
+    static let markupSubstitutions: [(NSRegularExpression, String)] = {
+        let patterns: [(String, String)] = [
+            (#"(?i)<\s*(?:br|hr)\b[^>]*>"#, "\n"),
+            (
+                #"(?i)<\s*/\s*(?:address|article|aside|blockquote|dd|div|dl|dt|fieldset|figcaption|figure|footer|form|h[1-6]|header|li|main|nav|ol|p|pre|section|table|tbody|td|tfoot|th|thead|tr|ul)\s*>"#,
+                "\n\n"
+            ),
+            (#"(?is)<\s*/?\s*[A-Za-z][^>]*>"#, ""),
+        ]
+        return patterns.compactMap { pattern, replacement in
+            (try? NSRegularExpression(pattern: pattern)).map { ($0, replacement) }
+        }
+    }()
+
+    static let invisibleBlockNames: [[UInt8]] = ["script", "style", "template", "noscript"].map { Array($0.utf8) }
+
+    /// Removes `<!-- ... -->` comments and `<script|style|template|noscript> ... </...>` blocks
+    /// (the same text the former `(?is)` patterns removed), in one pass over the UTF-8 bytes. An
+    /// opener without a closer stays in the text, as before.
+    static func removingNonVisibleBlocks(from source: String) -> String {
+        let bytes = Array(source.utf8)
+        guard bytes.contains(UInt8(ascii: "<")) else { return source }
+        let withoutComments = removingComments(from: bytes)
+        let result = removingInvisibleElements(from: withoutComments)
+        return String(decoding: result, as: UTF8.self)
+    }
+
+    static func removingComments(from bytes: [UInt8]) -> [UInt8] {
+        let opener = Array("<!--".utf8)
+        let closer = Array("-->".utf8)
+        var output: [UInt8] = []
+        output.reserveCapacity(bytes.count)
+        var index = 0
+        var hasNoCloserAhead = false
+        while index < bytes.count {
+            if !hasNoCloserAhead, matches(opener, in: bytes, at: index) {
+                if let end = firstIndex(of: closer, in: bytes, from: index + opener.count) {
+                    index = end + closer.count
+                    continue
+                }
+                // No closer after this opener means none after any later one either.
+                hasNoCloserAhead = true
+            }
+            output.append(bytes[index])
+            index += 1
+        }
+        return output
+    }
+
+    static func removingInvisibleElements(from bytes: [UInt8]) -> [UInt8] {
+        var output: [UInt8] = []
+        output.reserveCapacity(bytes.count)
+        // Names whose closer was searched for and not found: a later opener of the same name
+        // cannot find one either.
+        var exhaustedNames: Set<Int> = []
+        var index = 0
+        while index < bytes.count {
+            if bytes[index] == UInt8(ascii: "<"),
+               let opener = invisibleOpener(in: bytes, at: index),
+               !exhaustedNames.contains(opener.nameIndex) {
+                if let end = closerEnd(of: opener.nameIndex, in: bytes, from: opener.end) {
+                    index = end
+                    continue
+                }
+                exhaustedNames.insert(opener.nameIndex)
+            }
+            output.append(bytes[index])
+            index += 1
+        }
+        return output
+    }
+
+    /// `<\s*name\b[^>]*>` at `start`: the index in `invisibleBlockNames` and the index after `>`.
+    static func invisibleOpener(in bytes: [UInt8], at start: Int) -> (nameIndex: Int, end: Int)? {
+        var index = skippingWhitespace(in: bytes, from: start + 1)
+        guard let nameIndex = matchedName(in: bytes, at: index) else { return nil }
+        index += invisibleBlockNames[nameIndex].count
+        guard !isWordByte(bytes, at: index),
+              let close = bytes[index...].firstIndex(of: UInt8(ascii: ">")) else { return nil }
+        return (nameIndex, close + 1)
+    }
+
+    /// The end of the first `<\s*/\s*name\s*>` at or after `start`.
+    static func closerEnd(of nameIndex: Int, in bytes: [UInt8], from start: Int) -> Int? {
+        let name = invisibleBlockNames[nameIndex]
+        var index = start
+        while index < bytes.count, let lessThan = bytes[index...].firstIndex(of: UInt8(ascii: "<")) {
+            var cursor = skippingWhitespace(in: bytes, from: lessThan + 1)
+            if cursor < bytes.count, bytes[cursor] == UInt8(ascii: "/") {
+                cursor = skippingWhitespace(in: bytes, from: cursor + 1)
+                if matchedName(in: bytes, at: cursor) == nameIndex {
+                    cursor = skippingWhitespace(in: bytes, from: cursor + name.count)
+                    if cursor < bytes.count, bytes[cursor] == UInt8(ascii: ">") { return cursor + 1 }
+                }
+            }
+            index = lessThan + 1
+        }
+        return nil
+    }
+
+    static func matchedName(in bytes: [UInt8], at index: Int) -> Int? {
+        invisibleBlockNames.firstIndex { name in
+            guard index + name.count <= bytes.count else { return false }
+            return zip(name, bytes[index..<(index + name.count)]).allSatisfy { $0 == lowercased($1) }
+        }
+    }
+
+    static func lowercased(_ byte: UInt8) -> UInt8 {
+        (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte) ? byte + 32 : byte
+    }
+
+    static func isWordByte(_ bytes: [UInt8], at index: Int) -> Bool {
+        guard index < bytes.count else { return false }
+        let byte = bytes[index]
+        return byte == UInt8(ascii: "_")
+            || (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(byte)
+            || (UInt8(ascii: "a")...UInt8(ascii: "z")).contains(lowercased(byte))
+            || byte >= 0x80
+    }
+
+    static func skippingWhitespace(in bytes: [UInt8], from start: Int) -> Int {
+        var index = start
+        while index < bytes.count, [0x20, 0x09, 0x0A, 0x0B, 0x0C, 0x0D].contains(bytes[index]) { index += 1 }
+        return index
+    }
+
+    static func matches(_ pattern: [UInt8], in bytes: [UInt8], at index: Int) -> Bool {
+        guard index + pattern.count <= bytes.count else { return false }
+        return bytes[index..<(index + pattern.count)].elementsEqual(pattern)
+    }
+
+    static func firstIndex(of pattern: [UInt8], in bytes: [UInt8], from start: Int) -> Int? {
+        guard start + pattern.count <= bytes.count else { return nil }
+        var index = start
+        while let candidate = bytes[index...].firstIndex(of: pattern[0]) {
+            if matches(pattern, in: bytes, at: candidate) { return candidate }
+            index = candidate + 1
+            if index + pattern.count > bytes.count { return nil }
+        }
+        return nil
+    }
+
     static let namedEntities: [String: String] = [
         "Tab": "\t",
         "NewLine": "\n",
@@ -232,8 +368,7 @@ private extension FoundryTextDecoder {
         var current = source.startIndex
         while current < source.endIndex {
             guard source[current] == "&",
-                  let semicolon = source[current...].firstIndex(of: ";"),
-                  source.distance(from: current, to: semicolon) <= 34 else {
+                  let semicolon = source[current...].prefix(35).firstIndex(of: ";") else {
                 output.append(source[current])
                 current = source.index(after: current)
                 continue

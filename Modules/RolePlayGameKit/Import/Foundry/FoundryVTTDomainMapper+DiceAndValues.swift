@@ -24,15 +24,13 @@ extension FoundryMappingState {
         // MasterRPG can represent additive dice plus a numeric modifier. Foundry roll syntax also
         // supports pools, keep/drop, functions, variables, comparisons, and multiplication. Never
         // project a matching substring from those richer expressions as if it were equivalent.
-        let supportedGrammar = try? NSRegularExpression(
-            pattern: #"^\s*[0-9]*[dD][0-9]+(?:\s*(?:\+\s*[0-9]*[dD][0-9]+|[+-]\s*[0-9]+(?:\.[0-9]+)?))*\s*$"#
-        )
+        let supportedGrammar = FoundryMapperPatterns.supportedFormula
         guard supportedGrammar?.firstMatch(in: formula, range: range)?.range == range else {
             warnings.append(String(localized: "Roll formula ‘\(formula)’ uses Foundry syntax that is not exactly representable; it remains text in the raw archive.", bundle: .module))
             return nil
         }
 
-        let pattern = try? NSRegularExpression(pattern: #"([0-9]*)[dD]([0-9]+)"#)
+        let pattern = FoundryMapperPatterns.dieMatch
         let matches = pattern?.matches(in: formula, range: range) ?? []
         var dice: [DieModel] = []
         for match in matches {

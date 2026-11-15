@@ -35,6 +35,16 @@ extension MapEditorSession {
 
         // Merge incoming entries: prefer working-copy version for any entry that has
         // been locally edited (active edit entry and anything already flushed into entries).
+        // Without a working copy (player and game master in game mode) nothing is looked up at
+        // all; with one, both sides are indexed by id once instead of searched per incoming
+        // entry. See CODE_AUDIT_26 §7.9.
+        let workingEntriesById = workingCopy.map { copy in
+            Dictionary(copy.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        }
+        let localEntriesById = workingEntriesById == nil ? [:] : Dictionary(
+            entries.entries.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         let merged = newEntries.map { incoming -> MapEntryModel in
             // Active edit entry: keep what the user is working on, never overwrite with live
             if incoming.id == activeEntryId {
@@ -42,8 +52,8 @@ extension MapEditorSession {
             }
             // Previously-edited entries reflected in display: keep local version if it differs
             // from the live map (it was flushed from editEntries and not yet committed).
-            if let local = entries.entries.first(where: { $0.id == incoming.id }),
-               workingCopy?.entries.contains(where: { $0.id == incoming.id && $0 != incoming }) == true {
+            if let working = workingEntriesById?[incoming.id], working != incoming,
+               let local = localEntriesById[incoming.id] {
                 return local
             }
             return incoming

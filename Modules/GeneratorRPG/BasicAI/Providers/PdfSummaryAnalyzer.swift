@@ -39,7 +39,12 @@ struct PdfSummaryAnalyzer: Sendable {
 
         let pageLimit = min(maxPages, pdfDocument.pageCount)
         // Off the main actor, see `PdfPageTextReader` (CODE_AUDIT_18 §3.5).
-        let pageTexts = try await PdfPageTextReader.pages(of: .init(document: pdfDocument), pageLimit: pageLimit)
+        let pageTexts = try await PdfPageTextReader.pages(
+            of: .init(document: pdfDocument),
+            pageLimit: pageLimit,
+            maximumCharactersPerPage: maxCharacters,
+            stopAfterCharacters: maxCharacters
+        )
             .map { (pageNumber: $0.pageNumber, text: $0.text) }
         let pageCount = pdfDocument.pageCount
         let limitedText = FoundationModelInputLimiter.limitedCombinedText(

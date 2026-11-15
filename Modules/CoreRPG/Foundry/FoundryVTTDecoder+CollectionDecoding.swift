@@ -26,12 +26,13 @@ extension FoundryVTTDecoder {
         budget: inout FoundryVTTReadBudget
     ) throws -> (collection: FoundryDocumentCollection, diagnostics: [FoundryImportDiagnostic]) {
         let prefix = spec.path.isEmpty ? "" : (spec.path.hasSuffix("/") ? spec.path : spec.path + "/")
-        let discoveredTablePaths = source.paths.filter { path in
+        let candidatePaths = source.paths(withPrefix: prefix)
+        let discoveredTablePaths = candidatePaths.filter { path in
             let lowercased = path.lowercased()
             return (lowercased.hasSuffix(".ldb") || lowercased.hasSuffix(".sst"))
                 && (prefix.isEmpty || path.hasPrefix(prefix))
         }.sorted()
-        let discoveredLogPaths = source.paths.filter { path in
+        let discoveredLogPaths = candidatePaths.filter { path in
             guard path.lowercased().hasSuffix(".log"), prefix.isEmpty || path.hasPrefix(prefix) else { return false }
             return URL(filePath: path).deletingPathExtension().lastPathComponent.allSatisfy(\.isNumber)
         }.sorted()
@@ -93,9 +94,7 @@ extension FoundryVTTDecoder {
         source: FoundryVTTDataSource,
         budget: inout FoundryVTTReadBudget
     ) throws -> FoundryLevelDBLiveFiles {
-        let currentPath = source.paths.first { path in
-            path == prefix + "CURRENT" || path == prefix + "current"
-        }
+        let currentPath = [prefix + "CURRENT", prefix + "current"].first { source.contains(path: $0) }
         guard let currentPath else {
             for path in discoveredLogs {
                 guard let data = try source.data(forPath: path) else { continue }

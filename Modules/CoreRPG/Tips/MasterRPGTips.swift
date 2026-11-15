@@ -173,11 +173,42 @@ public enum MasterRPGTips {
 
     /// Reads the real item graph so imported, synchronized, and example data
     /// participate in eligibility even when no local TipKit event was donated.
+    ///
+    /// The scan visits every item of every module on the main actor, and every add button calls it.
+    /// A call within `eligibilityRefreshInterval` of the last scan is collapsed into one trailing
+    /// scan, so adding items in quick succession scans twice and not once per item.
+    /// See CODE_AUDIT_26 §7.42.
     @MainActor
     public static func refreshEligibility(
         rootManager: RootManager,
         databaseReady: Bool = true
     ) {
+        let now = ContinuousClock.now
+        if let last = lastEligibilityRefresh, now - last < eligibilityRefreshInterval {
+            pendingEligibilityRefresh?.cancel()
+            pendingEligibilityRefresh = Task { @MainActor in
+                try? await Task.sleep(for: eligibilityRefreshInterval)
+                guard !Task.isCancelled else { return }
+                performEligibilityRefresh(rootManager: rootManager, databaseReady: databaseReady)
+            }
+            return
+        }
+        pendingEligibilityRefresh?.cancel()
+        pendingEligibilityRefresh = nil
+        performEligibilityRefresh(rootManager: rootManager, databaseReady: databaseReady)
+    }
+
+    private static let eligibilityRefreshInterval: Duration = .seconds(1)
+    @MainActor private static var lastEligibilityRefresh: ContinuousClock.Instant?
+    @MainActor private static var pendingEligibilityRefresh: Task<Void, Never>?
+
+    @MainActor
+    private static func performEligibilityRefresh(
+        rootManager: RootManager,
+        databaseReady: Bool
+    ) {
+        lastEligibilityRefresh = .now
+        pendingEligibilityRefresh = nil
         var visitedDataModels: Set<ObjectIdentifier> = []
         var regularItemCount = 0
         var topLevelItemCount = 0

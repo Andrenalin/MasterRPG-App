@@ -77,7 +77,11 @@ extension MasterController {
                 guard let pending = gameModel.pendingAudioPlays[pendingId],
                       missingPlayers(for: pending).contains(model.sender.id)
                 else { continue }
-                await deliverPendingAudio(pending, to: [model.sender.id])
+                // Not awaited: the first export of a large track would hold every other
+                // player's receipt, asset request and pin move behind it. See CODE_AUDIT_26 §7.8.
+                startJoinAudioDelivery { [weak self] in
+                    await self?.deliverPendingAudio(pending, to: [model.sender.id])
+                }
             }
             await startCompletePendingAudioPlays()
             await joinRunningAudioPlay(playerId: model.sender.id)
@@ -226,10 +230,22 @@ extension MasterController {
         }
     }
 
+    /// Runs `work` in a task of its own and forgets the task when it ends.
+    private func startJoinAudioDelivery(_ work: @escaping () async -> Void) {
+        let token = UUID()
+        audioJoinDeliveryTasks[token] = Task { [weak self] in
+            await work()
+            self?.audioJoinDeliveryTasks[token] = nil
+        }
+    }
+
 #if DEBUG
     /// A test affordance: returns once the delivery for the pending play is done.
     func waitForAudioDeliveries() async {
         await audioDeliveryTask?.value
+        for task in Array(audioJoinDeliveryTasks.values) {
+            await task.value
+        }
     }
 
     /// A test affordance: returns once the look-ahead that sends the next track is done.
@@ -252,6 +268,10 @@ extension MasterController {
     func clearPendingAudioPlays() {
         audioDeliveryTask?.cancel()
         audioDeliveryTask = nil
+        for task in audioJoinDeliveryTasks.values {
+            task.cancel()
+        }
+        audioJoinDeliveryTasks.removeAll()
         // A new play or a pause replaces the music a late player could still join.
         lateAudioPlayers.removeAll()
         for task in audioPlayRetryTasks.values {
@@ -299,7 +319,9 @@ extension MasterController {
 
         if gameModel.claimAudioDeliveryRetry(itemId: itemId, playerId: playerId) {
             Logger.networking.error("MasterController: Audio \(itemId, privacy: .public) failed for player \(playerId, privacy: .public); sending it once more.")
-            await deliverAudio(id: itemId, to: [playerId])
+            startJoinAudioDelivery { [weak self] in
+                await self?.deliverAudio(id: itemId, to: [playerId])
+            }
             return
         }
         guard isPending else { return }

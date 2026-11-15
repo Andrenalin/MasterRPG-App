@@ -37,6 +37,17 @@ struct ExportController: Sendable {
 extension ExportController: ExportModelBacked {
     var itemControllable: any ItemControllable { itemController }
 
+    /// The rule as a player holds it: without the raw source payload, which the viewer never
+    /// shows and which can be hundreds of KB per rule over the slowest channel. `version` is
+    /// computed without it, so both copies agree. See CODE_AUDIT_26 §7.21.
+    @MainActor
+    func playerExportData(for itemId: UUID) throws -> Data? {
+        guard let item = itemController.itemSync(for: itemId) else { return nil }
+        let shared = item.copy()
+        shared.sourcePayload = nil
+        return try JSONCoding.encoder.encode(shared)
+    }
+
     @MainActor
     func exportingAll() -> ItemModuleIds {
         ItemModuleIds(dictionary: [

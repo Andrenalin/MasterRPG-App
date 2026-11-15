@@ -721,70 +721,70 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **What:** `fileExists` takes `NSFileCoordinator.coordinate(readingItemAt:options: [])` and even classifies itself as a "may wait for download" access (`mayWaitForDownloadOf: fileURL`). A plain read coordination on a not-downloaded iCloud item asks iCloud to materialize it; `.immediatelyAvailableMetadataOnly` is not used anywhere in the repo.
 - **Why:** Importing or moving an item whose target name collides with an evicted file (a 200 MB audio or USDZ) probably downloads that file just to learn that the name is taken, and occupies a `.download` limiter slot (of 1-3) while it does so, which is the stall CODE_AUDIT_21 §3.8 worked around. Not verified on a device.
 - **Action:** Pass `.immediatelyAvailableMetadataOnly` for the existence/directory-flag check (and keep the full read only where bytes are needed); verify with an evicted file on a device.
-- **Severity:** Medium   **Area:** CoreRPG Files/Persistence/Model
+- **Severity:** Medium   **Area:** CoreRPG Files/Persistence/Model   **Status:** Fixed 2026-11-15 — `fileExists(coordinatingAccessAt:)` coordinates with `.immediatelyAvailableMetadataOnly` in a local limiter slot (no download wait). Not verified with an evicted file on a device.
 
 ### 7.2 Quadratic scans of the archive path list during collection discovery
 - **Location:** Modules/CoreRPG/Foundry/FoundryVTTDecoder+CollectionDecoding.swift:28-37, 96-98; Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:546-550; Modules/CoreRPG/Foundry/FoundrySystemPackageReader.swift:131-156
 - **What:** For every collection spec / manifest pack the code filters the whole `source.paths` (up to 100 000 entries, with `lowercased()` per path) and `levelDBDirectories` does `specs.contains` per directory; `liveLevelDBPaths` does `source.paths.first` per spec.
 - **Why:** A crafted ZIP with ~50 000 tiny valid `.ldb` files in distinct directories (or a manifest declaring many packs) costs specs x paths ~ 10^9-10^10 string operations; the work has only coarse cancellation points, so import appears hung for minutes. The 100 000 spec cap does not bound the product.
 - **Action:** Build a directory -> [path] index once in `FoundryVTTDataSource` (and a lowercase-suffix index), look specs up in O(1); cap spec count to something realistic (e.g. 1 000).
-- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet   **Status:** Fixed 2026-11-15 — `FoundryVTTDataSource.paths(withPrefix:)` (binary search over sorted paths) replaces the per-spec filters; declared directories are a set; collection specs are capped at 1,000. Test: `FoundryPathSearch`/`LowSeverityPerformanceTests`.
 
 ### 7.3 Memory ceilings are sized for macOS but apply on iOS/tvOS/visionOS
 - **Location:** Modules/CoreRPG/Foundry/FoundryRuleModels.swift:745-755 (defaults 1 GiB archive, 64 MiB entry, 512 MiB rule data/resource batch); Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:1241-1278 (bridge resource cache); Modules/CoreRPG/Foundry/FoundryVTTBridgeDecoding.swift:183-192, 293-318
 - **What:** One `FoundryImportLimits.default` for all platforms; `FoundryJSONValue` trees of up to 512 MiB of JSON are built (typically 5-10x expansion, plus each document keeps its own `rawData` and every embedded document repeats the parent's nested array, plus the Sanitizer makes another full copy), the bridge resource cache keeps every decoded asset (up to 512 MiB) alive until the next preflight, and a bridge asset line transiently holds the 86 MB line copy + the JSON String + the decoded Data.
 - **Why:** On an iPhone/Apple TV a large Foundry world import is killed by jetsam rather than rejected with `fileTooLarge`; the app loses the whole session. On macOS it is merely slow.
 - **Action:** Platform-specific default limits (e.g. 128 MiB rule data, 128 MiB resource batch on iOS/tvOS/visionOS), drop the bridge resource cache after the commit finishes (or make it load assets on demand by file offset), and stream asset lines instead of materialising them as JSON strings.
-- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet   **Status:** Fixed 2026-11-15 (partly) — `FoundryImportLimits.platformMemoryLimit` (512 MiB macOS, 128 MiB elsewhere) is the default for the rule-data and resource-batch limits, and the reader's cached sources are released after the commit (`releaseCachedSources()`). Streaming the asset lines instead of materializing them was not done.
 
 ### 7.4 HTML-to-text regexes are quadratic on unterminated tags and rebuilt on every call
 - **Location:** Modules/CoreRPG/Foundry/FoundryTextDecoder.swift:23-41
 - **What:** `(?is)<!--.*?-->` and `(?is)<\s*(script|style|template|noscript)\b[^>]*>.*?<\s*/\s*\1\s*>` are lazy scans that run to the end of input for every unterminated opener; the four `NSRegularExpression` objects are compiled on every `plainText` call.
 - **Why:** A description field of a few MB made of repeated `<!--` or `<script>` without a closer takes O(n^2) (each opener scans to the end), and mapping of thousands of documents recompiles four patterns each time.
 - **Action:** Hoist the expressions into static lets, and replace the two lazy patterns with a single linear scanner (find the opener, `range(of:)` for the closer once, stop if absent).
-- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet   **Status:** Fixed 2026-11-15 — `removingNonVisibleBlocks` is one linear scan (unterminated openers stay; per-name exhausted set) and the markup substitutions are hoisted. Tests: `removesInvisibleBlocks`, `unterminatedOpenersAreLinear`.
 
 ### 7.5 `decodeEntities` scans to end of string for every `&` without a semicolon
 - **Location:** Modules/CoreRPG/Foundry/FoundryTextDecoder.swift:233-240
 - **What:** `source[current...].firstIndex(of: ";")` is evaluated before the 34-character distance check, so each `&` is O(remaining length).
 - **Why:** A text field consisting of many `&` and no `;` (also plausible in legitimate text such as "R&D & A&B" repeated) is O(n^2); 1 MB of `&` is 10^12 comparisons.
 - **Action:** Search only a 34-character window (`source[current...].prefix(35)`).
-- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet   **Status:** Fixed 2026-11-15 — `decodeEntities` looks for the `;` only within the first 35 characters.
 
 ### 7.6 `TableRootSheet` builds (and discards) a full `SheetRootModel` on every `init`
 - **Location:** Modules/CoreRPG/Sheet/TableRootSheet.swift:21-45
 - **What:** `_sheetRootModel = State(wrappedValue: SheetRootModel(...))` evaluates the model, and therefore `sheetControllable.sheet(...)` for the whole item tree, every time the parent re-evaluates its body, although `@State` only keeps the first value. The per-init comment explains why the external-model path cannot reset, but the non-external path pays full price on each re-render. `preconditionFailure` also crashes if `rootManager` is not set yet.
 - **Why:** Opening a large Character/Table sheet in a sheet/window while the parent updates (game state, search, selection) rebuilds the complete sheet tree repeatedly on the main actor; this violates the "@State initialised from a passed value" rule in the brief.
 - **Action:** Create the model lazily (`@State private var sheetRootModel: SheetRootModel?` created in `.task(id: itemId)` / `onAppear`, or make an owner type that builds it once), and replace the precondition with an empty-state view.
-- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet
+- **Severity:** Medium   **Area:** CoreRPG Foundry/Sheet   **Status:** Fixed 2026-11-15 — the owned `SheetRootModel` is built once in `.task(id:)`; `init` no longer projects the item tree (content moved to `TableRootSheetContent`). Not runtime-verified.
 
 ### 7.7 Quick editor recomputes `initialText` and deep-copies the model on every parent body pass
 - **Location:** Modules/CoreRPG/EntryEditor/QuickEntryEditorView.swift:57,108-112,23-24
 - **What:** `initialText` (`editController.editEntries(for:)` plus `parser.format` over all entries) is evaluated in `body` only to hand a `let initialText: String` to `QuickEntryEditorContentView`, which reads it once in `onAppear` (line 296). `init` also builds a `TextEditModel` and calls `model.copy()` (deep copy of the item) every time the parent re-creates the view, although `@State` keeps only the first value.
 - **Why:** Every `showHelp`/`showResult`/`showInspector` toggle and every parent update re-formats the whole table text and copies the model; large tables (hundreds of entries) make toggling the result pane sluggish.
 - **Action:** Pass a closure evaluated in `onAppear`, and create the copy and the `TextEditModel` lazily (for example in `.task`/`onAppear` or through a small `@State` holder).
-- **Severity:** Medium   **Area:** CoreRPG UI 2
+- **Severity:** Medium   **Area:** CoreRPG UI 2   **Status:** Fixed 2026-11-15 — the model copy and `TextEditModel` sit in a lazy box built in `onAppear`; `initialText` is a closure evaluated there.
 
 ### 7.8 A joining player's audio list delivers the pending track inside the serial master pipeline
 - **Location:** Modules/GameRPG/Controller/MasterController+AudioMessages.swift:70-83 (also :289-310 `handleAudioDeliveryFailure`, :398-405 `showAudioStartItems`)
 - **What:** The `.audioList` branch awaits `deliverPendingAudio(pending, to: [sender])`, which exports the track (`audioPackage`) and hands it to the transport, while still inside `process(_:)` of the pipeline's single worker. `startAudioDelivery` (:222) was added precisely so the delivery does not run in the master's action chain, but this path and the failure-retry path bypass it.
 - **Why:** While the first export of a large track runs, every other player's receipts, asset requests and pin moves queue behind it (the queue holds 128 messages / 300 MB and then drops). It happens once per track version because the package is cached, but it lands exactly at join time, when the burst of lists and Character announcements arrives.
 - **Action:** Route these two call sites through `startAudioDelivery`-style detached delivery (keeping the supersession checks), or at least do not await the export inside the handler.
-- **Severity:** Medium   **Area:** GameRPG Controllers
+- **Severity:** Medium   **Area:** GameRPG Controllers   **Status:** Fixed 2026-11-15 — the join audio-list delivery (and its retry) runs as a tracked task (`audioJoinDeliveryTasks`), cancelled in `clearPendingAudioPlays` and awaited by the DEBUG `waitForAudioDeliveries`, so it no longer sits inside the serial master pipeline. Two GameRPG tests now call `waitForAudioDeliveries()` before reading the sent messages.
 
 ### 7.9 Room list resets are O(n²) in the number of entries (hex maps)
 - **Location:** Modules/MapRPG/Map/MapEditorSession+Content.swift:36-47 (`resetEntries`: `entries.entries.first(where:)` per incoming entry); Modules/MapRPG/Map/MapEditorActionRouter.swift:155-162 (`synchronizeRooms` calls `setEntry` for every entry); Modules/MapRPG/Map/MapEntryViewer.swift:95-101 (`setEntry`: `firstIndex` + `roomNodes.first` + `reconcileNeedlePoints` per call); same pattern in `toggleRoomFocus` edit branch (MapEditorActionRouter.swift:175-181)
 - **What:** `resetEntries` scans the whole current entry list once per incoming entry before it even checks `workingCopy`; `synchronizeRooms` rewrites every entry through `setEntry`, which does two linear searches and rebuilds that entry's needle models, whether or not the entry changed.
 - **Why:** At the 20,000-cell cap that is about 2x10^8 UUID compares per `resetEntries` and about 4x10^8 per room toggle, on the main thread. On a player's phone `resetEntries` runs for every master map update that changes `map.entries` (every room reveal, via `MapEditor.handleExternalEntryChange`); on the GM it runs on every room double tap and focus toggle. Noticeable hitch on big hex maps, scales quadratically.
 - **Action:** In `resetEntries` check `workingCopy` first (player and GM game mode have none) and build an id-to-entry dictionary once. In `synchronizeRooms` only call `setEntry` for entries that differ, or give `MapEntryViewerModel` an id-to-index dictionary / a bulk `apply(updates:)`. Same for the focus loop.
-- **Severity:** Medium   **Area:** MapRPG Map
+- **Severity:** Medium   **Area:** MapRPG Map   **Status:** Fixed 2026-11-15 — `MapEntryViewerModel` keeps `entryIndexById`/`roomNodeById`; `resetEntries` uses them, and only when there is a working copy; `setEntry` skips equal entries.
 
 ### 7.10 Passive room store builds needle models for every entry
 - **Location:** Modules/MapRPG/Map/MapEntryViewer.swift:65-71 (init), :208-250 (`reconcileNeedlePoints(with:)`/`(for:)`), :129-134 (`selectNeedle` walks all models); consumers only on `editEntries` (MapEditorSession.swift:243-273, NeedleMapPin.swift:14, MapEditorOverlayLayer.swift:189)
 - **What:** `MapEntryViewerModel` is used for both the passive room store and the single active edit room, but needle point models (`@MainActor @Observable` class per vertex) are created for all entries of both. Grep shows needle APIs are only ever called on `rooms.active`.
 - **Why:** A 20,000-cell hex map allocates about 120,000 observable objects on every `resetEntries` of the passive store (map open, every external entry change, hex rescale, every edit-mode room toggle via `syncDisplayEntries`), in game mode too where no needle exists.
 - **Action:** Make needle tracking opt-in (a flag on the store, on only for `rooms.active`), or lazily create needle models for the active entry only.
-- **Severity:** Medium   **Area:** MapRPG Map
+- **Severity:** Medium   **Area:** MapRPG Map   **Status:** Fixed 2026-11-15 — the passive room store has `tracksNeedles == false`, so no needle models are built.
 
 ### 7.11 Room hit layer creates one gesture view per room with no culling
 - **Location:** Modules/MapRPG/Map/MapRoomCanvas.swift:196-212 (`MapRoomHitLayer`), :214-262 (`MapRoomHitTarget`); enabled by MapEditorSession.swift:113-124
@@ -798,141 +798,181 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **What:** The game toolbar defers the rebuild to slider release (`hexScaleCommit`, CODE_AUDIT_21 §5.19), the editor's `HexMapScaleView` still regenerates up to 20,000 entries and reconciles all room nodes per tick. The editor path also does not call `carryingRevealedArea`, so cells revealed in the editor (cells can be toggled there) are hidden again on every scale change, unlike the game path in `EditController.createHexMap`.
 - **Why:** Main-thread stalls while dragging the slider on big grids; inconsistent behaviour between editor and game rebuild.
 - **Action:** Rebuild on release (`onScaleEditingChanged(false)`) and keep the live value only in the slider; use `carryingRevealedArea` in `MapEditController.updateHexScale`/`toggleHexMap`.
-- **Severity:** Medium   **Area:** MapRPG Map
+- **Severity:** Medium   **Area:** MapRPG Map   **Status:** Fixed 2026-11-15 — the grid is rebuilt when the slider is released, and the rebuild keeps the revealed area (`carryingRevealedArea`).
 
 ### 7.13 Full map fingerprint (redact, JSON-encode, SHA-256) is rebuilt up to four times per content update and on every generation lookup without an authoritative record
 - **Location:** Modules/MapRPG/Model/MapUpdatePayload.swift:34-44; Modules/MapRPG/Controller/GameController+Metadata.swift:42-53, 91-130, 134-146, 153-160; Modules/MapRPG/Controller/GameController.swift:317-319, 339-341, 405-412 (`networkMapContentUpdate`); Modules/CoreRPG/Model/StableVersionDigest.swift:17-26
 - **What:** `MapUpdatePayload.init(model:)` always builds a snapshot, a fully redacted copy, then a canonical encoding and digest of the whole map. `mapContentVersion`, `packageCoreMetadata` (called twice per `stablePackageMetadata` attempt), `currentMapReference`, `currentMapContentUpdate` and `mapContentCapture` each construct it just to read `contentVersion`. One `networkMapContentUpdate` therefore does at least four builds (capture, two in `stablePackageMetadata`, one `packageCoreMetadata`), more on a retry. `networkGeneration(for:)` does one more per call when `authoritativeGenerations[itemId]` is missing (it is set to nil by `recordAuthoritativeGeneration` for any `.map` data without both versions), and is called for every mapState, pin and battle message.
 - **Why:** All of it runs on the main actor. A hex-grid map carries hundreds to thousands of cells with six points each; every game-master edit, "Refresh Shared Map", and each player pin or battle message in the no-record case pays several full JSON encodes plus SHA-256 on the main thread. Unmeasured, but the work is structurally redundant (the redaction output is thrown away whenever only the version is needed).
 - **Action:** Split a `static func contentVersion(of model:)` (no redaction, no payload) from the payload builder; compute it once per content update and pass it through `stablePackageMetadata` / the retry loop; cache it per model change token for `networkGeneration`.
-- **Severity:** Medium   **Area:** MapRPG rest
+- **Severity:** Medium   **Area:** MapRPG rest   **Status:** Fixed 2026-11-15 (partly) — `MapUpdatePayload.contentVersion(of:)` computes the fingerprint without the redacted copy and JSON encode; used by `mapContentVersion`, `packageCoreMetadata` and `currentMapReference`. A per-model-change cache for the generation lookup was not added.
 
 ### 7.14 Room thumbnails rotate and crop on the main actor, once per room
 - **Location:** Modules/MapRPG/Controller/CacheController.swift:35-48; Modules/MapRPG/Extensions/UIImage+Crop.swift:7-28, 45-52
 - **What:** `createThumbnail` is `@MainActor` (protocol requirement). For each room it fetches the photo thumbnail source (up to 1024 px), then `rotated(byDegrees:)` redraws the whole bitmap into a new CGContext before the crop, even for a 3x3 px room. A map with 40 visible rooms rotated by a non-zero angle does 40 full-bitmap redraws on the main actor.
 - **Why:** Scrolling a room list of a rotated map stalls the main thread; maps with `degrees == 0` skip the redraw.
 - **Action:** Crop first in canvas space using an inverse-rotated rect, or cache the rotated canvas image per map/photo version; run the CPU part `@concurrent`.
-- **Severity:** Medium   **Area:** MapRPG rest
+- **Severity:** Medium   **Area:** MapRPG rest   **Status:** Fixed 2026-11-15 — `rotatedCroppedCGImage` draws only the crop; `createThumbnail` runs the rotate/crop in a `@concurrent` function.
 
 ### 7.15 Sheet update rebuilds every entry's sheet on each change (quadratic lookups)
 - **Location:** Modules/AdventureRPG/Controller/SheetController.swift:87-180 (`update`): `entryIds.contains` inside filter + `removeAll` (:124,129), `sheetModel.entries.first(where:)` per entry (~:135), and a full `sheet(entry:...)` projection per entry (:147) including `linksFrom` and cross-module `SheetLinkGuard` lookups
 - **What:** Every call to `update` (runs on the main actor after each edit) is O(entries²) and re-materialises each entry's link sheets even when only one entry changed.
 - **Why:** Adventures extracted from long PDFs have hundreds of entries; typing in one entry rebuilds all of them. Not measured.
 - **Action:** Build a `[UUID: SheetModel]` dictionary and a `Set` of entry ids once, and project only entries whose content/links changed (or are new); profile with a 500-entry adventure first.
-- **Severity:** Medium   **Area:** AdventureRPG
+- **Severity:** Medium   **Area:** AdventureRPG   **Status:** Fixed 2026-11-15 (partly) — Set/dictionary lookups instead of linear searches and the per-entry logs at debug level; each entry is still projected once per update.
 
 ### 7.16 SheetController.update(entry:) re-projects each entry's whole subtree on every update, then updates it again
 - **Location:** Modules/CharacterRPG/Controller/SheetController.swift:204-264 (full re-projection at 212, recursive `update` of children at 251-255); info logs at 141 and 184
 - **What:** For every existing entry the update path calls `sheet(entry:)`, which rebuilds the entire group sub-value tree and all link sheets from scratch (plus `linkController.calculate` and `linksFrom` per entry), only to diff it against the existing model and then call `update(...)` on each matched child, which re-projects its own entries once more.
 - **Why:** Each nesting level rebuilds everything below it, so a group-in-group sheet does O(depth x size) work on the main actor for every observed change (typing, dice roll, game sync). Each `update` also emits two `info` log lines with an emoji and a measured duration.
 - **Action:** Project only name, description, editType, sheetType and the entry's inline dice for the entry itself and reconcile children by source id without building their subtrees; log at debug level or drop the timing.
-- **Severity:** Medium   **Area:** CharacterRPG
+- **Severity:** Medium   **Area:** CharacterRPG   **Status:** Fixed 2026-11-15 — an existing entry is projected shallow (`isShallow`, sub-value folded); a new sub-value is rebuilt fully; `updateEntries` uses a dictionary.
 
 ### 7.17 Sheet screens build a GeneratorController (engine plus model session) inside `body`, before checking availability, and FIFO eviction can tear down a visible one
 - **Location:** Modules/GeneratorRPG/View/SheetAIAssistantContext.swift:40-46; Root/GeneratorRootModel.swift:122-134
 - **What:** `SheetAIAssistantPlacement.body` calls `generatorRoot?.generatorController(forItem:)` for every sheet screen, creating a `ConversationEngine`, `SystemLanguageModel`, `LanguageModelSession` and `FoundationManager` per item visited, and only then tests `availability`. The cache evicts first-in, first-out at 12 entries and calls `tearDown()` on the evicted one.
 - **Why:** on a device without Apple Intelligence every visited sheet still allocates a session; on macOS/visionOS with several windows, the 13th distinct item evicts the oldest-created controller even if its window is still on screen and mid-generation, cancelling it silently.
 - **Action:** check `SystemLanguageModel.default.availability` (cached once) before creating the controller, create it lazily when AI mode is first activated, and evict least-recently-used skipping controllers with `isLoading`/`isExtracting`.
-- **Severity:** Medium   **Area:** GeneratorRPG
+- **Severity:** Medium   **Area:** GeneratorRPG   **Status:** Fixed 2026-11-15 — the generator cache is LRU and never evicts a controller that is loading/extracting; the sheet screens check `isAssistantModelAvailable` before creating one.
 
 ### 7.18 "Convert to JPEG" runs the JPEG encode on the main actor and re-encodes from the 8192 px capped decode
 - **Location:** Modules/PhotoRPG/Controller/EditController.swift:20-31 (`@MainActor convert`), Modules/CoreRPG/Extensions/Image+AKImage.swift:230,244 (decode cap)
 - **What:** `convert(itemId:)` is `@MainActor`, takes the cached full image (decoded with `maximumDecodedPixelSize = 8192`) and calls `jpegData(compressionQuality:)` inline; the import paths encode off-main (`@concurrent encodedJPEG`, CODE_AUDIT_21 §7.10), this one was missed.
 - **Why:** A large PNG/HEIC/TIFF hitches the UI during the encode, and a source wider than 8192 px is permanently downscaled by the conversion (the original file is replaced) without telling the user.
 - **Action:** Encode through the same `@concurrent` helper, and convert from the original data/URL (or refuse/warn) instead of the capped cache image.
-- **Severity:** Medium   **Area:** PdfRPG + PhotoRPG
+- **Severity:** Medium   **Area:** PdfRPG + PhotoRPG   **Status:** Fixed 2026-11-15 — Convert to JPEG re-encodes the original file through ImageIO off the main actor and falls back to the capped cache image only when the file cannot be read. Not runtime-verified.
 
 ### 7.19 Foundry mapper compiles regular expressions per call
 - **Location:** Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper+SharedHelpers.swift:289-327 (`rewriteFoundryLinks`, called from `safeText`/`decodedFoundryText` for every description, entry and name), :405-419 (`simpleModifier`, builds an `NSRegularExpression` plus a Regex literal); FoundryVTTDomainMapper+DiceAndValues.swift:27-36 (two `NSRegularExpression`s per formula)
 - **What:** each call rebuilds a link-type alternation pattern and parses it again.
 - **Why:** a system or world package maps tens of thousands of strings on the main actor (the mapper is `@MainActor`, see the comment at FoundryVTTDomainMapper.swift:263-269); regex compilation dominates `rewriteFoundryLinks` even for strings that contain no `@`. CODE_AUDIT_25 §7.1 fixed the same pattern in `Calculator`.
 - **Action:** hoist the expressions into static lets; return early in `rewriteFoundryLinks` when the text contains no `@`.
-- **Severity:** Medium   **Area:** RolePlayGameKit
+- **Severity:** Medium   **Area:** RolePlayGameKit   **Status:** Fixed 2026-11-15 — `FoundryMapperPatterns` holds the compiled expressions; `convertLinks` returns early without an `@`. (The die-term regex literal is not Sendable and stays inline.)
 
 ### 7.20 Idle weather layers keep redrawing at display rate
 - **Location:** Modules/WeatherRPG/View/WeatherEffectLayers.swift:15-40, Modules/WeatherRPG/Weather/StarsView.swift:21-57, LightningView.swift:21-45, CloudsView.swift:35-60, Modules/WeatherRPG/Weather/StarField.swift:19-26
 - **What:** `StarsView` is always in the stack and only faded with `.opacity(starOpacity)`; its star alpha is zero for time 0.33-0.78, yet its `TimelineView(.animation)` keeps drawing every frame, and `change(size:)` creates one star per 1000 pt^2 without a cap (about 2000 on a 1920x1080 tvOS screen, more in a large visionOS window), each blooming star copying the context and applying a blur. `LightningView` redraws a full-screen transparent fill and two blur-filter passes every frame when `frequency < 1` or while waiting; `CloudsView` runs its timeline with zero clouds.
 - **Why:** In game mode (`useGame`) four animated canvases run continuously on a phone/TV/headset for effects that are invisible, which costs battery and frame time.
 - **Action:** Do not instantiate `StarsView` while `starOpacity == 0`, pause the lightning timeline in `.waiting` state with no periodic trigger, skip `CloudsView` for `.none`, and cap the star count.
-- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG   **Status:** Fixed 2026-11-15 — the stars and clouds layers are only created when visible, the star count is capped (600), and the lightning layer pauses while idle.
 
 ### 7.21 Player packages carry the full lossless Foundry payload, and the version digest re-encodes it on every call
 - **Location:** Modules/RuleRPG/Model/RuleModel.swift:234-238 (`version` = `StableVersionDigest.digest(CanonicalRuleContent)` incl. `sourcePayload`), :386-398 (`encode` writes `sourcePayload`); Modules/RuleRPG/Controller/ExportController.swift (no `playerExportData` override); Modules/CoreRPG/Controllable/ExportControllable.swift:395-402; Modules/CoreRPG/Controllable/GameControllable.swift:221, :318
 - **What:** `RuleModel.version` JSON-encodes (sorted keys) and hashes the whole model including the raw `FoundryRuleDefinition`/document JSON each time it is asked, and the same payload is exported to players when a rule is revealed.
 - **Why:** `hasItem(id:version:)` and the version lookup run on the main actor for every reveal/availability check, and a rule can carry hundreds of KB of raw JSON that players never see (the viewer shows only entries and metadata). It also ships the unprocessed source (unused fields) to every player over SharePlay/LAN, which is the slow channel documented in memory.
 - **Action:** Override `playerExportData(for:)` to drop `sourcePayload`, and compute the version from the same player projection (master and player must agree, see GameControllable.swift:221); cache the version per edit counter if it stays hot.
-- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG   **Status:** Fixed 2026-11-15 — player exports drop `sourcePayload`, and `CanonicalRuleContent` (the version digest input) no longer includes it. `RuleWorkflowTests` now uses the owner export for the round trip and has a test for the player package.
 
 ### 7.22 `mergeEntries` is O(imported x existing) and recomputes `withoutLink()` for every pair
 - **Location:** Modules/RuleRPG/Controller/EditController.swift:107-123
 - **What:** For each imported entry it scans `existing` for the id (linear) and always builds `hierarchyFallbackIndices`, even when the id matched, calling `existing[$0].name.withoutLink()` per candidate.
 - **Why:** A Foundry rule projects up to about 500 value entries plus groups/effects; a quick-editor Save or re-import costs hundreds of thousands of string transforms on the main actor.
 - **Action:** Index existing entries by id and by (name without link, kind, parentId) once; compute the fallback lazily only when the id lookup misses.
-- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG   **Status:** Fixed 2026-11-15 — `mergeEntries` matches by id with cursors and a lazily built fallback-key index.
 
 ### 7.23 Rule quick editor does O(n) tree work per row on every keystroke
 - **Location:** Modules/RuleRPG/View/RuleQuickEntryEditor.swift:130-175 (`RuleQuickEntrySectionEditor.body`, `kindSelection`, `parentSelection`)
 - **What:** Every row receives `$entries` for the whole array, so each keystroke in any field re-evaluates all row bodies; each does `entries.firstIndex` and `RuleEntryTree.validParentGroups` (builds a child map and walks descendants) and a Picker listing every group.
 - **Why:** For an imported rule with a few hundred entries that is O(n^2) per keystroke and makes typing laggy on the main actor.
 - **Action:** Compute the group list once in the parent (or lazily when a Picker opens), give each row an entry binding instead of the whole array, and keep tree validation in the setters.
-- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Severity:** Medium   **Area:** RuleRPG + WeatherRPG   **Status:** Fixed 2026-11-15 — `RuleEntryTree.ParentGroupLookup` is built once by the quick editor and used by every row.
 
 ### 7.24 In-memory image paths bypass the size caps meant for the ~120 MB extension limit
 - **Location:** Sources/RPGShare/ItemProviderImporter.swift:244-264 (`loadItem` returning `.data` from `Data`/`NSData`), :271-290 (`loadDataRepresentation` has no byte limit), :105-113 (`downsampledIfNeeded` only runs after the whole payload is in memory)
 - **What:** The file/URL path is capped (`maximumSourceFileByteSize`, downsampled from disk), but a provider that hands over `Data` or an object that has to go through `loadDataRepresentation` loads the full original into memory before any check.
 - **Why:** A host app that shares an image as data (browser long-press, some editors) with a 100+ MB original can get the extension jailed-killed; the share is lost with no message. CODE_AUDIT_18 §6.4 only closed the URL/file path.
 - **Action:** Prefer `loadFileRepresentation` (a temporary file the importer already knows how to downsample from disk) for the data fallback, and check `Data.count` against the source cap before decoding.
-- **Severity:** Medium   **Area:** Sources + Resources
+- **Severity:** Medium   **Area:** Sources + Resources   **Status:** Fixed 2026-11-15 — the share extension prefers `copyOfFileRepresentation` (downsampled from disk) for images and checks `maximumSourceFileByteSize` on the data path.
 
 ### 7.25 Shared images are decoded at full resolution inside `body`, up to ten at once
 - **Location:** Sources/RPGShare/PhotoSection.swift:20-35 (`AKImage(data:)` per cell in `body`); Sources/RPGShare/SharingView.swift:141 (`.animation(value: imageListModel.images)`)
 - **What:** Each preview cell builds an `AKImage` from JPEG data of up to 4096 px (roughly 50 MB decoded each) every time the cell body runs, and `LazyHStack` keeps created cells alive; `ImageItem` is `Hashable` over its whole `Data`, so the animation `value:` compares megabytes of image data on each SharingView update.
 - **Why:** The memory budget the importer works hard to respect can be spent by the preview alone; unverified on device, but 10 photos are explicitly allowed by the activation rule.
 - **Action:** Create thumbnails once (ImageIO thumbnail at the display size) when the images are loaded and store them in `ImageItem`; animate on `images.map(\.id)`.
-- **Severity:** Medium   **Area:** Sources + Resources
+- **Severity:** Medium   **Area:** Sources + Resources   **Status:** Fixed 2026-11-15 — `ImageItem` carries a 1200 px ImageIO `preview` created on load; the strip draws it, and equality is by identity only.
 
 ### 7.L Low-severity items (40)
 
 - **7.26 Export id collection is quadratic for large folders** — Modules/CoreRPG/Controllable/ExportControllable.swift:126-141 — _CoreRPG Controllable/Import/Links_. Count children per folder once (dictionary of remaining ids) and keep a `queued` Set next to `checkIds`.
+  - **Status:** Fixed 2026-11-15 — `exportingFolder` collects each folder's missing children once (`pending`) and `bfsExportResults` keeps a `queued` set.
 - **7.27 Folder membership sort looks up names per comparison** — Modules/CoreRPG/Controllable/EditControllable.swift:410-416 — _CoreRPG Controllable/Import/Links_. Map to (name, entry) once, or insert at the binary-search position.
+  - **Status:** Fixed 2026-11-15 — The folder entries are mapped to (name, entry) once before the sort.
 - **7.28 Export fallback loads the whole finished export into memory** — Modules/CoreRPG/Controllable/ExportControllable.swift:292-297 — _CoreRPG Controllable/Import/Links_. Use `copyItem` after removing the destination, or stream with a FileHandle.
+  - **Status:** Fixed 2026-11-15 — The fallback streams the finished export into the destination in 1 MiB chunks (overwritten in place, since a picked file's folder may not be writable).
 - **7.29 Link register: empty arrays stay in the dictionaries and hydration is quadratic per destination** — Modules/CoreRPG/Links/LinkRegisterListModel.swift:157-186 — _CoreRPG Controllable/Import/Links_. Keep a `Set` of occurrence ids per destination for the dedup check; remove a key when its array becomes empty.
+  - **Status:** Fixed 2026-11-15 — `LinkRegisterListModel` keeps a per-destination occurrence set for the duplicate check, and a removed destination or source drops its key. Tests: `LowSeverityPerformanceTests`.
 - **7.30 `WallclockTimestamp.<` allocates two strings per comparison** — Modules/CoreRPG/CRDT/WallclockTimestamp.swift:104-106 — _CoreRPG Controllable/Import/Links_. Compare `(lhs.clock, lhs.actorId) < (rhs.clock, rhs.actorId)`.
+  - **Status:** Fixed 2026-11-15 — The comparison decides on the clock and builds the id strings only on a tie (the tie order is unchanged, so older replicas order a tie alike). Not the tuple of the audit text: comparing `actorId` directly would change the tie order across versions.
 - **7.31 Text renderer posts a Task on every draw pass** — Modules/CoreRPG/LinkRenderer/LinkHighlightTextRenderer.swift:95-97 — _CoreRPG Controllable/Import/Links_. Skip the task when the measurements equal the last published ones (compare before dispatching).
+  - **Status:** Fixed 2026-11-15 — The renderer publishes only when the measurements differ from the last published ones (`lastPublishedMeasurements`).
 - **7.32 PeerFileDataStore.hold compares the whole old and new Data under its lock** — Modules/CoreRPG/Files/PeerFileDataStore.swift:55-62 — _CoreRPG Files/Persistence/Model_. Compare outside the lock (return both values) or use the generation/hash the caller already has.
+  - **Status:** Fixed 2026-11-15 — The old and new bytes are compared after the lock is released.
 - **7.33 suggestedFileName recurses with one coordinated check per collision** — Modules/CoreRPG/Files/CloudDocumentController.swift:249-257 — _CoreRPG Files/Persistence/Model_. List the folder once and pick the first free `name-N` in memory; keep the non-replacing copy as the race guard.
+  - **Status:** Fixed 2026-11-15 — `suggestedFileName` lists the folder once and picks the first free `name-N` in memory; the coordinated check of the chosen name stays as the race guard.
 - **7.34 Bit-wise CRC-32C and per-byte Snappy copies make LevelDB reading slow** — Modules/CoreRPG/Foundry/FoundryLevelDBReader.swift:360-371 — _CoreRPG Foundry/Sheet_. Table-driven (or `__crc32cb` intrinsic) CRC32C over slices without copies; use `append(contentsOf:)` for non-overlapping Snappy copies.
+  - **Status:** Fixed 2026-11-15 — CRC-32C is table driven and works on slices; a non-overlapping Snappy copy is one slice append. Existing CRC test covers the values.
 - **7.35 Artifact detection parses whole JSON files twice with Foundation's object tree** — Modules/CoreRPG/Foundry/FoundryArtifactDetector.swift:107-111, 130-139 — _CoreRPG Foundry/Sheet_. Peek at a bounded prefix (e.g
+  - **Status:** Fixed 2026-11-15 — The JSON is parsed once for the container and Universal VTT checks. The bounded-prefix peek was not added.
 - **7.36 `FoundryValueHierarchy.nodes(from: [FoundryRuleValue])` copies a whole dictionary per insert on wide levels** — Modules/CoreRPG/Foundry/FoundryValueHierarchy.swift:80-88 — _CoreRPG Foundry/Sheet_. Remove the entry from the dictionary before mutating (`children.removeValue`) or mutate through `children[component, default: NodeBuilder()].insert(...)`.
+  - **Status:** Fixed 2026-11-15 — The child builder is taken out of the dictionary before it is mutated.
 - **7.37 Asset-path collection allocates a byte array and a `URL` per string** — Modules/CoreRPG/Foundry/FoundryPackageResolution.swift:124-133, 141-142 — _CoreRPG Foundry/Sheet_. Fast-path: skip strings without `.` for the extension test and without `<` for the HTML scan, use `utf8` view search and `lastIndex(of: ".")` instead of `URL`; only build the path string lazily when a
+  - **Status:** Fixed 2026-11-15 — Strings without `.` or `<` are skipped, and the extension is read without a `URL`.
 - **7.38 Packaged resource resolution reads, inflates and hashes every referenced asset during preflight and counts duplicates** — Modules/CoreRPG/Foundry/FoundryPackageResolution.swift:243-272 — _CoreRPG Foundry/Sheet_. Cache hash/size per resolved package path, count each package path once, and consider hashing lazily from the ZIP central-directory CRC (already verified) with SHA-256 computed at commit time.
+  - **Status:** Fixed 2026-11-15 — Size and SHA-256 are cached per package path and each package path counts once toward the batch limit. Hashing from the central-directory CRC was not done.
 - **7.39 `FoundrySystemPackageReader.readResources` re-opens (re-hashes) the whole archive on every call** — Modules/CoreRPG/Foundry/FoundrySystemPackageReader.swift:43-93 — _CoreRPG Foundry/Sheet_. Confirm callers; if unused remove `readResources`/`readResource`/`read(from:)` public surface (keep `read(reusingArchive:)`), otherwise use the shared cache.
+  - **Status:** Not changed 2026-11-15 — `readResources`/`readResource`/`read(from:)` of `FoundrySystemPackageReader` are public API used by tests only (production goes through `FoundryVTTImportReader`); removing them would drop that tested surface.
 - **7.40 `FoundryImportArchiveStore.archive(id:)` has no size cap and `save` checks size only after encoding** — Modules/CoreRPG/Foundry/FoundryImportArchive.swift:125-146 — _CoreRPG Foundry/Sheet_. Check `fileSize` before reading; estimate package size from the preflight statistics (raw bytes) before encoding.
+  - **Status:** Fixed 2026-11-15 — `archive(id:)` checks the file size before reading and the data size after. The pre-encode estimate in `save` was not added (the statistics carry no raw byte count).
 - **7.41 Search resets every cached link model on each keystroke** — Modules/CoreRPG/Sheet/SheetRootModel+Search.swift:31-35 — _CoreRPG Foundry/Sheet_. Debounce (cancel-then-replace) the filter/reset, and only reset models whose row is visible or whose text contains the previous/new term.
+  - **Status:** Fixed 2026-11-15 — `LinkHighlightTextModel.reset(highlightedText:)` keeps its cache and posts no update when the rendered text contains neither the old nor the new term. No debounce.
 - **7.42 `MasterRPGTips.refreshEligibility` walks every item of every module on the main actor after each add** — Modules/CoreRPG/Tips/MasterRPGTips.swift:196-264, called from Modules/CoreRPG/Sheet/SheetEntryAddButton.swift:24, Module — _CoreRPG Foundry/Sheet_. Skip the scan once all count-based tips are invalidated (`MasterRPGTipState` already knows), or maintain counters incrementally; at minimum early-exit when tips are disabled.
+  - **Status:** Fixed 2026-11-15 — `refreshEligibility` runs at most once a second, with one trailing run for calls in between.
 - **7.43 Move-into-group context menu computes candidates twice and is unbounded** — Modules/CoreRPG/LGViews/ListRootContextMenu.swift:337-401 — _CoreRPG UI 1_. Compute the list once, cap it, or use a searchable picker sheet.
+  - **Status:** Fixed 2026-11-15 — The candidates are computed once and capped at 100.
 - **7.44 `CacheItemListModel` is never pruned for removed entries and keys are built with string interpolation** — Modules/CoreRPG/ItemList/CacheItemListModel.swift:22-52 — _CoreRPG UI 2_. Key by a `struct { CacheType, UUID }`, drop entry ids when an entry is removed, and only reset visible models on search.
+  - **Status:** Fixed 2026-11-15 — The cache is keyed by a struct. Entry ids are still not dropped when an entry is removed.
 - **7.45 Slider drag saves on every tick** — Modules/CoreRPG/Editors/TextDoubleEditor.swift:92-95 — _CoreRPG UI 2_. Save on `onEditingChanged(false)` for the slider and on submit/focus loss for the field; keep onChange only for the toggle.
+  - **Status:** Fixed 2026-11-15 — The slider saves when the drag ends (`onEditingChanged`); the field and toggle paths are unchanged.
 - **7.46 Unscaled `UIGraphicsImageRenderer` bake for oriented photos has no pixel cap on iOS/visionOS** — Modules/GameRPG/Table3D/GameTableEntities.swift:60-71 — _GameRPG Table3D_. Apply the same `maximumBitmapDimension` cap on UIKit platforms and render at the capped size.
+  - **Status:** Fixed 2026-11-15 — The UIKit bake is rendered at a scale capped to 4,096 px on the long side.
 - **7.47 Board texture composite input and `TextureResource` upload run on the main actor** — Modules/GameRPG/Table3D/GameBoard.swift:53-101, 176-215 — _GameRPG Table3D_. Cache the converted `CGImage` per (photo id, version, degrees) in the model (`currentMapImage` already identifies it) so fog toggles reuse it. [[OPEN since CODE_AUDIT_3dTable §7.3, partial]]
+  - **Status:** Fixed 2026-11-15 — The converted board `CGImage` is cached by source image identity (`GameTableImage.cachedCGImage`) and cleared in `clearMap()`. The texture upload still runs on the main actor.
 - **7.48 Every player's audio and file list triggers a broadcast of all lists** — Modules/GameRPG/Controller/MasterController+AudioMessages.swift:70-73, 113-117 — _GameRPG Controllers_. Coalesce per module with one pending broadcast task.
+  - **Status:** Not changed 2026-11-15 — a coalesced (150 ms, leading+trailing) version was tried and reverted: the message-flow tests (and the 2.6-style request/answer flow they encode) expect one authoritative broadcast per report. Coalescing would change that contract, so it needs a decision first.
 - **7.49 Journal metadata loading is sequential and unbounded per snapshot** — Modules/GameRPG/SharePlay/RPGSharePlayController+JournalAttachments.swift:76-103, 40-64 — _GameRPG SharePlay/Network_. Cap the entries processed per snapshot (for example the newest 16 by counter, or skip senders other than the master on player devices before loading metadata), or load the metadata of uncached attachm
+  - **Status:** Fixed 2026-11-15 — Metadata of attachments not seen before is loaded four at a time. The newest-N cap was not added (it would change which publication wins).
 - **7.50 Statistics reload fetches every event of every session on the shared context** — Modules/GameRPG/Statistics/Controller/GameStatisticsDataController.swift:215-258 and 150-168, Modules/GameRPG/Statistics — _GameRPG Views/Battle/Statistics_. Aggregate with `NSExpression`/grouped fetches (count and sum by kind/outcome/module/origin), and do the duplicate check with one `deduplicationKey IN %@` fetch per batch.
+  - **Status:** Fixed 2026-11-15 — The duplicate check is one `IN` fetch per session for a whole batch. The grouped aggregation of the reload was not done.
 - **7.51 Empty-game content ticks every second for a minute-resolution clock** — Modules/GameRPG/GameViews/GameRootViewer.swift:325-333 — _GameRPG Views/Battle/Statistics_. Reuse `GameElapsedTimerText`'s anchored one-minute timeline (or the view itself).
+  - **Status:** Fixed 2026-11-15 — The empty-game clock ticks once a minute, anchored to the start time.
 - **7.52 Room culling pass still walks every node and recomputes `boundingRect` per frame** — Modules/MapRPG/Map/MapRoomCanvas.swift:78-91 — _MapRPG Map_. Store `bounds` as a stored property computed once in `makePath`/`update`, mark the node list `@ObservationIgnored` for the canvas read or snapshot it once per entry change, and optionally bucket nodes
+  - **Status:** Fixed 2026-11-15 — `MapRoomNode.bounds` is stored once.
 - **7.53 Fog tiles are drawn for the whole room, not the visible part** — Modules/MapRPG/Map/MapRoomCanvas.swift:146-169 — _MapRPG Map_. Intersect the column/row origins with the visible content rect before drawing (keep `MapFogTileBudget.allowsTiling` on the full bounds so 2D and 3D still agree).
+  - **Status:** Fixed 2026-11-15 — The fog planner draws only the tiles inside the visible rect; the budget is still decided on the full bounds.
 - **7.54 Edit toolbar body does O(entries) work on every re-evaluation** — Modules/MapRPG/Map/EditMapToolBar.swift:296-304 — _MapRPG Map_. Derive `editEntries` once in the session (non-hex ids in order) and invalidate on entry-structure change; compute `sharedMapHasChanges` from the undo history's dirty flag or compare only when the refr
+  - **Status:** Partly fixed 2026-11-15 — the title counts and finds the position in place without building the filtered array. `sharedMapHasChanges` is unchanged.
 - **7.55 Undo history stores full map copies including the hex grid** — Modules/MapRPG/Map/MapEditorPinHistory.swift:8-19 — _MapRPG Map_. Exclude the regenerable hex grid from snapshots (store only its scale and revealed ids), or lower the depth when the entry count is large; avoid the second `copy()` in `record`.
+  - **Status:** Partly fixed 2026-11-15 — `record` keeps the snapshot instead of copying it again, and the depth shrinks with the entry count (10 to 100). The hex grid is still part of each snapshot.
 - **7.56 Adding N monsters saves N times** — Modules/MapRPG/Controller/EditController.swift:366-372 — _MapRPG rest_. Append all pins to the model first and save once with a count in the message.
+  - **Status:** Fixed 2026-11-15 — All pins are appended first and saved once.
 - **7.57 `changedLinkRegisterModels` is O(n²) over entries** — Modules/AdventureRPG/Model/AdventureModel.swift:126-165 — _AdventureRPG_. Index old and new entries once into dictionaries by id and iterate those.
+  - **Status:** Fixed 2026-11-15 — Both entry lists are indexed once by id.
 - **7.58 Embedded artwork is decoded on the main actor** — Modules/AudioRPG/Model/AudioPlayerBarViewModel.swift:40-45, 74-79 — _AudioRPG_. Do the downsampling inside the `@concurrent` function and return a `CGImage`/Sendable result, building `Image` on the main actor.
+  - **Status:** Fixed 2026-11-15 — The artwork is read and downsampled in a `@concurrent` function that returns a `CGImage`; the `Image` is built on the main actor.
 - **7.59 `appIconImage()` rebuilt in every body evaluation** — Modules/AudioRPG/Audio/AudioPlayerTimelineView.swift:150, Modules/AudioRPG/Audio/AudioPlayerMiniBarView.swift:83, Module — _AudioRPG_. Cache the image in a static let (or in the view model once).
+  - **Status:** Fixed 2026-11-15 — The app icon is created once (static).
 - **7.60 `hasAudio(itemId:)` walks the folder subtree inside view bodies** — Modules/AudioRPG/Controller/ItemController.swift:35-39 — _AudioRPG_. Compute lazily per folder (e.g
+  - **Status:** Not changed 2026-11-15 — the audio `ItemController` is a stateless controller and `itemData` has no change token to invalidate a cache; the walk already stops at the first audio item.
 - **7.61 Result computation repeated several times per view body** — Modules/DiceRPG/Game/Detail/DiceGameResult.swift:49-66 — _DiceRPG_. Compute `result` once per row/body (`let result = ...`), and give `DieViewerView` a precomputed colour array per set instead of a per-die `diceSuccess` lookup.
+  - **Status:** Fixed 2026-11-15 — The game item and the result are read once per body evaluation. The per-die colour array was not added.
 - **7.62 PDF page text is read in full before the character cap** — Modules/GeneratorRPG/BasicAI/Providers/PdfPageTextReader.swift:26-38 — _GeneratorRPG_. stop reading once the budget is reached and cap each page string at `maxCharacters` right after reading.
+  - **Status:** Fixed 2026-11-15 — Each page is cut right after it is read (`maximumCharactersPerPage`) and the summary analyzer stops once enough characters are collected.
 - **7.63 PhotoEntity data export PNG-encodes the full cached image** — Modules/PhotoRPG/Intent/PhotoEntity+Image.swift:12-17, Modules/PhotoRPG/Intent/PhotoEntity.swift:110-112 — _PdfRPG + PhotoRPG_. Drop the data representation (the file representation covers images) or load the file data and return it as-is; do not encode on demand.
+  - **Status:** Fixed 2026-11-15 — The data representation returns the stored file's bytes as they are instead of PNG-encoding the cached image.
 - **7.64 Generation tree flattened repeatedly inside view bodies** — Modules/TableRPG/Model/TableGenerationModel.swift:158-188 — _SpaceRPG + TableRPG_. Cache the flattened list/`selectedEntries` (invalidate in `rebuildChildren`/`select`) if profiling shows cost
+  - **Status:** Partly fixed 2026-11-15 — only `occurrence(id:)` was changed (search without flattening). The flattened lists are not cached.
 - **7.65 Stale-scan cleanup runs synchronously on the main actor when the scanner model is first created** — Modules/SpaceRPG/Record/AppDataModel.swift:98-101 — _SpaceRPG + TableRPG_. Run the cleanup in a `@concurrent` background task (like `reset()` already does for the live folder).
+  - **Status:** Fixed 2026-11-15 — The stale-scan cleanup runs in a `@concurrent` task; it only removes folders created before the app asked for it, so a capture started meanwhile is safe.
 
 ## 8. SwiftUI / UI
 

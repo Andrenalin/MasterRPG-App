@@ -2,6 +2,8 @@
 
 import CoreRPG
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 #if os(macOS)
 import AppKit
 #else
@@ -19,8 +21,19 @@ extension EditController {
 extension EditController {
     @MainActor func convert(itemId: UUID) async throws {
         guard let item = editModel(for: itemId), let fileUrl = item.fileUrl else { return }
-        await cacheController?.photoId(for: item.id, item: item, shouldDownload: true)
-        guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: JPEGQuality.export) else { return }
+        // The original file is re-encoded off the main actor and at its own size. The cached image
+        // is decoded at 8192 px at most, so converting from it permanently downscaled a bigger
+        // photo, and the encode ran on the main actor. See CODE_AUDIT_26 §7.18.
+        var data = await originalAsJPEG(fileUrl)
+        if data == nil {
+            // An image the original path refuses (over the declared-size limits, or a format
+            // ImageIO cannot write): the capped cache image, as before.
+            await cacheController?.photoId(for: item.id, item: item, shouldDownload: true)
+            if let image = await cacheController?.photo(for: item.id) {
+                data = await Self.encodedJPEG(image)
+            }
+        }
+        guard let data else { return }
 
         var dataUrl = fileUrl
         dataUrl.convertFile(data, fileExtension: itemControllable.config.filenameExtension)
@@ -30,6 +43,41 @@ extension EditController {
         reset(fileUrl: newFileUrl, itemId: item.id)
     }
     
+    /// The JPEG of the file `fileUrl` names, written from the original bitmap by ImageIO (the
+    /// orientation and metadata travel with it), after the file is downloaded. `nil` when the file
+    /// cannot be read or its declared size is over the limits.
+    @MainActor private func originalAsJPEG(_ fileUrl: FileUrl) async -> Data? {
+        guard let fileUrlDataController else { return nil }
+        if await fileUrlDataController.hasAccess(for: fileUrl) == false {
+            try? await fileUrlDataController.download(fileUrl: fileUrl)
+        }
+        return await fileUrlDataController.resolvedImage(
+            for: fileUrl,
+            decodeData: { data in
+                CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary)
+                    .flatMap(Self.jpegData(from:))
+            },
+            decodeUrl: { url in
+                CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary)
+                    .flatMap(Self.jpegData(from:))
+            }
+        )
+    }
+
+    private static func jpegData(from source: CGImageSource) -> Data? {
+        guard case .withinLimits = ImageDownsampler.declaredSize(of: source) else { return nil }
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImageFromSource(
+            destination,
+            source,
+            0,
+            [kCGImageDestinationLossyCompressionQuality: JPEGQuality.export] as CFDictionary
+        )
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
+    }
+
     @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {
         guard let item = editModel(for: itemId) else { return false }
         guard let fileUrl = item.fileUrl else { return false }
@@ -94,12 +142,10 @@ extension EditController {
         }
     }
 
-#if !os(macOS)
     @concurrent
     private static func encodedJPEG(_ image: AKImage?) async -> Data? {
         image?.jpegData(compressionQuality: JPEGQuality.export)
     }
-#endif
 }
 
 // MARK: - Apply a photo analysis to a PhotoModel

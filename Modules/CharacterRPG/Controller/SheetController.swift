@@ -62,11 +62,15 @@ extension SheetController: SheetControllable {
         return sheets
     }
 
-    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
-        sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: [])
+    /// - Parameter isShallow: the group sub-value is projected folded, without its own entries.
+    ///   `update` uses it for an entry that already has a sheet: the matched children are updated
+    ///   (and so projected) by their own `update`, so building their subtree here as well made
+    ///   every nesting level rebuild everything below it. See CODE_AUDIT_26 §7.16.
+    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool, isShallow: Bool = false) -> SheetModel {
+        sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: [], isShallow: isShallow)
     }
 
-    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool, visited: Set<UUID>) -> SheetModel {
+    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool, visited: Set<UUID>, isShallow: Bool = false) -> SheetModel {
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
         let (name, description) = entryNameDescription(entry: entry, root: root)
 
@@ -78,7 +82,7 @@ extension SheetController: SheetControllable {
 
         var allSheets: [SheetModel] = []
         if let subValueId = entry.valueId {
-            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor, showsItemInlines: false, visited: visited)]
+            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: isShallow ? 1 : 0, isEditor: isEditor, showsItemInlines: false, visited: visited)]
         }
 
         let links = linkRegisterController.linksFrom(source: destination)
@@ -138,7 +142,7 @@ extension SheetController: SheetControllable {
 
     @MainActor private func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool, showsItemInlines: Bool) {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
+        Logger.sheetController.debug("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
         let item = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
@@ -181,35 +185,41 @@ extension SheetController: SheetControllable {
         }
 
         let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [Update] Completed - Duration: \(duration), Total entries: \(item.entries.count)")
+        Logger.sheetController.debug("✅ [Update] Completed - Duration: \(duration), Total entries: \(item.entries.count)")
     }
     
     @MainActor private func updateEntries(item: ValueModel, root: RootManager, in sheetModel: SheetModel, isEditor: Bool) {
-        let entryIds = item.entries.map { $0.id }
+        let entryIds = Set(item.entries.map(\.id))
         
         sheetModel.entries.removeAll { entry in
             guard let entryId = entry.source.entryId else { return false }
             return !entryIds.contains(entryId)
         }
+        var existingSheetModels: [UUID: SheetModel] = [:]
+        for existing in sheetModel.entries {
+            if let entryId = existing.source.entryId, existingSheetModels[entryId] == nil {
+                existingSheetModels[entryId] = existing
+            }
+        }
         
         var updatedEntries: [SheetModel] = []
         
         for entry in item.entries {
-            let updated = update(entry: entry, item: item, root: root, in: sheetModel, isEditor: isEditor)
+            let updated = update(entry: entry, item: item, root: root, in: sheetModel, existing: existingSheetModels[entry.id], isEditor: isEditor)
             updatedEntries.append(updated)
         }
         sheetModel.entries = updatedEntries
     }
     
-    @MainActor private func update(entry: ValueEntryModel, item: ValueModel, root: RootManager, in sheetModel: SheetModel, isEditor: Bool) -> SheetModel {
-        guard let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) else {
+    @MainActor private func update(entry: ValueEntryModel, item: ValueModel, root: RootManager, in sheetModel: SheetModel, existing: SheetModel?, isEditor: Bool) -> SheetModel {
+        guard let existingSheetModel = existing else {
             return sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor)
         }
 
         // Re-project the entry from scratch so a newly attached/removed sub-value or link
         // (e.g. converting the entry to a group) is reflected in sheetType and entries,
         // not just in name/description.
-        let projectedEntry = sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor)
+        let projectedEntry = sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor, isShallow: true)
 
         unequalSet(lhs: &existingSheetModel.name, rhs: projectedEntry.name) { changed in
             existingSheetModel.hasChanged = changed
@@ -241,6 +251,10 @@ extension SheetController: SheetControllable {
                 $0.source == projectedChild.source && $0.linkNumber == projectedChild.linkNumber
             }) else {
                 existingSheetModel.hasChanged = true
+                // A new sub-value has no sheet to update, and the shallow projection left it folded.
+                if entry.valueId != nil, offset == 0 {
+                    return sheet(root: root, itemId: projectedChild.source.itemId, destination: projectedChild.destination, level: projectedChild.level, isShown: false, moduleDepth: 0, isEditor: isEditor, showsItemInlines: false, visited: [])
+                }
                 return projectedChild
             }
 

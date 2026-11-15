@@ -341,6 +341,8 @@ struct AudioPlaylistGameFlowTests {
         env.master.gameModel.pendingAudioPlays[play.id] = play
 
         _ = try await env.master.handle(await Self.failureReport(from: player, itemId: trackId, in: env))
+        // The resend runs in a task of its own (CODE_AUDIT_26 §7.8).
+        await env.master.waitForAudioDeliveries()
 
         // The track goes to the player again, and nobody is given up on.
         #expect(Self.packageIds(to: player, in: env).contains(trackId))

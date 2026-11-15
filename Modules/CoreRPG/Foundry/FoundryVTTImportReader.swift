@@ -19,6 +19,14 @@ public struct FoundryVTTImportReader: Sendable {
         zipDataSourceCache = FoundryZIPDataSourceCache(limits: limits)
     }
 
+    /// Drops the decoded assets and parsed archives kept for resource reads. Call it when the
+    /// import has been committed: the bridge cache holds every asset of the source (up to the
+    /// resource batch limit) until the next preflight otherwise. See CODE_AUDIT_26 §7.3.
+    public func releaseCachedSources() async {
+        await bridgeResourceCache.invalidate(sourceURL: URL(filePath: "/"))
+        await zipDataSourceCache.invalidate(sourceURL: URL(filePath: "/"))
+    }
+
     public func read(from url: URL) async throws -> FoundryVTTImportPackage {
         if url.lastPathComponent.lowercased().hasSuffix(".mrpgfoundry") {
             await bridgeResourceCache.invalidate(sourceURL: url)
@@ -440,6 +448,28 @@ struct FoundryVTTCollectionSpec {
 }
 
 private extension FoundryVTTDecoder {
+    /// A realistic package has a few dozen collections. The count is capped so a crafted source
+    /// with tens of thousands of bogus packs or directories cannot turn into that many collection
+    /// decodes. See CODE_AUDIT_26 §7.2.
+    static let maximumCollectionSpecs = 1_000
+
+    func checkSpecCount(_ count: Int) throws {
+        guard count <= min(limits.maximumDocumentCount, Self.maximumCollectionSpecs) else {
+            throw FoundryImportError.tooManyDocuments(count)
+        }
+    }
+
+    /// Whether `path` or one of its ancestor directories is in `declared`.
+    static func isDeclared(_ path: String, in declared: Set<String>) -> Bool {
+        if declared.contains(path) { return true }
+        var components = path.split(separator: "/")
+        while !components.isEmpty {
+            if declared.contains(components.joined(separator: "/")) { return true }
+            components.removeLast()
+        }
+        return false
+    }
+
     func collectionSpecs(
         manifest: FoundryVTTPackageManifest?,
         manifestPath: String?,
@@ -495,9 +525,7 @@ private extension FoundryVTTDecoder {
                 // packs — each one going on to cost real work below (path resolution,
                 // collection decoding) even after a fast per-lookup path. Fail fast
                 // instead of materializing an unbounded spec list. See CODE_AUDIT §5.9.
-                guard specs.count <= limits.maximumDocumentCount else {
-                    throw FoundryImportError.tooManyDocuments(specs.count)
-                }
+                try checkSpecCount(specs.count)
             }
         }
 
@@ -531,6 +559,7 @@ private extension FoundryVTTDecoder {
                 declaredType: .inferred(fromCollectionName: name),
                 rawData: nil
             ))
+            try checkSpecCount(specs.count)
         }
 
         let levelDBDirectories = Set(source.paths.compactMap { path -> String? in
@@ -543,12 +572,13 @@ private extension FoundryVTTDecoder {
             // make it impossible to match against `source.paths`.
             return path.split(separator: "/").dropLast().joined(separator: "/")
         })
+        // The directories already declared, looked up with the directory and each of its
+        // ancestors instead of testing every spec for every directory. See CODE_AUDIT_26 §7.2.
+        var declaredDirectories = Set(specs.map { $0.path.hasSuffix("/") ? String($0.path.dropLast()) : $0.path })
         for path in levelDBDirectories.sorted() {
-            let isAlreadyDeclared = specs.contains { spec in
-                spec.path == path || path.hasPrefix(spec.path.hasSuffix("/") ? spec.path : spec.path + "/")
-            }
-            guard !isAlreadyDeclared else { continue }
+            guard !Self.isDeclared(path, in: declaredDirectories) else { continue }
             let name = URL(filePath: path).lastPathComponent
+            declaredDirectories.insert(path)
             specs.append(FoundryVTTCollectionSpec(
                 id: path.isEmpty && manifest == nil ? "standalone" : path,
                 name: name,
@@ -557,6 +587,7 @@ private extension FoundryVTTDecoder {
                 declaredType: .inferred(fromCollectionName: name),
                 rawData: nil
             ))
+            try checkSpecCount(specs.count)
         }
 
         if specs.isEmpty, manifest == nil {

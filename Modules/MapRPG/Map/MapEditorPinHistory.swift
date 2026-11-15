@@ -64,7 +64,10 @@ final class MapEditorHistory {
         undoStack.append(current)
         undoTitles.append(title)
         trimUndoHistory()
-        current = snapshot.copy()
+        // The snapshot owns a private map copy and is never mutated (see `MapEditorSnapshot`),
+        // so it is kept as it is: a second copy duplicated the whole map, hex grid included,
+        // on every checkpoint. See CODE_AUDIT_26 §7.55.
+        current = snapshot
         redoStack.removeAll(keepingCapacity: true)
         redoTitles.removeAll(keepingCapacity: true)
         return true
@@ -91,8 +94,14 @@ final class MapEditorHistory {
         return next.copy()
     }
 
+    /// The depth shrinks as the map grows: a checkpoint holds every entry, and a large hex
+    /// grid has thousands of them. 100 steps up to 200 entries, at least 10.
+    private var undoDepth: Int {
+        max(10, min(Self.maximumUndoDepth, 20_000 / max(1, current.map.entries.count)))
+    }
+
     private func trimUndoHistory() {
-        let overflow = undoStack.count - Self.maximumUndoDepth
+        let overflow = undoStack.count - undoDepth
         guard overflow > 0 else { return }
         undoStack.removeFirst(overflow)
         undoTitles.removeFirst(min(overflow, undoTitles.count))

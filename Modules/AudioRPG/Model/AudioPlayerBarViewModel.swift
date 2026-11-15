@@ -28,13 +28,21 @@ final class AudioPlayerBarViewModel {
             return
         }
 
-        let data = await Self.loadArtworkData(url: item.url)
+        // The artwork is read and downsampled off the main actor; only the `Image` is built here.
+        // See CODE_AUDIT_26 §7.58.
+        let image = await Self.loadArtworkImage(url: item.url)
         guard !Task.isCancelled else { return }
-        albumArtwork = Self.artworkImage(from: data)
+        albumArtwork = image.map { Image(decorative: $0, scale: 1) }
     }
 
-    /// Metadata parsing and data extraction have no UI dependency — @concurrent keeps
+    /// Metadata parsing, data extraction and decoding have no UI dependency — @concurrent keeps
     /// them off the main actor (nonisolated async would inherit the caller's isolation).
+    @concurrent
+    private static func loadArtworkImage(url: URL) async -> CGImage? {
+        guard let data = await loadArtworkData(url: url), !Task.isCancelled else { return nil }
+        return artworkCGImage(from: data)
+    }
+
     @concurrent
     private static func loadArtworkData(url: URL) async -> Data? {
         do {
@@ -55,16 +63,19 @@ final class AudioPlayerBarViewModel {
     }
 
     /// Longest edge, in pixels, the player bar keeps of the artwork it shows.
-    private static let maximumArtworkPixelSize: CGFloat = 1024
+    private nonisolated static let maximumArtworkPixelSize: CGFloat = 1024
 
     /// Embedded artwork can be several thousand pixels wide while the bar shows a thumbnail, so
     /// it is decoded downsampled, and not at all when its header names more than the pixel
     /// limits. See CODE_AUDIT §8.3.
     static func artworkImage(from data: Data?) -> Image? {
+        artworkCGImage(from: data).map { Image(decorative: $0, scale: 1) }
+    }
+
+    nonisolated static func artworkCGImage(from data: Data?) -> CGImage? {
         guard let data,
-              let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
-              let image = ImageDownsampler.downsampledImage(from: source, maxPixelSize: maximumArtworkPixelSize) else { return nil }
-        return Image(decorative: image, scale: 1)
+              let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+        return ImageDownsampler.downsampledImage(from: source, maxPixelSize: maximumArtworkPixelSize)
     }
 
     func toggleMute(audioPlayerModel: AudioPlayerModel) {
@@ -73,7 +84,15 @@ final class AudioPlayerBarViewModel {
         audioPlayerModel.volume = audioPlayerModel.isMuted ? audioPlayerModel.previousVolume : 0
     }
 
+    /// The app icon never changes while the app runs; it is looked up once, not on every body
+    /// evaluation of the player bars. See CODE_AUDIT_26 §7.59.
     func appIconImage() -> Image {
+        Self.cachedAppIcon
+    }
+
+    private static let cachedAppIcon: Image = makeAppIconImage()
+
+    private static func makeAppIconImage() -> Image {
 #if canImport(AppKit)
         if let appIcon = NSApplication.shared.applicationIconImage {
             return Image(nsImage: appIcon)

@@ -124,7 +124,7 @@ extension GameController {
         let item = gameItem(for: itemId)
         return PackageCoreMetadata(
             version: item.version,
-            contentVersion: MapUpdatePayload(model: item).contentVersion,
+            contentVersion: MapUpdatePayload.contentVersion(of: item),
             backgroundPhotoId: item.photoId
         )
     }
@@ -155,7 +155,7 @@ extension GameController {
             generation: MapGameModel.AuthoritativeGeneration(
                 version: item.version,
                 assetVersion: currentMapAssetVersion(for: itemId),
-                contentVersion: MapUpdatePayload(model: item).contentVersion
+                contentVersion: MapUpdatePayload.contentVersion(of: item)
             ),
             data: nil
         )

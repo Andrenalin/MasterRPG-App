@@ -342,8 +342,17 @@ private extension FoundrySnappyDecoder {
               length <= expectedLength - output.count else {
             throw FoundryImportError.corruptLevelDB("A Snappy copy points outside its decoded data.")
         }
-        for _ in 0..<length {
-            output.append(output[output.count - offset])
+        let start = output.count - offset
+        if offset >= length {
+            // Source and target do not overlap: one slice append (the slice is copied first, so the
+            // append does not copy the whole output). See CODE_AUDIT_26 §7.34.
+            let chunk = Array(output[start..<start + length])
+            output.append(contentsOf: chunk)
+        } else {
+            // An overlapping copy repeats the last `offset` bytes, so it is read as it is written.
+            for index in 0..<length {
+                output.append(output[start + index])
+            }
         }
     }
 }
@@ -357,14 +366,27 @@ enum FoundryCRC32C {
         return ((checksum >> 15) | (checksum << 17)) &+ maskDelta
     }
 
+    /// The byte-at-a-time lookup table of the reflected CRC-32C polynomial.
+    private static let table: [UInt32] = (0..<256).map { index -> UInt32 in
+        var crc = UInt32(index)
+        for _ in 0..<8 {
+            let mask = UInt32(bitPattern: -Int32(crc & 1))
+            crc = (crc >> 1) ^ (reversedPolynomial & mask)
+        }
+        return crc
+    }
+
     static func checksum(_ bytes: [UInt8]) -> UInt32 {
+        checksum(bytes[...])
+    }
+
+    /// Table driven (one lookup per byte instead of eight shift/XOR steps); a slice is
+    /// checksummed without copying it. See CODE_AUDIT_26 §7.34.
+    static func checksum(_ bytes: ArraySlice<UInt8>) -> UInt32 {
         var crc = UInt32.max
-        for byte in bytes {
-            crc ^= UInt32(byte)
-            // Standard bitwise CRC-32: one shift/XOR step per bit of the byte just mixed in.
-            for _ in 0..<8 {
-                let mask = UInt32(bitPattern: -Int32(crc & 1))
-                crc = (crc >> 1) ^ (reversedPolynomial & mask)
+        table.withUnsafeBufferPointer { table in
+            for byte in bytes {
+                crc = (crc >> 8) ^ table[Int((crc ^ UInt32(byte)) & 0xff)]
             }
         }
         return ~crc

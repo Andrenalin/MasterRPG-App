@@ -142,13 +142,17 @@ struct PdfContentExtractor: Sendable {
     // MARK: - Private Methods
     
     private func extractText(from pdfDocument: PDFDocument, pageLimit: Int) async throws -> [FoundationModelInputLimiter.PageText] {
-        let pages = try await PdfPageTextReader.pages(of: .init(document: pdfDocument), pageLimit: pageLimit)
+        let pages = try await PdfPageTextReader.pages(
+            of: .init(document: pdfDocument),
+            pageLimit: pageLimit,
+            maximumCharactersPerPage: maxCharacters
+        )
         return pages.map { page in
             let limited = FoundationModelInputLimiter.limitedText(page.text, maxCharacters: maxCharacters)
             return FoundationModelInputLimiter.PageText(
                 pageNumber: page.pageNumber,
                 text: limited,
-                wasTruncated: limited != page.text
+                wasTruncated: page.wasCapped || limited != page.text
             )
         }
     }

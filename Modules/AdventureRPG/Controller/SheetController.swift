@@ -86,7 +86,7 @@ extension SheetController: SheetControllable {
 
     @MainActor func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
         let startTime = ContinuousClock.now
-        Logger.sheetController.info("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
+        Logger.sheetController.debug("🔄 [Update] Starting update \(itemController.config.module.token) for itemId: \(sheetModel.source.itemId.uuidString), level: \(sheetModel.level)")
         
         let model = itemController.reviewAwareItemOrEmpty(root: root, for: sheetModel.source.itemId)
 
@@ -112,11 +112,14 @@ extension SheetController: SheetControllable {
 
         guard !sheetModel.isFolded else {
             let duration = ContinuousClock.now - startTime
-            Logger.sheetController.info("✅ [Update] Completed (folded) - Duration: \(duration), Changes: \(changeCount)")
+            Logger.sheetController.debug("✅ [Update] Completed (folded) - Duration: \(duration), Changes: \(changeCount)")
             return
         }
         
-        let entryIds = model.entries.map { $0.id }
+        // Sets and dictionaries built once: the lookups below ran a linear search per entry, so an
+        // update of a long adventure (hundreds of entries from a PDF) was quadratic.
+        // See CODE_AUDIT_26 §7.15.
+        let entryIds = Set(model.entries.map(\.id))
 
         // Remove deleted entries
         let removedCount = sheetModel.entries.filter { entry in
@@ -128,13 +131,20 @@ extension SheetController: SheetControllable {
             guard let entryId = entry.source.entryId else { return false }
             return !entryIds.contains(entryId)
         }
+        var existingSheetModels: [UUID: SheetModel] = [:]
+        existingSheetModels.reserveCapacity(sheetModel.entries.count)
+        for existing in sheetModel.entries {
+            if let entryId = existing.source.entryId, existingSheetModels[entryId] == nil {
+                existingSheetModels[entryId] = existing
+            }
+        }
 
         var updatedEntries: [SheetModel] = []
         var updatedCount = 0
         var createdCount = 0
         
         for entry in model.entries {
-            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
+            if let existingSheetModel = existingSheetModels[entry.id] {
                 let (entryName, entryDescription) = entryNameDescription(entry: entry, root: root)
                 unequalSet(lhs: &existingSheetModel.name, rhs: entryName) { changed in
                     existingSheetModel.hasChanged = changed
@@ -190,6 +200,6 @@ extension SheetController: SheetControllable {
         sheetModel.entries = updatedEntries
         
         let duration = ContinuousClock.now - startTime
-        Logger.sheetController.info("✅ [Update] Completed - Duration: \(duration), Changed fields: \(changeCount), Removed: \(removedCount), Updated: \(updatedCount), Created: \(createdCount), Total entries: \(updatedEntries.count)")
+        Logger.sheetController.debug("✅ [Update] Completed - Duration: \(duration), Changed fields: \(changeCount), Removed: \(removedCount), Updated: \(updatedCount), Created: \(createdCount), Total entries: \(updatedEntries.count)")
     }
 }

@@ -103,14 +103,33 @@ extension EditController: EntryDataEditable {
         var importedToExistingIds: [UUID: UUID] = [:]
         var idMatches: [Int: Int] = [:]
 
+        // Existing entries by id (in order, ids can repeat) and, built only when the first
+        // fallback is needed, by name without link + kind + parent. The lookups ran a linear
+        // search with a string transform per candidate for every imported entry.
+        // See CODE_AUDIT_26 §7.22.
+        var existingIndicesById: [UUID: [Int]] = [:]
+        for (index, entry) in existing.enumerated() {
+            existingIndicesById[entry.id, default: []].append(index)
+        }
+        var idCursors: [UUID: Int] = [:]
+
         for (importedIndex, entry) in imported.enumerated() {
-            guard let existingIndex = existing.indices.first(where: {
-                !matchedExistingIndices.contains($0) && existing[$0].id == entry.id
-            }) else { continue }
+            guard let candidates = existingIndicesById[entry.id] else { continue }
+            let cursor = idCursors[entry.id, default: 0]
+            guard cursor < candidates.count else { continue }
+            idCursors[entry.id] = cursor + 1
+            let existingIndex = candidates[cursor]
             matchedExistingIndices.insert(existingIndex)
             idMatches[importedIndex] = existingIndex
             importedToExistingIds[entry.id] = existing[existingIndex].id
         }
+
+        struct FallbackKey: Hashable {
+            let name: String
+            let kind: RuleEntryKind
+            let parentId: UUID?
+        }
+        var fallbackIndices: [FallbackKey: [Int]]?
 
         return imported.enumerated().map { importedIndex, sourceEntry in
             var importedEntry = sourceEntry
@@ -125,13 +144,15 @@ extension EditController: EntryDataEditable {
             } else {
                 // Compared without link markup, as `entriesMatchedByName` does: a name that only
                 // gained a link is the same entry. See CODE_AUDIT_Since_3.0.1 §5.1.
-                let importedName = importedEntry.name.withoutLink()
-                let hierarchyFallbackIndices = existing.indices.filter {
-                    !matchedExistingIndices.contains($0) &&
-                    existing[$0].name.withoutLink() == importedName &&
-                    existing[$0].kind == importedEntry.kind &&
-                    existing[$0].parentId == importedEntry.parentId
+                if fallbackIndices == nil {
+                    var index: [FallbackKey: [Int]] = [:]
+                    for (existingIndex, entry) in existing.enumerated() {
+                        index[FallbackKey(name: entry.name.withoutLink(), kind: entry.kind, parentId: entry.parentId), default: []].append(existingIndex)
+                    }
+                    fallbackIndices = index
                 }
+                let key = FallbackKey(name: importedEntry.name.withoutLink(), kind: importedEntry.kind, parentId: importedEntry.parentId)
+                let hierarchyFallbackIndices = (fallbackIndices?[key] ?? []).filter { !matchedExistingIndices.contains($0) }
                 matchedIndex = hierarchyFallbackIndices.count == 1 ? hierarchyFallbackIndices[0] : nil
                 if let matchedIndex {
                     matchedExistingIndices.insert(matchedIndex)

@@ -443,11 +443,11 @@ extension EditControllable {
             // A collection only references its members and may list one several times.
             entries.append(entry)
             if parentItem.category == .folder {
-                entries = entries.sorted {
-                    let name1 = itemControllable.nameSync(itemId: $0.childId)
-                    let name2 = itemControllable.nameSync(itemId: $1.childId)
-                    return name1.localizedStandardCompare(name2) == .orderedAscending
-                }
+                // Names are looked up once per entry, not twice per comparison (§7.27).
+                entries = entries
+                    .map { (name: itemControllable.nameSync(itemId: $0.childId), entry: $0) }
+                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+                    .map(\.entry)
             }
         }
 

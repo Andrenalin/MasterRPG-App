@@ -9,6 +9,7 @@ import CoreGraphics
 import Foundation
 
 class StarField {
+    static let maximumStars = 600
     var stars = [Star]()
     let deterministic: Bool
     let leftEdge = -50.0
@@ -23,7 +24,9 @@ class StarField {
     func change(size: CGSize) {
         rightEdge = size.width + 50
         stars = []
-        let starCount = Int(size.width * size.height / 1000)
+        // Capped: a 1920 x 1080 screen got about 2,000 stars, each blooming one a blurred copy of
+        // the context. See CODE_AUDIT_26 §7.20.
+        let starCount = min(Int(size.width * size.height / 1000), Self.maximumStars)
         for index in 0 ..< starCount {
             let x: Double
             let y: Double

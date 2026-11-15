@@ -12,6 +12,27 @@ fileprivate enum QuickEntryEditorFocusField: Hashable {
     case editor
 }
 
+/// A value made on first access. `@State` holds the box, so the value is made once however often
+/// the owning view's `init` runs.
+@MainActor
+final class QuickEditorLazyValue<Value> {
+    private var make: (() -> Value)?
+    private var stored: Value?
+
+    init(_ make: @escaping () -> Value) {
+        self.make = make
+    }
+
+    var value: Value {
+        if let stored { return stored }
+        let made = make?()
+        make = nil
+        guard let made else { preconditionFailure("The lazy value was read while it was being made.") }
+        stored = made
+        return made
+    }
+}
+
 public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector: View, PDFOverlay: View>: View {
     public init(root: any ItemRootControllable, editController: EditController, model: EditController.Model, referenceText: DebouncerModel<String>, pdfEditorRoute: any NavigationDestination, @ViewBuilder inspector: () -> Inspector, @ViewBuilder pdfOverlay: () -> PDFOverlay) {
         self.root = root
@@ -20,8 +41,11 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
         self.pdfEditorRoute = pdfEditorRoute
         self.inspector = inspector()
         self.pdfOverlay = pdfOverlay()
-        self.textEditModel = TextEditModel(linkRegisterController: editController.linkRegisterController)
-        self.model = model.copy()
+        // `init` runs on every parent update, `@State` keeps only the first value: the deep copy
+        // and the text model are made on first use, once. See CODE_AUDIT_26 §7.7.
+        let linkRegisterController = editController.linkRegisterController
+        self._textEditModelBox = State(wrappedValue: QuickEditorLazyValue { TextEditModel(linkRegisterController: linkRegisterController) })
+        self._modelBox = State(wrappedValue: QuickEditorLazyValue { model.copy() })
     }
     
     let root: any ItemRootControllable
@@ -39,9 +63,11 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 
     @FocusState private var focusedField: QuickEntryEditorFocusField?
 
-    @State private var textEditModel: TextEditModel
+    @State private var textEditModelBox: QuickEditorLazyValue<TextEditModel>
+    @State private var modelBox: QuickEditorLazyValue<EditController.Model>
 
-    @State private var model: EditController.Model
+    private var textEditModel: TextEditModel { textEditModelBox.value }
+    private var model: EditController.Model { modelBox.value }
     
     @State private var showHelp = false
     @State private var showInspector = false
@@ -54,7 +80,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     
     public var body: some View {
         ManagedNavigationStack(name: "QuickEntryEditor") {
-            QuickEntryEditorContentView(root: root, editController: editController, referenceText: referenceText, inspector: inspector, pdfOverlay: pdfOverlay, model: model, textEditModel: textEditModel, initialText: initialText, focusedField: $focusedField, createMultiLineEntries: createMultiLineEntries, showResult: $showResult, showInspector: $showInspector)
+            QuickEntryEditorContentView(root: root, editController: editController, referenceText: referenceText, inspector: inspector, pdfOverlay: pdfOverlay, model: model, textEditModel: textEditModel, initialText: { initialText }, focusedField: $focusedField, createMultiLineEntries: createMultiLineEntries, showResult: $showResult, showInspector: $showInspector)
                 .overlay(alignment: .top) {
                     VStack {
                         Text("The quick editor allows you to add all entries for the table at once. The first line is the title and the next text represents the content of the entry. An empty line is used to separate entries.", bundle: .module)
@@ -256,7 +282,8 @@ private struct QuickEntryEditorContentView<EditController: EntryDataEditable, In
     let pdfOverlay: PDFOverlay
     let model: EditController.Model
     let textEditModel: TextEditModel
-    let initialText: String
+    /// Evaluated once when the editor appears, not by every pass of the parent's body.
+    let initialText: () -> String
     let focusedField: FocusState<QuickEntryEditorFocusField?>.Binding
     let createMultiLineEntries: (String) -> [EditController.Model.Entry]
     @Binding var showResult: Bool
@@ -293,7 +320,7 @@ private struct QuickEntryEditorContentView<EditController: EntryDataEditable, In
         }
 #endif
         .onAppear {
-            referenceText.input = initialText
+            referenceText.input = initialText()
             focusedField.wrappedValue = .editor
             textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
         }

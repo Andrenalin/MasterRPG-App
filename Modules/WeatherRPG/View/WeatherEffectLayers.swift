@@ -20,15 +20,21 @@ struct WeatherEffectLayers: View {
 
     var body: some View {
         ZStack {
-            StarsView()
-                .opacity(starOpacity)
+            // Not part of the stack while it cannot be seen: a layer faded to zero still ran its
+            // timeline and drew every frame. See CODE_AUDIT_26 §7.20.
+            if starOpacity > 0 {
+                StarsView()
+                    .opacity(starOpacity)
+            }
 
-            CloudsView(
-                thickness: model.cloudThickness,
-                topTint: WeatherViewer.cloudTopStops.interpolated(amount: model.time),
-                bottomTint: WeatherViewer.cloudBottomStops.interpolated(amount: model.time)
-            )
-            .weatherLayerDepth(layerSpacing)
+            if model.cloudThickness != .none {
+                CloudsView(
+                    thickness: model.cloudThickness,
+                    topTint: WeatherViewer.cloudTopStops.interpolated(amount: model.time),
+                    bottomTint: WeatherViewer.cloudBottomStops.interpolated(amount: model.time)
+                )
+                .weatherLayerDepth(layerSpacing)
+            }
 
             LightningView(
                 frequency: model.lightningFrequency,

@@ -139,6 +139,9 @@ struct GameStatisticsDataController: Sendable {
         try await context.perform {
             var sessions: [UUID: RPGGameStatisticSession] = [:]
             var seenKeys: Set<String> = []
+            // The keys already stored are fetched once per session for the whole batch (one
+            // `IN` fetch), instead of one count per event. See CODE_AUDIT_26 §7.50.
+            let storedKeys = try self.storedDeduplicationKeys(for: batch.map(\.draft), in: context)
             for (draft, participant) in batch {
                 let session: RPGGameStatisticSession
                 if let cached = sessions[draft.sessionId] {
@@ -157,14 +160,7 @@ struct GameStatisticsDataController: Sendable {
                 if !draft.deduplicationKey.isEmpty {
                     let scopedKey = "\(draft.sessionId.uuidString)|\(draft.deduplicationKey)"
                     guard seenKeys.insert(scopedKey).inserted else { continue }
-                    let duplicateRequest = NSFetchRequest<RPGGameStatisticEvent>(entityName: "RPGGameStatisticEvent")
-                    duplicateRequest.predicate = NSPredicate(
-                        format: "sessionID == %@ AND deduplicationKey == %@",
-                        draft.sessionId as NSUUID,
-                        draft.deduplicationKey
-                    )
-                    duplicateRequest.fetchLimit = 1
-                    guard try context.count(for: duplicateRequest) == 0 else { continue }
+                    guard !storedKeys.contains(scopedKey) else { continue }
                 }
 
                 let event = RPGGameStatisticEvent(context: context)
@@ -210,6 +206,34 @@ struct GameStatisticsDataController: Sendable {
             }
             try self.saveIfNeeded(context)
         }
+    }
+
+    /// The `sessionID|deduplicationKey` pairs of the drafts that are already stored.
+    private func storedDeduplicationKeys(
+        for drafts: [GameStatisticEventDraft],
+        in context: NSManagedObjectContext
+    ) throws -> Set<String> {
+        var keysBySession: [UUID: Set<String>] = [:]
+        for draft in drafts where !draft.deduplicationKey.isEmpty {
+            keysBySession[draft.sessionId, default: []].insert(draft.deduplicationKey)
+        }
+        var stored: Set<String> = []
+        for (sessionId, keys) in keysBySession {
+            let request = NSFetchRequest<NSDictionary>(entityName: "RPGGameStatisticEvent")
+            request.resultType = .dictionaryResultType
+            request.propertiesToFetch = ["deduplicationKey"]
+            request.predicate = NSPredicate(
+                format: "sessionID == %@ AND deduplicationKey IN %@",
+                sessionId as NSUUID,
+                Array(keys)
+            )
+            for row in try context.fetch(request) {
+                if let key = row["deduplicationKey"] as? String {
+                    stored.insert("\(sessionId.uuidString)|\(key)")
+                }
+            }
+        }
+        return stored
     }
 
     func fetchDataSet(

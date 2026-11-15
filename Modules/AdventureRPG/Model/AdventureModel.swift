@@ -155,21 +155,22 @@ extension AdventureModel: nonisolated ItemLinkRegistrable {
         }
 
         if oldValue.entries != entries {
-            let addedEntryIds = Set(entries.map(\.id)).subtracting(Set(oldValue.entries.map(\.id)))
-            let removedEntryIds = Set(oldValue.entries.map(\.id)).subtracting(Set(entries.map(\.id)))
-            addedEntryIds.forEach {
-                added.append(contentsOf: linkRegisterModels(entry: self[$0]))
+            // Both entry lists are indexed once; the subscript by id searched the list for every
+            // id. See CODE_AUDIT_26 §7.57.
+            let newById = Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let oldById = Dictionary(oldValue.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            for (entryId, newEntry) in newById where oldById[entryId] == nil {
+                added.append(contentsOf: linkRegisterModels(entry: newEntry))
             }
-            removedEntryIds.forEach {
-                removed.append(contentsOf: linkRegisterModels(entry: oldValue[$0]))
-            }
-            let sameEntryIds = Set(entries.map(\.id)).intersection(Set(oldValue.entries.map(\.id)))
-            sameEntryIds.forEach {
-                let oldEntry = oldValue[$0]
-                let newEntry = self[$0]
+            for (entryId, oldEntry) in oldById {
+                guard let newEntry = newById[entryId] else {
+                    removed.append(contentsOf: linkRegisterModels(entry: oldEntry))
+                    continue
+                }
                 if oldEntry != newEntry {
-                    removed.append(contentsOf: linkRegisterModels(entry: oldEntry, valueChanged: oldEntry.content != newEntry.content))
-                    added.append(contentsOf: linkRegisterModels(entry: newEntry, valueChanged: oldEntry.content != newEntry.content))
+                    let valueChanged = oldEntry.content != newEntry.content
+                    removed.append(contentsOf: linkRegisterModels(entry: oldEntry, valueChanged: valueChanged))
+                    added.append(contentsOf: linkRegisterModels(entry: newEntry, valueChanged: valueChanged))
                 }
             }
         }

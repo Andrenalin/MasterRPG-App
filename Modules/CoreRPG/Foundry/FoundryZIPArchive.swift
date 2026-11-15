@@ -65,6 +65,8 @@ struct FoundryZIPArchive: Sendable {
     private let sourceStamp: SourceStamp?
     private let entries: [Entry]
     private let entriesByPath: [String: Entry]
+    /// The paths in sorted order, for prefix lookups (`paths(withPrefix:)`).
+    private let sortedPaths: [String]
 
     var entryPaths: [String] {
         entries.map(\.path)
@@ -207,6 +209,11 @@ struct FoundryZIPArchive: Sendable {
         archiveData = data
         entries = parsedEntries
         entriesByPath = Dictionary(uniqueKeysWithValues: parsedEntries.map { ($0.path, $0) })
+        sortedPaths = parsedEntries.map(\.path).sorted()
+    }
+
+    func paths(withPrefix prefix: String) -> [String] {
+        FoundryPathSearch.paths(withPrefix: prefix, inSorted: sortedPaths)
     }
 
     func contains(path: String) -> Bool {

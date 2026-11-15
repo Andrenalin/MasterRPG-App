@@ -46,7 +46,10 @@ private struct DiceGameResultResultView: View {
 
     @ViewBuilder
     var body: some View {
-        if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
+        // Looked up once per evaluation; the result was computed up to four times. See §7.61.
+        let gameItem = root.gameController.gameItem(for: itemId)
+        if gameItem.sumUp || gameItem.compareOption != .off {
+            let result = root.gameController.result(itemId: itemId)
             Button {
                 if canEditResult {
                     diceDisplayModel.showDiceValueEditor.toggle()
@@ -57,12 +60,12 @@ private struct DiceGameResultResultView: View {
                 Label {
                     Text(root.gameController.resultText(itemId: itemId).markDown())
                 } icon: {
-                    Image(systemName: root.gameController.result(itemId: itemId).checked ? "checkmark" : "xmark")
+                    Image(systemName: result.checked ? "checkmark" : "xmark")
                 }
             }
             .disabled(!canEditResult)
             .gameOverlayCapsuleControlStyle(
-                isSelected: root.gameController.result(itemId: itemId).checked
+                isSelected: result.checked
             )
         }
     }

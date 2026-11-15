@@ -40,6 +40,7 @@ private struct SheetAIAssistantPlacement: View {
 
     var body: some View {
         if let rootModel,
+           GeneratorRootModel.isAssistantModelAvailable,
            let generatorController = generatorRoot?.generatorController(forItem: rootModel.sheetModel.source.itemId),
            generatorController.availability {
             SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)

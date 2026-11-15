@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import Synchronization
 
 struct LinkHighlightTextRenderer: TextRenderer {
     let model: LinkHighlightTextModel
@@ -90,6 +91,10 @@ struct LinkHighlightTextRenderer: TextRenderer {
                 }
             }
         }
+        // Every animation frame draws; a task per frame is only needed when the measured
+        // locations changed. See CODE_AUDIT_26 §7.31.
+        guard model.lastPublishedMeasurements.withLock({ $0 != linkMeasurements }) else { return }
+        model.lastPublishedMeasurements.withLock { $0 = linkMeasurements }
         Task { @MainActor [linkMeasurements] in
             model.linkLocations.replace(with: linkMeasurements)
         }

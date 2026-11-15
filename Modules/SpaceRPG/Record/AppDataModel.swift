@@ -97,7 +97,15 @@ final class AppDataModel: Identifiable {
     // Leaves the model state in ready.
      private init() {
         state = .ready
-        CaptureFolderManager.cleanupStaleScans()
+        // Off the main actor: the model is created on first use, and the cleanup lists and
+        // deletes folders. Only folders older than this moment are removed. See CODE_AUDIT_26 §7.65.
+        let cutoff = Date.now
+        Task { await Self.cleanupStaleScans(createdBefore: cutoff) }
+    }
+
+    @concurrent
+    private static func cleanupStaleScans(createdBefore cutoff: Date) async {
+        CaptureFolderManager.cleanupStaleScans(createdBefore: cutoff)
     }
 
     // No deinit cleanup needed: `AppDataModel` is a singleton (`static let instance`), so

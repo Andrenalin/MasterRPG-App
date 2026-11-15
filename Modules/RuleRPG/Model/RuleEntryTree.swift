@@ -75,9 +75,47 @@ struct RuleEntryTree: Sendable {
         for entryId: UUID,
         in entries: [RuleEntryModel]
     ) -> [RuleEntryModel] {
-        let excludedIds = descendantIDs(of: entryId, in: entries).union([entryId])
-        return entries.filter { entry in
-            entry.kind == .group && !excludedIds.contains(entry.id)
+        ParentGroupLookup(entries: entries).validParentGroups(for: entryId)
+    }
+
+    /// The parent-group choices of every row of the quick editor from one pass over the entries.
+    /// Each row used to rebuild the child map and walk the tree itself on every keystroke, which
+    /// was quadratic for a rule with a few hundred entries. See CODE_AUDIT_26 §7.23.
+    struct ParentGroupLookup: Sendable {
+        init(entries: [RuleEntryModel]) {
+            var indices: [UUID: Int] = [:]
+            var children: [UUID: [UUID]] = [:]
+            var groupEntries: [RuleEntryModel] = []
+            for (index, entry) in entries.enumerated() {
+                if indices[entry.id] == nil { indices[entry.id] = index }
+                if let parentId = entry.parentId {
+                    children[parentId, default: []].append(entry.id)
+                }
+                if entry.kind == .group { groupEntries.append(entry) }
+            }
+            indexById = indices
+            childIdsByParent = children
+            groups = groupEntries
+        }
+
+        private let indexById: [UUID: Int]
+        private let childIdsByParent: [UUID: [UUID]]
+        private let groups: [RuleEntryModel]
+
+        /// The position of the first entry with `entryId`.
+        func index(of entryId: UUID) -> Int? {
+            indexById[entryId]
+        }
+
+        /// The groups `entryId` may be put into: not itself and not one of its descendants.
+        func validParentGroups(for entryId: UUID) -> [RuleEntryModel] {
+            var excludedIds: Set<UUID> = [entryId]
+            var pending = childIdsByParent[entryId, default: []]
+            while let currentId = pending.popLast() {
+                guard currentId != entryId, excludedIds.insert(currentId).inserted else { continue }
+                pending.append(contentsOf: childIdsByParent[currentId, default: []])
+            }
+            return groups.filter { !excludedIds.contains($0.id) }
         }
     }
 

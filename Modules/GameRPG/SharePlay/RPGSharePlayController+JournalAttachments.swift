@@ -63,6 +63,58 @@ extension RPGSharePlayController {
         trackSessionTask(task, key: Self.journalDrainTaskKey)
     }
 
+    /// How many attachments' metadata are loaded at once.
+    static let journalMetadataLoadConcurrency = 4
+
+    /// Loads the metadata of `attachments`, `journalMetadataLoadConcurrency` at a time. An attachment
+    /// whose load fails is logged and left out. Returns `nil` when the task was cancelled or the
+    /// session ended meanwhile.
+    private func loadJournalMetadata(
+        of attachments: [GroupSessionJournal.Attachment],
+        sessionId: UUID
+    ) async -> [(GroupSessionJournal.Attachment, GameNetworkModel)]? {
+        var loaded: [(GroupSessionJournal.Attachment, GameNetworkModel)] = []
+        var index = 0
+        while index < attachments.count {
+            let batch = attachments[index..<min(index + Self.journalMetadataLoadConcurrency, attachments.count)]
+            index += batch.count
+            let results = await withTaskGroup(
+                of: (GroupSessionJournal.Attachment, GameNetworkModel)?.self,
+                returning: [(GroupSessionJournal.Attachment, GameNetworkModel)].self
+            ) { group in
+                for attachment in batch {
+                    group.addTask { [weak self] in
+                        do {
+                            let attachmentId = attachment.id
+                            let metadata = try await SharePlayAttachmentLoadRetry.load(
+                                deadline: Self.journalMetadataLoadDeadline,
+                                isStillWanted: { [weak self] in
+                                    await self?.currentJournalAttachmentIds.contains(attachmentId) ?? false
+                                },
+                                operation: { try await attachment.loadMetadata(of: GameNetworkModel.self) }
+                            )
+                            return (attachment, metadata)
+                        } catch is CancellationError {
+                            return nil
+                        } catch let error {
+                            guard !Task.isCancelled else { return nil }
+                            Logger.sharePlay.error("Exception in load attachment metaData \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+                            return nil
+                        }
+                    }
+                }
+                var collected: [(GroupSessionJournal.Attachment, GameNetworkModel)] = []
+                for await result in group {
+                    if let result { collected.append(result) }
+                }
+                return collected
+            }
+            guard !Task.isCancelled, sessionLifecycle.isCurrent(sessionId: sessionId) else { return nil }
+            loaded.append(contentsOf: results)
+        }
+        return loaded
+    }
+
     func handle(_ attachments: GroupSessionJournal.Attachments.Element, sessionId: UUID) async {
         guard !Task.isCancelled,
               sessionLifecycle.isCurrent(sessionId: sessionId)
@@ -73,33 +125,21 @@ extension RPGSharePlayController {
 
         let attachmentIds = Set(attachments.map(\.id))
         journalMetadataCache = journalMetadataCache.filter { attachmentIds.contains($0.key) }
+        var uncached: [GroupSessionJournal.Attachment] = []
         for attachment in attachments {
             if let cached = journalMetadataCache[attachment.id] {
                 entries.append((attachment, cached))
-                continue
+            } else {
+                uncached.append(attachment)
             }
-            do {
-                let attachmentId = attachment.id
-                let metadata = try await SharePlayAttachmentLoadRetry.load(
-                    deadline: Self.journalMetadataLoadDeadline,
-                    isStillWanted: { [weak self] in
-                        await self?.currentJournalAttachmentIds.contains(attachmentId) ?? false
-                    },
-                    operation: { try await attachment.loadMetadata(of: GameNetworkModel.self) }
-                )
-                guard !Task.isCancelled,
-                      sessionLifecycle.isCurrent(sessionId: sessionId)
-                else { return }
-                journalMetadataCache[attachment.id] = metadata
-                entries.append((attachment, metadata))
-            } catch is CancellationError {
-                return
-            } catch let error {
-                guard !Task.isCancelled,
-                      sessionLifecycle.isCurrent(sessionId: sessionId)
-                else { return }
-                Logger.sharePlay.error("Exception in load attachment metaData \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-            }
+        }
+        // The metadata of the attachments not seen before is loaded a few at a time instead of
+        // one after the other, so a late join with many publications waits for the slowest of
+        // each batch and not for the sum. See CODE_AUDIT_26 §7.49.
+        guard let loaded = await loadJournalMetadata(of: uncached, sessionId: sessionId) else { return }
+        for (attachment, metadata) in loaded {
+            journalMetadataCache[attachment.id] = metadata
+            entries.append((attachment, metadata))
         }
 
         // A late join observes several publications at once. The message counter orders them,

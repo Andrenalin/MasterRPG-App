@@ -544,6 +544,8 @@ extension MultiConnectionAudioTests {
         _ = try await env.master.handleAudio(
             Self.audioReport(from: env.player2Root, availableIds: [], counter: 2)
         )
+        // The delivery to the reporting player runs in a task of its own (CODE_AUDIT_26 §7.8).
+        await env.master.waitForAudioDeliveries()
 
         // Then - The list converges first, followed by one group repair.
         let sent = env.masterNetworkSpy.sendResponseHistory

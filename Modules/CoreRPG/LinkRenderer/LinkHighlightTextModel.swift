@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftUI
+import Synchronization
 
 @MainActor @Observable
 public final class LinkHighlightTextModel {    
@@ -32,6 +33,10 @@ public final class LinkHighlightTextModel {
     
     var linkLocations: LinkHighLightLocations
 
+    /// The measurements the renderer last published, read and written from its draw pass, so an
+    /// unchanged frame posts no task. See CODE_AUDIT_26 §7.31.
+    nonisolated let lastPublishedMeasurements = Mutex<[LinkLayoutMeasurement]>([])
+
     var updated: UUID = UUID()
     
     var linkToggled: Bool = false
@@ -48,7 +53,20 @@ public final class LinkHighlightTextModel {
     public func reset(highlightedText: String) {
         let highlightedText = highlightedText.isEmpty ? nil : highlightedText
         guard self.highlightedText != highlightedText else { return }
+        let previous = self.highlightedText
         self.highlightedText = highlightedText
+        // A rendered text that contains neither the old nor the new term is drawn the same
+        // either way, so it keeps its cache and posts no update: a keystroke in the search field
+        // no longer rebuilds every row. (The joined components can only over-match a term
+        // spanning two of them, which just keeps the previous behavior.) See CODE_AUDIT_26 §7.41.
+        if let previous, let highlightedText, let cached = cachedDisplayText {
+            let rendered = cached.map(\.string).joined()
+            let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+            if rendered.range(of: previous, options: options) == nil,
+               rendered.range(of: highlightedText, options: options) == nil {
+                return
+            }
+        }
         cachedDisplayText = nil
         updated = UUID()
     }

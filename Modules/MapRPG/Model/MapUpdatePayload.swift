@@ -37,6 +37,16 @@ struct MapUpdatePayload: Codable, Sendable, MessageMapper {
         )
     }
 
+    /// The content version of `model`, the same value `init(model:)` stores, without building
+    /// the redacted snapshot or any payload. Callers that only compare versions (generation
+    /// lookups, metadata checks) used to build the whole payload for it. See CODE_AUDIT_26 §7.13.
+    @MainActor
+    static func contentVersion(of model: MapModel) -> Int {
+        StableVersionDigest.digest(
+            CanonicalMapContent(schemaVersion: currentSchemaVersion, snapshot: MapSnapshot(model))
+        )
+    }
+
     var isSupported: Bool {
         schemaVersion == Self.currentSchemaVersion
     }

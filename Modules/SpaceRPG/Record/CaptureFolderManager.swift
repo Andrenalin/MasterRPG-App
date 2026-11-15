@@ -186,7 +186,7 @@ final class CaptureFolderManager {
     /// photos of a user's real tabletop/miniatures/room shouldn't be Finder/Files-app
     /// visible (this app has `UIFileSharingEnabled`) or included in iCloud/device backups
     /// for the whole capture+reconstruction lifetime. See CODE_AUDIT_Space §6.1.
-    private static func rootScansFolder() -> URL? {
+    private nonisolated static func rootScansFolder() -> URL? {
         URL.cachesDirectory.appending(path: "Scans/", directoryHint: .isDirectory)
     }
 
@@ -194,13 +194,21 @@ final class CaptureFolderManager {
     /// previous run. Call once, early, before a new capture folder is created — there's no
     /// other reachable teardown point for a session that never reached `reset()`.
     /// See CODE_AUDIT_Space §6.1.
-    static func cleanupStaleScans() {
+    ///
+    /// Safe to run off the main actor and concurrently with a new capture: only folders created
+    /// before `cutoff` (the moment the app asked for the cleanup) are touched, so the folder of a
+    /// capture started meanwhile is never deleted. See CODE_AUDIT_26 §7.65.
+    nonisolated static func cleanupStaleScans(createdBefore cutoff: Date = .now) {
         guard let capturesFolder = rootScansFolder() else { return }
         guard let staleFolders = try? FileManager.default.contentsOfDirectory(
             at: capturesFolder,
-            includingPropertiesForKeys: nil
+            includingPropertiesForKeys: [.creationDateKey]
         ) else { return }
         for folder in staleFolders {
+            if let created = try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate,
+               created >= cutoff {
+                continue
+            }
             // A scan whose model could not be attached keeps its Models folder (see
             // `AppDataModel.reset()`): it is the only copy, so only the raw photos go.
             if hasModelFiles(in: folder) {
@@ -213,7 +221,7 @@ final class CaptureFolderManager {
         }
     }
 
-    private static func hasModelFiles(in scanFolder: URL) -> Bool {
+    private nonisolated static func hasModelFiles(in scanFolder: URL) -> Bool {
         let modelsFolder = scanFolder.appending(path: "Models", directoryHint: .isDirectory)
         let contents = try? FileManager.default.contentsOfDirectory(
             at: modelsFolder,

@@ -441,9 +441,11 @@ extension EditController {
         if let entryId, location == nil {
             pins = MapPinPlacement.cascade(pins: pins, in: model[entryId], pinScale: model.pinScale)
         }
-        pins.forEach { pin in
-            add(pin: pin, to: model)
-        }
+        // All pins are appended first and saved once: one save (and one broadcast) per pin
+        // made adding a group of monsters N saves. See CODE_AUDIT_26 §7.56.
+        guard !pins.isEmpty else { return }
+        model.mapPins.append(contentsOf: pins)
+        save(updated: model, message: String(localized: "Added pin", bundle: .module))
     }
 }
 

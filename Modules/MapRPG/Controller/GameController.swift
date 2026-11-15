@@ -318,7 +318,7 @@ extension GameController: MapGameStorable {
 
     @MainActor
     func mapContentVersion(for itemId: UUID) -> Int {
-        MapUpdatePayload(model: gameItem(for: itemId)).contentVersion
+        MapUpdatePayload.contentVersion(of: gameItem(for: itemId))
     }
 
     @MainActor

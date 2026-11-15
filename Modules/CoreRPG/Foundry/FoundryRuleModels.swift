@@ -729,6 +729,16 @@ public struct FoundryImportDiagnostic: Codable, Equatable, Identifiable, Sendabl
 public struct FoundryImportLimits: Equatable, Sendable {
     public static let `default` = Self()
 
+    /// Decoded rule data (and one batch of resources) the importer keeps in memory. A document
+    /// tree takes 5-10 times the size of its JSON, so a limit sized for a Mac gets an iPhone or
+    /// an Apple TV killed by jetsam instead of rejecting the file with `fileTooLarge`. The
+    /// archive itself is read from disk and keeps its limit. See CODE_AUDIT_26 §7.3.
+#if os(macOS)
+    public static let platformMemoryLimit = 512 * ByteUnit.mebibyte
+#else
+    public static let platformMemoryLimit = 128 * ByteUnit.mebibyte
+#endif
+
     public let maximumArchiveSize: Int
     public let maximumEntrySize: Int
     public let maximumRuleDataSize: Int
@@ -745,8 +755,8 @@ public struct FoundryImportLimits: Equatable, Sendable {
     public init(
         maximumArchiveSize: Int = ByteUnit.gibibyte,
         maximumEntrySize: Int = 64 * ByteUnit.mebibyte,
-        maximumRuleDataSize: Int = 512 * ByteUnit.mebibyte,
-        maximumResourceBatchSize: Int = 512 * ByteUnit.mebibyte,
+        maximumRuleDataSize: Int = FoundryImportLimits.platformMemoryLimit,
+        maximumResourceBatchSize: Int = FoundryImportLimits.platformMemoryLimit,
         maximumDocumentCount: Int = 100_000,
         maximumRecordCount: Int = 400_000,
         maximumDiagnosticCount: Int = 1_000,

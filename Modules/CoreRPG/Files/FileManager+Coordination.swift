@@ -5,9 +5,16 @@ import Synchronization
 
 extension FileManager {
 
+    /// Whether a file or folder exists at `fileURL`, and whether it is a folder.
+    ///
+    /// Only metadata is read, with `.immediatelyAvailableMetadataOnly`: a plain read coordination
+    /// on an evicted iCloud file asks iCloud to materialize it, so a name collision with a 200 MB
+    /// audio would download it just to learn that the name is taken, and hold a download slot
+    /// while it did. The slot is a local one for the same reason. A not-downloaded file still
+    /// exists here, as before. See CODE_AUDIT_26 §7.1.
     func fileExists(coordinatingAccessAt fileURL: URL) async throws -> (exists: Bool, isDirectory: Bool) {
-        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fileURL) { cancellation in
-            try Self.coordinate(cancellation, readingItemAt: fileURL) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: fileURL, options: .immediatelyAvailableMetadataOnly) { url in
                 var isDir: ObjCBool = false
                 let coordinatedExists = FileManager.default.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDir)
                 return (coordinatedExists, isDir.boolValue)

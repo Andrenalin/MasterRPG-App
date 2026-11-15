@@ -49,7 +49,13 @@ struct RuleWorkflowTests {
         let output = OutputStream.toMemory()
         output.open()
         defer { output.close() }
-        _ = try await source.exportController.export(itemIds: exportIDs, into: output)
+        // The owner export (file export and Save Game) keeps the Foundry payload; the stream
+        // overload without a model builds packages for the other players of a game.
+        _ = try await source.exportController.export(
+            itemIds: exportIDs,
+            into: output,
+            exportModel: ItemDataExportModel()
+        )
         let data = try #require(
             output.property(forKey: .dataWrittenToMemoryStreamKey) as? Data
         )
@@ -68,6 +74,44 @@ struct RuleWorkflowTests {
         #expect(imported.sourceMetadata == rule.sourceMetadata)
         #expect(imported.sourcePayload == rule.sourcePayload)
         #expect(destination.linkController.collectLinks(of: .rule, from: sourceID) == [linkedID])
+    }
+
+    @Test("A package for players leaves out the raw Foundry payload but keeps the version")
+    func playerPackageDropsSourcePayload() async throws {
+        // Given
+        let source = RuleRootModel.testRoot()
+        let sourceID = try #require(UUID(uuidString: "5B0C2F7A-1D34-4E0B-9E6F-3B1A7C2D9E41"))
+        let rule = RuleModel.fixture(
+            id: sourceID,
+            name: "Payload Rule",
+            entries: [.fixture(name: "Result", content: "Content")],
+            sourcePayload: .foundryDocument(.object(["_id": .string("payload-rule")]))
+        )
+        source.itemController.replace(model: rule, isInsert: true)
+        let exportIDs = source.exportController.exporting(
+            itemIds: ItemModuleIds(ids: [sourceID], module: .rule)
+        )
+        let output = OutputStream.toMemory()
+        output.open()
+        defer { output.close() }
+
+        // When
+        _ = try await source.exportController.export(itemIds: exportIDs, into: output)
+        let data = try #require(output.property(forKey: .dataWrittenToMemoryStreamKey) as? Data)
+        let destination = RuleRootModel.testRoot()
+        let input = InputStream(data: data)
+        input.open()
+        defer { input.close() }
+        try await destination.importController.importStream(from: input, forceSave: false)
+
+        // Then
+        let imported = try #require(destination.itemController.itemSync(for: sourceID))
+        #expect(imported.sourcePayload == nil)
+        #expect(imported.name == rule.name)
+        // The version does not depend on the payload, so a copy without it agrees with the master.
+        let withoutPayload = rule.copy()
+        withoutPayload.sourcePayload = nil
+        #expect(withoutPayload.version == rule.version)
     }
 
     @Test("Search excludes hidden rules and folder scope exposes visible children")

@@ -78,6 +78,9 @@ class Lightning {
     var lastUpdate = Date.now
     var flashOpacity = 0.0
 
+    /// No strike is running and nothing is left to draw.
+    var isIdle: Bool { state == .waiting }
+
     /// The strike being prepared or drawn. Its seed drives the bolt's jitter and forks.
     private var spec = LightningBoltSpec.random()
     private var random = LightningRandom(seed: 0)

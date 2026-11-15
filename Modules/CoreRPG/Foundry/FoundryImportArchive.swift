@@ -141,7 +141,16 @@ public actor FoundryImportArchiveStore {
         let archiveURL = url(for: id)
         let status = try await FileManager.default.fileExists(coordinatingAccessAt: archiveURL)
         guard status.exists, !status.isDirectory else { return nil }
+        // The size is checked before the file is read, as `mapArchives` does, so a file synced
+        // from elsewhere that exceeds the cap is not loaded whole. See CODE_AUDIT_26 §7.40.
+        if let fileSize = try? archiveURL.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+           fileSize > maximumEncodedByteCount {
+            throw FoundryImportArchiveStoreError.archiveTooLarge(fileSize)
+        }
         let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: archiveURL)
+        guard data.count <= maximumEncodedByteCount else {
+            throw FoundryImportArchiveStoreError.archiveTooLarge(data.count)
+        }
         return try decode(data)
     }
 

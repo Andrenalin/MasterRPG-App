@@ -49,8 +49,11 @@ extension MapEditController {
         }
         copy.hexMapScale = scale
         editorModel.hexScale = scale
+        // The cells revealed in the editor stay revealed at the new scale, as in the game's own
+        // rebuild (`EditController.createHexMap`). See CODE_AUDIT_26 §7.12.
+        let grid = MapHexGridGeometry.grid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height)))
         MapHexGridGeometry.replaceGrid(
-            MapHexGridGeometry.grid(for: scale, in: CGRect(origin: .zero, size: CGSize(width: copy.width, height: copy.height))),
+            MapHexGridGeometry.carryingRevealedArea(from: copy.entries, to: grid),
             in: copy
         )
         syncDisplayEntries(from: copy, editorModel: editorModel)

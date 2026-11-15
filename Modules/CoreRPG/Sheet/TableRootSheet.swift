@@ -26,40 +26,70 @@ public struct TableRootSheet: View {
         externalSheetRootModel: SheetRootModel? = nil
     ) {
         self.root = root
+        self.itemId = itemId
         self.configuration = configuration
         self.dismissAction = dismissAction
-        if let externalSheetRootModel {
-            self._sheetRootModel = State(wrappedValue: externalSheetRootModel)
-        } else {
-            guard let rootManager = root.rootManager else {
-                preconditionFailure("TableRootSheet requires ItemRootController.rootManager to be set before presentation.")
-            }
-            self._sheetRootModel = State(
-                wrappedValue: SheetRootModel(
-                    rootManager: rootManager,
-                    linkControllable: root.linkControllable,
-                    sheetControllable: root.sheetControllable,
-                    itemId: itemId,
-                    isEditor: false
-                )
-            )
-        }
+        self.externalSheetRootModel = externalSheetRootModel
     }
 
     let root: ItemRootController
+    let itemId: UUID
     let configuration: ViewerConfiguration
     let dismissAction: (() -> Void)?
+    let externalSheetRootModel: SheetRootModel?
+
+    /// The model this view owns when no external one is passed. It is built in `.task` and not
+    /// in `init`: `@State` keeps only the first value, but `init` runs on every parent update,
+    /// and building the model projects the whole item tree each time. See CODE_AUDIT_26 §7.6.
+    @State private var ownedSheetRootModel: SheetRootModel?
+    @State private var generationSelection: WindowItemSelection?
+
+    private var sheetRootModel: SheetRootModel? {
+        externalSheetRootModel ?? ownedSheetRootModel
+    }
+
+    public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+
+        Group {
+            if let sheetRootModel {
+                TableRootSheetContent(
+                    root: root,
+                    configuration: configuration,
+                    dismissAction: dismissAction,
+                    sheetRootModel: sheetRootModel,
+                    generationSelection: $generationSelection
+                )
+            } else {
+                // Until the model exists, or when the root manager is not set yet.
+                Color.clear.themedSurface()
+            }
+        }
+        .task(id: itemId) {
+            guard externalSheetRootModel == nil, ownedSheetRootModel == nil,
+                  let rootManager = root.rootManager else { return }
+            ownedSheetRootModel = SheetRootModel(
+                rootManager: rootManager,
+                linkControllable: root.linkControllable,
+                sheetControllable: root.sheetControllable,
+                itemId: itemId,
+                isEditor: false
+            )
+        }
+    }
+}
+
+private struct TableRootSheetContent: View {
+    let root: ItemRootController
+    let configuration: ViewerConfiguration
+    let dismissAction: (() -> Void)?
+    let sheetRootModel: SheetRootModel
+    @Binding var generationSelection: WindowItemSelection?
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
-    @State private var sheetRootModel: SheetRootModel
-    @State private var generationSelection: WindowItemSelection?
-    
-    public var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        
-        @Bindable var sheetRootModel = sheetRootModel
+    var body: some View {
 
         // The Apple TV game view is a display for the table: no search field there.
         TableSheetView(root: root, model: sheetRootModel, addSearchable: valueFor(iOS: true, macOS: configuration.addToolbar, tvOS: !configuration.isGame, visionOS: true))
@@ -84,7 +114,7 @@ public struct TableRootSheet: View {
     }
 }
 
-private extension TableRootSheet {
+private extension TableRootSheetContent {
     /// A Table opened from another module's sheet (a table link in a Map entry) generates through
     /// the Table module's root, since this sheet's own module has no generator.
     var generationRoot: ItemRootController {
@@ -93,7 +123,7 @@ private extension TableRootSheet {
     }
 }
 
-private extension TableRootSheet {
+private extension TableRootSheetContent {
     @ToolbarContentBuilder
     var toolbarContent: some ToolbarContent {
         if configuration.closeButton {

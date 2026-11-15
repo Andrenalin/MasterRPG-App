@@ -104,9 +104,11 @@ public struct FoundryArtifactDetector: Sendable {
         if lowercasedName == "world.json" {
             return FoundryArtifact(kind: .worldPackage, suggestedName: url.deletingPathExtension().lastPathComponent)
         }
-        if lowercasedName.hasSuffix(".json"), (try? Self.isJSONObjectOrArray(data)) == true {
+        // Parsed once: the container check and the Universal VTT check used to parse the file twice.
+        if lowercasedName.hasSuffix(".json"), let json = try? JSONSerialization.jsonObject(with: data),
+           json is [String: Any] || json is [Any] {
             try Task.checkCancellation()
-            let kind: FoundryArtifactKind = Self.looksLikeUniversalVTT(data) ? .universalVTT : .exportedDocument
+            let kind: FoundryArtifactKind = Self.looksLikeUniversalVTT(json) ? .universalVTT : .exportedDocument
             return FoundryArtifact(kind: kind, suggestedName: url.deletingPathExtension().lastPathComponent)
         }
         return FoundryArtifact(kind: .unknown, suggestedName: url.lastPathComponent)
@@ -127,13 +129,8 @@ private extension FoundryArtifactDetector {
             && object["format"] as? String == "masterrpg-foundry-bridge"
     }
 
-    static func isJSONObjectOrArray(_ data: Data) throws -> Bool {
-        let object = try JSONSerialization.jsonObject(with: data)
-        return object is [String: Any] || object is [Any]
-    }
-
-    static func looksLikeUniversalVTT(_ data: Data) -> Bool {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+    static func looksLikeUniversalVTT(_ json: Any) -> Bool {
+        guard let object = json as? [String: Any],
               object["image"] is String,
               let resolution = object["resolution"] as? [String: Any] else { return false }
         return resolution["map_size"] != nil && resolution["pixels_per_grid"] != nil

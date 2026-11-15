@@ -42,6 +42,8 @@ struct MapLogicalCanvasBaseLayer: View {
 struct MapLogicalCanvasHitAndOrdinaryPins: View {
     let session: MapEditorSession
     let viewportScale: CGFloat
+    /// See `MapRoomHitLayer.hitCullingRect`.
+    var roomHitCullingRect: CGRect = .infinite
     let interactionTransform: GestureState<ViewportTransform?>
 
     private var canvasSize: CGSize { session.mapCanvasSize }
@@ -55,6 +57,7 @@ struct MapLogicalCanvasHitAndOrdinaryPins: View {
                     session: session,
                     isEnabled: session.roomHitTargetsAreEnabled,
                     excludingEntryId: activeEntryId,
+                    visibleContentRect: roomHitCullingRect,
                     interactionTransform: interactionTransform
                 )
 

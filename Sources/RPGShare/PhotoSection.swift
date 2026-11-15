@@ -21,8 +21,8 @@ struct PhotoSection: View {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 10) {
                         ForEach(imageList.images.enumerated(), id: \.element.id) { index, image in
-                            if let image = AKImage(data: image.imageData) {
-                                Image(akImage: image)
+                            if let preview = image.preview {
+                                Image(decorative: preview, scale: 1)
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: size.width - 30)

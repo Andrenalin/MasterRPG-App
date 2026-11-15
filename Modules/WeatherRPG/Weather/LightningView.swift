@@ -25,13 +25,17 @@ struct LightningView: View {
     // persisted instance below since they're baked in only at construction.
     // See CODE_AUDIT_Weather §8.1.
     @State private var lightning: Lightning
+    /// Whether a strike is running. The timeline is paused while none is: it used to redraw a
+    /// full-screen transparent fill and two blur passes every frame of every idle game screen.
+    /// See CODE_AUDIT_26 §7.20.
+    @State private var isAnimating = false
 
     @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         Button(action: tap) {
-            TimelineView(.animation(paused: shouldSuppressLightning)) { timeline in
+            TimelineView(.animation(paused: shouldSuppressLightning || !isAnimating)) { timeline in
                 Canvas { context, size in
                     guard !shouldSuppressLightning else { return }
 
@@ -67,6 +71,18 @@ struct LightningView: View {
             // behavior). See CODE_AUDIT_9 §4.2.
             if frequency >= 1 {
                 PeriodicStrikeTrigger(interval: 60.0 / frequency) { strike() }
+            }
+        }
+        // Ends the animation once the strike has faded. The check is coarse on purpose: the last
+        // frame drawn is the cleared one.
+        .task(id: isAnimating) {
+            guard isAnimating else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(250))
+                if lightning.isIdle {
+                    isAnimating = false
+                    return
+                }
             }
         }
         .onChange(of: trigger) {
@@ -115,7 +131,9 @@ struct LightningView: View {
     /// A strike that starts on its own (the periodic cadence) or arrives from another device.
     private func strike(_ spec: LightningBoltSpec = .random()) {
         guard !shouldSuppressLightning else { return }
-        lightning.strike(spec)
+        if lightning.strike(spec) {
+            isAnimating = true
+        }
     }
 
     /// A strike the user asked for. It is shared when it starts here, or when this device
@@ -126,6 +144,7 @@ struct LightningView: View {
         if shouldSuppressLightning {
             onTap?(spec)
         } else if lightning.strike(spec) {
+            isAnimating = true
             onTap?(spec)
         }
     }

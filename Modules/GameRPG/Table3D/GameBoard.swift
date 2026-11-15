@@ -130,6 +130,7 @@ final class Board {
     /// Hides the board when no map photo is available.
     func clearMap() {
         imagePlane.isEnabled = false
+        GameTableImage.clearBoardImageCache()
     }
 }
 
@@ -183,7 +184,7 @@ struct BoardTextureInput: Sendable {
             image: image,
             degrees: normalizedDegrees
         ), coordinateSize.width > 0, coordinateSize.height > 0,
-              let cgImage = GameTableImage.cgImage(from: image) else { return nil }
+              let cgImage = GameTableImage.cachedCGImage(from: image) else { return nil }
 
         let displayConfig = mapModel.displayConfig
         self.image = cgImage

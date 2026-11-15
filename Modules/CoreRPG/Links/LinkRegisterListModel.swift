@@ -142,9 +142,29 @@ public final class LinkRegisterListModel: Sendable {
     /// saved or deleted from it until a fetch succeeds. See CODE_AUDIT_23 §5.12.
     var hydrationFailed = false
     
+    /// The registered occurrences per destination item, so `append` checks for a duplicate in
+    /// constant time instead of scanning a destination's whole list. Kept in step with `items`
+    /// by every mutation below. See CODE_AUDIT_26 §7.29.
+    private var occurrenceKeys: [UUID: Set<OccurrenceKey>] = [:]
+
+    private struct OccurrenceKey: Hashable {
+        let source: ItemRowModel
+        let destination: ItemRowModel
+        let linkNumber: Int?
+        let command: String?
+
+        init(_ link: LinkRegisterModel) {
+            source = link.source
+            destination = link.destination
+            linkNumber = link.linkNumber
+            command = link.command
+        }
+    }
+
     func reset() {
         items = [:]
         sourceItems = [:]
+        occurrenceKeys = [:]
     }
 
     /// Restores both directional indexes as one rollback operation.
@@ -158,6 +178,7 @@ public final class LinkRegisterListModel: Sendable {
     ) {
         self.items = items
         self.sourceItems = sourceItems
+        occurrenceKeys = items.mapValues { Set($0.map(OccurrenceKey.init)) }
         self.pendingAffectedSourceIds = pendingAffectedSourceIds
     }
 
@@ -166,10 +187,7 @@ public final class LinkRegisterListModel: Sendable {
     @discardableResult
     func append(_ link: LinkRegisterModel) -> Bool {
         let destinationKey = link.destination.itemId
-        let alreadyRegistered = items[destinationKey, default: []].contains {
-            $0.isSameOccurrence(as: link)
-        }
-        guard !alreadyRegistered else { return false }
+        guard occurrenceKeys[destinationKey, default: []].insert(OccurrenceKey(link)).inserted else { return false }
 
         items[destinationKey, default: []].append(link)
         sourceItems[link.source.itemId, default: []].append(link)
@@ -181,29 +199,41 @@ public final class LinkRegisterListModel: Sendable {
     func remove(_ link: LinkRegisterModel) -> Bool {
         let destinationKey = link.destination.itemId
         let sourceKey = link.source.itemId
-        let previousCount = items[destinationKey, default: []].count
+        let previousCount = items[destinationKey]?.count ?? 0
 
-        items[destinationKey, default: []].removeAll {
-            $0.isSameOccurrence(as: link)
-        }
-        sourceItems[sourceKey, default: []].removeAll {
-            $0.isSameOccurrence(as: link)
-        }
-        return items[destinationKey, default: []].count != previousCount
+        removeAll(in: &items, key: destinationKey) { $0.isSameOccurrence(as: link) }
+        removeAll(in: &sourceItems, key: sourceKey) { $0.isSameOccurrence(as: link) }
+        occurrenceKeys[destinationKey]?.remove(OccurrenceKey(link))
+        if occurrenceKeys[destinationKey]?.isEmpty == true { occurrenceKeys[destinationKey] = nil }
+        return (items[destinationKey]?.count ?? 0) != previousCount
+    }
+
+    /// Removes the matching links of one key and drops the key when its list is empty, so a
+    /// removed destination or source leaves no empty array behind.
+    private func removeAll(
+        in dictionary: inout [UUID: [LinkRegisterModel]],
+        key: UUID,
+        where shouldRemove: (LinkRegisterModel) -> Bool
+    ) {
+        guard var links = dictionary[key] else { return }
+        links.removeAll(where: shouldRemove)
+        dictionary[key] = links.isEmpty ? nil : links
     }
 
     /// Removes every link pointing to the exact destination item or entry from both indexes.
     func removeLinks(to destination: ItemRowModel) -> Set<UUID> {
         let destinationKey = destination.itemId
-        let removedLinks = items[destinationKey, default: []].filter { $0.destination == destination }
+        let removedLinks = (items[destinationKey] ?? []).filter { $0.destination == destination }
         guard !removedLinks.isEmpty else { return [] }
 
-        items[destinationKey, default: []].removeAll { $0.destination == destination }
+        removeAll(in: &items, key: destinationKey) { $0.destination == destination }
         for link in removedLinks {
-            sourceItems[link.source.itemId, default: []].removeAll {
+            occurrenceKeys[destinationKey]?.remove(OccurrenceKey(link))
+            removeAll(in: &sourceItems, key: link.source.itemId) {
                 $0.source == link.source && $0.destination == link.destination
             }
         }
+        if occurrenceKeys[destinationKey]?.isEmpty == true { occurrenceKeys[destinationKey] = nil }
         return Set(removedLinks.map(\.source.itemId))
     }
 }

@@ -19,10 +19,17 @@ public final class CacheItemListModel: Sendable {
     }
     
     @ObservationIgnored
-    private var itemLinkCache: [String: LinkHighlightTextModel] = [:]
-    
-    private func cacheId(for cacheType: CacheType, itemId: UUID) -> String {
-        "\(cacheType.rawValue)-\(itemId)"
+    private var itemLinkCache: [CacheKey: LinkHighlightTextModel] = [:]
+
+    /// A struct key: a string built per lookup allocated on every cell's body evaluation.
+    /// See CODE_AUDIT_26 §7.44.
+    private struct CacheKey: Hashable {
+        let cacheType: CacheType
+        let itemId: UUID
+    }
+
+    private func cacheId(for cacheType: CacheType, itemId: UUID) -> CacheKey {
+        CacheKey(cacheType: cacheType, itemId: itemId)
     }
         
     public func itemLink(cacheType: CacheType, itemId: UUID) -> LinkHighlightTextModel? {

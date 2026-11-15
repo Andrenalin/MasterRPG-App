@@ -324,7 +324,9 @@ private struct EmptyGameContent: View {
                 Spacer()
                 Text(title, bundle: .module)
                 if showsElapsedTime {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                    // The display has minute resolution: tick once a minute, anchored to the start so it
+                    // changes exactly when the elapsed minutes do. See CODE_AUDIT_26 §7.51.
+                    TimelineView(.periodic(from: startTime, by: 60)) { context in
                         Text(
                             elapsedDuration(at: context.date),
                             format: .time(pattern: .hourMinute(padHourToLength: 2))

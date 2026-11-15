@@ -26,6 +26,36 @@ struct FoundryPresentationHelpersTests {
         })
     }
 
+    /// CODE_AUDIT_26 §7.4: the linear scanner removes what the former patterns removed.
+    @Test(
+        "Comments and script-like blocks are removed, unterminated openers stay",
+        arguments: [
+            ("a<!-- hidden -->b", "ab"),
+            ("a<!---->b", "ab"),
+            ("a<SCRIPT type=x>leak()</ script >b", "ab"),
+            ("a< style >p{}</STYLE>b<template>x</template>c<noscript>y</noscript>d", "abcd"),
+            ("a<scripts>keep</scripts>b", "akeepb"),
+            ("a<script>no closer", "ano closer"),
+            ("a<!-- no closer", "a<!-- no closer"),
+            ("a<script>x</style>b", "axb"),
+        ]
+    )
+    func removesInvisibleBlocks(input: String, expected: String) {
+        #expect(FoundryTextDecoder.plainText(fromHTML: input) == expected)
+    }
+
+    @Test("Many unterminated openers and ampersands finish quickly")
+    func unterminatedOpenersAreLinear() {
+        let openers = String(repeating: "<!--", count: 50_000) + String(repeating: "<script>", count: 50_000)
+        let ampersands = String(repeating: "&", count: 200_000)
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            _ = FoundryTextDecoder.plainText(fromHTML: openers)
+            _ = FoundryTextDecoder.decodedText(ampersands)
+        }
+        #expect(elapsed < .seconds(10))
+    }
+
     @Test(
         "Entity decoding handles named, decimal, hexadecimal, and unknown entities",
         arguments: [

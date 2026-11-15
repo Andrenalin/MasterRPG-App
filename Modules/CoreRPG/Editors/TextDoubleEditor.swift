@@ -68,6 +68,9 @@ public struct TextDoubleEditor: View {
 
     @FocusState private var focusState: Bool
     @State private var text: String = ""
+    /// A slider drag changes the value on every tick; it is saved once when the drag ends.
+    /// See CODE_AUDIT_26 §7.45.
+    @State private var isSliding = false
 
     public var body: some View {
         LabeledContent {
@@ -91,11 +94,11 @@ public struct TextDoubleEditor: View {
         }
         .onChange(of: model.value) {
             text = Self.format(number: model.value)
-            model.save()
+            if !isSliding { model.save() }
         }
 
         LabeledContent {
-            TextDoubleEditorSlider(model: model, title: title, bundle: bundle, range: range)
+            TextDoubleEditorSlider(model: model, title: title, bundle: bundle, range: range, isSliding: $isSliding)
         } label: {
 #if os(macOS)
             Text(title, bundle: bundle)
@@ -150,6 +153,7 @@ private struct TextDoubleEditorSlider: View {
     let title: LocalizedStringKey
     let bundle: Bundle?
     let range: ClosedRange<Double>
+    @Binding var isSliding: Bool
 
     var body: some View {
 #if !os(tvOS)
@@ -157,11 +161,14 @@ private struct TextDoubleEditorSlider: View {
             value: $model.value,
             in: range,
             step: 1,
-            minimumValueLabel: Text(Int(range.lowerBound), format: .number),
-            maximumValueLabel: Text(Int(range.upperBound), format: .number)
-        ) {
-            Text(title, bundle: bundle)
-        }
+            label: { Text(title, bundle: bundle) },
+            minimumValueLabel: { Text(Int(range.lowerBound), format: .number) },
+            maximumValueLabel: { Text(Int(range.upperBound), format: .number) },
+            onEditingChanged: { isEditing in
+                isSliding = isEditing
+                if !isEditing { model.save() }
+            }
+        )
         .labelsHidden()
 #else
         EmptyView()

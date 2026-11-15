@@ -8,14 +8,18 @@ final class MapRoomNode: Identifiable {
     init(entry: MapEntryModel) {
         id = entry.id
         self.entry = entry
-        path = Self.makePath(for: entry)
+        let path = Self.makePath(for: entry)
+        self.path = path
+        bounds = path.boundingRect
     }
 
     nonisolated let id: UUID
     private(set) var entry: MapEntryModel
     private(set) var path: Path
-
-    var bounds: CGRect { path.boundingRect }
+    /// The path's bounding rectangle, computed when the geometry is made. The culling passes read
+    /// it for every room on every pan or zoom frame, so it must not be derived from the path each
+    /// time. See CODE_AUDIT_26 §7.52.
+    private(set) var bounds: CGRect
 
     func update(entry: MapEntryModel) {
         guard self.entry != entry else { return }
@@ -23,6 +27,7 @@ final class MapRoomNode: Identifiable {
         self.entry = entry
         if geometryChanged {
             path = Self.makePath(for: entry)
+            bounds = path.boundingRect
         }
     }
 
@@ -62,11 +67,33 @@ final class MapNeedleInteractionModel {
 final class MapEntryViewerModel {
     typealias NeedleSelectionHandler = @MainActor (MapNeedlePointModel?) -> Void
 
-    init(mapId: UUID, entries: [MapEntryModel] = []) {
+    /// - Parameter tracksNeedles: whether the model keeps an observable needle per vertex. Only
+    ///   the store of the room being edited uses them; the passive store of a 20,000-cell hex map
+    ///   would allocate about 120,000 of them on every reset. See CODE_AUDIT_26 §7.10.
+    init(mapId: UUID, entries: [MapEntryModel] = [], tracksNeedles: Bool = true) {
         self.mapId = mapId
+        self.tracksNeedles = tracksNeedles
         self.entries = entries
-        roomNodes = entries.map(MapRoomNode.init(entry:))
+        let nodes = entries.map(MapRoomNode.init(entry:))
+        roomNodes = nodes
+        entryIndexById = Self.indexById(entries)
+        roomNodeById = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         reconcileNeedlePoints(with: entries)
+    }
+
+    let tracksNeedles: Bool
+    /// Id lookups for `setEntry`, `entry(_:)` and `roomNode(for:)`: they ran a linear search per
+    /// call, which made a reset of a big hex map quadratic. See CODE_AUDIT_26 §7.9.
+    private var entryIndexById: [UUID: Int] = [:]
+    private var roomNodeById: [UUID: MapRoomNode] = [:]
+
+    private static func indexById(_ entries: [MapEntryModel]) -> [UUID: Int] {
+        var result: [UUID: Int] = [:]
+        result.reserveCapacity(entries.count)
+        for (index, entry) in entries.enumerated() where result[entry.id] == nil {
+            result[entry.id] = index
+        }
+        return result
     }
 
     var mapId: UUID
@@ -84,23 +111,26 @@ final class MapEntryViewerModel {
     func resetEntries(mapId: UUID, entries: [MapEntryModel]) {
         self.mapId = mapId
         self.entries = entries
+        entryIndexById = Self.indexById(entries)
         reconcileRoomNodes(with: entries)
         reconcileNeedlePoints(with: entries)
     }
 
     func entry(_ entryId: UUID) -> MapEntryModel {
-        entries.first { $0.id == entryId } ?? .empty(entryId)
+        entryIndexById[entryId].map { entries[$0] } ?? .empty(entryId)
     }
 
+    /// Replaces the entry with the same id. An entry equal to the stored one changes nothing, so
+    /// a bulk synchronization only pays for the rooms that differ.
     func setEntry(entry: MapEntryModel) {
-        guard let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        guard let index = entryIndexById[entry.id], entries[index] != entry else { return }
         entries[index] = entry
-        roomNodes.first(where: { $0.id == entry.id })?.update(entry: entry)
+        roomNodeById[entry.id]?.update(entry: entry)
         reconcileNeedlePoints(for: entry)
     }
 
     func roomNode(for entryId: UUID) -> MapRoomNode? {
-        roomNodes.first { $0.id == entryId }
+        roomNodeById[entryId]
     }
 
     func update(coordinate: CGPoint, for entryId: UUID, at index: Int) {
@@ -139,19 +169,19 @@ final class MapEntryViewerModel {
     }
 
     func moveNeedle(_ point: MapNeedlePointModel, to coordinate: CGPoint, entryId: UUID) {
-        guard var entry = entries.first(where: { $0.id == entryId }),
-              let entryIndex = entries.firstIndex(where: { $0.id == entryId }),
+        guard let entryIndex = entryIndexById[entryId],
+              case var entry = entries[entryIndex],
               point.coordinateIndex >= 0,
               point.coordinateIndex < entry.coordinates.count else { return }
         point.coordinate = coordinate
         entry.coordinates[point.coordinateIndex] = coordinate
         entries[entryIndex] = entry
-        roomNodes.first(where: { $0.id == entryId })?.update(entry: entry)
+        roomNodeById[entryId]?.update(entry: entry)
     }
 
     func insertNeedle(after point: MapNeedlePointModel, entryId: UUID) {
-        guard var entry = entries.first(where: { $0.id == entryId }),
-              let entryIndex = entries.firstIndex(where: { $0.id == entryId }),
+        guard let entryIndex = entryIndexById[entryId],
+              case var entry = entries[entryIndex],
               point.coordinateIndex >= 0,
               point.coordinateIndex < entry.coordinates.count else { return }
         let insertionIndex = point.coordinateIndex + 1 < entry.coordinates.count
@@ -165,7 +195,7 @@ final class MapEntryViewerModel {
         }
         entry.coordinates.insert(newCoordinate, at: insertionIndex)
         entries[entryIndex] = entry
-        roomNodes.first(where: { $0.id == entryId })?.update(entry: entry)
+        roomNodeById[entryId]?.update(entry: entry)
 
         var points = needlePointsByEntry[entryId] ?? []
         for candidate in points where candidate.coordinateIndex >= insertionIndex {
@@ -176,14 +206,14 @@ final class MapEntryViewerModel {
     }
 
     func removeNeedle(_ point: MapNeedlePointModel, entryId: UUID) {
-        guard var entry = entries.first(where: { $0.id == entryId }),
-              let entryIndex = entries.firstIndex(where: { $0.id == entryId }),
+        guard let entryIndex = entryIndexById[entryId],
+              case var entry = entries[entryIndex],
               point.coordinateIndex >= 0,
               point.coordinateIndex < entry.coordinates.count else { return }
         let removedIndex = point.coordinateIndex
         entry.coordinates.remove(at: removedIndex)
         entries[entryIndex] = entry
-        roomNodes.first(where: { $0.id == entryId })?.update(entry: entry)
+        roomNodeById[entryId]?.update(entry: entry)
 
         if point.isSelected {
             selectNeedle(nil)
@@ -218,9 +248,11 @@ final class MapEntryViewerModel {
         if structureChanged {
             roomNodes = reconciled
         }
+        roomNodeById = Dictionary(roomNodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private func reconcileNeedlePoints(with entries: [MapEntryModel]) {
+        guard tracksNeedles else { return }
         let validIds = Set(entries.map(\.id))
         needlePointsByEntry = needlePointsByEntry.filter { validIds.contains($0.key) }
         for entry in entries {
@@ -229,6 +261,7 @@ final class MapEntryViewerModel {
     }
 
     private func reconcileNeedlePoints(for entry: MapEntryModel) {
+        guard tracksNeedles else { return }
         let oldPoints = needlePointsByEntry[entry.id] ?? []
         var unused = oldPoints
         var reconciled: [MapNeedlePointModel] = []

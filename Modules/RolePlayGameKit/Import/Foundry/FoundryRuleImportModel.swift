@@ -281,6 +281,8 @@ final class FoundryImportModel {
                     try await adventureRoot.saveExternalImport()
                 }
             )
+            // The assets were read for the commit; do not keep them until the next preflight.
+            await reader.releaseCachedSources()
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             self.result = result
             loadState = .finalizing

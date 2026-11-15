@@ -301,14 +301,8 @@ extension FoundryMappingState {
     }
 
     func rewriteFoundryLinks(_ input: String) -> String {
-        let linkTypes = [
-            "UUID", "Actor", "Item", "Scene", "JournalEntry", "JournalEntryPage",
-            "RollTable", "TableResult", "Playlist", "PlaylistSound", "Cards", "Card",
-            "Adventure", "Combat", "Macro", "Compendium",
-        ].joined(separator: "|")
-        guard let expression = try? NSRegularExpression(
-            pattern: #"@("# + linkTypes + #")\[([^\]\r\n]+)\](?:\{([^}\r\n]+)\})?"#
-        ) else {
+        // Most strings hold no link at all: skip the expression for them. See CODE_AUDIT_26 §7.19.
+        guard input.contains("@"), let expression = FoundryMapperPatterns.foundryLink else {
             return input
         }
         var output = input
@@ -418,7 +412,7 @@ extension FoundryMappingState {
 
     func simpleModifier(_ formula: String) -> Double {
         let withoutDice = formula.replacing(/([0-9]*)[dD]([0-9]+)/, with: "")
-        guard let expression = try? NSRegularExpression(pattern: #"[+-]\s*[0-9]+(?:\.[0-9]+)?"#) else {
+        guard let expression = FoundryMapperPatterns.signedNumber else {
             return 0
         }
         let matches = expression.matches(
@@ -444,4 +438,30 @@ extension FoundryMappingState {
         }
         return data.base64EncodedString()
     }
+}
+
+
+/// The expressions the mapper uses for every description, entry and formula, compiled once. They
+/// were rebuilt on each call, which dominated the mapping of a package with tens of thousands of
+/// strings. See CODE_AUDIT_26 §7.19.
+enum FoundryMapperPatterns {
+    static let foundryLink: NSRegularExpression? = {
+        let linkTypes = [
+            "UUID", "Actor", "Item", "Scene", "JournalEntry", "JournalEntryPage",
+            "RollTable", "TableResult", "Playlist", "PlaylistSound", "Cards", "Card",
+            "Adventure", "Combat", "Macro", "Compendium",
+        ].joined(separator: "|")
+        return try? NSRegularExpression(
+            pattern: #"@("# + linkTypes + #")\[([^\]\r\n]+)\](?:\{([^}\r\n]+)\})?"#
+        )
+    }()
+
+    static let signedNumber = try? NSRegularExpression(pattern: #"[+-]\s*[0-9]+(?:\.[0-9]+)?"#)
+
+    /// A formula MasterRPG can represent exactly: additive dice plus a numeric modifier.
+    static let supportedFormula = try? NSRegularExpression(
+        pattern: #"^\s*[0-9]*[dD][0-9]+(?:\s*(?:\+\s*[0-9]*[dD][0-9]+|[+-]\s*[0-9]+(?:\.[0-9]+)?))*\s*$"#
+    )
+
+    static let dieMatch = try? NSRegularExpression(pattern: #"([0-9]*)[dD]([0-9]+)"#)
 }

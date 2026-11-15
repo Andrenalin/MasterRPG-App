@@ -359,9 +359,11 @@ private struct MoveIntoGroupMenu: View {
                     }
                 }
             }
-            if hasCandidates(itemId: itemId, excluding: openTarget?.id, editable: editable) {
+            // Computed once for both the check and the menu, and capped. See CODE_AUDIT_26 §7.43.
+            let candidates = candidates(itemId: itemId, excluding: openTarget?.id, editable: editable)
+            if !candidates.isEmpty {
                 Menu {
-                    ForEach(candidates(itemId: itemId, excluding: openTarget?.id, editable: editable)) { target in
+                    ForEach(candidates) { target in
                         Button(target.name) {
                             move(itemId: itemId, into: target.id, editable: editable)
                         }
@@ -384,12 +386,6 @@ private struct MoveIntoGroupMenu: View {
         return FolderRepresentable(id: openId, name: open.name)
     }
 
-    private func hasCandidates(itemId: UUID, excluding openId: UUID?, editable: any EntryDataEditable) -> Bool {
-        root.itemControllable.itemDataModel.items.contains {
-            $0 != openId && editable.canMoveIntoGroup(itemId: itemId, into: $0)
-        }
-    }
-
     private func candidates(itemId: UUID, excluding openId: UUID?, editable: any EntryDataEditable) -> [FolderRepresentable] {
         root.itemControllable.itemDataModel.items.compactMap { targetId -> FolderRepresentable? in
             guard targetId != openId,
@@ -398,7 +394,12 @@ private struct MoveIntoGroupMenu: View {
             return FolderRepresentable(id: targetId, name: target.name)
         }
         .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        .prefix(Self.maximumCandidates)
+        .map { $0 }
     }
+
+    /// A menu of thousands of items is unusable; the first by name are offered.
+    private static let maximumCandidates = 100
 
     private func move(itemId: UUID, into targetId: UUID, editable: any EntryDataEditable) {
         withAnimation {

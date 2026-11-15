@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import FoundationModels
 import Foundation
 import CoreData
 
@@ -148,17 +149,46 @@ public final class GeneratorRootModel {
     /// `generatorControllers` doc comment for why this is keyed by item rather than module.
     @MainActor func generatorController(forItem itemId: UUID) -> GeneratorController {
         if let existing = generatorControllers[itemId] {
+            // Least recently used: a controller that is asked for again moves to the end.
+            if generatorControllerOrder.last != itemId {
+                generatorControllerOrder.removeAll { $0 == itemId }
+                generatorControllerOrder.append(itemId)
+            }
             return existing
         }
         let controller = GeneratorController()
         generatorControllers[itemId] = controller
         generatorControllerOrder.append(itemId)
-        while generatorControllerOrder.count > Self.maximumGeneratorControllers {
-            let evictedId = generatorControllerOrder.removeFirst()
-            generatorControllers[evictedId]?.tearDown()
-            generatorControllers[evictedId] = nil
-        }
+        evictGeneratorControllers(keeping: itemId)
         return controller
+    }
+
+    /// Drops the least recently used controllers beyond the limit, but never one that is
+    /// generating or extracting (its window may still be on screen), nor `keptItemId`. The limit
+    /// is a soft one while such controllers exist. See CODE_AUDIT_26 §7.17.
+    @MainActor private func evictGeneratorControllers(keeping keptItemId: UUID) {
+        var index = 0
+        while generatorControllerOrder.count > Self.maximumGeneratorControllers,
+              index < generatorControllerOrder.count {
+            let candidateId = generatorControllerOrder[index]
+            guard candidateId != keptItemId,
+                  let candidate = generatorControllers[candidateId],
+                  !candidate.model.isLoading, !candidate.model.isExtracting else {
+                index += 1
+                continue
+            }
+            generatorControllerOrder.remove(at: index)
+            candidate.tearDown()
+            generatorControllers[candidateId] = nil
+        }
+    }
+
+    /// Whether the on-device model can be used at all. Checked before a controller is made, so a
+    /// device without Apple Intelligence does not allocate an engine and a session for every
+    /// sheet it visits. See CODE_AUDIT_26 §7.17.
+    @MainActor static var isAssistantModelAvailable: Bool {
+        if case .available = SystemLanguageModel.default.availability { return true }
+        return false
     }
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
