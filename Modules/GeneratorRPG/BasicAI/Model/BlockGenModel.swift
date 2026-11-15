@@ -6,7 +6,7 @@ import Foundation
 import FoundationModels
 
 @Generable(description: "The entry of the block could be a section / chapter / paragraph")
-public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
+public struct BlockEntryGenModel: Identifiable, Sendable {
     public let id: UUID = UUID()
     @Guide(description: "A short title of this particular section, usually the section title.")
     public let title: String
@@ -16,15 +16,19 @@ public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
         "\(title)-\(content)"
     }
 
+    public init(title: String, content: String) {
+        self.title = title
+        self.content = content
+    }
+}
+
+// Declared in an extension: the `@Generable` macro copies a conformance listed on the struct to
+// `PartiallyGenerated`, which a custom `==` cannot satisfy.
+extension BlockEntryGenModel: Equatable {
     /// Two entries with the same text are equal; the random `id` only identifies the instance.
     /// See CODE_AUDIT_26 §5.118.
     public static func == (lhs: BlockEntryGenModel, rhs: BlockEntryGenModel) -> Bool {
         lhs.title == rhs.title && lhs.content == rhs.content
-    }
-
-    public init(title: String, content: String) {
-        self.title = title
-        self.content = content
     }
 }
 

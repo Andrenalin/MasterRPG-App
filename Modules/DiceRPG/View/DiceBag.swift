@@ -56,7 +56,8 @@ struct DiceBag: View {
         ForEach(diceBag) { die in
             Button {
                 withAnimation(Animation.default.reduced(if: reduceMotion)) {
-                    root.editController.add(die: die, itemId: model.id)
+                    // The button is disabled when the set is full, so the result needs no handling.
+                    _ = root.editController.add(die: die, itemId: model.id)
                 }
             } label: {
                 ThumbnailDice(die: die)
