@@ -2,7 +2,7 @@
 
 Generated 2026-11-14. Scope: all 15 modules under `Modules/` plus `Sources/` and `Resources/` (entitlements, Info.plists) — about 215k production LOC — audited by 21 area agents (CoreRPG and GameRPG and MapRPG split by folder, one agent per remaining module). Tests and the `RPGTabletopGameContent` SPM package were read only for test-gap checks. No `Dead/` or archive directory exists.
 
-Findings cite `path/to/file.swift:LINE` (repo-relative). Items marked **[OPEN since CODE_AUDIT_N §x]** were found open in an earlier audit; everything else is new. Anything an earlier audit marked Fixed / By design / Won't fix, or that `Docu/CODE_AUDIT_25.md` §0 closed today, was not re-reported. The per-area working files with the agents' own summaries and "not audited" lists are in `Docu/CODE_AUDIT_26/`.
+Findings cite `path/to/file.swift:LINE` (repo-relative). Items marked **[OPEN since CODE_AUDIT_N §x]** were found open in an earlier audit; everything else is new. Anything an earlier audit marked Fixed / By design / Won't fix, or that `Docu/CODE_AUDIT_25.md` §0 closed today, was not re-reported. The per-area working files with the agents' own summaries and "not audited" lists are in `Docu/CODE_AUDIT_26_Single/`.
 
 **Totals:** 369 findings — 0 Critical, 9 High, 94 Medium, 266 Low. High and Medium items have the full template; Low items are compact one-liners (full text in the area files).
 
@@ -56,14 +56,14 @@ Overall health is good: the agents' sweeps for GCD, `ObservableObject`, legacy f
 - **What:** It reads `oldResultCategory`, writes the new category on the shared model, awaits `createGameData`, then writes the old one back.
 - **Why:** Two overlapping calls for the same item (a share-to-all from `DiceInline` while a roll share runs, or two quick "Share to player" taps) interleave. The second call captures the first call's temporary category as "old" and restores it, so the temporary category stays on the model and is attached to later shares.
 - **Action:** Pass the category into the export instead of mutating the model, or serialise per item.
-- **Severity:** Medium   **Area:** DiceRPG
+- **Severity:** Medium   **Area:** DiceRPG   **Status:** Fixed 2026-11-15 — the category is a task-local `DiceShareOverride` read by the dice `ExportController.playerExportData` (player packages only); the shared model is never written. Test: `GameControllerTests.overlappingSharesExportTheirOwnResultCategory`.
 
 ### 3.2 visionOS manipulation subscriptions are stored in the view's own @State and capture the view value
 - **Location:** Modules/SpaceRPG/Space/SpaceViewer.swift:58-59,640-680 (`manipulationBeganSubscription`/`manipulationEndedSubscription` closures use `self.isManipulating`, `self.handleManipulationEnded`, `self.tablePlacement`), 846-860 (`closeButtonAttachSubscription` closure uses `self`)
 - **What:** The `EventSubscription` handles are kept in `@State` of `SpaceViewer`, while their closures capture `self` (the view struct, which holds the same `@State` storage box).
 - **Why:** This is exactly the cycle CLAUDE.md warns about for the Table3D model (storage holds subscription, closure holds view copy, view copy holds the storage and with it `objectEntity`/`rootEntity`, i.e. the full USDZ entity). If RealityKit does not drop the handler when the scene is torn down, each open of the viewer on visionOS leaks the entity graph. The close-button subscription breaks its own cycle on the first update tick, the two manipulation ones never do. Not verified at runtime.
 - **Action:** Move the gesture/placement state and the handlers into a small `@MainActor` reference type owned by `@State` (capture it weakly), or cancel and nil the subscriptions in `onDisappear`. Check with the memory graph that the entity deinits after closing the viewer.
-- **Severity:** Medium   **Area:** SpaceRPG + TableRPG
+- **Severity:** Medium   **Area:** SpaceRPG + TableRPG   **Status:** Fixed 2026-11-15 (manipulation subscriptions; not runtime-verified) — the two subscriptions capture only a `SpaceManipulationRelay` reference; the view installs its handlers in `onAppear` and clears them in `onDisappear`. The close-button one-shot subscription still captures the view but cancels itself on its first update tick, so it was left. Memory-graph check of the entity deinit on visionOS is still open.
 
 ### 3.L Low-severity items (14)
 

@@ -181,20 +181,13 @@ extension GameController: DiceGameStorable {
         return NetworkCodableDataType(id: itemId, type: .dice, version: 0, data: diceResult.encodeData())
     }
     
+    /// Exports the dice with `resultCategory` for this share only. The category rides in a
+    /// task-local read by the dice export controller, so the shared model is never touched and
+    /// overlapping shares of one dice cannot restore each other's category. See CODE_AUDIT_26 §3.1.
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
-        let oldResultCategory = await applyResultCategory(resultCategory, for: itemId)
-        let result = try await createGameData(for: itemId)
-        await applyResultCategory(oldResultCategory, for: itemId)
-        return result
-    }
-
-    @MainActor
-    @discardableResult
-    private func applyResultCategory(_ resultCategory: ResultCategory?, for itemId: UUID) -> ResultCategory? {
-        guard let model = itemController.itemSync(for: itemId) else { return nil }
-        let oldResultCategory = model.resultCategory
-        model.resultCategory = resultCategory
-        return oldResultCategory
+        try await DiceShareOverride.$current.withValue(DiceShareOverride(itemId: itemId, resultCategory: resultCategory)) {
+            try await createGameData(for: itemId)
+        }
     }
 
     func createVirtualGameData(

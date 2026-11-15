@@ -55,6 +55,12 @@ struct SpaceViewer: View {
     /// "dragged far enough to count as pulled toward the immersive space."
     /// Window-embedded instances only; see `handleManipulationEnded`.
     @State private var manipulationStartPosition: SIMD3<Float>?
+    /// What the manipulation subscriptions call into. The subscription closures capture only this
+    /// relay, never the view value: the view's `@State` storage holds the subscriptions, so a
+    /// closure holding a copy of the view would be a retain cycle through the whole entity graph.
+    /// The view installs the handlers on appear and clears them on disappear.
+    /// See CODE_AUDIT_26 §3.2.
+    @State private var manipulationRelay = SpaceManipulationRelay()
     @State private var manipulationBeganSubscription: EventSubscription?
     @State private var manipulationEndedSubscription: EventSubscription?
     /// Holds the one-shot `SceneEvents.Update` wait `attachCloseButtonIfNeeded`
@@ -196,8 +202,12 @@ struct SpaceViewer: View {
         ) {
             await placeAboveTableIfNeeded()
         }
+        .onAppear {
+            installManipulationHandlers()
+        }
         .onDisappear {
             sendTransformIfChanged()
+            manipulationRelay.clear()
         }
 #endif
     }
@@ -446,6 +456,27 @@ private extension SpaceViewer {
     /// observational — it doesn't touch the gesture itself, so it can't
     /// reintroduce the drag/zoom conflict a competing gesture caused before.
     @MainActor
+    func installManipulationHandlers() {
+        if isImmersiveSpace {
+            manipulationRelay.began = { _ in
+                self.isManipulating = true
+                self.tablePlacement.markMoved()
+            }
+            manipulationRelay.ended = { _ in
+                self.isManipulating = false
+                self.sendTransformIfChanged()
+            }
+        } else {
+            manipulationRelay.began = { entity in
+                self.manipulationStartPosition = entity.position
+            }
+            manipulationRelay.ended = { entity in
+                self.handleManipulationEnded(entity)
+            }
+        }
+    }
+
+    @MainActor
     func handleManipulationEnded(_ entity: Entity) {
         defer { manipulationStartPosition = nil }
         guard !isImmersiveSpace, let start = manipulationStartPosition else { return }
@@ -639,18 +670,18 @@ private extension SpaceViewer {
                 // hand the object off to the immersive space.
                 manipulationBeganSubscription = content.subscribe(
                     to: ManipulationEvents.WillBegin.self
-                ) { [weak loadedEntity] event in
+                ) { [weak loadedEntity, relay = manipulationRelay] event in
                     guard event.entity == loadedEntity else { return }
                     Task { @MainActor in
-                        self.manipulationStartPosition = event.entity.position
+                        relay.began?(event.entity)
                     }
                 }
                 manipulationEndedSubscription = content.subscribe(
                     to: ManipulationEvents.WillEnd.self
-                ) { [weak loadedEntity] event in
+                ) { [weak loadedEntity, relay = manipulationRelay] event in
                     guard event.entity == loadedEntity else { return }
                     Task { @MainActor in
-                        self.handleManipulationEnded(event.entity)
+                        relay.ended?(event.entity)
                     }
                 }
             } else {
@@ -667,17 +698,15 @@ private extension SpaceViewer {
                 // already be seen by its `!isManipulating` guard. See CODE_AUDIT_19 §3.16.
                 manipulationBeganSubscription = content.subscribe(
                     to: ManipulationEvents.WillBegin.self
-                ) { [weak loadedEntity] event in
+                ) { [weak loadedEntity, relay = manipulationRelay] event in
                     guard event.entity == loadedEntity else { return }
-                    self.isManipulating = true
-                    self.tablePlacement.markMoved()
+                    relay.began?(event.entity)
                 }
                 manipulationEndedSubscription = content.subscribe(
                     to: ManipulationEvents.WillEnd.self
-                ) { [weak loadedEntity] event in
+                ) { [weak loadedEntity, relay = manipulationRelay] event in
                     guard event.entity == loadedEntity else { return }
-                    self.isManipulating = false
-                    self.sendTransformIfChanged()
+                    relay.ended?(event.entity)
                 }
             }
 #else
@@ -1209,4 +1238,21 @@ private struct SpaceViewerCloseButtonView: View {
         .environment(ScenesManager())
 }
 
+#endif
+
+#if os(visionOS)
+/// The target of `SpaceViewer`'s `ManipulationComponent` event subscriptions. A reference type with
+/// no view inside: the subscriptions (kept in the view's `@State`) capture it instead of the view
+/// value, and the view clears its handlers when it disappears, so no cycle keeps the entity graph
+/// alive. See CODE_AUDIT_26 §3.2.
+@MainActor
+final class SpaceManipulationRelay {
+    var began: (@MainActor (Entity) -> Void)?
+    var ended: (@MainActor (Entity) -> Void)?
+
+    func clear() {
+        began = nil
+        ended = nil
+    }
+}
 #endif

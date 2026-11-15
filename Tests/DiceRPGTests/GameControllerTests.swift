@@ -191,6 +191,30 @@ struct GameControllerTests {
         #expect(sut.gameModel.focusItemIds.first == dice.id)
     }
     
+    /// CODE_AUDIT_26 §3.1: the category of a share is exported with that share only. Two shares of
+    /// one dice in flight at once each carry their own category and the stored one is untouched.
+    @Test func overlappingSharesExportTheirOwnResultCategory() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        let stored = dice.resultCategory
+        let first = ResultCategory(id: UUID(), module: .table)
+        let second = ResultCategory(id: UUID(), module: .pdf)
+
+        async let firstData = sut.createGameData(for: dice.id, resultCategory: first)
+        async let secondData = sut.createGameData(for: dice.id, resultCategory: second)
+        let (firstShare, secondShare) = try await (firstData, secondData)
+        #expect(dice.resultCategory == stored)
+
+        let receiver = DiceRootModel.testRoot()
+        await receiver.itemController.resetData()
+        await receiver.gameController.reset()
+        try await receiver.gameController.updateGame(data: firstShare, hide: false, focus: false)
+        #expect(receiver.gameController.gameItem(for: dice.id).resultCategory == first)
+        try await receiver.gameController.updateGame(data: secondShare, hide: false, focus: false)
+        #expect(receiver.gameController.gameItem(for: dice.id).resultCategory == second)
+        #expect(dice.resultCategory == stored)
+    }
+
     @Test func fumble() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController
