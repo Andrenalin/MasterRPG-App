@@ -54,11 +54,7 @@ final class NavigateIntentTests: AppIntentsUITestCase {
                 XCTAssertTrue(list.waitForExistence(timeout: 15), "Navigating to \(rawValue) did not show \(token).")
             } else {
                 await eventually("Navigating to \(rawValue) did not select the \(token) tab.") {
-                    let tab = app.descendants(matching: .any)
-                        .matching(identifier: "module.tab.\(token)")
-                        .firstMatch
-                    // Reading `isSelected` of a missing element fails the test instead of retrying.
-                    return tab.exists && tab.isSelected
+                    isModuleTabSelected(token: token, title: token.capitalized)
                 }
             }
         }
@@ -77,10 +73,7 @@ final class NavigateIntentTests: AppIntentsUITestCase {
         try await definitions.intents["SearchInAppIntent"].makeIntent(criteria: "dragon").run()
 
         await eventually("The app-level search did not select the search tab.") {
-            let tab = app.descendants(matching: .any)
-                .matching(identifier: "module.tab.SEARCH")
-                .firstMatch
-            return tab.exists && tab.isSelected
+            isModuleTabSelected(token: "SEARCH", title: "Search")
         }
     }
 }

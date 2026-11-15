@@ -219,6 +219,17 @@ class AppIntentsUITestCase: MasterRPGUITestCase {
 
     // MARK: Assertions
 
+    /// Whether the module tab is selected. iOS 27 does not expose the tab label's accessibility
+    /// identifier on the tab-bar button, so the button is found by its title as a fallback.
+    func isModuleTabSelected(token: String, title: String) -> Bool {
+        let identified = app.descendants(matching: .any)
+            .matching(identifier: "module.tab.\(token)")
+            .firstMatch
+        let tab = identified.exists ? identified : app.tabBars.buttons[title].firstMatch
+        // Reading `isSelected` of a missing element fails the test instead of retrying.
+        return tab.exists && tab.isSelected
+    }
+
     /// Polls until `condition` holds. Spotlight indexing is asynchronous, so the index trails the
     /// intent that wrote to it.
     func eventually(

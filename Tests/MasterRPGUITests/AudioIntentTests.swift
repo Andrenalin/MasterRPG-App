@@ -11,9 +11,17 @@ final class AudioIntentTests: AppIntentsUITestCase {
         try await definitions.intents["PauseAudioIntent"].makeIntent().run()
     }
 
-    func testPlayAudioRunsForACreatedAudio() async throws {
+    /// A created audio has no file, so its playlist cannot load; the intent reports that
+    /// instead of claiming success (CODE_AUDIT_26 §5.100).
+    func testPlayAudioFailsForAnAudioWithoutAFile() async throws {
         let (audio, _) = try await createItem(.audio)
-        try await definitions.intents["PlayAudioIntent"].makeIntent(target: audio).run()
+
+        do {
+            try await definitions.intents["PlayAudioIntent"].makeIntent(target: audio).run()
+            XCTFail("An audio without a file must not report success.")
+        } catch {
+            // Expected: the audio could not be played.
+        }
         try await definitions.intents["PauseAudioIntent"].makeIntent().run()
     }
 
