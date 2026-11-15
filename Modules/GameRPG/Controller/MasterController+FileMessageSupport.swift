@@ -66,7 +66,7 @@ extension MasterController {
         if model.isAssetRequest {
             return try await answerAssetRequest(
                 for: model,
-                hasLocalFileData: { await access.controllable.hasLocalFileData(for: model.data.id) },
+                hasLocalFileData: { await access.controllable.awaitLocalFileData(for: model.data.id) },
                 package: { try await cachedPackage(module: model.data.type, itemId: model.data.id, controllable: access.controllable) }
             )
         }
@@ -88,8 +88,8 @@ extension MasterController {
     }
 
     /// The answer to a player's request for the bytes of an item, shared by the file-backed
-    /// modules and Audio. An iCloud file that has not downloaded cannot be exported: the requester
-    /// is told, see `AssetRequestUnavailable`. Otherwise `package` supplies the bytes from the
+    /// modules and Audio. `hasLocalFileData` waits for an iCloud file that has not downloaded;
+    /// only when it never arrives is the requester told, see `AssetRequestUnavailable`. Otherwise `package` supplies the bytes from the
     /// package cache, so N requests cost one export. See CODE_AUDIT_Game_Photo_Audio §9.1.
     func answerAssetRequest(
         for model: GameNetworkModel,

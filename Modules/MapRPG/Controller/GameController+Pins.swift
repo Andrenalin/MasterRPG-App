@@ -396,6 +396,27 @@ extension GameController {
         return await hasPhotoImage(for: backgroundPhotoId)
     }
 
+    @MainActor func awaitMapFiles(itemId: UUID) async -> Bool {
+        let model = gameItem(for: itemId)
+        // Hidden pins stay out: their photo must not be touched before the game master reveals them.
+        var photoIds = model.mapPins.filter { model.isPinVisibleToPlayers($0) }.compactMap { $0.photoId }
+        if let backgroundPhotoId = model.photoId { photoIds.insert(backgroundPhotoId, at: 0) }
+        var seen: Set<UUID> = []
+        let uniqueIds = photoIds.filter { seen.insert($0).inserted }
+        let photos = root.photoRoot.gameControllable
+        var present: [UUID] = []
+        for photoId in uniqueIds where await photos.hasItem(id: photoId, version: 0) {
+            // Start every download before waiting for the first one.
+            _ = await photos.hasLocalFileData(for: photoId)
+            present.append(photoId)
+        }
+        var allArrived = true
+        for photoId in present {
+            if await !photos.awaitLocalFileData(for: photoId) { allArrived = false }
+        }
+        return allArrived
+    }
+
     @MainActor func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType] {
         let model = gameItem(for: itemId)
         // A live map-state snapshot can introduce ordinary monster/character

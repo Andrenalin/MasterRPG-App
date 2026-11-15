@@ -285,6 +285,38 @@ public extension FileUrlDataController {
         await hasDownloadedData(for: fileUrl, startingDownload: true)
     }
 
+    /// Asks iCloud for the file and waits until it is downloaded. For a game sender: a package
+    /// or a pin photo is only sent from a file that can be read, so the send waits for the
+    /// download instead of being skipped. Returns `false` when the file does not exist, the
+    /// wait is cancelled, or iCloud did not deliver within `timeout`.
+    @concurrent
+    func waitUntilDownloaded(
+        _ fileUrl: FileUrl,
+        timeout: Duration = .seconds(600),
+        pollInterval: Duration = .milliseconds(500)
+    ) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        var attempt = 0
+        var missingPolls = 0
+        while !Task.isCancelled {
+            // Ask again now and then: a download that failed or was evicted again must restart.
+            if await hasDownloadedData(for: fileUrl, startingDownload: attempt.isMultiple(of: 30)) { return true }
+            guard clock.now < deadline else { break }
+            // No file and no placeholder: there is nothing to wait for. A short grace covers an
+            // iCloud placeholder that appears only after the download was requested.
+            if await hasLocalData(for: fileUrl) { missingPolls = 0 } else { missingPolls += 1 }
+            if missingPolls >= 10 { return false }
+            attempt += 1
+            do {
+                try await Task.sleep(for: pollInterval)
+            } catch {
+                return false
+            }
+        }
+        return false
+    }
+
     /// `hasDownloadedData(for:)` without the side effect: an evicted iCloud file is reported as
     /// missing but not asked for. Scans over a whole library (availability lists) use this, so a
     /// player joining or a share completing does not download every evicted file of the user;

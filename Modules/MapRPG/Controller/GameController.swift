@@ -127,6 +127,9 @@ public protocol MapGameStorable: Sendable {
         playerId: UUID
     ) -> Bool
     func hasBackgroundImage(itemId: UUID) async -> Bool
+    /// Downloads and waits for the background photo and the visible pins' photos; `false` when one
+    /// never arrived.
+    @MainActor func awaitMapFiles(itemId: UUID) async -> Bool
     func missingMapImages(itemId: UUID) async -> [NetworkCodableDataType]
     @MainActor func movePin(itemId: UUID, pinId: UUID, location: CGPoint) -> Bool
     @MainActor func toggleRoom(itemId: UUID, roomId: UUID) -> Bool

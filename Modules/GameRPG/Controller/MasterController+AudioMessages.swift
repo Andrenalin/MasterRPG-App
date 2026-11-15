@@ -44,7 +44,7 @@ extension MasterController {
             // §3.2 and §9.1.
             return try await answerAssetRequest(
                 for: model,
-                hasLocalFileData: { await root.audioRoot.audioGameControllable.hasLocalFileData(for: model.data.id) },
+                hasLocalFileData: { await root.audioRoot.audioGameControllable.awaitLocalFileData(for: model.data.id) },
                 package: { try await audioPackage(for: model.data.id) }
             )
         }
@@ -359,10 +359,10 @@ extension MasterController {
         to players: Set<UUID>,
         isSuperseded: () -> Bool = { false }
     ) async -> Bool {
-        // An evicted iCloud file is asked for here and the export would wait for the download,
-        // stalling the master's pipeline or the game master's action chain. Without the file the
-        // delivery fails and the bounded retry tries again. See CODE_AUDIT_Audio2 §5.11.
-        guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: id) else {
+        // An evicted iCloud file is downloaded first, even if that means waiting: the delivery
+        // only goes out from a file that can be read. It fails (and the bounded retry tries
+        // again) only when iCloud never delivers or the delivery is cancelled.
+        guard await root.audioRoot.audioGameControllable.awaitLocalFileData(for: id) else {
             Logger.networking.error("MasterController: Audio \(id, privacy: .public) is not downloaded yet.")
             return false
         }

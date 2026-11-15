@@ -310,6 +310,22 @@ struct FileAccessTests {
         #expect(await sut.hasDownloadedData(for: missing) == false)
     }
 
+    @Test("waitUntilDownloaded returns at once for a downloaded file and gives up on one that does not exist")
+    func waitUntilDownloadedReturnsForPresentAndMissingFiles() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "jpg")
+        let fileId = UUID()
+        var imported = FileUrl(fileId: fileId, url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
+        imported.resetData(Data("photo bytes".utf8))
+        let stored = try #require(
+            try await sut.createNewFileUrl(fileId: fileId, unconvertedFileUrl: imported, pathExtension: "jpg")
+        )
+        let missing = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
+
+        #expect(await sut.waitUntilDownloaded(stored, timeout: .seconds(5)))
+        #expect(await sut.waitUntilDownloaded(missing, timeout: .seconds(30), pollInterval: .milliseconds(5)) == false)
+    }
+
     @Test("Bytes held for a file that is not on this device are used by every read")
     func heldPeerDataServesReads() async throws {
         let module = uniqueModuleName()

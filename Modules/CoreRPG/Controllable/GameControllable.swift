@@ -2,6 +2,7 @@
 
 import Foundation
 import Observation
+import os.log
 
 @MainActor @Observable
 public final class ItemGameModel {
@@ -360,6 +361,18 @@ public extension GameControllable {
         guard let fileUrlDataController = itemControllable.fileUrlDataController else { return true }
         guard let fileUrl = await itemControllable.item(for: itemId)?.fileUrl else { return true }
         return await fileUrlDataController.hasDownloadedData(for: fileUrl)
+    }
+
+    /// Like `hasLocalFileData(for:)`, but an iCloud file that has not downloaded is waited for
+    /// instead of reported missing. Every game send (a show, a player's request, a pin photo)
+    /// uses this: the file is downloaded first, even if that takes a while. Returns `false`
+    /// only when the file never arrives or the caller is cancelled.
+    func awaitLocalFileData(for itemId: UUID) async -> Bool {
+        guard let fileUrlDataController = itemControllable.fileUrlDataController else { return true }
+        guard let fileUrl = await itemControllable.item(for: itemId)?.fileUrl else { return true }
+        if await fileUrlDataController.hasDownloadedData(for: fileUrl) { return true }
+        Logger.fileStore.info("Waiting for the iCloud download of \(itemId, privacy: .public) before it is sent")
+        return await fileUrlDataController.waitUntilDownloaded(fileUrl)
     }
 
     /// The size in bytes of the item's backing file on this device, `nil` for an item without a

@@ -87,7 +87,7 @@ extension PlayerController {
         }
         var payload = data
         if payload.data == nil {
-            guard await controllable.hasLocalFileData(for: data.id) else {
+            guard await controllable.awaitLocalFileData(for: data.id) else {
                 Logger.networking.error("PlayerController: Cannot share \(data.type.token, privacy: .public) \(data.id, privacy: .public): its file is not on this device")
                 return
             }

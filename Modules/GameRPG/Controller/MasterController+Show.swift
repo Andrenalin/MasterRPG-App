@@ -31,6 +31,11 @@ extension MasterController {
             root.mapRoot.mapGameControllable.clearSharedPinPhotos()
         }
 
+        // The files come first: a reveal that reaches this device's own player view (or any
+        // player) while the file is still an iCloud placeholder is rejected and only starts the
+        // download, so the first tap would do nothing. See `awaitFiles(of:)`.
+        await awaitFiles(of: idType)
+
         let reference: NetworkCodableDataType
         switch idType.type {
         case .map where idType.assetVersion == nil:
@@ -74,6 +79,25 @@ extension MasterController {
         }
         if reference.type == .audio {
             await showAudioStartItems(of: reference.id)
+        }
+    }
+
+    /// Downloads every iCloud file the shown item needs on the game master's device and waits
+    /// for it, so the reveal and its package go out from readable files. A file that never
+    /// arrives is logged and the show goes on: the players are then told it is unavailable.
+    private func awaitFiles(of idType: NetworkCodableDataType) async {
+        let isReady: Bool
+        switch idType.type {
+        case .audio:
+            isReady = await root.audioRoot.audioGameControllable.awaitLocalFileData(for: idType.id)
+        case .map:
+            isReady = await root.mapRoot.mapGameControllable.awaitMapFiles(itemId: idType.id)
+        default:
+            guard let access = FileBackedModuleAccess.access(for: idType.type, in: root) else { return }
+            isReady = await access.controllable.awaitLocalFileData(for: idType.id)
+        }
+        if !isReady {
+            Logger.networking.error("MasterController: The file of \(idType.type.token, privacy: .public) \(idType.id, privacy: .public) did not download; showing it anyway")
         }
     }
 
@@ -149,9 +173,9 @@ extension MasterController {
         return []
     }
 
-    /// The package of an item, or `nil` when there is none to send: an export without the
-    /// item's file (an iCloud file that has not downloaded) would only tell the players that
-    /// they still lack it.
+    /// The package of an item, or `nil` when there is none to send. An iCloud file that has
+    /// not downloaded is waited for first, so the package always carries the file; `nil` means
+    /// the file never arrived.
     ///
     /// The export requirements are `@concurrent`, so they run off the main actor by
     /// themselves and inherit this task's cancellation. See CODE_AUDIT_18 §7.1 and §4.4.
@@ -160,7 +184,7 @@ extension MasterController {
         case .map:
             return try await cachedMapPackage(for: idType.id)
         case .audio:
-            guard await root.audioRoot.audioGameControllable.hasLocalFileData(for: idType.id) else { return nil }
+            guard await root.audioRoot.audioGameControllable.awaitLocalFileData(for: idType.id) else { return nil }
             // The same cached, coalesced package as the push and the asset requests: a re-show
             // does not read the file again. See CODE_AUDIT_Game_Photo_Audio §7.5.
             return try await audioPackage(for: idType.id)
@@ -168,7 +192,7 @@ extension MasterController {
             return try await cachedWeatherPackage(for: idType.id)
         default:
             guard let access = FileBackedModuleAccess.access(for: idType.type, in: root),
-                  await access.controllable.hasLocalFileData(for: idType.id)
+                  await access.controllable.awaitLocalFileData(for: idType.id)
             else { return nil }
             return try await cachedPackage(module: idType.type, itemId: idType.id, controllable: access.controllable)
         }
