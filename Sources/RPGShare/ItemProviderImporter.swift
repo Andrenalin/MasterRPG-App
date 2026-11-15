@@ -152,21 +152,13 @@ private extension ItemProviderImporter {
         return ImageItem(imageData: data)
     }
 
-    /// A single large photo (ProRAW, HEIC panorama) can on its own exceed the Share
-    /// Extension's ~120MB budget. Downsamples via ImageIO's thumbnail generator — which
-    /// decodes directly at the target size rather than fully decoding the source and scaling
-    /// afterward — so the oversized original is never fully materialized in memory. Small
-    /// images pass through untouched. See CODE_AUDIT §6.3.
+    /// See `SharedImageDownsampling.downsampledIfNeeded`, where the rules live and are tested.
     nonisolated static func downsampledIfNeeded(_ data: Data) throws -> Data {
-        // Bytes that ImageIO does not read as an image are not stored as a Photo, however small.
-        // See CODE_AUDIT_23 §6.6.
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              CGImageSourceGetCount(source) > 0,
-              ImageDownsampler.declaredSize(of: source) != .overLimits else {
+        do {
+            return try SharedImageDownsampling.downsampledIfNeeded(data)
+        } catch {
             throw Error.failedToLoad
         }
-        guard data.count > maximumRawImageByteSize else { return data }
-        return downsampled(source) ?? data
     }
 
     /// Reads the image at `url` with a bounded memory footprint: a large file is downsampled
@@ -215,38 +207,11 @@ private extension ItemProviderImporter {
     }
 
     private nonisolated static func downsampled(_ source: CGImageSource) -> Data? {
-        // The header is checked before anything is decoded: an image declaring more pixels than
-        // the shared limit is not decoded inside the extension's memory budget at all.
-        // See CODE_AUDIT_21 §9.5.
-        guard ImageDownsampler.declaredSize(of: source) != .overLimits,
-              let thumbnail = ImageDownsampler.downsampledImage(
-                  from: source,
-                  maxPixelSize: maximumDownsampledPixelDimension
-              ) else {
-            return nil
-        }
-        let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(
-            output,
-            UTType.jpeg.identifier as CFString,
-            1,
-            nil
-        ) else {
-            return nil
-        }
-        CGImageDestinationAddImage(
-            destination,
-            thumbnail,
-            [kCGImageDestinationLossyCompressionQuality: JPEGQuality.downsampledImport] as CFDictionary
-        )
-        guard CGImageDestinationFinalize(destination) else {
-            return nil
-        }
-        return output as Data
+        SharedImageDownsampling.downsampled(source)
     }
 
-    nonisolated static let maximumRawImageByteSize = 8 * ByteUnit.mebibyte
-    nonisolated static let maximumDownsampledPixelDimension: CGFloat = 4_096
+    nonisolated static let maximumRawImageByteSize = SharedImageDownsampling.maximumRawImageByteSize
+    nonisolated static let maximumDownsampledPixelDimension = SharedImageDownsampling.maximumDownsampledPixelDimension
     nonisolated static let maximumTotalImagePayloadSize = 60 * ByteUnit.mebibyte
     /// Largest image file (or download) the extension will even open.
     nonisolated static let maximumSourceFileByteSize = ByteLimits.maximumSourceFileBytes

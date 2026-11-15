@@ -13,8 +13,7 @@ struct GameStatisticsActivityChart: View {
     /// day. See CODE_AUDIT_26 §5.89.
     private var selectedBucketDate: Date? {
         guard let selectedDate else { return nil }
-        let dates = points.map(\.date)
-        return dates.filter { $0 <= selectedDate }.max() ?? dates.min()
+        return GameStatisticTimePoint.bucketDate(containing: selectedDate, in: points.map(\.date))
     }
 
     var body: some View {

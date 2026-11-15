@@ -83,6 +83,30 @@ public struct PersistentHistoryCleaner {
     }
 }
 
+/// The timestamp rules of the history cleanup, free of `UserDefaults` and Core Data so they can be
+/// tested. See CODE_AUDIT_26 §10.8.
+enum PersistentHistoryTimestamps {
+    /// History younger than this is never deleted.
+    static let retention: TimeInterval = 7 * 24 * 60 * 60
+
+    /// The newest point history may be deleted up to: every actor that has a position has consumed
+    /// it AND it is at least `retention` old. The CloudKit mirroring delegate is not tracked in the
+    /// actors, so the floor is the only protection for its unconsumed transactions — deleting
+    /// those invalidates its history token and forces a full re-mirror.
+    static func safeCleanupTimestamp(actorTimestamps: [Date], now: Date) -> Date {
+        let floor = now.addingTimeInterval(-retention)
+        return min(actorTimestamps.min() ?? floor, floor)
+    }
+
+    /// The position to store after a cleanup to `timestamp`, or `nil` when the actor is already
+    /// there or further: a position is never rewound, that would make the actor reprocess history
+    /// it has already merged.
+    static func advanced(current: Date?, to timestamp: Date) -> Date? {
+        if let current, current >= timestamp { return nil }
+        return timestamp
+    }
+}
+
 private actor PersistentHistoryTimestampUpdater {
     static let shared = PersistentHistoryTimestampUpdater()
 
@@ -96,8 +120,9 @@ private actor PersistentHistoryTimestampUpdater {
         for actor in actors {
             // Never rewind an actor's position — that would make it reprocess history
             // it has already merged. Only advance actors that lag behind the cleanup point.
-            if let current = userDefault.lastHistoryTransactionTimestamp(for: actor), current >= timestamp { continue }
-            userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: timestamp)
+            let current = userDefault.lastHistoryTransactionTimestamp(for: actor)
+            guard let advanced = PersistentHistoryTimestamps.advanced(current: current, to: timestamp) else { continue }
+            userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: advanced)
         }
     }
 }
@@ -312,15 +337,10 @@ private actor PersistentHistoryProcessor {
 
 fileprivate extension UserDefaults {
     func lastCommonTransactionTimestamp(in appActors: [AppPersistentActor]) -> Date? {
-        let sevenDaysAgo = Date().addingTimeInterval(-7*24*60*60)
-        // Only delete history that every app actor has consumed AND that is at least
-        // 7 days old. The CloudKit mirroring delegate is not tracked in appActors, so
-        // the 7-day floor is the only protection for its unconsumed transactions —
-        // deleting those invalidates its history token and forces a full re-mirror.
-        let timestamp = appActors
-            .compactMap { lastHistoryTransactionTimestamp(for: $0) }
-            .min() ?? sevenDaysAgo
-        return min(timestamp, sevenDaysAgo)
+        PersistentHistoryTimestamps.safeCleanupTimestamp(
+            actorTimestamps: appActors.compactMap { lastHistoryTransactionTimestamp(for: $0) },
+            now: Date()
+        )
     }
 
     func lastHistoryTransactionTimestamp(for appActor: AppPersistentActor) -> Date? {

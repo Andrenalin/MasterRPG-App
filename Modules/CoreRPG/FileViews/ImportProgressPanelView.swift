@@ -252,7 +252,7 @@ public struct ImportProgressPanelView: View {
                 // After the release (which waits for the parse): remove files a review that was
                 // never applied wrote. See CODE_AUDIT_Folder §5.2.
                 await session?.release(cancelImport: true)
-                await Self.settleReviewFiles(importModel: importModel, rootManager: rootManager)
+                await ImportReviewApplyController.settleReviewFiles(importModel: importModel, rootManager: rootManager)
             }
         }
     }
@@ -277,21 +277,9 @@ private extension ImportProgressPanelView {
             // The session owns the apply, so a dismissal mid-apply waits for it before the
             // final save and lock release. See CODE_AUDIT_Folder §3.17.
             await session.runApply {
-                for module in reviewModel.modules {
-                    guard let root = rootManager.rootModel(for: module.id) else { continue }
-                    var appliedIds: Set<UUID> = []
-                    var deletedIds: Set<UUID> = []
-                    for item in module.reviewItems {
-                        switch await Self.apply(item: item, root: root) {
-                        case .applied: appliedIds.insert(item.id)
-                        case .deleted: deletedIds.insert(item.id)
-                        case .unchanged: break
-                        }
-                    }
-                    await Self.finishReview(root: root, appliedIds: appliedIds, deletedIds: deletedIds)
-                }
+                await ImportReviewApplyController.applyAll(reviewModel: reviewModel, rootManager: rootManager)
             }
-            await Self.settleReviewFiles(importModel: importModel, rootManager: rootManager)
+            await ImportReviewApplyController.settleReviewFiles(importModel: importModel, rootManager: rootManager)
         }
         await endDataMutation()
         outcome = .finished
@@ -364,50 +352,8 @@ private extension ImportProgressPanelView {
         Task { @MainActor in
             await mutationSession?.release(cancelImport: true)
             // Files the parse wrote for a review that is now cancelled. See CODE_AUDIT_Folder §5.2.
-            await Self.settleReviewFiles(importModel: importModel, rootManager: rootManager)
+            await ImportReviewApplyController.settleReviewFiles(importModel: importModel, rootManager: rootManager)
             navigator.dismiss()
-        }
-    }
-
-    enum ReviewApplyOutcome {
-        case applied, deleted, unchanged
-    }
-
-    /// After a module's review items were applied: reviewed deletions go to the trash (and are
-    /// purged with link, tag and file cleanup at the next launch) instead of being hard-deleted;
-    /// the children of a deleted folder that stay move to root; and the folder repair runs over
-    /// everything applied. Hard deletes left dangling folder entries and invisible children.
-    /// See CODE_AUDIT_Folder §5.9.
-    static func finishReview(root: any ItemRootControllable, appliedIds: Set<UUID>, deletedIds: Set<UUID>) async {
-        let editController = root.editControllable
-        var detachedIds: Set<UUID> = []
-        for itemId in deletedIds {
-            guard let item = root.itemControllable.itemSync(for: itemId, noGame: true) else { continue }
-            let keptChildren = item.isFolder ? item.entries.map(\.childId).filter {
-                !deletedIds.contains($0) && root.itemControllable.itemSync(for: $0, noGame: true)?.parentId == itemId
-            } : []
-            for childId in keptChildren {
-                editController.removeItemFromParent(itemId: childId, oneUp: false, moveFiles: true, scope: .library)
-                detachedIds.insert(childId)
-            }
-            editController.markForDeletion(itemId: itemId)
-        }
-        let repairIds = appliedIds.union(detachedIds)
-        guard !repairIds.isEmpty else { return }
-        // One pass over the folders for every applied item. See CODE_AUDIT_Folder §7.3.
-        editController.repairFolders(itemIds: appliedIds)
-        let repair = ConvertController(itemController: root.itemControllable, editController: editController)
-        await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: repairIds)
-    }
-
-    /// Settles the files a manual-review parse wrote: those an applied item references stay
-    /// (and replace its previous file), the rest are removed. See CODE_AUDIT_Folder §5.2, §5.26.
-    static func settleReviewFiles(importModel: ItemDataImportModel, rootManager: RootManager?) async {
-        let writes = importModel.reviewFileWrites
-        importModel.reviewFileWrites = []
-        guard let rootManager else { return }
-        for write in writes {
-            await rootManager.rootModel(for: write.module)?.itemControllable.settleImportedFile(write.write, itemId: write.itemId)
         }
     }
 
@@ -416,161 +362,6 @@ private extension ImportProgressPanelView {
         guard let importError = error as? ItemDataImportableError else { return false }
         if case .cancel = importError { return true }
         return false
-    }
-
-    static func apply(item: ImportReviewItemModel, root: any ItemRootControllable) async -> ReviewApplyOutcome {
-        let itemModel = item.itemModel
-        if item.isDeletion {
-            return itemModel.decision == .imported ? .deleted : .unchanged
-        }
-        if itemModel.decision == .existing {
-            guard itemModel.hasOverrides, itemModel.item.existing != nil else { return .unchanged }
-        }
-        guard let model = itemModel.materializedItem() as? any Observable & ItemDataAccessible else { return .unchanged }
-        // The review was built from the library item as it was at parse time. If it changed
-        // while the sheet was open (sync, another window), merge the reviewed result onto the
-        // current item instead of overwriting that change. See CODE_AUDIT_Folder §3.17.
-        var finalModel: any ModelType = model
-        if let parsed = itemModel.item.existing as? any Observable & ItemDataAccessible,
-           !root.itemControllable.libraryModel(id: item.id, matches: parsed),
-           let merged = root.itemControllable.mergeSync(with: model, forceMerge: true, noGame: true) {
-            finalModel = merged
-        }
-        // A reviewed folder may be a partial copy from a subset export. See CODE_AUDIT_Folder §5.8.
-        finalModel = root.itemControllable.keepingLocalFolderChildren(finalModel)
-        // An item that leaves the trash takes its tags again: trashing gave their counts back.
-        // See CODE_AUDIT_21 §5.30.
-        let trashed = DisplayStateMask.totalHidden.rawValue
-        if let restored = finalModel as? any ItemDataAccessible, restored.displayState != trashed,
-           root.itemControllable.itemSync(for: item.id, noGame: true)?.displayState == trashed {
-            root.editControllable.tagController.add(tags: restored.tags, module: root.itemControllable.config.module)
-        }
-        root.itemControllable.replaceImportedModel(model: finalModel, isInsert: true, forceSave: true)
-        return .applied
-    }
-}
-
-@MainActor @Observable
-private final class ImportMutationSession {
-    /// The hooks a presenter passes in; plain values the view keeps until it creates the session.
-    struct Handlers {
-        var beginDataMutation: (@MainActor () -> Bool)?
-        var endDataMutation: (@MainActor () async -> Void)?
-        var beginSaveDeferral: (@MainActor () -> UUID)?
-        var endSaveDeferral: (@MainActor (UUID) -> Void)?
-    }
-
-    private let beginDataMutationHandler: (@MainActor () -> Bool)?
-    private let endDataMutationHandler: (@MainActor () async -> Void)?
-    private let beginSaveDeferral: (@MainActor () -> UUID)?
-    private let endSaveDeferral: (@MainActor (UUID) -> Void)?
-
-    private(set) var isActive = false
-
-    var canStartImport: Bool { importTask == nil }
-
-    @ObservationIgnored private var coordinatorToken: UUID?
-    /// Held by the session, not the presenting view: release runs from a task that can outlive
-    /// the view, and reading the view's `@State` after teardown is not supported.
-    /// See CODE_AUDIT_Folder §3.16.
-    @ObservationIgnored private var saveDeferralToken: UUID?
-    @ObservationIgnored private var importTask: Task<Void, any Error>?
-    @ObservationIgnored private var applyTask: Task<Void, Never>?
-    @ObservationIgnored private var cleanupTask: Task<Void, Never>?
-
-    init(handlers: Handlers) {
-        self.beginDataMutationHandler = handlers.beginDataMutation
-        self.endDataMutationHandler = handlers.endDataMutation
-        self.beginSaveDeferral = handlers.beginSaveDeferral
-        self.endSaveDeferral = handlers.endSaveDeferral
-    }
-
-    func beginDataMutation() -> Bool {
-        guard !isActive else { return true }
-
-        if let beginDataMutationHandler {
-            guard beginDataMutationHandler() else { return false }
-        } else {
-            guard let token = DataMutationCoordinator.shared.begin() else { return false }
-            coordinatorToken = token
-        }
-
-        isActive = true
-        if saveDeferralToken == nil {
-            saveDeferralToken = beginSaveDeferral?()
-        }
-        return true
-    }
-
-    /// Runs the review apply as a task the session owns, so `release` waits for it before the
-    /// final save and lock release. See CODE_AUDIT_Folder §3.17.
-    func runApply(_ work: @escaping @MainActor () async -> Void) async {
-        let task = Task { @MainActor in
-            await work()
-        }
-        applyTask = task
-        await task.value
-        applyTask = nil
-    }
-
-    /// Retains the parser task so every exit path can wait until parsing has stopped mutating data.
-    func trackImportTask(_ task: Task<Void, any Error>) -> Bool {
-        guard importTask == nil else { return false }
-        importTask = task
-        return true
-    }
-
-    func release(cancelImport: Bool) async {
-        if cancelImport {
-            importTask?.cancel()
-        }
-
-        if let cleanupTask {
-            await cleanupTask.value
-            return
-        }
-
-        guard isActive else { return }
-
-        let parserTask = importTask
-        let applyTask = applyTask
-        let task = Task { @MainActor [self] in
-            _ = await parserTask?.result
-            await applyTask?.value
-            await self.finishRelease()
-        }
-        cleanupTask = task
-        await task.value
-        cleanupTask = nil
-    }
-
-    /// SwiftUI disappearance callbacks cannot await. This task deliberately retains the session
-    /// until parser cancellation, the final save, and lock release have all completed.
-    func cancelImportAndReleaseInBackground() {
-        importTask?.cancel()
-        guard isActive, cleanupTask == nil else { return }
-
-        Task { @MainActor [self] in
-            await self.release(cancelImport: true)
-        }
-    }
-
-    private func finishRelease() async {
-        guard isActive else { return }
-
-        if let saveDeferralToken {
-            endSaveDeferral?(saveDeferralToken)
-            self.saveDeferralToken = nil
-        }
-        await endDataMutationHandler?()
-
-        if let coordinatorToken {
-            DataMutationCoordinator.shared.end(coordinatorToken)
-            self.coordinatorToken = nil
-        }
-
-        importTask = nil
-        isActive = false
     }
 }
 

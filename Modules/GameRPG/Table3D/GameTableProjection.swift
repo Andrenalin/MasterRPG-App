@@ -26,23 +26,8 @@ extension TableGameSetup {
         activeAttackerPinId: UUID?,
         healthPercent: (MapPinModel) -> Double?
     ) -> [UUID: UUID] {
-        let allPins: [MapPinModel]
-        if let mapModel {
-            let pointerPins = mapModel.pointer.isShown ? [mapModel.pointer] : []
-            allPins = mapModel.mapPins + pointerPins
-        } else {
-            allPins = []
-        }
-        // Visibility: the master sees every pin (hidden ones dimmed); players
-        // see a pin when it is shown and — for monsters — not covered by fog.
-        var seenPinIds: Set<UUID> = []
-        let targetPins = allPins.filter { seenPinIds.insert($0.id).inserted }.filter { pin in
-            if isGameMaster { return true }
-            guard pin.isShown else { return false }
-            if pin.id == mapModel?.pointer.id { return true }
-            if pin.isPlayer { return true }
-            return mapModel.map { !$0.isLocationHiddenForPlayers(pin.location) } ?? true
-        }
+        let allPins = TablePinVisibility.allPins(of: mapModel)
+        let targetPins = TablePinVisibility.visiblePins(allPins: allPins, mapModel: mapModel, isGameMaster: isGameMaster)
 
         let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
         // Diagnostics loop every pin/room and build strings regardless of log level, so they are

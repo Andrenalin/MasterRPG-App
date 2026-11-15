@@ -1291,6 +1291,7 @@ Patterns worth applying repo-wide (each is backed by several findings in differe
 - **Why:** Regressions in the shared core hit all 12 modules.
 - **Action:** Add a CoreRPG test for file replacement in game mode (library item keeps a valid file), a tag hydration-failure test, and a locale-pinned folder merge test.
 - **Severity:** Medium   **Area:** CoreRPG Controllable/Import/Links
+- **Status:** Fixed 2026-11-15 — `FolderEntryMergeTests.orderIsLiteral` pins the folder merge order (literal, not locale); `ItemReconciliationRaceTests` forces an item added while `updates` awaits (a gated persistence stub; fails without the `idsBeforeAwait` guard, checked by reverting it) and an item gone from the store. Game-mode file replacement (`FileReplacementTests`) and the tag hydration failure (`TagControllerHydrationTests.failedFetchSkipsTheSave`) were already covered.
 
 ### 10.2 Import apply, trash handling and the data-mutation lock live untested inside a view
 - **Location:** Modules/CoreRPG/FileViews/ImportProgressPanelView.swift:262-304 (`applyReview`), 372-451 (`finishReview`, `settleReviewFiles`, `apply`), 453-575 (`ImportMutationSession`)
@@ -1298,13 +1299,14 @@ Patterns worth applying repo-wide (each is backed by several findings in differe
 - **Why:** This is the path that writes users' library data and holds the `DataMutationCoordinator` lock. A regression (lock not released after cancel, deleted folder children lost, files not settled) cannot be caught by a unit test, and CLAUDE.md asks for view logic to be testable.
 - **Action:** Move `ImportMutationSession` and the apply/finish/settle functions into an `ImportReviewApplyController` (stateless struct per the project's MVC) in CoreRPG/Controller or the same folder and cover: cancel while parsing, cancel while applying (release waits for the apply), apply when the lock is unavailable, deleted folder with kept children, reviewed file settle. The view then drops below 300 lines.
 - **Severity:** Medium   **Area:** CoreRPG UI 1
+- **Status:** Fixed 2026-11-15 (partly) — the apply/finish/settle functions moved to `ImportReviewApplyController` and `ImportMutationSession` is internal (own file). Tests: `ImportMutationSessionTests` (refused lock, begin/release once, cancel while parsing, second parse refused, cancel while applying) and `ImportReviewApplyTests` (trash, kept folder children, no-op, settle clears writes). `ImportProgressPanelView` is still about 390 lines.
 
 ### 10.3 Test gaps
 - **Location:** Tests/GameRPGTests (TableSeatAssignmentTests, GameTableProjectionTests, BoardTextureRendererTests, TableSeatDiceTests, TableGuestDiceTests, TableDiceResultTests, TablePopoverSourceTests, GameTableControlTests, TableMessageFlowTests exist)
 - **What:** Nothing covers `GameTableModel.performMapChange`/`loadMapPhoto` cancellation and failed-photo behaviour (the finding above), `PinPawn`/`syncPins` visibility filtering per role and display mode (GameTablePinPawnTests is visionOS only and, per CODE_AUDIT_3dTable 10.1, was already stale), the player-moves-own-pin rules in `canMovePin`, and the hidden-dice decision above.
 - **Why:** These are the paths where regressions have occurred before (health colour, session pins, map reshow).
 - **Action:** Extract the pin visibility filter from `syncPins` into a pure function and test it for player/GM/preview; test `canMovePin` and the map-change state machine with a stubbed photo loader.
-- **Severity:** Medium   **Area:** GameRPG Table3D   **Status:** [OPEN since CODE_AUDIT_3dTable §10.1]
+- **Severity:** Medium   **Area:** GameRPG Table3D   **Status:** Fixed 2026-11-15 (partly; was OPEN since CODE_AUDIT_3dTable §10.1) — the pin filter of `syncPins` is `TablePinVisibility` (pure) with `TablePinVisibilityTests` (GM, player, fog, pointer, duplicate ids); `canMovePin` was already covered by `GameTableControlTests`. The map-change state machine is tested without a stubbed photo loader (cancellation of an in-flight photo load is not covered).
 
 ### 10.4 Test gaps on the risky controller paths
 - **Location:** Tests/AdventureRPGTests (no hits for `duplicate(item`, `saveTablePlayers`, `tablePlayers(for`, group export, `update(itemId:entryId:` on a group entry, folder/collection duplication)
@@ -1312,6 +1314,7 @@ Patterns worth applying repo-wide (each is backed by several findings in differe
 - **Why:** These carry data-loss potential (duplicate copies member ids, saveTablePlayers deliberately avoids a full library overwrite during a game).
 - **Action:** Add tests: duplicate adventure with group entry (child copied, `groupId` and `adventureId` remapped), duplicate folder with sub-folder, saveTablePlayers during game mode (library updated, game copy session fields untouched, link register diffs), merge of two folder variants.
 - **Severity:** Medium   **Area:** AdventureRPG
+- **Status:** Fixed 2026-11-15 (partly) — `AdventureControllerRiskTests`: duplicate with a group entry, duplicate of a folder with a sub-folder, `saveTablePlayers` during a game, folder-variant merge. Link-register diffs of `saveTablePlayers` and group export are not tested.
 
 ### 10.5 Audio-session state machine (interruption, route change, media-services reset) has no tests
 - **Location:** Modules/AudioRPG/Controller/AudioPlayerSession.swift:201-247, Modules/AudioRPG/Controller/AudioController.swift:355-412, Modules/AudioRPG/Controller/MediaPlayerCoordinator.swift:94-117
@@ -1319,6 +1322,7 @@ Patterns worth applying repo-wide (each is backed by several findings in differe
 - **Why:** The interruption generation counters, `wasPlaying` hand-off, `isActive` bookkeeping, observer re-creation after a reset and the Now Playing throttle (`positionTolerance`) are exactly the code with await gaps and subtle ordering; the findings below were visible only by reading.
 - **Action:** Make the delegate calls injectable (the delegate protocol already is) and test: began/ended with and without `.shouldResume`, a second `.began`, reset while playing; test `handlePlaybackChange` throttle with a fake clock.
 - **Severity:** Medium   **Area:** AudioRPG
+- **Status:** Fixed 2026-11-15 (partly) — `AudioSessionStateMachineTests` (iOS): interruption began/ended with and without `.shouldResume`, media-services reset, Now Playing throttle. Route change (`AVAudioSessionRouteDescription` cannot be constructed) and the "second began cancels the pending resume" race are not tested.
 
 ### 10.6 No tests for app-level routing, window routing, database setup, or Validate/Repair locking
 - **Location:** Modules/RolePlayGameKit/Model/AppModel+Routing.swift:84-99 (external-route dedupe), :189-209 (layout restore); Route/WindowRouter.swift (per-role action lists, including recursion between `forwardToOtherWindow` and `routeToModule`); Model/DataBaseModel.swift:117-160; View/ValidateRepairView.swift:44-66; Route/RootURLHandler.swift
@@ -1326,6 +1330,7 @@ Patterns worth applying repo-wide (each is backed by several findings in differe
 - **Why:** these are the most regression-prone cross-platform branches (macOS/visionOS/iOS conditionals, buffered routes, the error state that is never reset); regressions in this area have repeatedly shipped (CODE_AUDIT_18 §3.17, Since_3.0.1 §5.16).
 - **Action:** add pure tests for `WindowRouter.actions(for:)` per role/platform, `admitsExternalRoute`, `DataBaseModel` error/recovery transitions with an injected persistence stub, and `startWithExclusiveDataAccess` refusing while the coordinator is held.
 - **Severity:** Medium   **Area:** RolePlayGameKit
+- **Status:** Fixed 2026-11-15 (partly) — `RolePlayGameKitRoutingTests` (in GameRPGTests): `admitsExternalRoute` dedupe/expiry, `DataBaseModel` error and recovery transitions through the new internal `apply(initializationError:)` (an injected error instead of a persistence stub), `startWithExclusiveDataAccess` busy while the token is held, `WindowRouter` action counts on iOS. Per-role action lists on macOS/visionOS and the layout restore are not tested.
 
 ### 10.7 Test gaps for the risky Weather and Rule logic
 - **Location:** Tests/WeatherRPGTests (no test touches `replace(with:)`/`weatherUpdate` semantics, `rainDirection` at zero angle, `linkRegisterModels`, or the `merge` stamp winner), Tests/RuleRPGTests (`mergeEntries` is tested for ordered input only; nothing for reordered or duplicate-named entries, `playerExport`, or the editor's save path)
@@ -1333,23 +1338,38 @@ Patterns worth applying repo-wide (each is backed by several findings in differe
 - **Why:** They are exactly the paths that regressed unnoticed.
 - **Action:** Add tests with each fix: link source type survives `validateLinks`; a name-only `replace` keeps `weatherUpdate`; a reordered `mergeEntries` yields unique ids.
 - **Severity:** Medium   **Area:** RuleRPG + WeatherRPG
+- **Status:** Fixed 2026-11-15 — `WeatherRiskTests` (rename keeps `weatherUpdate`, weather change moves it, `rainDirection` at zero angle, `linkRegisterModels`/diff, merge convergence and rename+edit) and `RuleMergeRiskTests` (duplicate names, reordered ids, child follows parent, `playerExportData` drops the source payload).
 
 ### 10.L Low-severity items (14)
 
 - **10.8 Persistence and file plumbing tests are missing for several risky pieces** — Modules/CoreRPG/Persistence/PersistentHistoryTrackerManager.swift:14-335 — _CoreRPG Files/Persistence/Model_. Extract the timestamp rules into pure functions with tests; add an in-memory store test for the change observer; test `ensureRemoteCache` with an injected downloader (the seam exists: `remoteFileDownl
+  - **Status:** Fixed 2026-11-15 (partly) — the timestamp rules are `PersistentHistoryTimestamps` (pure; `safeCleanupTimestamp`, `advanced`) with `PersistentHistoryTimestampTests`; `EnsureRemoteCacheTests` cover shared concurrent downloads, retry after a failure, the size cap with tmp cleanup and non-remote files. The in-memory store test for the remote-change observer was not written.
 - **10.9 Test gaps in the importers** — Tests/CoreRPGTests/Foundry — _CoreRPG Foundry/Sheet_. Add focused tests (with time limits) when fixing.
+  - **Status:** Fixed 2026-11-15 (partly) — `FoundryBridgeRiskTests` (malformed `assetReference`s are skipped with a capped diagnostic, thousands of them stay bounded, an oversized bridge file is refused early; each with a time limit). Other importer paths have no new tests.
 - **10.10 Test gaps (Sheet/Text)** — Tests/CoreRPGTests — _CoreRPG Foundry/Sheet_. Add focused table-driven tests with the fixes.
+  - **Status:** Fixed 2026-11-15 — `EntryTextParserTableTests` (table-driven `removeLineBreaks`, `parse`, `format` round trip, `transformingContent`) and `SheetRowStateTests` (`lastIsShown`, search restore).
 - **10.11 Test gap: no coverage found for the Simple session and EntryDataEditable defaults** — Modules/CoreRPG/Simple/SimpleSheetController.swift:73-112 — _CoreRPG UI 2_. Add tests for hidden entries on reorder/merge and three same-id links.
+  - **Status:** Fixed 2026-11-15 (partly) — `SimpleSheetControllerTests`: order, reorder keeps row identity, removal, merged-in entry, rename marks changed, linked child nesting. Hidden entries and "three same-id links" are not covered (the audit does not say what the latter means).
 - **10.12 Test gap: Viewport geometry, theme contrast and numeric filter** — Modules/CoreRPG/Views/ViewportGeometry.swift — _CoreRPG UI 2_. Add golden-value tests (all four theme x contrast combinations keep the documented ratios; viewport resize/zoom anchors).
+  - **Status:** Fixed 2026-11-15 (partly) — `NumericFilterTests` (table-driven `NumericOnlyViewModifier.filtered`). `ViewportGeometryTests` and `AppThemeTests` already existed; no new theme x contrast golden values.
 - **10.13 Test gaps** — Tests/GameRPGTests — _GameRPG Views/Battle/Statistics_. Add the four tests together with the fixes.
+  - **Status:** Fixed 2026-11-15 — `GameStatisticsRiskTests`: tolerant dashboard decoding (older, newer, empty, round trip), activity bucket selection (extracted `GameStatisticTimePoint.bucketDate(containing:in:)`), own-rolls-only dice counting with and without a local participant. `BattleNumberInput` was already covered by `BattleRoundInputAndBroadcastTests`.
 - **10.14 Test gaps** — Tests/MapRPGTests — _MapRPG Map_. Add tests for hex+room lookup, wrap insert midpoint, and a timing guard for `resetEntries` with a few thousand cells.
+  - **Status:** Fixed 2026-11-15 — `MapEntryViewerRiskTests`: room wins over the hex cell, topmost room, wrap-around needle insert midpoint, middle insert shifting indices, and a 4,000-cell reset with a one-minute limit (a coarse guard, not a benchmark).
 - **10.15 Test gaps** — Tests/MapRPGTests — _MapRPG rest_. Add the three tests alongside `MapPinVisibilityTests` / `MapWallRedactionTests`.
+  - **Status:** Fixed 2026-11-15 — `MapRedactionFingerprintTests`: hidden room text blanked for players only, `contentVersion(of:)` equals the payload fingerprint, hidden-room edits move the fingerprint while the player copy stays blank. The reveal-after-blank-package restore (§5.95) is not tested.
 - **10.16 Test gaps** — Tests/CharacterRPGTests — _CharacterRPG_. Add the owner-order test with that fix; add the portrait assertion to `characterDataControllerCreatesTrimmedValue`.
+  - **Status:** Fixed 2026-11-15 — already in place: the second-in-order owner test (`ConvertControllerRepairTests`, §5.30) and the `photoId` assertion in `characterDataControllerCreatesTrimmedValue` (§5.31).
 - **10.17 Test gaps** — Tests/DiceRPGTests — _DiceRPG_. Add the five tests together with the fixes.
+  - **Status:** Fixed 2026-11-15 — `DiceRiskTests` (`add(die:)` refused at the limit, bounded results keep the newest, a roll on a full die is visible) and `EditorValueClampTests` (the clamp is now `EditorValueClamp`, used by both number editors). The `hiddenPlayers`/sender-id cases were already covered in `GameControllerTests`.
 - **10.18 Untested risky logic: window trimming, overflow recovery, batch apply, prompt assembly** — Tests/GeneratorRPGTests — _GeneratorRPG_. extract `applyResult` and the window selection into pure functions and unit-test them; test `OneShotGate` for open-before-wait and double open.
+  - **Status:** Fixed 2026-11-15 — `TranscriptWindowTests` (`droppingLeadingNonPrompts`, estimated token window) and `OneShotGateTests` (open before wait, double open, timeout, finished task, cancelled waiter); `OneShotGate`, `GeneratorTaskWait` and the transcript window helpers are internal now. `applyResult` already delegates to the tested `BatchSummaryMerge`; the real-token window needs the model and is not tested.
 - **10.19 Test gaps for the file-backed paths** — Tests/PdfRPGTests, Tests/PhotoRPGTests — _PdfRPG + PhotoRPG_. Add tests for convert (extension case, size cap), non-image data to `resetPhoto(data:)` returning false, and a fake `FileUrlDataController` for `pdfDocument(for:)` cancellation.
+  - **Status:** Fixed 2026-11-15 (partly) — `PdfDocumentLoadingTests` (cancelled load returns nil, finished download opens, failed download and unknown item return nil, through the `remoteFileDownloader` seam instead of a fake controller) and `PhotoFileBackedRiskTests` (`isNotJpegPhoto` ignores case, non-image/empty data refused by `resetPhoto(data:)`). The `convert` size cap is not tested.
 - **10.20 No tests for the SpaceViewer-adjacent state machine and scanner reset logic** — Tests/SpaceRPGTests — _SpaceRPG + TableRPG_. Extract the pure folder-cleanup decision (`hasModelFiles`, keep Models) and the finish/cancel transitions into types testable on the simulator; add `consume` tests when the awaiting check is added.
+  - **Status:** Fixed 2026-11-15 (partly) — the stale-scan decision is `ScanFolderCleanup` (builds on every platform) with `ScanFolderCleanupTests` (keeps Models, removes raw photos, cutoff, hidden files). The finish/cancel transitions stay in `AppDataModel` (device-only, needs an `ObjectCaptureSession`); no `consume` tests because the awaiting check does not exist.
 - **10.21 Test gap: share extension, content-widget snapshot and widget timeline have no tests** — Sources/RPGShare/ItemProviderImporter.swift — _Sources + Resources_. Move `ItemProviderImporter`'s pure static helpers and the name-derivation into a module (CoreRPG/PhotoRPG) and add tests for oversize, undecodable and zero-length data, and for `ContentWidgetSnapshot`
+  - **Status:** Fixed 2026-11-15 (partly) — the share extension's image rules moved to CoreRPG `SharedImageDownsampling` (`ItemProviderImporter` delegates) with tests for zero-length, undecodable, small and oversized data; `ContentWidgetSnapshotTests` (round trip, links, publish filter and cap, empty load). Name derivation and the widget timeline have no tests.
 
 ## 11. What was NOT audited
 

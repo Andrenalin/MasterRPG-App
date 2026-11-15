@@ -82,8 +82,8 @@ private struct TextIntEditorTextField: View {
             .focused(focusState)
             .onSubmit {
                 // A typed value stays inside the editor's range, like the slider. See CODE_AUDIT_26 §5.111.
-                if let value = Int(text) {
-                    model.value <=> min(max(Double(value), range.lowerBound), range.upperBound)
+                if let value = Int(text), let clamped = EditorValueClamp.clamped(value, to: range) {
+                    model.value <=> clamped
                 }
                 model.save()
             }

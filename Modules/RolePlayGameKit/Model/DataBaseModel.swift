@@ -115,13 +115,19 @@ public final class DataBaseModel {
     }
     
     private func finishSetup() {
+        let error = (hasCloudKit ? cloudPersistence?.model.error : localPersistence?.model.error) ?? .none
+        coreDataInitModel = hasCloudKit ? cloudPersistence?.model : localPersistence?.model
+        apply(initializationError: error)
+    }
+
+    /// Turns the outcome of loading the stores into the state the initialization view shows.
+    /// Internal so the transitions can be tested with an injected error. See CODE_AUDIT_26 §10.6.
+    func apply(initializationError error: CoreDataInitError) {
         // A successful retry after "delete database" must not keep the earlier error.
         // See CODE_AUDIT_26 §5.121.
         hasError = false
         errorMessage = nil
         canRecover = false
-        let error = (hasCloudKit ? cloudPersistence?.model.error : localPersistence?.model.error) ?? .none
-        coreDataInitModel = hasCloudKit ? cloudPersistence?.model : localPersistence?.model
         switch error {
         case .none:
             guard !hasContextSet else { return }

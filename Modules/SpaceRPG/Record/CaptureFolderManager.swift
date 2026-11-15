@@ -202,35 +202,7 @@ final class CaptureFolderManager {
     /// capture started meanwhile is never deleted. See CODE_AUDIT_26 §7.65.
     nonisolated static func cleanupStaleScans(createdBefore cutoff: Date = .now) {
         guard let capturesFolder = rootScansFolder() else { return }
-        guard let staleFolders = try? FileManager.default.contentsOfDirectory(
-            at: capturesFolder,
-            includingPropertiesForKeys: [.creationDateKey]
-        ) else { return }
-        for folder in staleFolders {
-            if let created = try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate,
-               created >= cutoff {
-                continue
-            }
-            // A scan whose model could not be attached keeps its Models folder (see
-            // `AppDataModel.reset()`): it is the only copy, so only the raw photos go.
-            if hasModelFiles(in: folder) {
-                for name in ["Images", "Snapshots"] {
-                    try? FileManager.default.removeItem(at: folder.appending(path: name, directoryHint: .isDirectory))
-                }
-                continue
-            }
-            try? FileManager.default.removeItem(at: folder)
-        }
-    }
-
-    private nonisolated static func hasModelFiles(in scanFolder: URL) -> Bool {
-        let modelsFolder = scanFolder.appending(path: "Models", directoryHint: .isDirectory)
-        let contents = try? FileManager.default.contentsOfDirectory(
-            at: modelsFolder,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        )
-        return contents?.isEmpty == false
+        ScanFolderCleanup.removeStaleScans(in: capturesFolder, createdBefore: cutoff)
     }
 }
 

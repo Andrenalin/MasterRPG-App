@@ -140,7 +140,7 @@ private func foundationLabEstimateStructuredTokens(_ content: GeneratedContent) 
     max(1, Int(ceil(Double(content.jsonString.count) / 4.5)))
 }
 
-private extension Transcript {
+extension Transcript {
     /// The kept window must start with a prompt: a response, tool call or tool output without the
     /// prompt that caused it is an orphan the model session may reject or misread.
     /// See CODE_AUDIT_26 §5.115.

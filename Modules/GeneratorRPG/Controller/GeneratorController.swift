@@ -463,7 +463,8 @@ private extension GeneratorController {
 
 /// Waits for a task to end, but no longer than a timeout. `task.value` alone does not stop waiting
 /// when the waiter is cancelled and never returns for a task that ignores its cancellation.
-private enum GeneratorTaskWait {
+/// Internal so it can be tested. See CODE_AUDIT_26 §10.18.
+enum GeneratorTaskWait {
     static let predecessorTimeout: Duration = .seconds(5)
 
     static func end(of task: Task<Void, Never>, timeout: Duration) async {
@@ -488,7 +489,7 @@ private enum GeneratorTaskWait {
 }
 
 /// Resumes its one waiter the first time it is opened, also when that is before `wait`.
-private final class OneShotGate: Sendable {
+final class OneShotGate: Sendable {
     private enum State {
         case idle
         case waiting(CheckedContinuation<Void, Never>)

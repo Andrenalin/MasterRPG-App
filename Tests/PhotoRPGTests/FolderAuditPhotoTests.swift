@@ -323,7 +323,7 @@ struct FolderAuditPhotoTests {
     }
 }
 
-private extension PhotoRootModel {
+extension PhotoRootModel {
     /// `testRoot()` with a Core Data context, so writes reach a store the test can read back.
     static func persistentTestRoot(context: NSManagedObjectContext) -> PhotoRootModel {
         let root = PhotoRootModel(tagController: .preview)
@@ -335,7 +335,7 @@ private extension PhotoRootModel {
     }
 }
 
-private struct InMemoryStore {
+struct InMemoryStore {
     let container: NSPersistentContainer
     let context: NSManagedObjectContext
 

@@ -150,8 +150,9 @@ private struct TextDoubleEditorTextField: View {
             // `wholeMatch(of:)` requires the entire string to match, unlike
             // `Double(_:format:)`'s prefix-matching parse — see Calculator.swift's
             // fix for the same issue.
-            if let value = text.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale.current))?.output, value.isFinite {
-                model.value <=> min(max(value, range.lowerBound), range.upperBound)
+            if let value = text.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale.current))?.output,
+               let clamped = EditorValueClamp.clamped(value, to: range) {
+                model.value <=> clamped
             }
             model.save()
         }

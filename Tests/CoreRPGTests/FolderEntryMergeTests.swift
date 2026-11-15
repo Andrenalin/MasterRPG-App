@@ -36,4 +36,16 @@ struct FolderEntryMergeTests {
         )
         #expect(merged == [Entry(id: id, name: "Remote")])
     }
+
+    @Test("The order does not depend on the language: capitals sort before lowercase, accents after")
+    func orderIsLiteral() {
+        // A localized compare would give apple, Äpfel, Zebra in English and a different order in
+        // other languages; the literal compare is the same on every device. CODE_AUDIT_26 §5.53.
+        let names = ["Zebra", "Äpfel", "apple", "Éclair", "eclair"]
+        let entries = names.map { Entry(id: UUID(), name: $0) }
+        let merged = FolderEntryMerge.merged(local: entries, remote: [], id: \.id, name: \.name)
+        #expect(merged.map(\.name) == ["Zebra", "apple", "eclair", "Äpfel", "Éclair"])
+        let reversed = FolderEntryMerge.merged(local: [], remote: entries.reversed(), id: \.id, name: \.name)
+        #expect(reversed.map(\.name) == merged.map(\.name))
+    }
 }

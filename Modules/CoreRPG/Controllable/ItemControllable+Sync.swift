@@ -122,7 +122,10 @@ public extension ItemControllable {
         // Locally created items whose insert is still queued are not in the store yet; they
         // are not deletions. See CODE_AUDIT_18 §5.2.
         let unsavedInsertIds = unsavedBeforeFetch.union(await dataControllable?.unsavedInsertIds() ?? [])
-        let deletedIds = itemDataModel.items.filter { !sortedModelIds.contains($0) && !unsavedInsertIds.contains($0) }
+        // An id that appeared during the await is a new local item, not a deletion.
+        let deletedIds = itemDataModel.items.filter {
+            !sortedModelIds.contains($0) && !unsavedInsertIds.contains($0) && idsBeforeAwait.contains($0)
+        }
         for id in deletedIds {
             // Full-table reconciliation (a store swap, or the once-at-launch initial
             // fetch) must stay memory-only, matching `updateFromSync`'s incremental

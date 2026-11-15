@@ -424,6 +424,12 @@ struct GameStatisticTimePoint: Identifiable, Hashable, Sendable {
 
     var id: Date { date }
 
+    /// The bucket a selected date falls into: the latest bucket that starts at or before it, or the
+    /// first bucket for a date before all of them. See CODE_AUDIT_26 §5.89 / §10.13.
+    static func bucketDate(containing selected: Date, in dates: [Date]) -> Date? {
+        dates.filter { $0 <= selected }.max() ?? dates.min()
+    }
+
     func value(for metric: GameStatisticsMetric) -> Double {
         switch metric {
         case .duration: duration / 3_600
