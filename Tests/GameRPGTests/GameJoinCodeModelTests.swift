@@ -5,6 +5,7 @@ import Foundation
 import Synchronization
 import Testing
 
+@testable import CoreRPG
 @testable import GameRPG
 
 @Suite("GameJoinCodeModel — CODE_AUDIT_Join")
@@ -14,6 +15,22 @@ struct GameJoinCodeModelTests {
     private static let playerKey = "MasterRPGPlayerJoinCode"
     private static let lastCodeKey = "MasterRPGLastUsedMasterJoinCode"
     private static let lastHostKey = "MasterRPGLastUsedMasterHost"
+
+    @Test("Observers and proxies show no join code; hosting roles do")
+    func observersAndProxiesHaveNoJoinCode() {
+        let root = GameRoot.previewFixture(game: .empty)
+        let localId = root.gameModel.gameConfig.id
+        for (type, expectsCode) in [
+            (GameType.observer, false), (.proxy, false), (.player, true)
+        ] {
+            root.gameModel.gameRoster = GameRosterModel(players: [
+                PlayerGameModel(id: localId, type: type, name: "Local")
+            ])
+            #expect((root.ownJoinCode(isMaster: false) != nil) == expectsCode, "\(type)")
+            #expect(root.offersJoinCode(for: type) == expectsCode, "\(type)")
+        }
+        #expect(root.ownJoinCode(isMaster: true) != nil)
+    }
 
     @Test("Only four ASCII digits are a valid code (§5.7)")
     func validationIsAsciiOnly() {

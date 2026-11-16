@@ -130,12 +130,26 @@ public final class GameRoot {
     /// changes afterwards (Settings reset), so that running code is shown instead of the stored
     /// one — otherwise players would be told a code the listener does not accept.
     /// See CODE_AUDIT_Join §5.8.
+    ///
+    /// Observers and proxies never host (no listener, no Bonjour advertising — only the Game
+    /// Master and a player relay do), so they have no code to share and get `nil`.
     func ownJoinCode(isMaster: Bool) -> String? {
+        if !isMaster, !offersJoinCode(for: gameModel.gameType) { return nil }
         let store = isMaster ? networkStore : networkProxyStore
         if let hosting = store.model.masterStore?.networkModel, hosting.isStreaming, !hosting.passcode.isEmpty {
             return hosting.passcode
         }
         return isMaster ? gameJoinCodeModel.masterCode : gameJoinCodeModel.playerCode
+    }
+
+    /// Whether a device in `type` hosts a listener other devices can join, and so has a join
+    /// code to show. Observers and proxies only connect out. Must match the roles for which
+    /// `PlayerController.start` starts a proxy server.
+    func offersJoinCode(for type: GameType) -> Bool {
+        switch type {
+        case .observer, .proxy: false
+        case .notSet, .master, .player, .demo: true
+        }
     }
 
     /// The local-network connection was lost and this device is waiting for the master to dial back
