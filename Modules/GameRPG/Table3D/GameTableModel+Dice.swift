@@ -4,6 +4,7 @@
 import CoreRPG
 import DiceRPG
 import Foundation
+import RealityKit
 import Spatial
 import TabletopKit
 import os.log
@@ -12,13 +13,13 @@ extension GameTableModel {
     // MARK: - Dice
 
     /// Mirrors the locally focused character-sheet dice set onto the local player's own seat:
-    /// shows exactly as many `Die20`/`Die` (d6) slots as the set needs of each type, positioned to
+    /// shows exactly as many `Die20`/`Die3`/`Die4`/`Die12`/`Die10`/`Die8`/`Die` (d6) slots as the set needs of each type, positioned to
     /// match, and parks every other slot in this seat's pool off-table at `.parkedDicePose` with the
     /// `0` sentinel. Reuses DiceRPG's focus-dice mechanism as the trigger rather than a separate
     /// notion of "selected dice" for the table. `TabletopGame.addAction` syncs every change to every
     /// other participant, so every device shows the same shape for this seat.
     ///
-    /// Only d20 and d6 are backed by a table mesh, and each seat only has
+    /// Only d20, d12, d10, d8, d6, d4 and d3 are backed by a table mesh, and each seat only has
     /// `GameSetup.maxDicePerType` slots per type. Extras (a homebrew "roll 8d6", or a GM
     /// batch-rolling for several NPCs) are dropped rather than mirrored, and reported through
     /// `diceOverflowCount`.
@@ -35,8 +36,6 @@ extension GameTableModel {
     func applyDiceRoll(_ diceModel: DiceModel) {
         mirroredSheet = nil
         guard let seat = localSeat,
-              let d20Ids = setup.playerD20Ids[seat],
-              let d6Ids = setup.playerD6Ids[seat],
               let seatPose = setup.seats.first(where: { $0.id == seat })?.initialState.pose
         else { return }
         var sheetDieIds: [EquipmentIdentifier: UUID] = [:]
@@ -45,28 +44,17 @@ extension GameTableModel {
         // every d20 first and the d6s after them.
         let slots = TableSeatDice.slots(sides: diceModel.dice.map(\.die.max), poolSize: GameSetup.maxDicePerType)
         let layout = PlayerSeat.diceLayout(inFrontOf: seatPose, count: slots.count)
-        var d20Targets: [Int: (value: Int, pose: TableVisualState.Pose2D)] = [:]
-        var d6Targets: [Int: (value: Int, pose: TableVisualState.Pose2D)] = [:]
+        var targets: [TableDieKind: [Int: DieTarget]] = [:]
         for (slot, pose) in zip(slots, layout) {
             let die = diceModel.dice[slot.index]
-            let target = (value: die.result.last ?? TableDieValue.unrolled, pose: pose)
-            if slot.isD20, d20Ids.indices.contains(slot.slot) {
-                d20Targets[slot.slot] = target
-                sheetDieIds[d20Ids[slot.slot]] = die.id
-            } else if !slot.isD20, d6Ids.indices.contains(slot.slot) {
-                d6Targets[slot.slot] = target
-                sheetDieIds[d6Ids[slot.slot]] = die.id
-            }
+            guard let dieIds = setup.dieIds(slot.kind, seat: seat), dieIds.indices.contains(slot.slot) else { continue }
+            targets[slot.kind, default: [:]][slot.slot] = (value: die.result.last ?? TableDieValue.unrolled, pose: pose)
+            sheetDieIds[dieIds[slot.slot]] = die.id
         }
 
-        let parked = (value: TableDieValue.parked, pose: TableVisualState.Pose2D.parkedDicePose)
-        for (slot, dieId) in d20Ids.enumerated() {
-            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
-            updateDieSlot(equipment, target: d20Targets[slot] ?? parked)
-        }
-        for (slot, dieId) in d6Ids.enumerated() {
-            guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
-            updateDieSlot(equipment, target: d6Targets[slot] ?? parked)
+        for kind in TableDieKind.allCases {
+            guard let dieIds = setup.dieIds(kind, seat: seat) else { continue }
+            updateDiePool(kind, ids: dieIds, targets: targets[kind] ?? [:])
         }
         mirroredSheet = (diceModel.id, sheetDieIds)
 
@@ -76,6 +64,40 @@ extension GameTableModel {
             Logger.gameTable.warning(
                 "Focused dice set had \(overflowCount, privacy: .public) dice this table couldn't represent (unsupported sides, or more than \(GameSetup.maxDicePerType, privacy: .public) of one type at this seat); those results were not mirrored onto the table"
             )
+        }
+    }
+
+    /// Where a pool die goes: the value it shows and its pose.
+    typealias DieTarget = (value: Int, pose: TableVisualState.Pose2D)
+
+    /// Brings every die of one pool to its target; a slot with none is parked off the table.
+    func updateDiePool(_ kind: TableDieKind, ids: [EquipmentIdentifier], targets: [Int: DieTarget]) {
+        let parked: DieTarget = (value: TableDieValue.parked, pose: .parkedDicePose)
+        for (slot, dieId) in ids.enumerated() {
+            let target = targets[slot] ?? parked
+            switch kind {
+                case .d20:
+                    guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+                case .d3:
+                    guard let equipment = tabletopGame.equipment(of: Die3.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+                case .d4:
+                    guard let equipment = tabletopGame.equipment(of: Die4.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+                case .d12:
+                    guard let equipment = tabletopGame.equipment(of: Die12.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+                case .d10:
+                    guard let equipment = tabletopGame.equipment(of: Die10.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+                case .d8:
+                    guard let equipment = tabletopGame.equipment(of: Die8.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+                case .d6:
+                    guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
+                    updateDieSlot(equipment, target: target)
+            }
         }
     }
 
@@ -126,16 +148,110 @@ extension GameTableModel {
         return value
     }
 
+    // MARK: - Die colors
+
+    /// The d6 color of every pool slot this device can tell, from the dice sets it knows: the
+    /// local seat's own focused set, the shared set of the player at any other seat, and the
+    /// rolls of the guests. A die's color is the one its set has, so nothing is synced for it.
+    func dieColors(focused: DiceModel?, shared: [DiceModel]) -> TableDieColors {
+        func slots(of dice: DiceModel) -> [TableDieKind: [Int: String]] {
+            TableDieColors.slots(
+                dice: dice.dice.map { (sides: $0.die.max, colorCode: $0.colorCode) },
+                poolSize: GameSetup.maxDicePerType
+            )
+        }
+        var colors = TableDieColors()
+        let localSeat = localSeat
+        for seat in setup.seats where seat.id != PlayerSeat.guestSeat {
+            if seat.id == localSeat {
+                if let focused { colors.set(slots(of: focused), seat: seat.id.rawValue) }
+            } else if let dice = (seatPlayerNames[seat.id] ?? []).lazy
+                .compactMap({ name in shared.first { $0.name == name } }).first {
+                colors.set(slots(of: dice), seat: seat.id.rawValue)
+            }
+        }
+        var guestSlots: [TableDieKind: [Int: String]] = [:]
+        for group in guestGroups {
+            for die in group.dice where TableDieColors.isColored(die.kind) {
+                guestSlots[die.kind, default: [:]][die.slot] = die.colorCode
+            }
+        }
+        colors.set(guestSlots, seat: PlayerSeat.guestSeat.rawValue)
+        return colors
+    }
+
+    /// Puts each colored die of the pools in its color. Runs on every device, as the color is a
+    /// local material and not part of the synced die state; a slot with no color keeps the one it
+    /// has, since it lies parked until a set claims it.
+    func applyDieColors(_ colors: TableDieColors) {
+        dieColorTask?.cancel()
+        guard !colors.slots.isEmpty else { return }
+        dieColorTask = Task { [weak self] in
+            var materials: [TableDieKind: [String: PhysicallyBasedMaterial]] = [:]
+            for (kind, bySeat) in colors.slots {
+                for code in Set(bySeat.values.flatMap(\.values)) {
+                    if let material = await Self.dieMaterial(for: kind, code: code) {
+                        materials[kind, default: [:]][code] = material
+                    }
+                }
+            }
+            guard let self, !Task.isCancelled else { return }
+            for seat in setup.seats {
+                for (kind, bySeat) in colors.slots {
+                    guard let slotColors = bySeat[seat.id.rawValue],
+                          let dieIds = setup.dieIds(kind, seat: seat.id) else { continue }
+                    for (slot, code) in slotColors where dieIds.indices.contains(slot) {
+                        guard let material = materials[kind]?[code] else { continue }
+                        apply(material: material, to: dieIds[slot], kind: kind)
+                    }
+                }
+            }
+        }
+    }
+
+    private static func dieMaterial(for kind: TableDieKind, code: String) async -> PhysicallyBasedMaterial? {
+        switch kind {
+            case .d6: await DieAssets.d6Material(for: code)
+            case .d8: await Die8Assets.material(for: code)
+            case .d3: await Die3Assets.material(for: code)
+            case .d4: await Die4Assets.material(for: code)
+            case .d12: await Die12Assets.material(for: code)
+            case .d10: await Die10Assets.material(for: code)
+            case .d20: await Die20Assets.material(for: code)
+        }
+    }
+
+    private func apply(material: PhysicallyBasedMaterial, to dieId: EquipmentIdentifier, kind: TableDieKind) {
+        switch kind {
+            case .d6: tabletopGame.equipment(of: Die.self, matching: dieId)?.apply(material: material)
+            case .d8: tabletopGame.equipment(of: Die8.self, matching: dieId)?.apply(material: material)
+            case .d3: tabletopGame.equipment(of: Die3.self, matching: dieId)?.apply(material: material)
+            case .d4: tabletopGame.equipment(of: Die4.self, matching: dieId)?.apply(material: material)
+            case .d12: tabletopGame.equipment(of: Die12.self, matching: dieId)?.apply(material: material)
+            case .d10: tabletopGame.equipment(of: Die10.self, matching: dieId)?.apply(material: material)
+            case .d20: tabletopGame.equipment(of: Die20.self, matching: dieId)?.apply(material: material)
+        }
+    }
+
     /// Whether `dieId` belongs to the pool of the guest seat.
     func isGuestDie(_ dieId: EquipmentIdentifier) -> Bool {
-        setup.playerD20Ids[PlayerSeat.guestSeat]?.contains(dieId) == true
-            || setup.playerD6Ids[PlayerSeat.guestSeat]?.contains(dieId) == true
+        isDie(dieId, inPoolOf: PlayerSeat.guestSeat)
     }
 
     /// Whether `dieId` belongs to one of the table's dice pools.
     func isDie(_ dieId: EquipmentIdentifier) -> Bool {
         tabletopGame.equipment(of: Die20.self, matching: dieId) != nil
+            || tabletopGame.equipment(of: Die3.self, matching: dieId) != nil
+            || tabletopGame.equipment(of: Die4.self, matching: dieId) != nil
+            || tabletopGame.equipment(of: Die12.self, matching: dieId) != nil
+            || tabletopGame.equipment(of: Die10.self, matching: dieId) != nil
+            || tabletopGame.equipment(of: Die8.self, matching: dieId) != nil
             || tabletopGame.equipment(of: Die.self, matching: dieId) != nil
+    }
+
+    /// Whether `dieId` belongs to a seat's pools.
+    func isDie(_ dieId: EquipmentIdentifier, inPoolOf seat: TableSeatIdentifier) -> Bool {
+        TableDieKind.allCases.contains { setup.dieIds($0, seat: seat)?.contains(dieId) == true }
     }
 
     /// The game master may handle any die; a player only the dice in their own seat's pool.
@@ -146,8 +262,7 @@ extension GameTableModel {
         guard !isGuestDie(dieId) else { return false }
         if isGameMaster { return true }
         guard let seat = localSeat else { return false }
-        return setup.playerD20Ids[seat]?.contains(dieId) == true
-            || setup.playerD6Ids[seat]?.contains(dieId) == true
+        return isDie(dieId, inPoolOf: seat)
     }
 
     /// VoiceOver's "activate" gesture on a die entity (see `DiceComponent`, wired in `GameTableView`'s
@@ -158,6 +273,26 @@ extension GameTableModel {
         guard canControlDie(dieId) else { return }
         let result = rollTossedDie(dieId) ?? Int.random(in: 1...sides)
         if let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        } else if let equipment = tabletopGame.equipment(of: Die3.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        } else if let equipment = tabletopGame.equipment(of: Die4.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        } else if let equipment = tabletopGame.equipment(of: Die12.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        } else if let equipment = tabletopGame.equipment(of: Die10.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        } else if let equipment = tabletopGame.equipment(of: Die8.self, matching: dieId) {
             tabletopGame.addAction(
                 .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
             )

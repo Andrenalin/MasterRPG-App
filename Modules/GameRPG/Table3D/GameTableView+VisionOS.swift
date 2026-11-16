@@ -276,6 +276,10 @@ public struct GameTableView: View {
         .onChange(of: guestRolls, initial: false) { _, rolls in
             game?.applyGuestRolls(rolls)
         }
+        // The dice keep the color their set has, on every seat: see `GameTableModel.dieColors`.
+        .onChange(of: dieColors, initial: false) { _, colors in
+            game?.applyDieColors(colors)
+        }
         // The photo the game master shows on the map stands at its anchor on the table.
         .onChange(of: root.mapRoot.photoPopover.photo) {
             game?.updateMapPhotoAnchor()
@@ -321,6 +325,7 @@ public struct GameTableView: View {
             await game.handleMapChange(isGameMaster: game.isGameMaster)
             applyCurrentFocusedDiceRoll(to: game)
             game.applyGuestRolls(guestRolls)
+            game.applyDieColors(dieColors)
             return
         }
 
@@ -369,6 +374,7 @@ public struct GameTableView: View {
         // default face on the table until someone rolled again.
         applyCurrentFocusedDiceRoll(to: initializedGame)
         initializedGame.applyGuestRolls(guestRolls)
+        initializedGame.applyDieColors(dieColors)
     }
 
     /// Creates `activityManager`, which calls `tabletopGame.coordinateWithSession(_:)` once a
@@ -419,7 +425,7 @@ public struct GameTableView: View {
     }
 
     /// The last shared roll of every player who is not on Vision Pro, the game master's
-    /// included, as the dice overlay has it, reduced to the dice the table has: d20 and d6.
+    /// included, as the dice overlay has it, reduced to the dice the table has: d20, d12, d10, d8, d6, d4 and d3.
     private var guestRolls: [TableGuestRoll] {
         let diceRoot = root.diceRoot.diceGameControllable
         // By the sender's id, not the display name: a player named like the game master is no
@@ -430,14 +436,23 @@ public struct GameTableView: View {
             return TableGuestRoll(
                 name: dice.name,
                 dice: dice.dice.compactMap { die in
-                    guard let isD20 = TableSeatDice.isD20(sides: die.die.max),
+                    guard let kind = TableDieKind(sides: die.die.max),
                           let value = die.result.last else { return nil }
-                    return .init(isD20: isD20, value: value)
+                    return .init(kind: kind, value: value, colorCode: die.colorCode)
                 },
                 isGameMaster: root.gameModel.isTableGuestMaster(senderId: senderId),
                 senderId: senderId
             )
         }
+    }
+
+    /// The d6 color of every pool slot, as the sets this device knows have it.
+    private var dieColors: TableDieColors {
+        guard let game else { return TableDieColors() }
+        let diceRoot = root.diceRoot.diceGameControllable
+        let focused = diceRoot.gameModel.focusItemIds.first
+            .flatMap { diceRoot.gameModel.itemData[$0] as? DiceModel }
+        return game.dieColors(focused: focused, shared: diceRoot.sharedPlayerDice)
     }
 
     /// Everything about the currently-focused character-sheet dice set that

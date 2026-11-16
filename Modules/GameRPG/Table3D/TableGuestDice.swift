@@ -8,12 +8,14 @@ import Foundation
 // derives the same groups from the same shared rolls, which lets one device place the dice and
 // every device label them.
 
-/// A guest's last shared roll, reduced to what the table has dice for: d20 and d6.
+/// A guest's last shared roll, reduced to what the table has dice for: d20, d12, d10, d8, d6, d4 and d3.
 struct TableGuestRoll: Equatable {
     /// A rolled die of the set.
     struct Die: Equatable {
-        let isD20: Bool
+        let kind: TableDieKind
         let value: Int
+        /// The die's colour code in the shared set, see `TableDieColors`.
+        var colorCode = TableDiePalette.fallbackCode
     }
 
     let name: String
@@ -29,9 +31,11 @@ struct TableGuestRoll: Equatable {
 enum TableGuestDice {
     /// One of a guest's dice on the table: a slot of the guest seat's d20 or d6 pool.
     struct Die: Equatable {
-        let isD20: Bool
+        let kind: TableDieKind
         let slot: Int
         let value: Int
+        var colorCode = TableDiePalette.fallbackCode
+
     }
 
     /// A guest's dice on the table, lying together under one result popover.
@@ -45,21 +49,16 @@ enum TableGuestDice {
     /// groups keep their places from roll to roll. The pool holds `poolSize` dice of each type;
     /// dice that no longer fit are left out, and so is a guest none of whose dice fit.
     static func groups(for rolls: [TableGuestRoll], poolSize: Int) -> [Group] {
-        var nextD20 = 0
-        var nextD6 = 0
+        var next: [TableDieKind: Int] = [:]
         return rolls
             .sorted { ($0.name, $0.dice.count, $0.senderId?.uuidString ?? "") < ($1.name, $1.dice.count, $1.senderId?.uuidString ?? "") }
             .compactMap { roll in
-                // A group's dice lie in the order of the roll, d20 and d6 mixed as the set has them.
+                // A group's dice lie in the order of the roll, the kinds mixed as the set has them.
                 var dice: [Die] = []
-                for die in roll.dice {
-                    if die.isD20, nextD20 < poolSize {
-                        dice.append(Die(isD20: true, slot: nextD20, value: die.value))
-                        nextD20 += 1
-                    } else if !die.isD20, nextD6 < poolSize {
-                        dice.append(Die(isD20: false, slot: nextD6, value: die.value))
-                        nextD6 += 1
-                    }
+                for die in roll.dice where next[die.kind, default: 0] < poolSize {
+                    let slot = next[die.kind, default: 0]
+                    dice.append(Die(kind: die.kind, slot: slot, value: die.value, colorCode: die.colorCode))
+                    next[die.kind] = slot + 1
                 }
                 return dice.isEmpty ? nil : Group(name: roll.name, dice: dice, isGameMaster: roll.isGameMaster)
             }

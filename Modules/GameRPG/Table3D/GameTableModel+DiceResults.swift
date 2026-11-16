@@ -110,38 +110,51 @@ extension GameTableModel {
     /// The dice of a seat's pool that are on the table, with their synced values.
     private func seatDice(_ seat: TableSeatIdentifier, snapshot: TableSnapshot) -> [TableDie] {
         var dice: [TableDie] = []
-        for dieId in setup.playerD20Ids[seat] ?? [] {
-            guard let (die, state) = snapshot.equipment(of: Die20.self, matching: dieId),
-                  state.value != TableDieValue.parked else { continue }
-            dice.append((dieId, state.value, die.entity))
-        }
-        for dieId in setup.playerD6Ids[seat] ?? [] {
-            guard let (die, state) = snapshot.equipment(of: Die.self, matching: dieId),
-                  state.value != TableDieValue.parked else { continue }
-            dice.append((dieId, state.value, die.entity))
+        for kind in TableDieKind.allCases {
+            for dieId in setup.dieIds(kind, seat: seat) ?? [] {
+                guard let (entity, value) = Self.dieEntityAndValue(kind, dieId, snapshot: snapshot),
+                      value != TableDieValue.parked else { continue }
+                dice.append((dieId, value, entity))
+            }
         }
         return dice
+    }
+
+    /// The entity and synced value of a pool die, whatever its kind.
+    private static func dieEntityAndValue(
+        _ kind: TableDieKind,
+        _ dieId: EquipmentIdentifier,
+        snapshot: TableSnapshot
+    ) -> (entity: Entity, value: Int)? {
+        switch kind {
+            case .d20:
+                snapshot.equipment(of: Die20.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+            case .d3:
+                snapshot.equipment(of: Die3.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+            case .d4:
+                snapshot.equipment(of: Die4.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+            case .d12:
+                snapshot.equipment(of: Die12.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+            case .d10:
+                snapshot.equipment(of: Die10.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+            case .d8:
+                snapshot.equipment(of: Die8.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+            case .d6:
+                snapshot.equipment(of: Die.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+        }
     }
 
     /// A guest's dice on the table. `nil` unless every one of them shows the value this device
     /// knows of that guest's roll: the device placing the dice may know a different roll, and a
     /// popover must not put a name on someone else's dice.
     private func guestDice(_ group: TableGuestDice.Group, snapshot: TableSnapshot) -> [TableDie]? {
-        let d20Ids = setup.playerD20Ids[PlayerSeat.guestSeat] ?? []
-        let d6Ids = setup.playerD6Ids[PlayerSeat.guestSeat] ?? []
         var dice: [TableDie] = []
         for die in group.dice {
-            if die.isD20 {
-                guard d20Ids.indices.contains(die.slot),
-                      let (equipment, state) = snapshot.equipment(of: Die20.self, matching: d20Ids[die.slot]),
-                      state.value == die.value else { return nil }
-                dice.append((d20Ids[die.slot], state.value, equipment.entity))
-            } else {
-                guard d6Ids.indices.contains(die.slot),
-                      let (equipment, state) = snapshot.equipment(of: Die.self, matching: d6Ids[die.slot]),
-                      state.value == die.value else { return nil }
-                dice.append((d6Ids[die.slot], state.value, equipment.entity))
-            }
+            guard let dieIds = setup.dieIds(die.kind, seat: PlayerSeat.guestSeat),
+                  dieIds.indices.contains(die.slot),
+                  let (entity, value) = Self.dieEntityAndValue(die.kind, dieIds[die.slot], snapshot: snapshot),
+                  value == die.value else { return nil }
+            dice.append((dieIds[die.slot], value, entity))
         }
         return dice
     }
@@ -232,35 +245,21 @@ extension GameTableModel {
     /// Puts the guests' dice on the table if that is this device's job. Also run when the seats
     /// change hands, because the job can then pass to this device.
     func syncGuestDice() {
-        guard isGuestDiceDriver,
-              let d20Ids = setup.playerD20Ids[PlayerSeat.guestSeat],
-              let d6Ids = setup.playerD6Ids[PlayerSeat.guestSeat] else { return }
+        guard isGuestDiceDriver else { return }
 
         let positions = TableGuestDice.positions(groupSizes: guestGroups.map(\.dice.count))
-        var d20Targets: [Int: (value: Int, pose: TableVisualState.Pose2D)] = [:]
-        var d6Targets: [Int: (value: Int, pose: TableVisualState.Pose2D)] = [:]
+        var targets: [TableDieKind: [Int: DieTarget]] = [:]
         for (group, groupPositions) in zip(guestGroups, positions) {
             for (die, position) in zip(group.dice, groupPositions) {
-                let target = (
+                targets[die.kind, default: [:]][die.slot] = (
                     value: die.value,
                     pose: TableVisualState.Pose2D(position: .init(x: position.x, z: position.z), rotation: .zero)
                 )
-                if die.isD20 {
-                    d20Targets[die.slot] = target
-                } else {
-                    d6Targets[die.slot] = target
-                }
             }
         }
-
-        let parked = (value: TableDieValue.parked, pose: TableVisualState.Pose2D.parkedDicePose)
-        for (slot, dieId) in d20Ids.enumerated() {
-            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
-            updateDieSlot(equipment, target: d20Targets[slot] ?? parked)
-        }
-        for (slot, dieId) in d6Ids.enumerated() {
-            guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
-            updateDieSlot(equipment, target: d6Targets[slot] ?? parked)
+        for kind in TableDieKind.allCases {
+            guard let dieIds = setup.dieIds(kind, seat: PlayerSeat.guestSeat) else { continue }
+            updateDiePool(kind, ids: dieIds, targets: targets[kind] ?? [:])
         }
     }
 

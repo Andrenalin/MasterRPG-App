@@ -7,44 +7,66 @@ import Foundation
 // unit-tested on iOS: the row on the table has to read like the set's result, left to right
 // for the player at that seat.
 
-enum TableSeatDice {
-    /// A die of a dice set on the table: a slot of the seat's d20 or d6 pool.
-    struct Slot: Equatable {
-        let isD20: Bool
-        let slot: Int
-        /// The die's place in the dice set.
-        let index: Int
-    }
+/// The die types the table has a mesh and a pool for.
+enum TableDieKind: Hashable, CaseIterable {
+    case d20
+    case d12
+    case d10
+    case d8
+    case d6
+    case d4
+    case d3
 
-    /// Whether the table has a mesh for a die with this many sides, and which: d20 or d6.
+    /// The kind of a die with this many sides, `nil` if the table has no mesh for it.
     /// Takes the *resolved* side count (`RawDie.max`), not the `Sides` enum case: a die authored
     /// through the sheet's UI can end up as `.number(20)` instead of `.twenty`, and those don't
     /// compare equal despite meaning the same die.
-    static func isD20(sides: Int) -> Bool? {
+    init?(sides: Int) {
         switch sides {
-            case 20: true
-            case 6: false
-            default: nil
+            case 20: self = .d20
+            case 12: self = .d12
+            case 10: self = .d10
+            case 8: self = .d8
+            case 6: self = .d6
+            case 4: self = .d4
+            case 3: self = .d3
+            default: return nil
         }
+    }
+
+    var sides: Int {
+        switch self {
+            case .d20: 20
+            case .d12: 12
+            case .d10: 10
+            case .d8: 8
+            case .d6: 6
+            case .d4: 4
+            case .d3: 3
+        }
+    }
+}
+
+enum TableSeatDice {
+    /// A die of a dice set on the table: a slot of the seat's pool of its kind.
+    struct Slot: Equatable {
+        let kind: TableDieKind
+        let slot: Int
+        /// The die's place in the dice set.
+        let index: Int
+
     }
 
     /// Hands a seat's pool out to the dice of a set, in the set's own order — the order of the
     /// returned slots is the order the dice lie in. The pool holds `poolSize` dice of each type;
     /// dice it has no mesh or no free slot for are left out.
     static func slots(sides: [Int], poolSize: Int) -> [Slot] {
-        var nextD20 = 0
-        var nextD6 = 0
+        var next: [TableDieKind: Int] = [:]
         return sides.enumerated().compactMap { index, sides in
-            switch isD20(sides: sides) {
-                case true? where nextD20 < poolSize:
-                    nextD20 += 1
-                    return Slot(isD20: true, slot: nextD20 - 1, index: index)
-                case false? where nextD6 < poolSize:
-                    nextD6 += 1
-                    return Slot(isD20: false, slot: nextD6 - 1, index: index)
-                default:
-                    return nil
-            }
+            guard let kind = TableDieKind(sides: sides), next[kind, default: 0] < poolSize else { return nil }
+            let slot = next[kind, default: 0]
+            next[kind] = slot + 1
+            return Slot(kind: kind, slot: slot, index: index)
         }
     }
 
@@ -105,19 +127,10 @@ enum TableSeatDice {
         }
     }
 
-    /// Distance between neighboring dice, center to center. This was
-    /// shrunk from the original 2-die-only layout's 0.14 m to 0.05 m to
-    /// keep a seat's row compact at `GameSetup.maxDicePerType`'s largest realistic
-    /// mixes, but never re-checked against the die's own physical size —
-    /// at 0.05 m, two ~0.075 m-wide D20s (see `Die20`'s own
-    /// `representation`) overlap enough that TabletopKit resolves it by
-    /// resting one on top of the other instead of side by side. 0.11 m
-    /// (tried first, aiming for the "half a die's width" gap this method
-    /// was originally asked for) still left a partial, roughly
-    /// half-die-height overlap — the die's true collision size needs
-    /// closer to that original 0.14 m after all. 0.15 m stays a hair
-    /// above it for margin, since the previous, closer-but-still-short
-    /// guess undershot.
-    static let spacing = 0.15
+    /// Distance between neighboring dice, center to center. It used to be 0.15 m, sized for a
+    /// 7.5 cm d20 that TabletopKit otherwise resolved by resting one die on top of the other
+    /// (0.05 m and 0.11 m overlapped). Every die is now 3 to 3.75 cm tall, so it is halved to
+    /// 0.075 m: at least two die widths for the widest, the d20.
+    static let spacing = 0.075
 }
 #endif

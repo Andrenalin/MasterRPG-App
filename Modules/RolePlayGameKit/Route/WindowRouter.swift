@@ -62,7 +62,7 @@ private extension WindowRouter {
     /// - iOS / iPadOS / tvOS: every module surfaces here (single-window app).
     /// - macOS: only `.game` shows here; `.search` and `.setting` have their own windows; every
     ///   other module is forwarded to the Editor window.
-    /// - visionOS: `visionTabs` (game, adventures, values, generator, search, settings) plus the editor flips
+    /// - visionOS: `visionTabs` (game, adventures, values, dice, search, settings) plus the editor flips
     ///   `RootRoute.editors` → `ExtendedTabRoute.X` for material modules.
     @MainActor func gameWindowActions(for route: KnownRoutes) -> [NavigationAction] {
 #if os(macOS)
@@ -161,6 +161,8 @@ private extension WindowRouter {
         switch route {
         case .adventures(let itemId, _):
             return rootAndDetailActions(rootRoute: .adventures, detail: itemId.map { AdventureRoute.detail($0) })
+        case .dice(let itemId, _):
+            return rootAndDetailActions(rootRoute: .dice, detail: itemId.map { DiceRoute.detail($0) })
         case .game:
             return [.send(RootRoute.game)]
         case .generators(let itemId, _):

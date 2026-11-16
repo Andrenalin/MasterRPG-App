@@ -2822,12 +2822,62 @@
         }
       }
     },
+    "Game master's D3 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W3 des Spielleiters %lld"
+          }
+        }
+      }
+    },
+    "Game master's D4 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W4 des Spielleiters %lld"
+          }
+        }
+      }
+    },
+    "Game master's D10 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W10 des Spielleiters %lld"
+          }
+        }
+      }
+    },
+    "Game master's D12 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W12 des Spielleiters %lld"
+          }
+        }
+      }
+    },
     "Game master's D20 die %lld" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "W20 des Spielleiters %lld"
+          }
+        }
+      }
+    },
+    "Game master's D8 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W8 des Spielleiters %lld"
           }
         }
       }
@@ -4753,6 +4803,70 @@
         }
       }
     },
+    "Player seat %lld D3 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielerplatz %lld, W3 %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld D3 die %2$lld"
+          }
+        }
+      }
+    },
+    "Player seat %lld D4 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielerplatz %lld, W4 %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld D4 die %2$lld"
+          }
+        }
+      }
+    },
+    "Player seat %lld D10 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielerplatz %lld, W10 %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld D10 die %2$lld"
+          }
+        }
+      }
+    },
+    "Player seat %lld D12 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielerplatz %lld, W12 %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld D12 die %2$lld"
+          }
+        }
+      }
+    },
     "Player seat %lld D20 die %lld" : {
       "localizations" : {
         "de" : {
@@ -4765,6 +4879,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Player seat %1$lld D20 die %2$lld"
+          }
+        }
+      }
+    },
+    "Player seat %lld D8 die %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielerplatz %lld, W8 %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld D8 die %2$lld"
           }
         }
       }

@@ -13,23 +13,23 @@ struct TableGuestDiceTests {
     func groupsFollowNames() {
         let groups = TableGuestDice.groups(
             for: [
-                TableGuestRoll(name: "Cleo", dice: [.init(isD20: false, value: 2), .init(isD20: false, value: 5)]),
-                TableGuestRoll(name: "Anna", dice: [.init(isD20: true, value: 17), .init(isD20: true, value: 4), .init(isD20: false, value: 6)]),
-                TableGuestRoll(name: "Ben", dice: [.init(isD20: true, value: 11)])
+                TableGuestRoll(name: "Cleo", dice: [.init(kind: .d6, value: 2), .init(kind: .d6, value: 5)]),
+                TableGuestRoll(name: "Anna", dice: [.init(kind: .d20, value: 17), .init(kind: .d20, value: 4), .init(kind: .d6, value: 6)]),
+                TableGuestRoll(name: "Ben", dice: [.init(kind: .d20, value: 11)])
             ],
             poolSize: 6
         )
 
         #expect(groups.map(\.name) == ["Anna", "Ben", "Cleo"])
         #expect(groups[0].dice == [
-            .init(isD20: true, slot: 0, value: 17),
-            .init(isD20: true, slot: 1, value: 4),
-            .init(isD20: false, slot: 0, value: 6)
+            .init(kind: .d20, slot: 0, value: 17),
+            .init(kind: .d20, slot: 1, value: 4),
+            .init(kind: .d6, slot: 0, value: 6)
         ])
-        #expect(groups[1].dice == [.init(isD20: true, slot: 2, value: 11)])
+        #expect(groups[1].dice == [.init(kind: .d20, slot: 2, value: 11)])
         #expect(groups[2].dice == [
-            .init(isD20: false, slot: 1, value: 2),
-            .init(isD20: false, slot: 2, value: 5)
+            .init(kind: .d6, slot: 1, value: 2),
+            .init(kind: .d6, slot: 2, value: 5)
         ])
     }
 
@@ -38,18 +38,18 @@ struct TableGuestDiceTests {
         let groups = TableGuestDice.groups(
             for: [
                 TableGuestRoll(name: "Anna", dice: [
-                    .init(isD20: false, value: 3),
-                    .init(isD20: true, value: 11),
-                    .init(isD20: false, value: 5)
+                    .init(kind: .d6, value: 3),
+                    .init(kind: .d20, value: 11),
+                    .init(kind: .d6, value: 5)
                 ])
             ],
             poolSize: 6
         )
 
         #expect(groups[0].dice == [
-            .init(isD20: false, slot: 0, value: 3),
-            .init(isD20: true, slot: 0, value: 11),
-            .init(isD20: false, slot: 1, value: 5)
+            .init(kind: .d6, slot: 0, value: 3),
+            .init(kind: .d20, slot: 0, value: 11),
+            .init(kind: .d6, slot: 1, value: 5)
         ])
     }
 
@@ -57,24 +57,24 @@ struct TableGuestDiceTests {
     func masterGroup() {
         let groups = TableGuestDice.groups(
             for: [
-                TableGuestRoll(name: "Master", dice: [.init(isD20: true, value: 9)], isGameMaster: true),
-                TableGuestRoll(name: "Anna", dice: [.init(isD20: true, value: 12)])
+                TableGuestRoll(name: "Master", dice: [.init(kind: .d20, value: 9)], isGameMaster: true),
+                TableGuestRoll(name: "Anna", dice: [.init(kind: .d20, value: 12)])
             ],
             poolSize: 6
         )
 
         #expect(groups.map(\.name) == ["Anna", "Master"])
         #expect(groups.map(\.isGameMaster) == [false, true])
-        #expect(groups[1].dice == [.init(isD20: true, slot: 1, value: 9)])
+        #expect(groups[1].dice == [.init(kind: .d20, slot: 1, value: 9)])
     }
 
     @Test("Dice beyond the pool are left out, and so is a guest without any die on the table")
     func poolLimit() {
         let groups = TableGuestDice.groups(
             for: [
-                TableGuestRoll(name: "Anna", dice: [.init(isD20: true, value: 1), .init(isD20: true, value: 2), .init(isD20: true, value: 3)]),
-                TableGuestRoll(name: "Ben", dice: [.init(isD20: true, value: 4), .init(isD20: true, value: 5), .init(isD20: false, value: 6)]),
-                TableGuestRoll(name: "Cleo", dice: [.init(isD20: true, value: 7)]),
+                TableGuestRoll(name: "Anna", dice: [.init(kind: .d20, value: 1), .init(kind: .d20, value: 2), .init(kind: .d20, value: 3)]),
+                TableGuestRoll(name: "Ben", dice: [.init(kind: .d20, value: 4), .init(kind: .d20, value: 5), .init(kind: .d6, value: 6)]),
+                TableGuestRoll(name: "Cleo", dice: [.init(kind: .d20, value: 7)]),
                 TableGuestRoll(name: "Dora", dice: [])
             ],
             poolSize: 4

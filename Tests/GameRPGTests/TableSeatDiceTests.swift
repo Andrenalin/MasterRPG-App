@@ -13,19 +13,78 @@ struct TableSeatDiceTests {
         let slots = TableSeatDice.slots(sides: [6, 20, 20, 6], poolSize: 6)
 
         #expect(slots == [
-            .init(isD20: false, slot: 0, index: 0),
-            .init(isD20: true, slot: 0, index: 1),
-            .init(isD20: true, slot: 1, index: 2),
-            .init(isD20: false, slot: 1, index: 3)
+            .init(kind: .d6, slot: 0, index: 0),
+            .init(kind: .d20, slot: 0, index: 1),
+            .init(kind: .d20, slot: 1, index: 2),
+            .init(kind: .d6, slot: 1, index: 3)
+        ])
+    }
+
+    @Test("A d8 takes a slot of the d8 pool, numbered apart from the d20 and d6")
+    func d8HasItsOwnPool() {
+        let slots = TableSeatDice.slots(sides: [8, 6, 8, 20, 8], poolSize: 2)
+
+        #expect(slots == [
+            .init(kind: .d8, slot: 0, index: 0),
+            .init(kind: .d6, slot: 0, index: 1),
+            .init(kind: .d8, slot: 1, index: 2),
+            .init(kind: .d20, slot: 0, index: 3)
+        ])
+    }
+
+    @Test("A d3 takes a slot of the d3 pool, numbered apart from the other kinds")
+    func d3HasItsOwnPool() {
+        let slots = TableSeatDice.slots(sides: [3, 4, 3], poolSize: 6)
+
+        #expect(slots == [
+            .init(kind: .d3, slot: 0, index: 0),
+            .init(kind: .d4, slot: 0, index: 1),
+            .init(kind: .d3, slot: 1, index: 2)
+        ])
+    }
+
+    @Test("A d4 takes a slot of the d4 pool, numbered apart from the other kinds")
+    func d4HasItsOwnPool() {
+        let slots = TableSeatDice.slots(sides: [4, 6, 4, 12], poolSize: 6)
+
+        #expect(slots == [
+            .init(kind: .d4, slot: 0, index: 0),
+            .init(kind: .d6, slot: 0, index: 1),
+            .init(kind: .d4, slot: 1, index: 2),
+            .init(kind: .d12, slot: 0, index: 3)
+        ])
+    }
+
+    @Test("A d12 takes a slot of the d12 pool, numbered apart from the other kinds")
+    func d12HasItsOwnPool() {
+        let slots = TableSeatDice.slots(sides: [12, 10, 12, 20], poolSize: 6)
+
+        #expect(slots == [
+            .init(kind: .d12, slot: 0, index: 0),
+            .init(kind: .d10, slot: 0, index: 1),
+            .init(kind: .d12, slot: 1, index: 2),
+            .init(kind: .d20, slot: 0, index: 3)
+        ])
+    }
+
+    @Test("A d10 takes a slot of the d10 pool, numbered apart from the other kinds")
+    func d10HasItsOwnPool() {
+        let slots = TableSeatDice.slots(sides: [10, 8, 10, 6], poolSize: 6)
+
+        #expect(slots == [
+            .init(kind: .d10, slot: 0, index: 0),
+            .init(kind: .d8, slot: 0, index: 1),
+            .init(kind: .d10, slot: 1, index: 2),
+            .init(kind: .d6, slot: 0, index: 3)
         ])
     }
 
     @Test("Dice without a mesh or beyond the pool are left out, the others keep their order")
     func slotsSkipWhatTheTableLacks() {
-        let slots = TableSeatDice.slots(sides: [20, 12, 20, 6, 20, 100, 6], poolSize: 2)
+        let slots = TableSeatDice.slots(sides: [20, 2, 20, 6, 20, 100, 6], poolSize: 2)
 
         #expect(slots.map(\.index) == [0, 2, 3, 6])
-        #expect(slots.map(\.isD20) == [true, true, false, false])
+        #expect(slots.map(\.kind) == [.d20, .d20, .d6, .d6])
         #expect(slots.map(\.slot) == [0, 1, 0, 1])
     }
 

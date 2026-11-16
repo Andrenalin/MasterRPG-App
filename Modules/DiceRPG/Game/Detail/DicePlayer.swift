@@ -130,12 +130,15 @@ struct DicePlayerLabel: View {
 
             if root.gameController.gameItem(for: playerId).sumUp || root.gameController.gameItem(for: playerId).compareOption != .off {
                 Label {
+                    // Not animated: a cross-fade of the old and the new text leaves two ✅ with
+                    // faded digits between them. Only the checkmark symbol is replaced.
                     Text(root.gameController.resultText(itemId: playerId).markDown())
+                        .contentTransition(.identity)
                 } icon: {
                     Image(systemName: root.gameController.result(itemId: playerId).checked ? "checkmark" : "xmark")
+                        .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 }
                     .font(.footnote)
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
             }
 
             if isEditing {

@@ -57,7 +57,11 @@ private struct DiceGameResultResultView: View {
                 }
             } label: {
                 Label {
+                    // The result changes inside the roll's animation. Without this the old and the
+                    // new text cross-fade on top of each other, and as they differ in length their
+                    // two ✅ stand apart with the digits between them faded out.
                     Text(root.gameController.resultText(itemId: itemId).markDown())
+                        .contentTransition(.identity)
                 } icon: {
                     Image(systemName: result.checked ? "checkmark" : "xmark")
                 }

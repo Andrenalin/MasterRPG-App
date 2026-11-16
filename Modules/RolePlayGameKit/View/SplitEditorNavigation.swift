@@ -25,13 +25,19 @@ struct SplitEditorNavigation: View {
                 }
             }
         }
-        .syncOptionalState(
-            source: $storedTab,
-            destination: $appModel.selectedEditorModule
-        ) { newValue in
-            if appModel.menuSelectedModule != newValue.module {
-                appModel.menuSelectedModule = newValue.module
+        // `storedTab` is only touched inside these closures, never in `body`: reading `$storedTab`
+        // while the body is evaluated logs "Accessing a SceneStorage value outside of being
+        // installed on a View" whenever the body runs before/without a scene (e.g. hosted for a
+        // snapshot or evaluated ahead of installation) and yields a constant binding.
+        .onAppear {
+            restoreSelectedModule()
+        }
+        .onChange(of: appModel.selectedEditorModule) { _, newValue in
+            guard let newValue else { return }
+            if storedTab != newValue {
+                storedTab = newValue
             }
+            syncMenuSelection(for: newValue)
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive { (route: RootRoute, navigator) in
@@ -91,6 +97,20 @@ struct SplitEditorNavigation: View {
             .environment(scenesManager)
         }
 #endif
+    }
+    
+    /// Applies the scene's restored tab to the app model once the view is installed.
+    private func restoreSelectedModule() {
+        let restored = storedTab
+        guard appModel.selectedEditorModule != restored else { return }
+        appModel.selectedEditorModule = restored
+        syncMenuSelection(for: restored)
+    }
+    
+    private func syncMenuSelection(for tab: RootRoute) {
+        if appModel.menuSelectedModule != tab.module {
+            appModel.menuSelectedModule = tab.module
+        }
     }
     
     private func openGameWindow() {

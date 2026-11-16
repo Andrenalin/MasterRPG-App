@@ -92,6 +92,10 @@ final class GameTableModel: Sendable {
     /// its toss for as long as the sheet still has that value, instead of lining it up again.
     @ObservationIgnored
     var handTossedDice: [EquipmentIdentifier: Int] = [:]
+    /// Builds the d6 materials a new `TableDieColors` needs and puts them on the dice; a newer
+    /// set of colors replaces it (`applyDieColors(_:)`).
+    @ObservationIgnored
+    var dieColorTask: Task<Void, Never>?
     /// The dice module, which rolls a die tossed by hand.
     @ObservationIgnored
     weak var diceRoot: DiceRootModel?

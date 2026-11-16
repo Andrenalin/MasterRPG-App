@@ -90,7 +90,9 @@ struct DiceInline: View {
             }
             if showResult {
                 Label {
+                    // Snaps to the new roll instead of cross-fading two texts of different length.
                     Text(verbatim: root.gameController.resultText(itemId: itemId))
+                        .contentTransition(.identity)
                 } icon: {
                     Image(systemName: root.itemController.config.module.icon)
                 }

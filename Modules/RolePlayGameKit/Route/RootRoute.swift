@@ -116,7 +116,7 @@ extension RootRoute: NavigationDestination {
     }
     
     public static var visionTabs: [RootRoute] {
-        [.game, .adventures, .values, .search, .settings]
+        [.game, .adventures, .values, .dice, .search, .settings]
     }
 
     public static var visionEditorTabs: [RootRoute] {

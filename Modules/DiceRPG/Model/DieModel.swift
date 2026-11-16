@@ -120,6 +120,12 @@ extension DieModel {
         return "D\(die.sides.number())\(code)-\(number)"
     }
     
+    /// The die's concrete colour code ("A"…"I", never "Random"), the suffix of its art names.
+    /// The 3D table colours its d6 from it, so every device shows the colour the sheet has.
+    public var colorCode: String {
+        DieModel.resolvedColor(color, for: die)
+    }
+
     public func diceImage(for number: Int) -> Image {
         Image(name(for: number), bundle: RPGResources.Resources.bundle)
     }
