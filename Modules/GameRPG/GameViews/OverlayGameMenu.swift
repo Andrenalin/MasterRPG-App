@@ -98,7 +98,7 @@ private struct OverlayGameMenuVisionProMenuView: View {
             OverlayGameMenuTitleView(root: root, isMaster: isMaster)
 
             HStack(alignment: .bottom, spacing: marginWidth + 4) {
-                root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .top)
+                OverlayGameMenuVisionVolumeView(root: root, isMaster: isMaster)
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
@@ -114,6 +114,25 @@ private struct OverlayGameMenuVisionProMenuView: View {
 
                 OverlayGameMenuWifiView(root: root, isMaster: isMaster, playerController: playerController, marginWidth: marginWidth)
             }
+        }
+    }
+}
+#endif
+
+#if os(visionOS)
+/// The game master's volume button opens the full audio player, as on the other platforms; a
+/// player only gets the volume slider.
+private struct OverlayGameMenuVisionVolumeView: View {
+    let root: GameRoot
+    let isMaster: Bool
+
+    var body: some View {
+        if isMaster {
+            root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot, showsPlayer: true)
+                .tint(Color.accentColor)
+                .frame(minWidth: 44, minHeight: 44)
+        } else {
+            root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .top)
         }
     }
 }

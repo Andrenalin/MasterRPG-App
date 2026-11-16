@@ -63,6 +63,8 @@ extension AudioController {
     ) -> AsyncStream<Value> {
         AsyncStream(bufferingPolicy: .bufferingNewest(8)) { continuation in
             let last = Mutex<Value?>(nil)
+            // A key path is immutable, but not declared `Sendable`; the handler runs on any thread.
+            nonisolated(unsafe) let keyPath = keyPath
             // The value is read from the player: `change.newValue` is `nil` for an Objective-C
             // enum such as `timeControlStatus`, so every change was dropped and `isPlaying`
             // never turned true.
