@@ -23,7 +23,6 @@ struct ViewControllerTests {
 
         _ = sut.thumbnailRowView(for: itemId)
         _ = sut.thumbnailRowView(for: table)
-        _ = sut.diceSelection(root: root, selectionModel: selectionModel)
         _ = sut.gameListView(root: root)
         _ = sut.linkListView(type: .selection, itemSelectionModel: selectionModel)
         _ = sut.batchExtractionView(itemController: root.itemController, editController: root.editController, ids: [itemId])

@@ -55,7 +55,7 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
     func snapshotDiceGameResult() async throws {
         try await assertPreviewSnapshot("DiceGameResult") {
             ZStack(alignment: .topLeading) {
-                DiceRPG.DiceGameResult(itemId: DiceModel.previewId, canShowPlayer: true, isTrailing: false)
+                DiceRPG.DiceGameResult(itemId: DiceModel.previewId, isTrailing: false)
                     .environment(DiceRootModel.preview)
                     .environment(DiceDisplayModel())
             }

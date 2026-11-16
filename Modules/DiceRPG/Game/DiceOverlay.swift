@@ -10,10 +10,6 @@ struct DiceOverlay: View {
     var hideOwnDice = false
     var alignIsVertical = true
 
-    @Environment(DiceRootModel.self) private var root
-
-    @Environment(AppGameStateModel.self) private var appGameStateModel
-    @Environment(\.networkActions) private var networkActions
     @Environment(DiceDisplayModel.self) var diceDisplayModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -54,7 +50,7 @@ private struct DiceOverlayDiceViewsView: View {
             DiceOverlayActionBarView(itemId: itemId, showFocusButton: showFocusButton, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice)
         }
 
-        DiceOverlayOwnDiceView(itemId: itemId, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice, alignIsVertical: alignIsVertical)
+        DiceOverlayOwnDiceView(itemId: itemId, hideOwnDice: hideOwnDice, alignIsVertical: alignIsVertical)
 
         DiceOverlayPlayerDiceView(itemId: itemId, canShowPlayer: canShowPlayer)
     }
@@ -73,7 +69,6 @@ private struct DiceOverlayActionBarView: View {
 
 private struct DiceOverlayOwnDiceView: View {
     let itemId: UUID
-    let canShowPlayer: Bool
     let hideOwnDice: Bool
     let alignIsVertical: Bool
 
@@ -83,7 +78,7 @@ private struct DiceOverlayOwnDiceView: View {
     var body: some View {
         if !hideOwnDice {
             if alignIsVertical {
-                DiceGameResult(itemId: itemId, canShowPlayer: canShowPlayer, isTrailing: false)
+                DiceGameResult(itemId: itemId, isTrailing: false)
             }
 
             if diceDisplayModel.isEditing {
@@ -106,7 +101,7 @@ private struct DiceOverlayPlayerDiceView: View {
     @ViewBuilder
     var body: some View {
         if canShowPlayer && diceDisplayModel.showPlayerDice {
-            DicePlayer(filterout: itemId, alignment: .leading)
+            DicePlayer(alignment: .leading)
         }
     }
 }

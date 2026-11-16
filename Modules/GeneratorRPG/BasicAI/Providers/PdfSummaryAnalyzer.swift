@@ -116,7 +116,7 @@ struct PdfSummaryAnalyzer: Sendable {
         } catch let error as PdfSummaryAnalysisError {
             throw error
         } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
+            throw PdfSummaryAnalysisError.generationFailed(FoundationModelsErrorHandler.message(for: error, subject: .pdfAnalysis))
         } catch {
             throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
@@ -141,61 +141,6 @@ struct PdfSummaryAnalyzer: Sendable {
         - 3 to 5 specific tags in \(outputLanguage): what kind of document it is, what it is mainly about, and its specific places, peoples, creatures or themes
         - Major sections or chapters
         """
-    }
-
-    private func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
-        switch error {
-        case .exceededContextWindowSize:
-            return String(
-                localized: "PDF content is too large for processing. Try a smaller document or fewer pages.",
-                bundle: .module
-            )
-        case .guardrailViolation:
-            return String(
-                localized: "Content policy prevented analysis. The PDF may contain inappropriate content.",
-                bundle: .module
-            )
-        case .unsupportedLanguageOrLocale:
-            return String(
-                localized: "The PDF language is not supported by Apple Intelligence.",
-                bundle: .module
-            )
-        case .assetsUnavailable(let reason):
-            return String(
-                localized: "Model assets are unavailable: \(String(describing: reason)). Please ensure Apple Intelligence is fully downloaded.",
-                bundle: .module
-            )
-        case .unsupportedGuide(let guide):
-            return String(
-                localized: "PDF summary schema contains unsupported constraint: \(String(describing: guide)). This is a developer error.",
-                bundle: .module
-            )
-        case .decodingFailure(let reason):
-            return String(
-                localized: "Failed to decode PDF summary: \(String(describing: reason)). The document may have unusual formatting.",
-                bundle: .module
-            )
-        case .rateLimited(let retryAfter):
-            return String(
-                localized: "Rate limit exceeded. Please try again in \(String(describing: retryAfter)) seconds.",
-                bundle: .module
-            )
-        case .concurrentRequests(let maxCount):
-            return String(
-                localized: "Too many concurrent analysis requests. Maximum allowed: \(String(describing: maxCount)). Please wait for current analyses to complete.",
-                bundle: .module
-            )
-        case .refusal(let reason, let category):
-            return String(
-                localized: "Analysis refused: \(String(describing: reason)) (category: \(String(describing: category))). The PDF content may violate content policies.",
-                bundle: .module
-            )
-        @unknown default:
-            return String(
-                localized: "An unexpected generation error occurred: \(error.localizedDescription)",
-                bundle: .module
-            )
-        }
     }
 
     // MARK: - Constants

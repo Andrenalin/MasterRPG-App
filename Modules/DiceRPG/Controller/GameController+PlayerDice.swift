@@ -49,7 +49,7 @@ extension GameController {
     }
     
     @MainActor
-    func toggleHidden(playerId: UUID) async {
+    func toggleHidden(playerId: UUID) {
         let key = hiddenKey(for: playerId)
         if diceGameModel.hiddenPlayers.contains(key) {
             diceGameModel.hiddenPlayers.remove(key)

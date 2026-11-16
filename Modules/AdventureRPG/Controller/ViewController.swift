@@ -41,15 +41,6 @@ extension ViewController {
 }
 #endif
 
-// MARK: External Views
-
-extension ViewController {
-    @MainActor
-    func diceSelection(root: AdventureRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.diceRoot.viewController.dropChooseView(model: selectionModel)
-    }
-}
-
 // MARK: - Viewer
 
 public extension ViewController {

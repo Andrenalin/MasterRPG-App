@@ -121,13 +121,12 @@ struct SheetAIAssistantOverlayView: View {
     private func submitFocusedEntry(_ entry: SheetModel) {
         rootModel.focusAISheetModel = nil
         let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let content = entry.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        let message: String
-        if content.isEmpty {
-            message = String("Refine and expand the story around '\(name)'")
-        } else {
-            message = String("Refine and expand the story around '\(name)': \(content)")
-        }
+        // Bounded here, like `GeneratorController.prompt(for:)` bounds the request later, so the
+        // text counted for progress is the text that is sent.
+        let content = String(entry.description.trimmingCharacters(in: .whitespacesAndNewlines).prefix(2_800))
+        let message = content.isEmpty
+            ? "Refine and expand the story around '\(name)'"
+            : "Refine and expand the story around '\(name)': \(content)"
         generatorController.request(message: message, rootModel: rootModel)
         withAnimation(reduceMotion ? nil : .smooth) {
             generatorController.model.dismissError()

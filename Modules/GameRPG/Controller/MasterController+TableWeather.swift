@@ -13,6 +13,10 @@ import WeatherRPG
 extension MasterController {
     /// Whether the game master sends `.update/.tableWeather` at all. Off for now: no table shows
     /// a weather and the "Clear Weather" button never appears. Players still accept the message.
+    /// The whole path (this file, `PlayerController+TableWeather.swift`, `TableWeather.swift`)
+    /// is parked behind this flag; the three tests in `TableWeatherTests` are disabled with it.
+    /// Documented in `Docu/GAME_CONNECTIONS.md` §18. No removal date is set: either re-enable it
+    /// or delete the path. See CODE_AUDIT_26 §9.26.
     nonisolated static let isTableWeatherEnabled = false
 
     /// Shows a weather on every table: sent with each show of a weather.

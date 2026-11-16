@@ -79,7 +79,6 @@ final class RPGSharePlayController {
         let name: String?
         let image: AKImage?
     }
-    var stateText: String = "Not Active"
 
     var gameModel: GameRootModel?
     var packageSender: SharePlaySingleQueuePackageSender?

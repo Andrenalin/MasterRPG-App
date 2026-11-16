@@ -420,21 +420,6 @@ struct FileUrlDataControllerFileOperationTests {
         #expect(folderExists(folder))
     }
 
-    @Test("Moving a file to another category removes the category folders it left empty")
-    func categoryMoveRemovesEmptyFolders() async throws {
-        let module = "CategoryMoveModule-\(UUID().uuidString)"
-        let sut = await makeSut(module: module)
-        let id = UUID().uuidString
-        let source = ItemListCategory.folder
-        let file = try await createFile("\(source.title)/Sub-\(id)/Category.test", text: "category", module: module, with: sut)
-        let sourceFolder = try #require(sut.storedLocation(of: file)).deletingLastPathComponent()
-
-        let moved = try #require(await sut.move(fileUrl: file, from: source, to: .entry))
-
-        #expect(exists(moved, in: sut))
-        #expect(!folderExists(sourceFolder))
-    }
-
     @Test("Replacing a file removes the folders the old file left empty")
     func replaceRemovesEmptyFolders() async throws {
         let module = "ReplaceFoldersModule-\(UUID().uuidString)"

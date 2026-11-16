@@ -464,7 +464,7 @@ struct GameStatisticHeatMapPoint: Identifiable, Hashable, Sendable {
 
 // MARK: - Aggregated Summary
 
-struct GameStatisticsSummary: Sendable {
+struct GameStatisticsSummary: Equatable, Sendable {
     let sessionCount: Int
     let totalDuration: TimeInterval
     let averageDuration: TimeInterval

@@ -11,8 +11,8 @@ struct AsyncThumbnail: View {
     @Environment(PhotoRootModel.self) private var root
 
     @State private var renderedImage: AKImage?
-    @State private var renderedImageKey: AsyncThumbnailLoadKey?
-    @State private var lastLoadKey: AsyncThumbnailLoadKey?
+    @State private var renderedImageKey: PhotoImageLoadKey?
+    @State private var lastLoadKey: PhotoImageLoadKey?
     @State private var isLoading: Bool = false
 
     var body: some View {
@@ -48,16 +48,30 @@ struct AsyncThumbnail: View {
 
 // MARK: - Private Helpers
 
-/// Identifies a load without holding the `FileUrl` itself: its synthesized equality compares the
-/// inline `Data`, megabytes per `body` pass for a received photo. See CODE_AUDIT_23 §7.14.
-private struct AsyncThumbnailLoadKey: Equatable {
+/// Identifies a load of a photo's image without holding the `FileUrl` itself: the key lists the
+/// fields that decide whether the file changed, so a `body` pass never compares file bytes
+/// (`FileUrl.==` leaves the inline `Data` out, but a received photo still keeps megabytes in it).
+/// Shared by `AsyncThumbnail` and `AsyncImageViewer`. See CODE_AUDIT_23 §7.14, CODE_AUDIT_26 §9.51.
+struct PhotoImageLoadKey: Equatable {
     let itemId: UUID
     let fileId: UUID?
+    let fileUrl: URL?
     let fileLocation: FileLocation?
     let contentHash: String?
     let hasInlineData: Bool
-    let usesFullImage: Bool
-    let version: Int
+    var usesFullImage = false
+    var version = 0
+
+    @MainActor init(model: PhotoModel, usesFullImage: Bool = false, version: Int = 0) {
+        itemId = model.id
+        fileId = model.fileUrl?.fileId
+        fileUrl = model.fileUrl?.rawUrl
+        fileLocation = model.fileUrl?.location
+        contentHash = model.fileUrl?.contentHash
+        hasInlineData = model.fileUrl?.data != nil
+        self.usesFullImage = usesFullImage
+        self.version = version
+    }
 }
 
 extension AsyncThumbnail {
@@ -84,20 +98,12 @@ private extension AsyncThumbnail {
             : cacheController.cachedThumbnail(for: itemId)
     }
 
-    func loadKey(for model: PhotoModel) -> AsyncThumbnailLoadKey {
-        AsyncThumbnailLoadKey(
-            itemId: model.id,
-            fileId: model.fileUrl?.fileId,
-            fileLocation: model.fileUrl?.location,
-            contentHash: model.fileUrl?.contentHash,
-            hasInlineData: model.fileUrl?.data != nil,
-            usesFullImage: usesFullImage,
-            version: model.version
-        )
+    func loadKey(for model: PhotoModel) -> PhotoImageLoadKey {
+        PhotoImageLoadKey(model: model, usesFullImage: usesFullImage, version: model.version)
     }
     
     /// Initialize image loading with deduplication
-    func initImage(for model: PhotoModel, key: AsyncThumbnailLoadKey) async {
+    func initImage(for model: PhotoModel, key: PhotoImageLoadKey) async {
         if let cachedImage = cachedImage(for: model.id) {
             guard !Task.isCancelled else { return }
             renderedImage = cachedImage
@@ -127,7 +133,7 @@ private extension AsyncThumbnail {
     }
     
     /// Load the thumbnail asynchronously and update the observable cache
-    func loadImage(for model: PhotoModel, key: AsyncThumbnailLoadKey) async {
+    func loadImage(for model: PhotoModel, key: PhotoImageLoadKey) async {
         guard let cacheController = root.itemController.cacheController else {
             if lastLoadKey == key { isLoading = false }
             return

@@ -5,8 +5,8 @@ import CoreRPG
 import SwiftUI
 
 public enum ExtendedTabRoute: String, Hashable, Codable {
-    /// The `@SceneStorage` key both extended layouts (`ExtendedSplitBar`, `ExtendedTabBar`) keep
-    /// the selected module under. See CODE_AUDIT_19 §9.8.
+    /// The `@SceneStorage` key the extended layout (`ExtendedTabBar`) keeps the selected module
+    /// under. See CODE_AUDIT_19 §9.8.
     static let sceneStorageKey = "ExtendedTabRoute"
 
     case audios

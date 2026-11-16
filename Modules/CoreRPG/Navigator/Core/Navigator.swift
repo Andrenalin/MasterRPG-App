@@ -38,11 +38,6 @@ public final class Navigator {
         case presenter
     }
 
-    /// Errors that Navigator can throw
-    public enum NavigationError: Error {
-        case navigationLocked
-    }
-
     /// Allows weak storage of reference types in arrays, dictionaries, and other collection types.
     internal struct WeakNavigator: Sendable {
         weak var object: Navigator?
@@ -63,9 +58,6 @@ public final class Navigator {
 
     /// Presentation trigger for .cover navigation methods.
     internal var cover: AnyNavigationDestination? = nil
-
-    /// Navigation locks, if any
-    internal var navigationLocks: Set<UUID> = []
 
     // MARK: - Observable Properties
 

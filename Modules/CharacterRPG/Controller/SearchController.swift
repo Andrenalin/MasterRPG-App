@@ -25,8 +25,8 @@ extension SearchController {
     /// Search scope per item type:
     /// - **Regular characters** (`!specialCategory`): name and description only — entries are not
     ///   searched in the list view.
-    /// - **Folders / collections** (`specialCategory`): delegates to `result()` which searches
-    ///   the collection's children entries.
+    /// - **Folders / collections** (`specialCategory`): delegates to `result()`, which checks
+    ///   the folder's own name and description.
     @MainActor func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
 
@@ -40,8 +40,8 @@ extension SearchController {
                   item.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
 
             if item.specialCategory {
-                // Folder / collection — search its children entries (global = all fields)
-                await result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults)
+                // Folder / collection — its own name and description only (global = all fields)
+                result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults)
             } else {
                 // Regular character — name and description only, no entries
                 guard item.name.localizedStandardContains(searchText) ||
@@ -68,48 +68,11 @@ extension SearchController {
         return foundResults.sortedByRelevance()
     }
 
-    // displayMode: .regular in global search so all fields are covered.
-    /// - Parameter depth: recursion guard against a cyclic `valueId` chain (e.g. from a
-    ///   CloudKit merge conflict) — matches `buildCharacterFolderNode`'s `FolderTreeDepthLimit`
-    ///   guard on the same value-graph shape. See CODE_AUDIT_Character §5.3.
-    @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult], depth: Int = 0) async {
-        guard depth < FolderTreeDepthLimit.max else { return }
-
-        if itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
-            foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
-        }
-
-        if !item.specialCategory {
-            // Search through entries
-            for entry in item.entries {
-                guard !Task.isCancelled else { break }
-
-                if entry.filter(with: searchText) {
-                    let relevance = calculateRelevance(
-                        searchText: searchText,
-                        itemName: item.name,
-                        entryName: entry.name,
-                        content: entry.content,
-                        isItemMatch: false
-                    )
-                    foundResults.append(SearchResult(
-                        itemId: item.id,
-                        itemName: item.name,
-                        module: itemControllable.config.module,
-                        category: item.category,
-                        entryId: entry.id,
-                        entryName: entry.name,
-                        matchedContent: entry.content.isEmpty ? nil : entry.content,
-                        relevanceScore: relevance
-                    ))
-                }
-
-                if let subValueId = entry.valueId {
-                    guard let item = await itemController.item(for: subValueId) else { continue }
-                    await result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults, depth: depth + 1)
-                }
-            }
-        }
+    /// A folder or collection matches by its own name and description. The characters inside it
+    /// are found by the main loop in `globalSearchResults`.
+    @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) {
+        guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { return }
+        foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
     }
 }
 

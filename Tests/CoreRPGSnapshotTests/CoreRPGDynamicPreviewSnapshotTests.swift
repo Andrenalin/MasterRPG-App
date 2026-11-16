@@ -547,7 +547,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                 .environment(AppFocusModel())
                 .environment(SearchBarVisibleModel())
                 .environment(ScenesManager())
-                .environment(OptionKeyDownModel())
                 .environment(GroupItemSelectionModel())
                 .environment(ItemRootController.previewFixture())
                 .cloudKitAccountChecksEnabled(false)

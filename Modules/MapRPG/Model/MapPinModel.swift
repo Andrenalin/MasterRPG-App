@@ -35,23 +35,6 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
             rawValue
         }
 
-        var text: String {
-            switch self {
-            case .tiny:
-                return "Tiny"
-            case .small:
-                return "Small"
-            case .normal:
-                return "Normal"
-            case .large:
-                return "Large"
-            case .huge:
-                return "Huge"
-            case .colossal:
-                return "Colossal"
-            }
-        }
-
         /// Base render size in points, before `MapModel.pinScale` and zoom are
         /// applied. Exposed so other renderers (the 3D table) can derive a
         /// pin's on-screen size the same way the 2D map does.

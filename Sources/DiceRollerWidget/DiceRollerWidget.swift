@@ -10,27 +10,7 @@ import WidgetKit
 struct DiceRollerWidget: Widget {
     let kind: String = DiceWidgetKind.roller
     
-    private var supportedWidgetFamilies: [WidgetFamily] {
-        #if os(iOS)
-        return [
-            .systemSmall,
-            .systemMedium,
-            .systemLarge
-        ]
-        #elseif os(macOS)
-        return [
-            .systemSmall,
-            .systemMedium,
-            .systemLarge
-        ]
-        #else
-        return [
-            .systemSmall,
-            .systemMedium,
-            .systemLarge
-        ]
-        #endif
-    }
+    private let supportedWidgetFamilies: [WidgetFamily] = [.systemSmall, .systemMedium, .systemLarge]
     
     var body: some WidgetConfiguration {
         AppIntentConfiguration(

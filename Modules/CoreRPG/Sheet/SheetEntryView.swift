@@ -29,7 +29,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(\.appTheme) private var theme
     @Environment(AppGameStateModel.self) private var appGameStateModel
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.itemGenerationAction) private var itemGenerationAction
@@ -167,14 +166,6 @@ enum SheetRowResolver {
 }
 
 private extension SheetEntryView {
-    func rowColor(for level: Int) -> Color {
-#if os(macOS) || os(visionOS)
-        .clear
-#else
-        level.isMultiple(of: 2) ? (colorScheme == .dark ? .black : .white) : .secondary.opacity(0.3)
-#endif
-    }
-    
     var shareResult: ShareValueResult {
         ShareValueResult(
             networkActions: networkActions,

@@ -10,8 +10,6 @@ struct ItemRowsView: View {
     let menuController: ContextMenuMultiController
     var focusedRowId: FocusState<UUID?>.Binding
 
-    @Environment(\.appTheme) private var theme
-
     var body: some View {
         if listModel.list.isEmpty && parentModel != nil {
             DropHereView(root: root, addLink: addLink)
@@ -41,15 +39,7 @@ struct ItemRowsView: View {
 
     private func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-        withAnimation {
-            root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            listController.scheduleDetailSearch()
-            // A fresh search, not `resetFilter()`. See CODE_AUDIT_Folder §5.29.
-            root.folderListControllable.update(debounce: false)
-            Task {
-                await MasterRPGTips.donateContentOrganized()
-            }
-        }
+        addDroppedMember(itemId: itemId, to: parentModel.id, root: root, listController: listController)
     }
     
     private var leadingPadding: CGFloat {

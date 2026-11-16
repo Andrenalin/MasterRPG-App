@@ -159,10 +159,10 @@ public struct DiceWidgetSnapshot: Codable, Equatable, Sendable {
 
     public static var preview: DiceWidgetSnapshot {
         DiceWidgetSnapshot(
-            selectedDice: DiceWidgetDice(DiceModel.previewSnapshot),
+            selectedDice: DiceWidgetDice(DiceSnapshot.widgetDefault),
             lastRoll: DiceWidgetRoll(
                 DiceResultModel(
-                    diceModel: DiceModel.previewSnapshot,
+                    diceModel: DiceSnapshot.widgetDefault,
                     result: .rolled,
                     values: "18",
                     sum: 18,
@@ -206,7 +206,7 @@ public struct DiceConfiguration: Codable {
 
     public static var `default`: DiceConfiguration {
         DiceConfiguration(
-            selectedDice: DiceModel.previewSnapshot,
+            selectedDice: DiceSnapshot.widgetDefault,
             lastRoll: nil,
             showHistory: true
         )
@@ -245,6 +245,45 @@ public struct DiceConfiguration: Codable {
             return true
         }
     }
+}
+
+// MARK: - Widget default dice
+
+extension DiceSnapshot {
+    /// The dice a widget shows before the person has picked one: a single d20. It is its own
+    /// small value, not a preview fixture, so the fixtures can stay out of Release builds.
+    /// See CODE_AUDIT_26 §9.46.
+    nonisolated static let widgetDefault = DiceSnapshot(
+        id: UUID(uuid: (0x22, 0x01, 0xFB, 0xB7, 0x04, 0x03, 0x4A, 0x18, 0xA3, 0x61, 0xCA, 0xD5, 0xA7, 0x6A, 0x63, 0x7E)),
+        name: "D20",
+        description: "",
+        tags: [],
+        category: .game,
+        displayState: 0,
+        dice: [
+            DieModel(
+                id: UUID(uuid: (0x87, 0xC7, 0xE2, 0x92, 0xDE, 0xFA, 0x45, 0x6B, 0xB0, 0x09, 0x34, 0x1E, 0xDE, 0x85, 0x96, 0x8A)),
+                die: RawDie.twenty,
+                color: DieModel.ColorCode.G.rawValue,
+                rotation: 0.0,
+                result: [],
+                displayState: 0
+            ),
+        ],
+        sumUp: true,
+        modifier: 0.0,
+        percentDice: false,
+        compareOption: .off,
+        compareValue: 0.0,
+        coupValues: [],
+        coupOnlyOnFirstDie: false,
+        fumbleValues: [],
+        fumbleOnlyOnFirstDie: false,
+        rerollOptions: [],
+        reorderDice: false,
+        addDiceEvery: 0,
+        resultCategory: nil
+    )
 }
 
 #endif

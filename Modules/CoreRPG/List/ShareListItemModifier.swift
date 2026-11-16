@@ -36,6 +36,27 @@ public extension View {
     }
 }
 
+// MARK: - Shared share button parts
+
+extension View {
+    /// The round share button look shared by the list share button and the feedback button:
+    /// selected while everything is reported, with the follow-up action named when it exists.
+    /// See CODE_AUDIT_26 §9.24.
+    func shareRoundButton(allReported: Bool, module: NetworkModules, hasSecondAction: Bool) -> some View {
+        selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)
+            .accessibilityLabel(
+                allReported && hasSecondAction
+                    ? Text("Perform follow-up action", bundle: .module)
+                    : Text("Share", bundle: .module)
+            )
+    }
+}
+
+/// The share icon, or the second action's icon once everything is reported.
+func shareSymbolName(allReported: Bool, secondActionIcon: String?) -> String {
+    allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up"
+}
+
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
 private struct ShareItemViewModifierButtonView: View {
@@ -55,17 +76,12 @@ private struct ShareItemViewModifierButtonView: View {
                 action()
             }
         } label: {
-            Image(systemName: allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up")
+            Image(systemName: shareSymbolName(allReported: allReported, secondActionIcon: secondActionIcon))
                 .foregroundStyle(allReported ? Color.white : Color.primary)
             #if !os(macOS)
                 .frame(height: iconSize)
             #endif
         }
-        .selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)
-        .accessibilityLabel(
-            allReported && secondAction != nil
-                ? Text("Perform follow-up action", bundle: .module)
-                : Text("Share", bundle: .module)
-        )
+        .shareRoundButton(allReported: allReported, module: module, hasSecondAction: secondAction != nil)
     }
 }

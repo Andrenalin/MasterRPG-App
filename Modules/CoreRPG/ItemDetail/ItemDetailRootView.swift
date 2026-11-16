@@ -188,12 +188,8 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable, 
 // MARK: - Computed Properties
 
 private extension ItemDetailRootView {
-    var fileTypes: [UTType] {
-        root.editControllable.fileUrlDataController?.fileTypes ?? []
-    }
-    
     var shouldShowContent: Bool {
-        selectedModel.url != nil || fileTypes.isEmpty || selectedModel.specialCategory
+        root.showsContent(of: selectedModel)
     }
 }
 
@@ -231,27 +227,6 @@ private extension ItemDetailRootView {
         root.navigationModel.selectedItemId = nil
     }
 }
-
-// MARK: - Content View (Extracted)
-
-
-// MARK: - Header View (Extracted)
-
-
-// MARK: - File Importer View (Extracted & Unified)
-
-
-// MARK: - Editor Foreground View (Extracted)
-
-
-// MARK: - Editor Background View (Extracted)
-
-
-
-
-
-
-
 
 #Preview("Item Detail Root Direct") {
     let fixture = FakeItemRootControllerFixture()

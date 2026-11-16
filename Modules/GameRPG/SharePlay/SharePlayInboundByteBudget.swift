@@ -17,8 +17,10 @@ struct SharePlayInboundByteBudget {
 
     private var received: [UUID: [(at: ContinuousClock.Instant, count: Int)]] = [:]
 
-    /// Senders that currently have bytes recorded.
+#if DEBUG
+    /// A test affordance: senders that currently have bytes recorded.
     var senderCount: Int { received.count }
+#endif
 
     /// Records `count` bytes from `sender`; `false` once the sender is over its budget for the
     /// current window. A sender whose records have all left the window is forgotten, so the

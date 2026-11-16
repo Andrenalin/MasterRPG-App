@@ -11,6 +11,7 @@ struct EditToolBarViewModifier: ViewModifier {
     let editorModel: MapEditorSession
     let isTileEditor: Bool
 
+    @ScaledMetric private var iconSize: CGFloat = 24
     @Environment(\.dismiss) private var dismiss
     @Environment(\.networkActions) private var networkActions
     @Environment(ScenesManager.self) private var scenesManager
@@ -81,9 +82,9 @@ struct EditToolBarViewModifier: ViewModifier {
                                 HStack(spacing: 24) {
                                     Spacer()
                                     EditToolBarViewModifierUndoButtonView(mapEditController: mapEditController, editorModel: editorModel)
-                                        .frame(width: 24, height: 24)
+                                        .frame(width: iconSize, height: iconSize)
                                     EditToolBarViewModifierRedoButtonView(mapEditController: mapEditController, editorModel: editorModel)
-                                        .frame(width: 24, height: 24)
+                                        .frame(width: iconSize, height: iconSize)
                                     Spacer()
                                 }
                                 .buttonStyle(.bordered)

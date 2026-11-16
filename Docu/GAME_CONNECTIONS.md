@@ -1568,6 +1568,11 @@ Master:
   background remains part of the full journaled map package and is never requested
   here. Requests are deduplicated locally, and SharePlay returns a physically
   targeted Messenger repair to each requester.
+- Table weather (`.update/.tableWeather`) is parked: `MasterController.isTableWeatherEnabled`
+  is `false`, so the game master never sends it, while a player still accepts the message from
+  any master. The path is `MasterController+TableWeather.swift`,
+  `PlayerController+TableWeather.swift` and `Model/TableWeather.swift`; the three
+  `TableWeatherTests` that need the flag are disabled with it. No removal date is set.
 
 ## 19. Suggested Debug Checklist
 

@@ -11,72 +11,11 @@ import Synchronization
 // MARK: - Manage files
 
 extension FileUrlDataController {
-    public func move(fileUrl: FileUrl, name: String, category: String) async throws -> FileUrl? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:name:category:)", file: "FileUrlDataController.swift")
-
-        if fileUrl.location == .url {
-            return fileUrl
-        }
-        
-        // The real file, never the temp copy of held peer bytes: moving that copy into Documents
-        // left the original behind. See CODE_AUDIT_20 §5.3.
-        return try await deviceUrl(for: fileUrl) { url -> FileUrl? in
-            guard let url else { return nil }
-            var part = (locationFileManager.relativeUrl(for: fileUrl.rawUrl) ?? fileUrl.rawUrl).absoluteString
-            if fileUrl.location == .icloud {
-                let folders = await fileBookmarkController.folders()
-                for folderId in folders {
-                    guard let folderUrl = await self.fileBookmarkController.loadBookmark(fileId: folderId, folder: true) else { continue }
-                    if url.absoluteString.hasPrefix(folderUrl.absoluteString) {
-                        let count = folderUrl.pathComponents.count
-                        let filePath = url.pathComponents.dropFirst(count)
-                        part = filePath.joined(separator: "/")
-                        break
-                    }
-                }
-            } else {
-                if let suggestedName = try? await cloudDocumentController.suggestedFileName(for: category, filename: name) {
-                    part = category + "/" + suggestedName
-                }
-            }
-
-            let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part)
-            guard let newUrl = URL(string: destinationName) else { return nil }
-            if fileUrl.location == .local || fileUrl.location == .appCloud {
-                _ = await removeFileLoggingFailure(at: url)
-            }
-            let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: newUrl, location: .newCloud, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
-            return newFileUrl
-        }
-    }
-
-    public func move(fileUrl: FileUrl?, from source: ItemListCategory, to destination: ItemListCategory) async -> FileUrl? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:from:to:)", file: "FileUrlDataController.swift")
-        
-        do {
-            guard let fileUrl, fileUrl.location == .newCloud else { return nil }
-            let components = fileUrl.rawUrl.pathComponents
-            let firstComponent = components.first ?? ""
-            let secondComponent = components.count > 1 ? components[1] : ""
-            let sourceUrl = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
-            guard firstComponent == source.title || secondComponent == source.title, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newCategory: destination.title) else { return nil }
-            await bookmark(url: fullUrl, fileId: fileUrl.fileId)
-            if let sourceUrl {
-                await removeEmptyFolders(above: sourceUrl)
-            }
-
-            return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
-        } catch {
-            Logger.fileStore.error("Error moving file \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-        }
-        return nil
-    }
-
     /// Moves a `.newCloud` file to `destination`. Returns `nil` when the file is not one this
     /// controller moves; throws when the move fails, so the caller can surface it.
     /// See CODE_AUDIT_Folder §3.8.
     public func move(fileUrl: FileUrl?, to destination: String) async throws -> FileUrl? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:to:)", file: "FileUrlDataController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:to:)")
 
         let sourceUrl = fileUrl.flatMap { cloudDocumentController.fullUrl(fileUrl: $0.rawUrl) }
         guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }

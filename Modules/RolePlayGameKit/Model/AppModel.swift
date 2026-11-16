@@ -35,7 +35,6 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let scenesManager: ScenesManager
     @ObservationIgnored public let appFocusModel: AppFocusModel
 
-    @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
     @ObservationIgnored private var configuredContext: NSManagedObjectContext?
     @ObservationIgnored public let settingsModel: AppSettingsModel
@@ -139,14 +138,12 @@ public final class AppModel: Sendable {
         self.searchBarVisibleModel = SearchBarVisibleModel()
         self.scenesManager = ScenesManager()
         self.appFocusModel = AppFocusModel()
-        self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = settingsModelOverride ?? AppSettingsModel()
         
         self.inAppController = InAppController(model: inAppModel)
         
         self.gameNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "game.1.0.14",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: AppModel.navigatorVerbosity,
@@ -155,7 +152,6 @@ public final class AppModel: Sendable {
         )
         self.editorNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "editor.1.0.14",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: AppModel.navigatorVerbosity,
@@ -164,7 +160,6 @@ public final class AppModel: Sendable {
         )
         self.searchNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "search.1.0.14",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: AppModel.navigatorVerbosity,
@@ -173,7 +168,6 @@ public final class AppModel: Sendable {
         )
         self.settingsNavigator = Navigator(
             configuration: NavigationConfiguration(
-                restorationKey: "settings.1.0.13",
                 logger: AppModel.navigatorLogger(event:),
                 executionDelay: 0.4,
                 verbosity: AppModel.navigatorVerbosity,

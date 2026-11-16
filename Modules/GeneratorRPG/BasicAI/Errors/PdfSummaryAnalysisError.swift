@@ -8,7 +8,6 @@ import PDFKit
 public enum PdfSummaryAnalysisError: LocalizedError {
     case emptyDocument
     case textExtractionFailed
-    case contentTooLarge
     case modelUnavailable
     case generationFailed(String)
 
@@ -21,11 +20,6 @@ public enum PdfSummaryAnalysisError: LocalizedError {
             )
         case .textExtractionFailed:
             return String(localized: "Failed to extract text from the PDF document.", bundle: .module)
-        case .contentTooLarge:
-            return String(
-                localized: "The PDF content is too large. Processing only the first portion.",
-                bundle: .module
-            )
         case .modelUnavailable:
             return String(
                 localized: "Apple Intelligence is not available. PDF summary analysis requires it.",

@@ -10,6 +10,7 @@ import SwiftUI
 /// Map" toggle is on; the 3D table always re-syncs its pawns and broadcasts),
 /// so callers supply that as `onMonstersAdded`.
 struct ChooseMapPinsButton: View {
+    @ScaledMetric private var iconSize: CGFloat = 24
     let root: MapRootModel
     let focusedRoomId: UUID?
     let onMonstersAdded: () -> Void
@@ -32,7 +33,7 @@ struct ChooseMapPinsButton: View {
             let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .frame(width: 24, height: 24)
+                .frame(width: iconSize, height: iconSize)
         }
         .selectedRoundButton(
             title: String(localized: "Choose Map Pins", bundle: .module),

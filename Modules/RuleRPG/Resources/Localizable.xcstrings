@@ -1013,6 +1013,7 @@
       }
     },
     "Rule section type updated" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1412,6 +1413,22 @@
         }
       }
     },
+    "Untitled Section" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abschnitt ohne Titel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่วนที่ไม่มีชื่อ"
+          }
+        }
+      }
+    },
     "Update ${target}" : {
       "localizations" : {
         "de" : {
@@ -1536,22 +1553,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "กฎใด?"
-          }
-        }
-      }
-    },
-    "Untitled Section" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abschnitt ohne Titel"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ส่วนที่ไม่มีชื่อ"
           }
         }
       }

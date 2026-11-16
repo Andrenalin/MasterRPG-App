@@ -169,10 +169,6 @@ extension Navigator {
     @MainActor
     @discardableResult
     public func popAny() throws -> Bool {
-        guard !isNavigationLocked else {
-            log(.warning("Navigator \(id) error navigation locked"))
-            throw NavigationError.navigationLocked
-        }
         return root.recursivePopAny()
     }
 

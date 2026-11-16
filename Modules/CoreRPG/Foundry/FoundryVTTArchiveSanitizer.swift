@@ -258,8 +258,8 @@ private extension State {
         parentType: FoundryDocumentType,
         representedDocuments: [FoundryDocument]
     ) -> FoundryJSONValue {
-        guard case .object(var object) = rawData,
-              let mappings = Self.embeddedMappings[parentType] else { return rawData }
+        let mappings = FoundryEmbeddedMappings.mappings(for: parentType)
+        guard case .object(var object) = rawData, !mappings.isEmpty else { return rawData }
         for (key, type) in mappings {
             let representedIDs = Set(
                 representedDocuments.lazy
@@ -283,28 +283,6 @@ private extension State {
         let id = object["_id"]?.stringValue ?? object["id"]?.stringValue
         return id.map(ids.contains) ?? false
     }
-
-    static let embeddedMappings: [FoundryDocumentType: [String: FoundryDocumentType]] = [
-        .actor: ["items": .item, "effects": .activeEffect],
-        .item: ["effects": .activeEffect],
-        .scene: [
-            "levels": .level, "tokens": .token, "walls": .wall, "lights": .ambientLight,
-            "sounds": .ambientSound, "tiles": .tile, "drawings": .drawing,
-            "notes": .note, "regions": .region,
-        ],
-        .journalEntry: ["pages": .journalEntryPage],
-        .rollTable: ["results": .tableResult],
-        .playlist: ["sounds": .playlistSound],
-        .cards: ["cards": .card],
-        .combat: ["combatants": .combatant],
-        .adventure: [
-            "actors": .actor, "items": .item, "scenes": .scene,
-            "journal": .journalEntry, "journals": .journalEntry,
-            "journalEntries": .journalEntry, "tables": .rollTable,
-            "rollTables": .rollTable, "playlists": .playlist, "cards": .cards,
-            "combats": .combat, "macros": .macro, "folders": .folder,
-        ],
-    ]
 }
 
 // MARK: - RuleRPG hand-off payload

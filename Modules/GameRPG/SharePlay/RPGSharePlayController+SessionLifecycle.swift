@@ -328,7 +328,6 @@ extension RPGSharePlayController {
                 else { return }
                 let stateDescription = self.printState()
                 Logger.sharePlay.debug("Session state: \(stateDescription, privacy: .public)")
-                self.stateText = stateDescription
                 switch state {
                 case .waiting:
                     self.connectionState = .waiting

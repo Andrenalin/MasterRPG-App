@@ -19,7 +19,7 @@ public extension FileUrlDataController {
         pathExtension: String,
         requireDurableStorage: Bool = false
     ) async throws -> FileUrl? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createNewFileUrl(fileId:unconvertedFileUrl:pathExtension:)", file: "FileUrlDataController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createNewFileUrl(fileId:unconvertedFileUrl:pathExtension:)")
         
         guard let oldData = unconvertedFileUrl.data else { return nil }
         if unconvertedFileUrl.location == .url {
@@ -180,7 +180,7 @@ public extension FileUrlDataController {
     /// ItemController will call to get FileUrl for given urls from picker
     @concurrent
     func createFileUrl(fileId: UUID, url: URL, module: String, category: String?, contentHash: String? = nil) async throws -> FileUrl {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createFileUrl(fileId:url:module:category:)", file: "FileUrlDataController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createFileUrl(fileId:url:module:category:)")
 
         if url.isSupportedRemoteFileUrl {
             return FileUrl(
@@ -302,7 +302,7 @@ public extension FileUrlDataController {
         switch fileUrl.location {
             case .local, .appCloud, .newCloud:
                 start {
-                    await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)", file: "FileUrlDataController.swift")
+                    CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)")
 
                     // The real file, never the temp copy of held peer bytes. See CODE_AUDIT_20 §5.3.
                     guard let accessUrl = await deviceUrl(for: fileUrl, action: { $0 }) else {
@@ -509,7 +509,7 @@ public extension FileUrlDataController {
     }
 
     func download(fileUrl: FileUrl) async throws {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.download(fileUrl:)", file: "FileUrlDataController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.download(fileUrl:)")
         
         if fileUrl.location == .newCloud {
             try await cloudDocumentController.download(fileUrl: fileUrl.rawUrl)
@@ -519,7 +519,7 @@ public extension FileUrlDataController {
     }
 
     func duplicate(fileUrl: FileUrl?, for fileId: UUID) async throws -> FileUrl? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.duplicate(fileUrl:for:)", file: "FileUrlDataController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.duplicate(fileUrl:for:)")
         
         do {
             guard var unconverted = fileUrl, let data = try await loadData(for: unconverted) else { return nil }

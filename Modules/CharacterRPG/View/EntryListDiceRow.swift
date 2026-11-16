@@ -19,9 +19,14 @@ struct EntryListDiceRow: View, Equatable {
     var body: some View {
         // The game dice is created in the task below, never while `body` runs: creating it
         // writes observable state this body reads. See CODE_AUDIT_26 §8.2.
-        let templateDiceId = root.gameController.gameItem(for: itemId)[entryId].diceId
+        let entry = root.gameController.gameItem(for: itemId)[entryId]
+        let templateDiceId = entry.supportsDice ? entry.diceId : nil
         Group {
-            content
+            if templateDiceId == nil {
+                EmptyView()
+            } else {
+                content
+            }
         }
         .task(id: templateDiceId) {
             root.gameController.ensureGameDice(itemId: itemId, entryId: entryId)
@@ -50,7 +55,12 @@ struct EntryListDiceRow: View, Equatable {
                     updateDiceValue(id: id, compareValue: compareValue)
                 }
         } else {
-            EmptyView()
+            // A modifier on an `EmptyView` has no view to attach to, so the `.task` above would
+            // never run and the game dice would never be created. This zero-size view hosts it
+            // until the dice exists.
+            Color.clear
+                .frame(width: 0, height: 0)
+                .accessibilityHidden(true)
         }
     }
 

@@ -201,57 +201,15 @@ public struct GameTableView: View {
                 )
             }
         }
-        // Mirrors the iOS/macOS table's embedded `GameTableToolbar` overlay
-        // (this file's `#if os(iOS) || os(macOS)` half) — same controls,
-        // ornament instead of a view overlay since this window is volumetric.
-        // Anchored to `GeometryReader3D` (the whole scene), not the nested
-        // `RealityView` — attaching it inside the `if let loadedGame` branch
-        // anchored to the RealityView's own subtree instead of the volume's
-        // bounds.
-        // `.parent(.bottomFront)`, not `.scene(.bottom)`: the
-        // 2D `UnitPoint` anchor has no Z, so SwiftUI picked a depth for us
-        // that landed mid-volume (inside/behind the table) instead of at the
-        // front face, level with the window's grab handle. `.parent(_:)`
-        // takes a `UnitPoint3D` — since this ornament isn't nested inside
-        // another one, its "parent" is the Scene, same anchor space as
-        // `.scene(_:)`, just with the front (+z, toward the viewer) pinned
-        // explicitly. Requires visionOS 26+ (this app's floor).
-        // Horizontally centered on that front face (with `.top` content
-        // alignment, so the stack hangs centered below the volume's front
-        // edge) rather than at its leading corner, where it sat off to the
-        // side of the user's own seat.
-        // Requires `AppWindowSizeModel`, `\.networkActions`, and
-        // `AppGameStateModel` on the scene, none of which a bare
-        // `RealityView` gets for free — see `WindowVisionList`.
-        //
-        // The window-controls row (row 1) sits alongside the map toolbar
-        // (row 2) in this one stacked ornament rather than as its own
-        // separate ornament — that would leave multiple ornaments contending
-        // for anchor points instead of a shared VStack giving that stacking
-        // for free. The stack as a whole is centered on the front face, but
-        // its rows are leading-aligned to each other, so the map toolbar
-        // starts under the window controls' own first button. No dice action
-        // bar here (the flat Game screen's `.bottomLeading` ornament has
-        // one): the table shows the dice themselves and their result
-        // attachments, so the edit/overlay toggles aren't needed. Row 1 is
-        // every window-opening button the table volume offers —
-        // `WindowOpenButton` (the floating adventure/character window
-        // toggle) plus `GameTableSideMenu` (the *other* module windows) —
-        // combined into one row rather than a separate trailing-side
-        // ornament this view used to have: with only `WindowOpenButton`
-        // moved here and `GameTableSideMenu` left as its own
-        // `.bottomTrailingFront` ornament, the module-window buttons stayed
-        // visually split across two places for no real reason once one of
-        // them had already moved — see `WindowOpenButton`'s own doc for why
-        // it moved in the first place. Placed above the map toolbar (rather
-        // than below it, where it first landed) so the table's own window
-        // controls read as the top of the stack. No manual Y
-        // `.offset(...)` on the stack itself — an up-then-down row-height
-        // estimate was tried here to compensate for the extra rows and
-        // ended up clipping the ornament against the volume's own bounds
-        // on-device; removed rather than tuned further, since the
-        // anchor/padding below already positions the stack correctly on its
-        // own without it.
+        // The table's window controls and map toolbar, as one ornament (the iOS/macOS table has them
+        // in `GameTableToolbar`). Anchored to `GeometryReader3D`, the whole scene: inside the
+        // `if let loadedGame` branch it anchored to the RealityView's own subtree.
+        // `.parent(.bottomFront)` pins the front face: the 2D `.scene(.bottom)` anchor has no Z and
+        // landed mid-volume. Needs `AppWindowSizeModel`, `\.networkActions` and `AppGameStateModel`
+        // on the scene (see `WindowVisionList`).
+        // Row 1: every window-opening button (`WindowOpenButton`, `GameTableSideMenu`); row 2: the
+        // map toolbar. No dice action bar: the table shows the dice themselves. No manual Y offset:
+        // an estimate of the row heights clipped the ornament against the volume's bounds.
         .ornament(attachmentAnchor: .parent(.bottomFront), contentAlignment: .top) {
             if let game {
                 VStack(alignment: .leading) {
@@ -413,42 +371,17 @@ public struct GameTableView: View {
         initializedGame.applyGuestRolls(guestRolls)
     }
 
-    /// Creates `activityManager`, which is what actually calls
-    /// `tabletopGame.coordinateWithSession(_:)` (via `GroupActivityManager.init` →
-    /// `RPGSharePlayController.setup(tabletopGame:gameTableModel:)`) once a
-    /// SharePlay session exists — deliberately called from a `.task` chained
-    /// directly onto the already-mounted `RealityView`/`.tabletopGame(...)` view
-    /// below, not from `initializeGameIfNeeded()`'s outer `.task`.
+    /// Creates `activityManager`, which calls `tabletopGame.coordinateWithSession(_:)` once a
+    /// SharePlay session exists.
     ///
-    /// `coordinateWithSession(_:)` joins this device into the SharePlay session's
-    /// RealityKit *shared simulation* — a lower-level join than anything
-    /// TabletopKit's own Swift API surface does. That join replays the master's
-    /// already-established ECS state against this device's local scene, resolved
-    /// through TabletopKit's own RealityKit `System`, which the
-    /// `.tabletopGame(_:parent:)` modifier registers when it mounts. Setting the
-    /// `game` `@State` (in `initializeGameIfNeeded()`) only *schedules* a SwiftUI
-    /// re-render — it doesn't synchronously mount the view below — so triggering
-    /// the join from that same synchronous stretch of code raced
-    /// `.tabletopGame(_:parent:)`'s own mount. Losing that race left the shared-
-    /// simulation replay running against a scene TabletopKit's system hadn't
-    /// attached to yet, unpredictably failing to resolve one of the master's
-    /// already-known equipment entities — "Could not find static equipment with
-    /// identifier: ..." — inside RealityKit's own engine
-    /// (`RCPSharedSimulationExecuteUpdate` → `-[MRUISharedSimulation
-    /// _joinWithConnectionContext:error:]`), well below any of our own Swift-level
-    /// TabletopKit calls (`claimSeat`, `setupSeating`, etc. — see their own docs
-    /// for a *different*, since-fixed race that never was the actual cause here).
-    /// Apple's own TabletopKit SharePlay samples never hit this because their
-    /// `.tabletopGame(_:parent:)` is unconditionally present from the very first
-    /// render — never gated behind an async-loaded `@State` the way `game` is
-    /// here — so their own `.task { activityManager = .init(...) }`, chained on
-    /// that same view, can't ever run before it.
+    /// Called from a `.task` chained onto the already-mounted `RealityView`/`.tabletopGame(...)`
+    /// view, not from `initializeGameIfNeeded()`: the join replays the master's equipment against
+    /// the scene TabletopKit's system attaches on mount, and joining before that mount failed with
+    /// "Could not find static equipment with identifier: ...". `game` is set asynchronously, so
+    /// the mount is not guaranteed to have happened when it is set.
     ///
-    /// Guarded on `activityManager == nil`: this `.task` re-fires whenever the
-    /// RealityView reappears (e.g. the volumetric window disappearing and
-    /// reappearing while `@State` is retained — see `initializeGameIfNeeded()`'s
-    /// own "if let game" branch), and re-coordinating an already-coordinated
-    /// `tabletopGame` is neither needed nor safe.
+    /// Guarded on `activityManager == nil`: the `.task` re-fires when the RealityView reappears,
+    /// and coordinating an already-coordinated game is neither needed nor safe.
     private func setUpSharePlayCoordinationIfNeeded(for game: GameTableModel) {
         guard activityManager == nil else { return }
         activityManager = .init(

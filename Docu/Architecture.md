@@ -90,7 +90,6 @@ audios | dice | generator | maps | pdfs | photos | space | tables | weathers | s
 | `SplitNavigation` | macOS | Sidebar + detail split |
 | `SplitEditorNavigation` | macOS | Editor-specific split |
 | `ExtendedTabBar` | iOS/iPad/macOS | Secondary editor tabs |
-| `ExtendedSplitBar` | visionOS | Spatial secondary tabs |
 
 All use `ManagedNavigationStack` wired to their window's `Navigator`.
 

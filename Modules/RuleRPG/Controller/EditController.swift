@@ -206,13 +206,4 @@ extension EditController: EntryDataEditable {
         item.sourceMetadata = sourceMetadata
         save(updated: item, message: String(localized: "Rule source updated", bundle: .ruleModule))
     }
-
-    @MainActor
-    func reset(kind: RuleEntryKind, itemId: UUID, entryId: UUID) {
-        guard let item = editModel(for: itemId), item[entryId].kind != kind else { return }
-        var entry = item[entryId]
-        entry.kind = kind
-        item[entryId] = entry
-        save(updated: item, message: String(localized: "Rule section type updated", bundle: .ruleModule))
-    }
 }

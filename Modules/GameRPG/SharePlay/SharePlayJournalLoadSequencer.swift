@@ -31,8 +31,10 @@ final class SharePlayJournalLoadSequencer {
     private var tasks: [UUID: (token: UUID, task: Task<Void, Never>)] = [:]
     private var joinBatchHandled = false
 
-    /// Items with a load that has not ended.
+#if DEBUG
+    /// A test affordance: items with a load that has not ended.
     var activeItemCount: Int { tasks.count }
+#endif
 
     func start(
         _ loads: [Load],

@@ -114,7 +114,7 @@ extension View {
     /// ```swift
     /// @main
     /// struct NavigatorDemoApp: App {
-    ///     let navigator = Navigator(configuration: .init(restorationKey: "1.0.0", autoDestinationMode: true)
+    ///     let navigator = Navigator(configuration: .init(autoDestinationMode: true)
     ///     var body: some Scene {
     ///         WindowGroup {
     ///             RootTabView()

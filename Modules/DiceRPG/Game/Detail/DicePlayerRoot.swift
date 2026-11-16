@@ -33,7 +33,7 @@ struct DicePlayerRoot: View {
             }
             .buttonStyle(.borderedProminent)
 
-            DicePlayer(filterout: root.gameController.gameModel.focusItemIds.first ?? UUID(), alignment: .trailing)
+            DicePlayer(alignment: .trailing)
                 .opacity(diceDisplayModel.showPlayerDice ? 1 : 0)
                 .offset(x: diceDisplayModel.showPlayerDice ? 0 : Self.hiddenOffset)
                 .allowsHitTesting(diceDisplayModel.showPlayerDice)

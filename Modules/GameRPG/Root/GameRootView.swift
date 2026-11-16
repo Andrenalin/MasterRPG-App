@@ -15,16 +15,7 @@ struct GameRootView: View {
 
         GameView(root: root)
             .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
-                let isRunning = newState == .started
-                if appGameStateModel.isGameRunning != isRunning {
-                    appGameStateModel.isGameRunning = isRunning
-                }
-                let newModus: GameModus = isRunning
-                    ? (root.gameModel.gameConfig.isMaster ? .master : .player)
-                    : .edit
-                if appGameStateModel.gameModus != newModus {
-                    appGameStateModel.gameModus = newModus
-                }
+                appGameStateModel.update(isRunning: newState == .started, isMaster: root.gameModel.gameConfig.isMaster)
             }
     }
 }

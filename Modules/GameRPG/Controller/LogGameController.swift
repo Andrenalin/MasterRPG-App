@@ -83,6 +83,8 @@ struct LogGameController: Sendable {
         }.sorted { $0.id < $1.id }
     }
     
+#if DEBUG
+    /// A test affordance: logs a message under the current session with a chosen counter.
     @MainActor
     func addMessage(counter: Int, type: RPGMessageType, subType: RPGMessageActionType, module: NetworkModules, itemId: UUID) {
         let sessionID = currentSessionID ?? GameDeliveryMessageID.legacySessionID
@@ -94,6 +96,7 @@ struct LogGameController: Sendable {
             itemId: itemId
         )
     }
+#endif
 
     /// Starts a fresh delivery namespace. Existing rows belong to the previous
     /// game and are removed so a restarted counter can never overwrite or

@@ -12,7 +12,6 @@ final class FoundationManager {
     )
     
     var isModelAvailable: Bool = false
-    var isLanguageSupported = false
     
     init() {
         checkIsAvailable()
@@ -44,9 +43,5 @@ final class FoundationManager {
             )
         }
         return isModelAvailable
-    }
-    
-    func checkLanguageSupport(for locale: Locale) {
-        isLanguageSupported = SystemLanguageModel.default.supportsLocale(locale)
     }
 }

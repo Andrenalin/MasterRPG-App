@@ -7,7 +7,6 @@ import SwiftUI
 struct ExtendedTabBar: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.appTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 
     private let restoresState: Bool
@@ -64,26 +63,18 @@ struct ExtendedTabBar: View {
 }
 
 /// Restores the selected extended module from the scene storage and keeps the two in sync.
-/// Shared by `ExtendedTabBar` and `ExtendedSplitBar`; the split layout also selects Maps when
-/// the Editors module opens with nothing restored. See CODE_AUDIT_20 §9.7.
+/// See CODE_AUDIT_20 §9.7.
 struct ExtendedTabRestorationModifier: ViewModifier {
     @SceneStorage(ExtendedTabRoute.sceneStorageKey) private var currentModule: ExtendedTabRoute?
 
     let appModel: AppModel
     @Binding var tabSelectedModule: NetworkModules
-    var selectsMapsOnEditors = false
 
     func body(content: Content) -> some View {
         content
             .onChange(of: appModel.selectedExtendedModule) {
                 guard appModel.selectedExtendedModule != currentModule else { return }
                 currentModule <=> appModel.selectedExtendedModule
-            }
-            .applyIf(selectsMapsOnEditors) {
-                $0.onChange(of: appModel.selectedModule, initial: true) {
-                    guard let selectedModule = appModel.selectedModule, selectedModule == .editors, currentModule == nil else { return }
-                    appModel.selectedExtendedModule <=> .maps
-                }
             }
             .onAppear {
                 appModel.selectedExtendedModule <=> currentModule

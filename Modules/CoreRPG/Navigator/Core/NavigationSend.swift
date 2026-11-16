@@ -121,79 +121,14 @@ extension Navigator: NavigationSending {
             resume(.immediately, values: values + newValues)
         case .replacing(let newValues):
             resume(.immediately, values: newValues)
-        case .pause:
-            Navigator.resumableValues = values
         case .cancel:
             break
         }
     }
 
-    /// Resumes sending any values paused by an `onNavigationReceive` handler.
-    ///
-    /// This allows for actions like authentication sequences to occur as part of a deep linking sequence. The onNavigationReceive
-    /// handler pauses the sequence, and this function resumes them.
-    @MainActor
-    public func resume(condition: Bool = true) {
-        guard condition, let values = Navigator.resumableValues else {
-            return
-        }
-        Navigator.resumableValues = nil
-        send(values: values)
-    }
-
-    /// Deletes any stored values that might have been paused by an onNavigationReceive handler.
-    @MainActor
-    public func cancelResume() {
-        Navigator.resumableValues = nil
-    }
-
-    @MainActor internal static var resumableValues: [any Hashable]? = nil
-
 }
 
 extension View {
-
-    /// Declarative access to `navigator.send(value:)`.
-    ///
-    /// ```swift
-    /// struct ContentView: View {
-    ///     @Environment(\.navigator) private var navigator
-    ///     @State private var pendingTab: RootTabs?
-    ///
-    ///     var body: some View {
-    ///         Button("Go Home") {
-    ///             pendingTab = .home
-    ///         }
-    ///         .navigationSend($pendingTab)
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// Note that the bound optional value will be cleared immediately after it's sent.
-    public func navigationSend<T: Hashable & Equatable>(_ item: Binding<T?>) -> some View {
-        self.modifier(NavigationSendValueModifier<T>(item: item))
-    }
-
-    /// Declarative access to `navigator.send(values:)`.
-    ///
-    /// ```swift
-    /// struct ContentView: View {
-    ///     @Environment(\.navigator) private var navigator
-    ///     @State private var pendingActions: [NavigationAction]?
-    ///
-    ///     var body: some View {
-    ///         Button("Perform actions") {
-    ///             pendingActions = [.dismissAny, .popAny]
-    ///         }
-    ///         .navigationSend(values: $pendingActions)
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// Note that the bound optional values will be cleared immediately after the first value is sent.
-    public func navigationSend<T: Hashable & Equatable>(values: Binding<[T]?>) -> some View {
-        self.modifier(NavigationSendValuesModifier<T>(values: values))
-    }
 
     /// Handler receives values of a specific type broadcast via `navigator.send`.
     /// ```swift
@@ -292,19 +227,6 @@ extension View {
         })
     }
 
-    /// Resumes any values previously paused by an `onNavigationReceive` handler.
-    ///
-    /// Apply this modifier to a view that should resume a deep-link sequence
-    /// or other queued navigation work once it appears.
-    ///
-    /// ```swift
-    /// DetailView()
-    ///     .navigationResume()
-    /// ```
-    public func navigationResume() -> some View {
-        self.modifier(NavigationResumeModifier())
-    }
-
 }
 
 public typealias NavigationReceiveResumeHandler<T> = (_ value: T, _ navigator: Navigator) -> NavigationReceiveResumeType
@@ -329,39 +251,8 @@ public enum NavigationReceiveResumeType {
     ///  Appends new values onto the queue
     case appending([any Hashable])
 
-    /// Saves any remaining deep linking values for later resumption
-    case pause
-
     /// Cancels any remaining values in the send queue
     case cancel
-}
-
-private struct NavigationSendValueModifier<T: Hashable & Equatable>: ViewModifier {
-    @Binding internal var item: T?
-    @Environment(\.navigator) internal var navigator: Navigator
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: item) { _, item in
-                if let item {
-                    navigator.send(item)
-                    self.item = nil
-                }
-            }
-    }
-}
-
-private struct NavigationSendValuesModifier<T: Hashable & Equatable>: ViewModifier {
-    @Binding internal var values: [T]?
-    @Environment(\.navigator) internal var navigator: Navigator
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: values) { _, values in
-                if let values {
-                    navigator.send(values: values)
-                    self.values = nil
-                }
-            }
-    }
 }
 
 private struct OnNavigationReceiveModifier<T: Hashable>: ViewModifier {
@@ -388,16 +279,6 @@ private struct OnNavigationReceiveModifier<T: Hashable>: ViewModifier {
                         values.resume(type)
                     }
                 }
-            }
-    }
-}
-
-private struct NavigationResumeModifier: ViewModifier {
-    @Environment(\.navigator) internal var navigator: Navigator
-    func body(content: Content) -> some View {
-        content
-            .task {
-                navigator.resume()
             }
     }
 }

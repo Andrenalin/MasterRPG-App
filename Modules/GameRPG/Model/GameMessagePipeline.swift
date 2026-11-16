@@ -324,10 +324,12 @@ actor GameMessagePipeline {
         return true
     }
 
-    /// Whether events are waiting to be handled.
+#if DEBUG
+    /// A test affordance: whether events are waiting to be handled.
     var hasQueuedMessages: Bool {
         !messages.isEmpty
     }
+#endif
 
     /// Whether nothing is queued and no worker is handling an event. A reply that a handler
     /// triggers while the worker is busy is queued behind it and its sender returns at once

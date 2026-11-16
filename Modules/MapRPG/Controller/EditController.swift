@@ -519,17 +519,4 @@ extension EditController {
         }
         return itemRowModels
     }
-
-    @MainActor
-    func replace(itemId: UUID, with entries: [MapEntryModel]) {
-        guard let model = itemController.itemSync(for: itemId) else { return }
-        model.entries.enumerated().forEach { index, entry in
-            guard index < entries.count else { return }
-            let linkEntry = entries[index]
-            guard entry.content != linkEntry.content else { return }
-            var replacedEntry = entry
-            replacedEntry.content = linkEntry.content
-            model[replacedEntry.id] = replacedEntry
-        }
-    }
 }

@@ -60,11 +60,13 @@ extension SheetRootModel {
         updateParent(parentModel)
     }
 
-    func moveEntry(fromItemId: UUID, entryId: UUID, toItemId: UUID, afterEntry: SheetModel) {
-        guard let sourceEditable = entryDataEditable(for: ItemRowModel(itemId: fromItemId, typeId: afterEntry.source.typeId)) else { return }
+    /// Moves an entry to the end of another item. `targetEntry` only names the module of the
+    /// drop target; the position inside the target item is not honoured.
+    func moveEntry(fromItemId: UUID, entryId: UUID, toItemId: UUID, targetEntry: SheetModel) {
+        guard let sourceEditable = entryDataEditable(for: ItemRowModel(itemId: fromItemId, typeId: targetEntry.source.typeId)) else { return }
 
         // Move the entry from source item to target item
-        let success = sourceEditable.move(itemId: fromItemId, entryId: entryId, into: ItemRowModel(itemId: toItemId, typeId: afterEntry.source.typeId), forceSave: persistsEdits)
+        let success = sourceEditable.move(itemId: fromItemId, entryId: entryId, into: ItemRowModel(itemId: toItemId, typeId: targetEntry.source.typeId), forceSave: persistsEdits)
 
         guard success else { return }
 
@@ -114,7 +116,7 @@ extension SheetRootModel {
                         fromItemId: droppedItem.itemId,
                         entryId: draggedEntryId,
                         toItemId: targetEntry.source.itemId,
-                        afterEntry: targetEntry
+                        targetEntry: targetEntry
                     )
                 }
                 return true

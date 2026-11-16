@@ -74,12 +74,8 @@ struct AsyncImageViewer: View {
         }
     }
 
-    private var loadKey: AsyncImageViewerLoadKey {
-        AsyncImageViewerLoadKey(
-            itemId: model.id,
-            fileUrl: model.fileUrl,
-            hasInlineData: model.fileUrl?.data != nil
-        )
+    private var loadKey: PhotoImageLoadKey {
+        PhotoImageLoadKey(model: model)
     }
 
     private func cachedImage(for itemId: UUID) -> AKImage? {
@@ -124,12 +120,6 @@ struct AsyncImageViewer: View {
         // Reset loading state
         isLoading = false
     }
-}
-
-private struct AsyncImageViewerLoadKey: Equatable {
-    let itemId: UUID
-    let fileUrl: FileUrl?
-    let hasInlineData: Bool
 }
 
 #Preview(traits: .mockData) {

@@ -46,7 +46,7 @@ struct TableSummaryAnalyzer {
         } catch let error as PdfSummaryAnalysisError {
             throw error
         } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
+            throw PdfSummaryAnalysisError.generationFailed(FoundationModelsErrorHandler.message(for: error, subject: .table))
         } catch {
             throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
@@ -81,54 +81,6 @@ struct TableSummaryAnalyzer {
         """
     }
 
-    private func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
-        switch error {
-        case .exceededContextWindowSize:
-            return String(
-                localized: "Table content is too large. Try a table with fewer entries.",
-                bundle: .module
-            )
-        case .guardrailViolation:
-            return String(localized: "Content policy prevented analysis.", bundle: .module)
-        case .unsupportedLanguageOrLocale:
-            return String(
-                localized: "The table language is not supported by Apple Intelligence.",
-                bundle: .module
-            )
-        case .assetsUnavailable(let reason):
-            return String(
-                localized: "Model assets unavailable: \(String(describing: reason)). Ensure Apple Intelligence is downloaded.",
-                bundle: .module
-            )
-        case .unsupportedGuide(let guide):
-            return String(
-                localized: "Schema contains unsupported constraint: \(String(describing: guide)).",
-                bundle: .module
-            )
-        case .decodingFailure(let reason):
-            return String(
-                localized: "Failed to decode result: \(String(describing: reason)).",
-                bundle: .module
-            )
-        case .rateLimited(let retryAfter):
-            return String(
-                localized: "Rate limit exceeded. Try again in \(String(describing: retryAfter)) seconds.",
-                bundle: .module
-            )
-        case .concurrentRequests(let maxCount):
-            return String(
-                localized: "Too many concurrent requests (max \(String(describing: maxCount))). Please wait.",
-                bundle: .module
-            )
-        case .refusal(let reason, let category):
-            return String(
-                localized: "Analysis refused: \(String(describing: reason)) (category: \(String(describing: category))).",
-                bundle: .module
-            )
-        @unknown default:
-            return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
-        }
-    }
 
     private static let defaultInstructions = """
     Analyze RPG table entries (random tables, encounter tables, loot tables, etc.).

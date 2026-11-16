@@ -8,7 +8,10 @@ struct ItemDetailHeaderView: View {
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
-    
+
+    /// How far the header is pulled up into the title area; scales with Dynamic Type.
+    @ScaledMetric private var titleOverlap: CGFloat = 64
+
     var body: some View {
         ZStack(alignment: .bottom) {
             ItemDetailOverlayView(
@@ -22,7 +25,7 @@ struct ItemDetailHeaderView: View {
         .overlay(alignment: .top) {
             navigationHeader
                 .font(.title)
-                .padding(.top, -64)
+                .padding(.top, -titleOverlap)
         }
     }
     

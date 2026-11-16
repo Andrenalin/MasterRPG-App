@@ -57,7 +57,6 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     
     @Environment(\.navigator) private var navigator
     @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.undoManager) private var undoManager
 
@@ -345,7 +344,6 @@ private struct QuickEntryEditorEntryListView<EditController: EntryDataEditable, 
             }
         }
         .themedListSurface()
-        .environment(SearchModel.preview())
         .overlay {
             pdfOverlay
         }

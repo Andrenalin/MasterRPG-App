@@ -112,18 +112,6 @@ extension NavigationAction {
         .init { _ in .immediately }
     }
 
-    /// Cancels if navigation is locked.
-    @MainActor public static var locked: NavigationAction {
-        .init { navigator in
-            navigator.isNavigationLocked ? .cancel : .immediately
-        }
-    }
-
-    /// Empty action, usually used as a placeholder for a definition to be provided later.
-    @MainActor public static var pause: NavigationAction {
-        .init { _ in .pause }
-    }
-
     /// Finds named navigator and pops it back to the root.
     @MainActor public static func popAll(in name: String) -> NavigationAction {
         .init { navigator in

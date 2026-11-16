@@ -64,10 +64,7 @@ struct GameRootSetupView: View {
             root.networkStore.setup(gameModel: root.gameModel)
         }
         .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
-            appGameStateModel.isGameRunning = newState == .started
-            appGameStateModel.gameModus = newState == .started
-                ? (root.gameModel.gameConfig.isMaster ? .master : .player)
-                : .edit
+            appGameStateModel.update(isRunning: newState == .started, isMaster: root.gameModel.gameConfig.isMaster)
         }
     }
 }

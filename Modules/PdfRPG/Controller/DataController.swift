@@ -21,7 +21,7 @@ extension DataController: CoreDataSnapshotPersistable {
 
     @Sendable
     func mapSnapshot(_ model: RPGPdf, token: String) -> PdfSnapshot {
-        let id = repairedUuid(for: model)
+        let id = repairedUuid(of: model, at: \.uuid)
         return PdfSnapshot(
             id: id,
             name: CRDT(wrappedValue: model.name ?? ""),
@@ -35,28 +35,6 @@ extension DataController: CoreDataSnapshotPersistable {
         )
     }
 
-    // A nil `uuid` is expected transiently under CloudKit sync (attributes must be
-    // optional), but must never be silently re-randomized on every map call — that
-    // makes the same managed object resolve to a different domain id on separate
-    // passes. Assign and persist a stable id once instead. See CODE_AUDIT_Pdf §5.4.
-    @Sendable
-    private func repairedUuid(for model: RPGPdf) -> UUID {
-        if let uuid = model.uuid { return uuid }
-        let id = UUID()
-        Logger.itemController.error("RPGPdf managed object had a nil uuid; assigning and persisting \(id, privacy: .public) to repair identity.")
-        model.uuid = id
-        return id
-    }
-
-    @Sendable
-    private func repairedUuid(for model: RPGPdfEntry) -> UUID {
-        if let uuid = model.uuid { return uuid }
-        let id = UUID()
-        Logger.itemController.error("RPGPdfEntry managed object had a nil uuid; assigning and persisting \(id, privacy: .public) to repair identity.")
-        model.uuid = id
-        return id
-    }
-    
     // MARK: snapshot -> managed object (context queue)
 
     @Sendable
@@ -98,7 +76,7 @@ extension DataController: CoreDataSnapshotPersistable {
 
     private func map(_ model: RPGPdfEntry) -> PdfEntryModel {
         PdfEntryModel(
-            id: repairedUuid(for: model),
+            id: repairedUuid(of: model, at: \.uuid),
             name: model.name ?? "",
             content: model.content ?? "",
             pageNumber: model.pageLabel ?? "",

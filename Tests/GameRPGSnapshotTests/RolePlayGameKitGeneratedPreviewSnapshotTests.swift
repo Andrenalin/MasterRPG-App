@@ -162,29 +162,6 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: RolePlayGameKit::ExtendedSplitBar
-    @Test("ExtendedSplitBar")
-    func snapshotExtendedSplitBar() async throws {
-        try await assertPreviewSnapshot("ExtendedSplitBar") { appModel in
-            RolePlayGameKit.ExtendedSplitBar(restoresState: false)
-                .environment(appModel)
-        }
-    }
-
-    // snapshot-root: RolePlayGameKit::ExtendedSplitWithDetailView
-    @Test("ExtendedSplitWithDetailView")
-    func snapshotExtendedSplitWithDetailView() async throws {
-        try await assertPreviewSnapshot("ExtendedSplitWithDetailView") { appModel in
-            RolePlayGameKit.ExtendedSplitWithDetailView(
-                tab: .maps,
-                column: .constant(.all),
-                preferredCompactColumn: .constant(.sidebar),
-                appModel: appModel
-            )
-            .environment(appModel)
-        }
-    }
-
     // snapshot-root: RolePlayGameKit::ExtendedTabBar
     @Test("ExtendedTabBar")
     func snapshotExtendedTabBar() async throws {

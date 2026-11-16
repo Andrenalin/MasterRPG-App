@@ -12,6 +12,18 @@ public final class AppGameStateModel: Sendable {
     public var isGameRunning: Bool
     public var gameModus: GameModus
     
+    /// Maps the state of the running game to the two fields. Assigns a field only when it
+    /// changes, so readers of the other one are not invalidated. See CODE_AUDIT_26 §9.33.
+    public func update(isRunning: Bool, isMaster: Bool) {
+        if isGameRunning != isRunning {
+            isGameRunning = isRunning
+        }
+        let newModus: GameModus = isRunning ? (isMaster ? .master : .player) : .edit
+        if gameModus != newModus {
+            gameModus = newModus
+        }
+    }
+
     public static func preview(isGameRunning: Bool) -> AppGameStateModel {
         AppGameStateModel(isGameRunning: isGameRunning)
     }

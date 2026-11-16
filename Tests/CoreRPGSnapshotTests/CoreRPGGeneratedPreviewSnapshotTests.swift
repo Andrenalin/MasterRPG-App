@@ -1337,16 +1337,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::NavigationProvidedView
-    @Test("NavigationProvidedView")
-    func snapshotNavigationProvidedView() async throws {
-        try await assertPreviewSnapshot("NavigationProvidedView") {
-            CoreRPG.NavigationProvidedView(for: InternalRoute.removeAlert) {
-                Text(verbatim: "Navigation placeholder")
-            }
-        }
-    }
-
     // snapshot-root: CoreRPG::CloudKitSyncStatusView
     @Test("CloudKitSyncStatusView")
     func snapshotCloudKitSyncStatusView() async throws {
@@ -1677,7 +1667,6 @@ private func assertPreviewSnapshot<Content: View>(
             .environment(AppFocusModel())
             .environment(SearchBarVisibleModel())
             .environment(ScenesManager())
-            .environment(OptionKeyDownModel())
             .environment(GroupItemSelectionModel())
             .environment(ItemRootController.previewFixture())
             .cloudKitAccountChecksEnabled(false)

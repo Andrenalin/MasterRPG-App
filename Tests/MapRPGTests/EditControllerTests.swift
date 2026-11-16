@@ -233,18 +233,6 @@ struct EditControllerTests {
         #expect(blockedRows.isEmpty)
         #expect(map.entries.map(\.id) == [keepId, removeId])
         #expect(map.entries.first?.content == "updated")
-
-        sut.replace(
-            itemId: map.id,
-            with: [
-                MapEntryModel(id: keepId, name: "Ignored", content: "replaced", coordinates: []),
-                MapEntryModel(id: removeId, name: "Ignored", content: "saved", coordinates: [])
-            ]
-        )
-
-        #expect(map.entries.first?.id == keepId)
-        #expect(map.entries.first?.content == "replaced")
-        #expect(map.entries.last?.content == "saved")
     }
 
     /// Map content (entries/pins/rooms) must always stay in game memory while a

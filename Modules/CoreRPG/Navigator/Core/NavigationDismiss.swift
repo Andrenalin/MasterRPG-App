@@ -32,19 +32,6 @@ extension Navigator {
         return true
     }
 
-    /// Dismisses presented sheet or fullScreenCover views presented by this Navigator.
-    /// ```swift
-    /// Button("Dismiss") {
-    ///     navigator.dismissPresentedViews()
-    /// }
-    /// ```
-    /// This is used in the parent view to dismiss its children, effectively the opposite of `dismiss()`.
-    @MainActor
-    public func dismissPresentedViews() {
-        sheet = nil
-        cover = nil
-    }
-
     /// Dismisses *any* `ManagedNavigationStack` or `ManagedPresentationView` presented by this Navigator
     /// or by any child of this Navigator in the current navigation tree.
     /// ```swift
@@ -77,10 +64,6 @@ extension Navigator {
     @MainActor
     @discardableResult
     public func dismissAny() throws -> Bool {
-        guard !isNavigationLocked else {
-            log(.warning("Navigator \(id) error navigation locked"))
-            throw NavigationError.navigationLocked
-        }
         return root.dismissAnyChildren()
     }
 

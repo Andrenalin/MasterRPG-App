@@ -18,8 +18,6 @@ extension Logger {
 /// - Efficient module loading
 struct SharingView: View {
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
     // MARK: - Properties
     
     let itemProviders: [NSItemProvider]
@@ -42,7 +40,6 @@ struct SharingView: View {
     @State private var saveErrorMessage: String?
     /// Shared items that could not be read; shown above the content.
     @State private var skippedItemCount = 0
-    @State private var containerSize: CGSize = .zero
 
     private let performsInitialization: Bool
     
@@ -80,17 +77,20 @@ struct SharingView: View {
             if isLoading {
                 SharingLoadingView(cancelAction: close)
             } else if let errorMessage {
-                errorView(message: errorMessage)
+                SharingErrorView(message: errorMessage, closeAction: close)
             } else {
-                contentView(size: containerSize)
+                SharingContentView(
+                    imageListModel: imageListModel,
+                    moduleChooserModel: moduleChooserModel,
+                    inputModel: inputModel,
+                    skippedItemCount: skippedItemCount,
+                    isSaving: isSaving,
+                    closeAction: close,
+                    saveContent: saveContent
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { newValue in
-            containerSize = newValue
-        }
         .task {
             guard performsInitialization else { return }
             await initialize()
@@ -111,80 +111,6 @@ struct SharingView: View {
     }
     
     // MARK: - Views
-
-    private func errorView(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundStyle(.red)
-                .accessibilityHidden(true)
-            
-            Text("Error", bundle: .main)
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-            
-            Text(verbatim: message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            
-            Button {
-                close()
-            } label: {
-                Text("Close", bundle: .main)
-            }
-            .buttonStyle(.bordered)
-            .frame(minHeight: 44)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private func contentView(size: CGSize) -> some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                SharingHeader(cancelAction: close)
-
-                if skippedItemCount > 0 {
-                    Label {
-                        Text("\(skippedItemCount) shared items could not be read and were left out.", bundle: .main)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                    }
-                    .foregroundStyle(.orange)
-                    .font(.footnote)
-                }
-
-                ModuleChooserView(model: moduleChooserModel)
-                
-                PhotoSection(imageList: imageListModel, size: size)
-                
-                SharingInput(model: inputModel)
-
-                SharingSaveButtonView(
-                    inputModel: inputModel,
-                    canSave: ShareExtensionError.canSave(
-                        to: moduleChooserModel.currentModule,
-                        imageCount: imageListModel.images.count
-                    ),
-                    saveContent: saveContent
-                )
-
-                Spacer(minLength: 0)
-            }
-            .animation(reduceMotion ? nil : .bouncy, value: moduleChooserModel.showPhotoWarning)
-            .animation(reduceMotion ? nil : .bouncy, value: imageListModel.images)
-        }
-        .keyboardAvoiding()
-        .padding()
-        .disabled(isSaving)
-        .accessibilityHidden(isSaving)
-        .overlay {
-            if isSaving {
-                SharingSavingOverlayView()
-            }
-        }
-    }
 
     // MARK: - Initialization
     
@@ -286,6 +212,97 @@ struct SharingView: View {
 }
 
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SharingErrorView: View {
+    let message: String
+    let closeAction: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.red)
+                .accessibilityHidden(true)
+
+            Text("Error", bundle: .main)
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            Text(verbatim: message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button {
+                closeAction()
+            } label: {
+                Text("Close", bundle: .main)
+            }
+            .buttonStyle(.bordered)
+            .frame(minHeight: 44)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SharingContentView: View {
+    let imageListModel: ImageListModel
+    let moduleChooserModel: ModuleChooserModel
+    let inputModel: InputModel
+    let skippedItemCount: Int
+    let isSaving: Bool
+    let closeAction: () -> Void
+    let saveContent: () async -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                SharingHeader(cancelAction: closeAction)
+
+                if skippedItemCount > 0 {
+                    Label {
+                        Text("\(skippedItemCount) shared items could not be read and were left out.", bundle: .main)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                    }
+                    .foregroundStyle(.orange)
+                    .font(.footnote)
+                }
+
+                ModuleChooserView(model: moduleChooserModel)
+
+                PhotoSection(imageList: imageListModel)
+
+                SharingInput(model: inputModel)
+
+                SharingSaveButtonView(
+                    inputModel: inputModel,
+                    canSave: ShareExtensionError.canSave(
+                        to: moduleChooserModel.currentModule,
+                        imageCount: imageListModel.images.count
+                    ),
+                    saveContent: saveContent
+                )
+
+                Spacer(minLength: 0)
+            }
+            .animation(reduceMotion ? nil : .bouncy, value: moduleChooserModel.showPhotoWarning)
+            .animation(reduceMotion ? nil : .bouncy, value: imageListModel.images)
+        }
+        .keyboardAvoiding()
+        .padding()
+        .disabled(isSaving)
+        .accessibilityHidden(isSaving)
+        .overlay {
+            if isSaving {
+                SharingSavingOverlayView()
+            }
+        }
+    }
+}
 
 private struct SharingLoadingView: View {
     /// The sheet is not dismissable by swipe, so loading needs its own way out.

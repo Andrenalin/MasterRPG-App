@@ -33,18 +33,11 @@ struct InlineRowViewer: View, Equatable {
                     }
                 }
             } else {
-                root.diceRoot.viewController.rowViewer(source: diceSource, destination: destination)
+                root.diceRoot.viewController.rowViewer(source: source, destination: destination)
             }
         default:
             EmptyView()
         }
-    }
-    
-    var diceSource: ItemRowModel {
-        guard let newDiceId = root.gameController.gameDiceId(itemId: destination.itemId, entryId: destination.entryId ?? UUID()) else {
-            return source
-        }
-        return ItemRowModel(itemId: newDiceId, typeId: .dice)
     }
     
     var module: NetworkModules {

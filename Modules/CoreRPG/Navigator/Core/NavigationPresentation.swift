@@ -40,21 +40,6 @@ extension Navigator {
             navigate(to: destination, method: .cover)
         }
     }
-
-    /// Returns true if any child of the current ManagedNavigationStack or navigationDismissible is presenting.
-    public func isAnyChildPresenting() -> Bool {
-        _children.values.first(where: {
-            if let object = $0.object, object.isPresented || object.isAnyChildPresenting() {
-                return true
-            }
-            return false
-        }) != nil
-    }
-
-    /// Returns NavigationDestination of sheet or cover we're currently presenting, if any.
-    public var presentingSheetOrCover: (any NavigationDestination)? {
-        (sheet ?? cover)?.wrapped as? any NavigationDestination
-    }
 }
 
 extension View {

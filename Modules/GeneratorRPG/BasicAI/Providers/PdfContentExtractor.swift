@@ -119,7 +119,7 @@ struct PdfContentExtractor: Sendable {
                 // are skipped (CODE_AUDIT_17 §5.20). See CODE_AUDIT_18 §3.4.
                 throw CancellationError()
             } catch let error as LanguageModelSession.GenerationError {
-                lastFailure = handleGenerationError(error)
+                lastFailure = FoundationModelsErrorHandler.message(for: error, subject: .pdfExtraction)
                 failedPages.append(page.pageNumber)
                 Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(lastFailure, privacy: .public)")
             } catch {
@@ -166,60 +166,6 @@ struct PdfContentExtractor: Sendable {
         """
     }
     
-    private func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
-        switch error {
-        case .exceededContextWindowSize:
-            return String(
-                localized: "PDF content is too large for processing. Try a smaller document or fewer pages.",
-                bundle: .module
-            )
-        case .guardrailViolation:
-            return String(
-                localized: "Content policy prevented extraction. The PDF may contain inappropriate content.",
-                bundle: .module
-            )
-        case .unsupportedLanguageOrLocale:
-            return String(
-                localized: "The PDF language is not supported by Apple Intelligence.",
-                bundle: .module
-            )
-        case .assetsUnavailable(let reason):
-            return String(
-                localized: "Model assets are unavailable: \(String(describing: reason)). Please ensure Apple Intelligence is fully downloaded.",
-                bundle: .module
-            )
-        case .unsupportedGuide(let guide):
-            return String(
-                localized: "PDF extraction schema contains unsupported constraint: \(String(describing: guide)). This is a developer error.",
-                bundle: .module
-            )
-        case .decodingFailure(let reason):
-            return String(
-                localized: "Failed to decode PDF content: \(String(describing: reason)). The document may have unusual formatting.",
-                bundle: .module
-            )
-        case .rateLimited(let retryAfter):
-            return String(
-                localized: "Rate limit exceeded. Please try again in \(String(describing: retryAfter)) seconds.",
-                bundle: .module
-            )
-        case .concurrentRequests(let maxCount):
-            return String(
-                localized: "Too many concurrent extraction requests. Maximum allowed: \(String(describing: maxCount)). Please wait for current extractions to complete.",
-                bundle: .module
-            )
-        case .refusal(let reason, let category):
-            return String(
-                localized: "Extraction refused: \(String(describing: reason)) (category: \(String(describing: category))). The PDF content may violate content policies.",
-                bundle: .module
-            )
-        @unknown default:
-            return String(
-                localized: "An unexpected generation error occurred: \(error.localizedDescription)",
-                bundle: .module
-            )
-        }
-    }
     
     // MARK: - Constants
     

@@ -78,10 +78,7 @@ public extension SyncDataControllable {
         // store's items from the lists. See CODE_AUDIT_21 §3.1.
         guard let dataControllable = itemControllable.dataControllable else { return }
 
-        await CloudKitOperationCounter.shared.recordOperation(
-            function: "SyncDataControllable.updateFromSync(deleted:\(batch.deletedIds.count) inserted:\(batch.insertedIds.count) updated:\(batch.updatedIds.count))",
-            file: "SyncDataControllable.swift"
-        )
+        CloudKitOperationCounter.shared.recordOperation(function: "SyncDataControllable.updateFromSync(deleted:\(batch.deletedIds.count) inserted:\(batch.insertedIds.count) updated:\(batch.updatedIds.count))")
 
         // Process deletions — diff the reported ids against Core Data's actual
         // current ids rather than trusting `deletedIds` directly.

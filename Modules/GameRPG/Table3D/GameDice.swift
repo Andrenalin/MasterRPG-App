@@ -54,29 +54,13 @@ struct DiceComponent: Component {
     let sides: Int
 }
 
-/// Off-table park position for a pool die that isn't part of any seat's
-/// currently focused set — every die's initial pose (`Die20`/`Die.init`),
-/// and reapplied by `GameTableModel.applyDiceRoll` whenever a previously-
-/// active slot falls out of the focused set. Replaces this table's
-/// original approach of leaving the die at its (irrelevant) nominal
-/// position and hiding it by setting `Entity.isEnabled = false` instead.
+/// Off-table park position for a pool die that is not part of any seat's focused set: every die's
+/// initial pose, and reapplied by `GameTableModel.applyDiceRoll` when a slot leaves the focused set.
 ///
-/// `Entity.isEnabled` is a purely local, unsynced RealityKit property —
-/// none of Apple's own TabletopKit samples (dice, cards, the coin-
-/// collecting mini-game) ever set it on equipment; every hide/park/reset
-/// they show goes through the equipment's own *synced* pose or parentID
-/// instead (e.g. the playing-card sample's own off-table `poseOffTable`
-/// pattern this mirrors, or the mini-game's `ResetPlayer` moving a piece to
-/// `.bankID(for:)`). A permanently-disabled die — every pool slot, from
-/// creation, until its owning seat actually rolls — was never enabled on a
-/// joining player's own device, and it turned out that also meant it was
-/// never registered as "static equipment" for TabletopKit's own RealityKit-
-/// level shared-simulation join there. The very first snapshot read that
-/// touched one of those still-disabled dice crashed with "Could not find
-/// static equipment with identifier: ...". Far outside the table's
-/// 2.0×1.5 m surface (`GameMetrics.tableLength`/`tableWidth`) and every
-/// seat position (`PlayerSeat.seatPoses`), so a parked die reads as
-/// plainly off-table rather than overlapping a claimed seat.
+/// Dice are parked by their synced pose, never by `Entity.isEnabled`: a permanently disabled die
+/// was never registered as static equipment on a joining player's device, and the first snapshot
+/// read of one crashed with "Could not find static equipment with identifier: ...". Far outside the
+/// table surface and every seat position, so a parked die never overlaps a claimed seat.
 extension TableVisualState.Pose2D {
     static var parkedDicePose: Self {
         .init(position: .init(x: -5, z: -5), rotation: .zero)

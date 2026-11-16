@@ -45,7 +45,6 @@ struct ViewControllerTests {
         _ = sut.batchExtractionView(itemController: root.itemController, editController: root.editController, ids: [itemId])
         _ = sut.batchExtractionView(itemController: roots.dice.itemController, editController: root.editController, ids: [itemId])
         _ = sut.characterSelection(root: root, selectionModel: selectionModel)
-        _ = sut.diceSelection(root: root, selectionModel: selectionModel)
         _ = sut.photoSelection(root: root, selectionModel: selectionModel)
         _ = sut.linkListView(type: .inspector, itemSelectionModel: selectionModel)
         _ = sut.windowViewer(root: root, selection: WindowItemSelection(itemId: itemId))

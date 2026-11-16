@@ -295,15 +295,16 @@ extension LinkController {
 
 extension LinkController {
     /// The calculated number an entry's attached dice compares against (and scales its
-    /// die count by, via `DiceModel.addDiceEvery`), or `nil` for a non-number entry.
+    /// die count by, via `DiceModel.addDiceEvery`), or `nil` for an entry that carries no dice (text, selection).
     /// Resolves the entry's formula links through `calculate(entry:)`, so reading it
     /// inside a view's `body` lets Observation track every entry the formula depends on,
     /// at any link depth.
     @MainActor
     func diceCompareValue(itemId: UUID, entryId: UUID) -> Int? {
         let entry = itemController.itemOrEmpty(for: itemId)[entryId]
-        guard entry.type == .number else { return nil }
+        guard entry.supportsDice else { return nil }
         guard let valueText = calculate(entry: entry) else { return nil }
-        return Int(valueText)
+        // A decimal value counts without its fraction, as a number entry's value already does.
+        return Double(valueText).map(ValueEntryModel.truncatedInt)
     }
 }

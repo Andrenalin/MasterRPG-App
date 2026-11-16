@@ -38,12 +38,6 @@ struct GameControllerTests {
         #expect(sut.currentItem().id == diceTableId)
         #expect(sut.gameItem(for: listTableId).id == listTableId)
 
-        #expect(sut.entry(for: listTableId, with: 1) == firstEntry.id)
-        #expect(sut.entry(for: listTableId, with: 2) == secondEntry.id)
-        #expect(sut.entry(for: listTableId, with: 0) == nil)
-        #expect(sut.entry(for: listTableId, with: 3) == nil)
-        #expect(sut.entry(for: diceTableId, with: 2) == diceFirstEntry.id)
-        #expect(sut.entry(for: diceTableId, with: 5) == diceSecondEntry.id)
 
         sut.addResult(ResultCategory(id: listTableId, module: .table), value: "Top Level")
         #expect(sut.gameItem(for: listTableId).diceResult == "Top Level")

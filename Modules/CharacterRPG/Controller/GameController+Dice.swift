@@ -14,8 +14,7 @@ extension GameController {
     @MainActor
     func gameDiceId(itemId: UUID, entryId: UUID) -> UUID? {
         let entry = gameItem(for: itemId)[entryId]
-        guard let diceId = entry.diceId else { return nil }
-        guard entry.type == .number else { return diceId }
+        guard let diceId = entry.diceId, entry.supportsDice else { return nil }
         guard gameDiceModel.gameEntryDiceId[entryId] == diceId else { return nil }
         return gameDiceModel.gameDiceId[entryId]
     }
@@ -31,8 +30,7 @@ extension GameController {
     @discardableResult
     func ensureGameDice(itemId: UUID, entryId: UUID) -> UUID? {
         let entry = gameItem(for: itemId)[entryId]
-        guard let diceId = entry.diceId else { return nil }
-        guard entry.type == .number else { return diceId }
+        guard let diceId = entry.diceId, entry.supportsDice else { return nil }
         return cachedGameDice(key: entryId, diceId: diceId)
     }
 

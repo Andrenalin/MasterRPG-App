@@ -76,7 +76,7 @@ extension SheetController: SheetControllable {
 
         var inlineEntries: [SheetModel] = []
         // A group value (an entry that holds a sub-value) shows no dice of its own.
-        if let diceId = entry.diceId, entry.valueId == nil {
+        if let diceId = entry.diceId, entry.valueId == nil, entry.supportsDice {
             inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level, isShown: true, destination: destination))
         }
 
@@ -235,7 +235,7 @@ extension SheetController: SheetControllable {
             existingSheetModel.hasChanged = true
         }
         // Update per-entry dice inline
-        if let diceId = entry.diceId, entry.valueId == nil {
+        if let diceId = entry.diceId, entry.valueId == nil, entry.supportsDice {
             let destination = ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemController.config.module)
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
             let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: item.id, level: sheetModel.level, isShown: true, destination: destination)

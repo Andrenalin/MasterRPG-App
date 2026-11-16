@@ -19,6 +19,8 @@ struct ItemEditorBackgroundView<Editor: View>: View {
     /// importer, avoids that collision rather than fighting it.
     var editorOnTop: Bool = false
 
+    @ScaledMetric private var editorTopInset: CGFloat = 96
+
     var body: some View {
         Group {
             if editorOnTop {
@@ -45,8 +47,6 @@ struct ItemEditorBackgroundView<Editor: View>: View {
         .accessibilityHidden(!shouldShowContent)
         .transition(.opacity)
     }
-
-    private var editorTopInset: CGFloat { 96 }
 }
 
 private struct OverlaysBaseView: View {

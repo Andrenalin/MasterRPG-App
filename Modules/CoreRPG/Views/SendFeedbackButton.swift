@@ -80,7 +80,7 @@ private struct SendFeedbackButtonButtonView: View {
                 }
             }
         } label: {
-            Image(systemName: allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up")
+            Image(systemName: shareSymbolName(allReported: allReported, secondActionIcon: secondActionIcon))
                 .imageScale(.large)
                 .symbolEffect(.disappear, isActive: isSending)
                 .overlay {
@@ -92,12 +92,7 @@ private struct SendFeedbackButtonButtonView: View {
                 // white on the selected tint, primary on the plain glass.
                 .foregroundStyle(allReported ? Color.white : Color.primary)
         }
-        .selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)
-        .accessibilityLabel(
-            allReported && secondAction != nil
-                ? Text("Perform follow-up action", bundle: .module)
-                : Text("Share", bundle: .module)
-        )
+        .shareRoundButton(allReported: allReported, module: module, hasSecondAction: secondAction != nil)
         .onChange(of: isSending) {
             guard isSending else { return }
             withAnimation(accessibilityReduceMotion ? nil : .default) { isUpdating = true }

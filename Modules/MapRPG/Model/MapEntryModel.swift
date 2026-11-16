@@ -15,17 +15,6 @@ public enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable
     public var id: Int {
         rawValue
     }
-
-    var text: String {
-        switch self {
-        case .master:
-            return "Master"
-        case .player:
-            return "Player"
-        case .reader:
-            return "Reader"
-        }
-    }
 }
 
 public struct MapEntryModel: Identifiable, Equatable, Hashable, Codable, Sendable {

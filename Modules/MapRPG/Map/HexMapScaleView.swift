@@ -9,6 +9,7 @@ enum HexMapScaleAppearance {
 }
 
 struct HexMapScaleView: View {
+    @ScaledMetric private var iconSize: CGFloat = 24
     @Bindable var model: MapEditorSession
     let appearance: HexMapScaleAppearance
     let onToggle: () -> Void
@@ -45,7 +46,7 @@ struct HexMapScaleView: View {
                 let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
                 Image(systemName: symbolName)
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .frame(width: 24, height: 24)
+                    .frame(width: iconSize, height: iconSize)
                     .accessibilityLabel(Text("Hex Grid", bundle: .module))
                     .accessibilityValue(
                         model.isHexMap

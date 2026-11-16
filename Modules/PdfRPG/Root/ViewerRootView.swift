@@ -18,7 +18,6 @@ struct ViewerRootView: View {
     @Environment(PdfRootModel.self) private var root
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var searchModel = PdfSearchModel()

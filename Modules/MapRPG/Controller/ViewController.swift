@@ -59,10 +59,6 @@ extension ViewController {
         root.characterRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
     }
     
-    @MainActor func diceSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.diceRoot.viewController.dropChooseView(model: selectionModel)
-    }
-    
     @MainActor func photoSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.photoRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
     }

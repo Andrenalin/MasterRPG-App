@@ -546,13 +546,7 @@ private extension CoreDataController {
         context.logPendingSave("context")
 #endif
 
-        // Log CloudKit operation before save
-        Task {
-            await CloudKitOperationCounter.shared.recordOperation(
-                function: "CoreDataController.saveCoreData() -> context.save()",
-                file: "CoreDataController.swift"
-            )
-        }
+        CloudKitOperationCounter.shared.recordOperation(function: "CoreDataController.saveCoreData() -> context.save()")
 
         try context.save()
     }

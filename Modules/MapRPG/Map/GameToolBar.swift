@@ -249,7 +249,7 @@ private struct GameToolBarPinScaleView<Session: GameToolBarSession>: View {
 #if !os(tvOS)
             Text("Pin Scale", bundle: .module)
 
-            Slider(value: $model.pinScale, in: 0.5 ... 3.5) {
+            Slider(value: $model.pinScale, in: MapEditorScaleRanges.pinScale) {
                 Text("Pin Scale", bundle: .module)
             }
             .labelsHidden()
@@ -299,7 +299,7 @@ private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
             Text("Hex Scale", bundle: .module)
                 .foregroundStyle(.primary)
 
-            Slider(value: $model.hexScale, in: 20 ... 200) {
+            Slider(value: $model.hexScale, in: MapEditorScaleRanges.hexScale) {
                 Text("Hex Scale", bundle: .module)
             } onEditingChanged: { isEditing in
                 isEditingHexScale = isEditing

@@ -516,6 +516,41 @@ struct LinkControllerTests {
         #expect(root.gameController.ensureGameDice(itemId: itemId, entryId: entry.id) == created)
     }
 
+    /// Only number and decimal entries carry dice: a text or selection entry that still holds a
+    /// `diceId` shows none, and a decimal entry compares its dice against its value like a number.
+    @Test func diceOnlyForNumberAndDecimalEntries() async throws {
+        let root = Self.makeRoot()
+        let edit = root.editController
+        let diceTemplate = Self.addScalingDice(to: root)
+
+        let itemId = await root.itemController.addNew(type: .character)
+        let number = ValueEntryModel(id: UUID(), name: "Number", type: .number, value: "45", diceId: diceTemplate.id)
+        let decimal = ValueEntryModel(id: UUID(), name: "Decimal", type: .decimal, value: "41.5", diceId: diceTemplate.id)
+        let text = ValueEntryModel(id: UUID(), name: "Text", type: .text, value: "45", diceId: diceTemplate.id)
+        let selection = ValueEntryModel(id: UUID(), name: "Selection", type: .selection, value: "45", diceId: diceTemplate.id)
+        for entry in [number, decimal, text, selection] {
+            edit.add(entry: entry, itemId: itemId)
+        }
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        let sut = root.gameController
+        let numberDice = try #require(sut.ensureGameDice(itemId: itemId, entryId: number.id))
+        let decimalDice = try #require(sut.ensureGameDice(itemId: itemId, entryId: decimal.id))
+        #expect(numberDice != decimalDice)
+        #expect(sut.gameDiceId(itemId: itemId, entryId: decimal.id) == decimalDice)
+
+        #expect(sut.ensureGameDice(itemId: itemId, entryId: text.id) == nil)
+        #expect(sut.gameDiceId(itemId: itemId, entryId: text.id) == nil)
+        #expect(sut.ensureGameDice(itemId: itemId, entryId: selection.id) == nil)
+        #expect(sut.gameDiceId(itemId: itemId, entryId: selection.id) == nil)
+
+        #expect(root.linkController.diceCompareValue(itemId: itemId, entryId: number.id) == 45)
+        #expect(root.linkController.diceCompareValue(itemId: itemId, entryId: decimal.id) == 41)
+        #expect(root.linkController.diceCompareValue(itemId: itemId, entryId: selection.id) == nil)
+    }
+
     /// Entry B has an attached dice whose die count scales with B's calculated value
     /// (`DiceModel.addDiceEvery`/`resetDice()`), and B's formula links to entry A.
     /// Covers the first edit (which promotes the character into `gameItemData`) and

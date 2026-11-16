@@ -2,57 +2,42 @@
 
 import Foundation
 import os.log
+import Synchronization
 
 // MARK: - CloudKit Operation Counter
 
-// Actually enforces something (a periodic reset + a one-time-per-window log warning) instead
-// of being pure write-only telemetry nobody ever read or reset — see
-// CODE_AUDIT §9.2. `warningThreshold` is a heuristic, not an Apple-documented CloudKit quota:
-// it exists to surface an unusually chatty day of Core Data saves/file operations in the log
-// before they risk CloudKit's actual per-request rate limits, not to enforce a real limit.
-actor CloudKitOperationCounter {
+/// Counts file operations and Core Data saves and logs one warning when a window passes
+/// `warningThreshold`. The threshold is a heuristic, not an Apple-documented CloudKit quota: it
+/// surfaces an unusually chatty day of saves and file operations before they risk CloudKit's
+/// real per-request rate limits. A lock instead of an actor, so recording one is a plain
+/// synchronous call: no `Task` per save, no actor hop. The window restarts on the first
+/// operation after `windowLength`. See CODE_AUDIT §9.2, CODE_AUDIT_26 §9.10.
+final class CloudKitOperationCounter: Sendable {
     static let shared = CloudKitOperationCounter()
 
     private static let warningThreshold = 1_000
-    private static let resetInterval: Duration = .seconds(24 * 60 * 60)
+    private static let windowLength: TimeInterval = 24 * 60 * 60
 
-    private var operationCount = 0
-    private var startTime = Date()
-    private var hasWarnedThisWindow = false
-    private var resetTask: Task<Void, Never>?
+    private struct Window {
+        var count = 0
+        var start = Date()
+        var hasWarned = false
+    }
 
-    init() {
-        // Reached via `Self.shared`/`CloudKitOperationCounter.shared`, not a `self` capture:
-        // an actor's synchronous init only permits nonisolated access to `self` once a closure
-        // in its body has captured `self` for later (Sendable/escaping) use, so this task
-        // deliberately avoids capturing `self` at all — it only reaches back into the actor
-        // once the singleton is fully constructed, when the task actually runs.
-        resetTask = Task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: Self.resetInterval)
-                await CloudKitOperationCounter.shared.reset()
+    private let window = Mutex(Window())
+
+    func recordOperation(function: String) {
+        let crossedSince: Date? = window.withLock { window in
+            if Date().timeIntervalSince(window.start) > Self.windowLength {
+                window = Window()
             }
+            window.count += 1
+            guard window.count >= Self.warningThreshold, !window.hasWarned else { return nil }
+            window.hasWarned = true
+            return window.start
         }
-    }
-
-    deinit {
-        resetTask?.cancel()
-    }
-
-    func recordOperation(function: String, file: String) {
-        operationCount += 1
-        let elapsed = Date().timeIntervalSince(startTime)
-        Logger.fileStore.info("☁️ CloudKit Op #\(self.operationCount, privacy: .public) [\(elapsed, privacy: .public)s] - \(function, privacy: .public)")
-
-        guard operationCount >= Self.warningThreshold, !hasWarnedThisWindow else { return }
-        hasWarnedThisWindow = true
-        Logger.fileStore.warning("☁️ CloudKit operation count has crossed \(Self.warningThreshold, privacy: .public) since \(self.startTime, privacy: .public) — check for a sync loop or an unusually chatty batch.")
-    }
-
-    func reset() {
-        operationCount = 0
-        startTime = Date()
-        hasWarnedThisWindow = false
+        guard let crossedSince else { return }
+        Logger.fileStore.warning("☁️ Operation count has crossed \(Self.warningThreshold, privacy: .public) since \(crossedSince, privacy: .public) (last: \(function, privacy: .public)) — check for a sync loop or an unusually chatty batch.")
     }
 }
 
@@ -111,7 +96,7 @@ struct CloudDocumentController: Sendable {
     }
     
     func write(data: Data, to filePath: String) async throws {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.write(data:to:)", file: "CloudDocumentController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.write(data:to:)")
         
         let fileUrl = try destinationUrl(filePath: filePath)
         // Batch both operations into single coordinated access
@@ -133,13 +118,13 @@ struct CloudDocumentController: Sendable {
     }
 
     func download(fileUrl: URL) async throws {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(fileUrl:)", file: "CloudDocumentController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(fileUrl:)")
 
         try await FileManager.default.download(coordinatingAccessAt: downloadUrl(for: fileUrl))
     }
 
     func download(filePath: String) async throws {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(filePath:)", file: "CloudDocumentController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(filePath:)")
         
         try await FileManager.default.download(coordinatingAccessAt: destinationUrl(filePath: filePath))
     }
@@ -153,13 +138,12 @@ struct CloudDocumentController: Sendable {
             // otherwise collide on the same destination path: the second write
             // silently overwrites the first item's bytes, and deleting either item
             // then deletes the file for both. Dedupe against the destination root
-            // the same way the sibling `move(url:newCategory:)`/`move(url:newName:)`
-            // already do. See CODE_AUDIT_17 §5.4.
+            // the same way `move(url:newName:)` already does. See CODE_AUDIT_17 §5.4.
             //
             // The free name is only a suggestion: another import can take it before the copy
             // lands, so the copy never replaces and the next name is tried when it loses the race.
             // See CODE_AUDIT §5.1.
-            await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.createNameUrl(for:)", file: "CloudDocumentController.swift")
+            CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.createNameUrl(for:)")
             var name = try await suggestedFileName(for: "", filename: filename)
             for attempt in 1...Self.maximumCopyNameAttempts {
                 do {
@@ -177,50 +161,16 @@ struct CloudDocumentController: Sendable {
     /// are attempts all get one.
     private static let maximumCopyNameAttempts = 50
 
-    /// Copies the picked file file-to-file: reading it into memory first spiked memory for
-    /// large audio, USDZ or PDF files. See CODE_AUDIT_19 §7.1.
-    func move(sourceUrl: URL, destinationFilename: String) async throws -> String {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(sourceUrl:destinationFilename:)", file: "CloudDocumentController.swift")
-        
-        try await copy(from: sourceUrl, to: destinationFilename)
-        return destinationFilename
-    }
-
-    /// Copies `sourceUrl` to `filePath` below the module folder without reading it into memory.
-    /// See CODE_AUDIT_19 §7.1.
-    func copy(from sourceUrl: URL, to filePath: String) async throws {
-        try await FileManager.default.copyReplacingItem(coordinatingAccessFrom: sourceUrl, to: destinationUrl(filePath: filePath))
-    }
-
-    /// Like `copy(from:to:)`, but throws `fileWriteFileExists` when `filePath` is already taken
-    /// instead of replacing that file. See CODE_AUDIT_Folder §3.18.
+    /// Copies `sourceUrl` to `filePath` below the module folder file-to-file (reading it into
+    /// memory first spiked memory for large audio, USDZ or PDF files, CODE_AUDIT_19 §7.1). Throws
+    /// `fileWriteFileExists` when `filePath` is already taken instead of replacing that file.
+    /// See CODE_AUDIT_Folder §3.18.
     func copyWithoutReplacing(from sourceUrl: URL, to filePath: String) async throws {
         try await FileManager.default.copyItemWithoutReplacing(coordinatingAccessFrom: sourceUrl, to: destinationUrl(filePath: filePath))
     }
 
-    func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newCategory:)", file: "CloudDocumentController.swift")
-        
-        var pathComponents = url.pathComponents
-        guard let filename = pathComponents.last, pathComponents.count > 1 else { return nil }
-        pathComponents[0] = destination
-        let path = pathComponents.dropLast().joined(separator: "/")
-        let newFilename = try await suggestedFileName(for: path, filename: filename)
-        let newPath = path.appending("/\(newFilename)")
-        
-        guard let sourceUrl = fullUrl(fileUrl: url) else { return nil }
-        let destUrl = try destinationUrl(filePath: newPath)
-        
-        // Directory creation and move in one coordinated write of source and destination: the
-        // source is also an iCloud file other processes may touch. See CODE_AUDIT §5.2.
-        try await FileManager.default.moveItem(coordinatingAccessFrom: sourceUrl, to: destUrl, createParentFolder: true)
-        
-        guard let relativeUrl = URL(string: newPath) else { return nil }
-        return (destUrl, relativeUrl)
-    }
-
     func move(url: URL, newName destination: String) async throws -> (URL, URL)? {
-        await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newName:)", file: "CloudDocumentController.swift")
+        CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newName:)")
         
         // The folder and item names, split by hand. Parsed with `URL(string:)`, a `#` or `?` in a
         // name cut the path there and `%41` was decoded, so the file got a wrong name or
@@ -256,10 +206,6 @@ struct CloudDocumentController: Sendable {
 }
 
 extension CloudDocumentController {
-    static func suggestedFileName(for modulePath: String, filename: String, category: String) -> String {
-        "\(category)/\(filename)"
-    }
-    
     func suggestedFileName(for path: String, filename: String) async throws -> String {
         // The folder is listed once and the first free `name-N` is picked in memory; the
         // coordinated check of the chosen name stays as the guard against a name taken since

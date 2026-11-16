@@ -33,11 +33,7 @@ struct RouteDestinationView: View {
             case .dice:
                 DiceFactory.rootView()
             case .editors:
-#if os(visionOS)
-                ExtendedSplitBar()
-#else
                 ExtendedTabBar()
-#endif
             case .game:
                 GameSetupDestinationView()
             case .generator:

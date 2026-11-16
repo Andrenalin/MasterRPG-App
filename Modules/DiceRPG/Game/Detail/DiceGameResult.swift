@@ -5,7 +5,6 @@ import SwiftUI
 
 struct DiceGameResult: View {
     let itemId: UUID
-    let canShowPlayer: Bool
     let isTrailing: Bool
 
     @Environment(DiceRootModel.self) private var root
@@ -78,7 +77,7 @@ private struct DiceGameResultResultView: View {
 
 #Preview {
     ZStack(alignment: .topLeading) {
-        DiceGameResult(itemId: DiceModel.previewId, canShowPlayer: true, isTrailing: false)
+        DiceGameResult(itemId: DiceModel.previewId, isTrailing: false)
             .environment(DiceRootModel.preview)
             .environment(DiceDisplayModel())
             .environment(AppGameStateModel())

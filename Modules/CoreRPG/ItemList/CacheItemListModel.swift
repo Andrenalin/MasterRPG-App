@@ -10,12 +10,9 @@ public final class CacheItemListModel: Sendable {
     public enum CacheType: String, CaseIterable, Sendable {
         case name
         case description
-        case entryName
-        case content
         case row
         // Note: image and thumbnail cache moved to ImageCacheControllable.observableImageCache
         case image
-        case thumbnail
     }
     
     @ObservationIgnored

@@ -42,33 +42,33 @@ public final class GameRoot {
     let statisticsModel: GameStatisticsModel
     let gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
-    private var networkActionTasks: [UUID: Task<Void, Never>] = [:]
-    private var networkActionTail: Task<Void, Never>?
-    private var networkActionTailID: UUID?
-    private var demoTask: Task<Void, Never>?
+    var networkActionTasks: [UUID: Task<Void, Never>] = [:]
+    var networkActionTail: Task<Void, Never>?
+    var networkActionTailID: UUID?
+    var demoTask: Task<Void, Never>?
 
     /// Tracks an in-flight `stopGame()` so a `startGame`/`startMaster` call racing an
     /// unstructured `Task { await root.stopGame() }` (fired from `endGame()`) can't have its
     /// freshly-assigned controllers nulled out by the older, still-running teardown. Every
     /// entry point awaits this before proceeding, and `stopGame()` itself coalesces concurrent
     /// callers onto the same in-flight task rather than tearing down twice.
-    private var stopGameTask: Task<Void, Never>?
+    var stopGameTask: Task<Void, Never>?
     /// Which `stopGame` call created `stopGameTask`: only that teardown may clear it.
-    private var stopGameTaskToken: UUID?
+    var stopGameTaskToken: UUID?
     /// A `startGame` is running: a second call (double tap, intent and UI together) would reset
     /// the roster and the player controller under the first.
-    private var isStartingGame = false
+    var isStartingGame = false
 
     /// Set synchronously at the top of `startMaster` and cleared when it returns. The game is
     /// only `.started` after the adventure's game start has been awaited, so a second call in
     /// that window used to pass the `.stopped` guard and build a second master id and a second
     /// controller pair. See CODE_AUDIT_21 §3.2.
-    private var isStartingMaster = false
+    var isStartingMaster = false
 
     /// Bumped by every `stopGame`. A start that was running during a stop compares it after its
     /// suspensions and gives up, instead of building controllers and a `.started` game on top
     /// of the teardown. See CODE_AUDIT_23 §3.1.
-    private var stopGeneration = 0
+    var stopGeneration = 0
 
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel, gameJoinCodeModel: GameJoinCodeModel = GameJoinCodeModel()) {
         self.gameJoinCodeModel = gameJoinCodeModel
@@ -356,7 +356,7 @@ public final class GameRoot {
         }
     }
 
-    private func cancelOwnedTasks() {
+    func cancelOwnedTasks() {
         networkActionTasks.values.forEach { $0.cancel() }
         networkActionTasks.removeAll()
         networkActionTail = nil
@@ -395,423 +395,5 @@ extension GameRoot {
     func restoreSelectedCharacter(defaults: UserDefaults = .standard) {
         guard gameModel.selectedCharacter == nil else { return }
         resetSelectedCharacter(uuidString: defaults.string(forKey: GameStorageKeys.lastPlayerUUID) ?? "")
-    }
-}
-
-// MARK: - Master Control Game
-
-extension GameRoot {
-    func startMaster(supporterTier: SupporterTier = .none) async {
-        // Checked and set before the first suspension: a call that arrives while a start is
-        // running is ignored, it neither starts a second game nor stops the one being started.
-        // A start of either kind blocks the other: a Siri join racing a master start used to
-        // tear the other down.
-        guard !isStartingMaster, !isStartingGame else { return }
-        isStartingMaster = true
-        defer { isStartingMaster = false }
-        await awaitInFlightStop()
-        let generation = stopGeneration
-        guard gameModel.gameConfig.state == .stopped else {
-            await stopGame()
-            return
-        }
-        guard let id = gameModel.selectedAdventure else {
-            return
-        }
-
-        let adventureTitle = adventureRoot.networkTitle(for: id)
-        let masterGameModel = MasterGameModel(
-            id: UUID(),
-            type: .master,
-            name: gameMasterName,
-            adventureId: id,
-            adventureTitle: adventureTitle,
-            supporterTier: supporterTier
-        )
-        var newConfig = gameModel.gameConfig
-        newConfig.id = masterGameModel.id
-        newConfig.master = masterGameModel
-        gameModel.gameConfig = newConfig
-        gameModel.startGameTime = Date.now
-        #if os(visionOS)
-        gameModel.shareState.isMaster = true
-        #endif
-
-        // Bonjour advertises the adventure title (falling back to "GameMaster"
-        // when it's empty) plus the supporter tier, so browsing players see
-        // what adventure they're joining rather than a generic device label.
-        let advertisedName = adventureTitle.isEmpty ? gameMasterName : adventureTitle
-        networkStore.resetName(name: advertisedName, supporterTier: supporterTier)
-        networkProxyStore.resetName(name: advertisedName, supporterTier: supporterTier)
-        networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
-        installAudioCoordinatorChangeHandler()
-
-        await adventureRoot.adventureGameControllable.startGame(with: id)
-        guard generation == stopGeneration else { return }
-        gameModel.playerController = PlayerController(root: self, asGameMaster: true)
-        gameModel.masterController = MasterController(root: self, asProxy: false)
-        gameModel.tablePlayers = adventureRoot.adventureGameControllable.tablePlayers(for: id)
-
-        gameModel.gameConfig.state = .started
-        adventureRoot.startGame()
-
-        await beginStatisticsSession(for: .master, at: gameModel.startGameTime)
-
-        await gameModel.masterController?.start()
-        if !gameModel.tablePlayers.isEmpty {
-            // The table players' pins wait for the first shown map like a joined player's.
-            await gameModel.masterController?.resetPlayers()
-        }
-        await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: id))
-        guard generation == stopGeneration else { return }
-#if !os(tvOS)
-        adventureRoot.donateStartGame(of: id)
-#endif
-
-        KeepAwakeModel.shared.acquire(.game)
-    }
-}
-
-// MARK: - Player Control Game
-
-extension GameRoot {
-    private func name(for type: GameType) -> String {
-        switch type {
-        case .observer:
-            return String(localized: "Observer", bundle: .module)
-        case .proxy:
-            return String(localized: "Proxy", bundle: .module)
-        default:
-            return characterName
-        }
-    }
-
-    func startGame(
-        to model: BrowserGameModel?,
-        mode: GameType,
-        supporterTier: SupporterTier = .none,
-        joinCode: String = ""
-    ) async {
-        await awaitInFlightStop()
-        guard !isStartingGame, !isStartingMaster else {
-            Logger.networking.info("GameRoot: startGame ignored, another start is still running")
-            return
-        }
-        isStartingGame = true
-        defer { isStartingGame = false }
-        let generation = stopGeneration
-        // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
-        // boundary as well as in the setup UI so programmatic callers cannot join
-        // SharePlay by passing a nil target.
-        guard mode != .observer || model != nil else { return }
-        if (mode == .proxy || mode == .observer || mode == .demo) {
-            gameModel.selectedCharacter = nil
-        }
-        let playerGameModel = PlayerGameModel(
-            id: UUID(),
-            type: mode,
-            name: name(for: mode),
-            characterId: gameModel.selectedCharacter,
-            supporterTier: supporterTier,
-            companions: mode == .player ? Self.storedCompanions(for: gameModel.selectedCharacter) : []
-        )
-        gameModel.gameRoster = GameRosterModel(players: [playerGameModel])
-        gameModel.gameControl = .empty
-        var newConfig = gameModel.gameConfig
-        newConfig.id = playerGameModel.id
-        newConfig.state = .prepare
-        gameModel.gameConfig = newConfig
-        networkStore.resetName(name: name(for: mode), supporterTier: supporterTier)
-        if mode == .player {
-            networkProxyStore.resetName(name: characterName, supporterTier: supporterTier)
-            networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
-            installAudioCoordinatorChangeHandler()
-        }
-
-        await adventureRoot.adventureGameControllable.resetGame()
-        guard generation == stopGeneration else { return }
-        #if os(visionOS)
-        gameModel.shareState.isMaster = false
-        #endif
-        // Game mode before the player controller can process anything: a package the master
-        // sends while connecting was written to the permanent library otherwise. A failed start
-        // resets it again in `stopGame()`. See CODE_AUDIT_Folder §5.25.
-        adventureRoot.startGame()
-        let player = PlayerController(root: self, asGameMaster: mode == .demo)
-        gameModel.playerController = player
-
-        if mode == .demo {
-            await joinGame(for: mode, supporterTier: supporterTier)
-
-            KeepAwakeModel.shared.acquire(.game)
-        } else if await player.start(to: model, joinCode: joinCode) {
-            // A stop during the connect already tore the game down.
-            guard generation == stopGeneration else { return }
-            await joinGame(for: mode, supporterTier: supporterTier)
-
-            KeepAwakeModel.shared.acquire(.game)
-        } else {
-            await stopGame()
-        }
-    }
-
-    func joinGame(
-        for type: GameType,
-        supporterTier: SupporterTier = .none
-    ) async {
-        gameModel.startGameTime = Date.now
-        gameModel.playerGameStarted = true
-        var newConfig = gameModel.gameConfig
-        newConfig.state = .started
-        gameModel.gameConfig = newConfig
-        let companions = type == .player ? Self.storedCompanions(for: gameModel.selectedCharacter) : []
-        // Update the local player by id, not by index: a master broadcast
-        // processed during connect can already have replaced the roster, and
-        // index 0 may then be another player's entry.
-        if let index = gameModel.gameRoster.players.firstIndex(where: { $0.id == gameModel.gameConfig.id }) {
-            gameModel.gameRoster.players[index].type = type
-            gameModel.gameRoster.players[index].name = name(for: type)
-            gameModel.gameRoster.players[index].characterId = gameModel.selectedCharacter
-            gameModel.gameRoster.players[index].supporterTier = supporterTier
-            gameModel.gameRoster.players[index].companions = companions
-        } else {
-            gameModel.gameRoster.players.append(
-                PlayerGameModel(
-                    id: gameModel.gameConfig.id,
-                    type: type,
-                    name: name(for: type),
-                    characterId: gameModel.selectedCharacter,
-                    supporterTier: supporterTier,
-                    companions: companions
-                )
-            )
-        }
-        adventureRoot.startGame()
-        if type != .observer {
-            await characterRoot.valueGameControllable.startGame(for: gameModel.selectedCharacter)
-            await diceRoot.diceGameControllable.setFocusDice(on: characterRoot.valueGameControllable.focusDice(for: gameModel.selectedCharacter ?? UUID()))
-        }
-        await beginStatisticsSession(for: type, at: gameModel.startGameTime)
-    }
-
-    // both
-    func stopGame() async {
-        stopGeneration += 1
-        // Link actions (share/show from a text link) still running belong to the game that ends.
-        LinkActionTasks.cancelAll()
-        // Coalesce concurrent callers onto the single in-flight teardown instead of running
-        // it twice (or racing a fresh `startGame` — see `awaitInFlightStop()`).
-        if let stopGameTask {
-            await stopGameTask.value
-            return
-        }
-        let token = UUID()
-        let task = Task { @MainActor [weak self] in
-            guard let self else { return }
-            await performStopGame()
-            // Cleared by the teardown itself, without a suspension after it ended: a caller that
-            // resumed late used to clear the task of a later stop, or leave a finished one that a
-            // later `stopGame` coalesced onto without tearing anything down.
-            if stopGameTaskToken == token {
-                stopGameTask = nil
-                stopGameTaskToken = nil
-            }
-        }
-        stopGameTask = task
-        stopGameTaskToken = token
-        await task.value
-    }
-
-    private func awaitInFlightStop() async {
-        await stopGameTask?.value
-    }
-
-    /// A media-services reset replaces the audio engine and its playback coordinator: the
-    /// SharePlay controller must coordinate the new one, or the players hear nothing for the rest
-    /// of the session. See CODE_AUDIT_Audio2 §5.9.
-    private func installAudioCoordinatorChangeHandler() {
-        audioRoot.setAudioCoordinatorChangeHandler { [weak self] coordinator in
-            self?.networkStore.sharePlayStore.setup(audioCoordinator: coordinator)
-        }
-    }
-
-    private func performStopGame() async {
-        cancelOwnedTasks()
-        audioRoot.setAudioCoordinatorChangeHandler(nil)
-        mapRoot.mapGameControllable.resetBattleRound()
-        battleRoundBroadcastLog.reset()
-        await statisticsModel.checkpoint(participants: currentStatisticParticipants())
-        await statisticsModel.finishSession()
-        gameModel.playerGameStarted = false
-        gameModel.gameConfig.state = .stopped
-        // Guests of the 3D table belong to the game that ends here. See CODE_AUDIT_21 §5.12.
-        gameModel.tableGuests = [:]
-        gameModel.tableGuestMasterId = nil
-        await gameModel.masterController?.stop()
-        gameModel.masterController = nil
-        await gameModel.playerController?.stop()
-        gameModel.playerController?.uninstallMapPhotoActions()
-        gameModel.playerController = nil
-        // Only now: a message built while the controllers were stopping (a pending receipt, a
-        // debounced value update) must not go out under the empty config's random master id.
-        // See CODE_AUDIT_Game_Shareplay §5.25.
-        gameModel.gameConfig = .empty
-        await adventureRoot.adventureGameControllable.resetGame()
-        // Bytes peers sent for files not downloaded here are only for the running game.
-        FileUrlDataController.releaseHeldPeerData()
-        // Other apps' audio may resume once the game's audio is not playing.
-        audioRoot.releaseAudioSession()
-        #if !os(tvOS)
-        gameModel.gameTableModel = nil
-        #endif
-        #if os(visionOS)
-        gameModel.shareState = GameShareStateModel()
-        #endif
-
-        KeepAwakeModel.shared.release(.game)
-    }
-
-    func saveGame() -> ItemModuleIds {
-        adventureRoot.adventureGameControllable.saveGame()
-    }
-}
-
-// MARK: - Demo
-
-extension GameRoot {
-    /// Pacing between each photo reveal, and between map-state update steps, in the
-    /// auto-playing demo sequence. See CODE_AUDIT §9.14.
-    private nonisolated static let demoRevealPace: Duration = .seconds(3)
-    /// Pacing before revealing each weather or map in the demo sequence — longer than
-    /// `demoRevealPace` since these are bigger visual changes to let settle.
-    /// See CODE_AUDIT §9.14.
-    private nonisolated static let demoBigRevealPace: Duration = .seconds(5)
-
-    func startDemo(supporterTier: SupporterTier = .none) async {
-        // Cancel any previous demo loop before swapping `playerController` out from under it —
-        // otherwise a still-running old task keeps sending reveal/mapState messages through its
-        // own captured (now orphaned) controller, racing the new demo loop. See CODE_AUDIT.md §3.2.
-        demoTask?.cancel()
-        await startGame(to: nil, mode: .demo, supporterTier: supporterTier)
-
-        guard let playerController = gameModel.playerController else { return }
-        // `self` is bound strongly only for one step at a time, never across the paced
-        // sleeps, so a missed teardown no longer keeps the root alive. See CODE_AUDIT_19 §3.11.
-        demoTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                guard var steps = self?.demoRoundSteps(), !steps.isEmpty else { return }
-                while !steps.isEmpty {
-                    let step = steps.removeFirst()
-                    do {
-                        try await Task.sleep(for: step.pace)
-                    } catch {
-                        return
-                    }
-                    guard !Task.isCancelled, let followUp = await self?.performDemoStep(step, playerController: playerController) else { return }
-                    steps.insert(contentsOf: followUp, at: 0)
-                }
-            }
-        }
-    }
-
-    private enum DemoStep {
-        case photo(UUID)
-        case weather(UUID)
-        case map(UUID)
-        case mapState(UUID, data: NetworkCodableDataType, isLast: Bool)
-
-        var pace: Duration {
-            switch self {
-            case .photo, .mapState: GameRoot.demoRevealPace
-            case .weather, .map: GameRoot.demoBigRevealPace
-            }
-        }
-    }
-
-    /// One demo round: every photo, then every weather, then every map. `nil` once the game
-    /// stopped; empty when there is nothing to show (no step would ever suspend).
-    private func demoRoundSteps() -> [DemoStep]? {
-        guard gameModel.gameConfig.state != .stopped else { return nil }
-        let photos = photoRoot.itemControllable.itemDataModel.items.map(DemoStep.photo)
-        let weathers = weatherRoot.itemControllable.itemDataModel.items.map(DemoStep.weather)
-        let maps = mapRoot.itemControllable.itemDataModel.items.map(DemoStep.map)
-        return photos + weathers + maps
-    }
-
-    /// Sends one demo step and returns the steps that must follow it right away (a revealed
-    /// map's state updates).
-    private func performDemoStep(_ step: DemoStep, playerController: PlayerController) async -> [DemoStep] {
-        let gameNetworkModel: GameNetworkModel
-        var followUp: [DemoStep] = []
-        switch step {
-        case .photo(let id):
-            let data = await photoRoot.gameControllable.share(id: id)
-            gameNetworkModel = gameModel.outgoingMessage(counter: 1, type: .reveal, subType: .show, asMaster: true, data: data)
-        case .weather(let id):
-            let data = await weatherRoot.gameControllable.share(id: id)
-            gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .reveal, subType: .show, asMaster: true, data: data)
-        case .map(let id):
-            let data = await mapRoot.mapGameControllable.shareMap(id: id)
-            gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .reveal, subType: .show, asMaster: true, data: data)
-            followUp = nextDemoMapState(for: id)
-        case .mapState(let id, let data, let isLast):
-            gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .update, subType: .mapState, asMaster: true, data: data)
-            if !isLast {
-                followUp = nextDemoMapState(for: id)
-            }
-        }
-        await playerController.receivedProcess(gameNetworkModel)
-        return followUp
-    }
-
-    /// The map's next demo state; after the last one the map is restarted once and the demo
-    /// moves on.
-    private func nextDemoMapState(for id: UUID) -> [DemoStep] {
-        if let data = mapRoot.mapGameControllable.demoNextMap(itemId: id, restart: false) {
-            return [.mapState(id, data: data, isLast: false)]
-        }
-        guard let data = mapRoot.mapGameControllable.demoNextMap(itemId: id, restart: true) else { return [] }
-        return [.mapState(id, data: data, isLast: true)]
-    }
-}
-
-
-// MARK: - Search Helpers
-
-extension GameRoot {
-    func rootController(for module: NetworkModules) -> ItemRootController {
-        switch module {
-        case .adventure:
-            return adventureRoot.rootController
-        case .audio:
-            return audioRoot.rootController
-        case .value:
-            return characterRoot.rootController
-        case .dice:
-            return diceRoot.rootController
-        case .map:
-            return mapRoot.rootController
-        case .pdf:
-            return pdfRoot.rootController
-        case .photo:
-            return photoRoot.rootController
-        case .rule:
-            // `searchAllItems()` only ever produces `.rule` results when `ruleRoot` exists, so
-            // this should never be reached with a nil `ruleRoot`. Assert loudly in debug builds
-            // rather than silently mislabeling Adventure content as a Rule search result.
-            guard let ruleRoot else {
-                assertionFailure("rootController(for: .rule) called with a nil ruleRoot")
-                return adventureRoot.rootController
-            }
-            return ruleRoot.rootController
-        case .space:
-            return spaceRoot.rootController
-        case .table:
-            return tableRoot.rootController
-        case .weather:
-            return weatherRoot.rootController
-        default:
-            return adventureRoot.rootController
-        }
     }
 }

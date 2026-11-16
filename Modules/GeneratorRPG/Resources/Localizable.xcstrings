@@ -1,22 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ Apple's Private Cloud Compute can analyze the photo instead. The photo is sent to Apple, which designs it not to keep the photo. This needs a network connection and counts toward a daily limit." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Apple's Private Cloud Compute can analyze the photo instead. The photo is sent to Apple, which designs it not to keep the photo. This needs a network connection and counts toward a daily limit."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Stattdessen kann Apples Private Cloud Compute das Foto analysieren. Das Foto wird an Apple gesendet, das so konzipiert ist, dass es das Foto nicht speichert. Dafür ist eine Netzwerkverbindung nötig, und es zählt zu einem Tageslimit."
-          }
-        }
-      }
-    },
     "... and %lld more" : {
       "localizations" : {
         "de" : {
@@ -115,6 +99,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "การวิเคราะห์ %@"
+          }
+        }
+      }
+    },
+    "%@ Apple's Private Cloud Compute can analyze the photo instead. The photo is sent to Apple, which designs it not to keep the photo. This needs a network connection and counts toward a daily limit." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Stattdessen kann Apples Private Cloud Compute das Foto analysieren. Das Foto wird an Apple gesendet, das so konzipiert ist, dass es das Foto nicht speichert. Dafür ist eine Netzwerkverbindung nötig, und es zählt zu einem Tageslimit."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Apple's Private Cloud Compute can analyze the photo instead. The photo is sent to Apple, which designs it not to keep the photo. This needs a network connection and counts toward a daily limit."
           }
         }
       }
@@ -259,6 +259,22 @@
         }
       }
     },
+    "add" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่ม"
+          }
+        }
+      }
+    },
     "Add a reference character" : {
       "localizations" : {
         "de" : {
@@ -307,6 +323,22 @@
         }
       }
     },
+    "Add Tags" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tags hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มแท็ก"
+          }
+        }
+      }
+    },
     "Added note to \"%@\"." : {
       "localizations" : {
         "de" : {
@@ -323,6 +355,22 @@
         }
       }
     },
+    "Adds a note to the description of a generator." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fügt der Beschreibung eines Generators eine Notiz hinzu."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มโน้ตลงในคำอธิบายของตัวสร้าง"
+          }
+        }
+      }
+    },
     "Adventure" : {
       "localizations" : {
         "de" : {
@@ -335,6 +383,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "การผจญภัย"
+          }
+        }
+      }
+    },
+    "AI" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "AI"
           }
         }
       }
@@ -357,21 +421,22 @@
     },
     "Allow and Analyze" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allow and Analyze"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erlauben und analysieren"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow and Analyze"
+          }
         }
       }
     },
     "An unexpected generation error occurred: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -404,6 +469,7 @@
       }
     },
     "Analysis refused: %@ (category: %@). The PDF content may violate content policies." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -437,16 +503,16 @@
     },
     "Analyze Photo" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Analyze Photo"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foto analysieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyze Photo"
           }
         }
       }
@@ -485,16 +551,16 @@
     },
     "Analyzing photo with Apple Intelligence..." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Analyzing photo with Apple Intelligence..."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foto wird mit Apple Intelligence analysiert..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyzing photo with Apple Intelligence..."
           }
         }
       }
@@ -531,6 +597,22 @@
         }
       }
     },
+    "Apple Intelligence" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence"
+          }
+        }
+      }
+    },
     "Apple Intelligence is not available. PDF summary analysis requires it." : {
       "localizations" : {
         "de" : {
@@ -549,16 +631,16 @@
     },
     "Apple Intelligence is not available. Photo analysis requires it." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence is not available. Photo analysis requires it."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Intelligence ist nicht verfügbar. Die Fotoanalyse benötigt es."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence is not available. Photo analysis requires it."
           }
         }
       }
@@ -581,16 +663,16 @@
     },
     "Apple Intelligence on this device is not ready." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence on this device is not ready."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Intelligence ist auf diesem Gerät nicht bereit."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence on this device is not ready."
           }
         }
       }
@@ -671,6 +753,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ยกเลิกการดึงข้อมูล"
+          }
+        }
+      }
+    },
+    "change" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ändern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยน"
           }
         }
       }
@@ -939,16 +1037,16 @@
     },
     "Don't Allow" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Don't Allow"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht erlauben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't Allow"
           }
         }
       }
@@ -965,6 +1063,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เสร็จสิ้น"
+          }
+        }
+      }
+    },
+    "edit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bearbeiten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แก้ไข"
           }
         }
       }
@@ -1050,6 +1164,7 @@
       }
     },
     "Extraction refused: %@ (category: %@). The PDF content may violate content policies." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1083,21 +1198,22 @@
     },
     "Failed to analyze the photo: %@" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Failed to analyze the photo: %@"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Foto konnte nicht analysiert werden: %@"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to analyze the photo: %@"
+          }
         }
       }
     },
     "Failed to decode PDF content: %@. The document may have unusual formatting." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1114,6 +1230,7 @@
       }
     },
     "Failed to decode PDF summary: %@. The document may have unusual formatting." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1263,6 +1380,54 @@
         }
       }
     },
+    "generate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "generieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้าง"
+          }
+        }
+      }
+    },
+    "Generated with \"%@\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellt mit „%@“"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างด้วย \"%@\""
+          }
+        }
+      }
+    },
+    "Generates new content on this device with Apple Intelligence, guided by the generator's description and entries and your request." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstellt mit Apple Intelligence auf diesem Gerät neue Inhalte, geleitet von der Beschreibung und den Einträgen des Generators und deiner Anfrage."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างเนื้อหาใหม่บนอุปกรณ์นี้ด้วย Apple Intelligence โดยอิงจากคำอธิบายและรายการของตัวสร้าง รวมถึงคำขอของคุณ"
+          }
+        }
+      }
+    },
     "Generating sheet content" : {
       "localizations" : {
         "de" : {
@@ -1339,6 +1504,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ซ่อนถาม AI"
+          }
+        }
+      }
+    },
+    "idea" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idee"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไอเดีย"
           }
         }
       }
@@ -1446,6 +1627,7 @@
       }
     },
     "Model assets are unavailable: %@. Please ensure Apple Intelligence is fully downloaded." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1541,6 +1723,38 @@
         }
       }
     },
+    "Moves generators to the trash. They can be restored in the app." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verschiebt Generatoren in den Papierkorb. Sie lassen sich in der App wiederherstellen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ย้ายตัวสร้างไปที่ถังขยะ กู้คืนได้ในแอป"
+          }
+        }
+      }
+    },
+    "New Name" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Name"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อใหม่"
+          }
+        }
+      }
+    },
     "No note added." : {
       "localizations" : {
         "de" : {
@@ -1557,6 +1771,22 @@
         }
       }
     },
+    "note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notiz"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โน้ต"
+          }
+        }
+      }
+    },
     "Note" : {
       "localizations" : {
         "de" : {
@@ -1569,6 +1799,54 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "โน้ต"
+          }
+        }
+      }
+    },
+    "Nothing changed in \"%@\"." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An „%@“ wurde nichts geändert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีการเปลี่ยนแปลงใน \"%@\""
+          }
+        }
+      }
+    },
+    "Nothing was generated. Try another request." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es wurde nichts erstellt. Versuch eine andere Anfrage."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีสิ่งใดถูกสร้าง ลองคำขออื่น"
+          }
+        }
+      }
+    },
+    "NPC" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NSC"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "NPC"
           }
         }
       }
@@ -1591,16 +1869,16 @@
     },
     "Only used when the on-device model cannot analyze the photo. The photo is then sent to Apple." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Only used when the on-device model cannot analyze the photo. The photo is then sent to Apple."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wird nur verwendet, wenn das Modell auf dem Gerät das Foto nicht analysieren kann. Das Foto wird dann an Apple gesendet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only used when the on-device model cannot analyze the photo. The photo is then sent to Apple."
           }
         }
       }
@@ -1671,6 +1949,7 @@
       }
     },
     "PDF extraction schema contains unsupported constraint: %@. This is a developer error." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1687,6 +1966,7 @@
       }
     },
     "PDF summary schema contains unsupported constraint: %@. This is a developer error." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1702,18 +1982,50 @@
         }
       }
     },
+    "Photo to analyze" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu analysierendes Foto"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รูปภาพที่จะวิเคราะห์"
+          }
+        }
+      }
+    },
     "Private Cloud Compute could not analyze the photo: %@" : {
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute konnte das Foto nicht analysieren: %@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Private Cloud Compute could not analyze the photo: %@"
           }
-        },
+        }
+      }
+    },
+    "prompt" : {
+      "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Private Cloud Compute konnte das Foto nicht analysieren: %@"
+            "value" : "Prompt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พรอมต์"
           }
         }
       }
@@ -1735,6 +2047,7 @@
       }
     },
     "Rate limit exceeded. Please try again in %@ seconds." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1820,6 +2133,134 @@
         }
       }
     },
+    "remove" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบ"
+          }
+        }
+      }
+    },
+    "Remove Tags" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tags entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบแท็ก"
+          }
+        }
+      }
+    },
+    "rename" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "umbenennen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนชื่อ"
+          }
+        }
+      }
+    },
+    "Renames a generator, replaces its description, or adds and removes tags. Fields left empty stay as they are." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benennt einen Generator um, ersetzt seine Beschreibung oder fügt Tags hinzu und entfernt sie. Leere Felder bleiben unverändert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนชื่อตัวสร้าง แทนที่คำอธิบาย หรือเพิ่มและลบแท็ก ช่องที่เว้นว่างไว้จะคงเดิม"
+          }
+        }
+      }
+    },
+    "Replaces the description. Formatting is kept." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ersetzt die Beschreibung. Die Formatierung bleibt erhalten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แทนที่คำอธิบาย การจัดรูปแบบจะยังคงอยู่"
+          }
+        }
+      }
+    },
+    "Request" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anfrage"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คำขอ"
+          }
+        }
+      }
+    },
+    "Run ${target}" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${target} ausführen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เรียกใช้ ${target}"
+          }
+        }
+      }
+    },
+    "Run Generator" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generator ausführen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เรียกใช้ตัวสร้าง"
+          }
+        }
+      }
+    },
     "Schema contains unsupported constraint: %@." : {
       "localizations" : {
         "de" : {
@@ -1848,6 +2289,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เลือกค่าที่ดึงมาเพื่อนำไปใช้กับ %@"
+          }
+        }
+      }
+    },
+    "Skipped: no text to analyze" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersprungen: kein Text zum Analysieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้าม: ไม่มีข้อความให้วิเคราะห์"
           }
         }
       }
@@ -1948,6 +2405,22 @@
         }
       }
     },
+    "tag" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แท็ก"
+          }
+        }
+      }
+    },
     "Tags" : {
       "localizations" : {
         "de" : {
@@ -1966,101 +2439,102 @@
     },
     "The on-device model cannot analyze this photo, and Private Cloud Compute is turned off." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The on-device model cannot analyze this photo, and Private Cloud Compute is turned off."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Modell auf dem Gerät kann dieses Foto nicht analysieren, und Private Cloud Compute ist ausgeschaltet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model cannot analyze this photo, and Private Cloud Compute is turned off."
           }
         }
       }
     },
     "The on-device model cannot analyze this photo. Allow Private Cloud Compute to continue." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The on-device model cannot analyze this photo. Allow Private Cloud Compute to continue."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Modell auf dem Gerät kann dieses Foto nicht analysieren. Erlaube Private Cloud Compute, um fortzufahren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model cannot analyze this photo. Allow Private Cloud Compute to continue."
           }
         }
       }
     },
     "The on-device model cannot read images." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The on-device model cannot read images."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Modell auf dem Gerät kann keine Bilder lesen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model cannot read images."
           }
         }
       }
     },
     "The on-device model is busy or limited right now." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The on-device model is busy or limited right now."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Modell auf dem Gerät ist gerade ausgelastet oder eingeschränkt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model is busy or limited right now."
           }
         }
       }
     },
     "The on-device safety check stopped the analysis." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The on-device safety check stopped the analysis."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Sicherheitsprüfung auf dem Gerät hat die Analyse gestoppt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device safety check stopped the analysis."
           }
         }
       }
     },
     "The output language is not supported on this device." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The output language is not supported on this device."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Ausgabesprache wird auf diesem Gerät nicht unterstützt."
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The output language is not supported on this device."
+          }
         }
       }
     },
     "The PDF content is too large. Processing only the first portion." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2110,32 +2584,32 @@
     },
     "The photo could not be read." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The photo could not be read."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Foto konnte nicht gelesen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo could not be read."
           }
         }
       }
     },
     "The photo is too large for the on-device model." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The photo is too large for the on-device model."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Foto ist für das Modell auf dem Gerät zu groß."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo is too large for the on-device model."
           }
         }
       }
@@ -2221,6 +2695,7 @@
       }
     },
     "Too many concurrent analysis requests. Maximum allowed: %@. Please wait for current analyses to complete." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2237,6 +2712,7 @@
       }
     },
     "Too many concurrent extraction requests. Maximum allowed: %@. Please wait for current extractions to complete." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2370,6 +2846,22 @@
         }
       }
     },
+    "trash" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Papierkorb"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ถังขยะ"
+          }
+        }
+      }
+    },
     "Try again" : {
       "localizations" : {
         "de" : {
@@ -2498,102 +2990,6 @@
         }
       }
     },
-    "Upgrade to use Apple Intelligence" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Upgrade durchführen, um Apple Intelligence zu verwenden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "อัปเกรดเพื่อใช้งาน Apple Intelligence"
-          }
-        }
-      }
-    },
-    "Use Private Cloud Compute when needed" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use Private Cloud Compute when needed"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Private Cloud Compute bei Bedarf verwenden"
-          }
-        }
-      }
-    },
-    "Use Private Cloud Compute?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use Private Cloud Compute?"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Private Cloud Compute verwenden?"
-          }
-        }
-      }
-    },
-    "What note should be added?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welche Notiz soll hinzugefügt werden?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ควรเพิ่มโน้ตอะไร?"
-          }
-        }
-      }
-    },
-    "Which generator?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welcher Generator?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตัวสร้างใด?"
-          }
-        }
-      }
-    },
-    "Run ${target}" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "${target} ausführen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เรียกใช้ ${target}"
-          }
-        }
-      }
-    },
     "Update ${target}" : {
       "localizations" : {
         "de" : {
@@ -2606,246 +3002,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "อัปเดต ${target}"
-          }
-        }
-      }
-    },
-    "Run Generator" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generator ausführen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เรียกใช้ตัวสร้าง"
-          }
-        }
-      }
-    },
-    "Generates new content on this device with Apple Intelligence, guided by the generator's description and entries and your request." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erstellt mit Apple Intelligence auf diesem Gerät neue Inhalte, geleitet von der Beschreibung und den Einträgen des Generators und deiner Anfrage."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างเนื้อหาใหม่บนอุปกรณ์นี้ด้วย Apple Intelligence โดยอิงจากคำอธิบายและรายการของตัวสร้าง รวมถึงคำขอของคุณ"
-          }
-        }
-      }
-    },
-    "generate" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "generieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้าง"
-          }
-        }
-      }
-    },
-    "AI" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "KI"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "AI"
-          }
-        }
-      }
-    },
-    "idea" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Idee"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไอเดีย"
-          }
-        }
-      }
-    },
-    "NPC" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NSC"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "NPC"
-          }
-        }
-      }
-    },
-    "Apple Intelligence" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Apple Intelligence"
-          }
-        }
-      }
-    },
-    "Request" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anfrage"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คำขอ"
-          }
-        }
-      }
-    },
-    "What to generate, for example \"a suspicious innkeeper\". Without one, the generator's own text guides it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Was erstellt werden soll, zum Beispiel „ein verdächtiger Wirt“. Ohne Anfrage gibt der Text des Generators die Richtung vor."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สิ่งที่จะสร้าง เช่น \"เจ้าของโรงเตี๊ยมที่น่าสงสัย\" หากไม่ระบุ ข้อความของตัวสร้างจะเป็นแนวทาง"
-          }
-        }
-      }
-    },
-    "Generated with \"%@\"" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erstellt mit „%@“"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างด้วย \"%@\""
-          }
-        }
-      }
-    },
-    "Nothing was generated. Try another request." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Es wurde nichts erstellt. Versuch eine andere Anfrage."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่มีสิ่งใดถูกสร้าง ลองคำขออื่น"
-          }
-        }
-      }
-    },
-    "prompt" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "พรอมต์"
-          }
-        }
-      }
-    },
-    "Adds a note to the description of a generator." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fügt der Beschreibung eines Generators eine Notiz hinzu."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เพิ่มโน้ตลงในคำอธิบายของตัวสร้าง"
-          }
-        }
-      }
-    },
-    "add" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "hinzufügen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เพิ่ม"
-          }
-        }
-      }
-    },
-    "note" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notiz"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โน้ต"
           }
         }
       }
@@ -2866,150 +3022,6 @@
         }
       }
     },
-    "Renames a generator, replaces its description, or adds and removes tags. Fields left empty stay as they are." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Benennt einen Generator um, ersetzt seine Beschreibung oder fügt Tags hinzu und entfernt sie. Leere Felder bleiben unverändert."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปลี่ยนชื่อตัวสร้าง แทนที่คำอธิบาย หรือเพิ่มและลบแท็ก ช่องที่เว้นว่างไว้จะคงเดิม"
-          }
-        }
-      }
-    },
-    "rename" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "umbenennen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปลี่ยนชื่อ"
-          }
-        }
-      }
-    },
-    "edit" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "bearbeiten"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แก้ไข"
-          }
-        }
-      }
-    },
-    "change" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ändern"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปลี่ยน"
-          }
-        }
-      }
-    },
-    "tag" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tag"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แท็ก"
-          }
-        }
-      }
-    },
-    "New Name" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neuer Name"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ชื่อใหม่"
-          }
-        }
-      }
-    },
-    "Replaces the description. Formatting is kept." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ersetzt die Beschreibung. Die Formatierung bleibt erhalten."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แทนที่คำอธิบาย การจัดรูปแบบจะยังคงอยู่"
-          }
-        }
-      }
-    },
-    "Add Tags" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tags hinzufügen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เพิ่มแท็ก"
-          }
-        }
-      }
-    },
-    "Remove Tags" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tags entfernen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลบแท็ก"
-          }
-        }
-      }
-    },
     "Updated \"%@\"." : {
       "localizations" : {
         "de" : {
@@ -3022,86 +3034,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "อัปเดต \"%@\" แล้ว"
-          }
-        }
-      }
-    },
-    "Nothing changed in \"%@\"." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "An „%@“ wurde nichts geändert."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่มีการเปลี่ยนแปลงใน \"%@\""
-          }
-        }
-      }
-    },
-    "Moves generators to the trash. They can be restored in the app." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verschiebt Generatoren in den Papierkorb. Sie lassen sich in der App wiederherstellen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ย้ายตัวสร้างไปที่ถังขยะ กู้คืนได้ในแอป"
-          }
-        }
-      }
-    },
-    "remove" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "entfernen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลบ"
-          }
-        }
-      }
-    },
-    "trash" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Papierkorb"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ถังขยะ"
-          }
-        }
-      }
-    },
-    "Skipped: no text to analyze" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übersprungen: kein Text zum Analysieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้าม: ไม่มีข้อความให้วิเคราะห์"
           }
         }
       }
@@ -3122,18 +3054,98 @@
         }
       }
     },
-    "Photo to analyze" : {
+    "Upgrade to use Apple Intelligence" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zu analysierendes Foto"
+            "value" : "Upgrade durchführen, um Apple Intelligence zu verwenden"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "รูปภาพที่จะวิเคราะห์"
+            "value" : "อัปเกรดเพื่อใช้งาน Apple Intelligence"
+          }
+        }
+      }
+    },
+    "Use Private Cloud Compute when needed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute bei Bedarf verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Private Cloud Compute when needed"
+          }
+        }
+      }
+    },
+    "Use Private Cloud Compute?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private Cloud Compute verwenden?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Private Cloud Compute?"
+          }
+        }
+      }
+    },
+    "What note should be added?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welche Notiz soll hinzugefügt werden?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรเพิ่มโน้ตอะไร?"
+          }
+        }
+      }
+    },
+    "What to generate, for example \"a suspicious innkeeper\". Without one, the generator's own text guides it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was erstellt werden soll, zum Beispiel „ein verdächtiger Wirt“. Ohne Anfrage gibt der Text des Generators die Richtung vor."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สิ่งที่จะสร้าง เช่น \"เจ้าของโรงเตี๊ยมที่น่าสงสัย\" หากไม่ระบุ ข้อความของตัวสร้างจะเป็นแนวทาง"
+          }
+        }
+      }
+    },
+    "Which generator?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcher Generator?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวสร้างใด?"
           }
         }
       }

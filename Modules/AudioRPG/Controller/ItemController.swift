@@ -37,13 +37,4 @@ extension ItemController {
         guard model.specialCategory else { return model.url != nil }
         return model.entries.contains { hasAudio(itemId: $0.childId, depth: depth + 1) }
     }
-
-    @MainActor func audioList(itemId: UUID, depth: Int = 0) -> [AudioModel] {
-        guard depth < FolderTreeDepthLimit.max, let model = itemSync(for: itemId) else { return [] }
-        guard model.specialCategory else {
-            guard model.url != nil else { return [] }
-            return [model]
-        }
-        return model.entries.flatMap { audioList(itemId: $0.childId, depth: depth + 1) }
-    }
 }

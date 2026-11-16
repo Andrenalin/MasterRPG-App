@@ -142,10 +142,6 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
         linkWindowId + "Viewer"
     }
 
-    public var linkAltWindowId: String {
-        linkWindowId + "Alt"
-    }
-
     /// SceneId of the window that owns this module's UI on the current platform.
     ///
     /// Mirrors `AppModel.navigator(for:)` so callers can open the right window before sending a route.

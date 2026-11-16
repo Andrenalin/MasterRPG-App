@@ -20,9 +20,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     @FocusState private var currentFocus: EntryEditorFocusField?
-    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     
     @State private var editModel: TextEditModel
     

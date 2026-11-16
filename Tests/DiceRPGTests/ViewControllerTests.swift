@@ -61,12 +61,5 @@ struct ViewControllerTests {
 
         #expect(sut.height(for: dice) == 190)
         #expect(sut.height(for: dice, minResult: 1, maxResult: 1) == 118)
-        #expect(sut.width(for: dice, maxWidth: 500) == 188)
-        #expect(sut.width(for: dice, maxWidth: 120) == 120)
-        #expect(sut.gameDiceHeight(root: root) == 82)
-
-        root.gameController.setGame(item: dice, itemId: dice.id)
-
-        #expect(sut.gameDiceHeight(root: root) == 190)
     }
 }

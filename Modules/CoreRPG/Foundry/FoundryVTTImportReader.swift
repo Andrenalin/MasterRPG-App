@@ -1025,10 +1025,7 @@ private enum FoundryVTTEmbeddedExtractor {
 
     static func documents(in raw: FoundryJSONValue, parentType: FoundryDocumentType) -> [Candidate] {
         guard let object = raw.objectValue else { return [] }
-        var mappings = standardMappings[parentType] ?? [:]
-        if parentType == .adventure {
-            mappings.merge(adventureMappings, uniquingKeysWith: { current, _ in current })
-        }
+        let mappings = FoundryEmbeddedMappings.mappings(for: parentType)
         var result: [Candidate] = []
         for key in mappings.keys.sorted() {
             guard let values = object[key]?.arrayValue, let type = mappings[key] else { continue }
@@ -1038,34 +1035,6 @@ private enum FoundryVTTEmbeddedExtractor {
         }
         return result
     }
-
-    static let standardMappings: [FoundryDocumentType: [String: FoundryDocumentType]] = [
-        .actor: ["items": .item, "effects": .activeEffect],
-        .item: ["effects": .activeEffect],
-        .scene: [
-            "levels": .level, "tokens": .token, "walls": .wall, "lights": .ambientLight,
-            "sounds": .ambientSound, "tiles": .tile, "drawings": .drawing,
-            "notes": .note, "regions": .region,
-        ],
-        .level: [
-            "tokens": .token, "walls": .wall, "lights": .ambientLight,
-            "sounds": .ambientSound, "tiles": .tile, "drawings": .drawing,
-            "notes": .note, "regions": .region,
-        ],
-        .journalEntry: ["pages": .journalEntryPage],
-        .rollTable: ["results": .tableResult],
-        .playlist: ["sounds": .playlistSound],
-        .cards: ["cards": .card],
-        .combat: ["combatants": .combatant],
-    ]
-
-    static let adventureMappings: [String: FoundryDocumentType] = [
-        "actors": .actor, "items": .item, "scenes": .scene,
-        "journal": .journalEntry, "journals": .journalEntry,
-        "journalEntries": .journalEntry, "tables": .rollTable,
-        "rollTables": .rollTable, "playlists": .playlist, "cards": .cards,
-        "combats": .combat, "macros": .macro, "folders": .folder,
-    ]
 }
 
 // MARK: - Known Field Tracking

@@ -247,7 +247,7 @@ struct TableGenerationController: Sendable {
         for result: Int,
         in occurrence: TableGenerationOccurrence
     ) -> TableGenerationEntry? {
-        // Ranges belong to a dice table, as in `GameController.entry(for:with:)`. A list table
+        // Ranges belong to a dice table. A list table
         // is rolled by position, and a leading number in an entry name ("2 Wolves") is not a
         // range: read as one, "5 Orcs" could never be rolled. See CODE_AUDIT_21 §5.18.
         if occurrence.tableType == .dice, let ranged = occurrence.entries.first(where: {

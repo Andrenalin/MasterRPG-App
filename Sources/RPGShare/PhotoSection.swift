@@ -11,9 +11,9 @@ final class ImageListModel {
 
 struct PhotoSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric private var photoHeight: CGFloat = 300
 
     let imageList: ImageListModel
-    let size: CGSize
     
     var body: some View {
         Group {
@@ -25,7 +25,8 @@ struct PhotoSection: View {
                                 Image(decorative: preview, scale: 1)
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
-                                    .frame(width: size.width - 30)
+                                    // Nine tenths of the scroll view, so the next photo peeks in.
+                                    .containerRelativeFrame(.horizontal, count: 10, span: 9, spacing: 0)
                                     .clipShape(.rect(cornerRadius: 10))
                                     .accessibilityLabel(Text("Shared image", bundle: .main))
                                     .accessibilityValue(
@@ -38,7 +39,7 @@ struct PhotoSection: View {
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.viewAligned)
-                .frame(height: 300)
+                .frame(height: photoHeight)
                 .scrollIndicators(.hidden)
                 .transition(reduceMotion ? .opacity : .push(from: .top))
             }
@@ -56,8 +57,5 @@ struct PhotoSection: View {
         return imageList
     }()
 
-    PhotoSection(
-        imageList: imageList,
-        size: CGSize(width: 390, height: 300)
-    )
+    PhotoSection(imageList: imageList)
 }

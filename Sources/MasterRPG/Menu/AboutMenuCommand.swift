@@ -50,7 +50,7 @@ struct AboutPanelCommand: Commands {
     }
 }
 
-public extension Bundle {
+extension Bundle {
     var displayName: String {
         infoDictionary?["CFBundleDisplayName"] as? String ?? "-"
     }

@@ -57,11 +57,6 @@ struct ModuleChooserView: View {
     }
 }
 
-extension ModuleChooserModel {
-    @MainActor
-    static let preview = ModuleChooserModel()
-}
-
 #Preview("Adventure with shared photos") {
     let model: ModuleChooserModel = {
         let model = ModuleChooserModel()

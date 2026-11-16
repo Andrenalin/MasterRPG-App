@@ -81,6 +81,12 @@ public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
     var canCalculate: Bool {
         valueId == nil && (type == .number || type == .decimal)
     }
+
+    /// Only number and decimal entries carry dice. A text or selection entry never shows one,
+    /// even when it still holds a `diceId` from before its type changed.
+    var supportsDice: Bool {
+        type == .number || type == .decimal
+    }
 }
 
 extension ValueEntryModel {

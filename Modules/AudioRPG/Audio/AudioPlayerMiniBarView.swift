@@ -11,7 +11,6 @@ public struct AudioPlayerMiniBarView: View {
     let showsMetadata: Bool
 
     @Environment(AudioRootModel.self) private var root
-    @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
 
     // Reuses the same artwork-loading model as the full player bar instead of
     // always showing a static placeholder. See CODE_AUDIT_Audio §8.3.

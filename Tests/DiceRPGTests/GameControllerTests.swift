@@ -53,7 +53,7 @@ struct GameControllerTests {
         sut.diceGameModel.playerDice = [playerDice]
         #expect(sut.playerDiceId(named: "Anna Example") == playerDice.id)
         #expect(sut.playerDiceId(named: "Nobody") == nil)
-        await sut.toggleHidden(playerId: playerDice.id)
+        sut.toggleHidden(playerId: playerDice.id)
         #expect(sut.playerDiceId(named: "Anna Example") == nil)
     }
 
@@ -85,12 +85,11 @@ struct GameControllerTests {
         sut.gameModel.focusItemIds = []
         #expect(sut.isPlayerDice(itemId: dice.id))
 
-        await sut.toggleHidden(playerId: dice.id)
+        sut.toggleHidden(playerId: dice.id)
         #expect(sut.isPlayerHidden(playerId: dice.id))
-        await sut.toggleHidden(playerId: dice.id)
+        sut.toggleHidden(playerId: dice.id)
         #expect(!sut.isPlayerHidden(playerId: dice.id))
 
-        #expect(sut.number(for: dice.id, result: "3|4|5") == 12)
         sut.validateForValue(diceId: gameDiceId, compareValue: 12)
         #expect(sut.gameItem(for: gameDiceId).compareValue == 12)
         sut.validateForValue(diceId: gameDiceId, compareValue: nil)

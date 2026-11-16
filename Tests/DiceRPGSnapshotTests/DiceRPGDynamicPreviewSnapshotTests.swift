@@ -15,7 +15,7 @@ struct DiceRPGDynamicPreviewSnapshotTests {
     @Test("DicePlayer")
     func dicePlayer() async throws {
         try await assertPreviewSnapshot("DicePlayer") { _ in
-            DicePlayer(filterout: DiceModel.previewId, alignment: .leading)
+            DicePlayer(alignment: .leading)
                 .environment(DiceDisplayModel())
                 .padding()
         }

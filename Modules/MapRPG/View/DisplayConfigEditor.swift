@@ -9,8 +9,6 @@ struct DisplayConfigEditor: View {
     
     @Environment(MapRootModel.self) private var root
     
-    @Environment(\.navigator) private var navigator
-    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var color = Color.black

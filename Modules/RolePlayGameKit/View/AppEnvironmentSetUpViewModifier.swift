@@ -35,7 +35,6 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .setAppSizeMode()
             .environment(appModel.appGameStateModel)
             .environment(appModel.searchBarVisibleModel)
-            .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
             .environment(appModel.scenesManager)
             .environment(appModel.appFocusModel)

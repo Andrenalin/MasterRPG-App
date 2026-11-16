@@ -68,17 +68,28 @@ public struct LinkEntryData: LinkDataTransferable {
     public let isMove: Bool
 }
 
-public struct LinkAdventureData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .adventure, isMove: Bool = false) {
+/// The module and the exported `UTType` of one kind of module link. See `ModuleLinkData`.
+public protocol LinkModuleTag: Sendable {
+    static var module: NetworkModules { get }
+    static var contentType: UTType { get }
+}
+
+/// A dragged link to an item or entry of one module. The module is fixed by `Tag`, and each
+/// module has its own `UTType`, so a drop target accepts only the links it can follow.
+/// The per-module `Link…Data` names below are typealiases of this one type. The encoded form
+/// (`module`, `itemId`, `entryId`, `name`, `isMove`) and the `UTType` identifiers are unchanged.
+/// See CODE_AUDIT_26 §9.11.
+public struct ModuleLinkData<Tag: LinkModuleTag>: LinkDataTransferable {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, isMove: Bool = false) {
         self.itemId = itemId
         self.entryId = entryId
         self.name = name
-        self.module = .adventure
+        self.module = Tag.module
         self.isMove = isMove
     }
 
     public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .adventureLink)
+        CodableRepresentation(contentType: Tag.contentType)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 
@@ -89,212 +100,68 @@ public struct LinkAdventureData: LinkDataTransferable {
     public let isMove: Bool
 }
 
-public struct LinkAudioData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .audio, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .audio
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .audioLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum AdventureLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .adventure }
+    public static var contentType: UTType { .adventureLink }
 }
+public typealias LinkAdventureData = ModuleLinkData<AdventureLinkTag>
 
-public struct LinkCharacterData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .value, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .value
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .characterLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum AudioLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .audio }
+    public static var contentType: UTType { .audioLink }
 }
+public typealias LinkAudioData = ModuleLinkData<AudioLinkTag>
 
-public struct LinkDiceData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .dice, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .dice
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .diceLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum CharacterLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .value }
+    public static var contentType: UTType { .characterLink }
 }
+public typealias LinkCharacterData = ModuleLinkData<CharacterLinkTag>
 
-public struct LinkMapData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .map, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .map
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .mapLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum DiceLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .dice }
+    public static var contentType: UTType { .diceLink }
 }
+public typealias LinkDiceData = ModuleLinkData<DiceLinkTag>
 
-public struct LinkPdfData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .pdf, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .pdf
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .pdfLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public var module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum MapLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .map }
+    public static var contentType: UTType { .mapLink }
 }
+public typealias LinkMapData = ModuleLinkData<MapLinkTag>
 
-public struct LinkPhotoData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .photo, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .photo
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .photoLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum PdfLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .pdf }
+    public static var contentType: UTType { .pdfLink }
 }
+public typealias LinkPdfData = ModuleLinkData<PdfLinkTag>
 
-public struct LinkSpaceData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .space, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .space
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .spaceLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum PhotoLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .photo }
+    public static var contentType: UTType { .photoLink }
 }
+public typealias LinkPhotoData = ModuleLinkData<PhotoLinkTag>
 
-public struct LinkRuleData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .rule, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .rule
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .ruleLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum RuleLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .rule }
+    public static var contentType: UTType { .ruleLink }
 }
+public typealias LinkRuleData = ModuleLinkData<RuleLinkTag>
 
-public struct LinkTableData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .table, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .table
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .tableLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum SpaceLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .space }
+    public static var contentType: UTType { .spaceLink }
 }
+public typealias LinkSpaceData = ModuleLinkData<SpaceLinkTag>
 
-public struct LinkWeatherData: LinkDataTransferable {
-    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .weather, isMove: Bool = false) {
-        self.itemId = itemId
-        self.entryId = entryId
-        self.name = name
-        self.module = .weather
-        self.isMove = isMove
-    }
-
-    public static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .weatherLink)
-        ProxyRepresentation(exporting: \.linkRepresentation)
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let entryId: UUID?
-    public let name: String
-    public let isMove: Bool
+public enum TableLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .table }
+    public static var contentType: UTType { .tableLink }
 }
+public typealias LinkTableData = ModuleLinkData<TableLinkTag>
+
+public enum WeatherLinkTag: LinkModuleTag {
+    public static var module: NetworkModules { .weather }
+    public static var contentType: UTType { .weatherLink }
+}
+public typealias LinkWeatherData = ModuleLinkData<WeatherLinkTag>

@@ -81,7 +81,6 @@ public protocol DiceGameStorable: Sendable {
     @MainActor func setFocusDice(on diceId: UUID?) async
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws
     
-    @MainActor func number(for diceId: UUID, result: String) -> Int
     /// Rolls one die of a dice set the way the sheet does, and shares the result like a roll
     /// of the whole set. For a die tossed by hand on the 3D table; the sheet makes no sound for
     /// it. Returns the face the die shows, or `nil` if the set has no such die.
@@ -280,14 +279,6 @@ extension GameController: DiceGameStorable {
         }
         reset(for: itemId)
         gameModel.focusItemIds.insert(itemId, at: 0)
-    }
-    
-    @MainActor
-    func number(for diceId: UUID, result: String) -> Int {
-        let dice = gameItem(for: diceId)
-        dice.applyResult(text: result)
-        setGame(item: dice, itemId: dice.id)
-        return sumResult(itemId: diceId)
     }
     
     @MainActor

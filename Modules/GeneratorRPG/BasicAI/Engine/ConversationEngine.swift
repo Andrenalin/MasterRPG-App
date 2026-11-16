@@ -71,16 +71,6 @@ public final class ConversationEngine {
         }
     }
 
-    public func prewarm(withPromptPrefix promptPrefix: String?) {
-        let trimmedPrefix = promptPrefix?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let trimmedPrefix, !trimmedPrefix.isEmpty {
-            session.prewarm(promptPrefix: Prompt(trimmedPrefix))
-        } else {
-            session.prewarm()
-        }
-    }
-
     func sendStreamingMessage(
         _ content: String,
         generationOptions: GenerationOptionsConfiguration? = nil,

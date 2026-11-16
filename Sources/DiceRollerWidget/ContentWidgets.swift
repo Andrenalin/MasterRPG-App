@@ -7,6 +7,19 @@ import WidgetKit
 private struct ContentWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: ContentWidgetSnapshot
+
+    // Shared by the small and medium views. See CODE_AUDIT_26 §9.56.
+    var moduleTitle: LocalizedStringKey {
+        snapshot.module == .value ? "Characters" : "Adventures"
+    }
+
+    var moduleIcon: String {
+        snapshot.module == .value ? "person.crop.circle" : "book.closed"
+    }
+
+    var countLabel: LocalizedStringKey {
+        snapshot.module == .value ? "characters" : "adventures"
+    }
 }
 
 private struct ContentWidgetProvider: TimelineProvider {
@@ -75,35 +88,23 @@ private struct ContentWidgetSmallContentView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Image(systemName: moduleIcon)
+            Image(systemName: entry.moduleIcon)
                 .font(.title)
                 .foregroundStyle(.tint)
                 .widgetAccentable()
                 .accessibilityHidden(true)
             Spacer()
-            Text(moduleTitle)
+            Text(entry.moduleTitle)
                 .font(.headline)
             Text(entry.snapshot.totalCount, format: .number)
                 .font(.title)
                 .bold()
-            Text(countLabel)
+            Text(entry.countLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-    }
-
-    private var moduleTitle: LocalizedStringKey {
-        entry.snapshot.module == .value ? "Characters" : "Adventures"
-    }
-
-    private var moduleIcon: String {
-        entry.snapshot.module == .value ? "person.crop.circle" : "book.closed"
-    }
-
-    private var countLabel: LocalizedStringKey {
-        entry.snapshot.module == .value ? "characters" : "adventures"
     }
 }
 
@@ -116,7 +117,7 @@ private struct ContentWidgetMediumContentView: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
-                Label(moduleTitle, systemImage: moduleIcon)
+                Label(entry.moduleTitle, systemImage: entry.moduleIcon)
                     .font(.headline)
                     .foregroundStyle(.tint)
                     .widgetAccentable()
@@ -124,7 +125,7 @@ private struct ContentWidgetMediumContentView: View {
                 Text(entry.snapshot.totalCount, format: .number)
                     .bold()
                     // The number stays the value; the label alone replaced it. See CODE_AUDIT_26 §8.4.
-                    .accessibilityLabel(Text(countLabel))
+                    .accessibilityLabel(Text(entry.countLabel))
                     .accessibilityValue(Text(entry.snapshot.totalCount, format: .number))
             }
             Divider()
@@ -133,7 +134,7 @@ private struct ContentWidgetMediumContentView: View {
                     Label {
                         Text("No Items", bundle: .main)
                     } icon: {
-                        Image(systemName: moduleIcon)
+                        Image(systemName: entry.moduleIcon)
                     }
                 } description: {
                     Text("Create one in MasterRPG.", bundle: .main)
@@ -159,18 +160,6 @@ private struct ContentWidgetMediumContentView: View {
                 }
             }
         }
-    }
-
-    private var moduleTitle: LocalizedStringKey {
-        entry.snapshot.module == .value ? "Characters" : "Adventures"
-    }
-
-    private var moduleIcon: String {
-        entry.snapshot.module == .value ? "person.crop.circle" : "book.closed"
-    }
-
-    private var countLabel: LocalizedStringKey {
-        entry.snapshot.module == .value ? "characters" : "adventures"
     }
 }
 

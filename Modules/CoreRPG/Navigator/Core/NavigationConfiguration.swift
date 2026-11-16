@@ -17,7 +17,7 @@ import os.log
 /// ```swift
 /// @main
 /// struct NavigatorDemoApp: App {
-///     let navigator = Navigator(configuration: .init(restorationKey: "1.0.0", autoDestinationMode: true)
+///     let navigator = Navigator(configuration: .init(autoDestinationMode: true)
 ///     var body: some Scene {
 ///         WindowGroup {
 ///             RootTabView()
@@ -35,13 +35,6 @@ nonisolated public struct NavigationConfiguration {
     /// to a new destination. Default is 0.1.
     public let executionDelay: TimeInterval
 
-    /// Provide a restorationKey to enable state restoration in named ManagedNavigationControllers.
-    ///
-    /// Increment or change the key when changing destination types.
-    ///
-    /// If no restorationKey is provided then navigation state restoration is disabled.
-    public let restorationKey: String?
-
     /// Allows the developer to log navigation messages to the console or to their own logging system.
     ///
     /// If logger is nil then nothing is logged.
@@ -56,9 +49,6 @@ nonisolated public struct NavigationConfiguration {
     /// Creates a new navigation configuration.
     ///
     /// - Parameters:
-    ///   - restorationKey: An optional key used to enable state restoration
-    ///     for named managed navigation stacks. Change the key when you add
-    ///     or remove destination types.
     ///   - logger: A closure that receives navigation events for logging.
     ///     The default implementation prints events in debug builds.
     ///   - executionDelay: Controls the timing of deep-link animations.
@@ -68,7 +58,6 @@ nonisolated public struct NavigationConfiguration {
     ///   - autoDestinationMode: When enabled, allows navigation to
     ///     ``NavigationDestination`` values without explicit registration.
     public init(
-        restorationKey: String? = nil,
         logger: ((NavigationEvent) -> Void)? = {
             // Uses the project's `Logger` conventions rather than a bare
             // `print`, so navigation events are filterable/redactable like
@@ -86,7 +75,6 @@ nonisolated public struct NavigationConfiguration {
         // pre-iOS-18 branch this once guarded (a 0.7 floor) could never run —
         // collapsed to just the reachable branch. See CODE_AUDIT_10 §3.2.
         self.executionDelay = min(max(0.3, executionDelay), 5.0)
-        self.restorationKey = restorationKey
         self.logger = logger
         self.verbosity = verbosity
         self.autoDestinationMode = autoDestinationMode
@@ -102,7 +90,7 @@ extension View {
     /// ```swift
     /// @main
     /// struct NavigatorDemoApp: App {
-    ///     let navigator = Navigator(configuration: .init(restorationKey: "1.0.0", verbosity: .info)
+    ///     let navigator = Navigator(configuration: .init(verbosity: .info)
     ///     var body: some Scene {
     ///         WindowGroup {
     ///             RootTabView()

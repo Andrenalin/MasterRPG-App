@@ -31,8 +31,8 @@ import Foundation
 /// `SimpleLinkController`/`SimpleSheetController`) — the peripheral
 /// controllables `ItemRootController` also requires (export/game/import/
 /// search/folder-list/view) are never exercised by a pure add/edit-entries
-/// sheet session, so this reuses the existing internal `Fake*` equivalents
-/// directly rather than duplicating them.
+/// sheet session, so they are the inert per-session `SimpleNull*` conformers
+/// (`SimpleNullControllers.swift`), not the shared preview `Fake*` doubles.
 ///
 /// A consumer embedding `SheetRootEditorView` also needs to present
 /// `EntryEditorView(rootManager: rootController.rootManager!, editorModel:
@@ -67,6 +67,17 @@ public final class SimpleSheetEditingSession {
         let linkController = SimpleLinkController(itemControllable: itemController)
         let sheetController = SimpleSheetController(itemController: itemController)
 
+        let exportController = SimpleNullExportController(itemControllable: itemController, editControllable: editController)
+        let importController = SimpleNullImportController(itemControllable: itemController, editControllable: editController)
+        let gameController = SimpleNullGameController(
+            itemControllable: itemController,
+            exportControllable: exportController,
+            importControllable: importController,
+            gameModel: ItemGameModel(itemDataModel: itemDataModel)
+        )
+        let searchController = SimpleNullSearchController(itemControllable: itemController)
+        let folderListController = SimpleNullFolderListController(itemControllable: itemController, searchRootControllable: searchController)
+
         let root = ItemRootController(
             config: config,
             navigationModel: ModuleNavigationModel(),
@@ -76,16 +87,16 @@ public final class SimpleSheetEditingSession {
             removeEntryListModel: RemoveEntryListModel(),
             cacheControllable: nil,
             editControllable: editController,
-            exportControllable: FakeExportController.fake,
-            gameControllable: FakeGameController.fake,
-            importControllable: FakeImportController.fake,
+            exportControllable: exportController,
+            gameControllable: gameController,
+            importControllable: importController,
             itemControllable: itemController,
             linkControllable: linkController,
-            folderListControllable: FakeFolderListController.fake,
-            folderLinkControllable: FakeFolderListController.fake,
-            searchControllable: FakeSearchController.fake,
+            folderListControllable: folderListController,
+            folderLinkControllable: folderListController,
+            searchControllable: searchController,
             sheetControllable: sheetController,
-            viewControllable: FakeViewController()
+            viewControllable: SimpleNullViewController()
         )
         // A plain, non-DEBUG-gated public API (`Modules/CoreRPG/Controllable/RootManager.swift`)
         // that fans one root out to every module slot — exactly what a

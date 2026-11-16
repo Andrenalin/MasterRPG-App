@@ -48,10 +48,6 @@ struct SplitNavigation: View {
             }
 #endif
     }
-    
-    var selectedModule: NetworkModules {
-        (appModel.selectedModule ?? RootRoute.defaultRoute).module
-    }
 }
 
 #Preview {

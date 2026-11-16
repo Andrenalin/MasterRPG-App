@@ -8,7 +8,6 @@ extension View {
         itemId: UUID,
         entryId: UUID?,
         name: String,
-        isMove: Bool = false,
         @ViewBuilder preview: @escaping () -> Preview
     ) -> some View {
         modifier(DragOverlayViewModifier(module: module, itemId: itemId, entryId: entryId, name: name, preview: preview))
@@ -19,13 +18,12 @@ extension View {
         for module: NetworkModules,
         itemId: UUID,
         entryId: UUID?,
-        name: String,
-        isMove: Bool = false
+        name: String
     ) -> some View {
-        draggableWithOverlay(for: module, itemId: itemId, entryId: entryId, name: name, isMove: isMove) {
+        draggableWithOverlay(for: module, itemId: itemId, entryId: entryId, name: name) {
             Text(name)
                 .lineLimit(1)
-                .padding(.horizontal, 12)
+                .padding(.horizontal)
                 .padding(.vertical, 6)
                 .background(.regularMaterial, in: .rect(cornerRadius: 8))
         }

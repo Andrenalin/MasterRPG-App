@@ -3,12 +3,9 @@
 import Foundation
 
 /// Parses a dice-table entry name like `"5-10"`, `"5–10"`, or `"7"` into the
-/// inclusive range of roll results it matches. Shared by
-/// `TableGenerationController` (the live roll UI) and `GameController`
-/// (`TableGameStorable.entry(for:with:)`) so the two roll-resolution paths
-/// in this module can no longer silently diverge — `GameController` used to
-/// hand-roll a version that only checked the upper bound and only split on
-/// an ASCII hyphen. See CODE_AUDIT_Table §5.1/§5.2.
+/// inclusive range of roll results it matches. Used by
+/// `TableGenerationController.matchingEntry`, the single roll-resolution path
+/// of the Table module. See CODE_AUDIT_Table §5.1/§5.2, CODE_AUDIT_26 §9.55.
 public enum TableRollRange {
     /// A token of two or more zeros ("00", "000") is the die maximum — 100, 1000 — when it is the
     /// only value or the upper end of a range ("96-00"): printed d100 tables write 100 as 00. As

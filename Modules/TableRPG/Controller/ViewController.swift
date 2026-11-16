@@ -27,15 +27,6 @@ extension ViewController: ViewControllable {
     }
 }
 
-// MARK: External Views
-
-extension ViewController {
-    @MainActor
-    func diceSelection(root: TableRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.diceRoot.viewController.dropChooseView(model: selectionModel)
-    }
-}
-
 // MARK: - List Views
 
 public extension ViewController {

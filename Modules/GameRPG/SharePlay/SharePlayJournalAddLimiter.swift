@@ -49,9 +49,12 @@ final class SharePlayJournalAddLimiter<Key: Hashable & Sendable, Value: Sendable
     private let maxObsoleteAttempts: Int
     private var attempts: [SharePlayJournalAddAttemptKey<Key>: SharePlayJournalAddAttempt<Value>] = [:]
 
+#if DEBUG
+    /// A test affordance: attempts that have not ended.
     var activeCount: Int {
         attempts.count
     }
+#endif
 
     func run(
         for key: Key,

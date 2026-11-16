@@ -13,12 +13,6 @@ struct SelectionBar: View {
     let searchModel: PdfSearchModel
     let withoutBookmark: Bool
     
-    @Environment(PdfRootModel.self) private var root
-    
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
     var body: some View {
         SelectionBarTextSelectionView(editController: editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
             .opacity(showsSelection ? 1 : 0)

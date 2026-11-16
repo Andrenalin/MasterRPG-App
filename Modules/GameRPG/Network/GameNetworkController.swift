@@ -149,15 +149,12 @@ extension GameNetworkController {
         Logger.networking.debug("GameNetworkController: stop game \(name, privacy: .private)")
         if await isStreaming() {
             model.masterStore?.stopStreaming()
-            await model.playerStore?.stop()
-            if !proxy { sharePlayStore.reset() }
-        } else {
-            await model.playerStore?.stop()
-            // Not only leaving: Messenger, the send queue, deferred retries and Journal loads of
-            // the left session would run on, and a quick restart could receive their traffic.
-            // `reset()` also leaves the session. See CODE_AUDIT_Game_Shareplay §5.30.
-            if !proxy { sharePlayStore.reset() }
         }
+        await model.playerStore?.stop()
+        // Not only leaving: Messenger, the send queue, deferred retries and Journal loads of
+        // the left session would run on, and a quick restart could receive their traffic.
+        // `reset()` also leaves the session. See CODE_AUDIT_Game_Shareplay §5.30.
+        if !proxy { sharePlayStore.reset() }
         if !proxy {
             sharePlayStore.stopJoin()
             model.setLocalPlayers(to: false)

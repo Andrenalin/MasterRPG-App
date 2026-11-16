@@ -12,6 +12,26 @@ Findings cite `path/to/file.swift:LINE` (repo-relative). Items marked **[OPEN si
 
 ---
 
+## 0. Status (§9 Dead code / duplication / refactor, worked 2026-11-15)
+
+Verified with Debug builds (iOS Simulator, visionOS Simulator, macOS, tvOS), Release builds (iOS device, visionOS device, macOS, tvOS) and the `MasterRPG` test plan (868 tests, passing; the first run had one timing flake in `FolderListControllerTests` that passed on rerun). Uncommitted.
+
+**Fixed:** 9.1 (split into `ImportModels`, `InputStream+GmzFraming`, `ImportControllable+ReviewLog`, `EditControllable+Folders/+Delete/+Undo`, `ItemControllable+GamePersistence`, `ItemGameModel`), 9.2, 9.3 (Simple has its own `SimpleNull*` controllers per session), 9.4, 9.6 (chain deleted on request), 9.7 (`SpaceViewer+SharedPlacement/+Handoff/+Loading`, `SpaceViewerSubviews`; `loadEntity` now calls `configureInteraction`, `startCollisionShapeGeneration`, `normalizeScale`, `place`), 9.8, 9.9 (`isMove`, padding), 9.10-9.17, 9.19-9.24, 9.25, 9.26 (counters `#if DEBUG`), 9.27-9.30, 9.32 (`GameRoot+Master/+Player/+Stop/+Demo/+Search`), 9.33-9.36, 9.39, 9.41, 9.42, 9.45 (`DiceModel+Options/+Merge/+Codable/+ItemData`), 9.47-9.49, 9.51-9.53, 9.55, 9.57.
+
+**Partly fixed:** 9.40 (`AudioEntryModel.displayState` kept, removing it changes the wire format), 9.44 (`CompareValue.check(value:against:)` is used by `GameController+DiceResult`), 9.50 (`PhotoEntryModel.filter(with:)` is used through the protocol), 9.56 (widget entry helpers shared; the window viewer and link lists are not), 9.21 (`MeshAnimationView` is used by snapshot tests).
+
+**Not done:**
+- 9.5 left out on request (to be checked by the owner).
+- 9.9 `AnyView` returns and `lineSpacing(4)` kept.
+- 9.13 the agreement test between the two Foundry mapping tables was not added; both now read one table.
+- 9.26 the table-weather flag has no removal date (documented in code and GAME_CONNECTIONS.md §18).
+- 9.3, 9.18, 9.31, 9.37, 9.38, 9.43, 9.46, 9.54 **`#if DEBUG` gating of the preview and mock fixtures was tried and reverted.** `#Preview` blocks are compiled in Release too (764 of them in 692 files use the `Fake*`, `*PreviewData` and `*MockData` fixtures), so gating the fixtures breaks every Release build (94 files in CoreRPG alone). It needs every `#Preview` wrapped in `#if DEBUG` first. Done instead: the Adventure fixtures moved to `AdventureRPG/Preview/`, the widget no longer depends on a fixture (`DiceSnapshot.widgetDefault`) and the production Table outcome editor no longer uses `Fake*`.
+- The `@ScaledMetric` sizes of 9.18 (`GridLabelView`, `CachePhotoView`, the `ImporterFanView` radius) were not changed.
+
+**Release builds:** the iOS Simulator Release configuration fails in the `DiceRollerWidgetExtension` target ("Unable to resolve module dependency", frameworks built for an incompatible target), the generic iOS device Release build succeeds.
+
+---
+
 ## 1. Executive summary
 
 No Critical finding. The nine High findings were all re-read in the code by the lead; eight are user-hit bugs and most are small and local, the ninth (§6.1) needs a hostile imported package. In priority order:

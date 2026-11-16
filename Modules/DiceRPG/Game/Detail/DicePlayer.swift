@@ -4,7 +4,6 @@ import SwiftUI
 import CoreRPG
 
 struct DicePlayer: View {
-    let filterout: UUID
     let alignment: HorizontalAlignment
 
     @Environment(DiceRootModel.self) private var root
@@ -60,9 +59,7 @@ private struct DicePlayerButton: View {
     var body: some View {
         if diceDisplayModel.isEditing {
             Button {
-                Task {
-                    await root.gameController.toggleHidden(playerId: playerId)
-                }
+                root.gameController.toggleHidden(playerId: playerId)
             } label: {
                 DicePlayerLabel(playerId: playerId, isEditing: true)
             }
@@ -162,7 +159,7 @@ struct DicePlayerLabel: View {
 
 #Preview {
     @Previewable @State var isEditing: Bool = false
-    DicePlayer(filterout: DiceModel.previewId, alignment: .leading)
+    DicePlayer(alignment: .leading)
         .environment(DiceRootModel.preview)
         .environment(DiceDisplayModel())
 }

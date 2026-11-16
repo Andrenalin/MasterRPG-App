@@ -30,7 +30,6 @@ struct ViewControllerTests {
         _ = sut.thumbnailRowView(for: adventure)
         _ = sut.batchExtractionView(itemController: root.itemController, editController: root.editController, ids: [itemId])
         _ = sut.batchExtractionView(itemController: roots.dice.itemController, editController: root.editController, ids: [itemId])
-        _ = sut.diceSelection(root: root, selectionModel: selectionModel)
         _ = sut.dropChooseView(model: selectionModel)
         _ = sut.linkListView(type: .selection, itemSelectionModel: selectionModel)
         _ = sut.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: true), dismissAction: {})

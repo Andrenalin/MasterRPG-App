@@ -25,7 +25,6 @@ final class GameStatisticsModel: Sendable {
     private(set) var isCollectionEnabled: Bool
     private(set) var isLoading = false
     private(set) var errorMessage: String?
-    private(set) var lastCompletedSessionID: UUID?
 
     @ObservationIgnored private var context: NSManagedObjectContext?
     @ObservationIgnored private var setupTask: Task<Void, Never>?
@@ -279,7 +278,6 @@ final class GameStatisticsModel: Sendable {
         defer { isClosingSession = false }
         do {
             try await dataController.finishSession(id: activeSessionID, at: date, reason: reason, in: context)
-            lastCompletedSessionID = activeSessionID
             self.activeSessionID = nil
             activeLocalParticipantID = nil
             await pruneShortSessions()
@@ -307,13 +305,9 @@ final class GameStatisticsModel: Sendable {
                 configuration: configuration,
                 calendar: calendar
             )
-            if summary.sessionCount != newSummary.sessionCount ||
-                summary.totalDuration != newSummary.totalDuration ||
-                summary.diceRollCount != newSummary.diceRollCount ||
-                summary.payloadByteCount != newSummary.payloadByteCount ||
-                summary.recentSessions != newSummary.recentSessions {
-                summary = newSummary
-            } else {
+            // Published only when something changed, so the charts do not redraw for a reload
+            // that found the same data.
+            if summary != newSummary {
                 summary = newSummary
             }
             errorMessage = nil
@@ -384,7 +378,6 @@ final class GameStatisticsModel: Sendable {
             // Events still queued belong to the running game and must not be flushed into nothing.
             await flushPendingEvents()
             try await dataController.deleteAll(keeping: activeSessionID, in: context)
-            lastCompletedSessionID = nil
             summary = .empty
             allSessions = []
             errorMessage = nil

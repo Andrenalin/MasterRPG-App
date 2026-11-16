@@ -156,16 +156,7 @@ private extension ListRowItemView {
 
     func addLink(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-        withAnimation {
-            root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
-            listController.scheduleDetailSearch()
-            // A fresh search, not `resetFilter()`, which rebuilt from stale results and left the
-            // moved item at root as well. See CODE_AUDIT_Folder §5.29.
-            root.folderListControllable.update(debounce: false)
-            Task {
-                await MasterRPGTips.donateContentOrganized()
-            }
-        }
+        addDroppedMember(itemId: itemId, to: parentModel.id, root: root, listController: listController)
     }
 }
 

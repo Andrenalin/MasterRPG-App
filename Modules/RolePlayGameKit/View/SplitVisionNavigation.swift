@@ -76,10 +76,6 @@ struct SplitVisionNavigation: View {
 #endif
     }
     
-    var selectedModule: NetworkModules {
-        (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
-    }
-
     private func openEditorWindow() {
         scenesManager.openWindow(.editor)
         MasterRPGTips.recordWindowOpened()

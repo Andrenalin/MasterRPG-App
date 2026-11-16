@@ -39,25 +39,7 @@ extension SearchListController: SearchRootControllable {
 
     /// Sync expansion: folder/collection children only (list search never expands item entries).
     @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
-        guard let item = searchController.itemControllable.itemSync(for: focusId),
-              item.specialCategory else { return [] }
-        let results = zip(item.entries, item.memberRowIds()).compactMap { entry, entryId -> SearchResult? in
-            guard let child = searchController.itemControllable.itemSync(for: entry.childId),
-                  child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
-            var result = SearchResult(
-                itemId: child.id, itemName: child.name,
-                module: searchController.itemControllable.config.module,
-                category: child.category,
-                entryId: entryId, entryName: nil, matchedContent: nil, relevanceScore: 0
-            )
-            result.canOpen = child.specialCategory  // nested folders can themselves be expanded
-            return result
-        }
-        // Folders: alphabetical order. Collections: preserve entry order.
-        if item.category == .folder {
-            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-        }
-        return results
+        searchController.folderChildResults(focusId: focusId) ?? []
     }
 
     public func copy(listDisplayModel: ListDisplayModel) -> any SearchRootControllable {
@@ -112,39 +94,22 @@ extension SearchLinkController: SearchRootControllable {
     /// Sync expansion: folder/collection children OR item entries (inspector).
     /// Same logic as `results(text:, focusId:)` but purely synchronous via `itemSync`.
     @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
+        if let children = searchController.folderChildResults(focusId: focusId) {
+            return children
+        }
         guard let item = searchController.itemControllable.itemSync(for: focusId) else { return [] }
-        if item.specialCategory {
-            let results = zip(item.entries, item.memberRowIds()).compactMap { entry, entryId -> SearchResult? in
-                guard let child = searchController.itemControllable.itemSync(for: entry.childId),
-                      child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
-                var result = SearchResult(
-                    itemId: child.id, itemName: child.name,
-                    module: searchController.itemControllable.config.module,
-                    category: child.category,
-                    entryId: entryId, entryName: nil, matchedContent: nil, relevanceScore: 0
-                )
-                result.canOpen = child.specialCategory
-                return result
-            }
-            // Folders: alphabetical order. Collections: preserve entry order.
-            if item.category == .folder {
-                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-            }
-            return results
-        } else {
-            // Regular item: flat entry list (inspector entry expansion).
-            // No search active here (empty-search rebuild) — preserve the item's own
-            // entry order (e.g. table rows), same as the collection branch above.
-            return item.entries.map { entry in
-                SearchResult(
-                    itemId: item.id, itemName: item.name,
-                    module: searchController.itemControllable.config.module,
-                    category: item.category,
-                    entryId: entry.id, entryName: entry.name,
-                    matchedContent: entry.content.isEmpty ? nil : entry.content,
-                    relevanceScore: 0
-                )
-            }
+        // Regular item: flat entry list (inspector entry expansion).
+        // No search active here (empty-search rebuild) — preserve the item's own
+        // entry order (e.g. table rows), same as a collection's children.
+        return item.entries.map { entry in
+            SearchResult(
+                itemId: item.id, itemName: item.name,
+                module: searchController.itemControllable.config.module,
+                category: item.category,
+                entryId: entry.id, entryName: entry.name,
+                matchedContent: entry.content.isEmpty ? nil : entry.content,
+                relevanceScore: 0
+            )
         }
     }
 
@@ -154,5 +119,30 @@ extension SearchLinkController: SearchRootControllable {
             searchModel: searchModel.newSearchModel,
             listDisplayModel: listDisplayModel
         )
+    }
+}
+
+extension SearchControllable {
+    /// The visible children of a folder or collection as search results, `nil` when `focusId` is
+    /// not a folder or collection. Folders sort alphabetically, collections keep their entry order.
+    /// Shared by `SearchListController` and `SearchLinkController`. See CODE_AUDIT_26 §9.8.
+    @MainActor func folderChildResults(focusId: UUID) -> [SearchResult]? {
+        guard let item = itemControllable.itemSync(for: focusId), item.specialCategory else { return nil }
+        let results = zip(item.entries, item.memberRowIds()).compactMap { entry, entryId -> SearchResult? in
+            guard let child = itemControllable.itemSync(for: entry.childId),
+                  child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
+            var result = SearchResult(
+                itemId: child.id, itemName: child.name,
+                module: itemControllable.config.module,
+                category: child.category,
+                entryId: entryId, entryName: nil, matchedContent: nil, relevanceScore: 0
+            )
+            result.canOpen = child.specialCategory  // nested folders can themselves be expanded
+            return result
+        }
+        if item.category == .folder {
+            return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
+        }
+        return results
     }
 }

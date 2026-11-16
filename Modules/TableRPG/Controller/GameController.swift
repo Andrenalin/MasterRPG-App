@@ -136,34 +136,6 @@ extension GameController: TableGameStorable {
             model.diceResult = value
         }
     }
-    
-    // Not currently called from production code (only from
-    // GameControllerTests) — `TableGenerationController.matchingEntry`
-    // handles live rolls instead. Kept in sync with it via the shared
-    // `TableRollRange` parser so a future caller doesn't inherit a stale
-    // implementation. See CODE_AUDIT_Table §5.1/§5.2/§5.8.
-    @MainActor
-    func entry(for id: UUID, with result: Int) -> UUID? {
-        let item = gameItem(for: id)
-        switch item.tableType {
-        case .dice:
-            guard item.diceId != nil else { return nil }
-            if let ranged = item.entries.first(where: {
-                TableRollRange.selectorRange(for: $0.name)?.contains(result) == true
-            }) {
-                return ranged.id
-            }
-            let index = result - 1
-            guard item.entries.indices.contains(index) else { return nil }
-            return item.entries[index].id
-        case .list, .all:
-            let index = result - 1
-            if index >= 0 && index < item.entries.count {
-                return item.entries[index].id
-            }
-            return nil
-        }
-    }
 
     @MainActor
     public func isTableAvailable(itemId: UUID, version: Int) -> Bool {

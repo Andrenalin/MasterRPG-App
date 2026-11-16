@@ -6,7 +6,7 @@ import SwiftUI
 struct DiceFocusResult: View {
     var body: some View {
         FocusedDiceContainer { itemId in
-            DiceGameResult(itemId: itemId, canShowPlayer: false, isTrailing: true)
+            DiceGameResult(itemId: itemId, isTrailing: true)
         }
     }
 }

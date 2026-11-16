@@ -4,7 +4,6 @@ import SwiftUI
 
 public struct AddTagsEditor: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @Environment(\.appTheme) private var theme
 
     public init(tags: Binding<[String]>, prompt: LocalizedStringKey = "New tag") {
         self._tags = tags

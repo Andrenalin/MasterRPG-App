@@ -21,15 +21,6 @@ import SwiftUI
 /// ```
 /// ### Dismissible
 /// Presented ManagedNavigationStacks are automatically dismissible.
-/// ### State Restoration
-/// ManagedNavigationStack supports state restoration out of the box. For state restoration to work, however, a
-/// few conditions apply.
-///
-/// 1.  The ManagedNavigationStack must have a unique scene name.
-/// 2.  All ``NavigationDestination`` types pushed onto the stack must be Codable.
-/// 3.  A state restoration key was provided in ``NavigationConfiguration``.
-///
-/// See the State Restoration documentation for more.
 @MainActor
 public struct ManagedNavigationStack<Content: View>: View {
 
@@ -38,57 +29,38 @@ public struct ManagedNavigationStack<Content: View>: View {
 
     private let name: String?
     private let content: (Navigator) -> Content
-    private let isScene: Bool
 
     /// Initializes NavigationStack.
     public init(@ViewBuilder content: @escaping () -> Content) {
         self.name = nil
         self.content = { _ in content() }
-        self.isScene = false
     }
 
     /// Initializes NavigationStack passing Navigator into closure.
     public init(@ViewBuilder content: @escaping (Navigator) -> Content) {
         self.name = nil
         self.content = { navigator in content(navigator) }
-        self.isScene = false
     }
 
     /// Initializes named NavigationStack.
     public init(name: String?, @ViewBuilder content: @escaping () -> Content) {
         self.name = name
         self.content = { _ in content() }
-        self.isScene = false
     }
 
     /// Initializes named NavigationStack passing Navigator into closure.
     public init(name: String, @ViewBuilder content: @escaping (Navigator) -> Content) {
         self.name = name
         self.content = { navigator in content(navigator) }
-        self.isScene = false
-    }
-
-    /// Initializes NavigationStack with name needed to enable scene storage.
-    public init(scene name: String, @ViewBuilder content: @escaping () -> Content) {
-        self.name = name
-        self.content = { _ in content() }
-        self.isScene = true
-    }
-
-    /// Initializes NavigationStack with name needed to enable scene storage passing Navigator into closure.
-    public init(scene name: String, @ViewBuilder content: @escaping (Navigator) -> Content) {
-        self.name = name
-        self.content = { navigator in content(navigator) }
-        self.isScene = true
     }
 
     /// The managed navigation stack that either uses an existing navigator
     /// (when wrapped in ``ManagedPresentationView``) or creates its own.
     public var body: some View {
         if isWrappedInPresentationView {
-            WrappedNavigationStack(navigator: navigator.setting(name), sceneName: sceneName, content: content(navigator))
+            WrappedNavigationStack(navigator: navigator.setting(name), content: content(navigator))
         } else {
-            CreateNavigationStack(name: name, sceneName: sceneName, content: content)
+            CreateNavigationStack(name: name, content: content)
         }
     }
 
@@ -96,20 +68,14 @@ public struct ManagedNavigationStack<Content: View>: View {
         isPresented && navigator.owner == .presenter
     }
 
-    internal var sceneName: String? {
-        isScene ? name : nil
-    }
-
     // Allows NavigationStack to use Navigator provided by ManagedPresentationView
     internal struct WrappedNavigationStack: View {
 
         internal var navigator: Navigator
-        internal let sceneName: String?
         internal let content: Content
 
-        init(navigator: Navigator, sceneName: String?, content: Content) {
+        init(navigator: Navigator, content: Content) {
             self.navigator = navigator
-            self.sceneName = sceneName
             self.content = content
         }
 
@@ -124,7 +90,6 @@ public struct ManagedNavigationStack<Content: View>: View {
                             .environment(\.navigator, navigator)
                     }
             }
-            .modifier(NavigationSceneStorageModifier(navigator: navigator, name: sceneName))
             .onAppear {
                 navigator.set(current: navigator)
             }
@@ -141,7 +106,6 @@ public struct ManagedNavigationStack<Content: View>: View {
         @LazyState private var navigator: Navigator
         @State private var registration = ChildRegistration()
 
-        private let sceneName: String?
         private let content: (Navigator) -> Content
 
         /// Whether this stack's navigator was added to its parent. A plain reference, not
@@ -150,9 +114,8 @@ public struct ManagedNavigationStack<Content: View>: View {
             var isDone = false
         }
 
-        init(name: String?, sceneName: String?, content: @escaping (Navigator) -> Content) {
+        init(name: String?, content: @escaping (Navigator) -> Content) {
             self._navigator = .init(wrappedValue: Navigator(owner: .stack, name: name))
-            self.sceneName = sceneName
             self.content = content
         }
 
@@ -178,7 +141,6 @@ public struct ManagedNavigationStack<Content: View>: View {
                     .environment(\.navigator, navigator)
             }
             .modifier(NavigationPresentationModifiers(navigator: navigator))
-            .modifier(NavigationSceneStorageModifier(navigator: navigator, name: sceneName))
             .environment(\.navigator, navigator)
             .onChange(of: isPresented) {
                 parent.addChild(navigator, dismissible: isPresented ? dismiss : nil)

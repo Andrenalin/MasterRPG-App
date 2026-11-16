@@ -10,7 +10,6 @@ enum TimeConstant {
 
 struct PlayerTime: Equatable, Hashable, Sendable {
     let elapsedText: String
-    let remainingText: String
     let totalDuration: Double
     /// The elapsed time in seconds. Views read the position from here: it is observed and
     /// updated by the player's time observer and after every seek.
@@ -20,7 +19,6 @@ struct PlayerTime: Equatable, Hashable, Sendable {
 
     init(elapsedTime: Double, remainingTime: Double) {
         elapsedText = PlayerTime.formatted(time: elapsedTime)
-        remainingText = PlayerTime.formatted(time: remainingTime)
         totalDuration = elapsedTime + remainingTime
         elapsedSeconds = elapsedTime
     }

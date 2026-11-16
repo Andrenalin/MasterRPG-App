@@ -74,9 +74,9 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
     private var fileTypes: [UTType] {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
-    
+
     private var shouldShowContent: Bool {
-        model.url != nil || fileTypes.isEmpty || model.specialCategory
+        root.showsContent(of: model)
     }
 
     private var isEntryEditorPresented: Bool {
