@@ -124,6 +124,8 @@ private extension MasterGameScreen {
         } catch {
             return
         }
+        // The game may have been quit during the delay: its windows must not open then.
+        guard appGameStateModel.isGameRunning, !root.isStopping, root.gameModel.gameConfig.state != .stopped else { return }
 
 #if os(visionOS)
         // The adventure game view never appears inline on visionOS; it always
@@ -160,6 +162,9 @@ private extension MasterGameScreen {
     func endGame() {
         appGameStateModel.isGameRunning = false
         Task {
+#if os(visionOS)
+            await GameWindowToggle.closeSecondaryWindows(scenesManager: scenesManager)
+#endif
             await root.stopGame()
         }
     }

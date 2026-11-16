@@ -15,7 +15,9 @@ struct GameRootView: View {
 
         GameView(root: root)
             .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
-                appGameStateModel.update(isRunning: newState == .started, isMaster: root.gameModel.gameConfig.isMaster)
+                // A quit that is still tearing down must not turn the game back on when this view
+                // mounts again meanwhile: the game screen would return and reopen its windows.
+                appGameStateModel.update(isRunning: newState == .started && !root.isStopping, isMaster: root.gameModel.gameConfig.isMaster)
             }
     }
 }

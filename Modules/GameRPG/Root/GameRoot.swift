@@ -53,6 +53,9 @@ public final class GameRoot {
     /// entry point awaits this before proceeding, and `stopGame()` itself coalesces concurrent
     /// callers onto the same in-flight task rather than tearing down twice.
     var stopGameTask: Task<Void, Never>?
+    /// Whether a quit is tearing the game down. The game's state is still `.started` until the
+    /// teardown reaches its end, so a view that mounts meanwhile must not read it as running.
+    var isStopping: Bool { stopGameTask != nil }
     /// Which `stopGame` call created `stopGameTask`: only that teardown may clear it.
     var stopGameTaskToken: UUID?
     /// A `startGame` is running: a second call (double tap, intent and UI together) would reset

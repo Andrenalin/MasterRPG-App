@@ -99,6 +99,8 @@ private extension PlayerGameScreen {
         } catch {
             return
         }
+        // The game may have been quit during the delay: its windows must not open then.
+        guard appGameStateModel.isGameRunning, !root.isStopping, root.gameModel.gameConfig.state != .stopped else { return }
 
 #if os(visionOS)
         // The character game view never appears inline on visionOS; it always
@@ -140,6 +142,9 @@ private extension PlayerGameScreen {
     func endGame() {
         appGameStateModel.isGameRunning = false
         Task {
+#if os(visionOS)
+            await GameWindowToggle.closeSecondaryWindows(scenesManager: scenesManager)
+#endif
             await root.stopGame()
         }
     }

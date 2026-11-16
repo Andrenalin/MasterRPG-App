@@ -61,4 +61,26 @@ enum GameWindowToggle {
             appSettingsModel.playerMainTabDisplayMode = GameMainTabDisplayMode.hidden.rawValue
         }
     }
+
+#if os(visionOS)
+    /// The secondary windows a game opens: each module's viewer and link windows (the adventure
+    /// game view among them), the battle round, the 3D table and the spatial viewers.
+    private static var secondaryScenes: [SceneId] {
+        let moduleScenes = NetworkModules.allCases
+            .filter { $0.linkWindowId != "NoWindow" }
+            .flatMap { [SceneId.sceneId(for: $0), SceneId.viewerId(for: $0)] }
+        return moduleScenes + [.battleRound, .gameTable, .gameRecover, .imageSpaceViewer, .weatherSpaceViewer]
+    }
+
+    /// Closes every secondary window and the immersive space when the game quits, so none stays
+    /// behind with nothing to show. The game screen itself is left to the navigation.
+    static func closeSecondaryWindows(scenesManager: ScenesManager) async {
+        for scene in secondaryScenes where scenesManager.getSceneState(for: scene) != .closed {
+            scenesManager.dismissWindow(scene)
+        }
+        if scenesManager.immersiveSpaceState == .open {
+            await scenesManager.toggleSpaceViewer(selection: nil)
+        }
+    }
+#endif
 }
