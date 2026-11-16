@@ -44,6 +44,9 @@ struct ViewerRootView: View {
                             .foregroundStyle(Color.accentColor)
                     }
                 }
+#else
+            PdfUnsupportedView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 #endif
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])

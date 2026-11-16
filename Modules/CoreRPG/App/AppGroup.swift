@@ -83,4 +83,18 @@ public extension FileManager {
     static var preferredRootUrl: URL {
         cloudURL ?? groupURL ?? URL.documentsDirectory
     }
+
+    /// Whether a file written below `preferredRootUrl` is expected to reach disk and stay there.
+    ///
+    /// `false` on tvOS: an app there may only write to the caches and temporary folders; the
+    /// group container refuses the write (`NSCocoaErrorDomain` 513). A game delivery on tvOS
+    /// (observer mode) therefore must not insist on a stored file: it keeps the bytes in memory
+    /// for the game, and `persistFromGame` leaves such an item out of the library.
+    static var supportsDurableFileStorage: Bool {
+        #if os(tvOS)
+        false
+        #else
+        true
+        #endif
+    }
 }

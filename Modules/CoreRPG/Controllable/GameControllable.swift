@@ -312,11 +312,12 @@ public extension GameControllable {
             do {
                 // A delivery that is stored in the library needs its file on disk: the in-memory
                 // fallback of a failed write was persisted as a reference to a file that does
-                // not exist after relaunch. See CODE_AUDIT_21 §5.14.
+                // not exist after relaunch. See CODE_AUDIT_21 §5.14. tvOS cannot store files, so
+                // there the bytes stay in memory and the item stays out of the library.
                 appliedIds = try await importNetwork(
                     from: encodedData,
                     importMode: importMode,
-                    requiresDurableFiles: policy == .persist
+                    requiresDurableFiles: policy == .persist && FileManager.supportsDurableFileStorage
                 )[itemControllable.config.module] ?? []
             } catch is CancellationError {
                 throw CancellationError()

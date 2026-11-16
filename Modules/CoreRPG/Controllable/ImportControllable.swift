@@ -640,11 +640,18 @@ private extension ImportControllable {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension, requireDurableStorage: requiresDurableFile)
             Logger.importController.debug("Import addFile stored imported file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) storedUrl=\((updated ?? fileUrl).rawUrl.absoluteString, privacy: .private) storedHash=\((updated ?? fileUrl).contentHash ?? "nil", privacy: .public)")
             let stored = updated ?? fileUrl
+            // The write fell back to memory (tvOS cannot store files): item replacement and
+            // sync merges drop bytes that sit on the item, so they are held by file id, which
+            // every reader (`loadData`, `url(for:)`, `hasDownloadedData`) consults.
+            if stored.hasUnconvertedData, stored.location == .newCloud {
+                fileUrlDataController.holdPeerData(data, for: stored)
+            }
             await itemControllable.reset(fileUrl: stored, item: &item)
             return (false, ImportedFileWrite(written: stored, previous: localFileUrl))
         } catch {
             guard !requiresDurableFile else { throw error }
             Logger.importController.error("Cannot store the delivered file \(module, privacy: .public), keeping it in memory for the game")
+            fileUrlDataController.holdPeerData(data, for: fileUrl)
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
             return (false, nil)
         }

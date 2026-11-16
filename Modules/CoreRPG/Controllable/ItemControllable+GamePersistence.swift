@@ -17,7 +17,10 @@ public extension ItemControllable {
         // Bytes that never reached disk are gone at the next launch; the library must not
         // reference them. The delivery's import already requires a stored file, this covers
         // every other way an item gets here. See CODE_AUDIT_21 §5.14.
-        if let fileUrl = model.fileUrl, fileUrl.hasUnconvertedData, fileUrl.location == .newCloud {
+        // Where files cannot be stored (tvOS) the bytes are held by file id (`holdPeerData`), not
+        // on the item, so `hasUnconvertedData` is false by now: the platform decides.
+        if let fileUrl = model.fileUrl, fileUrl.location == .newCloud,
+           fileUrl.hasUnconvertedData || !FileManager.supportsDurableFileStorage {
             Logger.fileStore.error("Not storing game item \(model.id, privacy: .public) in the library: its file was not written to disk")
             return
         }
