@@ -95,7 +95,7 @@ extension GameTableModel {
                     guard let equipment = tabletopGame.equipment(of: Die8.self, matching: dieId) else { continue }
                     updateDieSlot(equipment, target: target)
                 case .d6:
-                    guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
+                    guard let equipment = tabletopGame.equipment(of: Die6.self, matching: dieId) else { continue }
                     updateDieSlot(equipment, target: target)
             }
         }
@@ -211,7 +211,7 @@ extension GameTableModel {
 
     private static func dieMaterial(for kind: TableDieKind, code: String) async -> PhysicallyBasedMaterial? {
         switch kind {
-            case .d6: await DieAssets.d6Material(for: code)
+            case .d6: await Die6Assets.material(for: code)
             case .d8: await Die8Assets.material(for: code)
             case .d3: await Die3Assets.material(for: code)
             case .d4: await Die4Assets.material(for: code)
@@ -223,7 +223,7 @@ extension GameTableModel {
 
     private func apply(material: PhysicallyBasedMaterial, to dieId: EquipmentIdentifier, kind: TableDieKind) {
         switch kind {
-            case .d6: tabletopGame.equipment(of: Die.self, matching: dieId)?.apply(material: material)
+            case .d6: tabletopGame.equipment(of: Die6.self, matching: dieId)?.apply(material: material)
             case .d8: tabletopGame.equipment(of: Die8.self, matching: dieId)?.apply(material: material)
             case .d3: tabletopGame.equipment(of: Die3.self, matching: dieId)?.apply(material: material)
             case .d4: tabletopGame.equipment(of: Die4.self, matching: dieId)?.apply(material: material)
@@ -246,7 +246,7 @@ extension GameTableModel {
             || tabletopGame.equipment(of: Die12.self, matching: dieId) != nil
             || tabletopGame.equipment(of: Die10.self, matching: dieId) != nil
             || tabletopGame.equipment(of: Die8.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die.self, matching: dieId) != nil
+            || tabletopGame.equipment(of: Die6.self, matching: dieId) != nil
     }
 
     /// Whether `dieId` belongs to a seat's pools.
@@ -296,7 +296,7 @@ extension GameTableModel {
             tabletopGame.addAction(
                 .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
             )
-        } else if let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) {
+        } else if let equipment = tabletopGame.equipment(of: Die6.self, matching: dieId) {
             tabletopGame.addAction(
                 .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
             )

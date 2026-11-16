@@ -1290,7 +1290,11 @@ struct FolderListControllerTests {
         controller.listDisplayModel.listMode = .folder
         controller.scheduleSearch()
         controller.scheduleDetailSearch()
-        try await Task.sleep(for: .milliseconds(500))
+        // Poll instead of a fixed sleep: the root search is debounced and async, so a fixed
+        // window is flaky when the whole suite runs in parallel.
+        _ = await waitUntil(timeout: .seconds(5)) {
+            controller.listModel.list.contains(where: { $0.source.itemId == folderId })
+        }
 
         #expect(controller.listModel.list.contains(where: { $0.source.itemId == folderId }),
                 "The root search must still run after the detail search was scheduled")

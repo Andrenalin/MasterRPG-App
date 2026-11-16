@@ -255,7 +255,7 @@ struct SheetControllerTests {
         let updatedDiceId = UUID()
         let originalPhotoId = UUID()
         let updatedPhotoId = UUID()
-        let keptEntry = ValueEntryModel(id: UUID(), name: "Old Value", type: .text, value: "Old text", diceId: originalDiceId)
+        let keptEntry = ValueEntryModel(id: UUID(), name: "Old Value", type: .number, value: "5", diceId: originalDiceId)
         let removedEntry = ValueEntryModel(id: UUID(), name: "Removed Value", type: .text, value: "Gone")
         let rootManager = RootManager(
             adventureRoot: root,
@@ -286,7 +286,7 @@ struct SheetControllerTests {
 
         let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
 
-        let updatedEntry = ValueEntryModel(id: keptEntry.id, name: "Updated Value", type: .text, value: "Updated text", diceId: updatedDiceId)
+        let updatedEntry = ValueEntryModel(id: keptEntry.id, name: "Updated Value", type: .number, value: "7", diceId: updatedDiceId)
         let newEntry = ValueEntryModel(id: UUID(), name: "New Value", type: .number, value: "0|7")
         let item = root.itemController.itemOrEmpty(for: itemId)
         item.name = "Updated Character"
@@ -305,7 +305,7 @@ struct SheetControllerTests {
         #expect(!sheetModel.entries.map(\.source.entryId).contains(removedEntry.id))
         #expect(sheetModel.entries.map(\.source.entryId).contains(newEntry.id))
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.name == "Updated Value")
-        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "Updated text")
+        #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "7")
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.inlineEntries.map(\.source.itemId) == [updatedDiceId])
     }
 
@@ -314,7 +314,7 @@ struct SheetControllerTests {
         let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
         let itemId = UUID()
         let diceId = UUID()
-        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "", diceId: diceId)
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .number, value: "", diceId: diceId)
         let rootManager = RootManager(
             adventureRoot: root,
             audioRoot: root,

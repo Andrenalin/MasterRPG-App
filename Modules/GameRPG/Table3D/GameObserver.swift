@@ -42,7 +42,7 @@ final class GameObserver: TabletopGame.Observer {
             if state.value != TableDieValue.parked { die10.playTossSound() }
         } else if let (die8, state) = newSnapshot.equipment(of: Die8.self, matching: action.equipmentID) {
             if state.value != TableDieValue.parked { die8.playTossSound() }
-        } else if let (die, state) = newSnapshot.equipment(of: Die.self, matching: action.equipmentID) {
+        } else if let (die, state) = newSnapshot.equipment(of: Die6.self, matching: action.equipmentID) {
             if state.value != TableDieValue.parked { die.playTossSound() }
         }
     }

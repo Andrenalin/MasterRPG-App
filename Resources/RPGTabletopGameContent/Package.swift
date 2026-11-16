@@ -33,11 +33,6 @@ let package = Package(
         .target(
             name: "RPGTabletopGameContent",
             dependencies: [],
-            resources: [
-                // Pip mask of `Die.usdz`'s base color atlas (0 = pip, 255 = body); the table
-                // recolors the d6 from it, see `DieAssets.d6Material(for:)`.
-                .copy("DieFaceMask.png")
-            ],
             swiftSettings: [
                 .enableUpcomingFeature("MemberImportVisibility")
             ]),

@@ -23,18 +23,6 @@ enum GeneratedDie {
         return material
     }
 
-    /// Puts one material on every model of a loaded entity and its children.
-    @MainActor
-    static func setMaterial(_ material: PhysicallyBasedMaterial, in entity: Entity) {
-        if var model = entity.components[ModelComponent.self] {
-            model.materials = model.materials.map { _ in material }
-            entity.components.set(model)
-        }
-        for child in entity.children {
-            setMaterial(material, in: child)
-        }
-    }
-
     /// The orientation that turns this direction — a face's outward normal, or a corner — up.
     static func faceUpOrientation(normal: SIMD3<Float>) -> Rotation3D {
         let up = SIMD3<Float>(0, 1, 0)

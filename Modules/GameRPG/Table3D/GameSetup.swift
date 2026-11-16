@@ -155,7 +155,7 @@ final class GameSetup {
                 setup.add(equipment: d20)
                 d20Ids.append(d20.id)
 
-                let d6 = Die(
+                let d6 = Die6(
                     id: EquipmentIdentifier(idGenerator.newId()),
                     seatIndex: index,
                     dieNumber: slot + 1

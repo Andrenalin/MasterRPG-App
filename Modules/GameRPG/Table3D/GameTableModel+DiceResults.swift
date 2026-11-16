@@ -140,7 +140,7 @@ extension GameTableModel {
             case .d8:
                 snapshot.equipment(of: Die8.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
             case .d6:
-                snapshot.equipment(of: Die.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
+                snapshot.equipment(of: Die6.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
         }
     }
 

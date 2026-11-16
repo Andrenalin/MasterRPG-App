@@ -13,10 +13,9 @@ import os.log
 
 // MARK: - Generated Assets
 
-/// The d3's materials. Its mesh is the d6's (`DieAssets.entity(named: "Die")`); what differs is the
-/// texture: the numbers 1, 2 and 3 drawn into the faces' places on the d6's atlas, in the body and
-/// numeral colors of a dice color code. The d6's normal, occlusion and roughness maps have its pips
-/// baked in, so the d3 goes without them and is a smooth, glossy die.
+/// The d3's materials. Its mesh is the d6's cube (`Die6Assets.meshResource()`); what differs is the
+/// texture: the numbers 1, 2 and 3 drawn into the faces' cells of the cube's atlas, in the body and
+/// numeral colors of a dice color code.
 @MainActor
 enum Die3Assets {
     private static var materials: [String: PhysicallyBasedMaterial] = [:]
@@ -42,20 +41,23 @@ enum Die3Assets {
         return cached
     }
 
-    /// Draws the atlas: the die's body color everywhere, and on each face of the d6 mesh the number
-    /// it shows on the d3, in the numeral color.
+    /// Draws the atlas: the die's body color everywhere, and on each face of the cube the number
+    /// it shows on the d3, upright, in the numeral color.
     @concurrent
     private static func renderAtlas(palette: TableDiePalette) async -> CGImage? {
-        let size = 2048
-        guard let context = GeneratedDie.bodyContext(width: size, height: size, palette: palette) else { return nil }
-        for island in TableDie3Layout.islands {
+        let cell = 512
+        let width = cell * TableDie6Geometry.atlasColumns
+        let height = cell * TableDie6Geometry.atlasRows
+        guard let context = GeneratedDie.bodyContext(width: width, height: height, palette: palette) else { return nil }
+        for face in TableDie6Geometry.faces {
+            let center = TableDie6Geometry.atlasSquare(for: face).center
             GeneratedDie.drawNumeral(
-                String(island.number),
-                at: CGPoint(x: CGFloat(island.center.x) * CGFloat(size), y: CGFloat(island.center.y) * CGFloat(size)),
-                fontSize: CGFloat(size) * 0.2,
+                String(TableDie3Layout.number(forPips: face.number)),
+                at: CGPoint(x: CGFloat(center.x) * CGFloat(width), y: CGFloat(center.y) * CGFloat(height)),
+                fontSize: CGFloat(cell) * 0.5,
                 underlined: false,
                 color: GeneratedDie.cgColor(palette.pip),
-                imageHeight: size,
+                imageHeight: height,
                 in: context
             )
         }
@@ -78,28 +80,31 @@ struct Die3: EntityEquipment {
     /// Called by TabletopKit itself, not from our own code — see `Die.restingOrientation`.
     func restingOrientation(state: DieState) -> Rotation3D {
         guard state.value != TableDieValue.parked else { return .init() }
-        guard let face = TableDie3Layout.faceUp(forValue: TableDieValue.face(state.value)),
-              let orientation = Die.orientation(showingFace: face) else {
+        guard let pips = TableDie3Layout.faceUp(forValue: TableDieValue.face(state.value)),
+              let face = TableDie6Geometry.face(number: pips) else {
             Logger.gameTable.error("Invalid D3 die value \(state.value, privacy: .public); using default orientation as a fallback")
             return .init()
         }
-        return orientation
+        return GeneratedDie.faceUpOrientation(normal: face.normal)
     }
 
     @MainActor
     init(id: ID, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
         self.id = id
-        // See the matching comment on `Die.init`: a missing asset degrades to a procedural mesh.
+        // A mesh that can't be generated degrades to a plain box instead of crashing.
+        let model: Entity
         do {
-            self.entity = try DieAssets.entity(named: "Die")
+            model = ModelEntity(mesh: try Die6Assets.meshResource(), materials: [GeneratedDie.placeholderMaterial()])
         } catch {
             Logger.gameTable.error(
-                "Failed to load the bundled Die RealityKit asset for the D3: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); using a procedural fallback mesh"
+                "Failed to generate the cube mesh of the D3: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private); using a procedural fallback mesh"
             )
-            self.entity = ModelEntity(mesh: .generateBox(size: 0.07), materials: [GeneratedDie.placeholderMaterial()])
+            model = ModelEntity(
+                mesh: .generateBox(size: TableDie6Geometry.displayHeight),
+                materials: [GeneratedDie.placeholderMaterial()]
+            )
         }
-        // The d6's own material shows its pips; until the color's texture is ready, a plain one.
-        GeneratedDie.setMaterial(GeneratedDie.placeholderMaterial(), in: self.entity)
+        self.entity = model
         self.entity.name = "D3"
         do {
             let audioResource = try DieAssets.audio(named: "/Root/dieSoundShort_mp3")
@@ -110,7 +115,7 @@ struct Die3: EntityEquipment {
             )
             self.audioPlaybackController = nil
         }
-        representation = .cube(height: entity.visualBounds(relativeTo: nil).extents.x)
+        representation = .cube(height: TableDie6Geometry.displayHeight)
         initialState = .init(value: 0, parentID: .tableId, seatControl: seatControl, pose: .parkedDicePose, entity: self.entity)
 
         // See the matching accessibility setup on `Die20.init`.
@@ -132,7 +137,9 @@ struct Die3: EntityEquipment {
     /// Shows the die in the material `Die3Assets.material(for:)` made for a dice color.
     @MainActor
     func apply(material: PhysicallyBasedMaterial) {
-        GeneratedDie.setMaterial(material, in: entity)
+        guard var model = entity.components[ModelComponent.self] else { return }
+        model.materials = model.materials.map { _ in material }
+        entity.components.set(model)
     }
 
     @MainActor

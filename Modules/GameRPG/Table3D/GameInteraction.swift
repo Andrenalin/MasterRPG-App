@@ -68,7 +68,7 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
             interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die10.representation)
         } else if let die8 = game.tabletopGame.equipment(of: Die8.self, matching: interaction.value.startingEquipmentID) {
             interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die8.representation)
-        } else if let die = game.tabletopGame.equipment(of: Die.self, matching: interaction.value.startingEquipmentID) {
+        } else if let die = game.tabletopGame.equipment(of: Die6.self, matching: interaction.value.startingEquipmentID) {
             interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die.representation)
         }
     }
@@ -99,7 +99,7 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
             } else if let die8 = game.tabletopGame.equipment(of: Die8.self, matching: outcome.id) {
                 let nextValue = game.rollTossedDie(outcome.id) ?? Int.random(in: 1 ... 8)
                 interaction.addAction(.updateEquipment(die8, value: nextValue, pose: outcome.pose))
-            } else if let die = game.tabletopGame.equipment(of: Die.self, matching: outcome.id) {
+            } else if let die = game.tabletopGame.equipment(of: Die6.self, matching: outcome.id) {
                 let nextValue = game.rollTossedDie(outcome.id) ?? Int.random(in: 1 ... 6)
                 interaction.addAction(.updateEquipment(die, value: nextValue, pose: outcome.pose))
             }
