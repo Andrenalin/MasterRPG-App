@@ -63,8 +63,11 @@ extension AudioController {
     ) -> AsyncStream<Value> {
         AsyncStream(bufferingPolicy: .bufferingNewest(8)) { continuation in
             let last = Mutex<Value?>(nil)
-            let observation = KeyValueObservationBox(player.observe(keyPath, options: [.initial, .new]) { _, change in
-                guard let value = change.newValue else { return }
+            // The value is read from the player: `change.newValue` is `nil` for an Objective-C
+            // enum such as `timeControlStatus`, so every change was dropped and `isPlaying`
+            // never turned true.
+            let observation = KeyValueObservationBox(player.observe(keyPath, options: [.initial]) { observed, _ in
+                let value = observed[keyPath: keyPath]
                 let isRepeat = last.withLock { previous in
                     defer { previous = value }
                     return previous == value
