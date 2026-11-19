@@ -21,7 +21,7 @@ Most cases are generated directly from their view's same-file `#Preview`, keepin
 ruby Scripts/generate_snapshot_tests.rb
 ```
 
-The generator's handled/skipped inventory is written to `Tests/SNAPSHOT_GENERATION_REPORT.md`. Previews with `@Previewable` local state use small hand-written snapshot cases instead.
+The generator's handled/skipped inventory is written to `Docu/SNAPSHOT_GENERATION_REPORT.md`. Previews with `@Previewable` local state use small hand-written snapshot cases instead.
 
 ## Run and record snapshots
 

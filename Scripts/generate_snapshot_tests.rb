@@ -530,6 +530,6 @@ modules_to_generate.each do |module_name, test_directory|
 end
 
 if requested_modules.empty?
-  ROOT.join("Tests/SNAPSHOT_GENERATION_REPORT.md").write(report.join("\n"))
+  ROOT.join("Docu/SNAPSHOT_GENERATION_REPORT.md").write(report.join("\n"))
 end
 puts "Generated snapshot tests for #{modules_to_generate.length} module(s)."

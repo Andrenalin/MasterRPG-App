@@ -296,7 +296,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** Earlier audits found a full-reindex-per-save and a sync-load-on-init; both are invisible to correctness tests.
 - **Action:** Add 3–4 `measure`/time-budget tests with generous thresholds (10 000 items load; 5 000-entry folder import; fog render of the example map).
 - **Severity:** Low
-- **Status: FIXED 2026-11-19.** `Tests/TableRPGTests/PerformanceBudgetTests.swift` (10 000 tables written, saved and read back: 3.3 s / 1.5 s, budgets 60 s / 30 s; a 5 000-entry table exported and imported: 0.06 s / 3.1 s, budget 30 s each) and `Tests/GameRPGTests/FogRenderPerformanceTests.swift` (400 rooms on a 3 000 px map, for the master and a player: 0.03 s, budget 5 s). The measured times are printed as `PERF …`. The budgets catch quadratic regressions, not small ones. Not covered: a Foundry world import and SharePlay package assembly.
+- **Status: FIXED 2026-11-19.** `Tests/TableRPGTests/PerformanceBudgetTests.swift` (10 000 tables written, saved and read back: 3.3 s / 1.5 s, budgets 60 s / 30 s; a 5 000-entry table exported and imported: 0.06 s / 3.1 s, budget 30 s each) and `Tests/GameRPGTests/FogRenderPerformanceTests.swift` (400 rooms on a 3 000 px map, for the master and a player: 0.03 s alone, up to 10 s under a full parallel run, budget 30 s). The measured times are printed as `PERF …`. The budgets catch quadratic regressions, not small ones. Not covered: a Foundry world import and SharePlay package assembly.
 
 ### 7.2 `ObjectCache` and the two `CacheController`s
 - **Location:** `Modules/CoreRPG/Cache/ObjectCache.swift:1-99` (7 of 10 unnamed: disk save/load/eviction), `PhotoRPG/Controller/CacheController.swift`, `MapRPG/Controller/CacheController.swift`
@@ -364,6 +364,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** The per-module convention (one `<Module>Tests`, one `<Module>SnapshotTests`) is broken for the module with 10 k LOC and the Foundry importers, so ownership and per-module coverage reports attribute those tests to GameRPG.
 - **Action:** Add `RolePlayGameKitTests`, move those files, add it to all three unit plans.
 - **Severity:** Medium
+- **Status: FIXED 2026-11-19.** New unit-test target `RolePlayGameKitTests` (wired like `GameRPGTests`: `RPGResourcesDebug` and `MasterRPG` dependencies, visionOS test host; `TestSupport` shared) in `MasterRPG.xcodeproj/project.xcproj` and in the `MasterRPG`, `MasterRPGAndSnapshot` and `MasterAll` plans. The 12 files moved with `git mv` to `Tests/RolePlayGameKitTests` (the 11 listed plus `FoundryImportModelTests` and `ShareExtensionSaveTests`, which were added by §5.7/§6.3): 64 tests in 12 suites. `MasterThreadSanitizer` still runs `GameRPGTests` only, so these suites are no longer in the Thread Sanitizer run. The generated `RolePlayGameKitGeneratedPreviewSnapshotTests` still lives in `GameRPGSnapshotTests` (§8.2).
 
 ### 9.2 Per-module controller tests are copies of each other
 - **Location:** `Tests/*/ExportControllerTests.swift` (10), `ImportControllerTests.swift` (10), `LinkControllerTests.swift` (10), `SheetControllerTests.swift` (10), `DataControllerTests.swift` (11)
@@ -371,6 +372,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** A change to the shared protocol means ten edits; the modules without a file (§5.12) simply drift.
 - **Action:** Generic conformance suites with a `ModuleFixture` (see §10.2).
 - **Severity:** Low
+- **Status: NOT CHANGED, on purpose.** The files are not copies of each other beyond a small shared core: the export tests run from 58 to 323 lines per module and the link tests from 55 to 723, and most of each file is module-specific (Table PDF/dice dependencies, Character group links, Photo/Space file handling). Replacing them with generic suites would either drop those assertions or move them without removing the duplication. The shared core is now covered once by `ModuleItemLifecycleTests` and `ExportEngineHelperTests` (§5.12/§5.13); a generic export/import round-trip suite over all modules (§10.2) would be new coverage, not a clean-up, and is still open.
 
 ### 9.3 Production-compiled preview/mock types are the test fixtures
 - **Location:** `Modules/*/Model/MockData.swift`, `Modules/CoreRPG/Fake/FakeEditController.swift`, `Modules/GameRPG/Preview/PreviewData.swift`
@@ -378,6 +380,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** Not a gap by itself; it blocks making fixtures `#if DEBUG` and makes test data changes also change previews and snapshots.
 - **Action:** Keep as is; do not rewrite fixtures without regenerating the baseline (§8.1).
 - **Severity:** Low
+- **Status: NO ACTION, as the audit says.** The fixtures were not touched; the new tests use the existing `Fake*` types and `testRoot` helpers, and §7.1's fog test builds its own map instead of using preview data.
 
 ### 9.4 Tracked-but-unused snapshot generator report path
 - **Location:** `Docu/SNAPSHOT_TESTING.md` says the report is `Tests/SNAPSHOT_GENERATION_REPORT.md`; the file is at `Docu/SNAPSHOT_GENERATION_REPORT.md`
@@ -385,6 +388,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** Misleads whoever regenerates the cases.
 - **Action:** Fix the doc.
 - **Severity:** Low
+- **Status: FIXED 2026-11-19.** The doc was not the only stale part: `Scripts/generate_snapshot_tests.rb` still wrote the report to `Tests/SNAPSHOT_GENERATION_REPORT.md` while the committed file is `Docu/SNAPSHOT_GENERATION_REPORT.md`, so a regeneration would have created a second copy. The script and `Docu/SNAPSHOT_TESTING.md` now both use the `Docu/` path.
 
 ---
 

@@ -179,6 +179,13 @@
     {
       "target": {
         "containerPath": "container:MasterRPG.xcodeproj",
+        "identifier": "59F401032FA0000000000001",
+        "name": "RolePlayGameKitTests"
+      }
+    },
+    {
+      "target": {
+        "containerPath": "container:MasterRPG.xcodeproj",
         "identifier": "8EBECE432CD8EE92004E7103",
         "name": "TableRPGTests"
       }

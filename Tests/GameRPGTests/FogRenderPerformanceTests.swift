@@ -11,9 +11,9 @@ import Testing
 @testable import GameRPG
 
 /// CODE_AUDIT_TestGaps §7.1: the 3D board texture of a large map with many rooms, for the game
-/// master and for a player (who also gets the repeated fog tile). The budget (5 s) is about
-/// a hundred times the 0.03 s a development Mac needs: it catches a change to quadratic work per
-/// room, not a slow machine.
+/// master and for a player (who also gets the repeated fog tile). It takes 0.03 s alone and
+/// up to 10 s while the whole plan runs in parallel, so the budget is 30 s: it catches a change to
+/// quadratic work per room, not a slow machine.
 @Suite("Performance budgets: fog render")
 @MainActor
 struct FogRenderPerformanceTests {
@@ -90,7 +90,7 @@ struct FogRenderPerformanceTests {
         print("PERF fog render 400 rooms (master: \(isGameMaster)): \(time)")
         let image = try #require(texture)
         #expect(max(image.width, image.height) <= Int(BoardTextureRenderer.maximumDimension))
-        #expect(time < .seconds(5), "rendering 400 rooms took \(time)")
+        #expect(time < .seconds(30), "rendering 400 rooms took \(time)")
     }
 }
 #endif
