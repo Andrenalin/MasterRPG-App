@@ -10,6 +10,7 @@ import UIKit
 
 #if DEBUG
 import RPGResourcesDebug
+import Synchronization
 #endif
 
 /// Real media used by previews and snapshot tests.
@@ -41,7 +42,7 @@ public enum PreviewAssetFixture {
 
     public static func url(_ file: File) -> URL? {
 #if DEBUG
-        switch file {
+        let bundledUrl: URL? = switch file {
         case .audio:
             ResourcesDebug.audioExampleURL
         case .pdf:
@@ -49,10 +50,45 @@ public enum PreviewAssetFixture {
         case .space:
             ResourcesDebug.spaceExampleURL
         }
+        return bundledUrl.map(stableUrl(for:))
 #else
         nil
 #endif
     }
+
+#if DEBUG
+    /// The folder the example files are copied to, the same on every machine and in every build.
+    private static let stableFolder = URL(filePath: "/tmp/MasterRPGPreviewAssets", directoryHint: .isDirectory)
+    private static let copyLock = Mutex(())
+
+    /// The path of a bundled example file contains the DerivedData folder, which differs per
+    /// machine, per Xcode run and per `run_snapshot_tests.sh` process. Views such as the audio and
+    /// Pdf detail editors print the file path, so every snapshot containing one would only match
+    /// where it was recorded. The file is therefore copied to a fixed folder and that path is
+    /// handed out instead. Falls back to the bundled file when the copy is not possible (for
+    /// example in a sandboxed macOS test host).
+    private static func stableUrl(for bundledUrl: URL) -> URL {
+        let copyUrl = stableFolder.appending(path: bundledUrl.lastPathComponent, directoryHint: .notDirectory)
+        return copyLock.withLock { _ in
+            let fileManager = FileManager.default
+            let copyPath = copyUrl.path(percentEncoded: false)
+            do {
+                let bundledSize = try bundledUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize
+                let copySize = try? copyUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize
+                if copySize == nil || copySize != bundledSize {
+                    try fileManager.createDirectory(at: stableFolder, withIntermediateDirectories: true)
+                    if fileManager.fileExists(atPath: copyPath) {
+                        try fileManager.removeItem(at: copyUrl)
+                    }
+                    try fileManager.copyItem(at: bundledUrl, to: copyUrl)
+                }
+                return copyUrl
+            } catch {
+                return bundledUrl
+            }
+        }
+    }
+#endif
 
     public static func fileUrl(
         _ file: File,

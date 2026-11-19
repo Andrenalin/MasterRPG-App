@@ -2,6 +2,7 @@
 
 #if !os(visionOS)
 
+import CoreRPG
 import Foundation
 import SnapshotTesting
 import SwiftUI
@@ -196,6 +197,7 @@ private struct DeterministicSnapshotEnvironmentModifier: ViewModifier {
             .environment(\.calendar, SnapshotTestEnvironment.calendar)
             .environment(\.timeZone, SnapshotTestEnvironment.timeZone)
             .environment(\.layoutDirection, .leftToRight)
+            .environment(\.isSnapshotRendering, true)
             .dynamicTypeSize(.large)
             .preferredColorScheme(.light)
             .transaction { transaction in
@@ -210,6 +212,24 @@ extension View {
     @MainActor
     func deterministicSnapshotEnvironment() -> some View {
         modifier(DeterministicSnapshotEnvironmentModifier())
+    }
+}
+
+/// Owns the `@FocusState` a view under test takes as a binding.
+///
+/// A `@FocusState` declared as a local variable of a test function is read outside a view body,
+/// which SwiftUI reports ("Accessing FocusState's value outside of the body of a View") and answers
+/// with a constant binding. Declared here it is installed on a real view.
+struct OptionalFocusStateHarness<Value: Hashable, Content: View>: View {
+    @FocusState private var focusedValue: Value?
+    private let content: (FocusState<Value?>.Binding) -> Content
+
+    init(@ViewBuilder content: @escaping (FocusState<Value?>.Binding) -> Content) {
+        self.content = content
+    }
+
+    var body: some View {
+        content($focusedValue)
     }
 }
 

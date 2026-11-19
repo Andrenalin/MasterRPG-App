@@ -247,18 +247,18 @@ struct CoreRPGDynamicPreviewSnapshotTests {
     // snapshot-root: CoreRPG::SheetEntryView
     @Test("SheetEntryView")
     func sheetEntryView() {
-        @FocusState var focusedEntryId: UUID?
-        
         assertCoreSnapshot("SheetEntryView") {
             CoreRPGNamespaceSnapshotHarness { namespace in
-                SheetEntryView(
-                    rootModel: .fake,
-                    parentModel: .empty,
-                    entryModel: .empty,
-                    isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self,
-                    focusedEntryId: $focusedEntryId
-                )
+                OptionalFocusStateHarness { focusedEntryId in
+                    SheetEntryView(
+                        rootModel: .fake,
+                        parentModel: .empty,
+                        entryModel: .empty,
+                        isEditor: true,
+                        linkTypes: EmptyLinkTransferable.self,
+                        focusedEntryId: focusedEntryId
+                    )
+                }
             }
             .environment(AppGameStateModel())
         }
@@ -267,18 +267,18 @@ struct CoreRPGDynamicPreviewSnapshotTests {
     // snapshot-root: CoreRPG::SheetView
     @Test("SheetView")
     func sheetView() {
-        @FocusState var focusedEntryId: UUID?
-        
         assertCoreSnapshot("SheetView") {
             CoreRPGNamespaceSnapshotHarness { namespace in
-                SheetView(
-                    root: ItemRootController.fake,
-                    rootModel: .fake,
-                    sheetModel: .empty,
-                    isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self,
-                    focusedEntryId: $focusedEntryId
-                )
+                OptionalFocusStateHarness { focusedEntryId in
+                    SheetView(
+                        root: ItemRootController.fake,
+                        rootModel: .fake,
+                        sheetModel: .empty,
+                        isEditor: true,
+                        linkTypes: EmptyLinkTransferable.self,
+                        focusedEntryId: focusedEntryId
+                    )
+                }
             }
             .environment(AppGameStateModel())
         }

@@ -11,6 +11,7 @@ import GeneratorRPG
 struct TabbedNavigation: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.appTheme) private var theme
+    @Environment(\.isSnapshotRendering) private var isSnapshotRendering
 
     private let restoresState: Bool
 
@@ -42,7 +43,7 @@ struct TabbedNavigation: View {
         }
         .tabBarMinimizeBehavior(.onScrollDown)
 #endif
-        .applyIf(restoresState) {
+        .applyIf(restoresState && !isSnapshotRendering) {
             $0.modifier(TabbedNavigationRestorationModifier(appModel: appModel))
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)

@@ -9,7 +9,8 @@ struct SplitEditorNavigation: View {
     
     @Environment(AppModel.self) private var appModel
     @Environment(ScenesManager.self) private var scenesManager
-    
+    @Environment(\.isSnapshotRendering) private var isSnapshotRendering
+
     @State private var column: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
@@ -30,11 +31,13 @@ struct SplitEditorNavigation: View {
         // installed on a View" whenever the body runs before/without a scene (e.g. hosted for a
         // snapshot or evaluated ahead of installation) and yields a constant binding.
         .onAppear {
+            // A snapshot is hosted without a scene, which `@SceneStorage` needs.
+            guard !isSnapshotRendering else { return }
             restoreSelectedModule()
         }
         .onChange(of: appModel.selectedEditorModule) { _, newValue in
             guard let newValue else { return }
-            if storedTab != newValue {
+            if !isSnapshotRendering, storedTab != newValue {
                 storedTab = newValue
             }
             syncMenuSelection(for: newValue)

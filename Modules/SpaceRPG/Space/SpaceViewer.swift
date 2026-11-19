@@ -24,6 +24,7 @@ struct SpaceViewer: View {
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.isSnapshotRendering) var isSnapshotRendering
 
     @State var rootEntity: Entity?
     @State var objectEntity: Entity?

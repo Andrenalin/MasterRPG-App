@@ -906,22 +906,22 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: CoreRPG::ItemRowsView
     @Test("ItemRowsView")
     func snapshotItemRowsView() async throws {
-        @FocusState var focusedRowId: UUID?
-        
         try await assertPreviewSnapshot("ItemRowsView") {
             let fixture = FakeItemRootControllerFixture()
-            CoreRPG.ItemRowsView(
-                root: fixture.root,
-                listController: fixture.folderListController,
-                parentModel: nil,
-                listModel: fixture.folderListController.listModel,
-                menuController: ContextMenuMultiController(
-                    editController: fixture.editController,
-                    itemController: fixture.itemController,
-                    listModel: fixture.folderListController.listModel
-                ),
-                focusedRowId: $focusedRowId
-            )
+            OptionalFocusStateHarness { focusedRowId in
+                CoreRPG.ItemRowsView(
+                    root: fixture.root,
+                    listController: fixture.folderListController,
+                    parentModel: nil,
+                    listModel: fixture.folderListController.listModel,
+                    menuController: ContextMenuMultiController(
+                        editController: fixture.editController,
+                        itemController: fixture.itemController,
+                        listModel: fixture.folderListController.listModel
+                    ),
+                    focusedRowId: focusedRowId
+                )
+            }
         }
     }
 
@@ -978,8 +978,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: CoreRPG::ListRowItemView
     @Test("ListRowItemView")
     func snapshotListRowItemView() async throws {
-        @FocusState var focusedRowId: UUID?
-        
         try await assertPreviewSnapshot("ListRowItemView") {
             let fixture = FakeItemRootControllerFixture()
             let item = {
@@ -997,20 +995,22 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 )
                 return item
             }()
-            CoreRPG.ListRowItemView(
-                root: fixture.root,
-                item: item,
-                listController: fixture.folderListController,
-                parentModel: nil,
-                listModel: fixture.folderListController.listModel,
-                menuController: ContextMenuMultiController(
-                    editController: fixture.editController,
-                    itemController: fixture.itemController,
-                    listModel: fixture.folderListController.listModel
-                ),
-                leadingPadding: 8,
-                focusedRowId: $focusedRowId
-            )
+            OptionalFocusStateHarness { focusedRowId in
+                CoreRPG.ListRowItemView(
+                    root: fixture.root,
+                    item: item,
+                    listController: fixture.folderListController,
+                    parentModel: nil,
+                    listModel: fixture.folderListController.listModel,
+                    menuController: ContextMenuMultiController(
+                        editController: fixture.editController,
+                        itemController: fixture.itemController,
+                        listModel: fixture.folderListController.listModel
+                    ),
+                    leadingPadding: 8,
+                    focusedRowId: focusedRowId
+                )
+            }
             .environment(AppGameStateModel())
             .environment(\.locale, .init(identifier: "de"))
         }

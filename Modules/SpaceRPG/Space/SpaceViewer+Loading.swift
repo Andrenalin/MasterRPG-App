@@ -23,6 +23,11 @@ extension SpaceViewer {
         // can no longer get its camera afterwards. See `SpaceRootModel.liveViewerWasShown`.
         RealityViewPresence.noteCreated()
 
+        // A snapshot shows the progress view and ends right after the first layout; a model
+        // loaded then is still being built by RealityIO when the test process exits, which
+        // crashes it on the live scene update queue. See `EnvironmentValues.isSnapshotRendering`.
+        guard !isSnapshotRendering else { return }
+
         // Prevent reloading same model
         guard loadedItemId != id else { return }
 
