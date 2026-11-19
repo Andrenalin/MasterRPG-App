@@ -86,7 +86,7 @@ struct AudioRemoteCommandGameTests {
 
         await Self.inGame(root, sent) {
             #expect(root.routeRemoteCommand(.play))
-            try? await Task.sleep(for: .milliseconds(50))
+            #expect(await conditionHolds { sent.requests.isEmpty })
         }
 
         #expect(sent.requests.isEmpty)

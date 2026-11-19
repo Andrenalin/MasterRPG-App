@@ -41,11 +41,7 @@ struct AudioSessionStateMachineTests {
     }
 
     private func waitUntil(_ condition: () -> Bool) async -> Bool {
-        for _ in 0..<400 {
-            if condition() { return true }
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        return condition()
+        await awaitCondition(pollInterval: .milliseconds(10)) { condition() }
     }
 
     private func makeSession(_ spy: DelegateSpy) -> AudioPlayerSession {
@@ -157,9 +153,10 @@ struct AudioSessionStateMachineTests {
         #expect(session.needsActivation)
 
         post(interruption: .began)
-        try? await Task.sleep(for: .milliseconds(100))
-        #expect(spy.beginCalls == 0, "the observers of the old session are gone")
-        #expect(spy.resets == 1)
+        #expect(
+            await conditionHolds(for: .milliseconds(100)) { spy.beginCalls == 0 && spy.resets == 1 },
+            "the observers of the old session are gone"
+        )
     }
 
     // MARK: - Now Playing throttle

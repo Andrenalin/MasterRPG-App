@@ -737,6 +737,7 @@
         { "kind": "folder", "path": "WeatherRPGSnapshotTests", "target-membership": [ "WeatherRPGSnapshotTests" ] },
         { "kind": "folder", "path": "MasterRPGUITests", "target-membership": [ "MasterRPGUITests" ] },
         { "kind": "folder", "path": "SnapshotTestSupport", "target-membership": [ "AdventureRPGSnapshotTests", "AudioRPGSnapshotTests", "CharacterRPGSnapshotTests", "CoreRPGSnapshotTests", "DiceRPGSnapshotTests", "GameRPGSnapshotTests", "GeneratorRPGSnapshotTests", "MapRPGSnapshotTests", "PdfRPGSnapshotTests", "PhotoRPGSnapshotTests", "SpaceRPGSnapshotTests", "TableRPGSnapshotTests", "WeatherRPGSnapshotTests" ] },
+        { "kind": "folder", "path": "TestSupport", "target-membership": [ "AdventureRPGTests", "AudioRPGTests", "CharacterRPGTests", "CoreRPGTests", "DiceRPGTests", "GameRPGTests", "GeneratorRPGTests", "MapRPGTests", "PdfRPGTests", "PhotoRPGTests", "RuleRPGTests", "SpaceRPGTests", "TableRPGTests", "WeatherRPGTests" ] },
       ],
     },
   ],

@@ -31,12 +31,18 @@ struct ListenerRestartScheduler {
 
     /// Runs `restart` after the next pause, replacing a restart that is still pending. Returns
     /// `false`, scheduling nothing, once the attempts are used up.
+    ///
+    /// - Parameter sleep: waits out the pause. Tests pass a sleeper they release by hand instead
+    ///   of waiting seconds; it must throw when its task is cancelled.
     @discardableResult
-    mutating func schedule(restart: @escaping @MainActor () async -> Void) -> Bool {
+    mutating func schedule(
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        restart: @escaping @MainActor () async -> Void
+    ) -> Bool {
         guard let delay = nextDelay() else { return false }
         task?.cancel()
         task = Task { @MainActor in
-            try? await Task.sleep(for: delay)
+            try? await sleep(delay)
             guard !Task.isCancelled else { return }
             await restart()
         }

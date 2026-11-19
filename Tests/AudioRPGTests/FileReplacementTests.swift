@@ -172,9 +172,7 @@ struct FileReplacementTests {
     /// Starts the question for `itemId` and returns once it is shown.
     private func ask(_ sut: FileReplacementConfirmation, itemId: UUID, in root: AudioRootModel) async throws -> (task: Task<ReplacedFileDisposal?, Never>, request: FileReplacementConfirmation.Request) {
         let task = Task { await sut.disposal(forReplacingFileOf: itemId, editControllable: root.editController) }
-        for _ in 0..<200 where sut.request == nil {
-            try await Task.sleep(for: .milliseconds(5))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(5)) { sut.request != nil }
         return (task, try #require(sut.request))
     }
 
@@ -241,9 +239,7 @@ struct FileReplacementTests {
         let sut = FileReplacementConfirmation()
 
         let replacement = Task { await sut.resetFile(url: picked, itemId: itemId, editControllable: root.editController) }
-        for _ in 0..<200 where sut.request == nil {
-            try await Task.sleep(for: .milliseconds(5))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(5)) { sut.request != nil }
         sut.answer(try #require(sut.request), with: nil)
 
         #expect(await replacement.value == false)

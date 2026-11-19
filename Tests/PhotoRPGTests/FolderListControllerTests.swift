@@ -1408,8 +1408,7 @@ struct FolderListControllerTests {
         await searchFolder(root)
         let controller = root.folderListController
         controller.resetDetail(model: root.itemController.itemOrEmpty(for: activeId))
-        try await Task.sleep(for: .milliseconds(300))
-        #expect(detailItemIds(root).contains(childId))
+        #expect(await awaitCondition { detailItemIds(root).contains(childId) })
 
         let detail = try #require(controller.listModel.detailListModel)
         let row = try #require(detail.list.first(where: { $0.source.itemId == childId }))
@@ -1439,12 +1438,11 @@ struct FolderListControllerTests {
         await searchFolder(root)
         let controller = root.folderListController
         controller.resetDetail(model: root.itemController.itemOrEmpty(for: activeId))
-        try await Task.sleep(for: .milliseconds(300))
+        #expect(await awaitCondition { detailItemIds(root).contains(subId) })
         let detail = try #require(controller.listModel.detailListModel)
         let subRow = try #require(detail.list.first(where: { $0.source.itemId == subId }))
         controller.toggleFolder(item: subRow)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(detailItemIds(root).contains(childId), "sub folder must be open")
+        #expect(await awaitCondition { detailItemIds(root).contains(childId) }, "sub folder must be open")
 
         root.menuController.removeItemsFromFolder(currentSelected: childId, parentId: subId, oneUp: true)
         controller.update(debounce: false)
@@ -1525,7 +1523,7 @@ struct FolderListControllerTests {
         await searchFolder(root)
         let controller = root.folderListController
         controller.resetDetail(model: root.itemController.itemOrEmpty(for: activeId))
-        try await Task.sleep(for: .milliseconds(300))
+        #expect(await awaitCondition { detailItemIds(root).contains(childId) })
         let detail = try #require(controller.listModel.detailListModel)
         let menu = ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: detail)
 

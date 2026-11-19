@@ -674,10 +674,9 @@ struct LinkControllerTests {
 
         let resyncData = try await root.gameController.createGameData(for: itemId)
         try await root.gameController.updatePlayer(data: resyncData)
-        // A fixed settle, not a condition wait: this checks that the resync does *not* change the
-        // count, which a wait for the current value would pass without waiting.
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
+        // Checks that the resync does *not* change the count: a wait for the current value would
+        // pass at once, so the count has to hold for a while.
+        #expect(await conditionHolds(for: .milliseconds(100)) { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2 })
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 15)
         #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1 })

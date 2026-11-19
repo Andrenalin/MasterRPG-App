@@ -120,13 +120,9 @@ final class LinkedGameEnvironment {
     /// current message and its sender returns at once, so the call that started a flow returns
     /// before the flow has ended. Fails the test when the links do not settle.
     func settle(timeout: Duration = .seconds(10), sourceLocation: SourceLocation = #_sourceLocation) async {
-        let deadline = ContinuousClock.now + timeout
-        while !(await isSettled) {
-            guard ContinuousClock.now < deadline else {
-                Issue.record("The linked game did not settle", sourceLocation: sourceLocation)
-                return
-            }
-            try? await Task.sleep(for: .milliseconds(5))
+        let didSettle = await awaitCondition(timeout: timeout, pollInterval: .milliseconds(5)) { await isSettled }
+        if !didSettle {
+            Issue.record("The linked game did not settle", sourceLocation: sourceLocation)
         }
     }
 

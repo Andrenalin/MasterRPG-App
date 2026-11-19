@@ -98,9 +98,9 @@ struct RolePlayGameKitRoutingTests {
     func validateRepairIsBusyWhileTokenIsHeld() async throws {
         let appModel = AppModel.preview
         var held: UUID?
-        for _ in 0..<200 where held == nil {
+        _ = await awaitCondition(pollInterval: .milliseconds(20)) {
             held = appModel.beginExclusiveDataMutation()
-            if held == nil { try await Task.sleep(for: .milliseconds(50)) }
+            return held != nil
         }
         let token = try #require(held)
         defer { appModel.endExclusiveDataMutation(token) }

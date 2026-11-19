@@ -160,11 +160,7 @@ struct SharePlayJournalHangTests {
     // MARK: - Helpers
 
     private static func eventually(_ condition: @escaping @MainActor () async -> Bool) async -> Bool {
-        for _ in 0 ..< 200 {
-            if await condition() { return true }
-            try? await Task.sleep(for: .milliseconds(25))
-        }
-        return false
+        await awaitCondition(pollInterval: .milliseconds(25)) { await condition() }
     }
 }
 

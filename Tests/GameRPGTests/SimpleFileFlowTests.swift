@@ -421,10 +421,7 @@ struct SimpleFileFlowTests {
 
         // Then: the quiet player blocks the play until the deadline, then it starts for all.
         #expect(env.masterSends.filter { $0.message.subType == .playAudio }.isEmpty)
-        let deadline = ContinuousClock.now + .seconds(5)
-        while env.master.runningAudioPlay == nil, ContinuousClock.now < deadline {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(10)) { env.master.runningAudioPlay != nil }
         #expect(env.master.runningAudioPlay != nil)
         let plays = env.masterSends.filter { $0.message.subType == .playAudio }
         #expect(plays.count == 1)

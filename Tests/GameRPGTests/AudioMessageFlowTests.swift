@@ -681,12 +681,11 @@ private final class AudioCommandRecorder {
 private extension MultiConnectionAudioTests {
     /// The loop hands the replay to a task, so the command is sent a moment after the loop ended.
     static func waitForPlayCommand(in env: MultiConnectionTestEnvironment, after baseline: Int) async throws {
-        for _ in 0..<300 {
-            let sent = env.masterNetworkSpy.sendResponseHistory
+        _ = await awaitCondition(pollInterval: .milliseconds(10)) {
+            env.masterNetworkSpy.sendResponseHistory
                 .dropFirst(baseline)
                 .compactMap { $0 as? GameNetworkModel }
-            if sent.contains(where: { $0.subType == .playAudio }) { return }
-            try await Task.sleep(for: .milliseconds(10))
+                .contains { $0.subType == .playAudio }
         }
     }
 

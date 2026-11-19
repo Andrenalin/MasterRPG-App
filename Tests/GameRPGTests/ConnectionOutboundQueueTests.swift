@@ -24,9 +24,7 @@ struct ConnectionOutboundQueueTests {
 
     /// The failure is reported from a task of its own.
     private func waitForFailure(_ delegate: PlayerConnectionDelegateMock) async {
-        for _ in 0..<200 where delegate.calledFailed == 0 {
-            try? await Task.sleep(for: .milliseconds(10))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(5)) { delegate.calledFailed > 0 }
     }
 
     @Test("A connection over its queue limit is dropped and reported once")
@@ -39,8 +37,7 @@ struct ConnectionOutboundQueueTests {
         for _ in 0..<(GameLimits.maximumOutboundQueuedBytes / GameLimits.maximumMessageBytes) {
             await controller.response(type: .gameData, encodedContent: frame)
         }
-        try? await Task.sleep(for: .milliseconds(50))
-        #expect(delegate.calledFailed == 0)
+        #expect(await conditionHolds { delegate.calledFailed == 0 })
 
         await controller.response(type: .gameData, encodedContent: Data(count: 1))
         await waitForFailure(delegate)
@@ -48,8 +45,7 @@ struct ConnectionOutboundQueueTests {
 
         // The connection is gone: a later send is ignored and reports nothing more.
         await controller.response(type: .gameData, encodedContent: frame)
-        try? await Task.sleep(for: .milliseconds(50))
-        #expect(delegate.calledFailed == 1)
+        #expect(await conditionHolds { delegate.calledFailed == 1 })
     }
 
     @Test("A frame past the frame limit is skipped and does not count against the queue (§5.1)")
@@ -65,8 +61,7 @@ struct ConnectionOutboundQueueTests {
         for _ in 0..<(GameLimits.maximumOutboundQueuedBytes / GameLimits.maximumMessageBytes) {
             await controller.response(type: .gameData, encodedContent: frame)
         }
-        try? await Task.sleep(for: .milliseconds(50))
-        #expect(delegate.calledFailed == 0)
+        #expect(await conditionHolds { delegate.calledFailed == 0 })
         await controller.response(type: .gameData, encodedContent: Data(count: 1))
         await waitForFailure(delegate)
         #expect(delegate.calledFailed == 1)
@@ -78,9 +73,8 @@ struct ConnectionOutboundQueueTests {
         let controller = stalledConnection(delegate: delegate)
 
         await controller.response(type: .gameData, encodedContent: Data(count: GameLimits.maximumMessageBytes))
-        try? await Task.sleep(for: .milliseconds(50))
 
-        #expect(delegate.calledFailed == 0)
+        #expect(await conditionHolds { delegate.calledFailed == 0 })
     }
 }
 #endif

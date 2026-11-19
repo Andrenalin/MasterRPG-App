@@ -1,0 +1,26 @@
+{
+  "configurations" : [
+    {
+      "id" : "5F2A7C41-3B1E-4D86-9A0C-6E8D2B7F9C13",
+      "name" : "Thread Sanitizer",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testExecutionOrdering" : "random",
+    "testTimeoutsEnabled" : true,
+    "threadSanitizerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "8EBED0B52CD8EF94004E7103",
+        "name" : "GameRPGTests"
+      }
+    }
+  ],
+  "version" : 1
+}

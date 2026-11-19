@@ -142,11 +142,7 @@ struct SharedWorkCoalescerTests {
     }
 
     private static func eventually(_ condition: @escaping @MainActor () async -> Bool) async -> Bool {
-        for _ in 0 ..< 200 {
-            if await condition() { return true }
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        return false
+        await awaitCondition(pollInterval: .milliseconds(10)) { await condition() }
     }
 }
 

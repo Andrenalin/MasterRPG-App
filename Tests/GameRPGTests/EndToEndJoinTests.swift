@@ -22,7 +22,11 @@ struct EndToEndJoinTests {
             hostingSessions: HostingSessionStore(storage: InMemoryJoinCodeStorage())
         )
         master.startStreaming(passcode: code)
-        try await Task.sleep(for: .seconds(2))
+        // The listener accepts joins once it is running; the advertisement follows with it.
+        let isRunning = await awaitCondition(pollInterval: .milliseconds(20)) {
+            master.networkModel.listenerStatus == .running
+        }
+        try #require(isRunning, "The host's listener did not start")
         let game = BrowserGameModel(id: UUID(), endpointName: name, connectionMode: .observer, sessionId: master.networkModel.sessionId)
         return (master, game)
     }
@@ -73,22 +77,16 @@ struct EndToEndJoinTests {
             await connection.response(type: .gameData, encodedContent: Data("to player".utf8))
         }
         await player.networkModel.connectionController?.request(type: .gameData, encodedContent: Data("to master".utf8))
-        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
-        while ContinuousClock.now < deadline {
-            if masterDelegate.calledReceived > masterReceived, playerDelegate.calledReceived > playerReceived { return true }
-            try? await Task.sleep(for: .milliseconds(100))
+        let delivered = await awaitCondition(pollInterval: .milliseconds(20)) {
+            masterDelegate.calledReceived > masterReceived && playerDelegate.calledReceived > playerReceived
         }
+        if delivered { return true }
         Logger.networking.error("E2E: master received \(masterDelegate.calledReceived - masterReceived), player received \(playerDelegate.calledReceived - playerReceived), master connections \(master.networkModel.connections.count)")
         return false
     }
 
     private func waitFor(_ state: PlayerNetworkModel.ConnectionState, of player: PlayerNetworkController, timeout: Duration) async -> Bool {
-        let deadline = ContinuousClock.now.advanced(by: timeout)
-        while ContinuousClock.now < deadline {
-            if player.networkModel.connectionState == state { return true }
-            try? await Task.sleep(for: .milliseconds(100))
-        }
-        return false
+        await awaitCondition(timeout: timeout, pollInterval: .milliseconds(20)) { player.networkModel.connectionState == state }
     }
 
     @Test("Joining with a different code fails as a bad code")

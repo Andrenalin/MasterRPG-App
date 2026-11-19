@@ -4,6 +4,7 @@
 @testable import CoreRPG
 import Foundation
 import PDFKit
+import Synchronization
 import Testing
 import UniformTypeIdentifiers
 
@@ -45,13 +46,16 @@ struct PdfDocumentLoadingTests {
 
     @Test("A cancelled load returns nil instead of an error document", .timeLimit(.minutes(1)))
     func cancelledLoadReturnsNil() async {
+        let downloadStarted = Mutex(false)
         let (controller, itemId) = makeController { _ in
+            downloadStarted.withLock { $0 = true }
             try await Task.sleep(for: .seconds(300))
             throw URLError(.timedOut)
         }
 
         let load = Task { @MainActor in await controller.pdfDocument(for: itemId)?.pageCount }
-        try? await Task.sleep(for: .milliseconds(100))
+        // Cancelled while the download is running, not before it started.
+        #expect(await awaitCondition { downloadStarted.withLock { $0 } })
         load.cancel()
 
         #expect(await load.value == nil)

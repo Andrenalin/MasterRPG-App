@@ -498,6 +498,14 @@ final class OneShotGate: Sendable {
 
     private let state = Mutex<State>(.idle)
 
+    /// Whether a task is suspended in `wait()`. Lets a test open the gate only once its waiter is parked.
+    var hasWaiter: Bool {
+        state.withLock { state in
+            if case .waiting = state { return true }
+            return false
+        }
+    }
+
     func wait() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let isOpen = state.withLock { state -> Bool in

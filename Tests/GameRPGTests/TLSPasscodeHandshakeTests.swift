@@ -265,13 +265,9 @@ struct TLSPasscodeHandshakeTests {
         func readyConnection(for id: ConnectionController.ID) async { record("ready") }
 
         func outcome(at index: Int, timeout: Duration) async -> String {
-            let deadline = ContinuousClock.now.advanced(by: timeout)
-            while ContinuousClock.now < deadline {
-                let outcomes = recorded
-                if outcomes.count > index { return outcomes[index] }
-                try? await Task.sleep(for: .milliseconds(50))
-            }
-            return "timeout"
+            let arrived = await awaitCondition(timeout: timeout, pollInterval: .milliseconds(10)) { recorded.count > index }
+            let outcomes = recorded
+            return arrived && outcomes.count > index ? outcomes[index] : "timeout"
         }
     }
 }

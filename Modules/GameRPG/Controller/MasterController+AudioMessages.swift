@@ -520,12 +520,11 @@ extension MasterController {
         root.audioRoot.audioGameControllable.setTrackStartHandler(nil)
     }
 
-    private static let audioPlayRetryDelay: Duration = .seconds(5)
     /// Caps the bounded retry so a permanently failing export (missing or
     /// corrupt file) stops re-exporting after this many attempts instead of
     /// retrying every `audioPlayRetryDelay` for the rest of the session.
     /// See CODE_AUDIT_17 §3.6.
-    private static let maxAudioPlayRetryAttempts = 5
+    static let maxAudioPlayRetryAttempts = 5
 
     /// Schedules one bounded retry of a pending play whose export failed, replacing any retry
     /// already scheduled for this item — so a persistently failing export doesn't pile up
@@ -540,8 +539,9 @@ extension MasterController {
         }
 
         audioPlayRetryTasks[id]?.cancel()
+        let retryDelay = audioPlayRetryDelay
         audioPlayRetryTasks[id] = Task { [weak self] in
-            try? await Task.sleep(for: Self.audioPlayRetryDelay)
+            try? await Task.sleep(for: retryDelay)
             guard !Task.isCancelled, let self else { return }
             self.audioPlayRetryTasks[id] = nil
             guard let data = self.gameModel.pendingAudioPlays[id] else { return }

@@ -559,12 +559,9 @@ struct FileDeletionTests {
         if let created {
             sut.delete(created)
             
-            // Give it a moment to delete asynchronously
-            try await Task.sleep(for: .milliseconds(100))
-            
-            // Try to load - should fail or return nil
-            let loadedData = try? await sut.loadData(for: created)
-            #expect(loadedData == nil, "File should be deleted and data unavailable")
+            // The delete runs asynchronously: wait until a load no longer finds the data.
+            let isGone = await awaitCondition { (try? await sut.loadData(for: created)) == nil }
+            #expect(isGone, "File should be deleted and data unavailable")
         }
     }
     

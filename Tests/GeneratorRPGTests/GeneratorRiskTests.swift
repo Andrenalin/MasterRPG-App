@@ -100,7 +100,7 @@ struct OneShotGateTests {
     func doubleOpen() async {
         let gate = OneShotGate()
         let waiter = Task { await gate.wait() }
-        try? await Task.sleep(for: .milliseconds(50))
+        #expect(await awaitCondition { gate.hasWaiter })
 
         gate.open()
         gate.open()

@@ -75,9 +75,7 @@ struct SharePlayDeferredPromotionTests {
         #expect(controller.deferredDeliveryQueue.count == 1)
 
         gate.open()
-        for _ in 0 ..< 200 where controller.deferredDeliveryQueue.count > 0 {
-            try? await Task.sleep(for: .milliseconds(10))
-        }
+        _ = await awaitCondition { controller.deferredDeliveryQueue.count == 0 }
 
         #expect(controller.deferredDeliveryQueue.count == 0)
         controller.reset()

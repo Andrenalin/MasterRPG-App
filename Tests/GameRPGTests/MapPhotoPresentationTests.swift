@@ -260,8 +260,7 @@ struct MapPhotoPresentationTests {
         // A held photo is made current first, then counted once.
         let known = Self.presentation(itemId: fixture.photoId, mapId: fixture.mapId, mode: .fullScreen, sequence: 2)
         try await Self.send(known, counter: 2, to: fixture)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(player.gameModel.gameUpdateType == .photo)
+        #expect(await awaitCondition { player.gameModel.gameUpdateType == .photo })
         #expect(player.gameModel.mapPhoto.fullScreenRequest == 1)
 
         // A photo that arrives for no waiting presentation changes nothing.
@@ -341,8 +340,7 @@ struct MapPhotoPresentationTests {
 
         // The pin popover's Full Screen button, shared or not: a player never sends.
         popover.actions?.showPhotoFullScreen(pin, true)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(player.gameModel.gameUpdateType == .photo)
+        #expect(await awaitCondition { player.gameModel.gameUpdateType == .photo })
         #expect(player.gameModel.mapPhoto.isLocal)
         #expect(fixture.env.root.photoRoot.gameControllable.gameModel.currentItemId == fixture.photoId)
 
@@ -492,8 +490,7 @@ struct MapPhotoPresentationTests {
         #expect(!masterPlayer.gameModel.mapPhoto.isLocal)
         #expect(masterPlayer.gameModel.mapPhoto.mode == .fullScreen)
         #expect(masterPlayer.gameModel.mapPhoto.presentation?.title == "Goblin")
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(masterPlayer.gameModel.gameUpdateType == .photo)
+        #expect(await awaitCondition { masterPlayer.gameModel.gameUpdateType == .photo })
 
         // Closing the pin's popover broadcast the map state; its echo on the game master's own
         // screen must not take the full-screen photo away.

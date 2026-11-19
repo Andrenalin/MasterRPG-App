@@ -38,11 +38,7 @@ private final class Log {
 
 @MainActor
 private func eventually(_ condition: @MainActor () -> Bool) async -> Bool {
-    for _ in 0 ..< 400 {
-        if condition() { return true }
-        try? await Task.sleep(for: .milliseconds(5))
-    }
-    return false
+    await awaitCondition(pollInterval: .milliseconds(5)) { condition() }
 }
 
 // MARK: - 7.1 Journal load sequencer

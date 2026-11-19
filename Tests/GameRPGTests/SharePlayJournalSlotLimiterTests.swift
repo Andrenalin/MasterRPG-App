@@ -30,10 +30,7 @@ struct SharePlayJournalSlotLimiterTests {
     }
 
     private func waitUntilStarted(_ gate: Gate) async {
-        let deadline = ContinuousClock.now + .seconds(5)
-        while !gate.started, ContinuousClock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(5))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(5)) { gate.started }
     }
 
     @Test("A playlist and its first track add at the same time; two adds of one slot do not")

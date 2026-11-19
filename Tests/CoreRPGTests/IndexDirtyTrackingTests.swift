@@ -169,10 +169,7 @@ struct AppIntentContentInvalidatorTests {
     }
 
     private func waitUntil(_ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now + .seconds(15)
-        while !condition() {
-            try #require(ContinuousClock.now < deadline, "timed out")
-            try await Task.sleep(for: .milliseconds(20))
-        }
+        let reached = await awaitCondition(pollInterval: .milliseconds(20)) { condition() }
+        try #require(reached, "timed out")
     }
 }

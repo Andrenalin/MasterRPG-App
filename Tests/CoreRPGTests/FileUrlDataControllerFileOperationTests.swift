@@ -48,9 +48,7 @@ struct FileUrlDataControllerFileOperationTests {
         if let location = sut.storedLocation(of: fileUrl) {
             await PendingFileDeletions.shared.waitUntilFinished(at: CloudDocumentController.canonicalPath(location))
         }
-        for _ in 0..<50 where exists(fileUrl, in: sut) {
-            try await Task.sleep(for: .milliseconds(20))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(20)) { !exists(fileUrl, in: sut) }
     }
 
     // MARK: - CODE_AUDIT_21 §5.1, §6.1
@@ -118,9 +116,9 @@ struct FileUrlDataControllerFileOperationTests {
         await sut.removeStoredFile(hostile)
         await sut.deleteReplaced(hostile, keeping: kept)
         sut.delete(hostile)
-        try await Task.sleep(for: .milliseconds(200))
 
-        #expect(try text(of: kept, in: sut) == "kept")
+        // A wrongly accepted delete runs detached, so the file has to stay for as long as one could.
+        #expect(await conditionHolds(for: .milliseconds(200)) { (try? text(of: kept, in: sut)) == "kept" })
     }
 
     @Test("The stored-file remover refuses a folder and a path outside the app's file roots")
@@ -159,9 +157,8 @@ struct FileUrlDataControllerFileOperationTests {
             pathExtension: "test",
             requireDurableStorage: true
         ))
-        try await Task.sleep(for: .milliseconds(300))
 
-        #expect(try text(of: imported, in: sut) == "same")
+        #expect(await conditionHolds(for: .milliseconds(300)) { (try? text(of: imported, in: sut)) == "same" })
     }
 
     @Test("An announced deletion holds an import back until the file is gone")
@@ -181,8 +178,8 @@ struct FileUrlDataControllerFileOperationTests {
             let destination = try await sut.importDestination(for: incoming, contentHash: hash, referencedFileUrls: [])
             return (destination, FileManager.default.fileExists(atPath: sut.storedLocation(of: file)?.path(percentEncoded: false) ?? ""))
         }
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(exists(file, in: sut))
+        // The import is held back for as long as the announced deletion has not run.
+        #expect(await conditionHolds(for: .milliseconds(100)) { exists(file, in: sut) })
         sut.delete(file, announced: announced)
 
         let (destination, fileWasThere) = try await importing.value
@@ -276,9 +273,8 @@ struct FileUrlDataControllerFileOperationTests {
         let file = try await createFile("Shared-\(UUID().uuidString).test", text: "shared", module: module, with: sut)
 
         sut.delete(file, keepingStoredFile: true)
-        try await Task.sleep(for: .milliseconds(200))
 
-        #expect(try text(of: file, in: sut) == "shared")
+        #expect(await conditionHolds(for: .milliseconds(200)) { (try? text(of: file, in: sut)) == "shared" })
     }
 
     @Test("copyFile copies the bytes to a new file and keeps the source")

@@ -14,11 +14,13 @@ import Testing
 @Suite("AppModel reset data")
 struct AppModelResetDataTests {
     private func acquireToken(_ appModel: AppModel) async throws -> UUID {
-        for _ in 0..<200 {
-            if let token = appModel.beginExclusiveDataMutation() { return token }
-            try await Task.sleep(for: .milliseconds(50))
+        var token: UUID?
+        let acquired = await awaitCondition(pollInterval: .milliseconds(20)) {
+            token = appModel.beginExclusiveDataMutation()
+            return token != nil
         }
-        throw TokenUnavailable()
+        guard acquired, let token else { throw TokenUnavailable() }
+        return token
     }
 
     private struct TokenUnavailable: Error {}
@@ -38,9 +40,10 @@ struct AppModelResetDataTests {
     func resetReleasesItsToken() async throws {
         let appModel = AppModel.preview
         var outcome = await appModel.resetData()
-        for _ in 0..<200 where outcome == .busy {
-            try await Task.sleep(for: .milliseconds(50))
+        _ = await awaitCondition(pollInterval: .milliseconds(20)) {
+            guard outcome == .busy else { return true }
             outcome = await appModel.resetData()
+            return outcome != .busy
         }
 
         #expect(outcome == .completed)

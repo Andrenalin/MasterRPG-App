@@ -125,8 +125,8 @@ struct LinkControllerTests {
         #expect(result.contains("playing"))
 
         // The load runs on a task of its own.
-        for _ in 0..<100 where root.audioController.model.playList.count < trackIds.count {
-            try await Task.sleep(for: .milliseconds(50))
+        _ = await awaitCondition(pollInterval: .milliseconds(20)) {
+            root.audioController.model.playList.count >= trackIds.count
         }
         #expect(root.audioController.model.playList.map(\.id) == trackIds)
         #expect(root.audioController.model.playListRootId == playlistId)

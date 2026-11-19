@@ -41,6 +41,12 @@
          <TestPlanReference
             reference = "container:TestPlans/MasterAppIntents.xctestplan">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:TestPlans/MasterThreadSanitizer.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:TestPlans/MasterRPGAndSnapshot.xctestplan">
+         </TestPlanReference>
       </TestPlans>
    </TestAction>
    <LaunchAction

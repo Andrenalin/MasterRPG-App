@@ -9,9 +9,7 @@ import Testing
 @Suite("Coordinated access limiter")
 struct CoordinatedAccessLimiterTests {
     private func waitForWaiters(_ count: Int, in limiter: CoordinatedAccessLimiter) async throws {
-        for _ in 0..<200 where await limiter.waiterCount != count {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        _ = await awaitCondition(pollInterval: .milliseconds(10)) { await limiter.waiterCount == count }
         #expect(await limiter.waiterCount == count)
     }
 

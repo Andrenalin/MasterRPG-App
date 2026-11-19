@@ -69,6 +69,9 @@ final class MasterController {
     /// How long a pending audio play waits for the players' receipts before it starts for the
     /// players that are ready. See CODE_AUDIT_Game_Shareplay §5.7.
     var audioPlayDeadline: Duration = .seconds(20)
+    /// How long a pending play waits before it is exported and sent again after its delivery
+    /// failed. See CODE_AUDIT_17 §3.6.
+    var audioPlayRetryDelay: Duration = .seconds(5)
     /// The deadline of each pending play, cancelled with the play.
     var audioPlayDeadlineTasks: [UUID: Task<Void, Never>] = [:]
     /// The play command that is running for the table now, so a player whose file arrives after
