@@ -131,9 +131,6 @@ extension GameTableModel {
 
 /// Lets the 3D table host the exact same `GameToolBar` (and its button
 /// actions) as the 2D map — see `GameToolBarSession` for what this promises.
-extension GameTableModel: GameToolBarSession {
-    /// The board has no display-time cascade of unpositioned pins like the 2D canvas.
-    var placesNewPinsInMapCenter: Bool { true }
-}
+extension GameTableModel: GameToolBarSession {}
 
 #endif

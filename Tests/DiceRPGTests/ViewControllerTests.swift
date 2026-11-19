@@ -43,7 +43,7 @@ struct ViewControllerTests {
     }
 
     @Test func diceSizingUsesResultsEntriesAndCurrentGameItem() {
-        let root = DiceRootModel.testRoot()
+        let _ = DiceRootModel.testRoot()
         let sut = ViewController()
         let dice = DiceModel(
             id: UUID(),

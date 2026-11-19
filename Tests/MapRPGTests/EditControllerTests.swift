@@ -224,26 +224,6 @@ struct EditControllerTests {
         #expect(map.mapPins[2].location == CGPoint(x: 7, y: 9))
     }
 
-    @Test func pinsWithoutRoomGoToMapCenterOnlyWhenAsked() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-        let map = MapModel(id: UUID(), name: "Center", entries: [], pinScale: 1)
-        map.width = 1000
-        map.height = 600
-
-        sut.addPhotoPins(map: map, entryId: nil, location: nil, photoIds: [UUID()])
-        #expect(map.mapPins.map(\.location) == [.zero])
-
-        sut.addPhotoPins(map: map, entryId: nil, location: nil, photoIds: [UUID()], placesInMapCenter: true)
-        #expect(map.mapPins.count == 2)
-        #expect(map.mapPins[1].location == CGPoint(x: 500, y: 300))
-
-        // A second pin does not stack on the first one in the middle.
-        sut.addPhotoPins(map: map, entryId: nil, location: nil, photoIds: [UUID()], placesInMapCenter: true)
-        #expect(map.mapPins[2].location != map.mapPins[1].location)
-    }
-
     @Test func mergeAndReplaceEntriesUpdateExistingMapData() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

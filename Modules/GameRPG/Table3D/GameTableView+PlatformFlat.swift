@@ -180,6 +180,10 @@ private struct GameTableRealityContent: View {
         // lands only on the fog, letting roomTapGesture win instead.
         .simultaneousGesture(pinTapGesture.exclusively(before: roomTapGesture))
         .simultaneousGesture(tableRotateGesture)
+        // A character or photo dragged from a list becomes a pin where it is released.
+        .dropDestination(for: MapPinDropTransferable.self) { links, point in
+            dropPins(links, at: point)
+        }
         .overlay(alignment: .topTrailing) {
             if showsEmbeddedToolbar {
                 GameTableToolbar(root: root, game: game)
@@ -378,6 +382,21 @@ private struct GameTableRealityContent: View {
     /// Keeps `GameTableModel.popoverSources` on their targets (the selected pin, the photo pin, the map photo). The system's camera controls
     /// orbit and zoom without telling SwiftUI, so the pin is projected again on every rendered
     /// frame; the model publishes only a visible change.
+    /// Adds the dropped characters (not their entries) and photos as pins at the drop point: the
+    /// view point is cast onto the pin plane, the same way a pin drag finds its position.
+    private func dropPins(_ links: [MapPinDropTransferable], at point: CGPoint) -> Bool {
+        let items = links
+            .filter { $0.module == .photo || ($0.module == .value && $0.entryId == nil) }
+            .map { ItemRowModel(itemId: $0.itemId, typeId: $0.module) }
+        guard !items.isEmpty,
+              let content = projector.content,
+              let ray = content.ray(through: point, in: .local, to: game.setup.pinContainer),
+              abs(ray.direction.y) > 0.000_001 else { return false }
+        let distance = (MapTableProjection.pinHeight - ray.origin.y) / ray.direction.y
+        guard distance.isFinite, distance >= 0 else { return false }
+        return game.dropPins(items, at: ray.origin + ray.direction * distance)
+    }
+
     private func installPinMenuTracking(in content: RealityViewCameraContent) {
         projector.content = content
         // Captured weakly and directly, so the scene's handler holds neither the model nor

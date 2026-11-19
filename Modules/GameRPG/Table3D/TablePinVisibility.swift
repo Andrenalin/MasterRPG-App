@@ -8,11 +8,12 @@ import MapRPG
 /// See CODE_AUDIT_26 §10.3.
 @MainActor
 enum TablePinVisibility {
-    /// The pins of `mapModel` plus its pointer when the pointer is on show.
+    /// The pins of `mapModel` plus its pointer when the pointer is on show. The pins are placed as
+    /// the 2D map shows them: one without a location stands in the map's first entry.
     static func allPins(of mapModel: MapModel?) -> [MapPinModel] {
         guard let mapModel else { return [] }
         let pointerPins = mapModel.pointer.isShown ? [mapModel.pointer] : []
-        return mapModel.mapPins + pointerPins
+        return MapPinPlacement.displayPins(mapModel.mapPins, in: mapModel, pinScale: mapModel.pinScale) + pointerPins
     }
 
     /// The master sees every pin (hidden ones dimmed); players see a pin when it is shown and,

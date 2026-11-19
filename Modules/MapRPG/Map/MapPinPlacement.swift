@@ -10,12 +10,22 @@ import Foundation
 /// `MapEditorSession` — see CODE_AUDIT §9.3/§9.4. The cascade intentionally
 /// advances both axes by the same step, so successive pins fan out
 /// diagonally rather than stacking in a single horizontal row.
-enum MapPinPlacement {
+public enum MapPinPlacement {
     static let maximumMonstersPerDrop = 25
 
     private static let entryInsetFractionX: CGFloat = 0.25
     private static let entryInsetFractionY: CGFloat = 0.5
     private static let interPinGap: CGFloat = 5
+
+    /// The pins as every map renderer shows them: a pin without a location (`.zero`) is cascaded
+    /// into the map's first entry, the others stay where they are. Nothing is stored. The 2D
+    /// canvas and the 3D table both draw their pins through this, so a pin added without a
+    /// location appears in the same place in both.
+    @MainActor
+    public static func displayPins(_ pins: [MapPinModel], in map: MapModel, pinScale: CGFloat) -> [MapPinModel] {
+        guard let entry = map.entries.first else { return pins }
+        return cascade(pins: pins, in: entry, pinScale: pinScale)
+    }
 
     @MainActor
     static func spawnPins(

@@ -563,6 +563,22 @@ extension GameController {
         return CGPoint(x: item.width / 2, y: item.height / 2)
     }
 
+    /// The room a pin added from the game toolbar goes into: the focused room, else the room the
+    /// game master opened last while it is still open. A hex cell is never taken for the last
+    /// opened room. `nil` leaves the pin unplaced, which both map renderers then draw in the
+    /// map's first entry (`MapPinPlacement.displayPins`).
+    @MainActor
+    func newPinRoomId(itemId: UUID, focusedRoomId: UUID?) -> UUID? {
+        if let focusedRoomId { return focusedRoomId }
+        let item = gameItem(for: itemId)
+        guard let roomId = mapGameModel.lastOpenedRoomId(for: itemId),
+              let room = item.entries.first(where: { $0.id == roomId }),
+              room.isShown,
+              !room.isHexGrid,
+              room.coordinates.bounds != nil else { return nil }
+        return room.id
+    }
+
     /// Toggles a pin's visibility as the game master — the 3D-table
     /// equivalent of the 2D game-master double tap.
     @MainActor

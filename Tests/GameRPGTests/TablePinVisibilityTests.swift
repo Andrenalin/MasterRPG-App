@@ -25,6 +25,20 @@ struct TablePinVisibilityTests {
         return MapModel(id: UUID(), name: "Visibility", entries: [room], mapPins: pins)
     }
 
+    @Test("A pin without a location stands where the 2D map shows it: cascaded into the first entry")
+    func unplacedPinsFollowTheTwoDimensionalRule() {
+        let unplaced = MapPinModel(id: UUID(), name: "New")
+        let placed = MapPinModel(id: UUID(), name: "Old", location: CGPoint(x: 70, y: 20))
+        let model = map(pins: [unplaced, placed])
+
+        let pins = TablePinVisibility.allPins(of: model)
+
+        let expected = MapPinPlacement.cascade(pins: [unplaced, placed], in: model.entries[0], pinScale: model.pinScale)
+        #expect(pins.map(\.location) == expected.map(\.location))
+        #expect(pins[0].location != .zero)
+        #expect(pins[1].location == CGPoint(x: 70, y: 20))
+    }
+
     @Test("The game master sees every pin, hidden ones and monsters in fog included")
     func gameMasterSeesEverything() {
         let hidden = MapPinModel(id: UUID(), name: "Hidden", isShown: false)

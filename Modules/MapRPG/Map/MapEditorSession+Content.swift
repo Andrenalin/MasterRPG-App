@@ -9,10 +9,7 @@ extension MapEditorSession {
     // MARK: - Pins Management
 
     func resetPlayerAndPins(newPins: [MapPinModel], map: MapModel, pinScale: CGFloat) {
-        var modified = newPins
-        if let entry = map.entries.first {
-            modified = MapPinPlacement.cascade(pins: newPins, in: entry, pinScale: pinScale)
-        }
+        let modified = MapPinPlacement.displayPins(newPins, in: map, pinScale: pinScale)
 
         guard pins.mapPins != modified else { return }
         if mapMode == .edit {

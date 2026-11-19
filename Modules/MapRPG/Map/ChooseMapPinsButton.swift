@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 
 /// Adds monster or photo pins to the game's currently focused room. Shared by the 2D
@@ -13,9 +14,6 @@ struct ChooseMapPinsButton: View {
     @ScaledMetric private var iconSize: CGFloat = 24
     let root: MapRootModel
     let focusedRoomId: UUID?
-    /// Without a focused room, new pins go to the middle of the map instead of staying
-    /// unpositioned. See `GameToolBarSession.placesNewPinsInMapCenter`.
-    var placesInMapCenter: Bool = false
     let onMonstersAdded: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -82,11 +80,10 @@ struct ChooseMapPinsButton: View {
             withAnimation(reduceMotion ? nil : .bouncy) {
                 root.editController.addMonsters(
                     map: map,
-                    entryId: focusedRoomId,
+                    entryId: root.gameController.newPinRoomId(itemId: map.id, focusedRoomId: focusedRoomId),
                     location: nil,
                     monsters: monsters,
-                    number: 1,
-                    placesInMapCenter: placesInMapCenter
+                    number: 1
                 )
             }
             onMonstersAdded()
@@ -112,10 +109,9 @@ struct ChooseMapPinsButton: View {
         withAnimation(reduceMotion ? nil : .bouncy) {
             root.editController.addPhotoPins(
                 map: map,
-                entryId: focusedRoomId,
+                entryId: root.gameController.newPinRoomId(itemId: map.id, focusedRoomId: focusedRoomId),
                 location: nil,
-                photoIds: photoIds,
-                placesInMapCenter: placesInMapCenter
+                photoIds: photoIds
             )
         }
         onMonstersAdded()

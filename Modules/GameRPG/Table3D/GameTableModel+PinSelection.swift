@@ -104,6 +104,37 @@ extension GameTableModel {
         }
     }
 
+    /// Pin drop from outside the table: a character or photo dragged onto the board becomes a pin
+    /// where it was released. `position` is the point on the pin plane in the pin container's space.
+    /// Game master only, like adding pins with the toolbar; the pawns are synced and the edit
+    /// broadcast unless sharing is paused. Returns whether pins were added.
+    @discardableResult
+    func dropPins(_ items: [ItemRowModel], at position: SIMD3<Float>) -> Bool {
+        guard isGameMaster, !items.isEmpty, let mapId = currentMapId,
+              let mapImage = currentMapImage,
+              let mapModel = currentMapModel(),
+              let coordinateSize = MapTableProjection.canvasSize(
+                  map: mapModel,
+                  image: mapImage,
+                  degrees: currentMapDegrees
+              ) else { return false }
+        let projection = MapTableProjection(
+            imageSize: coordinateSize,
+            planeAspectRatio: MapTableProjection.planeAspectRatio(
+                photoSize: mapImage.size,
+                degrees: currentMapDegrees,
+                canvasSize: coordinateSize
+            )
+        )
+        let location = projection.mapLocation(
+            for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
+        )
+        mapRoot.addDroppedPins(items, itemId: mapId, location: location)
+        syncPawnsWithMapPins()
+        broadcastMapEdit(for: mapId)
+        return true
+    }
+
     /// A tap first adds a missing combatant while Surprise is being
     /// prepared. Otherwise a player's tap toggles the shared highlight,
     /// while a master's tap instead opens/closes the local pin action
