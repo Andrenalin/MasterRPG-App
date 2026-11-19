@@ -55,12 +55,19 @@ extension ViewController {
 // MARK: External Views
 
 extension ViewController {
+    // The pickers bring the module roots they read with them. A presenter outside the app's
+    // window hierarchy (the visionOS 3D table's volumetric window) injects almost none, and a
+    // missing root is a fatal error in the picker. A character row shows its photo, so the
+    // character picker needs the photo root too.
     @MainActor func characterSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.characterRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
+            .environment(root.characterRoot)
+            .environment(root.photoRoot)
     }
     
     @MainActor func photoSelection(root: MapRootModel, selectionModel: ItemSelectionModel) -> some View {
         root.photoRoot.viewController.linkListView(type: .selection, itemSelectionModel: selectionModel)
+            .environment(root.photoRoot)
     }
 }
 
