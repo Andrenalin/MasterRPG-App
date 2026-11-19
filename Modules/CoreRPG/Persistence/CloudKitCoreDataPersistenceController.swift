@@ -5,13 +5,6 @@ import CloudKit
 import Foundation
 import os.log
 
-private enum CloudKitEventModelUpdate: Sendable {
-    case none
-    case syncState(CloudKitSyncState)
-    case importSucceeded(Date)
-    case exportSucceeded(Date)
-}
-
 public struct CloudKitCoreDataPersistenceController {
     static let cloudKitContainerIdentifier = FileManager.cloudContainerIdentifier
 
@@ -192,74 +185,12 @@ public struct CloudKitCoreDataPersistenceController {
                     continue
                 }
 
-                let update: CloudKitEventModelUpdate
-                switch event.type {
-                case .setup:
-                    if event.succeeded {
-                        Logger.persistenceController.info("CloudKit setup succeeded")
-                        update = .none
-                    } else if let error = event.error {
-                        // A `succeeded == false` setup event with an attached error is a
-                        // real failure (quota, not-authenticated, schema), not just "still
-                        // in progress" — surface it instead of masking it as `.inProgress`.
-                        // See CODE_AUDIT_17 §5.8.
-                        Logger.persistenceController.error("CloudKit setup failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                        update = .syncState(.failed(error.localizedDescription))
-                    } else {
-                        Logger.persistenceController.info("CloudKit setup in progress")
-                        update = .syncState(.inProgress)
-                    }
-
-                case .import:
-                    if event.succeeded {
-                        Logger.persistenceController.info("CloudKit import succeeded")
-                        update = .importSucceeded(Date())
-                    } else if let error = event.error {
-                        Logger.persistenceController.error("CloudKit import error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                        update = .syncState(.failed(error.localizedDescription))
-                    } else {
-                        update = .syncState(.inProgress)
-                    }
-
-                case .export:
-                    if event.succeeded {
-                        Logger.persistenceController.info("CloudKit export succeeded")
-                        update = .exportSucceeded(Date())
-                    } else if let error = event.error {
-                        // A failed export previously mapped to `.none` (logged only), so the
-                        // UI kept showing "succeeded" from the last import while local edits
-                        // never reached iCloud. Surface it the same way import failures are.
-                        // See CODE_AUDIT_17 §5.8.
-                        Logger.persistenceController.error("CloudKit export error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
-                        update = .syncState(.failed(error.localizedDescription))
-                    } else {
-                        update = .syncState(.inProgress)
-                    }
-
-                @unknown default:
-                    Logger.persistenceController.debug("CloudKit unknown event type")
-                    update = .none
-                }
-
                 guard let model else { return }
-                switch update {
-                case .none:
-                    break
-                case .syncState(let state):
-                    model.cloudKitSyncState = state
-                case .importSucceeded(let date):
-                    model.cloudKitSyncState = .succeeded
-                    model.lastSuccessfulSync = date
-                case .exportSucceeded(let date):
-                    // Clear a previously-surfaced failed/in-progress state now that an
-                    // export has actually succeeded. See CODE_AUDIT_17 §5.8.
-                    model.cloudKitSyncState = .succeeded
-                    model.lastSuccessfulSync = date
-                }
+                model.apply(CloudKitSyncEvent(event).modelUpdate())
             }
         }
     }
-    
+
     private static let allowCloudKitSync: Bool = {
         let arguments = ProcessInfo.processInfo.arguments
         guard let index = arguments.firstIndex(where: { $0 == "-allowCloudKitSync" }), index + 1 < arguments.count else { return true }
