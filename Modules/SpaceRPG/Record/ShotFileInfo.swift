@@ -5,8 +5,6 @@ Abstract:
 Value type for holding the various info about a particular snapshot file.
 */
 
-#if os(iOS) && !targetEnvironment(simulator)
-
 import Foundation
 import SwiftUI
 
@@ -25,5 +23,3 @@ struct ShotFileInfo {
 }
 
 extension ShotFileInfo: Identifiable { }
-
-#endif

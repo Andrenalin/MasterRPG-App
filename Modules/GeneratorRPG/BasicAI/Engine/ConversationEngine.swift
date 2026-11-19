@@ -14,6 +14,17 @@ public final class ConversationEngine {
     public private(set) var isSummarizing: Bool = false
     public private(set) var isApplyingWindow: Bool = false
 
+    /// The three calls that need the on-device model. A test replaces them to drive the overflow
+    /// recovery, the streaming task and the session reset without Apple Intelligence; the
+    /// production engine leaves them `nil`. See CODE_AUDIT_TestGaps §5.8.
+    struct ModelHooks {
+        var respond: (@MainActor (_ prompt: String) async throws -> String)?
+        var streamedContent: (@MainActor (_ prompt: String) -> AsyncThrowingStream<String, any Error>)?
+        var summarize: (@MainActor () async throws -> ConversationSummary)?
+    }
+
+    var hooks = ModelHooks()
+
     private var configuration: ConversationConfiguration
     private var model: SystemLanguageModel
     private var activeStreamingTask: Task<String, Error>?
@@ -206,7 +217,12 @@ private extension ConversationEngine {
             }
 
             var latest = ""
-            if let generationOptions {
+            if let streamedContent = self.hooks.streamedContent {
+                for try await content in streamedContent(prompt) {
+                    latest = content
+                    onPartialResponse?(content)
+                }
+            } else if let generationOptions {
                 for try await snapshot in self.session.streamResponse(
                     to: Prompt(prompt),
                     options: generationOptions.foundationModelsValue
@@ -246,6 +262,9 @@ private extension ConversationEngine {
         to prompt: String,
         generationOptions: GenerationOptionsConfiguration?
     ) async throws -> String {
+        if let respond = hooks.respond {
+            return try await respond(prompt)
+        }
         if let generationOptions {
             return try await session.respond(
                 to: Prompt(prompt),
@@ -311,6 +330,9 @@ private extension ConversationEngine {
     static let maximumSummaryInputCharacters = 6_000
 
     func generateConversationSummary() async throws -> ConversationSummary {
+        if let summarize = hooks.summarize {
+            return try await summarize()
+        }
         let summarySession = LanguageModelSession(
             model: model,
             instructions: Instructions(configuration.summaryInstructions)

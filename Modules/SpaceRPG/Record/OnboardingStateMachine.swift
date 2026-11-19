@@ -5,8 +5,6 @@ Abstract:
 The state machine this sample uses to transition between the review screens, playing the tutorials, and showing the guidance text.
 */
 
-#if os(iOS) && !targetEnvironment(simulator)
-
 import CoreRPG
 import Foundation
 import os
@@ -151,5 +149,3 @@ enum OnboardingUserInput: Equatable {
     case objectCannotBeFlipped
     case flipObjectAnyway
 }
-
-#endif

@@ -5,8 +5,6 @@ Abstract:
 A class that supports the creation, listing, and filename support of a capture folder.
 */
 
-#if os(iOS) && !targetEnvironment(simulator)
-
 import CoreRPG
 import Dispatch
 import Foundation
@@ -205,5 +203,3 @@ final class CaptureFolderManager {
         ScanFolderCleanup.removeStaleScans(in: capturesFolder, createdBefore: cutoff)
     }
 }
-
-#endif

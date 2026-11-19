@@ -12,10 +12,6 @@ import RealityKit
 import SwiftUI
 import os
 
-extension Logger {
-    static let scanner3D = Logger(subsystem: subsystem, category: "Scanner3D")
-}
-
 #Preview {
     Scanner3DRootView(itemId: UUID()) { _ in true }
 }

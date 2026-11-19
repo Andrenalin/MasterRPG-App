@@ -42,4 +42,74 @@ struct ReferenceScannerTests {
         let links = ReferenceScanner.allUuidUrls(for: "rpg", in: "[X](rpg://TABLE/1/not-a-uuid)")
         #expect(links.tables.isEmpty)
     }
+
+    // MARK: - CODE_AUDIT_TestGaps §5.15
+
+    @Test("Text without the scheme, and an empty text, have no links")
+    func noSchemeNoLinks() {
+        #expect(ReferenceScanner.allUuidUrls(for: "rpg", in: "").tables.isEmpty)
+        let plain = ReferenceScanner.allUuidUrls(for: "rpg", in: "just text, [a](https://example.com/\(table))")
+        #expect(plain.tables.isEmpty && plain.tableEntries.isEmpty)
+    }
+
+    @Test("Only links of the asked scheme are found")
+    func schemeIsExact() {
+        let text = "[A](rpg://TABLE/1/\(table)) [B](other://TABLE/1/\(table))"
+
+        #expect(ReferenceScanner.allUuidUrls(for: "rpg", in: text).tables.map(\.name) == ["A"])
+        #expect(ReferenceScanner.allUuidUrls(for: "other", in: text).tables.map(\.name) == ["B"])
+        #expect(ReferenceScanner.allUuidUrls(for: "rp", in: text).tables.isEmpty, "a prefix of the scheme is another scheme")
+    }
+
+    @Test("The module, link number, table and entry are returned as written")
+    func fieldsAreReturned() throws {
+        let links = ReferenceScanner.allUuidUrls(for: "rpg", in: "[Goblin](rpg://VALUE/42/\(table)/\(entry))")
+
+        let link = try #require(links.tableEntries.first)
+        #expect(link.name == "Goblin")
+        #expect(link.module == "VALUE")
+        #expect(link.linkNumber == "42")
+        #expect(link.table == table)
+        #expect(link.entry == entry)
+        #expect(link.command == nil)
+        #expect(links.tables.isEmpty)
+    }
+
+    @Test("Several links in one text are all found, in any order of shapes")
+    func severalLinks() {
+        let other = UUID()
+        let text = """
+            Start [One](rpg://TABLE/1/\(table)) then [Two](rpg://TABLE/2/\(other)) and
+            [Three](rpg://TABLE/3/\(table)/\(entry)) end.
+            """
+
+        let links = ReferenceScanner.allUuidUrls(for: "rpg", in: text)
+
+        #expect(Set(links.tables.map(\.table)) == [table, other])
+        #expect(links.tableEntries.map(\.name) == ["Three"])
+    }
+
+    @Test("A link whose entry is not a UUID is ignored as an entry")
+    func invalidEntryIsIgnored() {
+        let links = ReferenceScanner.allUuidUrls(for: "rpg", in: "[X](rpg://TABLE/1/\(table)/not-a-uuid)")
+
+        #expect(links.tableEntries.isEmpty)
+    }
+
+    @Test("A link with an empty name is still a link")
+    func emptyName() {
+        let links = ReferenceScanner.allUuidUrls(for: "rpg", in: "[](rpg://TABLE/1/\(table))")
+
+        #expect(links.tables.count == 1)
+        #expect(links.tables.first?.name == "")
+    }
+
+    @Test("A broken link next to a good one does not hide the good one")
+    func brokenNeighbour() {
+        let text = "[Bad](rpg://TABLE/x/\(table)) [Good](rpg://TABLE/1/\(table))"
+
+        let links = ReferenceScanner.allUuidUrls(for: "rpg", in: text)
+
+        #expect(links.tables.map(\.name) == ["Good"], "a link number must be digits")
+    }
 }

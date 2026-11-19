@@ -55,14 +55,60 @@ final class GameCenterModel: Sendable {
     }
 }
 
+/// What Game Center already holds for one achievement.
+struct GameCenterAchievementState: Hashable, Sendable {
+    let identifier: String
+    let percentComplete: Double
+}
+
+/// One achievement to report to Game Center.
+struct GameCenterAchievementUpdate: Hashable, Sendable {
+    let identifier: String
+    let percentComplete: Double
+    let showsCompletionBanner: Bool
+}
+
+/// The part of GameKit that reports achievements. `GameCenterController` decides *what* to report;
+/// this is the seam a test replaces, because `GKAchievement.report` cannot be called without a
+/// signed-in player. See CODE_AUDIT_TestGaps §5.14.
+@MainActor
+protocol GameCenterService: Sendable {
+    var isAuthenticated: Bool { get }
+    func loadAchievements() async throws -> [GameCenterAchievementState]
+    func report(_ updates: [GameCenterAchievementUpdate]) async throws
+}
+
+@MainActor
+struct GameKitGameCenterService: GameCenterService {
+    var isAuthenticated: Bool { GKLocalPlayer.local.isAuthenticated }
+
+    func loadAchievements() async throws -> [GameCenterAchievementState] {
+        try await GKAchievement.loadAchievements().map {
+            GameCenterAchievementState(identifier: $0.identifier, percentComplete: $0.percentComplete)
+        }
+    }
+
+    func report(_ updates: [GameCenterAchievementUpdate]) async throws {
+        let achievements = updates.map { update in
+            let achievement = GKAchievement(identifier: update.identifier)
+            achievement.percentComplete = update.percentComplete
+            achievement.showsCompletionBanner = update.showsCompletionBanner
+            return achievement
+        }
+        try await GKAchievement.report(achievements)
+    }
+}
+
 @MainActor
 final class GameCenterController: Sendable {
     let model: GameCenterModel
     private let evaluator = GameCenterAchievementEvaluator()
+    private let service: any GameCenterService
     private var authenticationHandlerInstalled = false
 
-    init(model: GameCenterModel) {
+    init(model: GameCenterModel, service: any GameCenterService = GameKitGameCenterService()) {
         self.model = model
+        self.service = service
     }
 
     func authenticate() {
@@ -83,26 +129,13 @@ final class GameCenterController: Sendable {
     }
 
     func reportAchievements(from summary: GameStatisticsSummary) async {
-        guard GKLocalPlayer.local.isAuthenticated else { return }
+        guard service.isAuthenticated else { return }
         model.beginReporting()
         do {
-            let existing = try await GKAchievement.loadAchievements()
-            // First-wins, not a trapping `uniqueKeysWithValues`: the ids come from GameKit.
-            // See CODE_AUDIT_21 §5.16.
-            let existingByID = Dictionary(existing.map { ($0.identifier, $0) }, uniquingKeysWith: { first, _ in first })
-            let progress = evaluator.progress(from: summary)
-            var achievements: [GKAchievement] = []
-
-            for item in progress where item.percentComplete > 0 {
-                let achievement = existingByID[item.identifier] ?? GKAchievement(identifier: item.identifier)
-                guard item.percentComplete > achievement.percentComplete else { continue }
-                achievement.percentComplete = item.percentComplete
-                achievement.showsCompletionBanner = item.percentComplete >= 100
-                achievements.append(achievement)
-            }
-
-            if !achievements.isEmpty {
-                try await GKAchievement.report(achievements)
+            let existing = try await service.loadAchievements()
+            let updates = Self.updates(for: evaluator.progress(from: summary), existing: existing)
+            if !updates.isEmpty {
+                try await service.report(updates)
             }
             model.finishReporting(error: nil)
         } catch is CancellationError {
@@ -110,6 +143,29 @@ final class GameCenterController: Sendable {
         } catch {
             model.finishReporting(error: error)
         }
+    }
+
+    /// The achievements whose progress is higher than what Game Center already holds. Nothing
+    /// that is at zero, or not higher, is reported again.
+    static func updates(
+        for progress: [GameCenterAchievementProgress],
+        existing: [GameCenterAchievementState]
+    ) -> [GameCenterAchievementUpdate] {
+        // First-wins, not a trapping `uniqueKeysWithValues`: the ids come from GameKit.
+        // See CODE_AUDIT_21 §5.16.
+        let existingById = Dictionary(existing.map { ($0.identifier, $0) }, uniquingKeysWith: { first, _ in first })
+        var updates: [GameCenterAchievementUpdate] = []
+        var reported = Set<String>()
+        for item in progress where item.percentComplete > 0 {
+            guard item.percentComplete > (existingById[item.identifier]?.percentComplete ?? 0),
+                  reported.insert(item.identifier).inserted else { continue }
+            updates.append(GameCenterAchievementUpdate(
+                identifier: item.identifier,
+                percentComplete: item.percentComplete,
+                showsCompletionBanner: item.percentComplete >= 100
+            ))
+        }
+        return updates
     }
 
     func setAccessPoint(active: Bool) {
