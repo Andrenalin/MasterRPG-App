@@ -24,7 +24,7 @@ struct MapPinSelectionEnvironmentTests {
             selectionModel: ItemSelectionModel(isSingleSelection: false, allowCollections: true)
         )
 
-        try await show(picker)
+        show(picker)
     }
 
     @Test("The photo picker does not rely on the presenter's module roots")
@@ -35,23 +35,19 @@ struct MapPinSelectionEnvironmentTests {
             selectionModel: ItemSelectionModel(isSingleSelection: false, allowCollections: false)
         )
 
-        try await show(picker)
+        show(picker)
     }
 
-    /// Puts `picker` on screen in a window with the volumetric window's environment only.
-    private func show(_ picker: some View) async throws {
+    /// Sizes `picker` once with the volumetric window's environment only. Sizing evaluates the
+    /// body, which is where a missing module root is a fatal error; no window is needed for that.
+    private func show(_ picker: some View) {
         let content = picker
             .environment(ScenesManager())
             .environment(AppSettingsModel())
             .environment(AppGameStateModel())
             .setAppSizeMode()
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 600, height: 800))
-        window.rootViewController = UIHostingController(rootView: content)
-        window.makeKeyAndVisible()
-        window.layoutIfNeeded()
-        // The picker's rows are made on the first passes of the run loop.
-        try await Task.sleep(for: .milliseconds(300))
-        window.isHidden = true
+        let controller = UIHostingController(rootView: content)
+        _ = controller.sizeThatFits(in: CGSize(width: 600, height: 800))
     }
 }
 #endif

@@ -8,21 +8,36 @@ MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Chara
 
 ## Build Commands
 ```bash
-# Build main app for iOS / visionOS Simulator
-xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro' build
+# Build main app for iOS Simulator
+xcodebuild -workspace MasterRPG.xcworkspace -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro' build
 # Build for macOS
-xcodebuild -scheme MasterMac -destination 'platform=macOS' build
-# Build for visionOS
-xcodebuild -scheme MasterRPG -destination 'platform=visionOS Simulator' build
+xcodebuild -workspace MasterRPG.xcworkspace -scheme MasterMac -destination 'platform=macOS' build
+# Build for visionOS (concrete simulator, see "Simulators" below)
+xcodebuild -workspace MasterRPG.xcworkspace -scheme MasterRPG -destination "platform=visionOS Simulator,id=$(xcrun simctl list devices available | awk '/^-- visionOS 27/{f=1;next} /^--/{f=0} f&&/Apple Vision Pro/{match($0,/[0-9A-F-]{36}/);print substr($0,RSTART,RLENGTH);exit}')" build
 # Build for tvOS
-xcodebuild -scheme MasterTV -destination 'platform=tvOS Simulator' build
+xcodebuild -workspace MasterRPG.xcworkspace -scheme MasterTV -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' build
 ```
+
+## Simulators
+Several runtimes are installed side by side (iOS 26.5/27.2, visionOS 26.5/27.2, tvOS 27.2), so a device **name** can resolve to a different simulator than the one the app was installed on. Always check with `xcrun simctl list devices available`.
+- Use the **newest runtime** (27.x). Pin the simulator with `id=<UDID>` whenever the name exists on more than one runtime (e.g. `Apple Vision Pro`). A name-based destination installs/launches on one device and tests on another, which fails with `Simulator device failed to launch de.AndreTrettin.GameMaster ... NotFound ("Launch Transaction error")`.
+- iOS/iPadOS: `iPhone 18 Pro` (unique name, fine by name). tvOS: `Apple TV 4K (3rd generation)`. visionOS: `Apple Vision Pro` on the visionOS 27.2 runtime, by id.
+- The generic `platform=visionOS Simulator` / `generic/platform=visionOS Simulator` destination can fail with a stale `EagerLinkingTBDs` x86_64 linker error; build for the concrete simulator instead.
 
 ## Test Commands
 ```bash
-# Run all tests
-xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
+# Run all tests (iOS)
+xcodebuild test -workspace MasterRPG.xcworkspace -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
+# One suite
+xcodebuild test -workspace MasterRPG.xcworkspace -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -only-testing:GameRPGTests/GameTablePinPawnTests
 ```
+
+visionOS-only suites (`#if os(visionOS)`, e.g. `GameTablePinPawnTests`) need the visionOS simulator by id, and the `MasterRPG` scheme's visionOS `build-for-testing` currently fails inside the third-party `swift-snapshot-testing` package (`cannot find 'Image' in scope`). Workaround:
+1. Copy `MasterRPG.xcodeproj/xcshareddata/xcschemes/GameRPGTests.xcscheme` to a temporary scheme and remove its `GameRPGSnapshotTests` `<TestableReference>` (the snapshot tests do not build for visionOS).
+2. `xcodebuild build-for-testing` then `test-without-building` with that scheme, `-destination 'platform=visionOS Simulator,id=<UDID>'` and `-only-testing:GameRPGTests/<Suite>`.
+3. Delete the temporary scheme afterwards; never commit it.
+
+The Xcode MCP `RunSomeTests` can report "not run" (cached test list, wrong simulator, empty result bundle); fall back to `xcodebuild` and read its `✔`/`✘` lines.
 
 ## Tech Stack
 - **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
