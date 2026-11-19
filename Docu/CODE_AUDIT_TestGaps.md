@@ -260,6 +260,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** This is the SSRF/size guard introduced by CODE_AUDIT_18 §6.4/6.5, CODE_AUDIT_19 §6.2, CODE_AUDIT_20 §6.2: it must reject a redirect to a LAN host, a body over `maximumBytes`, a non-2xx response and a private connected address. A refactor of the static `session`/`Delegate` could remove each silently.
 - **Action:** Make the `URLSession` configuration injectable (a `URLProtocol` stub) and add four cases: redirect to a private IP, oversize body (streamed, aborted), 404, connected-to-private after a public name; plus the happy path.
 - **Severity:** High
+- **Status: FIXED 2026-11-19.** `GuardedRemoteDownload.downloadWithResponse` has an internal overload that takes the `URLSession`; `Tests/CoreRPGTests/GuardedRemoteDownloadTests.swift` (11 test functions) runs it on a `URLProtocol` stub: happy path, a file exactly at the limit, a public redirect followed, a redirect to seven private/loopback/IPv6-mapped targets refused with the private address never requested, a private redirect followed only when `allowsPrivateHosts`, a `file:` redirect refused, an announced and an unannounced oversize body, non-2xx statuses, and the connected-address check (extracted as `containsPrivateAddress`, which a stub cannot feed through `URLSessionTaskMetrics`).
 
 ### 6.2 `SecurityScopedAccess`
 - **Location:** `Modules/CoreRPG/Files/SecurityScopedAccess.swift:1-94`
@@ -267,6 +268,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** An unbalanced start/stop leaks scoped access (stops working after a number of opens) — reproducible only with a unit test on a temp URL.
 - **Action:** Test balance on throw, on cancellation, and nested use.
 - **Severity:** Low
+- **Status: FIXED 2026-11-19.** `Tests/CoreRPGTests/SecurityScopedAccessTests.swift` (7 test functions): double stop without start, sync and async result, error passed on and a later access still working, cancellation before the work, nested access, `runAtDefaultPriority` and `runOffCallerExecutor`. A real scoped start/stop count cannot be observed for an app-container url (the start answers `false`), so balance is tested through the no-op stop and error paths only.
 
 ### 6.3 Share extension save path
 - **Location:** `Sources/RPGShare/ShareExtensionSaveController.swift:1-117`, `ShareViewController.swift`, `SharingInput.swift`; `Sources/RPGShare/ItemProviderImporter.swift` is covered (44 references)
@@ -274,6 +276,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** The extension runs in a separate, memory-limited process with no UI to show errors.
 - **Action:** Extract `saveContent` into `CoreRPG`/a package target so it can be unit-tested with a temp container.
 - **Severity:** Medium
+- **Status: FIXED 2026-11-19.** `ShareExtensionSaveController` moved from `Sources/RPGShare` into `Modules/RolePlayGameKit/Model` (public; takes `[Data]` instead of the extension-local `ImageItem`, which `SharingView` maps); `ShareExtensionDatabaseService` got an internal `init(context:container:)`. `Tests/GameRPGTests/ShareExtensionSaveTests.swift` (6 test functions, 13 cases) runs the real controller on an in-memory store with every module's model: a text share creates one saved item in Adventure/Map/Weather/Character with the name trimmed, two shares, Photo without an image refused, unsupported modules refused and nothing left unsaved, a service without a context refused, and a failed save after the photo write leaving no `RPGPhoto` row. Not covered: a successful photo save (it writes into the real photo module folder, so it is not run in a unit test) and the removal of the file after a failed save.
 
 ### 6.4 Untrusted-import coverage is good — keep it
 - **Location:** `Tests/CoreRPGTests/UntrustedImportTests.swift`, `Foundry/FoundryVTTArchiveSanitizerTests.swift`, `FoundryZIPArchive` tests (105 references)
@@ -281,6 +284,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** The gap is only that the *module-level* `sanitizeImportedFileUrl` (`ImportControllable.swift`) is not named directly (§5.13).
 - **Action:** One direct test with `../` and absolute-path inputs.
 - **Severity:** Low
+- **Status: FIXED 2026-11-19.** The function the audit names is a private wrapper around `FileUrl.sanitizedForImport`, which already had traversal tests. `UntrustedImportTests` gained a table over every `FileLocation` × nine hostile inputs (`../`, absolute, `file:`, encoded slash, empty): no traversal remains, the result resolves inside the module folder or is a public url, and sanitizing twice changes nothing; and a private remote host is kept only for a trusted source.
 
 ---
 
@@ -292,6 +296,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** Earlier audits found a full-reindex-per-save and a sync-load-on-init; both are invisible to correctness tests.
 - **Action:** Add 3–4 `measure`/time-budget tests with generous thresholds (10 000 items load; 5 000-entry folder import; fog render of the example map).
 - **Severity:** Low
+- **Status: FIXED 2026-11-19.** `Tests/TableRPGTests/PerformanceBudgetTests.swift` (10 000 tables written, saved and read back: 3.3 s / 1.5 s, budgets 60 s / 30 s; a 5 000-entry table exported and imported: 0.06 s / 3.1 s, budget 30 s each) and `Tests/GameRPGTests/FogRenderPerformanceTests.swift` (400 rooms on a 3 000 px map, for the master and a player: 0.03 s, budget 5 s). The measured times are printed as `PERF …`. The budgets catch quadratic regressions, not small ones. Not covered: a Foundry world import and SharePlay package assembly.
 
 ### 7.2 `ObjectCache` and the two `CacheController`s
 - **Location:** `Modules/CoreRPG/Cache/ObjectCache.swift:1-99` (7 of 10 unnamed: disk save/load/eviction), `PhotoRPG/Controller/CacheController.swift`, `MapRPG/Controller/CacheController.swift`
@@ -299,6 +304,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** Eviction and disk fallback decide memory use of image-heavy modules.
 - **Action:** Test eviction at the count limit and the disk round trip with a temp directory.
 - **Severity:** Low
+- **Status: FIXED 2026-11-19.** `Tests/CoreRPGTests/ImageCacheTests.swift` (21 test functions): `ObjectCache` memory hit/miss/replace/nil, eviction at the count limit (only that eviction happens, `NSCache` limits are not strict), disk save/load/remove, disk outliving the memory cache, two ids in one subfolder, a damaged file being a miss; the 120/400 LRU of `ObservableImageCache`; and the shared thumbnail pipeline of every module's `CacheController` (memory, disk fallback, create once, cancel, remove also deleting the disk copy). Not covered: the Photo and Map `createThumbnail` bodies (they need a file-backed photo root).
 
 ---
 
@@ -338,6 +344,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** `QuickEntryEditorView` is the exact place where the earlier health/link bug was found (memory: "Character sheet inline quick-editor… link destroyed"); the fix is guarded by an end-to-end regression test, not by view-model tests.
 - **Action:** Move the model types out of the view files (CLAUDE.md already asks for view logic in view models) and test them directly.
 - **Severity:** Medium
+- **Status: PARTLY FIXED 2026-11-19.** Moved out of the view files into their own files and tested: `QuickEditorLazyValue` (4 tests), `GroupEditorModel`/`GroupEditorController` (5 tests on what the editor shows plus 6 on a real Table root for what it saves, including that an untouched tag editor never clears tags), `LazyGenerationModel` (2), `ViewportModelStore` (2), `BatteryMonitor` (5; the process-wide count is tested because the simulator ignores `isBatteryMonitoringEnabled`), and `DisplayConfigTilePlan` (the four-point rule of the cover tile, 3 tests). The quick editor's link write-back already goes through `QuickLinkScanner`; the SwiftUI side of `applyQuickLink` is still only reachable through the view.
 
 ### 8.6 No accessibility or Dynamic Type tests
 - **Location:** `Scripts/verify_accessibility.rb` (static check only), no UI test sets `XCUIApplication.launchArguments` for Dynamic Type or VoiceOver
@@ -345,6 +352,7 @@ Size of the thing: ~216 k LOC in 15 modules + ~3.7 k LOC in 4 app targets (1,966
 - **Why:** The snapshot environment pins one Dynamic Type size (`Docu/SNAPSHOT_TESTING.md`).
 - **Action:** Add a second snapshot configuration at `accessibility3` for ~10 critical views, and an `performAccessibilityAudit()` UI test per module root.
 - **Severity:** Low
+- **Status: PARTLY FIXED 2026-11-19; the UI half is not verified.** `deterministicSnapshotEnvironment` takes a `dynamicTypeSize` (default `.large`, so the baseline is unchanged), and `CoreRPGAccessibilitySnapshotTests` renders 10 CoreRPG views at `accessibility3` with 10 new references in `Snapshots/Xcode27/CoreRPGSnapshotTests/CoreRPGAccessibilitySnapshotTests` (recorded with `missing`, then verified; uncommitted, stored through LFS). `Tests/MasterRPGUITests/AccessibilityAuditUITests.swift` has one `performAccessibilityAudit` test per module root (description, hit region, trait). **Those did not run:** on this machine every UI test, the existing ones included, fails at `openModule` (`The … module tab is missing`; on iPhone the editor modules are behind the Editors tab) and the iPad simulator cannot load the UI test bundle. Contrast, Dynamic Type and clipped-text audits are left out on purpose. Only CoreRPG has accessibility3 references, not the other modules.
 
 ---
 

@@ -20,8 +20,19 @@ public enum GuardedRemoteDownload {
         maximumBytes: Int,
         allowsPrivateHosts: Bool = false
     ) async throws -> (fileUrl: URL, response: URLResponse) {
+        try await downloadWithResponse(from: url, maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts, session: Self.session)
+    }
+
+    /// The download on `session`. A test passes a session whose configuration carries a
+    /// `URLProtocol` stub, so the guards run without a network. See CODE_AUDIT_TestGaps §6.1.
+    static func downloadWithResponse(
+        from url: URL,
+        maximumBytes: Int,
+        allowsPrivateHosts: Bool,
+        session: URLSession
+    ) async throws -> (fileUrl: URL, response: URLResponse) {
         let delegate = Delegate(maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts)
-        let (temporaryUrl, response) = try await Self.session.download(from: url, delegate: delegate)
+        let (temporaryUrl, response) = try await session.download(from: url, delegate: delegate)
         // A host name can resolve to a loopback or LAN address, and so can any redirect hop,
         // which the string check cannot see. The addresses actually connected to are checked
         // after the transfer; a private one discards the file. See CODE_AUDIT_20 §6.2.
@@ -40,6 +51,15 @@ public enum GuardedRemoteDownload {
             throw URLError(.dataLengthExceedsMaximum)
         }
         return (temporaryUrl, response)
+    }
+
+    /// Whether any address a transfer connected to (its own and every redirect hop's) is not a
+    /// public one. An unknown address (`nil`) is not counted.
+    static func containsPrivateAddress(_ remoteAddresses: [String?]) -> Bool {
+        remoteAddresses.contains { address in
+            guard let address else { return false }
+            return !URL.isPublicAddressLiteral(address)
+        }
     }
 
     /// `URLSession.shared` gives a transfer seven days to finish, so a host that drips bytes
@@ -83,11 +103,7 @@ public enum GuardedRemoteDownload {
 
         func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
             guard !allowsPrivateHosts else { return }
-            let hasPrivateAddress = metrics.transactionMetrics.contains { transaction in
-                guard let address = transaction.remoteAddress else { return false }
-                return !URL.isPublicAddressLiteral(address)
-            }
-            if hasPrivateAddress {
+            if GuardedRemoteDownload.containsPrivateAddress(metrics.transactionMetrics.map(\.remoteAddress)) {
                 sawPrivateAddress.withLock { $0 = true }
             }
         }

@@ -74,9 +74,8 @@ struct DisplayConfigEditor: View {
     }
     
     private func loadTileImage() async {
-        guard model.displayConfig.tileCoordinates.count == 4,
-              let photoId = model.photoId,
-              let tileRect = model.displayConfig.tileCoordinates.bounds else {
+        guard let photoId = model.photoId,
+              let tileRect = DisplayConfigTilePlan.tileRect(coordinates: model.displayConfig.tileCoordinates) else {
             tileImage = nil
             return
         }

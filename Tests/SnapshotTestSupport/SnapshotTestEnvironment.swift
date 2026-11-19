@@ -191,6 +191,8 @@ enum SnapshotTestEnvironment {
 
 @MainActor
 private struct DeterministicSnapshotEnvironmentModifier: ViewModifier {
+    let dynamicTypeSize: DynamicTypeSize
+
     func body(content: Content) -> some View {
         content
             .environment(\.locale, SnapshotTestEnvironment.locale)
@@ -198,7 +200,7 @@ private struct DeterministicSnapshotEnvironmentModifier: ViewModifier {
             .environment(\.timeZone, SnapshotTestEnvironment.timeZone)
             .environment(\.layoutDirection, .leftToRight)
             .environment(\.isSnapshotRendering, true)
-            .dynamicTypeSize(.large)
+            .dynamicTypeSize(dynamicTypeSize)
             .preferredColorScheme(.light)
             .transaction { transaction in
                 transaction.animation = nil
@@ -209,9 +211,12 @@ private struct DeterministicSnapshotEnvironmentModifier: ViewModifier {
 
 extension View {
     /// Fixes host-dependent SwiftUI values before Point-Free renders a view.
+    ///
+    /// `dynamicTypeSize` is `.large` for the reviewed baseline. The accessibility suites pass a
+    /// larger size to check the layout of the same views at an accessibility text size.
     @MainActor
-    func deterministicSnapshotEnvironment() -> some View {
-        modifier(DeterministicSnapshotEnvironmentModifier())
+    func deterministicSnapshotEnvironment(dynamicTypeSize: DynamicTypeSize = .large) -> some View {
+        modifier(DeterministicSnapshotEnvironmentModifier(dynamicTypeSize: dynamicTypeSize))
     }
 }
 

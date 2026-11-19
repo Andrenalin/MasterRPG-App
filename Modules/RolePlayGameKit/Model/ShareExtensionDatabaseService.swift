@@ -29,6 +29,15 @@ public final class ShareExtensionDatabaseService {
         self.useCloudKit = useCloudKit
     }
 
+    /// A service that is ready on an existing store, for tests: `setup()` opens the shared
+    /// app-group store, which a test must not touch. See CODE_AUDIT_TestGaps §6.3.
+    init(context: NSManagedObjectContext, container: NSPersistentContainer?) {
+        useCloudKit = false
+        self.context = context
+        self.container = container
+        isReady = true
+    }
+
     // MARK: - Setup
 
     /// Loads ALL modules to ensure database integrity

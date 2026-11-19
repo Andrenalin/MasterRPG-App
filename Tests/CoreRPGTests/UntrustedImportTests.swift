@@ -416,4 +416,59 @@ struct UntrustedImportTests {
         let stale = LWWRegister("remote", actorID: "a", timestamp: aheadWithinSkew)
         #expect(register.merged(with: stale).value == "local")
     }
+
+    // MARK: - CODE_AUDIT_TestGaps §6.4: hostile paths for every location
+
+    private static let hostilePaths = [
+        "../../Stores/Private/private.sqlite",
+        "/../../etc/passwd",
+        "/etc/passwd",
+        "file:///etc/passwd",
+        "a/../../../b",
+        "..%2F..%2Fsecret",
+        "./.././x",
+        "/",
+        ""
+    ]
+
+    @Test("No location lets a hostile relative or absolute path out of the module folder", arguments: FileLocation.allCases)
+    func hostilePathsNeverLeaveTheModuleFolder(location: FileLocation) throws {
+        let controller = CloudDocumentController(modulePath: "Pdfs")
+        let moduleRoot = normalizedPath(controller.moduleUrl)
+
+        for path in Self.hostilePaths {
+            let url = try #require(URL(string: path) ?? URL(string: "x"))
+            let hostile = FileUrl(fileId: UUID(), url: url, location: location, module: "Pdfs", relativeUrl: nil)
+
+            let sanitized = hostile.sanitizedForImport()
+
+            #expect(sanitized.fileId == hostile.fileId)
+            if sanitized.location == .url {
+                #expect(sanitized.rawUrl.isPublicRemoteFileUrl, "\(path) at \(location) kept a url that is not public")
+                continue
+            }
+            #expect(!sanitized.rawUrl.pathComponents.contains(".."), "\(path) at \(location) kept a traversal")
+            if let resolved = controller.fullUrl(fileUrl: sanitized.rawUrl) {
+                #expect(normalizedPath(resolved).hasPrefix(moduleRoot + "/"), "\(path) at \(location) resolved to \(resolved)")
+            }
+            // Sanitizing what was sanitized changes nothing.
+            #expect(sanitized.sanitizedForImport().rawUrl == sanitized.rawUrl, "\(path) at \(location) is not stable")
+        }
+    }
+
+    @Test("A private remote host is only kept for a trusted source", arguments: [
+        "http://192.168.1.4/rules.pdf",
+        "http://localhost/rules.pdf",
+        "https://nas.local/rules.pdf"
+    ])
+    func privateRemoteHostNeedsATrustedSource(address: String) throws {
+        let remote = FileUrl(fileId: UUID(), url: try #require(URL(string: address)), location: .url, module: "Pdfs", relativeUrl: nil)
+
+        let untrusted = remote.sanitizedForImport(allowsPrivateRemoteHosts: false)
+        let trusted = remote.sanitizedForImport(allowsPrivateRemoteHosts: true)
+
+        #expect(untrusted.location == .newCloud, "an untrusted package must not point the device at the LAN")
+        #expect(trusted.location == .url)
+        #expect(trusted.rawUrl == remote.rawUrl)
+    }
 }

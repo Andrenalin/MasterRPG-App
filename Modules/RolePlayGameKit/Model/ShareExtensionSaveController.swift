@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import RolePlayGameKit
 import Foundation
 import os.log
 import SwiftUI
@@ -15,22 +14,26 @@ import AdventureRPG
 /// Controller for saving content from the share extension using lightweight data operations
 /// Mimics SaveAction behavior but uses Core Data directly without full root model infrastructure
 @MainActor
-final class ShareExtensionSaveController {
-    init(databaseService: ShareExtensionDatabaseService) {
+public final class ShareExtensionSaveController {
+    public init(databaseService: ShareExtensionDatabaseService) {
         self.databaseService = databaseService
     }
 
-    let databaseService: ShareExtensionDatabaseService
+    public let databaseService: ShareExtensionDatabaseService
 
     // MARK: - Save Operations
 
     /// Saves content to the specified module
     /// Replicates SaveAction logic without using root models
-    func saveContent(
+    ///
+    /// `images` holds the raw data of each shared image. The class lives in the module, not in the
+    /// extension, so the save path can be unit-tested with a temporary store.
+    /// See CODE_AUDIT_TestGaps §6.3.
+    public func saveContent(
         to module: NetworkModules,
         name: String,
         text: String,
-        images: [ImageItem]
+        images: [Data]
     ) async throws {
         guard let context = databaseService.context else {
             throw ShareExtensionError.contextNotAvailable
@@ -68,7 +71,7 @@ final class ShareExtensionSaveController {
         to module: NetworkModules,
         name: String,
         text: String,
-        images: [ImageItem],
+        images: [Data],
         context: NSManagedObjectContext,
         photoController: ShareImportPhotoController,
         writtenFiles: inout [FileUrl]
@@ -78,7 +81,7 @@ final class ShareExtensionSaveController {
         var photoLinks: [String] = []
 
         for image in images {
-            let added = try await photoController.addNewPhotoFile(context: context, data: image.imageData, name: name, text: text)
+            let added = try await photoController.addNewPhotoFile(context: context, data: image, name: name, text: text)
             writtenFiles.append(added.fileUrl)
             photoIds.append(added.photoId)
             photoLinks.append(added.link)

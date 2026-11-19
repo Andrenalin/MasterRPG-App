@@ -15,12 +15,6 @@ struct ImageViewer: View {
     let accessibilityHint: String?
     let toolBarModel: GameToolBarModel?
 
-    /// Holds the viewport model, created on the first read (see `viewportModel`).
-    @MainActor
-    private final class ViewportModelStore {
-        var model: ViewportModel?
-    }
-
     @State private var viewportModelStore = ViewportModelStore()
     @State private var configuredImageViewport: ImageViewportConfiguration?
 #if !os(tvOS)
@@ -32,18 +26,17 @@ struct ImageViewer: View {
     /// `State(initialValue:)` allocated an `@Observable` model and measured the image on every
     /// parent render, and kept only the first. See CODE_AUDIT_20 §7.3.
     var viewportModel: ViewportModel {
-        if let model = viewportModelStore.model { return model }
-        let imageConfiguration = ImageViewportConfiguration(
-            id: id,
-            imageSize: image.fixedSize,
-            containerSize: containerSize,
-            degrees: photoDegrees
-        )
-        let model = ViewportModel(
-            configuration: ImageViewportGeometry(configuration: imageConfiguration).viewportConfiguration
-        )
-        viewportModelStore.model = model
-        return model
+        viewportModelStore.model {
+            let imageConfiguration = ImageViewportConfiguration(
+                id: id,
+                imageSize: image.fixedSize,
+                containerSize: containerSize,
+                degrees: photoDegrees
+            )
+            return ViewportModel(
+                configuration: ImageViewportGeometry(configuration: imageConfiguration).viewportConfiguration
+            )
+        }
     }
 
     private var currentDegrees: Double {

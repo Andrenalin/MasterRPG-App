@@ -189,7 +189,7 @@ struct SharingView: View {
                 to: selectedModule,
                 name: inputModel.name,
                 text: inputModel.text,
-                images: imageListModel.images
+                images: imageListModel.images.map(\.imageData)
             )
             
             os.Logger.bootStrap.info("Successfully saved to \(selectedModule.rawValue)")

@@ -678,7 +678,6 @@
             { "path": "ModuleChooserView.swift", "target-membership": [ "RPGShare/compile-sources" ] },
             { "path": "PhotoSection.swift", "target-membership": [ "RPGShare/compile-sources" ] },
             { "path": "PrivacyInfo.xcprivacy", "target-membership": [ "RPGShare/resources" ] },
-            { "path": "ShareExtensionSaveController.swift", "target-membership": [ "RPGShare/compile-sources" ] },
             { "path": "ShareViewController.swift", "target-membership": [ "RPGShare/compile-sources" ] },
             { "path": "SharingHeader.swift", "target-membership": [ "RPGShare/compile-sources" ] },
             { "path": "SharingInput.swift", "target-membership": [ "RPGShare/compile-sources" ] },

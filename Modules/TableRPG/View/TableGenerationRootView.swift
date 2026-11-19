@@ -170,18 +170,6 @@ struct TableGenerationRootView: View {
     }
 }
 
-@MainActor
-private final class LazyGenerationModel {
-    private var model: TableGenerationModel?
-
-    func model(_ make: () -> TableGenerationModel) -> TableGenerationModel {
-        if let model { return model }
-        let made = make()
-        model = made
-        return made
-    }
-}
-
 #Preview("Dice table", traits: .mockData) {
     TableGenerationRootView(
         itemId: TableModel.previewId,
