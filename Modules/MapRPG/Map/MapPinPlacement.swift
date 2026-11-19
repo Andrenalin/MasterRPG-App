@@ -43,6 +43,26 @@ enum MapPinPlacement {
         return pins
     }
 
+    /// One pin per photo, showing that photo. Unlike a monster pin it is linked to no character:
+    /// `characterId` stays `nil`.
+    static func spawnPhotoPins(
+        photos: [(photoId: UUID, name: String)],
+        location: CGPoint?
+    ) -> [MapPinModel] {
+        photos.prefix(maximumMonstersPerDrop).map { photo in
+            MapPinModel(
+                id: UUID(),
+                name: photo.name,
+                color: .random,
+                photoId: photo.photoId,
+                characterId: nil,
+                location: location ?? .zero,
+                size: .normal,
+                isShown: true
+            )
+        }
+    }
+
     /// Cascades unpositioned pins (`location == .zero`) diagonally, starting
     /// near the entry's left-center, each offset from the previous pin by its
     /// own width (scaled) plus `interPinGap` on both axes. Already-positioned

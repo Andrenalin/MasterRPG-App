@@ -183,7 +183,11 @@ private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
             isSelected: model.isStreaming
         )
 
-        ChooseMapPinsButton(root: root, focusedRoomId: model.focusedRoomId) {
+        ChooseMapPinsButton(
+            root: root,
+            focusedRoomId: model.focusedRoomId,
+            placesInMapCenter: model.placesNewPinsInMapCenter
+        ) {
             if model.isStreaming { model.sendMapUpdates() }
         }
 

@@ -2,6 +2,7 @@
 
 import CoreGraphics
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 
 // Split out of MapEditController.swift — see CODE_AUDIT §9.13.
@@ -49,9 +50,52 @@ extension MapEditController {
         let location = editorModel.contentPoint(fromViewport: point)
         let entry = editorModel.entry(for: location, in: map)
 
+        let characters = monsters.filter { $0.typeId != .photo }
+        let photoIds = monsters.filter { $0.typeId == .photo }.map(\.itemId)
+
         withAnimation(.bouncy) {
-            addMonsters(entryId: entry?.id, location: location, monsters: monsters, number: 1, editorModel: editorModel)
+            if !characters.isEmpty {
+                addMonsters(entryId: entry?.id, location: location, monsters: characters, number: 1, editorModel: editorModel)
+            }
+            addPhotoPins(entryId: entry?.id, location: location, photoIds: photoIds, editorModel: editorModel)
         }
+    }
+}
+
+// MARK: - Add Photo Pins (working copy only)
+
+extension MapEditController {
+    /// Adds one pin per photo, named after the photo and linked to no character. At `location`
+    /// when it is given, otherwise cascaded in the selected room (or the first one) like
+    /// monster pins.
+    @MainActor
+    func addPhotoPins(
+        entryId: UUID? = nil,
+        location: CGPoint? = nil,
+        photoIds: [UUID],
+        editorModel: MapEditorSession
+    ) {
+        guard let copy = editorModel.workingCopy, !photoIds.isEmpty else { return }
+
+        let photoRoot = editController.root.photoRoot
+        let photos = photoIds.map { photoId in
+            (photoId: photoId, name: photoRoot.itemControllable.nameSync(itemId: photoId))
+        }
+        var pins = MapPinPlacement.spawnPhotoPins(photos: photos, location: location)
+
+        let selectedEntryId = entryId ?? editController.editorModel.sheetEditorModel.entryId
+        let targetEntryId = selectedEntryId ?? copy.entries.first(where: { !$0.isHexGrid })?.id
+        if location == nil, let targetEntryId {
+            pins = MapPinPlacement.cascade(
+                pins: pins,
+                in: copy[targetEntryId],
+                pinScale: copy.pinScale,
+                occupied: copy.mapPins.map(\.location)
+            )
+        }
+
+        editorModel.pins.mapPins = copy.mapPins + pins
+        commitPinMutation(editorModel: editorModel)
     }
 }
 

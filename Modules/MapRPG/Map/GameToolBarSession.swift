@@ -14,6 +14,10 @@ public protocol GameToolBarSession: AnyObject, Observable {
     /// The room the game master currently has zoomed/focused — where a newly
     /// added monster pin should land.
     var focusedRoomId: UUID? { get }
+    /// Whether a pin added without a focused room goes to the middle of the map. The 2D canvas
+    /// cascades such pins into the first room when it draws them; a renderer without that step
+    /// (the 3D table) would leave them at (0, 0), the corner of the map.
+    var placesNewPinsInMapCenter: Bool { get }
 
     /// Whether toolbar-driven edits (pointer moves, added pins) are pushed to
     /// every connected client as they happen, versus staying local until the
@@ -38,6 +42,10 @@ public protocol GameToolBarSession: AnyObject, Observable {
     /// Pushes whatever the toolbar just changed (a pointer move, an added
     /// pin) to every connected client.
     func sendMapUpdates()
+}
+
+public extension GameToolBarSession {
+    var placesNewPinsInMapCenter: Bool { false }
 }
 
 public extension MapDisplayMode {

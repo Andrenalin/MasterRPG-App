@@ -431,21 +431,65 @@ extension EditController {
 // MARK: - Monster
 
 extension EditController {
-    @MainActor func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        addMonsters(to: map, entryId: entryId, location: location, monsters: monsters, number: number)
+    /// `placesInMapCenter`: pins that get neither a location nor a room go to the middle of the map.
+    @MainActor func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, placesInMapCenter: Bool = false) {
+        addMonsters(to: map, entryId: entryId, location: location, monsters: monsters, number: number, placesInMapCenter: placesInMapCenter)
     }
 
-    @MainActor private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
+    @MainActor private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int, placesInMapCenter: Bool = false) {
         var pins = MapPinPlacement.spawnPins(monsters: monsters, count: number, location: location, characterRoot: root.characterRoot)
-
-        if let entryId, location == nil {
-            pins = MapPinPlacement.cascade(pins: pins, in: model[entryId], pinScale: model.pinScale)
-        }
+        pins = placed(pins, in: model, entryId: entryId, location: location, placesInMapCenter: placesInMapCenter)
         // All pins are appended first and saved once: one save (and one broadcast) per pin
         // made adding a group of monsters N saves. See CODE_AUDIT_26 §7.56.
         guard !pins.isEmpty else { return }
         model.mapPins.append(contentsOf: pins)
         save(updated: model, message: String(localized: "Added pin", bundle: .module))
+    }
+}
+
+// MARK: - Pin Placement
+
+extension EditController {
+    /// Places new, unpositioned pins: cascaded in `entryId`'s room, else (when asked) around the
+    /// middle of the map next to the pins already there. A given `location` is kept.
+    @MainActor private func placed(
+        _ pins: [MapPinModel],
+        in map: MapModel,
+        entryId: UUID?,
+        location: CGPoint?,
+        placesInMapCenter: Bool
+    ) -> [MapPinModel] {
+        guard location == nil else { return pins }
+        if let entryId {
+            return MapPinPlacement.cascade(pins: pins, in: map[entryId], pinScale: map.pinScale)
+        }
+        guard placesInMapCenter else { return pins }
+        return MapPinPlacement.centered(
+            pins: pins,
+            in: CGSize(width: map.width, height: map.height),
+            pinScale: map.pinScale,
+            occupied: map.mapPins.map(\.location)
+        )
+    }
+}
+
+// MARK: - Photo Pins
+
+extension EditController {
+    /// Adds one pin per photo to a game map, named after the photo and linked to no character.
+    /// At `location` when given, otherwise cascaded in `entryId`'s room.
+    @MainActor func addPhotoPins(map: MapModel, entryId: UUID?, location: CGPoint?, photoIds: [UUID], placesInMapCenter: Bool = false) {
+        guard !photoIds.isEmpty else { return }
+        let photos = photoIds.map { (photoId: $0, name: root.photoRoot.itemControllable.nameSync(itemId: $0)) }
+        let pins = placed(
+            MapPinPlacement.spawnPhotoPins(photos: photos, location: location),
+            in: map,
+            entryId: entryId,
+            location: location,
+            placesInMapCenter: placesInMapCenter
+        )
+        map.mapPins.append(contentsOf: pins)
+        save(updated: map, message: String(localized: "Added pin", bundle: .module))
     }
 }
 

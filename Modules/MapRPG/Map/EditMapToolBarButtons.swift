@@ -133,21 +133,46 @@ struct EditToolBarViewModifierCancelButtonView: View {
     }
 }
 
+/// The editor's "Choose Map Pins" menu: character pins (a monster, NPC, ...) or photo pins,
+/// which are linked to no character.
 struct EditToolBarViewModifierShowPinSelectionButtonView: View {
     @Binding var showPinSelection: Bool
+    @Binding var showPhotoPinSelection: Bool
 
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(MapRootModel.self) private var root
+
+    /// macOS picks photos in the photo module's own window, which writes into this model.
+    let photoSelection: ItemSelectionModel
 
     var body: some View {
-        Button {
+        Menu {
+            Button(
+                String(localized: "Character Pins", bundle: .module),
+                systemImage: NetworkModules.value.icon
+            ) {
 #if os(macOS)
-            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
+                scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
 #else
-            showPinSelection.toggle()
+                showPinSelection.toggle()
 #endif
-            MasterRPGTips.recordMapToolUsed()
+                MasterRPGTips.recordMapToolUsed()
+            }
+            Button(
+                String(localized: "Photo Pins", bundle: .module),
+                systemImage: NetworkModules.photo.icon
+            ) {
+#if os(macOS)
+                root.photoRoot.itemSelectionModel = photoSelection
+                scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
+#else
+                showPhotoPinSelection.toggle()
+#endif
+                MasterRPGTips.recordMapToolUsed()
+            }
         } label: {
-            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
+            let isPresented = showPinSelection || showPhotoPinSelection
+            let symbolName = "mappin\(isPresented ? ".and.ellipse" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .accessibilityLabel(Text("Choose Map Pins", bundle: .module))

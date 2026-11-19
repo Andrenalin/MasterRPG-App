@@ -82,6 +82,54 @@ struct MapEditorCharacterLinkTests {
         let copy = try #require(context.session.workingCopy)
         #expect(LinkReplaceController.links(for: copy[room.id].content).count == 1)
     }
+
+    @Test("Photo pins carry the photo and no character, in the first room, and link no character")
+    func photoPinsHaveNoCharacter() throws {
+        // Given
+        let room1 = MapEntryModel(id: UUID(), name: "Room 1", content: "Old text", coordinates: rectangle(origin: .zero))
+        let context = makeContext(map: makeMap(entries: [room1]))
+        let photoIds = [UUID(), UUID()]
+
+        // When
+        context.controller.addPhotoPins(photoIds: photoIds, editorModel: context.session)
+
+        // Then
+        let copy = try #require(context.session.workingCopy)
+        #expect(copy.mapPins.map(\.photoId) == photoIds)
+        #expect(copy.mapPins.allSatisfy { $0.characterId == nil })
+        #expect(copy.mapPins.allSatisfy { $0.location != .zero })
+        #expect(copy[room1.id].content == "Old text")
+        #expect(context.session.history.canUndo)
+    }
+
+    @Test("A dropped photo and a dropped character each become a pin at the drop location")
+    func dropAddsPhotoAndCharacterPins() throws {
+        // Given
+        let room1 = MapEntryModel(id: UUID(), name: "Room 1", content: "", coordinates: rectangle(origin: .zero))
+        let map = makeMap(entries: [room1])
+        let context = makeContext(map: map)
+        let photoId = UUID()
+        let characterId = UUID()
+
+        // When
+        context.controller.dropPin(
+            at: .zero,
+            map: map,
+            monsters: [
+                ItemRowModel(itemId: photoId, typeId: .photo),
+                ItemRowModel(itemId: characterId, typeId: .value)
+            ],
+            editorModel: context.session
+        )
+
+        // Then
+        let copy = try #require(context.session.workingCopy)
+        let photoPin = try #require(copy.mapPins.first { $0.photoId == photoId })
+        let characterPin = try #require(copy.mapPins.first { $0.characterId == characterId })
+        #expect(copy.mapPins.count == 2)
+        #expect(photoPin.characterId == nil)
+        #expect(characterPin.photoId != photoId)
+    }
 }
 
 private extension MapEditorCharacterLinkTests {

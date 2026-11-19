@@ -307,13 +307,23 @@ private extension MapEditor {
         } else {
             let location = session.contentPoint(fromViewport: dropPinModel.point)
             let entry = session.entry(for: location, in: map)
+            let characters = dropPinModel.items.filter { $0.typeId != .photo }
+            let photoIds = dropPinModel.items.filter { $0.typeId == .photo }.map(\.itemId)
             withAnimation(.bouncy) {
-                root.editController.addMonsters(
+                if !characters.isEmpty {
+                    root.editController.addMonsters(
+                        map: map,
+                        entryId: entry?.id,
+                        location: location,
+                        monsters: characters,
+                        number: 1
+                    )
+                }
+                root.editController.addPhotoPins(
                     map: map,
                     entryId: entry?.id,
                     location: location,
-                    monsters: dropPinModel.items,
-                    number: 1
+                    photoIds: photoIds
                 )
             }
         }
