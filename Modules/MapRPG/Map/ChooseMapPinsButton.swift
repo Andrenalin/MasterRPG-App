@@ -1,9 +1,10 @@
 // @copyright André Trettin
 
 import CoreRPG
+import PhotoRPG
 import SwiftUI
 
-/// Adds monster pins to the game's currently focused room. Shared by the 2D
+/// Adds monster or photo pins to the game's currently focused room. Shared by the 2D
 /// map toolbar (`GameToolBar`) and the 3D table toolbar so both offer the
 /// same picker sheet and pin-drop behavior — only what happens *after* the
 /// pins land differs per renderer (2D pushes an update only while its "Share
@@ -19,18 +20,36 @@ struct ChooseMapPinsButton: View {
     @Environment(ScenesManager.self) private var scenesManager
 
     @State private var showPinSelection: Bool = false
+    @State private var showPhotoPinSelection: Bool = false
     @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
+    @State private var selectedPhotoPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: false)
     @Namespace private var pinSpace
 
     var body: some View {
-        Button {
+        Menu {
+            Button(
+                String(localized: "Character Pins", bundle: .module),
+                systemImage: NetworkModules.value.icon
+            ) {
 #if os(macOS)
-            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
+                scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
 #else
-            showPinSelection.toggle()
+                showPinSelection.toggle()
 #endif
+            }
+            Button(
+                String(localized: "Photo Pins", bundle: .module),
+                systemImage: NetworkModules.photo.icon
+            ) {
+#if os(macOS)
+                root.photoRoot.itemSelectionModel = selectedPhotoPin
+                scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
+#else
+                showPhotoPinSelection.toggle()
+#endif
+            }
         } label: {
-            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
+            let symbolName = "mappin\(showPinSelection || showPhotoPinSelection ? ".and.ellipse" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(width: iconSize, height: iconSize)
@@ -49,6 +68,11 @@ struct ChooseMapPinsButton: View {
 #endif
             }
         }
+        .sheet(isPresented: $showPhotoPinSelection) {
+            ManagedPresentationView {
+                root.viewController.photoSelection(root: root, selectionModel: selectedPhotoPin)
+            }
+        }
         .onChange(of: showPinSelection, initial: false) { _, newValue in
             guard !newValue, !selectedPin.selection.isEmpty else { return }
             let map = root.gameController.currentItem()
@@ -56,7 +80,7 @@ struct ChooseMapPinsButton: View {
             withAnimation(reduceMotion ? nil : .bouncy) {
                 root.editController.addMonsters(
                     map: map,
-                    entryId: focusedRoomId,
+                    entryId: root.gameController.newPinRoomId(itemId: map.id, focusedRoomId: focusedRoomId),
                     location: nil,
                     monsters: monsters,
                     number: 1
@@ -65,6 +89,33 @@ struct ChooseMapPinsButton: View {
             onMonstersAdded()
             selectedPin.resetSelection(itemId: nil, entryId: nil)
         }
+        // Photo pins: the sheet closing on iOS/visionOS, every pick in the macOS window.
+#if os(macOS)
+        .onChange(of: selectedPhotoPin.selection, initial: false) {
+            addSelectedPhotoPins()
+        }
+#else
+        .onChange(of: showPhotoPinSelection, initial: false) { _, isPresented in
+            guard !isPresented else { return }
+            addSelectedPhotoPins()
+        }
+#endif
+    }
+
+    private func addSelectedPhotoPins() {
+        let photoIds = selectedPhotoPin.selection.map(\.itemId)
+        guard !photoIds.isEmpty else { return }
+        let map = root.gameController.currentItem()
+        withAnimation(reduceMotion ? nil : .bouncy) {
+            root.editController.addPhotoPins(
+                map: map,
+                entryId: root.gameController.newPinRoomId(itemId: map.id, focusedRoomId: focusedRoomId),
+                location: nil,
+                photoIds: photoIds
+            )
+        }
+        onMonstersAdded()
+        selectedPhotoPin.resetSelection(itemId: nil, entryId: nil)
     }
 }
 

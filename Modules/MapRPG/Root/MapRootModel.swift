@@ -307,6 +307,20 @@ public extension MapRootModel {
         editController.toggleHexMap(for: gameController.gameItem(for: itemId))
     }
 
+    /// Adds a pin for each dropped item to the game map `itemId` at `location`: a photo item
+    /// becomes a pin showing that photo, a character item a pin of that character. Public for the
+    /// 3D table, whose drop point is converted to a map location there.
+    @MainActor
+    func addDroppedPins(_ items: [ItemRowModel], itemId: UUID, location: CGPoint) {
+        let map = gameController.gameItem(for: itemId)
+        let characters = items.filter { $0.typeId != .photo }
+        let photoIds = items.filter { $0.typeId == .photo }.map(\.itemId)
+        if !characters.isEmpty {
+            editController.addMonsters(map: map, entryId: nil, location: location, monsters: characters, number: 1)
+        }
+        editController.addPhotoPins(map: map, entryId: nil, location: location, photoIds: photoIds)
+    }
+
     /// Rebuilds the hex grid of the game map `itemId` for `scale`, keeping the revealed area.
     /// Public for the 3D table, like `toggleHexMap(itemId:)`. See CODE_AUDIT_21 §5.19.
     @MainActor

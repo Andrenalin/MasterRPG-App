@@ -708,6 +708,22 @@
         }
       }
     },
+    "Character Pins" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter-Marker"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หมุดตัวละคร"
+          }
+        }
+      }
+    },
     "Choose Map Pins" : {
       "localizations" : {
         "de" : {
@@ -2078,6 +2094,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รูปของ %@"
+          }
+        }
+      }
+    },
+    "Photo Pins" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto-Marker"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หมุดรูปภาพ"
           }
         }
       }

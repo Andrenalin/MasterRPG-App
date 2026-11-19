@@ -28,14 +28,14 @@ struct MapPinView: View {
 
 /// What a pin accepts by drop in the editor: a photo for its image or a character.
 /// The dropped `module` tells them apart.
-struct MapPinDropTransferable: LinkDataTransferable {
-    let module: NetworkModules
-    let itemId: UUID
-    let entryId: UUID?
-    let name: String
-    let isMove: Bool
+public struct MapPinDropTransferable: LinkDataTransferable {
+    public let module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+    public let isMove: Bool
 
-    static var transferRepresentation: some TransferRepresentation {
+    public static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .photoLink)
         CodableRepresentation(contentType: .characterLink)
     }

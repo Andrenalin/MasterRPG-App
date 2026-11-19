@@ -74,8 +74,11 @@ struct RootEditCanvasMap: View {
             await reloadImage(for: imageLoadIdentity)
         }
 #if !os(tvOS)
-        .dropDestination(for: LinkCharacterData.self) { items, point in
-            let dropItems = items.filter { $0.module == .value && $0.entryId == nil }.map { ItemRowModel(itemId: $0.itemId, typeId: $0.module )}
+        .dropDestination(for: MapPinDropTransferable.self) { items, point in
+            // A character (not one of its entries) or a photo becomes a pin.
+            let dropItems = items
+                .filter { $0.module == .photo || ($0.module == .value && $0.entryId == nil) }
+                .map { ItemRowModel(itemId: $0.itemId, typeId: $0.module) }
             guard !dropItems.isEmpty else { return false }
             dropPinModel.point = point
             dropPinModel.items = dropItems

@@ -22,8 +22,10 @@ struct EditToolBarViewModifier: ViewModifier {
     @State private var exitReady: Bool = false
     @State private var hideScales: Bool = true
     @State private var showPinSelection: Bool = false
+    @State private var showPhotoPinSelection: Bool = false
 
     @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
+    @State private var selectedPhotoPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: false)
 
     @Namespace private var pinSpace
 
@@ -142,6 +144,11 @@ struct EditToolBarViewModifier: ViewModifier {
                         .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))
                 }
             }
+            .fullScreenCover(isPresented: $showPhotoPinSelection) {
+                ManagedPresentationView {
+                    root.viewController.photoSelection(root: root, selectionModel: selectedPhotoPin)
+                }
+            }
 #endif
             .onChange(of: showPinSelection, initial: false) { _, newValue in
                 guard !newValue, !selectedPin.selection.isEmpty else { return }
@@ -152,6 +159,18 @@ struct EditToolBarViewModifier: ViewModifier {
                 }
                 selectedPin.resetSelection(itemId: nil, entryId: nil)
             }
+            // Photo pins: the picker sheet closing on iOS/visionOS, every pick in the macOS
+            // window. Each photo becomes a pin without a character.
+#if os(macOS)
+            .onChange(of: selectedPhotoPin.selection, initial: false) {
+                addSelectedPhotoPins()
+            }
+#else
+            .onChange(of: showPhotoPinSelection, initial: false) { _, isPresented in
+                guard !isPresented else { return }
+                addSelectedPhotoPins()
+            }
+#endif
             // The working copy otherwise commits only on Save or `.onDisappear` — a crash,
             // force-quit or macOS quit with the editor open discarded the whole drawing
             // session, since the app-level exit save only ever saved the un-updated stored
@@ -249,7 +268,11 @@ struct EditToolBarViewModifier: ViewModifier {
                         displayModeAccessibilityValue: displayModeAccessibilityValue
                     )
 
-                    EditToolBarViewModifierShowPinSelectionButtonView(showPinSelection: $showPinSelection)
+                    EditToolBarViewModifierShowPinSelectionButtonView(
+                        showPinSelection: $showPinSelection,
+                        showPhotoPinSelection: $showPhotoPinSelection,
+                        photoSelection: selectedPhotoPin
+                    )
                         .matchedTransitionSource(id: "pin", in: pinSpace)
                 }
 
@@ -323,6 +346,15 @@ private extension EditToolBarViewModifier {
         return !editedMap.isSame(savedMap)
             || editorModel.pinScale != savedMap.pinScale
             || editorModel.hexScale != savedMap.hexMapScale
+    }
+
+    func addSelectedPhotoPins() {
+        let photoIds = selectedPhotoPin.selection.map(\.itemId)
+        guard !photoIds.isEmpty else { return }
+        withAnimation(reduceMotion ? nil : .default) {
+            mapEditController.addPhotoPins(photoIds: photoIds, editorModel: editorModel)
+        }
+        selectedPhotoPin.resetSelection(itemId: nil, entryId: nil)
     }
 
     func resetSelectedIndex(shouldIncrease: Bool) {

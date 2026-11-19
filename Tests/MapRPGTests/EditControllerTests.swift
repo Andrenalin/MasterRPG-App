@@ -201,6 +201,29 @@ struct EditControllerTests {
         #expect(monsterMap.mapPins.map(\.location) == [CGPoint(x: 25, y: 40), CGPoint(x: 74, y: 89)])
     }
 
+    @Test func addPhotoPinsAddsPinsWithoutCharacter() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0), CGPoint(x: 100, y: 80), CGPoint(x: 0, y: 80)]
+        )
+        let map = MapModel(id: UUID(), name: "Photo Pins", entries: [room], pinScale: 1)
+        let photoIds = [UUID(), UUID()]
+
+        sut.addPhotoPins(map: map, entryId: room.id, location: nil, photoIds: photoIds)
+        sut.addPhotoPins(map: map, entryId: nil, location: CGPoint(x: 7, y: 9), photoIds: [UUID()])
+
+        #expect(map.mapPins.count == 3)
+        #expect(map.mapPins.prefix(2).map(\.photoId) == photoIds)
+        #expect(map.mapPins.allSatisfy { $0.characterId == nil })
+        #expect(map.mapPins.prefix(2).allSatisfy { $0.location != .zero })
+        #expect(map.mapPins[2].location == CGPoint(x: 7, y: 9))
+    }
+
     @Test func mergeAndReplaceEntriesUpdateExistingMapData() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

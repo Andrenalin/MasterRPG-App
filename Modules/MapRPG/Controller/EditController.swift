@@ -449,6 +449,23 @@ extension EditController {
     }
 }
 
+// MARK: - Photo Pins
+
+extension EditController {
+    /// Adds one pin per photo to a game map, named after the photo and linked to no character.
+    /// At `location` when given, otherwise cascaded in `entryId`'s room.
+    @MainActor func addPhotoPins(map: MapModel, entryId: UUID?, location: CGPoint?, photoIds: [UUID]) {
+        guard !photoIds.isEmpty else { return }
+        let photos = photoIds.map { (photoId: $0, name: root.photoRoot.itemControllable.nameSync(itemId: $0)) }
+        var pins = MapPinPlacement.spawnPhotoPins(photos: photos, location: location)
+        if let entryId, location == nil {
+            pins = MapPinPlacement.cascade(pins: pins, in: map[entryId], pinScale: map.pinScale)
+        }
+        map.mapPins.append(contentsOf: pins)
+        save(updated: map, message: String(localized: "Added pin", bundle: .module))
+    }
+}
+
 // MARK: - HexGrid
 
 extension EditController {
