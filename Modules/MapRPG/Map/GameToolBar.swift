@@ -8,12 +8,27 @@ import CharacterRPG
 /// (`GameTableModel`, via `GameToolBarSession`) — the exact same toolbar,
 /// buttons, and button actions render for both, so the game master sees one
 /// consistent set of controls regardless of which representation is on screen.
-struct GameToolBar<Session: GameToolBarSession>: View {
+struct GameToolBar<Session: GameToolBarSession, Header: View>: View {
     /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
     @ScaledMetric private var iconSize: CGFloat = 24
     let editController: EditController
     let model: Session
     let isMaster: Bool
+    /// A row above the buttons and below the scale controls, aligned with the buttons on the
+    /// leading edge (the iPhone's 2D / 3D switch).
+    let header: Header
+
+    init(
+        editController: EditController,
+        model: Session,
+        isMaster: Bool,
+        @ViewBuilder header: () -> Header
+    ) {
+        self.editController = editController
+        self.model = model
+        self.isMaster = isMaster
+        self.header = header()
+    }
 
     @Environment(MapRootModel.self) private var root
     @Environment(\.dismiss) private var dismiss
@@ -50,6 +65,8 @@ struct GameToolBar<Session: GameToolBarSession>: View {
                     .accessibilityHidden(true)
 #endif
             }
+
+        header
 
         HStack {
             if isMaster {
@@ -138,6 +155,14 @@ struct GameToolBar<Session: GameToolBarSession>: View {
             Text("Player", bundle: .module)
         case .reader:
             Text("Reader", bundle: .module)
+        }
+    }
+}
+
+extension GameToolBar where Header == EmptyView {
+    init(editController: EditController, model: Session, isMaster: Bool) {
+        self.init(editController: editController, model: model, isMaster: isMaster) {
+            EmptyView()
         }
     }
 }

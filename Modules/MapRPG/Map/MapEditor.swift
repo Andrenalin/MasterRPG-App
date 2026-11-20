@@ -11,6 +11,7 @@ struct MapEditor: View {
         photoDegrees: Double,
         map: MapModel,
         trailingViewportReservation: CGFloat = 0,
+        bottomViewportReservation: CGFloat = 0,
         configuration: MapEditorConfiguration,
         actions: MapEditorActions = MapEditorActions()
     ) {
@@ -19,6 +20,7 @@ struct MapEditor: View {
         self.photoDegrees = photoDegrees
         self.map = map
         self.trailingViewportReservation = trailingViewportReservation
+        self.bottomViewportReservation = bottomViewportReservation
         self.configuration = configuration
         mapEditController = MapEditController(editController: editController)
         // Built on first use, once. As a `State` initial value it was built on every init of
@@ -32,7 +34,8 @@ struct MapEditor: View {
                 photoDegrees: photoDegrees,
                 configuration: configuration,
                 actions: actions,
-                trailingViewportReservation: trailingViewportReservation
+                trailingViewportReservation: trailingViewportReservation,
+                bottomViewportReservation: bottomViewportReservation
             )
         )
     }
@@ -46,6 +49,7 @@ struct MapEditor: View {
     private let photoDegrees: Double
     private let map: MapModel
     private let trailingViewportReservation: CGFloat
+    private let bottomViewportReservation: CGFloat
     private let configuration: MapEditorConfiguration
     private let mapEditController: MapEditController
 
@@ -135,6 +139,9 @@ struct MapEditor: View {
         }
         .onChange(of: trailingViewportReservation, initial: true) { _, reservation in
             session.updateTrailingViewportReservation(reservation)
+        }
+        .onChange(of: bottomViewportReservation, initial: true) { _, reservation in
+            session.updateBottomViewportReservation(reservation)
         }
         .onChange(of: session.pinScale) {
             guard session.mapMode != .edit else { return }

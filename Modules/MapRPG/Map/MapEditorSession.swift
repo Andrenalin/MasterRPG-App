@@ -151,6 +151,7 @@ final class MapEditorSession {
     var measuredContainerSize: CGSize
     var containerSize: CGSize
     var trailingViewportReservation: CGFloat = 0
+    var bottomViewportReservation: CGFloat = 0
     var pendingInitialFitMapId: UUID?
     var awaitingInitialRoomHydration = false
     var presentationIsActive = false
@@ -165,7 +166,8 @@ final class MapEditorSession {
         containerSize: CGSize = .zero,
         configuration: MapEditorConfiguration,
         actions: MapEditorActions = MapEditorActions(),
-        trailingViewportReservation: CGFloat = 0
+        trailingViewportReservation: CGFloat = 0,
+        bottomViewportReservation: CGFloat = 0
     ) {
         self.configuration = configuration
         self.actions = actions
@@ -175,14 +177,19 @@ final class MapEditorSession {
         let normalizedTrailingReservation = trailingViewportReservation.isFinite
             ? max(0, trailingViewportReservation)
             : 0
+        let normalizedBottomReservation = bottomViewportReservation.isFinite
+            ? max(0, bottomViewportReservation)
+            : 0
         let effectiveContainerSize = Self.effectiveContainerSize(
             measuredSize: containerSize,
-            trailingReservation: normalizedTrailingReservation
+            trailingReservation: normalizedTrailingReservation,
+            bottomReservation: normalizedBottomReservation
         )
         self.canvasSize = resolvedCanvasSize
         self.measuredContainerSize = containerSize
         self.containerSize = effectiveContainerSize
         self.trailingViewportReservation = normalizedTrailingReservation
+        self.bottomViewportReservation = normalizedBottomReservation
         self.pinScale = map.pinScale
         self.hexScale = map.hexMapScale
         self.lastPinScale = map.pinScale

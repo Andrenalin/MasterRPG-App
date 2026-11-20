@@ -94,10 +94,14 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 QuickDiceToggleField()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(.trailing, quickDiceTogglePadding)
-                    .padding(.bottom, GameScreenModel.quickDiceBottomInset)
+                    .padding(.bottom, GameScreenModel.quickDiceBottomInset + gameScreenModel.quickDiceToggleBottomReservation)
                     .animation(
                         accessibilityReduceMotion ? nil : .bouncy,
                         value: gameScreenModel.quickDiceToggleTrailingReservation
+                    )
+                    .animation(
+                        accessibilityReduceMotion ? nil : .bouncy,
+                        value: gameScreenModel.quickDiceToggleBottomReservation
                     )
                     .zIndex(16)
             }
@@ -116,7 +120,11 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #endif
 
             toolBarOverlay()
-                .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0))
+                .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0) + gameScreenModel.toolBarBottomReservation)
+                .animation(
+                    accessibilityReduceMotion ? nil : .default,
+                    value: gameScreenModel.toolBarBottomReservation
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(.horizontal, horizontalPadding)
                 .zIndex(40)

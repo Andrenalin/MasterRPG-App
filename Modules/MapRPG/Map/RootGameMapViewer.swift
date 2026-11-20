@@ -11,6 +11,7 @@ struct RootGameMapViewer: View {
         playerPinId: UUID?,
         registersGameToolbarSession: Bool = true,
         trailingViewportReservation: CGFloat = 0,
+        bottomViewportReservation: CGFloat = 0,
         image: AKImage,
         degrees: Double
     ) {
@@ -20,6 +21,7 @@ struct RootGameMapViewer: View {
         self.playerPinId = playerPinId
         self.registersGameToolbarSession = registersGameToolbarSession
         self.trailingViewportReservation = trailingViewportReservation
+        self.bottomViewportReservation = bottomViewportReservation
         self.image = image
         self.degrees = degrees
     }
@@ -30,6 +32,7 @@ struct RootGameMapViewer: View {
     let playerPinId: UUID?
     let registersGameToolbarSession: Bool
     let trailingViewportReservation: CGFloat
+    let bottomViewportReservation: CGFloat
     let image: AKImage
     let degrees: Double
 
@@ -42,6 +45,7 @@ struct RootGameMapViewer: View {
             photoDegrees: degrees,
             map: mapModel,
             trailingViewportReservation: trailingViewportReservation,
+            bottomViewportReservation: bottomViewportReservation,
             configuration: MapEditorConfiguration(
                 mode: mode == .player ? .player : .gameMaster,
                 displayMode: mode == .player ? .player : .master,

@@ -119,6 +119,22 @@ public final class AppSettingsModel: Sendable {
         }
     }
 
+    /// Where the iPhone sidebar sits for the game master and for players, raw
+    /// `GameSidebarPlacement` (0 trailing, 1 bottom).
+    public var masterSidebarPlacement: Int = 0 {
+        didSet {
+            guard oldValue != masterSidebarPlacement else { return }
+            defaults?.set(masterSidebarPlacement, forKey: AppSettingsModel.masterSidebarPlacementKey)
+        }
+    }
+
+    public var playerSidebarPlacement: Int = 0 {
+        didSet {
+            guard oldValue != playerSidebarPlacement else { return }
+            defaults?.set(playerSidebarPlacement, forKey: AppSettingsModel.playerSidebarPlacementKey)
+        }
+    }
+
     public var showGameTableVolume: Bool = false {
         didSet {
             guard oldValue != showGameTableVolume else { return }
@@ -203,6 +219,8 @@ public final class AppSettingsModel: Sendable {
         masterMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.masterMainTabDisplayModeKey)
         playerMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
         masterSidebarLayout = defaults.integer(forKey: AppSettingsModel.masterSidebarLayoutKey)
+        masterSidebarPlacement = defaults.integer(forKey: AppSettingsModel.masterSidebarPlacementKey)
+        playerSidebarPlacement = defaults.integer(forKey: AppSettingsModel.playerSidebarPlacementKey)
         
         showGameTableVolume = defaults.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
         showGameDice = defaults.value(forKey: AppSettingsModel.showGameDiceKey) as? Bool ?? true
@@ -265,6 +283,8 @@ public final class AppSettingsModel: Sendable {
     private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
     private static let playerMainTabDisplayModeKey = "playerMainTabDisplayMode"
     private static let masterSidebarLayoutKey = "masterSidebarLayout"
+    private static let masterSidebarPlacementKey = "masterSidebarPlacement"
+    private static let playerSidebarPlacementKey = "playerSidebarPlacement"
     private static let showGameTableVolumeKey = "showGameTableVolume"
     private static let showGameDiceKey = "showGameDice"
     private static let showGamePlayerDiceKey = "showGamePlayerDice"

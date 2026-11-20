@@ -966,6 +966,23 @@
         }
       }
     },
+    "Bottom Layout" : {
+      "comment" : "The sidebar placement at the bottom half of the screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layout unten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลย์เอาต์ด้านล่าง"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "localizations" : {
         "de" : {
@@ -6659,6 +6676,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รวมทั้งหมด"
+          }
+        }
+      }
+    },
+    "Trailing Layout" : {
+      "comment" : "The sidebar placement on the trailing edge of the screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layout rechts"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลย์เอาต์ด้านท้าย"
           }
         }
       }

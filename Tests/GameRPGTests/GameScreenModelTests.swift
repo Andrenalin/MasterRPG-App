@@ -151,6 +151,73 @@ struct GameScreenModelTests {
         #expect(model.inlineSidebarWidth == 300)
     }
 
+    @Test("The bottom placement reserves the map's bottom, not its trailing edge")
+    func bottomPlacementReservesBottom() {
+        let model = GameScreenModel()
+        model.updateInlineMainOverlayWidth(300)
+        model.updateBottomPanelHeight(400)
+        model.showMainTab = .game
+
+        #expect(model.mapTrailingViewportReservation > 0)
+        #expect(model.mapBottomViewportReservation == 0)
+
+        model.sidebarPlacement = .bottom
+        #expect(model.mapTrailingViewportReservation == 0)
+        #expect(model.topMenuTrailingReservation == 0)
+        #expect(model.mapBottomViewportReservation == 400 + GameScreenModel.mapOverlaySpacing)
+
+        model.hideInlineSidebar()
+        #expect(model.mapBottomViewportReservation == 0)
+    }
+
+    @Test("Enlarging the bottom sidebar changes its height share, not its width")
+    func bottomSidebarEnlargeChangesHeight() {
+        let model = GameScreenModel()
+        model.sidebarPlacement = .bottom
+        let width = model.sideBarWidth
+
+        #expect(model.bottomSidebarHeightFraction == 0.5)
+        #expect(!model.isSidebarEnlarged)
+
+        model.toggleSidebarSize()
+
+        #expect(model.isSidebarEnlarged)
+        #expect(model.bottomSidebarHeightFraction > 0.5)
+        #expect(model.sideBarWidth == width)
+
+        model.sidebarPlacement = .trailing
+        #expect(!model.isSidebarEnlarged)
+        model.toggleSidebarSize()
+        #expect(model.isSidebarEnlarged)
+        #expect(model.sideBarWidth > width)
+    }
+
+    @Test("The bottom toolbar rises above any view shown in the bottom panel")
+    func toolBarRisesAboveBottomPanel() {
+        let model = GameScreenModel()
+        model.updateBottomPanelHeight(300)
+        model.showSettingTab = .setting
+        #expect(model.toolBarBottomReservation == 0)
+
+        model.sidebarPlacement = .bottom
+        #expect(model.toolBarBottomReservation == 300 + GameScreenModel.mapOverlaySpacing)
+
+        model.hideInlineSidebar()
+        #expect(model.toolBarBottomReservation == 0)
+    }
+
+    @Test("The quick dice toggle sits above a shown bottom panel")
+    func quickDiceToggleAboveBottomPanel() {
+        let model = GameScreenModel()
+        model.sidebarPlacement = .bottom
+        model.updateBottomPanelHeight(300)
+
+        #expect(model.quickDiceToggleBottomReservation == 0)
+        model.showMainTab = .game
+        #expect(model.quickDiceToggleBottomReservation == 300)
+        #expect(model.quickDiceToggleTrailingReservation == 0)
+    }
+
     @Test("Changing sidebar width mutates only sidebar presentation state")
     func sidebarWidthState() {
         let model = GameScreenModel()

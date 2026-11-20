@@ -16,15 +16,18 @@ enum GameSidePanelSlot {
     case leading
     /// The trailing column of the vertical layout.
     case trailing
+    /// The full-width panel at the bottom of the screen (the iPhone's bottom placement).
+    case bottomPanel
 
     /// The slot reaches the top screen edge, so its content clears the top safe area.
     var touchesTopEdge: Bool {
-        self != .bottom
+        self != .bottom && self != .bottomPanel
     }
 
-    /// The slot reaches the trailing screen edge.
+    /// The slot reaches the trailing screen edge and is no wider than the sidebar column, so
+    /// its navigation stack runs past the trailing safe area.
     var touchesTrailingEdge: Bool {
-        self != .leading
+        self != .leading && self != .bottomPanel
     }
 
     /// The slot reaches the bottom screen edge, where the quick dice overlay can sit.
@@ -148,23 +151,26 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(
-                maxWidth: width,
+                maxWidth: isBottomPanel ? .infinity : width,
                 maxHeight: .infinity,
-                alignment: content.valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
+                alignment: isBottomPanel
+                    ? .bottom
+                    : content.valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
             )
 #if os(iOS)
             .ignoresSafeArea()
-            .clipShape(Self.iOSPanelShape)
-            .background(.ultraThinMaterial, in: Self.iOSPanelShape)
+            .clipShape(iOSShape)
+            .background(.ultraThinMaterial, in: iOSShape)
 #elseif !os(visionOS)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 #endif
             // Outside the background, so the panel itself ends above the quick dice overlay.
             .padding(.bottom, slot.touchesBottomEdge ? gameScreenModel.quickDiceBottomReservation : 0)
             .offset(
-                x: isShown
+                x: isShown || isBottomPanel
                     ? 0
-                    : content.valueFor(iOS: width, macOS: width, tvOS: width, visionOS: -width)
+                    : content.valueFor(iOS: width, macOS: width, tvOS: width, visionOS: -width),
+                y: isShown || !isBottomPanel ? 0 : gameScreenModel.bottomPanelHeight
             )
             .opacity(isShown ? 1 : 0)
             .allowsHitTesting(isShown)
@@ -175,9 +181,32 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.size.width
             } action: { width in
+                // The bottom panel is as wide as the screen: not a sidebar column width.
+                guard !isBottomPanel else { return }
                 onWidthChange?(width)
             }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                guard isBottomPanel else { return }
+                gameScreenModel.updateBottomPanelHeight(height)
+            }
     }
+
+    private var isBottomPanel: Bool {
+        slot == .bottomPanel
+    }
+
+#if os(iOS)
+    private var iOSShape: UnevenRoundedRectangle {
+        isBottomPanel ? Self.iOSBottomPanelShape : Self.iOSPanelShape
+    }
+
+    /// Rounded only on the top edge: the panel slides up from the bottom screen edge.
+    private static var iOSBottomPanelShape: UnevenRoundedRectangle {
+        .rect(topLeadingRadius: 14, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 14)
+    }
+#endif
 
 #if os(iOS)
     /// Rounded only on the leading edge: the panel slides in from the trailing screen edge.

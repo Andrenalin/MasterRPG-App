@@ -27,6 +27,7 @@ struct BattleRoundSideOverlay: View {
 
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.gameSidePanelSlot) private var slot
     @CoreRPG.LazyState private var screenModel: BattleRoundScreenModel
 
     var body: some View {
@@ -37,7 +38,7 @@ struct BattleRoundSideOverlay: View {
                     .transition(
                         accessibilityReduceMotion
                             ? .opacity
-                            : .move(edge: .trailing).combined(with: .opacity)
+                            : .move(edge: slot == .bottomPanel ? .bottom : .trailing).combined(with: .opacity)
                     )
             }
         }
@@ -55,6 +56,7 @@ private struct BattleRoundSidePanel: View {
 
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.gameSidePanelSlot) private var slot
 
     var body: some View {
         BattleRoundView(controller: root.battleRoundController, screenModel: screenModel, isSidePanel: true)
@@ -70,9 +72,9 @@ private struct BattleRoundSidePanel: View {
             }
             .gameSidePanelIgnoringTrailingSafeArea()
             .frame(
-                maxWidth: gameScreenModel.sideBarWidth,
+                maxWidth: slot == .bottomPanel ? .infinity : gameScreenModel.sideBarWidth,
                 maxHeight: .infinity,
-                alignment: .trailing
+                alignment: slot == .bottomPanel ? .bottom : .trailing
             )
 #if os(iOS)
             .ignoresSafeArea(.container, edges: .bottom)
@@ -84,7 +86,14 @@ private struct BattleRoundSidePanel: View {
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.size.width
             } action: { width in
+                guard slot != .bottomPanel else { return }
                 gameScreenModel.updateInlineMainOverlayWidth(width)
+            }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                guard slot == .bottomPanel else { return }
+                gameScreenModel.updateBottomPanelHeight(height)
             }
     }
 }

@@ -9,16 +9,6 @@ struct OverlayMasterTabBar: View {
     let adventureId: UUID
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-#if os(iOS)
-    @Environment(AppSettingsModel.self) private var appSettingsModel
-    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
-
-    /// The saved layout, offered at the regular width (iPad) only.
-    private var effectiveLayout: GameSidebarLayout {
-        guard appWindowSizeModel.mode == .regular else { return .single }
-        return GameSidebarLayout(rawValue: appSettingsModel.masterSidebarLayout) ?? .single
-    }
-#endif
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -26,7 +16,7 @@ struct OverlayMasterTabBar: View {
 #if os(macOS) || os(visionOS)
             OnlyGameView(root: root, adventureId: adventureId)
 #else
-            GameSidebarSlotsLayout(layout: gameScreenModel.sidebarLayout) {
+            GameSidebarSlotsLayout(layout: gameScreenModel.sidebarLayout, placement: gameScreenModel.sidebarPlacement) {
                 TabGameView(root: root, adventureId: adventureId)
             } secondary: {
                 TabSecondGameView(root: root)
@@ -38,9 +28,7 @@ struct OverlayMasterTabBar: View {
 #endif
             }
 #if os(iOS)
-            .onChange(of: effectiveLayout, initial: true) { _, layout in
-                gameScreenModel.sidebarLayout = layout
-            }
+            .gameSidebarLayoutSync(isMaster: true)
 #endif
 #endif
         }

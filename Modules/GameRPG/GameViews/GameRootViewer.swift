@@ -179,13 +179,15 @@ struct GameRootViewer: View {
             root.mapRoot.viewController.gameMasterMapView(
                 root: root.mapRoot,
                 id: mapId,
-                trailingViewportReservation: mapTrailingViewportReservation
+                trailingViewportReservation: mapTrailingViewportReservation,
+                bottomViewportReservation: mapBottomViewportReservation
             )
         case .player:
             root.mapRoot.viewController.gameMapView(
                 root: root.mapRoot,
                 playerId: root.gameModel.gameConfig.id,
-                trailingViewportReservation: mapTrailingViewportReservation
+                trailingViewportReservation: mapTrailingViewportReservation,
+                bottomViewportReservation: mapBottomViewportReservation
             )
         case .externalPlayer:
             root.mapRoot.viewController.gameMapView(root: root.mapRoot, playerId: root.gameModel.gameConfig.id, external: true)
@@ -197,6 +199,11 @@ struct GameRootViewer: View {
         return gameScreenModel?.mapTrailingViewportReservation ?? 0
     }
 
+    private var mapBottomViewportReservation: CGFloat {
+        guard contentType != .externalPlayer else { return 0 }
+        return gameScreenModel?.mapBottomViewportReservation ?? 0
+    }
+
     @MainActor @ViewBuilder
     private func otherViews<Content: View>(@ViewBuilder defaultContentView: () -> Content) -> some View {
         Group {
@@ -206,7 +213,8 @@ struct GameRootViewer: View {
                 case .photo:
                     root.photoRoot.viewController.gameViewer(
                         root: root.photoRoot,
-                        trailingViewportReservation: mapTrailingViewportReservation
+                        trailingViewportReservation: mapTrailingViewportReservation,
+                        bottomViewportReservation: mapBottomViewportReservation
                     )
                 case .space:
                     // visionOS opens the immersive space directly from the
@@ -238,6 +246,7 @@ struct GameRootViewer: View {
                 )
                 .padding()
                 .padding(.trailing, mapTrailingViewportReservation)
+                .padding(.bottom, mapBottomViewportReservation)
             }
         }
     }

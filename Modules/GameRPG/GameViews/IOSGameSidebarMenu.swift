@@ -13,6 +13,8 @@ struct IOSGameSidebarMenu: View {
     /// Whether the menu offers the single / horizontal / vertical sidebar layouts (the game
     /// master on iPad).
     var showsLayoutOptions: Bool = false
+    /// Whether the menu offers the trailing / bottom sidebar placements (the iPhone).
+    var showsPlacementOptions: Bool = false
 
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(GameScreenModel.self) private var gameScreenModel
@@ -38,23 +40,37 @@ struct IOSGameSidebarMenu: View {
 
             Button {
                 withAnimation(accessibilityReduceMotion ? nil : .default) {
-                    gameScreenModel.toggleSideBarWidth()
+                    gameScreenModel.toggleSidebarSize()
                 }
             } label: {
                 Label {
                     Text(
-                        gameScreenModel.isLargeSideBar ? "Reduce Sidebar" : "Enlarge Sidebar",
+                        gameScreenModel.isSidebarEnlarged ? "Reduce Sidebar" : "Enlarge Sidebar",
                         bundle: .module
                     )
                 } icon: {
                     Image(
-                        systemName: gameScreenModel.isLargeSideBar
+                        systemName: gameScreenModel.isSidebarEnlarged
                             ? "square.resize.down"
                             : "square.resize.up"
                     )
                 }
             }
             .disabled(!isSidebarVisible)
+
+            if showsPlacementOptions {
+                Divider()
+
+                ForEach(GameSidebarPlacement.allCases) { placement in
+                    Toggle(isOn: placementBinding(for: placement)) {
+                        Label {
+                            Text(placement.title)
+                        } icon: {
+                            Image(systemName: placement.systemImage)
+                        }
+                    }
+                }
+            }
 
             if showsLayoutOptions {
                 Divider()
@@ -156,6 +172,17 @@ struct IOSGameSidebarMenu: View {
         )
     }
 
+    /// Only one placement is on at a time: turning the active one off keeps it on.
+    private func placementBinding(for placement: GameSidebarPlacement) -> Binding<Bool> {
+        Binding(
+            get: { gameScreenModel.sidebarPlacement == placement },
+            set: { isOn in
+                guard isOn else { return }
+                setPlacement(placement)
+            }
+        )
+    }
+
     private var primaryViewBinding: Binding<Bool> {
         Binding(
             get: { gameScreenModel.showMainTab == primaryModule },
@@ -198,6 +225,17 @@ struct IOSGameSidebarMenu: View {
             } else {
                 gameScreenModel.hideInlineSidebar()
             }
+        }
+    }
+
+    private func setPlacement(_ placement: GameSidebarPlacement) {
+        if isMaster {
+            appSettingsModel.masterSidebarPlacement = placement.rawValue
+        } else {
+            appSettingsModel.playerSidebarPlacement = placement.rawValue
+        }
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.sidebarPlacement = placement
         }
     }
 

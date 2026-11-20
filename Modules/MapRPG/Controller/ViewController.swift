@@ -101,7 +101,8 @@ public extension ViewController {
         root: MapRootModel,
         playerId: UUID,
         external: Bool = false,
-        trailingViewportReservation: CGFloat = 0
+        trailingViewportReservation: CGFloat = 0,
+        bottomViewportReservation: CGFloat = 0
     ) -> some View {
         RootCanvasMap(
             root: root,
@@ -109,7 +110,8 @@ public extension ViewController {
             mode: .player,
             playerPinId: playerId,
             registersGameToolbarSession: !external,
-            trailingViewportReservation: trailingViewportReservation
+            trailingViewportReservation: trailingViewportReservation,
+            bottomViewportReservation: bottomViewportReservation
         )
             .environment(root)
     }
@@ -118,7 +120,8 @@ public extension ViewController {
     func gameMasterMapView(
         root: MapRootModel,
         id: UUID?,
-        trailingViewportReservation: CGFloat = 0
+        trailingViewportReservation: CGFloat = 0,
+        bottomViewportReservation: CGFloat = 0
     ) -> some View {
         let itemId = id ?? UUID()
         return RootCanvasMap(
@@ -126,7 +129,8 @@ public extension ViewController {
             itemId: itemId,
             mode: .master,
             playerPinId: nil,
-            trailingViewportReservation: trailingViewportReservation
+            trailingViewportReservation: trailingViewportReservation,
+            bottomViewportReservation: bottomViewportReservation
         )
             .environment(root)
     }
@@ -137,6 +141,34 @@ public extension ViewController {
             GameToolBar(editController: root.editController, model: model, isMaster: isMaster)
                 .environment(root)
         }
+    }
+
+    /// The game toolbar with a `header` row above its buttons, aligned with them on the leading
+    /// edge. Without a game editor the header stands alone.
+    @MainActor @ViewBuilder
+    func gameToolBarView<Header: View>(
+        root: MapRootModel,
+        isMaster: Bool,
+        @ViewBuilder header: () -> Header
+    ) -> some View {
+        if let model = root.rootModel.gameEditorModel {
+            GameToolBar(editController: root.editController, model: model, isMaster: isMaster, header: header)
+                .environment(root)
+        } else {
+            header()
+        }
+    }
+
+    /// `gameToolBarView(root:isMaster:header:)` for a session other than the 2D map's.
+    @MainActor @ViewBuilder
+    func gameToolBarView<Session: GameToolBarSession, Header: View>(
+        root: MapRootModel,
+        isMaster: Bool,
+        session: Session,
+        @ViewBuilder header: () -> Header
+    ) -> some View {
+        GameToolBar(editController: root.editController, model: session, isMaster: isMaster, header: header)
+            .environment(root)
     }
 
     /// Cross-module entry point: other modules (GameRPG's 3D table) reach the

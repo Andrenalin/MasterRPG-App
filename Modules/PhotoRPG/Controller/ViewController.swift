@@ -71,12 +71,14 @@ public extension ViewController {
 public extension ViewController {
     @MainActor func gameViewer(
         root: PhotoRootModel,
-        trailingViewportReservation: CGFloat = 0
+        trailingViewportReservation: CGFloat = 0,
+        bottomViewportReservation: CGFloat = 0
     ) -> some View {
         ViewerRootView(
             model: root.gameController.currentItem(),
             configuration: ViewerConfiguration(isGame: true),
-            trailingViewportReservation: trailingViewportReservation
+            trailingViewportReservation: trailingViewportReservation,
+            bottomViewportReservation: bottomViewportReservation
         )
     }
 

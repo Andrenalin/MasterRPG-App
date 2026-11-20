@@ -69,7 +69,8 @@ struct IOSGameOverlayMenu: View {
                     )
                     IOSGameSidebarMenu(
                         isMaster: isMaster,
-                        allowsPrimaryView: allowsPrimaryView
+                        allowsPrimaryView: allowsPrimaryView,
+                        showsPlacementOptions: true
                     )
                 }
                 .padding(.trailing, topTrailingOcclusionWidth)

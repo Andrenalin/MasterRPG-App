@@ -20,6 +20,44 @@ struct GameTableToolbar: View {
     let game: GameTableModel
 
     var body: some View {
+        GameToolBarCompactSwitch {
+            // The switch (and the weather button) is a row of the toolbar, directly above its
+            // buttons.
+            if game.currentMapId != nil {
+                game.mapRoot.viewController.gameToolBarView(
+                    root: game.mapRoot,
+                    isMaster: game.isGameMaster,
+                    session: game
+                ) {
+                    GameTableToolbarActions(root: root, game: game)
+                }
+            } else {
+                GameTableToolbarActions(root: root, game: game)
+            }
+        } regular: {
+            HStack {
+                GameTableToolbarActions(root: root, game: game)
+
+                // The shared map toolbar's actions (fog, pointer, room
+                // visibility) are meaningless before a map is on the table.
+                if game.currentMapId != nil {
+                    game.mapRoot.viewController.gameToolBarView(
+                        root: game.mapRoot,
+                        isMaster: game.isGameMaster,
+                        session: game
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// The 3D table toolbar's own buttons, before the shared map toolbar's.
+private struct GameTableToolbarActions: View {
+    let root: GameRoot
+    let game: GameTableModel
+
+    var body: some View {
         HStack {
 #if !os(visionOS)
             // Always visible: this is the switch between the 2D map window
@@ -32,16 +70,6 @@ struct GameTableToolbar: View {
             if game.isGameMaster,
                root.gameModel.playerController?.gameModel.tableWeather.shownWeatherId != nil {
                 GameTableClearWeatherButton(root: root)
-            }
-
-            // The shared map toolbar's actions (fog, pointer, room
-            // visibility) are meaningless before a map is on the table.
-            if game.currentMapId != nil {
-                game.mapRoot.viewController.gameToolBarView(
-                    root: game.mapRoot,
-                    isMaster: game.isGameMaster,
-                    session: game
-                )
             }
         }
     }
@@ -76,6 +104,7 @@ private struct GameTableClearWeatherButton: View {
     Group {
         if let game {
             GameTableToolbar(root: .preview, game: game)
+                .environment(AppWindowSizeModel())
         } else {
             ProgressView()
         }

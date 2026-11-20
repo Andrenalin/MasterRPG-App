@@ -8,6 +8,7 @@ struct ViewerRootView: View {
     let configuration: ViewerConfiguration
     var dismissAction: (() -> Void)? = nil
     var trailingViewportReservation: CGFloat = 0
+    var bottomViewportReservation: CGFloat = 0
 
     @State private var toolBarModel: GameToolBarModel = GameToolBarModel()
     @State private var cacheItemListModel = CacheItemListModel()
@@ -19,6 +20,7 @@ struct ViewerRootView: View {
                 PhotoContentView(
                     model: model,
                     trailingViewportReservation: trailingViewportReservation,
+                    bottomViewportReservation: bottomViewportReservation,
                     toolBarModel: toolBarModel,
                     containerSize: $containerSize
                 )
@@ -29,6 +31,7 @@ struct ViewerRootView: View {
                 PhotoContentView(
                     model: model,
                     trailingViewportReservation: trailingViewportReservation,
+                    bottomViewportReservation: bottomViewportReservation,
                     toolBarModel: toolBarModel,
                     containerSize: $containerSize
                 )
@@ -36,11 +39,14 @@ struct ViewerRootView: View {
                         PhotoRotateButtonView(model: model, toolBarModel: toolBarModel)
                             .selectedRoundButton(title: String(localized: "Rotate image", bundle: .module), module: .photo, isSelected: false)
                             .padding()
+                            // Above a bottom sidebar panel, which the viewport leaves free.
+                            .padding(.bottom, bottomViewportReservation)
                     }
             } else {
                 PhotoContentView(
                     model: model,
                     trailingViewportReservation: trailingViewportReservation,
+                    bottomViewportReservation: bottomViewportReservation,
                     toolBarModel: toolBarModel,
                     containerSize: $containerSize
                 )
@@ -73,13 +79,15 @@ struct ViewerRootView: View {
 private struct PhotoContentView: View {
     let model: PhotoModel
     let trailingViewportReservation: CGFloat
+    let bottomViewportReservation: CGFloat
     let toolBarModel: GameToolBarModel
     @Binding var containerSize: CGSize
 
     var body: some View {
         let viewportSize = PhotoViewportReservation.effectiveContainerSize(
             measuredSize: containerSize,
-            trailingReservation: trailingViewportReservation
+            trailingReservation: trailingViewportReservation,
+            bottomReservation: bottomViewportReservation
         )
         return Color.clear
             .overlay(alignment: .topLeading) {
@@ -105,7 +113,8 @@ private struct PhotoContentView: View {
 struct PhotoViewportReservation {
     static func effectiveContainerSize(
         measuredSize: CGSize,
-        trailingReservation: CGFloat
+        trailingReservation: CGFloat,
+        bottomReservation: CGFloat = 0
     ) -> CGSize {
         guard measuredSize.width.isFinite,
               measuredSize.height.isFinite,
@@ -117,10 +126,14 @@ struct PhotoViewportReservation {
         let reservation = trailingReservation.isFinite
             ? max(0, trailingReservation)
             : 0
+        let bottom = bottomReservation.isFinite
+            ? max(0, bottomReservation)
+            : 0
         let minimumRecoverableWidth = min(44, measuredSize.width)
+        let minimumRecoverableHeight = min(44, measuredSize.height)
         return CGSize(
             width: max(minimumRecoverableWidth, measuredSize.width - reservation),
-            height: measuredSize.height
+            height: max(minimumRecoverableHeight, measuredSize.height - bottom)
         )
     }
 }

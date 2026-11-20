@@ -26,6 +26,15 @@ extension MapEditorSession {
         updateEffectiveContainerSize()
     }
 
+    /// The bottom counterpart of `updateTrailingViewportReservation`, for a sidebar panel that
+    /// covers the lower part of the screen (the iPhone's bottom sidebar layout).
+    func updateBottomViewportReservation(_ newReservation: CGFloat) {
+        let reservation = newReservation.isFinite ? max(0, newReservation) : 0
+        guard bottomViewportReservation != reservation else { return }
+        bottomViewportReservation = reservation
+        updateEffectiveContainerSize()
+    }
+
     /// The editor canvas for `map` drawn over `image`, used on creation and on every update.
     /// See CODE_AUDIT_19 §9.13.
     static func canvasSize(map: MapModel, image: AKImage, degrees: Double) -> CGSize {
@@ -121,7 +130,8 @@ extension MapEditorSession {
     private func updateEffectiveContainerSize() {
         let effectiveSize = Self.effectiveContainerSize(
             measuredSize: measuredContainerSize,
-            trailingReservation: trailingViewportReservation
+            trailingReservation: trailingViewportReservation,
+            bottomReservation: bottomViewportReservation
         )
         guard containerSize != effectiveSize else { return }
         containerSize = effectiveSize
@@ -160,16 +170,21 @@ extension MapEditorSession {
 
     static func effectiveContainerSize(
         measuredSize: CGSize,
-        trailingReservation: CGFloat
+        trailingReservation: CGFloat,
+        bottomReservation: CGFloat = 0
     ) -> CGSize {
         guard measuredSize.isFiniteAndPositive else { return .zero }
         let reservation = trailingReservation.isFinite
             ? max(0, trailingReservation)
             : 0
+        let bottom = bottomReservation.isFinite
+            ? max(0, bottomReservation)
+            : 0
         let minimumRecoverableWidth = min(44, measuredSize.width)
+        let minimumRecoverableHeight = min(44, measuredSize.height)
         return CGSize(
             width: max(minimumRecoverableWidth, measuredSize.width - reservation),
-            height: measuredSize.height
+            height: max(minimumRecoverableHeight, measuredSize.height - bottom)
         )
     }
 

@@ -29,9 +29,16 @@ struct OverlayToolBar: View {
                         .accessibilityLabel(Text("Loading 3D Table", bundle: .module))
                 }
             } else {
-                HStack {
-                    GameTableWindowButton(root: root, isMaster: isMaster)
-                    root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
+                GameToolBarCompactSwitch {
+                    // The switch is a row of the toolbar, directly above its buttons.
+                    root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster) {
+                        GameTableWindowButton(root: root, isMaster: isMaster)
+                    }
+                } regular: {
+                    HStack {
+                        GameTableWindowButton(root: root, isMaster: isMaster)
+                        root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
+                    }
                 }
             }
 #else

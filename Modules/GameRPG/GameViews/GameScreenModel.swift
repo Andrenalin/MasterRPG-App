@@ -62,6 +62,17 @@ final class GameScreenModel {
         }
     }
 
+    /// Where the sidebar sits. The screen sets it from the saved choice and keeps it `.trailing`
+    /// wherever the bottom placement is not offered (everywhere but the iPhone).
+    var sidebarPlacement: GameSidebarPlacement = .trailing
+
+    /// The bottom placement's panel takes two thirds of the screen height instead of half.
+    var isLargeBottomSidebar: Bool = false
+
+    /// The rendered height of the bottom placement's panel. Like `inlineMainOverlayWidth`,
+    /// presentation metadata for the viewport reservation, never a layout constraint.
+    var bottomPanelHeight: CGFloat = 0
+
     /// Which view the split layouts' second slot shows when they open: the Other View or the
     /// Battle Round, whichever was shown last.
     var splitSecondaryIsBattle: Bool = false
@@ -165,7 +176,8 @@ final class GameScreenModel {
     private(set) var topGameMenuHeight: CGFloat = 0
 
     var mapTrailingViewportReservation: CGFloat {
-        guard (showMainTab != .none || showsBattleRoundSidebar),
+        guard !isBottomSidebar,
+              (showMainTab != .none || showsBattleRoundSidebar),
               inlineMainOverlayWidth > 0 else { return 0 }
         return inlineSidebarWidth + Self.mapOverlaySpacing
     }
@@ -191,7 +203,7 @@ final class GameScreenModel {
     /// The part of the visible side panel that overlaps the top menu's row. The panel
     /// runs to the screen edge, the menu stops at the safe area and the chrome padding.
     var topMenuTrailingReservation: CGFloat {
-        guard isInlineSidebarVisible else { return 0 }
+        guard isInlineSidebarVisible, !isBottomSidebar else { return 0 }
         return max(0, inlineSidebarWidth - chromeTrailingSafeAreaInset - Self.chromeHorizontalPadding)
     }
 
@@ -227,6 +239,10 @@ final class GameScreenModel {
 #if os(visionOS)
         return 0
 #else
+        if isBottomSidebar {
+            // The button sits above a shown bottom panel, at the trailing edge.
+            return showQuickDice && !isInlineSidebarVisible ? sideBarWidth : 0
+        }
         if showQuickDice { return sideBarWidth }
         if isInlineSidebarVisible, inlineMainOverlayWidth > 0 { return inlineSidebarWidth }
         return 0

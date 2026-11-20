@@ -6,6 +6,8 @@ import SwiftUI
 struct OverlayPlayerTabBar: View {
     let root: GameRoot
 
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         ZStack(alignment: .trailing) {
@@ -17,8 +19,14 @@ struct OverlayPlayerTabBar: View {
                 TabSecondGameView(root: root, isPlayer: true)
             }
 #else
-            TabPlayerGameView(root: root)
-            TabSecondGameView(root: root, isPlayer: true)
+            GameSidebarSlotsLayout(layout: .single, placement: gameScreenModel.sidebarPlacement) {
+                TabPlayerGameView(root: root)
+            } secondary: {
+                TabSecondGameView(root: root, isPlayer: true)
+            }
+#if os(iOS)
+            .gameSidebarLayoutSync(isMaster: false)
+#endif
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
@@ -31,4 +39,6 @@ struct OverlayPlayerTabBar: View {
 #Preview {
     OverlayPlayerTabBar(root: GameRoot.preview)
         .environment(GameScreenModel())
+        .environment(AppSettingsModel())
+        .environment(AppWindowSizeModel())
 }
