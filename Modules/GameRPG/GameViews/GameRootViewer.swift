@@ -214,7 +214,8 @@ struct GameRootViewer: View {
                     root.photoRoot.viewController.gameViewer(
                         root: root.photoRoot,
                         trailingViewportReservation: mapTrailingViewportReservation,
-                        bottomViewportReservation: mapBottomViewportReservation
+                        bottomViewportReservation: mapBottomViewportReservation,
+                        controlsBottomInset: gameScreenModel?.fullScreenControlsBottomClearance ?? 0
                     )
                 case .space:
                     // visionOS opens the immersive space directly from the

@@ -66,6 +66,9 @@ final class GameScreenModel {
     /// wherever the bottom placement is not offered (everywhere but the iPhone).
     var sidebarPlacement: GameSidebarPlacement = .trailing
 
+    /// The window is at compact width (the iPhone). The screen sets it with the sidebar placement.
+    var isCompactWidth: Bool = false
+
     /// The bottom placement's panel takes two thirds of the screen height instead of half.
     var isLargeBottomSidebar: Bool = false
 
@@ -226,7 +229,8 @@ final class GameScreenModel {
 #if os(visionOS)
         return 0
 #else
-        guard showQuickDice, quickDiceOverlayHeight > 0 else { return 0 }
+        // Above a bottom panel, not inside it: the panel keeps its full height.
+        guard showQuickDice, quickDiceOverlayHeight > 0, !isBottomSidebar else { return 0 }
         return quickDiceOverlayHeight + chromeBottomSafeAreaInset + Self.quickDiceBottomInset + Self.mapOverlaySpacing
 #endif
     }
@@ -240,8 +244,8 @@ final class GameScreenModel {
         return 0
 #else
         if isBottomSidebar {
-            // The button sits above a shown bottom panel, at the trailing edge.
-            return showQuickDice && !isInlineSidebarVisible ? sideBarWidth : 0
+            // Beside the overlay, which sits above a shown bottom panel.
+            return showQuickDice ? sideBarWidth : 0
         }
         if showQuickDice { return sideBarWidth }
         if isInlineSidebarVisible, inlineMainOverlayWidth > 0 { return inlineSidebarWidth }

@@ -80,6 +80,12 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                     // its own content clear of that edge's safe area.
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .ignoresSafeArea(.container, edges: .horizontal)
+                    // Above a bottom sidebar panel, where the toggle button is.
+                    .padding(.bottom, gameScreenModel.quickDiceToggleBottomReservation)
+                    .animation(
+                        accessibilityReduceMotion ? nil : .default,
+                        value: gameScreenModel.quickDiceToggleBottomReservation
+                    )
 #else
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(.horizontal, horizontalPadding)

@@ -72,13 +72,15 @@ public extension ViewController {
     @MainActor func gameViewer(
         root: PhotoRootModel,
         trailingViewportReservation: CGFloat = 0,
-        bottomViewportReservation: CGFloat = 0
+        bottomViewportReservation: CGFloat = 0,
+        controlsBottomInset: CGFloat = 0
     ) -> some View {
         ViewerRootView(
             model: root.gameController.currentItem(),
             configuration: ViewerConfiguration(isGame: true),
             trailingViewportReservation: trailingViewportReservation,
-            bottomViewportReservation: bottomViewportReservation
+            bottomViewportReservation: bottomViewportReservation,
+            controlsBottomInset: controlsBottomInset
         )
     }
 

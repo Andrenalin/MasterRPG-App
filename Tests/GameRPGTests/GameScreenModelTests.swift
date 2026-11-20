@@ -206,16 +206,50 @@ struct GameScreenModelTests {
         #expect(model.toolBarBottomReservation == 0)
     }
 
-    @Test("The quick dice toggle sits above a shown bottom panel")
-    func quickDiceToggleAboveBottomPanel() {
+    @Test("The quick dice overlay and toggle sit above a shown bottom panel without shortening it")
+    func quickDiceAboveBottomPanel() {
         let model = GameScreenModel()
         model.sidebarPlacement = .bottom
         model.updateBottomPanelHeight(300)
+        model.updateChromeSafeAreaInsets(top: 59, trailing: 0, bottom: 34)
+        model.updateQuickDiceOverlayHeight(120)
+        model.showQuickDice = true
 
         #expect(model.quickDiceToggleBottomReservation == 0)
         model.showMainTab = .game
-        #expect(model.quickDiceToggleBottomReservation == 300)
-        #expect(model.quickDiceToggleTrailingReservation == 0)
+
+        // The panel's part under the bottom safe area is not counted.
+        #expect(model.quickDiceToggleBottomReservation == 300 - 34 + GameScreenModel.mapOverlaySpacing)
+        #expect(model.quickDiceBottomReservation == 0)
+        #expect(model.quickDiceToggleTrailingReservation == model.sideBarWidth)
+
+        model.sidebarPlacement = .trailing
+        #expect(model.quickDiceBottomReservation > 0)
+    }
+
+    @Test("On the iPhone the toolbar rises above an open quick dice overlay")
+    func toolBarRisesAboveQuickDiceOverlay() {
+        let model = GameScreenModel()
+        model.updateQuickDiceOverlayHeight(120)
+        model.updateChromeSafeAreaInsets(top: 59, trailing: 0, bottom: 34)
+        model.showQuickDice = true
+
+        // Not at regular width.
+        #expect(model.toolBarBottomReservation == 0)
+
+        model.isCompactWidth = true
+        #expect(model.toolBarBottomReservation == 120 + GameScreenModel.mapOverlaySpacing)
+        #expect(model.fullScreenControlsBottomClearance == 120 + GameScreenModel.mapOverlaySpacing + 34)
+
+        // Stacked on top of a bottom panel, which the overlay itself sits above.
+        model.sidebarPlacement = .bottom
+        model.updateBottomPanelHeight(300)
+        model.showMainTab = .game
+        #expect(model.toolBarBottomReservation
+            == (300 - 34 + GameScreenModel.mapOverlaySpacing) + 120 + GameScreenModel.mapOverlaySpacing)
+
+        model.showQuickDice = false
+        #expect(model.toolBarQuickDiceClearance == 0)
     }
 
     @Test("Changing sidebar width mutates only sidebar presentation state")

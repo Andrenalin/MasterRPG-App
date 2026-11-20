@@ -22,6 +22,8 @@ struct GameSidebarSlotsLayout<Primary: View, Secondary: View>: View {
             // Read here, not inside the layout closure below: that closure runs at layout time
             // and does not observe the model, so a change would only show on the next rebuild.
             let heightFraction = gameScreenModel.bottomSidebarHeightFraction
+            // The container excludes the safe areas the panel runs under: the share is of the screen.
+            let safeAreaHeight = gameScreenModel.chromeTopSafeAreaInset + gameScreenModel.chromeBottomSafeAreaInset
             // One view at a time in a full-width panel at the bottom. The height is a share of the
             // container's, set outside the stack so a hidden panel (kept mounted, slid out) claims nothing.
             ZStack(alignment: .bottom) {
@@ -30,7 +32,7 @@ struct GameSidebarSlotsLayout<Primary: View, Secondary: View>: View {
             }
             .environment(\.gameSidePanelSlot, .bottomPanel)
             .containerRelativeFrame(.vertical, alignment: .bottom) { length, _ in
-                length * heightFraction
+                (length + safeAreaHeight) * heightFraction
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .animation(accessibilityReduceMotion ? nil : .default, value: heightFraction)
@@ -125,6 +127,7 @@ struct GameSidebarLayoutSyncModifier: ViewModifier {
     private struct Effective: Equatable {
         var layout: GameSidebarLayout
         var placement: GameSidebarPlacement
+        var isCompact: Bool
     }
 
     private var effective: Effective {
@@ -132,10 +135,14 @@ struct GameSidebarLayoutSyncModifier: ViewModifier {
             let layout = isMaster
                 ? GameSidebarLayout(rawValue: appSettingsModel.masterSidebarLayout) ?? .single
                 : .single
-            return Effective(layout: layout, placement: .trailing)
+            return Effective(layout: layout, placement: .trailing, isCompact: false)
         }
         let saved = isMaster ? appSettingsModel.masterSidebarPlacement : appSettingsModel.playerSidebarPlacement
-        return Effective(layout: .single, placement: GameSidebarPlacement(rawValue: saved) ?? .trailing)
+        return Effective(
+            layout: .single,
+            placement: GameSidebarPlacement(rawValue: saved) ?? .trailing,
+            isCompact: true
+        )
     }
 
     func body(content: Content) -> some View {
@@ -143,6 +150,7 @@ struct GameSidebarLayoutSyncModifier: ViewModifier {
             .onChange(of: effective, initial: true) { _, effective in
                 gameScreenModel.sidebarLayout = effective.layout
                 gameScreenModel.sidebarPlacement = effective.placement
+                gameScreenModel.isCompactWidth = effective.isCompact
             }
     }
 }

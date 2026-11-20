@@ -100,15 +100,37 @@ extension GameScreenModel {
         isBottomSidebar && isInlineSidebarVisible ? bottomPanelHeight : 0
     }
 
-    /// The quick dice toggle button sits above a shown bottom panel.
-    var quickDiceToggleBottomReservation: CGFloat {
-        visibleBottomPanelHeight
+    /// How far a control in the game screen's safe-area layer rises to clear a shown bottom panel,
+    /// one spacing step above it. The panel reaches the screen's bottom edge, that layer stops at
+    /// the bottom safe area, so the panel's part below it is not counted.
+    var bottomPanelClearance: CGFloat {
+        let rise = visibleBottomPanelHeight - chromeBottomSafeAreaInset
+        return rise > 0 ? rise + Self.mapOverlaySpacing : 0
     }
 
-    /// How far the bottom toolbar (map controls) rises above a shown bottom panel.
+    /// The quick dice overlay and its toggle button sit above a shown bottom panel.
+    var quickDiceToggleBottomReservation: CGFloat {
+        bottomPanelClearance
+    }
+
+    /// On the iPhone the quick dice overlay stretches across the bottom, where the map toolbar
+    /// and the photo's rotate button sit: they rise above it while it is open.
+    var toolBarQuickDiceClearance: CGFloat {
+        guard isCompactWidth, showQuickDice, quickDiceOverlayHeight > 0 else { return 0 }
+        return quickDiceOverlayHeight + Self.mapOverlaySpacing
+    }
+
+    /// How far the bottom toolbar (map controls) rises above a shown bottom panel and, on the
+    /// iPhone, the open quick dice overlay.
     var toolBarBottomReservation: CGFloat {
-        let height = visibleBottomPanelHeight
-        return height > 0 ? height + Self.mapOverlaySpacing : 0
+        bottomPanelClearance + toolBarQuickDiceClearance
+    }
+
+    /// `toolBarBottomReservation` for controls inside a full-screen layer (the photo viewer),
+    /// which also runs under the bottom safe area.
+    var fullScreenControlsBottomClearance: CGFloat {
+        let clearance = toolBarBottomReservation
+        return clearance > 0 ? clearance + chromeBottomSafeAreaInset : 0
     }
 
     /// The Game View the split layouts always show first. They are for the game master only.
