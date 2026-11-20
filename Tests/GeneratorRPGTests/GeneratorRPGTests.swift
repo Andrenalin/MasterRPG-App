@@ -21,6 +21,28 @@ struct GeneratorRPGTests {
         #expect(result.hasSuffix(FoundationModelInputLimiter.truncationMarker))
     }
 
+    @Test func limitedTextShrinksTheBudgetForTokenDenseScripts() {
+        let latin = String(repeating: "a", count: 4_000)
+        let japanese = String(repeating: "魔", count: 4_000)
+
+        let latinResult = FoundationModelInputLimiter.limitedText(latin, maxCharacters: 3_000)
+        let japaneseResult = FoundationModelInputLimiter.limitedText(japanese, maxCharacters: 3_000)
+
+        #expect(latinResult.count == 3_000, "Latin text keeps the full character budget")
+        #expect(japaneseResult.count == 1_000, "one token per character: a third of the budget")
+        #expect(japaneseResult.hasSuffix(FoundationModelInputLimiter.truncationMarker))
+    }
+
+    @Test func combinedTextShrinksTheBudgetForTokenDenseScripts() {
+        let result = FoundationModelInputLimiter.limitedCombinedText(
+            pages: [(pageNumber: 1, text: String(repeating: "魔", count: 4_000))],
+            maxPages: 5,
+            maxCharacters: 3_000
+        )
+
+        #expect(result.count == 1_000)
+    }
+
     @Test func combinedTextHonorsPageAndCharacterLimits() {
         let result = FoundationModelInputLimiter.limitedCombinedText(
             pages: ["first", "second", "third"],

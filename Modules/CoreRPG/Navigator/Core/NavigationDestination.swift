@@ -197,13 +197,6 @@ extension View {
         self.modifier(NavigationDestinationModifier(destination: destination))
     }
 
-    /// Deprecated variant of `navigationDestination` and `navigationAutoReceive`.
-    public func navigationDestinationAutoReceive<D: NavigationDestination>(_ destination: D.Type) -> some View {
-        self
-            .modifier(NavigationDestinationModifier(destination: destination))
-            .navigationAutoReceive(D.self)
-    }
-
 }
 
 private struct NavigationDestinationModifier<D: NavigationDestination>: ViewModifier {

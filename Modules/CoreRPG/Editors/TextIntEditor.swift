@@ -32,13 +32,18 @@ public struct TextIntEditor: View {
 
     @FocusState private var focusState: Bool
     @State private var text: String = ""
+    /// A slider drag changes the value on every tick; it is saved once when the drag ends, like
+    /// `TextDoubleEditor`. See CODE_AUDIT §7.9.
+    @State private var isSliding = false
+    /// A three-digit value stays readable at larger Dynamic Type sizes. See CODE_AUDIT §8.1.
+    @ScaledMetric(relativeTo: .body) private var fieldWidth: CGFloat = 64
 
     public var body: some View {
         HStack {
             TextIntEditorTextField(model: model, title: title, prompt: prompt, bundle: bundle, range: range, text: $text, focusState: $focusState)
-                .frame(maxWidth: 64, alignment: .leading)
+                .frame(maxWidth: fieldWidth, alignment: .leading)
 
-            TextIntEditorSlider(model: model, title: title, bundle: bundle, range: range)
+            TextIntEditorSlider(model: model, title: title, bundle: bundle, range: range, isSliding: $isSliding)
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
@@ -49,7 +54,7 @@ public struct TextIntEditor: View {
         }
         .onChange(of: model.value) {
             text = model.value.formatted(.number.precision(.fractionLength(0)))
-            model.save()
+            if !isSliding { model.save() }
         }
     }
 }
@@ -95,6 +100,7 @@ private struct TextIntEditorSlider: View {
     let title: LocalizedStringKey
     let bundle: Bundle?
     let range: ClosedRange<Double>
+    @Binding var isSliding: Bool
 
     var body: some View {
 #if !os(tvOS)
@@ -102,11 +108,14 @@ private struct TextIntEditorSlider: View {
             value: $model.value,
             in: range,
             step: 1,
-            minimumValueLabel: Text(Int(range.lowerBound), format: .number),
-            maximumValueLabel: Text(Int(range.upperBound), format: .number)
-        ) {
-            Text(title, bundle: bundle)
-        }
+            label: { Text(title, bundle: bundle) },
+            minimumValueLabel: { Text(Int(range.lowerBound), format: .number) },
+            maximumValueLabel: { Text(Int(range.upperBound), format: .number) },
+            onEditingChanged: { isEditing in
+                isSliding = isEditing
+                if !isEditing { model.save() }
+            }
+        )
         .labelsHidden()
 #else
         EmptyView()

@@ -120,10 +120,6 @@ public final class Navigator {
     internal static let undeliveredSendLifetime: Duration = .seconds(5)
     internal static let maximumUndeliveredSends = 8
 
-    /// Registered view providers
-    @ObservationIgnored
-    internal var navigationProviders: [ObjectIdentifier : Any] = [:]
-
     /// Use AnyNavigationDestination for all pushed NavigationDestination values, avoiding need to register destinations
     @ObservationIgnored
     internal var autoDestinationMode: Bool {
@@ -185,11 +181,6 @@ public final class Navigator {
     public var children: [Navigator] {
         _children
             .compactMap { $1.object }
-    }
-
-    /// Returns navigator's name or distinct uuid
-    public var nameOrId: String {
-        name ?? id.uuidString
     }
 
     // MARK: - Lifecycle
@@ -300,30 +291,12 @@ extension Navigator: Hashable, Equatable {
 
 extension Navigator {
 
-    /// Returns the root Navigator in the navigation tree.
-    ///
-    /// Note this navigation may not have a navigation stack associated with it.
-    public var rootNavigator: Navigator {
-        root
-    }
-
-    /// Returns the parent Navigator, if any, in the navigation tree.
-    public var parentNavigator: Navigator? {
-        parent
-    }
-
     /// Returns the current Navigator that represents the current ManagedNavigationStack.
     ///
     /// Note this Navigator is defined when a given ManagedNavigationStack fires its "onAppear" handler, so it should be good for
     /// when a given Navigator first appears and when control returns to a given Navigator.
     public var currentNavigator: Navigator? {
         root._current
-    }
-
-    /// Returns an array of any presented children.
-    public var childNavigators: [Navigator] {
-        _children
-            .compactMap { $1.object }
     }
 
 }

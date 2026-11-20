@@ -293,7 +293,9 @@ struct TableGenerationController: Sendable {
         // instead of recreating it, so toggling a sibling selection in a
         // multi-select table doesn't discard the choices already made
         // inside that entry's generated table.
-        let existingChildren = occurrence.children
+        // Each existing child is consumed once, so an entry that links the same table twice keeps
+        // two distinct children instead of reusing the first for both. See CODE_AUDIT §5.8.
+        var unusedChildren = occurrence.children
         var newChildren: [TableGenerationOccurrence] = []
         occurrence.ignoredCycleNames = []
         occurrence.truncatedLinkNames = []
@@ -309,10 +311,10 @@ struct TableGenerationController: Sendable {
                     occurrence.ignoredCycleNames.append(link.name)
                     continue
                 }
-                if let existing = existingChildren.first(where: {
+                if let existingIndex = unusedChildren.firstIndex(where: {
                     $0.sourceEntryId == entry.id && $0.tableId == link.itemId
                 }) {
-                    newChildren.append(existing)
+                    newChildren.append(unusedChildren.remove(at: existingIndex))
                     continue
                 }
                 // This occurrence's old children are replaced below, so they do not count.

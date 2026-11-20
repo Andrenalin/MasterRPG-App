@@ -11,6 +11,8 @@ struct DieViewerView: View {
     let resultColor: [Bool]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Grows with Dynamic Type next to the result text. See CODE_AUDIT §8.1.
+    @ScaledMetric(relativeTo: .title) private var dieSize: CGFloat = 44
 
     /// Gives the roll's rotation animation time to finish before resetting it back to 0 for
     /// the next roll. See CODE_AUDIT §9.14.
@@ -24,7 +26,7 @@ struct DieViewerView: View {
     var body: some View {
         die.diceImage(for: die.result.last ?? die.die.max)
             .resizable()
-            .frame(width: 44, height: 44)
+            .frame(width: dieSize, height: dieSize)
             .rotation3DEffect(.degrees(withoutResult ? 0 : die.rotation), axis: (x: 0, y: 0, z: 1))
             .padding(8)
             .background(.ultraThinMaterial)
@@ -42,7 +44,7 @@ struct DieViewerView: View {
                             .foregroundStyle(color(for: index))
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
-                            .frame(width: 44, height: 44)
+                            .frame(width: dieSize, height: dieSize)
                             .background(.ultraThinMaterial)
                             .clipShape(.circle)
                             .overlay(Circle().stroke(lineWidth: 4).foregroundStyle(.white))

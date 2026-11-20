@@ -179,7 +179,11 @@ struct FoundryZIPArchive: Sendable {
                 throw FoundryImportError.fileTooLarge(uncompressedSize)
             }
             let (nextTotal, totalOverflow) = totalUncompressedSize.addingReportingOverflow(uncompressedSize)
-            guard !totalOverflow, nextTotal <= limits.maximumRuleDataSize else {
+            // Entries are inflated lazily (each capped by `maximumEntrySize`) and the readers
+            // charge what they decode against the rule-data budget, so the total here is the
+            // archive limit, not the in-memory one: artwork and audio are not rule data.
+            // See CODE_AUDIT §5.19.
+            guard !totalOverflow, nextTotal <= limits.maximumArchiveSize else {
                 throw FoundryImportError.fileTooLarge(totalOverflow ? Int.max : nextTotal)
             }
             totalUncompressedSize = nextTotal

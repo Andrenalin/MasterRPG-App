@@ -18,29 +18,38 @@ final class WeatherGameModel {
     /// (e.g. a stale retransmit racing a newer update) so the "check availability,
     /// import, mark available" sequence can't interleave across two callers. See
     /// CODE_AUDIT_Weather §5.4.
-    private var inFlightReveals: [UUID: Task<Bool, Error>] = [:]
+    private var inFlightReveals: [UUID: InFlightReveal] = [:]
+
+    /// A running reveal. `version` lets a caller with the same package join it, `token` keeps a
+    /// finished reveal from clearing the entry of the newer one that replaced it.
+    struct InFlightReveal {
+        let token: UUID
+        let version: Int
+        let task: Task<Bool, Error>
+    }
 
     func reset() {
         availableVersions.removeAll()
         inFlightReveals.removeAll()
     }
 
-    func inFlightReveal(for itemId: UUID) -> Task<Bool, Error>? {
+    func inFlightReveal(for itemId: UUID) -> InFlightReveal? {
         inFlightReveals[itemId]
     }
 
-    func setInFlightReveal(_ task: Task<Bool, Error>, for itemId: UUID) {
-        inFlightReveals[itemId] = task
+    func setInFlightReveal(_ reveal: InFlightReveal, for itemId: UUID) {
+        inFlightReveals[itemId] = reveal
     }
 
-    func clearInFlightReveal(for itemId: UUID) {
+    func clearInFlightReveal(for itemId: UUID, token: UUID) {
+        guard inFlightReveals[itemId]?.token == token else { return }
         inFlightReveals[itemId] = nil
     }
 }
 
 public protocol WeatherGameControllable: Sendable {
-    /// Stable wire version of the complete Weather package. Weather itself is
-    /// immutable during a game, so only its linked Photo asset participates.
+    /// Stable wire version of the complete Weather package: the Weather's sky and storm settings
+    /// plus its linked Photo asset.
     func weatherVersion(for itemId: UUID) async -> Int
     func shareWeather(id: UUID) async -> NetworkCodableDataType
     /// `@concurrent`, like `createGameData`. See CODE_AUDIT_18 §7.1.
@@ -85,12 +94,20 @@ extension GameController: GameControllable {
 }
 
 extension GameController: WeatherGameControllable {
+    /// The version players compare their cached copy with: the Weather's own settings plus the
+    /// linked Photo's version, so editing a Weather during a game reaches the players on the next
+    /// show. See CODE_AUDIT §5.7.
     func weatherVersion(for itemId: UUID) async -> Int {
         // `gameItem(for:)` is itself `@MainActor` — `await` alone hops there, no
         // `MainActor.run` wrapper needed.
-        let photoId = await gameItem(for: itemId).photoId
-        guard let photoId else { return 0 }
-        guard await exportController.photoRoot.itemControllable.item(for: photoId) != nil else {
+        let weather = await gameItem(for: itemId)
+        let photoVersion = await linkedPhotoVersion(of: weather)
+        return await weather.contentVersion(photoVersion: photoVersion)
+    }
+
+    private func linkedPhotoVersion(of weather: WeatherModel) async -> Int {
+        guard let photoId = await weather.photoId,
+              await exportController.photoRoot.itemControllable.item(for: photoId) != nil else {
             return 0
         }
         return await exportController.photoRoot.gameControllable.networkVersion(for: photoId)
@@ -139,17 +156,23 @@ extension GameController: WeatherGameControllable {
             throw ItemGameStorableError.wrongData
         }
 
-        // Join an already-running reveal for this item instead of racing it —
-        // otherwise two overlapping reveals could both pass `isWeatherAvailable`
-        // before either finishes importing, and the later `markWeatherAvailable`
-        // could win with a version that doesn't match what `setCurrent` sees.
-        if let inFlight = await weatherGameModel.inFlightReveal(for: itemId) {
-            return try await inFlight.value
+        // Never race a running reveal of this item — otherwise two overlapping reveals could
+        // both pass `isWeatherAvailable` before either finishes importing, and the later
+        // `markWeatherAvailable` could win with a version that doesn't match what `setCurrent`
+        // sees. The same package joins the running reveal; a different one (a newer package,
+        // see CODE_AUDIT §3.1) runs after it, so its payload is never dropped.
+        let previous = await weatherGameModel.inFlightReveal(for: itemId)
+        if let previous, previous.version == data.version {
+            return try await previous.task.value
         }
 
+        let token = UUID()
         let task = Task<Bool, Error> {
+            if let previous {
+                _ = try? await previous.task.value
+            }
             defer {
-                Task { @MainActor in weatherGameModel.clearInFlightReveal(for: itemId) }
+                Task { @MainActor in weatherGameModel.clearInFlightReveal(for: itemId, token: token) }
             }
 
             if await isWeatherAvailable(itemId: itemId, version: data.version) {
@@ -171,7 +194,10 @@ extension GameController: WeatherGameControllable {
             return await setCurrent(itemId: itemId)
         }
 
-        await weatherGameModel.setInFlightReveal(task, for: itemId)
+        await weatherGameModel.setInFlightReveal(
+            WeatherGameModel.InFlightReveal(token: token, version: data.version, task: task),
+            for: itemId
+        )
         return try await task.value
     }
 }

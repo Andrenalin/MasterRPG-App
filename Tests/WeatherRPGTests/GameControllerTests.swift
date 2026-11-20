@@ -10,7 +10,7 @@ import Testing
 
 @MainActor
 struct GameControllerTests {
-    @Test("Weather package version follows only its linked Photo")
+    @Test("Weather package version follows its settings and its linked Photo")
     func packageVersionTracksLinkedPhoto() async throws {
         // Given
         let photoRoot = PhotoRootModel.testRoot()
@@ -49,7 +49,6 @@ struct GameControllerTests {
         // When
         let firstVersion = await sut.weatherVersion(for: weatherId)
         let backfilledPhoto = photoRoot.itemController.itemOrEmpty(for: photoId)
-        let firstPhotoVersion = backfilledPhoto.version
         let firstReference = await sut.shareWeather(id: weatherId)
         let exportIds = root.exportController.exporting(
             itemIds: ItemModuleIds(ids: [weatherId], module: .weather)
@@ -77,18 +76,42 @@ struct GameControllerTests {
         let missingPhotoVersion = await sut.weatherVersion(for: missingPhotoWeatherId)
 
         // Then
-        #expect(firstVersion == firstPhotoVersion)
         #expect(backfilledPhoto.fileUrl?.contentHash != nil)
         #expect(firstReference.type == .weather)
-        #expect(firstReference.version == firstPhotoVersion)
+        #expect(firstReference.version == firstVersion)
         #expect(firstReference.data == nil)
-        #expect(firstFullPackage.version == firstPhotoVersion)
+        #expect(firstFullPackage.version == firstVersion)
         #expect(firstFullPackage.data != nil)
         #expect(exportIds.ids[.photo]?.contains(photoId) == true)
         #expect(relocatedVersion == firstVersion)
         #expect(replacementVersion != firstVersion)
-        #expect(noPhotoVersion == 0)
-        #expect(missingPhotoVersion == 0)
+        #expect(noPhotoVersion == missingPhotoVersion, "a missing Photo counts like no Photo")
+        #expect(noPhotoVersion != firstVersion)
+    }
+
+    @Test("Editing a Weather changes its package version, a rename does not")
+    func editingWeatherChangesVersion() async throws {
+        // Given
+        let root = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        let sut = root.gameController
+        let weatherId = UUID()
+        let weather = Self.weather(id: weatherId, photoId: nil)
+        root.itemController.replace(model: weather, isInsert: true)
+        let before = await sut.weatherVersion(for: weatherId)
+
+        // When
+        weather.name = "Renamed storm"
+        let afterRename = await sut.weatherVersion(for: weatherId)
+        weather.rainIntensity = 80
+        let afterEdit = await sut.weatherVersion(for: weatherId)
+        weather.stormType = .snow
+        let afterSnow = await sut.weatherVersion(for: weatherId)
+
+        // Then
+        #expect(afterRename == before)
+        #expect(afterEdit != before)
+        #expect(afterSnow != afterEdit)
+        #expect(before != 0)
     }
 
     @Test("Full Weather reveal stays in game memory and enables later id-only reveal")
@@ -127,7 +150,32 @@ struct GameControllerTests {
         #expect(sut.gameModel.currentItemId == weatherId)
         #expect(sut.gameModel.itemData[weatherId] is WeatherModel)
         #expect(playerRoot.itemController.itemDataModel.itemData[weatherId] == nil)
-        #expect(fullPackage.version == 0)
+        #expect(fullPackage.version != 0)
+    }
+
+    @Test("A newer Weather package that arrives during a reveal is imported, not dropped (CODE_AUDIT §3.1)")
+    func newerPackageIsNotDroppedByRunningReveal() async throws {
+        // Given
+        let masterRoot = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        let weatherId = UUID()
+        let weather = Self.weather(id: weatherId, photoId: nil)
+        masterRoot.itemController.replace(model: weather, isInsert: true)
+        let oldPackage = try await masterRoot.gameController.createWeatherGameData(for: weatherId)
+        weather.rainIntensity = 90
+        let newPackage = try await masterRoot.gameController.createWeatherGameData(for: weatherId)
+        try #require(oldPackage.version != newPackage.version, "the edit must produce a new version")
+
+        let playerRoot = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
+        let sut = playerRoot.gameController
+        playerRoot.itemController.itemDataModel.resetGame(start: true)
+
+        // When
+        async let first = sut.revealWeather(itemId: weatherId, data: oldPackage)
+        async let second = sut.revealWeather(itemId: weatherId, data: newPackage)
+        _ = try await (first, second)
+
+        // Then
+        #expect(sut.isWeatherAvailable(itemId: weatherId, version: newPackage.version))
     }
 
     @Test("Weather availability requires the exact package version and resets with the game")

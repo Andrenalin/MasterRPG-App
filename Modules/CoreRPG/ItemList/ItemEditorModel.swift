@@ -62,8 +62,8 @@ public final class ItemEditorModel: Sendable {
 
     func markLibraryScopedUndo(_ value: ModelType) {
         libraryScopedUndoValues.append(value as AnyObject)
-        if libraryScopedUndoValues.count > 64 {
-            libraryScopedUndoValues.removeFirst(libraryScopedUndoValues.count - 64)
+        if libraryScopedUndoValues.count > UndoManaged<ModelType?>.maxDepth {
+            libraryScopedUndoValues.removeFirst(libraryScopedUndoValues.count - UndoManaged<ModelType?>.maxDepth)
         }
     }
 

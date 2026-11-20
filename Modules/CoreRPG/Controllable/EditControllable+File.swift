@@ -261,7 +261,7 @@ public extension EditControllable {
         // `baseName` comes from a user-editable item name, which can contain characters
         // (`#`, unencoded `%`/`?`, ...) that aren't valid in a URL string; `.appending(component:)`
         // percent-encodes it so this can never fail, unlike `URL(string:)!`.
-        let requestedUrl = URL(string: "/")!.appending(path: folder).appending(component: fileName)
+        let requestedUrl = (URL(string: "/") ?? URL(filePath: "/")).appending(path: folder).appending(component: fileName)
         guard let fileUrlDataController else { return }
         let dataUrl = try await fileUrlDataController.writeDestination(
             for: requestedUrl,

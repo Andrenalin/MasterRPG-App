@@ -67,14 +67,16 @@ extension GameController {
         var result = 0
         if item.sumUp {
             if item.canPercentDice, item.percentDice {
-                var ten = orderedDice[0].result.last ?? 0
-                var one = orderedDice[1].result.last ?? 0
-                ten = ten == 10 ? 0 : ten
-                one = one == 10 ? 0 : one
-                result = ten * 10 + one
-                if result == 0 {
-                    result = 100
+                // The tens and the ones die go through the same reroll overrides and per-die
+                // maximum as any other die; the modifier is added and the result stays a
+                // percentage (1…100). See CODE_AUDIT §5.16.
+                let ten = percentDigit(of: orderedDice[0], index: 1, item: item)
+                let one = percentDigit(of: orderedDice[1], index: 2, item: item)
+                var percent = ten * 10 + one
+                if percent == 0 {
+                    percent = 100
                 }
+                result = min(100, max(1, percent.saturatingSum(item.modifier.saturatingInt)))
             } else {
                 orderedDice.enumerated().forEach { index, die in
                     let maxValue = maxValuePerDice(for: index + 1, item: item)
@@ -89,6 +91,24 @@ extension GameController {
         return result
     }
     
+    /// One digit (0…9) of a percent roll: the die's last rolled value after the reroll overrides
+    /// and the per-die maximum, with a 10 standing for 0.
+    @MainActor
+    private func percentDigit(of die: DieModel, index: Int, item: DiceModel) -> Int {
+        let rolled = die.result.last ?? 0
+        let maxValue = maxValuePerDice(for: index, item: item)
+        let resolved = resolvedDiceValue(for: rolled, maxValue: maxValue, rerollOptions: item.rerollOptions)
+        return min(9, max(0, resolved == 10 ? 0 : resolved))
+    }
+
+    /// Whether a percent die counts as a success: its value was not dropped by the per-die maximum.
+    @MainActor
+    private func percentDieCounts(_ die: DieModel, index: Int, item: DiceModel) -> Bool {
+        let rolled = die.result.last ?? 0
+        let maxValue = maxValuePerDice(for: index, item: item)
+        return resolvedDiceValue(for: rolled, maxValue: maxValue, rerollOptions: item.rerollOptions) > 0
+    }
+
     @MainActor
     func coup(for itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
@@ -110,7 +130,9 @@ extension GameController {
               item.sumUp else { return [] }
         let orderedDice = reorder(for: itemId)
         if item.canPercentDice, item.percentDice {
-            return orderedDice.map { ($0.id, [true]) }
+            return orderedDice.enumerated().map { index, die in
+                (die.id, [percentDieCounts(die, index: index + 1, item: item)])
+            }
         }
         return orderedDice.enumerated().map { index, die in
             let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)

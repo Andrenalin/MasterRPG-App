@@ -25,7 +25,10 @@ public struct ThumbnailRowPhotoView: View {
     let entryId: UUID?
 
     @State private var isLoading: Bool = false
-    
+    /// Identifies the load that owns `isLoading`, so a cancelled load that finishes late cannot
+    /// clear the spinner of the load that replaced it (as in `CachePhotoView`).
+    @State private var loadToken = UUID()
+
     public var body: some View {
         
         VStack {
@@ -78,41 +81,37 @@ private extension ThumbnailRowPhotoView {
         }
     }
     
-    /// Load thumbnail image with proper structured concurrency
+    /// Load thumbnail image with proper structured concurrency.
+    ///
+    /// `.task(id:)` cancels the previous load when the file changes and starts this one at once, so
+    /// there is no re-entrancy guard: an `isLoading` guard would make the replacement return
+    /// immediately while the cancelled load still held the flag. See CODE_AUDIT §3.2.
     func loadImage() async {
-        guard !isLoading else { return }
-
         // A newly constructed row can already see the shared observable thumbnail.
         // Selection reconstructs list-row values, but must not start another file
         // load when the shared cache already contains the result.
         if cachedImage != nil {
             return
         }
-        
-        // Mark as loading; `.task(id:)` owns URL-change cancellation/restart.
+
+        let token = UUID()
+        loadToken = token
         isLoading = true
-        
+        defer {
+            if loadToken == token { isLoading = false }
+        }
+
         let fileId = entryId ?? model.id
-        
-        // Perform async loading with proper task priority inheritance
+
         await cacheController.thumbnailId(for: fileId, item: model)
-        guard !Task.isCancelled else {
-            isLoading = false
-            return
-        }
+        guard !Task.isCancelled else { return }
         let newImage = await cacheController.thumbnail(for: fileId)
-        guard !Task.isCancelled else {
-            isLoading = false
-            return
-        }
-        
+        guard !Task.isCancelled else { return }
+
         // A transient read/cancellation must not erase a thumbnail another row or
         // detail task already published for this item.
         if let newImage {
             cacheController.setCachedThumbnail(newImage, for: fileId)
         }
-        
-        // Reset loading state
-        isLoading = false
     }
 }

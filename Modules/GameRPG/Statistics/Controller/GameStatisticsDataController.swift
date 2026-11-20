@@ -69,10 +69,22 @@ struct GameStatisticsDataController: Sendable {
         id: UUID,
         participants: [GameStatisticParticipantDraft],
         at date: Date,
+        details: GameStatisticSessionDetails? = nil,
         in context: NSManagedObjectContext
     ) async throws {
         try await context.perform {
             guard let session = try self.fetchSession(id: id, in: context) else { return }
+            if let details {
+                // Only fills what the session started without; a known value is never replaced.
+                if session.adventureID == nil, let adventureId = details.adventureId {
+                    session.adventureID = adventureId
+                    session.adventureTitle = details.adventureTitle
+                }
+                if (session.masterName ?? "").isEmpty, !details.masterName.isEmpty {
+                    session.masterID = details.masterId
+                    session.masterName = details.masterName
+                }
+            }
             let lastActivityAt = max(session.lastActivityAt ?? date, date)
             session.lastActivityAt = lastActivityAt
             session.durationSeconds = max(
@@ -99,6 +111,29 @@ struct GameStatisticsDataController: Sendable {
             session.endedReasonRaw = reason.rawValue
             session.isComplete = true
             self.closeParticipants(for: id, in: context, at: date)
+            try self.saveIfNeeded(context)
+        }
+    }
+
+    /// Closes a session that was still open when the next game starts, at the moment of its own
+    /// last recorded activity rather than at the new game's start, so an orphan does not gain the
+    /// idle time between the two games as play time. See CODE_AUDIT §5.12.
+    func finishLeftoverSession(
+        id: UUID,
+        reason: GameStatisticSessionEndReason,
+        notAfter limit: Date,
+        in context: NSManagedObjectContext
+    ) async throws {
+        try await context.perform {
+            guard let session = try self.fetchSession(id: id, in: context) else { return }
+            let startedAt = session.startedAt ?? limit
+            let end = min(max(session.lastActivityAt ?? startedAt, startedAt), limit)
+            session.endedAt = end
+            session.lastActivityAt = end
+            session.durationSeconds = max(0, end.timeIntervalSince(startedAt))
+            session.endedReasonRaw = reason.rawValue
+            session.isComplete = true
+            self.closeParticipants(for: id, in: context, at: end)
             try self.saveIfNeeded(context)
         }
     }

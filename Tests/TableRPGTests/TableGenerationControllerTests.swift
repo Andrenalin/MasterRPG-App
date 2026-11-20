@@ -217,6 +217,45 @@ struct TableGenerationControllerTests {
         #expect(model.root.children.contains { $0.sourceEntryId == secondEntry.id })
     }
 
+    @Test("An entry that links the same table twice keeps two distinct children when a sibling is selected (CODE_AUDIT §5.8)")
+    func duplicateLinksKeepDistinctChildren() throws {
+        // Given
+        let root = makeRoot()
+        let material = TableModel(
+            id: .fixture2,
+            name: "Material",
+            entries: [TableEntryModel.fixture(id: .fixture5, name: "1", content: "Silver")]
+        )
+        let other = TableModel(
+            id: .fixture4,
+            name: "Condition",
+            entries: [TableEntryModel.fixture(id: .fixture3, name: "1", content: "Ancient")]
+        )
+        root.itemController.replace(model: material, isInsert: true)
+        root.itemController.replace(model: other, isInsert: true)
+        let materialLink = root.linkController.generateLink(itemId: material.id)
+        let twice = TableEntryModel.fixture(id: .fixturePhoto, name: "Pair", content: "\(materialLink) and \(materialLink)")
+        let sibling = TableEntryModel.fixture(
+            id: .fixtureMap,
+            name: "Amulet",
+            content: root.linkController.generateLink(itemId: other.id)
+        )
+        let table = TableModel(id: .fixture1, name: "Jewelry", entries: [twice, sibling])
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+
+        // When
+        root.generationController.select(entryId: twice.id, in: model.root, model: model)
+        let childrenBefore = model.root.children.filter { $0.sourceEntryId == twice.id }
+        root.generationController.select(entryId: sibling.id, in: model.root, model: model)
+        let childrenAfter = model.root.children.filter { $0.sourceEntryId == twice.id }
+
+        // Then
+        try #require(childrenBefore.count == 2, "the fixture must link the table twice")
+        #expect(childrenAfter.map(\.id) == childrenBefore.map(\.id))
+        #expect(Set(childrenAfter.map(\.id)).count == 2, "each link keeps its own child")
+    }
+
     @Test("The outcome mirrors the on-screen nesting: nested picks join with '/', sibling picks join with ','")
     func outcomeMirrorsNestedSelectionStructure() throws {
         // Given

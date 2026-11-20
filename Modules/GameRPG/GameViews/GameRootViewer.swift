@@ -266,7 +266,7 @@ struct GameRootViewer: View {
             && mapPhoto.presentation?.module == playerController.gameModel.gameUpdateType
     }
     
-    private static let defaultViewId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    private static let defaultViewId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
 
     private var currentViewId: UUID {
         switch visibleUpdateType {

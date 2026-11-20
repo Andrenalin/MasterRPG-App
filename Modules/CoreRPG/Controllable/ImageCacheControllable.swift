@@ -56,6 +56,18 @@ extension ImageCacheControllable {
         return image?.sizeResetCopy()
     }
     
+    /// PNG data of the item's thumbnail, generating it first when it is not cached yet.
+    ///
+    /// For modules that only render QuickLook thumbnails (Pdf, Space) and so never fill the
+    /// full-image cache `photo(for:)` reads. See CODE_AUDIT §5.9.
+    @MainActor public func thumbnailPngData(for itemId: UUID, item: any ItemDataAccessible) async throws -> Data {
+        _ = await thumbnailId(for: itemId, item: item)
+        guard let image = await thumbnail(for: itemId) else {
+            throw AKImageEncodingError()
+        }
+        return try image.pngRepresentationData()
+    }
+
     public func thumbnail(for itemId: UUID) async -> AKImage? {
         guard let image = await thumbnailCacheController.object(for: itemId) else {
             PerformanceTrace.cacheEvent(

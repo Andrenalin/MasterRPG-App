@@ -23,6 +23,9 @@ public final class UndoManaged<T> {
         redoTitles.removeAll()
     }
 
+    /// The number of undo steps kept. Older ones are dropped.
+    public static var maxDepth: Int { 100 }
+
     public func updateValue(_ value: T) {
         self.value = value
     }
@@ -30,6 +33,13 @@ public final class UndoManaged<T> {
     public func previousValue(_ prevValue: T, title: String) {
         undoStack.append(prevValue)
         undoTitles.append(title)
+        // Every entry is a full copy of the edited model; keep only the newest ones.
+        // See CODE_AUDIT §7.5.
+        if undoStack.count > Self.maxDepth {
+            let overflow = undoStack.count - Self.maxDepth
+            undoStack.removeFirst(overflow)
+            undoTitles.removeFirst(min(overflow, undoTitles.count))
+        }
         guard !redoStack.isEmpty else { return }
         redoStack.removeAll()
     }

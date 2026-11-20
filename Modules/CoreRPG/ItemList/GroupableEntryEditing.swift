@@ -24,9 +24,17 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         return entry.id
     }
 
-    @MainActor func canBecomeGroup(itemId: UUID) -> Bool {
-        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return false }
-        return item.groupId == nil
+    /// Whether the existing item `itemId` can become the group value of an entry. It must be an
+    /// ordinary, visible item that is no group and has no groups itself — the same predicate
+    /// `canMoveIntoGroup` applies — and, when the hosting item is known, not the host itself.
+    /// A host is never a group (`canHostGroupValues`), so no cycle can form. See CODE_AUDIT §5.17.
+    @MainActor func canBecomeGroup(itemId: UUID, in hostItemId: UUID?) -> Bool {
+        guard let item = itemControllable.itemSync(for: itemId) as? Model,
+              isMovableIntoGroup(item) else { return false }
+        guard let hostItemId else { return true }
+        guard hostItemId != itemId,
+              let host = itemControllable.itemSync(for: hostItemId) as? Model else { return false }
+        return canHostGroupValues(host)
     }
 
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
@@ -34,6 +42,9 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
 
         let groupId: UUID
         if let existingItemId, editModel(for: existingItemId) != nil {
+            // The same rules as the candidate list, so a stale or crafted request cannot turn an
+            // item into a group of itself or of its own group. See CODE_AUDIT §5.17.
+            guard canBecomeGroup(itemId: existingItemId, in: itemId) else { return UUID() }
             // A hidden group has no folder, as in `moveIntoGroup`; the folder would keep listing
             // it. See CODE_AUDIT_26 §5.73.
             if editModel(for: existingItemId)?.parentId != nil {

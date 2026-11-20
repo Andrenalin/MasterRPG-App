@@ -55,7 +55,9 @@ struct ListModelUpdatesViewModifier: ViewModifier {
 #endif
                 }
             }
-            .task {
+            // Keyed on the observed folder: a reused detail view that switches to another folder
+            // must watch that folder's entries, not the first one's. See CODE_AUDIT §5.18.
+            .task(id: parentModel?.id) {
                 await updateStreamChanges()
             }
     }

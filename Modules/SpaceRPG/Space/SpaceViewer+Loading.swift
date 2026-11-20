@@ -39,6 +39,19 @@ extension SpaceViewer {
 #endif
 
         do {
+            // An object imported on another device can still be an iCloud placeholder; Pdf and
+            // Photo start the download before reading, so does Space. See CODE_AUDIT §5.10.
+            if let fileUrl = await root.itemController.item(for: id)?.fileUrl {
+                do {
+                    try await root.itemController.fileUrlDataController?.download(fileUrl: fileUrl)
+                } catch is CancellationError {
+                    return
+                } catch {
+                    // Fall through: a file that is already local still loads.
+                    Logger.spaceViewer.error("Could not download the 3D model: \(error.localizedDescription, privacy: .private)")
+                }
+                guard !Task.isCancelled else { return }
+            }
             guard let url = await root.itemController.loadableUrl(itemId: id) else {
                 loadError = String(
                     localized: "Could not access the 3D model file for item \(id.uuidString).",

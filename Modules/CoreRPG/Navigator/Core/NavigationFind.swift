@@ -32,18 +32,6 @@ extension Navigator {
         recursiveFindChild { $0.name == name }
     }
 
-    /// Find a parent navigator that matches the current condition
-    internal func recursiveFindParent(_ condition: (Navigator) -> Bool) -> Navigator? {
-        if let parent = parent {
-            if condition(parent) {
-                return parent
-            } else {
-                return parent.recursiveFindParent(condition)
-            }
-        }
-        return nil
-    }
-
     /// Finds a child navigator that matches the current condition starting from the current node
     internal func recursiveFindChild(_ condition: (Navigator) -> Bool) -> Navigator? {
         if condition(self) {

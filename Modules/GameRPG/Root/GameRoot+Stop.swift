@@ -65,7 +65,7 @@ extension GameRoot {
         audioRoot.setAudioCoordinatorChangeHandler(nil)
         mapRoot.mapGameControllable.resetBattleRound()
         battleRoundBroadcastLog.reset()
-        await statisticsModel.checkpoint(participants: currentStatisticParticipants())
+        await statisticsModel.checkpoint(participants: currentStatisticParticipants(), details: currentStatisticSessionDetails())
         await statisticsModel.finishSession()
         gameModel.playerGameStarted = false
         gameModel.gameConfig.state = .stopped

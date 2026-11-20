@@ -424,6 +424,13 @@ struct FoundryTemplateDecoder {
     /// Most templates one `template.json` may declare.
     static let maximumTemplateCount = 4_096
 
+    /// Every subtype gets its own flattened copy of its templates' fields, so thousands of
+    /// subtypes times thousands of fields would be millions of entries from a few MiB of JSON.
+    /// Real systems declare tens of subtypes and a few thousand fields in total.
+    /// See CODE_AUDIT §6.2.
+    static let maximumSubtypeCount = 1_024
+    static let maximumTotalFieldCount = 500_000
+
     /// The list without repeated names. The last occurrence stays: merging a template twice gives
     /// the same result as merging it once at its last position, and a repeated name would
     /// otherwise double the work of every level above it.
@@ -437,6 +444,8 @@ struct FoundryTemplateDecoder {
             throw FoundryImportError.invalidArchive("template.json is not an object.")
         }
         var schemas: [FoundryRuleSchema] = []
+        var totalSubtypeCount = 0
+        var totalFieldCount = 0
         for documentType in root.keys.sorted() {
             guard let document = root[documentType]?.objectValue else { continue }
             let templates = document["templates"]?.objectValue ?? [:]
@@ -447,6 +456,10 @@ struct FoundryTemplateDecoder {
             // templates and subtypes list it.
             var memo: [String: [String: FoundryJSONValue]] = [:]
             let declaredTypes = document["types"]?.arrayValue?.compactMap(\.stringValue) ?? []
+            totalSubtypeCount += declaredTypes.count
+            guard totalSubtypeCount <= Self.maximumSubtypeCount else {
+                throw FoundryImportError.invalidArchive("template.json declares more than \(Self.maximumSubtypeCount) subtypes.")
+            }
             for subtype in declaredTypes.sorted() {
                 guard let subtypeValue = document[subtype], let subtypeObject = subtypeValue.objectValue else { continue }
                 let inherited = Self.deduplicated(subtypeObject["templates"]?.arrayValue?.compactMap(\.stringValue) ?? [])
@@ -461,13 +474,18 @@ struct FoundryTemplateDecoder {
                     resolved = deepMerge(resolved, inheritedValue)
                 }
                 resolved = deepMerge(resolved, subtypeObject.filter { $0.key != "templates" })
+                let fields = flatten(.object(resolved), path: ["system"]).map {
+                    FoundryRuleField(path: $0.path, valueKind: $0.value.valueKind, defaultValue: $0.value)
+                }
+                totalFieldCount += fields.count
+                guard totalFieldCount <= Self.maximumTotalFieldCount else {
+                    throw FoundryImportError.invalidArchive("template.json expands to more than \(Self.maximumTotalFieldCount) fields.")
+                }
                 schemas.append(FoundryRuleSchema(
                     documentType: documentType,
                     subtype: subtype,
                     inheritedTemplates: inherited,
-                    fields: flatten(.object(resolved), path: ["system"]).map {
-                        FoundryRuleField(path: $0.path, valueKind: $0.value.valueKind, defaultValue: $0.value)
-                    },
+                    fields: fields,
                     rawData: subtypeValue
                 ))
             }

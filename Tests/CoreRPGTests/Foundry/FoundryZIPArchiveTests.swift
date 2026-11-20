@@ -78,6 +78,19 @@ struct FoundryZIPArchiveTests {
         }
     }
 
+    @Test("An archive whose artwork exceeds the rule-data budget still opens (CODE_AUDIT §5.19)")
+    func totalSizeFollowsTheArchiveLimitNotTheRuleDataBudget() throws {
+        let archiveData = makeZIP(entries: [
+            .stored(path: "ds4/system.json", data: Data("{}".utf8)),
+            .stored(path: "ds4/art/map.webp", data: Data(repeating: 0x61, count: 64))
+        ])
+        let limits = FoundryImportLimits(maximumRuleDataSize: 16)
+
+        let archive = try FoundryZIPArchive(data: archiveData, limits: limits)
+
+        #expect(try archive.data(forPath: "ds4/system.json") == Data("{}".utf8))
+    }
+
     @Test("Checks CRC-32 before returning entry data")
     func verifiesChecksum() throws {
         let archiveData = makeZIP(entries: [

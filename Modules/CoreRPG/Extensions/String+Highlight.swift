@@ -11,7 +11,7 @@ extension String {
     /// - Returns: Array of all ranges of the substring
     func ranges(of substring: String, options: CompareOptions = [], locale: Locale? = nil, in subRange: Range<Index>? = nil) -> [Range<Index>] {
         var ranges: [Range<Index>] = []
-        let searchEndIndex = (subRange == nil) ? self.endIndex : subRange!.upperBound
+        let searchEndIndex = subRange?.upperBound ?? self.endIndex
         while let range = range(of: substring, options: options, range: (ranges.last?.upperBound ?? subRange?.lowerBound ?? self.startIndex)..<searchEndIndex, locale: locale) {
             ranges.append(range)
         }

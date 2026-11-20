@@ -175,6 +175,85 @@ struct GameStatisticsDataControllerTests {
         #expect(openCount == 1)
     }
 
+    @Test("a checkpoint fills the adventure and master a joining player did not know yet (CODE_AUDIT §5.11)")
+    func checkpointFillsUnknownAdventureAndMaster() async throws {
+        // Given: a player joined before the master's state arrived
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let sessionId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 41))
+        let participant = GameStatisticParticipantDraft.fixture()
+        let adventureId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42))
+        try await sut.beginSession(
+            GameStatisticSessionDraft(
+                id: sessionId,
+                startedAt: startedAt,
+                role: .player,
+                localParticipantId: participant.participantId,
+                localName: "Pia",
+                characterId: nil,
+                characterName: "",
+                adventureId: nil,
+                adventureTitle: "",
+                masterId: nil,
+                masterName: "",
+                isDemo: false,
+                participants: [participant]
+            ),
+            in: store.context
+        )
+
+        // When
+        try await sut.checkpointSession(
+            id: sessionId,
+            participants: [participant],
+            at: startedAt.addingTimeInterval(600),
+            details: GameStatisticSessionDetails(masterId: nil, masterName: "Max", adventureId: adventureId, adventureTitle: "The Crypt"),
+            in: store.context
+        )
+        try await sut.checkpointSession(
+            id: sessionId,
+            participants: [participant],
+            at: startedAt.addingTimeInterval(1_200),
+            details: GameStatisticSessionDetails(masterId: nil, masterName: "Other", adventureId: nil, adventureTitle: "Other"),
+            in: store.context
+        )
+        try await sut.finishSession(id: sessionId, at: startedAt.addingTimeInterval(1_800), reason: .stopped, in: store.context)
+        let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+
+        // Then
+        let persisted = try #require(dataSet.sessions.first)
+        #expect(persisted.adventureId == adventureId)
+        #expect(persisted.adventureTitle == "The Crypt")
+        #expect(persisted.masterName == "Max", "a known master is never replaced")
+    }
+
+    @Test("a leftover session is closed at its own last activity, not at the next game's start")
+    func leftoverSessionEndsAtItsLastActivity() async throws {
+        // Given
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let nextGameStart = startedAt.addingTimeInterval(2 * 24 * 60 * 60)
+        let sessionId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31))
+        let participant = GameStatisticParticipantDraft.fixture()
+        try await sut.beginSession(.fixture(id: sessionId, startedAt: startedAt, participants: [participant]), in: store.context)
+        try await sut.checkpointSession(
+            id: sessionId,
+            participants: [participant],
+            at: startedAt.addingTimeInterval(3_600),
+            in: store.context
+        )
+
+        // When
+        try await sut.finishLeftoverSession(id: sessionId, reason: .interrupted, notAfter: nextGameStart, in: store.context)
+        let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+
+        // Then
+        let persisted = try #require(dataSet.sessions.first)
+        #expect(persisted.duration == 3_600, "two idle days must not count as play time")
+    }
+
     @Test("completed observer and proxy sessions are deleted regardless of duration")
     func deletesUncountedRoleSessions() async throws {
         // Given

@@ -102,6 +102,36 @@ struct GameStatisticsControllerTests {
         #expect(summary.recentSessions.first?.id == sessions[1].id)
     }
 
+    @Test("a participant without a character is one party entry across games (CODE_AUDIT §5.13)")
+    func partyAggregatesCharacterlessParticipantsByName() {
+        // Given: the same game master, with a fresh random participant id in every game
+        let sessions: [GameStatisticSessionSnapshot] = (1...3).map {
+            .fixture(id: deterministicUUID($0), startedAt: Date(timeIntervalSince1970: Double($0) * 86_400))
+        }
+        let participants: [GameStatisticParticipantSnapshot] = (1...3).map {
+            .fixture(
+                id: deterministicUUID(20 + $0),
+                sessionId: deterministicUUID($0),
+                participantId: deterministicUUID(50 + $0),
+                characterId: nil,
+                name: "Dana",
+                characterName: "",
+                connectedDuration: 1_000
+            )
+        }
+
+        // When
+        let summary = GameStatisticsController().summary(
+            from: GameStatisticsDataSet(sessions: sessions, participants: participants, events: []),
+            configuration: .default
+        )
+
+        // Then
+        #expect(summary.party.count == 1)
+        #expect(summary.party.first?.value == 3_000)
+        #expect(summary.party.first?.count == 3)
+    }
+
     @Test("achievement progress is cumulative and capped")
     func evaluatesAchievements() throws {
         // Given

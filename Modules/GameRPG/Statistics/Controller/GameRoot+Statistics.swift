@@ -59,13 +59,29 @@ extension GameRoot {
                 localName: gameType == .master ? master.name : gameModel.gameName,
                 characterId: characterId,
                 characterName: characterName,
-                adventureId: master.adventureId ?? gameModel.selectedAdventure,
+                // A player does not know the game's adventure yet when joining: falling back to
+                // their own selected adventure recorded the wrong one. `checkpoint` fills it in
+                // once the master's state has arrived. See CODE_AUDIT §5.11.
+                adventureId: gameType == .master ? (master.adventureId ?? gameModel.selectedAdventure) : master.adventureId,
                 adventureTitle: master.adventureTitle ?? "",
                 masterId: master.id,
                 masterName: master.name,
                 isDemo: gameType == .demo,
                 participants: participants
             )
+        )
+    }
+
+    /// The master and adventure the game turned out to have, or `nil` while the master's state has
+    /// not arrived on this device.
+    func currentStatisticSessionDetails() -> GameStatisticSessionDetails? {
+        let master = gameModel.gameConfig.master
+        guard !master.name.isEmpty || master.adventureId != nil else { return nil }
+        return GameStatisticSessionDetails(
+            masterId: master.id,
+            masterName: master.name,
+            adventureId: master.adventureId,
+            adventureTitle: master.adventureTitle ?? ""
         )
     }
 

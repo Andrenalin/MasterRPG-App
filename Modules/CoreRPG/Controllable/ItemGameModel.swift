@@ -67,10 +67,8 @@ public final class ItemGameModel {
     }
 
     public func setPlayerReport(playerId: UUID, for itemId: UUID) {
-        if playerReports[itemId] == nil {
-            playerReports[itemId] = [playerId]
-        } else if !playerReports[itemId]!.contains(playerId) {
-            playerReports[itemId]!.append(playerId)
+        if !playerReports[itemId, default: []].contains(playerId) {
+            playerReports[itemId, default: []].append(playerId)
         }
     }
 

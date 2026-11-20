@@ -306,8 +306,8 @@ extension FoundryMappingState {
             }
             var description = safeText(document.descriptionHTML)
             let elevation = [
-                minimumElevation.map { "bottom \($0.formatted())" },
-                maximumElevation.map { "top \($0.formatted())" }
+                minimumElevation.map { "bottom \(FoundryStoredText.number($0))" },
+                maximumElevation.map { "top \(FoundryStoredText.number($0))" }
             ].compactMap { $0 }.joined(separator: ", ")
             if !elevation.isEmpty {
                 description += "\(description.isEmpty ? "" : "\n\n")Elevation: \(elevation)"
@@ -403,7 +403,7 @@ extension FoundryMappingState {
             .map { result in
                 var entry = TableEntryModel.empty(stableID("\(result.id)#table-entry"))
                 entry.name = sanitizedFoundryText(result.name)
-                let range = result.rawData["range"]?.arrayValue?.compactMap(number).map { $0.formatted() }.joined(separator: "–")
+                let range = result.rawData["range"]?.arrayValue?.compactMap(number).map(FoundryStoredText.number).joined(separator: "–")
                 let weight = number(result.rawData["weight"])
                 var details = safeText(result.descriptionHTML)
                 if details.isEmpty { details = result.rawData["text"]?.stringValue.map(safeText) ?? "" }
@@ -412,7 +412,7 @@ extension FoundryMappingState {
                 }
                 let metadata = [
                     range.map { "Range: \($0)" },
-                    weight.map { "Weight: \($0.formatted())" }
+                    weight.map { "Weight: \(FoundryStoredText.number($0))" }
                 ].compactMap { $0 }.joined(separator: "; ")
                 entry.content = [details, metadata].filter { !$0.isEmpty }.joined(separator: "\n")
                 recordMapping(sourceID: result.id, module: .table, itemId: tableID, entryID: entry.id)
@@ -586,7 +586,7 @@ extension FoundryMappingState {
             let speaker = message.rawData.value(at: "speaker.alias")?.stringValue ?? message.name
             let timestamp = message.rawData["timestamp"]?.integerValue
             let content = message.rawData["content"]?.stringValue ?? message.descriptionHTML ?? ""
-            let dateText = timestamp.map { Date(timeIntervalSince1970: TimeInterval($0 / 1_000)).formatted(date: .abbreviated, time: .shortened) }
+            let dateText = timestamp.map { FoundryStoredText.date(Date(timeIntervalSince1970: TimeInterval($0 / 1_000))) }
             let entry = AdventureEntryModel(
                 id: stableID("\(message.id)#chat-entry"),
                 name: [speaker, dateText]

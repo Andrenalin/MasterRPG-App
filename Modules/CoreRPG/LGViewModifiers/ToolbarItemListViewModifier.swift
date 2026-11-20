@@ -19,8 +19,6 @@ struct ToolbarItemListViewModifier: ViewModifier {
     let showsDismissButton: Bool
     let dismissHandler: (() -> Void)?
 
-    @Environment(\.dismiss) private var dismiss
-
     func body(content: Content) -> some View {
         content
             .toolbar {

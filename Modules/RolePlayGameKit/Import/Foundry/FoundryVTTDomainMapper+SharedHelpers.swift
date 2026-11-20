@@ -402,7 +402,7 @@ extension FoundryMappingState {
         let defeated = combatant.rawData["defeated"]?.boolValue ?? false
         let hidden = combatant.rawData["hidden"]?.boolValue ?? false
         return [
-            initiative.map { "Initiative: \($0.formatted())" },
+            initiative.map { "Initiative: \(FoundryStoredText.number($0))" },
             "Defeated: \(defeated ? "yes" : "no")",
             "Hidden: \(hidden ? "yes" : "no")"
         ].compactMap { $0 }.joined(separator: "\n")
@@ -462,4 +462,18 @@ enum FoundryMapperPatterns {
     )
 
     static let dieMatch = try? NSRegularExpression(pattern: #"([0-9]*)[dD]([0-9]+)"#)
+}
+
+/// Text that is written into imported items. Items sync through CloudKit and the importer compares
+/// them with what is already in the library, so the same world has to produce the same bytes on
+/// every device: a fixed locale for numbers and UTC ISO-8601 for dates, never the device's
+/// formatting (`1,000` against `1.000`). See CODE_AUDIT §5.15.
+enum FoundryStoredText {
+    static func number(_ value: Double) -> String {
+        value.formatted(.number.grouping(.never).locale(Locale(identifier: "en_US_POSIX")))
+    }
+
+    static func date(_ value: Date) -> String {
+        value.formatted(.iso8601)
+    }
 }

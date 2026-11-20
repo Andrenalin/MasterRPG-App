@@ -10,11 +10,15 @@ extension PdfEntity {
         }
     }
 
+    /// The PDF's thumbnail: the module renders QuickLook thumbnails only, so the full-image
+    /// cache is always empty. See CODE_AUDIT §5.9.
+    @MainActor
     private func loadAssetData() async throws -> Data {
-        guard let image = await root.cacheController?.photo(for: self.id) else {
+        guard let cacheController = root.cacheController,
+              let model = root.itemController.itemSync(for: id) else {
             throw AKImageEncodingError()
         }
-        return try image.pngRepresentationData()
+        return try await cacheController.thumbnailPngData(for: id, item: model)
     }
 }
 

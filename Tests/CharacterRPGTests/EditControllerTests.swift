@@ -73,6 +73,34 @@ struct EditControllerTests {
         #expect(sut.canBecomeGroup(itemId: groupItemId) == false)
     }
 
+    @Test func canBecomeGroupRejectsTheHostItselfAndHiddenItems() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+        let hostId = await root.itemController.addNew(type: .item)
+        let otherId = await root.itemController.addNew(type: .item)
+        let hiddenId = await root.itemController.addNew(type: .item)
+        sut.reset(hidden: true, itemId: hiddenId)
+
+        #expect(sut.canBecomeGroup(itemId: otherId, in: hostId))
+        #expect(!sut.canBecomeGroup(itemId: hostId, in: hostId), "an item cannot become a group of itself")
+        #expect(!sut.canBecomeGroup(itemId: hiddenId, in: hostId), "a hidden item would disappear from its folder")
+    }
+
+    @Test func convertToGroupIgnoresTheHostItself() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .item)
+        let entry = ValueEntryModel(id: UUID(), name: "Self", type: .text, value: "")
+        sut.add(entry: entry, itemId: itemId)
+
+        _ = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: itemId)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        #expect(item.groupId == nil)
+        #expect(item.displayState == DisplayStateMask.fullVisible.rawValue)
+        #expect(item.entries.first { $0.id == entry.id }?.valueId == nil)
+    }
+
     // MARK: - moveIntoGroup
 
     @Test func moveIntoGroupAddsEntryAndHidesTheItem() async throws {

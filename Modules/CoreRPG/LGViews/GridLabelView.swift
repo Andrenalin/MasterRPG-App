@@ -24,13 +24,15 @@ public struct GridLabelView<Value: GridButtonValue>: View {
     let color: Color
 
     @Environment(\.colorScheme) private var colorScheme
+    /// Grows with Dynamic Type next to the `.title` text. See CODE_AUDIT §8.1.
+    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 50
     
     public var body: some View {
         Group {
             VStack {
                 Image(systemName: value.icon)
                     .resizable()
-                    .frame(width: 50, height: 50)
+                    .frame(width: iconSize, height: iconSize)
 #if os(visionOS)
                     .foregroundStyle(color)
 #else

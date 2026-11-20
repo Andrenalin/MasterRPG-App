@@ -627,6 +627,61 @@ private extension GameControllerTests {
         }.reduce(true) { $0 && $1 }
     }
 
+    // MARK: - Percent dice (CODE_AUDIT §5.16)
+
+    @MainActor
+    private static func percentDice(tens: Int, ones: Int, modifier: Double = 0, rerolls: [DiceModel.RerollOption] = []) -> DiceModel {
+        DiceModel(
+            id: UUID(),
+            name: "Percent",
+            description: "",
+            tags: [],
+            category: .item,
+            displayState: 3,
+            dice: [
+                DieModel(id: dieUUID1, die: .ten, rotation: 0, result: [tens], displayState: 3),
+                DieModel(id: dieUUID2, die: .ten, rotation: 0, result: [ones], displayState: 3)
+            ],
+            sumUp: true,
+            modifier: modifier,
+            percentDice: true,
+            compareOption: .off,
+            compareValue: 0,
+            coupValues: [],
+            coupOnlyOnFirstDie: false,
+            fumbleValues: [],
+            fumbleOnlyOnFirstDie: false,
+            rerollOptions: rerolls,
+            reorderDice: false,
+            addDiceEvery: 0,
+            resultCategory: ResultCategory(id: UUID(), module: .table)
+        )
+    }
+
+    @Test("Percent dice add the modifier and stay within 1 to 100")
+    @MainActor
+    func percentDiceApplyModifierAndClamp() async {
+        let root = DiceRootModel.testRoot()
+        let sut = root.gameController
+
+        #expect(sut.sumResult(of: Self.percentDice(tens: 3, ones: 4)) == 34)
+        #expect(sut.sumResult(of: Self.percentDice(tens: 3, ones: 4, modifier: 10)) == 44)
+        #expect(sut.sumResult(of: Self.percentDice(tens: 9, ones: 8, modifier: 10)) == 100, "clamped to 100")
+        #expect(sut.sumResult(of: Self.percentDice(tens: 3, ones: 4, modifier: -50)) == 1, "clamped to 1")
+        #expect(sut.sumResult(of: Self.percentDice(tens: 10, ones: 10)) == 100, "00 reads as 100")
+    }
+
+    @Test("Percent dice honour reroll overrides")
+    @MainActor
+    func percentDiceApplyRerollOverrides() async {
+        let root = DiceRootModel.testRoot()
+        let sut = root.gameController
+        let reroll = DiceModel.RerollOption(number: 1, value: 5, maxDiceValue: false)
+
+        // a rolled 1 on either die counts as 5
+        #expect(sut.sumResult(of: Self.percentDice(tens: 1, ones: 1, rerolls: [reroll])) == 55)
+    }
+
     static func diceResult(values: [[Int]]) -> [DieModel] {
         return [
             DieModel(id: dieUUID1, die: .twenty, rotation: 0, result: values[0], displayState: 3),

@@ -33,7 +33,7 @@ public protocol EntryDataEditable: EditControllable {
     var canAddGroups: Bool { get }
     var canConvertGroups: Bool { get }
     @MainActor func addNewGroup(itemId: UUID) async -> UUID
-    @MainActor func canBecomeGroup(itemId: UUID) -> Bool
+    @MainActor func canBecomeGroup(itemId: UUID, in hostItemId: UUID?) -> Bool
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID
     /// Whether the item `itemId` can become a hidden group value inside `targetId`.
     @MainActor func canMoveIntoGroup(itemId: UUID, into targetId: UUID) -> Bool
@@ -128,7 +128,10 @@ public extension EntryDataEditable {
         UUID() // Default implementation does nothing, returns empty UUID
     }
 
-    @MainActor func canBecomeGroup(itemId: UUID) -> Bool { false }
+    @MainActor func canBecomeGroup(itemId: UUID, in hostItemId: UUID?) -> Bool { false }
+
+    /// Whether `itemId` could become a group value of some entry, without a host to check against.
+    @MainActor func canBecomeGroup(itemId: UUID) -> Bool { canBecomeGroup(itemId: itemId, in: nil) }
 
     /// As `addNewGroup`: callers check `canConvertGroups` first.
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
@@ -211,12 +214,6 @@ public extension EntryDataEditable {
         let name = String(duplicate.name.prefix(16))
         save(updated: item, message: String(localized: "Copy entry \(name)", bundle: .module), forceSave: forceSave)
         return duplicate.id
-    }
-
-    @MainActor func remove(itemId: UUID, entryIndexSet: IndexSet, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        let ids = entryIndexSet.map { item.entries[$0].id }
-        remove(itemId: itemId, entryIds: ids, forceSave: forceSave)
     }
 
     @MainActor func remove(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {

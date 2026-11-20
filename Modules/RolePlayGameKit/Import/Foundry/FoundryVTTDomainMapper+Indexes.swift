@@ -185,7 +185,10 @@ extension FoundryMappingState {
                 ].insert(id)
             }
         }
-        let declarationsByID = Dictionary(declarations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let declarationsByID = Dictionary(
+            declarations.map { (folderCycleKey(documentType: $0.documentType, scope: $0.scope, foundryID: $0.documentID), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         for folder in declarations {
             try await cooperativeCheckpoint()
             for module in modules(for: folder.documentType) {
@@ -279,16 +282,25 @@ extension FoundryMappingState {
         declarationsByID: [String: FolderDeclaration]
     ) -> String? {
         guard let parentFoundryID = folder.parentID, !parentFoundryID.isEmpty else { return nil }
-        var visited = Set([folder.id])
+        // `parentID` is the raw Foundry id while `FolderDeclaration.id` is canonical, so the walk is
+        // keyed by (type, scope, raw document id) — the same identity `resolveFolder` uses.
+        func key(_ foundryID: String) -> String {
+            folderCycleKey(documentType: folder.documentType, scope: folder.scope, foundryID: foundryID)
+        }
+        var visited = Set([key(folder.documentID)])
         var candidate: String? = parentFoundryID
         while let current = candidate {
-            guard visited.insert(current).inserted else {
+            guard visited.insert(key(current)).inserted else {
                 warnings.append(String(localized: "Foundry folder hierarchy contains a cycle at \(folder.name); it was placed at the root.", bundle: .module))
                 return nil
             }
-            candidate = declarationsByID[current]?.parentID
+            candidate = declarationsByID[key(current)]?.parentID
         }
         return parentFoundryID
+    }
+
+    func folderCycleKey(documentType: FoundryDocumentType, scope: String, foundryID: String) -> String {
+        "\(documentType.rawValue)\u{0}\(scope)\u{0}\(foundryID)"
     }
 
     func canonicalScope(of canonicalID: String, fallback: String) -> String {

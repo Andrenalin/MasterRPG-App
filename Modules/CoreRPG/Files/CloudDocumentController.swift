@@ -85,7 +85,7 @@ struct CloudDocumentController: Sendable {
         // invalid in a URL string (`#`, unencoded `%`/`?`, ...); build from a clean base
         // and append via `.append(path:)`, which percent-encodes each component, instead
         // of round-tripping the first segment through `URL(string:)!`.
-        var name = URL(string: "/")!
+        var name = URL(string: "/") ?? URL(filePath: "/")
         if let first = namePath.first {
             name.append(path: first)
         }

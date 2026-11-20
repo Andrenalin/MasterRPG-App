@@ -70,6 +70,24 @@ struct FoundryTemplateDecoderTests {
         }
     }
 
+    @Test("More subtypes than the cap are rejected before every one is flattened (CODE_AUDIT §6.2)")
+    func tooManySubtypesAreRejected() {
+        let subtypes = (0...FoundryTemplateDecoder.maximumSubtypeCount).map { "type\($0)" }
+
+        #expect(throws: FoundryImportError.self) {
+            try FoundryTemplateDecoder().decode(template(named: ["base": []], types: ["character": subtypes]))
+        }
+    }
+
+    @Test("A realistic number of subtypes still decodes")
+    func realisticSubtypeCountDecodes() throws {
+        let subtypes = (0..<20).map { "type\($0)" }
+
+        let schemas = try FoundryTemplateDecoder().decode(template(named: ["base": []], types: ["character": subtypes]))
+
+        #expect(schemas.count == 20)
+    }
+
     @Test("A repeated template name is merged once, at its last position")
     func duplicatesCollapseToTheLastOccurrence() {
         #expect(FoundryTemplateDecoder.deduplicated(["a", "b", "a", "c", "b"]) == ["a", "c", "b"])

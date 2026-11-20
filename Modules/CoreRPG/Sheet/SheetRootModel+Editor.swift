@@ -70,7 +70,7 @@ extension SheetRootModel {
         return LinkReplaceController.links(for: content).compactMap { link -> FolderRepresentable? in
             guard link.entryId == nil,
                   link.module == source.typeId,
-                  editable.canBecomeGroup(itemId: link.itemId),
+                  editable.canBecomeGroup(itemId: link.itemId, in: source.itemId),
                   seen.insert(link.itemId).inserted else { return nil }
             return FolderRepresentable(id: link.itemId, name: editable.itemControllable.nameSync(itemId: link.itemId))
         }

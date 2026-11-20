@@ -320,6 +320,16 @@ struct GameStatisticSessionDraft: Sendable {
     let participants: [GameStatisticParticipantDraft]
 }
 
+/// What a player learns about the game only after joining: who runs it and which adventure it is.
+/// A checkpoint fills it into a session that began before the master's state had arrived.
+/// See CODE_AUDIT §5.11.
+struct GameStatisticSessionDetails: Sendable {
+    let masterId: UUID?
+    let masterName: String
+    let adventureId: UUID?
+    let adventureTitle: String
+}
+
 struct GameStatisticParticipantDraft: Sendable {
     let participantId: UUID
     let characterId: UUID?

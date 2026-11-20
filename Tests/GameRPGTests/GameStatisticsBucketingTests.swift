@@ -388,7 +388,7 @@ struct GameStatisticsBucketingTests {
         #expect(result.party.first?.value == 1_500)
         #expect(result.party.first?.count == 2)
         #expect(result.party.last?.title == "Ben", "without a Character the player's name is the title")
-        #expect(result.party.last?.key == id(93).uuidString)
+        #expect(result.party.last?.key == "\(GameStatisticRole.player.rawValue)|ben", "keyed by role and name, not by the per-game participant id (CODE_AUDIT §5.13)")
     }
 
     @Test("The network points group by origin with the event count and the bytes")

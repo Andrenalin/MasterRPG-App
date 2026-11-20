@@ -7,9 +7,6 @@ import SwiftUI
 #if os(iOS) || os(visionOS)
 import UIKit
 #endif
-#if os(macOS)
-import IOKit.ps
-#endif
 
 /// Compact battery status icon for the game menu / toolbar. Hidden whenever
 /// the device is charging, on battery-full, or on a platform where the

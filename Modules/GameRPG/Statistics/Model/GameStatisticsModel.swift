@@ -96,7 +96,7 @@ final class GameStatisticsModel: Sendable {
         lastCheckpointedRosterIds = []
         do {
             if let activeSessionID {
-                try await dataController.finishSession(id: activeSessionID, at: draft.startedAt, reason: .interrupted, in: context)
+                try await dataController.finishLeftoverSession(id: activeSessionID, reason: .interrupted, notAfter: draft.startedAt, in: context)
             }
             try await dataController.beginSession(draft, in: context)
             activeSessionID = draft.id
@@ -107,12 +107,16 @@ final class GameStatisticsModel: Sendable {
         }
     }
 
-    func checkpoint(participants: [GameStatisticParticipantDraft], at date: Date = .now) async {
+    func checkpoint(
+        participants: [GameStatisticParticipantDraft],
+        at date: Date = .now,
+        details: GameStatisticSessionDetails? = nil
+    ) async {
         guard let context, let activeSessionID else { return }
         await flushPendingEvents()
         lastCheckpointedRosterIds = Set(participants.map(\.participantId))
         do {
-            try await dataController.checkpointSession(id: activeSessionID, participants: participants, at: date, in: context)
+            try await dataController.checkpointSession(id: activeSessionID, participants: participants, at: date, details: details, in: context)
         } catch {
             errorMessage = error.localizedDescription
         }

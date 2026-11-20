@@ -212,6 +212,12 @@ public final class SheetRootModel: Sendable {
         let newSheetModel = sheetControllable.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: isEditor)
         self.sheetModel = newSheetModel
         self.editorModel.setEdit(source: newSheetModel.source)
+        // The debounced reconciles only refresh the old item's sheet tree (the edits themselves
+        // were already written), so they must not run against the new item. See CODE_AUDIT §3.5.
+        pendingGroupMoveTask?.cancel()
+        pendingGroupMoveTask = nil
+        for task in pendingParentReconcileTasks.values { task.cancel() }
+        pendingParentReconcileTasks = [:]
         // Clear stale per-item caches so new views build fresh link text models.
         linkTextModel = [:]
         // Clear search state without restoring saved visibility (hasActiveSearch=false

@@ -12,6 +12,10 @@ struct UnavailableGlassOverlay<Content: View>: View {
     }
     
     @Environment(\.appTheme) private var theme
+    /// The "No Results" card grows with Dynamic Type so its description is not cut off.
+    /// See CODE_AUDIT §8.1.
+    @ScaledMetric(relativeTo: .body) private var cardWidth: CGFloat = 200
+    @ScaledMetric(relativeTo: .body) private var cardHeight: CGFloat = 400
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -28,7 +32,7 @@ struct UnavailableGlassOverlay<Content: View>: View {
                     .glassEffect(.clear.tint(theme.accentColor))
 #endif
                     .padding()
-                    .frame(width: 200, height: 400)
+                    .frame(width: cardWidth, height: cardHeight)
                     .opacity(isUnavailable ? 1 : 0)
                     .allowsHitTesting(isUnavailable)
                     .accessibilityHidden(!isUnavailable)

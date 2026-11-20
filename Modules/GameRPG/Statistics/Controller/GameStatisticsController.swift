@@ -305,14 +305,18 @@ struct GameStatisticsController: Sendable {
                 let count = events.reduce(0) { $0 + $1.quantity }
                 return GameStatisticCategoryPoint(key: String(module.rawValue), title: module.title, value: Double(count), count: count)
             }
-            .sorted { $0.count > $1.count }
+            .sorted { ($0.count, $1.key) > ($1.count, $0.key) }
     }
 
     private func participantPoints(participants: [GameStatisticParticipantSnapshot]) -> [GameStatisticCategoryPoint] {
         let remote = participants.filter { !$0.isLocal }
         var aggregates: [String: (title: String, duration: TimeInterval, count: Int)] = [:]
         for participant in remote {
-            let key = participant.characterId?.uuidString ?? participant.participantId.uuidString
+            // `participantId` is a fresh random id per game for everybody without a character, so
+            // keying by it made one chart point per game. A person is told apart by role and name
+            // instead. See CODE_AUDIT §5.13.
+            let key = participant.characterId?.uuidString
+                ?? "\(participant.role.rawValue)|\(participant.name.lowercased())"
             let title = participant.characterName.isEmpty ? participant.name : participant.characterName
             var aggregate = aggregates[key] ?? (title, 0, 0)
             aggregate.duration += participant.connectedDuration
@@ -322,7 +326,8 @@ struct GameStatisticsController: Sendable {
         return aggregates.map { key, aggregate in
             GameStatisticCategoryPoint(key: key, title: aggregate.title, value: aggregate.duration, count: aggregate.count)
         }
-        .sorted { $0.value > $1.value }
+        // Equal values keep a fixed order (not the dictionary's, which changes per launch).
+        .sorted { ($0.value, $1.key) > ($1.value, $0.key) }
     }
 
     private func networkPoints(events: [GameStatisticEventSnapshot]) -> [GameStatisticCategoryPoint] {

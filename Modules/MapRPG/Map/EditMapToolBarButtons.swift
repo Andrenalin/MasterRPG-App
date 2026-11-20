@@ -263,8 +263,15 @@ struct EditToolBarViewModifierRefreshSharedMapButtonView: View {
                       networkActions != nil else { return }
                 mapEditController.commitChanges(editorModel: editorModel)
                 guard root.gameController.refreshSharedMap(from: editedMap) else { return }
-                Task {
-                    let update = await root.gameController.networkMapContentUpdate(for: editedMap.id)
+                let root = root
+                let networkActions = networkActions
+                let mapId = editedMap.id
+                // The content update below carries the entry structure, so a structural edit that
+                // was held back while sharing was paused is covered by it. Chained behind earlier
+                // content sends so an older update cannot arrive last. See CODE_AUDIT §5.6.
+                root.rootModel.mapsWithUnsharedStructure.remove(mapId)
+                root.rootModel.enqueueMapContentSend {
+                    let update = await root.gameController.networkMapContentUpdate(for: mapId)
                     networkActions?.game(update, .generic, nil)
                 }
             } label: {

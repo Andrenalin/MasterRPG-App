@@ -42,7 +42,3 @@ extension KnownRoutes {
         }
     }
 }
-
-extension EnvironmentValues {
-    @Entry public var router: any NavigationRouting<KnownRoutes> = MockNavigationRouter()
-}

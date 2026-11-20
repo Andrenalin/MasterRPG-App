@@ -32,8 +32,10 @@ struct UniversalVTTDomainMapper {
             sourceVersion: document.formatVersion.map { String($0) }
         )
         let imageExtension = URL(filePath: document.imageResource.logicalPath).pathExtension
+        // A file name is not a URL: `Crypt #2.dd2vtt` keeps its `#`, so the plan must not cut
+        // the name at the first `#`/`?`. See CODE_AUDIT §5.14.
         guard let normalizationPlan = FoundryMediaNormalizer.plan(
-            for: "\(sourceName).\(imageExtension)"
+            forPackagedPath: "\(sourceName).\(imageExtension)"
         ), normalizationPlan.kind == .image else {
             throw FoundryMediaNormalizationError.invalidImage
         }
@@ -63,7 +65,7 @@ struct UniversalVTTDomainMapper {
         try Task.checkCancellation()
         let lightDescription = document.lights.isEmpty
             ? ""
-            : "\n\n\(document.lights.count.formatted()) light definitions are retained in the normalized source archive."
+            : "\n\n\(document.lights.count) light definitions are retained in the normalized source archive."
         let map = MapModel(
             id: mapID,
             name: sourceName,
