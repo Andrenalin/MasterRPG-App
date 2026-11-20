@@ -398,6 +398,9 @@ final class PinPawn {
 final class RoomHitArea {
     let roomId: UUID
     let entity: Entity
+    /// The room's outline ribbon: practically invisible until the room is looked at, then the
+    /// hover effect draws it red on top of the board texture's green room border.
+    private let outlineEntity: ModelEntity
     /// The outline and projection the current collision shape was built from.
     private var appliedGeometry: (coordinates: [CGPoint], projection: MapTableProjection)
 
@@ -408,8 +411,21 @@ final class RoomHitArea {
         hitEntity.name = "RoomHitArea-\(entry.name)"
         hitEntity.components.set(RoomComponent(roomId: entry.id))
         hitEntity.components.set(InputTargetComponent())
-        hitEntity.components.set(HoverEffectComponent())
+        // The hit volume has no model of its own, so the effect lands on the outline child (a hover
+        // effect applies to the whole entity hierarchy). `.full` draws the red at full strength even
+        // though the outline's own material is almost fully transparent.
+        hitEntity.components.set(HoverEffectComponent(.highlight(
+            HoverEffectComponent.HighlightHoverEffectStyle(
+                color: GameTablePlatformColor.red,
+                strength: Self.highlightStrength,
+                opacityFunction: .full
+            )
+        )))
         hitEntity.components.set(Self.collision(for: entry.coordinates, projection: projection))
+        outlineEntity = ModelEntity()
+        outlineEntity.name = "RoomOutline-\(entry.name)"
+        outlineEntity.model = Self.outlineModel(for: entry.coordinates, projection: projection)
+        hitEntity.addChild(outlineEntity)
         var accessibility = AccessibilityComponent()
         accessibility.isAccessibilityElement = true
         accessibility.label = LocalizedStringResource("Room \(entry.name)", bundle: .module)
@@ -427,6 +443,50 @@ final class RoomHitArea {
         }
         appliedGeometry = (entry.coordinates, projection)
         entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
+        outlineEntity.model = Self.outlineModel(for: entry.coordinates, projection: projection)
+    }
+
+    /// Width of the outline ribbon: the board texture's room border (8 map points) in table meters,
+    /// but never thinner than a line that can still be seen and looked at.
+    private static let outlinePointWidth: Float = 8
+    /// How far the red glow overpowers the green board border under it. At 2.0 the red added to
+    /// the green read yellow; a high strength saturates it to red.
+    private static let highlightStrength: Float = 8
+    private static let outlineMinimumWidth: Float = 0.003
+
+    /// The room polygon as a flat ribbon on the board, drawn with an almost transparent red
+    /// material. Its alpha is not zero so the renderer does not drop the mesh; the `.full` hover
+    /// effect ignores it. Nil model for an outline that cannot form a ribbon.
+    private static func outlineModel(for coordinates: [CGPoint], projection: MapTableProjection) -> ModelComponent? {
+        guard coordinates.count >= 3 else { return nil }
+        let half = max(projection.metersPerPoint * outlinePointWidth, outlineMinimumWidth) / 2
+        let points = coordinates.map { projection.tablePosition(for: $0) }
+        var positions: [SIMD3<Float>] = []
+        var indices: [UInt32] = []
+        for index in points.indices {
+            let start = points[index]
+            let end = points[(index + 1) % points.count]
+            let delta = SIMD3<Float>(end.x - start.x, 0, end.z - start.z)
+            let length = simd_length(delta)
+            guard length > 1e-6 else { continue }
+            let direction = delta / length
+            let normal = SIMD3<Float>(-direction.z, 0, direction.x) * half
+            // Extended by half a width at both ends, so the corners of the outline are covered.
+            let from = start - direction * half
+            let to = end + direction * half
+            let base = UInt32(positions.count)
+            positions.append(contentsOf: [from + normal, from - normal, to + normal, to - normal])
+            indices.append(contentsOf: [base, base + 1, base + 2, base + 1, base + 3, base + 2])
+        }
+        guard !positions.isEmpty else { return nil }
+        var descriptor = MeshDescriptor(name: "RoomOutline")
+        descriptor.positions = MeshBuffers.Positions(positions)
+        descriptor.primitives = .triangles(indices)
+        guard let mesh = try? MeshResource.generate(from: [descriptor]) else { return nil }
+        var material = UnlitMaterial(color: GameTablePlatformColor.red)
+        material.blending = .transparent(opacity: .init(floatLiteral: 0.01))
+        material.faceCulling = .none
+        return ModelComponent(mesh: mesh, materials: [material])
     }
 
     /// A thin convex volume enclosing the room polygon, projected onto the
