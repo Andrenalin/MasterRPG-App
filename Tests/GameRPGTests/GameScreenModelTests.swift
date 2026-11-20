@@ -24,6 +24,133 @@ struct GameScreenModelTests {
         #expect(model.isInlineSidebarVisible)
     }
 
+    @Test("Sidebar view switches are exclusive and show the sidebar")
+    func sidebarViewSwitches() {
+        let model = GameScreenModel()
+
+        model.setSidebarPrimaryView(true, primaryModule: .game, allowsPrimaryView: true)
+        #expect(model.showMainTab == .game)
+        #expect(model.showMainTabIOS)
+
+        model.setSidebarBattleRound(true)
+        #expect(model.showsBattleRoundSidebar)
+        #expect(model.showMainTab == .none)
+
+        model.setSidebarOtherView(true)
+        #expect(model.showSettingTab == .setting)
+        #expect(!model.iOSSidebarShowsPrimaryView)
+
+        model.setSidebarOtherView(false)
+        model.setSidebarBattleRound(false)
+        #expect(!model.isInlineSidebarVisible)
+        #expect(!model.showMainTabIOS)
+    }
+
+    @Test("An observer cannot switch to the primary view")
+    func observerPrimaryViewSwitchIgnored() {
+        let model = GameScreenModel()
+
+        model.setSidebarPrimaryView(true, primaryModule: .value, allowsPrimaryView: false)
+
+        #expect(model.showMainTab == .none)
+        #expect(!model.showMainTabIOS)
+    }
+
+    @Test("Split layouts show the Game View with the Other View or Battle Round")
+    func splitLayoutShowsTwoViews() {
+        let model = GameScreenModel()
+        model.sidebarLayout = .horizontal
+
+        model.setSidebarPrimaryView(true, primaryModule: .game, allowsPrimaryView: true)
+        #expect(model.showMainTab == .game)
+        #expect(model.showSettingTab == .setting)
+        #expect(model.isSplitSidebarVisible)
+
+        model.setSidebarBattleRound(true)
+        #expect(model.showMainTab == .game)
+        #expect(model.showsBattleRoundSidebar)
+        #expect(model.showSettingTab == .none)
+
+        model.setSidebarOtherView(true)
+        #expect(model.showMainTab == .game)
+        #expect(model.showSettingTab == .setting)
+        #expect(!model.showsBattleRoundSidebar)
+    }
+
+    @Test("Turning the active second view off in a split layout keeps it")
+    func splitSecondaryCannotBeTurnedOff() {
+        let model = GameScreenModel()
+        model.sidebarLayout = .vertical
+        model.setSidebarOtherView(true)
+
+        model.setSidebarOtherView(false)
+        #expect(model.showSettingTab == .setting)
+        #expect(model.showMainTab == .game)
+
+        model.setSidebarBattleRound(true)
+        model.setSidebarBattleRound(false)
+        #expect(model.showsBattleRoundSidebar)
+    }
+
+    @Test("Hiding the Game View hides the whole split sidebar and reopening restores the second view")
+    func splitHideAndRestore() {
+        let model = GameScreenModel()
+        model.sidebarLayout = .horizontal
+        model.setSidebarBattleRound(true)
+
+        model.setSidebarPrimaryView(false, primaryModule: .game, allowsPrimaryView: true)
+        #expect(!model.isInlineSidebarVisible)
+
+        model.setSidebarPrimaryView(true, primaryModule: .game, allowsPrimaryView: true)
+        #expect(model.showMainTab == .game)
+        #expect(model.showsBattleRoundSidebar)
+        #expect(model.showSettingTab == .none)
+    }
+
+    @Test("A battle that closes its panel falls back to the Other View in a split layout")
+    func splitBattleClosingFallsBack() {
+        let model = GameScreenModel()
+        model.sidebarLayout = .horizontal
+        model.setSidebarBattleRound(true)
+
+        model.showsBattleRoundSidebar = false
+
+        #expect(model.showMainTab == .game)
+        #expect(model.showSettingTab == .setting)
+    }
+
+    @Test("Changing the layout keeps a shown sidebar consistent")
+    func layoutChangeNormalizesSidebar() {
+        let model = GameScreenModel()
+        model.showSettingTab = .setting
+
+        model.sidebarLayout = .vertical
+        #expect(model.showMainTab == .game)
+        #expect(model.showSettingTab == .setting)
+
+        model.sidebarLayout = .single
+        #expect(model.showMainTab == .game)
+        #expect(model.showSettingTab == .none)
+
+        model.hideInlineSidebar()
+        model.sidebarLayout = .horizontal
+        #expect(!model.isInlineSidebarVisible)
+    }
+
+    @Test("The vertical layout reserves both columns")
+    func verticalLayoutReservesTwoColumns() {
+        let model = GameScreenModel()
+        model.updateInlineMainOverlayWidth(300)
+        model.sidebarLayout = .vertical
+        model.setSidebarOtherView(true)
+
+        #expect(model.inlineSidebarWidth == 300 * 2 + GameScreenModel.mapOverlaySpacing)
+        #expect(model.mapTrailingViewportReservation == model.inlineSidebarWidth + GameScreenModel.mapOverlaySpacing)
+
+        model.sidebarLayout = .horizontal
+        #expect(model.inlineSidebarWidth == 300)
+    }
+
     @Test("Changing sidebar width mutates only sidebar presentation state")
     func sidebarWidthState() {
         let model = GameScreenModel()

@@ -110,6 +110,15 @@ public final class AppSettingsModel: Sendable {
         }
     }
     
+    /// The game master's sidebar layout on iPad, raw `GameSidebarLayout` (0 single, 1 horizontal,
+    /// 2 vertical). Stored as an `Int` like the main tab display modes, since the enum lives in GameRPG.
+    public var masterSidebarLayout: Int = 0 {
+        didSet {
+            guard oldValue != masterSidebarLayout else { return }
+            defaults?.set(masterSidebarLayout, forKey: AppSettingsModel.masterSidebarLayoutKey)
+        }
+    }
+
     public var showGameTableVolume: Bool = false {
         didSet {
             guard oldValue != showGameTableVolume else { return }
@@ -193,6 +202,7 @@ public final class AppSettingsModel: Sendable {
         
         masterMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.masterMainTabDisplayModeKey)
         playerMainTabDisplayMode = defaults.integer(forKey: AppSettingsModel.playerMainTabDisplayModeKey)
+        masterSidebarLayout = defaults.integer(forKey: AppSettingsModel.masterSidebarLayoutKey)
         
         showGameTableVolume = defaults.bool(forKey: AppSettingsModel.showGameTableVolumeKey)
         showGameDice = defaults.value(forKey: AppSettingsModel.showGameDiceKey) as? Bool ?? true
@@ -254,6 +264,7 @@ public final class AppSettingsModel: Sendable {
     private static let autoShowPlayerMainTabKey = "autoShowPlayerMainTab"
     private static let masterMainTabDisplayModeKey = "masterMainTabDisplayMode"
     private static let playerMainTabDisplayModeKey = "playerMainTabDisplayMode"
+    private static let masterSidebarLayoutKey = "masterSidebarLayout"
     private static let showGameTableVolumeKey = "showGameTableVolume"
     private static let showGameDiceKey = "showGameDice"
     private static let showGamePlayerDiceKey = "showGamePlayerDice"

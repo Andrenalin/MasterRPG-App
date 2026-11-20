@@ -8,20 +8,40 @@ struct OverlayMasterTabBar: View {
     let root: GameRoot
     let adventureId: UUID
 
+    @Environment(GameScreenModel.self) private var gameScreenModel
+#if os(iOS)
+    @Environment(AppSettingsModel.self) private var appSettingsModel
+    @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
+
+    /// The saved layout, offered at the regular width (iPad) only.
+    private var effectiveLayout: GameSidebarLayout {
+        guard appWindowSizeModel.mode == .regular else { return .single }
+        return GameSidebarLayout(rawValue: appSettingsModel.masterSidebarLayout) ?? .single
+    }
+#endif
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         ZStack(alignment: .trailing) {
 #if os(macOS) || os(visionOS)
             OnlyGameView(root: root, adventureId: adventureId)
 #else
-            TabGameView(root: root, adventureId: adventureId)
-            TabSecondGameView(root: root)
-#endif
+            GameSidebarSlotsLayout(layout: gameScreenModel.sidebarLayout) {
+                TabGameView(root: root, adventureId: adventureId)
+            } secondary: {
+                TabSecondGameView(root: root)
 #if os(iOS)
-            // The side panel is how iOS presents the battle round. macOS has
-            // its own window for it, and no other platform opens the panel,
-            // so none of them carries the view.
-            BattleRoundSideOverlay(root: root)
+                // The side panel is how iOS presents the battle round. macOS has
+                // its own window for it, and no other platform opens the panel,
+                // so none of them carries the view.
+                BattleRoundSideOverlay(root: root)
+#endif
+            }
+#if os(iOS)
+            .onChange(of: effectiveLayout, initial: true) { _, layout in
+                gameScreenModel.sidebarLayout = layout
+            }
+#endif
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
@@ -34,4 +54,6 @@ struct OverlayMasterTabBar: View {
 #Preview {
     OverlayMasterTabBar(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
         .environment(GameScreenModel())
+        .environment(AppSettingsModel())
+        .environment(AppWindowSizeModel())
 }

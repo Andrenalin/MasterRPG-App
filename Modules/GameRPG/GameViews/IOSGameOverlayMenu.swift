@@ -16,6 +16,7 @@ struct IOSGameOverlayMenu: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
+        let buttonSpacing = GameScreenModel.mapOverlaySpacing
         GlassEffectContainerAll {
             if appWindowSizeModel.mode == .regular {
                 ZStack {
@@ -25,14 +26,23 @@ struct IOSGameOverlayMenu: View {
                         if isMaster || root.gameModel.gameType != .observer {
                             IOSGameDiceToggleButtonField()
                         }
-                        if isMaster {
-                            GameElapsedTimerText(startDate: root.gameModel.startGameTime)
-                        }
                         Spacer()
                         IOSGameSidebarMenu(
                             isMaster: isMaster,
-                            allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
+                            allowsPrimaryView: allowsPrimaryView,
+                            showsViewToggles: false,
+                            showsLayoutOptions: isMaster
                         )
+                        // An overlay, so the buttons do not change the measured menu height
+                        // that positions the sidebar content and dice. They hang below the
+                        // menu button and move with it.
+                        .overlay(alignment: .bottom) {
+                            IOSGameSidebarViewButtons(
+                                isMaster: isMaster,
+                                allowsPrimaryView: allowsPrimaryView
+                            )
+                            .alignmentGuide(.bottom) { $0[.top] - buttonSpacing }
+                        }
                     }
 
                     IOSGameOverlayControlField(
@@ -59,13 +69,17 @@ struct IOSGameOverlayMenu: View {
                     )
                     IOSGameSidebarMenu(
                         isMaster: isMaster,
-                        allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
+                        allowsPrimaryView: allowsPrimaryView
                     )
                 }
                 .padding(.trailing, topTrailingOcclusionWidth)
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var allowsPrimaryView: Bool {
+        isMaster || root.gameModel.gameType != .observer
     }
 
     private var itemSpacing: CGFloat {

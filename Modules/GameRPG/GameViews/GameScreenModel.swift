@@ -53,6 +53,19 @@ final class GameScreenModel {
 
     var isSideMenuVisible: Bool = true
 
+    /// The effective sidebar layout. The screen sets it from the game master's saved choice and
+    /// keeps it `.single` wherever the split layouts are not offered (see `GameSidebarLayout`).
+    var sidebarLayout: GameSidebarLayout = .single {
+        didSet {
+            guard oldValue != sidebarLayout else { return }
+            applySidebarLayoutChange()
+        }
+    }
+
+    /// Which view the split layouts' second slot shows when they open: the Other View or the
+    /// Battle Round, whichever was shown last.
+    var splitSecondaryIsBattle: Bool = false
+
     /// Owned so it stays derived from `showMainTab` instead of being toggled
     /// separately by each call site — `showMainTab` changes from several
     /// places (window restore, tab buttons, the sidebar menu), and a
@@ -64,11 +77,18 @@ final class GameScreenModel {
 
     var showMainTab: NetworkModules = .none {
         didSet {
+            if showMainTab == .none, isSplitSidebar {
+                hideSplitSecondary()
+            }
             if showMainTab == .none, !showsBattleRoundSidebar {
                 isSideMenuVisible = true
             } else if showMainTab != .none {
-                showSettingTab = .none
-                showsBattleRoundSidebar = false
+                if isSplitSidebar {
+                    ensureSplitSecondary()
+                } else {
+                    showSettingTab = .none
+                    showsBattleRoundSidebar = false
+                }
             }
             searchBarVisibleModel.isVisible = showMainTab != .none
         }
@@ -77,8 +97,14 @@ final class GameScreenModel {
     var showSettingTab: NetworkModules = .none {
         didSet {
             guard showSettingTab != .none else { return }
-            showMainTab = .none
-            showsBattleRoundSidebar = false
+            splitSecondaryIsBattle = false
+            if isSplitSidebar {
+                showsBattleRoundSidebar = false
+                if showMainTab == .none { showMainTab = Self.splitPrimaryModule }
+            } else {
+                showMainTab = .none
+                showsBattleRoundSidebar = false
+            }
         }
     }
     func resetToSettingsTab(toggle: Bool = true) {
@@ -104,9 +130,21 @@ final class GameScreenModel {
     /// protocol while the property observers preserve exclusive presentation.
     var showsBattleRoundSidebar: Bool = false {
         didSet {
-            guard showsBattleRoundSidebar else { return }
-            showMainTab = .none
-            showSettingTab = .none
+            guard showsBattleRoundSidebar else {
+                // The battle panel closing leaves the split's second slot to the Other View.
+                if isSplitSidebar, showMainTab != .none, showSettingTab == .none {
+                    showSettingTab = .setting
+                }
+                return
+            }
+            splitSecondaryIsBattle = true
+            if isSplitSidebar {
+                showSettingTab = .none
+                if showMainTab == .none { showMainTab = Self.splitPrimaryModule }
+            } else {
+                showMainTab = .none
+                showSettingTab = .none
+            }
         }
     }
 
@@ -129,7 +167,7 @@ final class GameScreenModel {
     var mapTrailingViewportReservation: CGFloat {
         guard (showMainTab != .none || showsBattleRoundSidebar),
               inlineMainOverlayWidth > 0 else { return 0 }
-        return inlineMainOverlayWidth + Self.mapOverlaySpacing
+        return inlineSidebarWidth + Self.mapOverlaySpacing
     }
 
     func updateInlineMainOverlayWidth(_ width: CGFloat) {
@@ -154,7 +192,7 @@ final class GameScreenModel {
     /// runs to the screen edge, the menu stops at the safe area and the chrome padding.
     var topMenuTrailingReservation: CGFloat {
         guard isInlineSidebarVisible else { return 0 }
-        return max(0, inlineMainOverlayWidth - chromeTrailingSafeAreaInset - Self.chromeHorizontalPadding)
+        return max(0, inlineSidebarWidth - chromeTrailingSafeAreaInset - Self.chromeHorizontalPadding)
     }
 
     func updateChromeSafeAreaInsets(top: CGFloat, trailing: CGFloat, bottom: CGFloat = 0) {
@@ -190,7 +228,7 @@ final class GameScreenModel {
         return 0
 #else
         if showQuickDice { return sideBarWidth }
-        if isInlineSidebarVisible, inlineMainOverlayWidth > 0 { return inlineMainOverlayWidth }
+        if isInlineSidebarVisible, inlineMainOverlayWidth > 0 { return inlineSidebarWidth }
         return 0
 #endif
     }

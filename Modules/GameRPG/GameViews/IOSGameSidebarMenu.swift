@@ -7,6 +7,12 @@ import SwiftUI
 struct IOSGameSidebarMenu: View {
     let isMaster: Bool
     let allowsPrimaryView: Bool
+    /// Whether the menu also holds the view switches. The regular width shows them as buttons
+    /// below the menu button instead (`IOSGameSidebarViewButtons`).
+    var showsViewToggles: Bool = true
+    /// Whether the menu offers the single / horizontal / vertical sidebar layouts (the game
+    /// master on iPad).
+    var showsLayoutOptions: Bool = false
 
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(GameScreenModel.self) private var gameScreenModel
@@ -50,31 +56,47 @@ struct IOSGameSidebarMenu: View {
             }
             .disabled(!isSidebarVisible)
 
-            Divider()
+            if showsLayoutOptions {
+                Divider()
 
-            Toggle(isOn: primaryViewBinding) {
-                Label {
-                    Text(primaryViewTitle)
-                } icon: {
-                    Image(systemName: primaryModule.icon)
-                }
-            }
-            .disabled(!allowsPrimaryView)
-
-            Toggle(isOn: otherViewBinding) {
-                Label {
-                    Text("Other View", bundle: .module)
-                } icon: {
-                    Image(systemName: NetworkModules.setting.icon)
+                ForEach(GameSidebarLayout.allCases) { layout in
+                    Toggle(isOn: layoutBinding(for: layout)) {
+                        Label {
+                            Text(layout.title)
+                        } icon: {
+                            Image(systemName: layout.systemImage)
+                        }
+                    }
                 }
             }
 
-            if isMaster {
-                Toggle(isOn: battleRoundBinding) {
+            if showsViewToggles {
+                Divider()
+
+                Toggle(isOn: primaryViewBinding) {
                     Label {
-                        Text("Battle Round", bundle: .module)
+                        Text(primaryViewTitle)
                     } icon: {
-                        Image(systemName: "shield.lefthalf.filled")
+                        Image(systemName: primaryModule.icon)
+                    }
+                }
+                .disabled(!allowsPrimaryView)
+
+                Toggle(isOn: otherViewBinding) {
+                    Label {
+                        Text("Other View", bundle: .module)
+                    } icon: {
+                        Image(systemName: NetworkModules.setting.icon)
+                    }
+                }
+
+                if isMaster {
+                    Toggle(isOn: battleRoundBinding) {
+                        Label {
+                            Text("Battle Round", bundle: .module)
+                        } icon: {
+                            Image(systemName: "shield.lefthalf.filled")
+                        }
                     }
                 }
             }
@@ -119,6 +141,17 @@ struct IOSGameSidebarMenu: View {
             get: { isSidebarVisible },
             set: { isVisible in
                 setSidebarVisible(isVisible)
+            }
+        )
+    }
+
+    /// Only one layout is on at a time: turning the active one off keeps it on.
+    private func layoutBinding(for layout: GameSidebarLayout) -> Binding<Bool> {
+        Binding(
+            get: { gameScreenModel.sidebarLayout == layout },
+            set: { isOn in
+                guard isOn else { return }
+                setLayout(layout)
             }
         )
     }
@@ -168,8 +201,17 @@ struct IOSGameSidebarMenu: View {
         }
     }
 
+    private func setLayout(_ layout: GameSidebarLayout) {
+        appSettingsModel.masterSidebarLayout = layout.rawValue
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.sidebarLayout = layout
+        }
+    }
+
     private func showSelectedSidebarView() {
-        if allowsPrimaryView && gameScreenModel.iOSSidebarShowsPrimaryView {
+        if gameScreenModel.isSplitSidebar {
+            gameScreenModel.showMainTab = primaryModule
+        } else if allowsPrimaryView && gameScreenModel.iOSSidebarShowsPrimaryView {
             gameScreenModel.showSettingTab = .none
             gameScreenModel.showMainTab = primaryModule
         } else {
@@ -179,27 +221,25 @@ struct IOSGameSidebarMenu: View {
     }
 
     private func setPrimaryView(_ isOn: Bool) {
-        guard allowsPrimaryView else { return }
-        gameScreenModel.iOSSidebarShowsPrimaryView = isOn
         withAnimation(accessibilityReduceMotion ? nil : .default) {
-            gameScreenModel.showMainTab = isOn ? primaryModule : .none
+            gameScreenModel.setSidebarPrimaryView(
+                isOn,
+                primaryModule: primaryModule,
+                allowsPrimaryView: allowsPrimaryView
+            )
         }
-        gameScreenModel.showMainTabIOS = gameScreenModel.isInlineSidebarVisible
     }
 
     private func setOtherView(_ isOn: Bool) {
-        gameScreenModel.iOSSidebarShowsPrimaryView = !isOn
         withAnimation(accessibilityReduceMotion ? nil : .default) {
-            gameScreenModel.showSettingTab = isOn ? .setting : .none
+            gameScreenModel.setSidebarOtherView(isOn)
         }
-        gameScreenModel.showMainTabIOS = gameScreenModel.isInlineSidebarVisible
     }
 
     private func setBattleRound(_ isOn: Bool) {
         withAnimation(accessibilityReduceMotion ? nil : .default) {
-            gameScreenModel.showsBattleRoundSidebar = isOn
+            gameScreenModel.setSidebarBattleRound(isOn)
         }
-        gameScreenModel.showMainTabIOS = gameScreenModel.isInlineSidebarVisible
     }
 }
 

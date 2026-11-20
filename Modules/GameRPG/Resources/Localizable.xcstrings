@@ -3274,6 +3274,23 @@
         }
       }
     },
+    "Horizontal Layout" : {
+      "comment" : "The sidebar layout that stacks the game view above the other view or battle round.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horizontales Layout"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลย์เอาต์แนวนอน"
+          }
+        }
+      }
+    },
     "Host Game" : {
       "localizations" : {
         "de" : {
@@ -6196,6 +6213,23 @@
         }
       }
     },
+    "Single Layout" : {
+      "comment" : "The sidebar layout that shows one view at a time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einzel-Layout"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลย์เอาต์เดี่ยว"
+          }
+        }
+      }
+    },
     "Start a battle with player pins and the monsters in the selected room." : {
       "localizations" : {
         "de" : {
@@ -6760,6 +6794,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "หยุดการอัปเดตชั่วคราว"
+          }
+        }
+      }
+    },
+    "Vertical Layout" : {
+      "comment" : "The sidebar layout that shows the game view next to the other view or battle round.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertikales Layout"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลย์เอาต์แนวตั้ง"
           }
         }
       }

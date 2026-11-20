@@ -3,6 +3,40 @@
 import CoreRPG
 import SwiftUI
 
+/// Where a side panel sits in the sidebar. The split layouts (see `GameSidebarLayout`) lay two
+/// panels out in one sidebar, and the panels adapt their safe-area handling to their slot.
+enum GameSidePanelSlot {
+    /// The whole sidebar column.
+    case full
+    /// The upper half of the horizontal layout.
+    case top
+    /// The lower half of the horizontal layout.
+    case bottom
+    /// The leading column of the vertical layout.
+    case leading
+    /// The trailing column of the vertical layout.
+    case trailing
+
+    /// The slot reaches the top screen edge, so its content clears the top safe area.
+    var touchesTopEdge: Bool {
+        self != .bottom
+    }
+
+    /// The slot reaches the trailing screen edge.
+    var touchesTrailingEdge: Bool {
+        self != .leading
+    }
+
+    /// The slot reaches the bottom screen edge, where the quick dice overlay can sit.
+    var touchesBottomEdge: Bool {
+        self != .top
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var gameSidePanelSlot: GameSidePanelSlot = .full
+}
+
 extension View {
     /// The game screen's slide-in side panel: sidebar width, material background, and the slide,
     /// fade and hit-testing of a hidden panel. Shared by the main tab (game master and player)
@@ -54,6 +88,7 @@ extension View {
 #if os(iOS) || os(tvOS)
 private struct GameSidePanelContentModifier: ViewModifier {
     @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.gameSidePanelSlot) private var slot
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
@@ -75,7 +110,7 @@ private struct GameSidePanelContentModifier: ViewModifier {
     /// ends at the panel's leading edge and the content only has to clear the safe area.
     /// The tvOS menu spans the screen, so it always overlaps the panel.
     private var topInset: CGFloat {
-        guard let systemTopInset else { return 0 }
+        guard let systemTopInset, slot.touchesTopEdge else { return 0 }
 #if os(iOS)
         let contentTop = horizontalSizeClass == .compact
             ? gameScreenModel.sidePanelContentTop
@@ -91,10 +126,11 @@ private struct GameSidePanelContentModifier: ViewModifier {
 #if os(iOS)
 private struct GameSidePanelTrailingSafeAreaModifier: ViewModifier {
     @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.gameSidePanelSlot) private var slot
 
     func body(content: Content) -> some View {
         content
-            .padding(.trailing, -gameScreenModel.chromeTrailingSafeAreaInset)
+            .padding(.trailing, slot.touchesTrailingEdge ? -gameScreenModel.chromeTrailingSafeAreaInset : 0)
     }
 }
 #endif
@@ -107,6 +143,7 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.gameSidePanelSlot) private var slot
 
     func body(content: Content) -> some View {
         content
@@ -123,7 +160,7 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
             .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 #endif
             // Outside the background, so the panel itself ends above the quick dice overlay.
-            .padding(.bottom, gameScreenModel.quickDiceBottomReservation)
+            .padding(.bottom, slot.touchesBottomEdge ? gameScreenModel.quickDiceBottomReservation : 0)
             .offset(
                 x: isShown
                     ? 0
