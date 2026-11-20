@@ -24,23 +24,15 @@ enum Die10Assets {
         if let mesh {
             return mesh
         }
-        var positions: [SIMD3<Float>] = []
-        var normals: [SIMD3<Float>] = []
-        var coordinates: [SIMD2<Float>] = []
-        var indices: [UInt32] = []
-        for face in TableDie10Geometry.faces {
-            let base = UInt32(positions.count)
-            positions += face.corners
-            normals += Array(repeating: face.normal, count: 4)
-            // The atlas is an image with y down; texture coordinates have v up.
-            coordinates += TableDie10Geometry.atlasKite(for: face).coordinates.map { SIMD2($0.x, 1 - $0.y) }
-            indices += [base, base + 1, base + 2, base, base + 2, base + 3]
-        }
+        // A small bezel on every edge; the faces keep their planes, so the rest height is unchanged.
+        let bevelled = TableDieBevel.mesh(faces: TableDie10Geometry.faces.map {
+            TableDieBevel.Face(corners: $0.corners, normal: $0.normal, atlas: TableDie10Geometry.atlasKite(for: $0).coordinates)
+        })
         var descriptor = MeshDescriptor(name: "D10")
-        descriptor.positions = MeshBuffer(positions)
-        descriptor.normals = MeshBuffer(normals)
-        descriptor.textureCoordinates = MeshBuffer(coordinates)
-        descriptor.primitives = .triangles(indices)
+        descriptor.positions = MeshBuffer(bevelled.positions)
+        descriptor.normals = MeshBuffer(bevelled.normals)
+        descriptor.textureCoordinates = MeshBuffer(bevelled.coordinates)
+        descriptor.primitives = .triangles(bevelled.indices)
         let resource = try MeshResource.generate(from: [descriptor])
         mesh = resource
         return resource
@@ -75,7 +67,7 @@ enum Die10Assets {
     /// upright towards the kite's apex, in the numeral color.
     @concurrent
     private static func renderAtlas(palette: TableDiePalette, percentile: Bool) async -> CGImage? {
-        let cell = 512
+        let cell = GeneratedDie.atlasCell
         let width = cell * TableDie10Geometry.atlasColumns
         let height = cell * TableDie10Geometry.atlasRows
         guard let context = GeneratedDie.bodyContext(width: width, height: height, palette: palette) else { return nil }

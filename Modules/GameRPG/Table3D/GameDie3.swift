@@ -45,7 +45,7 @@ enum Die3Assets {
     /// it shows on the d3, upright, in the numeral color.
     @concurrent
     private static func renderAtlas(palette: TableDiePalette) async -> CGImage? {
-        let cell = 512
+        let cell = GeneratedDie.atlasCell
         let width = cell * TableDie6Geometry.atlasColumns
         let height = cell * TableDie6Geometry.atlasRows
         guard let context = GeneratedDie.bodyContext(width: width, height: height, palette: palette) else { return nil }

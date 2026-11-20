@@ -11,6 +11,12 @@ import simd
 
 /// What the dice generated in code (`Die8`, `Die10`) have in common.
 enum GeneratedDie {
+    /// The edge of a cell of a die's texture atlas, in pixels. Every color of every die kind keeps
+    /// an atlas (RGBA, with mipmaps) in memory, so this is what the dice's texture memory scales
+    /// with, by its square: 256 instead of 512 is a quarter of it. The d4 draws three numerals in
+    /// each of its few large cells and uses twice this.
+    static let atlasCell = 256
+
     /// The material of a die before its color's texture is ready, and the base of every color's.
     @MainActor
     static func placeholderMaterial() -> PhysicallyBasedMaterial {

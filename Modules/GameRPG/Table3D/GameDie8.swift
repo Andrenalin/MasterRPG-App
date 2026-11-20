@@ -24,20 +24,15 @@ enum Die8Assets {
         if let mesh {
             return mesh
         }
-        var positions: [SIMD3<Float>] = []
-        var normals: [SIMD3<Float>] = []
-        var coordinates: [SIMD2<Float>] = []
-        for face in TableDie8Geometry.faces {
-            positions += face.corners(circumradius: TableDie8Geometry.circumradius)
-            normals += Array(repeating: face.normal, count: 3)
-            // The atlas is an image with y down; texture coordinates have v up.
-            coordinates += TableDie8Geometry.atlasCoordinates(for: face).map { SIMD2($0.x, 1 - $0.y) }
-        }
+        // A small bezel on every edge; the faces keep their planes, so the rest height is unchanged.
+        let bevelled = TableDieBevel.mesh(faces: TableDie8Geometry.faces.map {
+            TableDieBevel.Face(corners: $0.corners(circumradius: TableDie8Geometry.circumradius), normal: $0.normal, atlas: TableDie8Geometry.atlasCoordinates(for: $0))
+        })
         var descriptor = MeshDescriptor(name: "D8")
-        descriptor.positions = MeshBuffer(positions)
-        descriptor.normals = MeshBuffer(normals)
-        descriptor.textureCoordinates = MeshBuffer(coordinates)
-        descriptor.primitives = .triangles(Array(0 ..< UInt32(positions.count)))
+        descriptor.positions = MeshBuffer(bevelled.positions)
+        descriptor.normals = MeshBuffer(bevelled.normals)
+        descriptor.textureCoordinates = MeshBuffer(bevelled.coordinates)
+        descriptor.primitives = .triangles(bevelled.indices)
         let resource = try MeshResource.generate(from: [descriptor])
         mesh = resource
         return resource
@@ -74,7 +69,7 @@ enum Die8Assets {
     /// underline, so that they can be told apart.
     @concurrent
     private static func renderAtlas(palette: TableDiePalette) async -> CGImage? {
-        let cell = 512
+        let cell = GeneratedDie.atlasCell
         let width = cell * TableDie8Geometry.atlasColumns
         let height = cell * TableDie8Geometry.atlasRows
         guard let context = GeneratedDie.bodyContext(width: width, height: height, palette: palette) else { return nil }
