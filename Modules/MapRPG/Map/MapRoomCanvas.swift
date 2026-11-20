@@ -288,13 +288,34 @@ private struct MapRoomHitTarget: View {
     let node: MapRoomNode
     let session: MapEditorSession
     let interactionTransform: GestureState<ViewportTransform?>
+#if os(visionOS)
+    @Namespace private var hoverNamespace
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+#endif
 
     var body: some View {
         node.path
             .fill(.white.opacity(0.001))
             .contentShape(node.path)
 #if os(visionOS)
-            .hoverEffect(.highlight)
+            // Custom look-at highlight instead of the system one: the room's green border
+            // (drawn by the canvas) turns red while the person looks at the room.
+            .contentShape(.hoverEffect, node.path)
+            .overlay {
+                node.path
+                    .stroke(
+                        .red,
+                        style: StrokeStyle(
+                            lineWidth: colorSchemeContrast == .increased ? 6 : 8,
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
+                    )
+                    .hoverEffect(in: HoverEffectGroup(hoverNamespace)) { effect, isActive, _ in
+                        effect.opacity(isActive ? 1 : 0)
+                    }
+            }
+            .hoverEffectGroup(HoverEffectGroup(hoverNamespace))
 #endif
             .highPriorityGesture(
                 doubleTapGesture.exclusively(before: longPressGesture)

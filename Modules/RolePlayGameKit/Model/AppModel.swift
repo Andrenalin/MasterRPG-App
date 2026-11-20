@@ -389,49 +389,46 @@ extension AppModel {
         refreshTipEligibility()
     }
 
-    public func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
+    /// The window the game shows its content in: the adventure viewer for the master, the
+    /// character viewer for the player. The table, audio and photo windows are placed around it.
+    private var gameViewWindowId: String {
+        appGameStateModel.gameModus == .player
+            ? NetworkModules.value.viewerWindowId
+            : NetworkModules.adventure.viewerWindowId
+    }
+
+    public func windowPlacement(for module: NetworkModules, isViewer: Bool = false) -> WindowPlacementPosition {
         switch module {
         case .none, .setting, .editor, .game, .generator, .search:
                 return .leading(SceneId.game.rawValue)
             case .photo:
-                if appGameStateModel.gameModus == .player {
-                    return .leading(SceneId.game.rawValue, fallback: nil)
-                }
-                return
-                    .above(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
+                return .below(gameViewWindowId, fallback: SceneId.game.rawValue)
             case .map:
                 return .trailing(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
             case .table:
-                return .leading(SceneId.game.rawValue)
+                return .leading(gameViewWindowId, fallback: SceneId.game.rawValue)
             case .adventure:
-                return .trailing(SceneId.game.rawValue)
+                return .leading(SceneId.game.rawValue)
             case .dice:
-                if appGameStateModel.gameModus == .player {
-                    return .trailing(NetworkModules.value.linkWindowId, fallback: SceneId.game.rawValue)
-                }
-                return .below(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
+                return .above(SceneId.game.rawValue)
             case .weather:
                 return .above(NetworkModules.map.linkWindowId, fallback: SceneId.game.rawValue)
             case .value:
-                if appGameStateModel.gameModus == .player {
-                    return .trailing(SceneId.game.rawValue, fallback: nil)
+                // The player's character viewer is the game view itself; only the link window
+                // goes above the Game window.
+                if isViewer, appGameStateModel.gameModus == .player {
+                    return .leading(SceneId.game.rawValue, fallback: nil)
                 }
-                return .above(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
+                return .above(SceneId.game.rawValue)
 
             case .audio:
-                if appGameStateModel.gameModus == .player {
-                    return .leading(NetworkModules.photo.linkWindowId, fallback: SceneId.game.rawValue)
-                }
-                return .below(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
+                return .above(gameViewWindowId, fallback: SceneId.game.rawValue)
             case .pdf:
-                return .leading(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
+                return .below(SceneId.game.rawValue)
             case .rule:
                 return .trailing(NetworkModules.pdf.linkWindowId, fallback: SceneId.game.rawValue)
             case .space:
-                if appGameStateModel.gameModus == .player {
-                    return .leading(NetworkModules.photo.linkWindowId, fallback: SceneId.game.rawValue)
-                }
-                return .below(NetworkModules.map.linkWindowId, fallback: SceneId.game.rawValue)
+                return .below(SceneId.game.rawValue)
         @unknown default:
             return .leading(SceneId.game.rawValue)
         }

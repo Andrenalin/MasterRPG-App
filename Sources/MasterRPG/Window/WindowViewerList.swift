@@ -100,7 +100,7 @@ struct WindowViewerList: Scene {
             .environment(model)
         }
         .windowResizability(.contentSize)
-        .defaultWindowPlacementAll(model.windowPlacement(for: module))
+        .defaultWindowPlacementAll(model.windowPlacement(for: module, isViewer: true))
         .restorationBehaviorAll(.disabled)
     }
     
