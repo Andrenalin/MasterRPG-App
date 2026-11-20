@@ -328,14 +328,31 @@ struct MapTableProjection: Equatable {
 
     /// The oriented map coordinate space, at least 1×1.
     let imageSize: CGSize
+    /// The map's extents on the table (X and Z), after the quarter turn if there is one.
     let planeWidth: Float
     let planeDepth: Float
+    /// Whether the map lies turned by 90° clockwise (seen from above) on the table.
+    let isQuarterTurned: Bool
+
+    /// visionOS turns a landscape map a quarter turn so it fills the table's long side: the table
+    /// is longer than wide, and a landscape map would leave most of its length unused.
+    static var rotatesLandscapeMapsByDefault: Bool {
+#if os(visionOS)
+        true
+#else
+        false
+#endif
+    }
+
+    /// The map image's extents before the quarter turn — what the image plane's mesh is built with.
+    var imagePlaneWidth: Float { isQuarterTurned ? planeDepth : planeWidth }
+    var imagePlaneDepth: Float { isQuarterTurned ? planeWidth : planeDepth }
 
     /// Table meters per source-image point. Multiplying a 2D pin's point size
     /// by this (and by `MapModel.pinScale`) gives the 3D token the same size
     /// relative to the table that the pin has relative to the map image.
     var metersPerPoint: Float {
-        planeWidth / Float(imageSize.width)
+        imagePlaneWidth / Float(imageSize.width)
     }
 
     /// `imageSize` must already be in the oriented coordinate space (see `coordinateSize`).
@@ -343,12 +360,19 @@ struct MapTableProjection: Equatable {
     /// (see `planeAspectRatio(photoSize:degrees:canvasSize:)`). It defaults to the canvas' own aspect
     /// ratio. Positions are always normalized against `imageSize`, so pins and rooms keep their place
     /// on the picture even when the stored canvas doesn't match the photo.
-    init(imageSize: CGSize, planeAspectRatio: CGFloat? = nil) {
+    /// `rotatesLandscapeMap` turns a map that is wider than high by a quarter turn (see
+    /// `rotatesLandscapeMapsByDefault`); the plane then takes the turned shape.
+    init(
+        imageSize: CGSize,
+        planeAspectRatio: CGFloat? = nil,
+        rotatesLandscapeMap: Bool = MapTableProjection.rotatesLandscapeMapsByDefault
+    ) {
         let safeSize = CGSize(width: max(1, imageSize.width), height: max(1, imageSize.height))
         self.imageSize = safeSize
         let aspectRatio = planeAspectRatio.flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
             ?? safeSize.width / safeSize.height
-        let plane = Self.fitBox(aspectRatio: aspectRatio)
+        isQuarterTurned = rotatesLandscapeMap && aspectRatio > 1
+        let plane = Self.fitBox(aspectRatio: isQuarterTurned ? 1 / aspectRatio : aspectRatio)
         planeWidth = plane.width
         planeDepth = plane.depth
     }
@@ -403,16 +427,24 @@ struct MapTableProjection: Equatable {
     func tablePosition(for location: CGPoint) -> SIMD3<Float> {
         let normalizedX = location.x / imageSize.width
         let normalizedY = location.y / imageSize.height
-        let tableX = Float(normalizedX - 0.5) * planeWidth
-        let tableZ = Float(normalizedY - 0.5) * planeDepth
-        return SIMD3<Float>(tableX, Self.pinHeight, tableZ)
+        // Position on the map image before the quarter turn.
+        let imageX = Float(normalizedX - 0.5) * imagePlaneWidth
+        let imageZ = Float(normalizedY - 0.5) * imagePlaneDepth
+        // A quarter turn clockwise seen from above (X right, Z toward the viewer) takes
+        // (x, z) to (-z, x).
+        if isQuarterTurned {
+            return SIMD3<Float>(-imageZ, Self.pinHeight, imageX)
+        }
+        return SIMD3<Float>(imageX, Self.pinHeight, imageZ)
     }
 
     /// Exact inverse of `tablePosition(for:)`, clamped to the image bounds
     /// since a pin may be dropped anywhere on the table.
     func mapLocation(for position: SIMD3<Float>) -> CGPoint {
-        let x = (CGFloat(position.x / planeWidth) + 0.5) * imageSize.width
-        let y = (CGFloat(position.z / planeDepth) + 0.5) * imageSize.height
+        let imageX = isQuarterTurned ? position.z : position.x
+        let imageZ = isQuarterTurned ? -position.x : position.z
+        let x = (CGFloat(imageX / imagePlaneWidth) + 0.5) * imageSize.width
+        let y = (CGFloat(imageZ / imagePlaneDepth) + 0.5) * imageSize.height
         return CGPoint(x: min(max(x, 0), imageSize.width), y: min(max(y, 0), imageSize.height))
     }
 

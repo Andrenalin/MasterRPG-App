@@ -24,7 +24,7 @@ struct GameTableProjectionTests {
 
     @Test("Positions round-trip between map and table space")
     func tablePositionRoundTrips() {
-        let projection = MapTableProjection(imageSize: CGSize(width: 1200, height: 800))
+        let projection = MapTableProjection(imageSize: CGSize(width: 1200, height: 800), rotatesLandscapeMap: false)
         let location = CGPoint(x: 300, y: 600)
 
         let roundTripped = projection.mapLocation(for: projection.tablePosition(for: location))
@@ -46,10 +46,44 @@ struct GameTableProjectionTests {
         #expect(far.y == 0)
     }
 
+    @Test("A landscape map is turned a quarter turn clockwise to fill the table's long side")
+    func landscapeMapIsQuarterTurned() {
+        let size = CGSize(width: 1200, height: 800)
+        let projection = MapTableProjection(imageSize: size, rotatesLandscapeMap: true)
+        #expect(projection.isQuarterTurned)
+        #expect(projection.planeWidth <= MapTableProjection.maxPlaneWidth + 0.0001)
+        #expect(projection.planeDepth <= MapTableProjection.maxPlaneDepth + 0.0001)
+        #expect(projection.planeDepth > projection.planeWidth)
+        // Larger than the unturned plane.
+        let unturned = MapTableProjection(imageSize: size, rotatesLandscapeMap: false)
+        #expect(projection.planeWidth * projection.planeDepth > unturned.planeWidth * unturned.planeDepth)
+        // The image's top-left corner ends up at the top-right, its top-right at the bottom-right.
+        let topLeft = projection.tablePosition(for: CGPoint(x: 0, y: 0))
+        #expect(abs(topLeft.x - projection.planeWidth / 2) < 0.0001)
+        #expect(abs(topLeft.z + projection.planeDepth / 2) < 0.0001)
+        let topRight = projection.tablePosition(for: CGPoint(x: 1200, y: 0))
+        #expect(abs(topRight.x - projection.planeWidth / 2) < 0.0001)
+        #expect(abs(topRight.z - projection.planeDepth / 2) < 0.0001)
+        // Positions still round-trip, and a pin keeps its size relative to the map.
+        let location = CGPoint(x: 300, y: 600)
+        let roundTripped = projection.mapLocation(for: projection.tablePosition(for: location))
+        #expect(abs(roundTripped.x - location.x) < 0.01)
+        #expect(abs(roundTripped.y - location.y) < 0.01)
+        #expect(abs(projection.metersPerPoint * 1200 - projection.planeDepth) < 0.0001)
+    }
+
+    @Test("Portrait and square maps stay as they are")
+    func portraitMapIsNotTurned() {
+        for size in [CGSize(width: 800, height: 1200), CGSize(width: 900, height: 900)] {
+            let projection = MapTableProjection(imageSize: size, rotatesLandscapeMap: true)
+            #expect(!projection.isQuarterTurned)
+        }
+    }
+
     @Test("The plane fits inside the margin box for wide and tall maps")
     func planeFitsInsideBox() {
         for size in [CGSize(width: 4000, height: 500), CGSize(width: 500, height: 4000), CGSize(width: 800, height: 800)] {
-            let projection = MapTableProjection(imageSize: size)
+            let projection = MapTableProjection(imageSize: size, rotatesLandscapeMap: false)
             #expect(projection.planeWidth <= MapTableProjection.maxPlaneWidth + 0.0001)
             #expect(projection.planeDepth <= MapTableProjection.maxPlaneDepth + 0.0001)
             let planeAspect = CGFloat(projection.planeWidth / projection.planeDepth)
@@ -65,7 +99,7 @@ struct GameTableProjectionTests {
         )
         #expect(abs(aspect - 820.0 / 1267.0) < 0.0001)
 
-        let projection = MapTableProjection(imageSize: canvas, planeAspectRatio: aspect)
+        let projection = MapTableProjection(imageSize: canvas, planeAspectRatio: aspect, rotatesLandscapeMap: false)
         #expect(abs(projection.planeDepth - MapTableProjection.maxPlaneDepth) < 0.0001)
         let corner = projection.tablePosition(for: CGPoint(x: 1200, y: 800))
         #expect(abs(corner.x - projection.planeWidth / 2) < 0.0001)

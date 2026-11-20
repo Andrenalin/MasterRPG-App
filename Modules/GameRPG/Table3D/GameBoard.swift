@@ -106,8 +106,13 @@ final class Board {
             imageSize: input.coordinateSize,
             planeAspectRatio: input.displaySize.width / input.displaySize.height
         )
-        imagePlane.model?.mesh = .generatePlane(width: plane.planeWidth, depth: plane.planeDepth)
-        imagePlane.components.set(Self.hitTestCollision(width: plane.planeWidth, depth: plane.planeDepth))
+        // The plane is built in the map image's own shape and turned with the map; its hit-test
+        // box is a child component, so it turns along.
+        imagePlane.model?.mesh = .generatePlane(width: plane.imagePlaneWidth, depth: plane.imagePlaneDepth)
+        imagePlane.components.set(Self.hitTestCollision(width: plane.imagePlaneWidth, depth: plane.imagePlaneDepth))
+        imagePlane.orientation = plane.isQuarterTurned
+            ? simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(0, 1, 0))
+            : simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
         imagePlane.model?.materials = [material]
         imagePlane.isEnabled = true
         return true
