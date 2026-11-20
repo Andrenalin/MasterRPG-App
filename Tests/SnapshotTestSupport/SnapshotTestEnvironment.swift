@@ -59,12 +59,31 @@ enum SnapshotReferenceLocation {
 
         let repositoryRoot = testsDirectory.deletingLastPathComponent()
         let suiteName = testFile.deletingPathExtension().lastPathComponent
-        return repositoryRoot
+        let repositoryDirectory = repositoryRoot
             .appending(path: "Snapshots")
             .appending(path: baselineVariant)
             .appending(path: testTargetDirectory.lastPathComponent)
             .appending(path: suiteName)
-            .path()
+
+        // Xcode Cloud builds the test products on one machine and runs them on another
+        // that has no repository checkout, so the reviewed references also ship inside the
+        // test bundle. The repository copy stays authoritative whenever it exists: local
+        // runs and the recording script read and write it.
+        if !FileManager.default.fileExists(atPath: repositoryDirectory.path()),
+           let bundledDirectory = bundledDirectory(forSuite: suiteName)
+        {
+            return bundledDirectory.path()
+        }
+        return repositoryDirectory.path()
+    }
+
+    /// The suite's reference folder copied into the test bundle, when the target ships one.
+    private static func bundledDirectory(forSuite suiteName: String) -> URL? {
+        let bundle = Bundle(for: SnapshotTestBundleToken.self)
+        guard let directory = bundle.resourceURL?.appending(path: suiteName, directoryHint: .isDirectory),
+              FileManager.default.fileExists(atPath: directory.path())
+        else { return nil }
+        return directory
     }
 
     private static func normalizedVariant(_ value: String) -> String {

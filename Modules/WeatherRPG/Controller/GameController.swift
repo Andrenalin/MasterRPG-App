@@ -33,12 +33,23 @@ final class WeatherGameModel {
         inFlightReveals.removeAll()
     }
 
-    func inFlightReveal(for itemId: UUID) -> InFlightReveal? {
-        inFlightReveals[itemId]
-    }
-
-    func setInFlightReveal(_ reveal: InFlightReveal, for itemId: UUID) {
-        inFlightReveals[itemId] = reveal
+    /// Returns the running reveal of the same package, or registers a new one that
+    /// `makeTask` builds from the reveal it has to wait for. Looking up and registering happen
+    /// in this one synchronous call: with an `await` between them, two overlapping reveals could
+    /// both see "nothing running" and import in parallel, letting the older package finish last.
+    func reveal(
+        for itemId: UUID,
+        version: Int,
+        makeTask: (_ previous: InFlightReveal?, _ token: UUID) -> Task<Bool, Error>
+    ) -> Task<Bool, Error> {
+        let previous = inFlightReveals[itemId]
+        if let previous, previous.version == version {
+            return previous.task
+        }
+        let token = UUID()
+        let task = makeTask(previous, token)
+        inFlightReveals[itemId] = InFlightReveal(token: token, version: version, task: task)
+        return task
     }
 
     func clearInFlightReveal(for itemId: UUID, token: UUID) {
@@ -161,43 +172,47 @@ extension GameController: WeatherGameControllable {
         // `markWeatherAvailable` could win with a version that doesn't match what `setCurrent`
         // sees. The same package joins the running reveal; a different one (a newer package,
         // see CODE_AUDIT §3.1) runs after it, so its payload is never dropped.
-        let previous = await weatherGameModel.inFlightReveal(for: itemId)
-        if let previous, previous.version == data.version {
-            return try await previous.task.value
+        let task = await weatherGameModel.reveal(for: itemId, version: data.version) { previous, token in
+            Task {
+                try await performReveal(itemId: itemId, data: data, after: previous, token: token)
+            }
         }
 
-        let token = UUID()
-        let task = Task<Bool, Error> {
-            if let previous {
-                _ = try? await previous.task.value
-            }
-            defer {
-                Task { @MainActor in weatherGameModel.clearInFlightReveal(for: itemId, token: token) }
-            }
+        return try await task.value
+    }
 
-            if await isWeatherAvailable(itemId: itemId, version: data.version) {
-                return await setCurrent(itemId: itemId)
-            }
+    /// The body of one registered reveal: waits for the reveal it follows, then shows the
+    /// session copy or imports the package. `@concurrent`, so the import stays off the main actor.
+    @concurrent
+    private func performReveal(
+        itemId: UUID,
+        data: NetworkCodableDataType,
+        after previous: WeatherGameModel.InFlightReveal?,
+        token: UUID
+    ) async throws -> Bool {
+        if let previous {
+            _ = try? await previous.task.value
+        }
+        defer {
+            Task { @MainActor in weatherGameModel.clearInFlightReveal(for: itemId, token: token) }
+        }
 
-            guard data.data != nil else { return false }
-            try await updateGame(
-                data: data,
-                hide: false,
-                deep: true,
-                policy: .memoryOnly
-            )
-            guard await hasWeatherModel(itemId: itemId) else {
-                return false
-            }
-
-            await markWeatherAvailable(itemId: itemId, version: data.version)
+        if await isWeatherAvailable(itemId: itemId, version: data.version) {
             return await setCurrent(itemId: itemId)
         }
 
-        await weatherGameModel.setInFlightReveal(
-            WeatherGameModel.InFlightReveal(token: token, version: data.version, task: task),
-            for: itemId
+        guard data.data != nil else { return false }
+        try await updateGame(
+            data: data,
+            hide: false,
+            deep: true,
+            policy: .memoryOnly
         )
-        return try await task.value
+        guard await hasWeatherModel(itemId: itemId) else {
+            return false
+        }
+
+        await markWeatherAvailable(itemId: itemId, version: data.version)
+        return await setCurrent(itemId: itemId)
     }
 }
