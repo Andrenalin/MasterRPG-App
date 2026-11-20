@@ -106,6 +106,42 @@ struct GroupEditorSaveTests {
         #expect(fixture.table(1)?.tags.sorted() == ["new", "old"])
     }
 
+    @Test("Adding a tag to items with different tags adds it to each and keeps their own tags (CODE_AUDIT §5.2)")
+    func addedTagIsUnionedIntoDifferingItems() async {
+        let fixture = await fixture([("A", "", ["Boss", "Undead"]), ("B", "", ["Elf"]), ("C", "", ["Boss"]), ("D", "", [])])
+        let controller = fixture.controller
+        #expect(controller.model.tagsAreMixed)
+        #expect(controller.model.tags.isEmpty)
+
+        controller.model.tags = ["Act2"]
+        controller.save()
+
+        #expect(fixture.table(0)?.tags.sorted() == ["Act2", "Boss", "Undead"])
+        #expect(fixture.table(1)?.tags.sorted() == ["Act2", "Elf"])
+        #expect(fixture.table(2)?.tags.sorted() == ["Act2", "Boss"])
+        #expect(fixture.table(3)?.tags == ["Act2"])
+    }
+
+    @Test("A tag an item already has is not added twice, and the shared-tags case is unchanged")
+    func unionDoesNotDuplicateAndSharedCaseStaysReplace() async {
+        let mixed = await fixture([("A", "", ["Boss"]), ("B", "", ["Elf"])])
+        let mixedController = mixed.controller
+        mixedController.model.tags = ["Boss", "Act2"]
+        mixedController.save()
+
+        #expect(mixed.table(0)?.tags.sorted() == ["Act2", "Boss"])
+        #expect(mixed.table(1)?.tags.sorted() == ["Act2", "Boss", "Elf"])
+
+        let shared = await fixture([("A", "", ["old", "gone"]), ("B", "", ["old", "gone"])])
+        let sharedController = shared.controller
+        #expect(!sharedController.model.tagsAreMixed)
+        sharedController.model.tags = ["old"]
+        sharedController.save()
+
+        #expect(shared.table(0)?.tags == ["old"], "items that agree can still remove a shared tag")
+        #expect(shared.table(1)?.tags == ["old"])
+    }
+
     @Test("An untouched tag editor never clears the tags of items that differ")
     func differingTagsAreKept() async {
         let fixture = await fixture([("A", "", ["x"]), ("B", "", ["y"])])

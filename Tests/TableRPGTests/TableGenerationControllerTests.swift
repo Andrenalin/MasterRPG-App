@@ -55,6 +55,36 @@ struct TableGenerationControllerTests {
         #expect(controller.matchingEntry(for: 5, in: ranged)?.id == entries[1].id)
     }
 
+    @Test("A table with a linked Dice matches ranges although its type is still .list (CODE_AUDIT §5.3)")
+    func linkedDiceMakesRangesApply() {
+        let controller = makeRoot().generationController
+        let entries = [
+            TableGenerationEntry(id: .fixture2, name: "1-5", content: "", tableLinks: []),
+            TableGenerationEntry(id: .fixture3, name: "6-10", content: "", tableLinks: []),
+            TableGenerationEntry(id: .fixture4, name: "11-20", content: "", tableLinks: [])
+        ]
+        // The editor only sets `diceId`; `tableType` stays at its `.list` default.
+        let table = TableGenerationOccurrence(tableId: .fixture5, tableName: "Loot", tableType: .list, diceId: UUID(), entries: entries, depth: 0, tablePath: [])
+
+        #expect(controller.matchingEntry(for: 3, in: table)?.id == entries[0].id)
+        #expect(controller.matchingEntry(for: 6, in: table)?.id == entries[1].id)
+        #expect(controller.matchingEntry(for: 17, in: table)?.id == entries[2].id, "a d20 result beyond the entry count must still resolve")
+        #expect(controller.matchingEntry(for: 21, in: table) == nil)
+    }
+
+    @Test("Without a Dice a table stays positional even when its names look like ranges' lower ends")
+    func noDiceStaysPositional() {
+        let controller = makeRoot().generationController
+        let entries = [
+            TableGenerationEntry(id: .fixture2, name: "5 Orcs", content: "", tableLinks: []),
+            TableGenerationEntry(id: .fixture3, name: "2 Wolves", content: "", tableLinks: [])
+        ]
+        let table = TableGenerationOccurrence(tableId: .fixture5, tableName: "Encounters", tableType: .list, diceId: nil, entries: entries, depth: 0, tablePath: [])
+
+        #expect(controller.matchingEntry(for: 1, in: table)?.id == entries[0].id)
+        #expect(controller.matchingEntry(for: 2, in: table)?.id == entries[1].id)
+    }
+
     @Test("Selecting an entry appends every linked table and deselecting restores siblings")
     func selectionExpandsAndCollapsesEveryLinkedTable() throws {
         // Given

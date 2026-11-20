@@ -7,12 +7,13 @@ import Observation
 /// tested. See CODE_AUDIT_TestGaps §8.5.
 @Observable @MainActor
 final class GroupEditorModel {
-    internal init(namePlaceHolder: String, descriptionPlaceHolder: String, tags: [String], tagsPlaceHolder: String) {
+    internal init(namePlaceHolder: String, descriptionPlaceHolder: String, tags: [String], tagsPlaceHolder: String, tagsAreMixed: Bool = false) {
         self.namePlaceHolder = namePlaceHolder
         self.descriptionPlaceHolder = descriptionPlaceHolder
         self.tags = tags
         self.originalTags = tags
         self.tagsPlaceHolder = tagsPlaceHolder
+        self.tagsAreMixed = tagsAreMixed
     }
 
     var name: String = ""
@@ -27,6 +28,10 @@ final class GroupEditorModel {
     // actually changed anything even though `tags` may start non-empty now.
     let originalTags: [String]
     var tagsPlaceHolder: String
+    /// The selected items do not share one tag set, so `tags` is not a set to write back: it only
+    /// holds the tags the user adds, and saving adds them to every item next to the tags the item
+    /// already has. See CODE_AUDIT §5.2.
+    let tagsAreMixed: Bool
 }
 
 struct GroupEditorController {
@@ -89,7 +94,17 @@ struct GroupEditorController {
         // (matching the "Different Tags" placeholder), and starting from a mix would risk
         // silently introducing tags to items that never had them. See CODE_AUDIT_EditItem §5.6.
         let sharedTags = tagsIsDifferent ? [] : (tags ?? [])
-        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module), descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module), tags: sharedTags, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module))
+        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module), descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module), tags: sharedTags, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module), tagsAreMixed: tagsIsDifferent)
+    }
+
+    /// The tags an item ends with. Items that share their tags take the edited set as it is (the
+    /// user could add and remove). Items that differ keep their own tags and gain the added ones:
+    /// the editor never showed them a set to edit, so replacing would wipe their tags.
+    @MainActor private func tagsToSave(for itemId: UUID) -> [String] {
+        guard model.tagsAreMixed else { return model.tags }
+        let existing = itemController.itemSync(for: itemId)?.tags ?? []
+        let added = model.tags.filter { !existing.contains($0) }
+        return existing + added
     }
 
     @MainActor func save() {
@@ -115,7 +130,7 @@ struct GroupEditorController {
             }
 
             if tagsChanged {
-                editController.reset(tags: model.tags, itemId: itemId, forceSave: true)
+                editController.reset(tags: tagsToSave(for: itemId), itemId: itemId, forceSave: true)
             }
         }
     }

@@ -237,8 +237,9 @@ or an unmatched result produces an inline error.
 
 ### Entry-name matching
 
-The generator first tries to interpret the leading part of each entry name as a
-number or inclusive range.
+A table with a linked Dice first tries to interpret the leading part of each entry
+name as a number or inclusive range. A table without a Dice is rolled by position
+and never reads entry names as ranges.
 
 | Entry name | Selector |
 | --- | --- |

@@ -247,10 +247,13 @@ struct TableGenerationController: Sendable {
         for result: Int,
         in occurrence: TableGenerationOccurrence
     ) -> TableGenerationEntry? {
-        // Ranges belong to a dice table. A list table
-        // is rolled by position, and a leading number in an entry name ("2 Wolves") is not a
-        // range: read as one, "5 Orcs" could never be rolled. See CODE_AUDIT_21 §5.18.
-        if occurrence.tableType == .dice, let ranged = occurrence.entries.first(where: {
+        // Ranges belong to a dice table: one with a linked Dice (the editor never sets
+        // `tableType`, so the Dice link is what makes a user-made table a dice table) or an
+        // imported one typed `.dice`. A table without a Dice is rolled by position, and a leading
+        // number in an entry name ("2 Wolves") is not a range there: read as one, "5 Orcs" could
+        // never be rolled. See CODE_AUDIT_21 §5.18 and CODE_AUDIT §5.3.
+        let isDiceTable = occurrence.diceId != nil || occurrence.tableType == .dice
+        if isDiceTable, let ranged = occurrence.entries.first(where: {
             selectorRange(for: $0.name)?.contains(result) == true
         }) {
             return ranged

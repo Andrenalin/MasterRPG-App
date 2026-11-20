@@ -17,26 +17,36 @@ public extension EditControllable {
 
     @MainActor
     func undo() {
-        // Undoing a folder edit made on the library: what redo brings back is the library's
-        // state now, and it is a library edit as well. See CODE_AUDIT_21 §5.31.
-        if let next = editorModel.undoManaged.nextUndoValue as? Model, editorModel.isLibraryScopedUndo(next),
-           let current = itemControllable.itemSync(for: next.id, noGame: true)?.copy() {
-            editorModel.markLibraryScopedUndo(current)
-            editorModel.undoManaged.updateValue(current)
-        }
+        recordLiveValue(before: editorModel.undoManaged.nextUndoValue as? Model)
         editorModel.undoManaged.undo()
         applyUndoValue()
     }
 
     @MainActor
     func redo() {
-        if let next = editorModel.undoManaged.nextRedoValue as? Model, editorModel.isLibraryScopedUndo(next),
-           let current = itemControllable.itemSync(for: next.id, noGame: true)?.copy() {
-            editorModel.markLibraryScopedUndo(current)
-            editorModel.undoManaged.updateValue(current)
-        }
+        recordLiveValue(before: editorModel.undoManaged.nextRedoValue as? Model)
         editorModel.undoManaged.redo()
         applyUndoValue()
+    }
+
+    /// `UndoManaged.undo()`/`redo()` push their current `value` onto the opposite stack, and a
+    /// save never advances `value`, so it is stale (the state from when the item was selected).
+    /// Before moving, make it the item as it is now: that is what the opposite step must bring
+    /// back, so edit, edit, undo, redo ends on the second edit instead of the original. The item
+    /// to read is the one the step restores, as the stack holds the states of every item edited.
+    /// An edit made on the library (a folder edit during a game) is a library edit again when it
+    /// is undone: what redo brings back is the library's state now. See CODE_AUDIT §5.1 and
+    /// CODE_AUDIT_21 §5.31.
+    @MainActor
+    private func recordLiveValue(before next: Model?) {
+        guard let next else { return }
+        if editorModel.isLibraryScopedUndo(next) {
+            guard let current = itemControllable.itemSync(for: next.id, noGame: true)?.copy() else { return }
+            editorModel.markLibraryScopedUndo(current)
+            editorModel.undoManaged.updateValue(current)
+        } else if let current = itemControllable.itemSync(for: next.id)?.copy() {
+            editorModel.undoManaged.updateValue(current)
+        }
     }
 
     /// Writes the value undo or redo just restored. A folder edit made on the library goes

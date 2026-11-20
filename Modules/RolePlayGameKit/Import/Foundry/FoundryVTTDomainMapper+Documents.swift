@@ -498,20 +498,40 @@ extension FoundryMappingState {
         model.tags = foundryTags(document)
         model.category = .campaign
         model.parentId = folderID(for: document, module: .adventure)
-        model.entries = document.embeddedDocuments.flatMap { child in
-            (mappingReferences[child.id] ?? []).map { reference in
-                AdventureEntryModel(
-                    id: stableID("\(document.id)#link#\(child.id)#\(reference.module.token)#\(reference.itemId)"),
+        // One entry per embedded document, linking the item it is projected to. Everything recorded
+        // under a source id is not that item: field groups of an Actor or Item are hidden helper
+        // models, and an Item is a Value and a Rule. The references are a `Set`, so taking all
+        // of them linked the helpers and ordered the entries by the per-process hash seed.
+        // See CODE_AUDIT §5.4.
+        model.entries = document.embeddedDocuments.compactMap { child in
+            guard let reference = adventureLinkReference(for: child) else { return nil }
+            return AdventureEntryModel(
+                id: stableID("\(document.id)#link#\(child.id)#\(reference.module.token)#\(reference.itemId)"),
+                name: sanitizedFoundryText(child.name),
+                content: markdownLink(
                     name: sanitizedFoundryText(child.name),
-                    content: markdownLink(
-                        name: sanitizedFoundryText(child.name),
-                        module: reference.module,
-                        itemId: reference.itemId
-                    )
+                    module: reference.module,
+                    itemId: reference.itemId
                 )
-            }
+            )
         }
         add(model, module: .adventure, sourceID: document.id)
+    }
+
+    /// The projected item an Adventure entry for `child` links: the destination the importer
+    /// predicts for it (the one links inside imported text resolve to), else the first
+    /// non-auxiliary mapping in a fixed order. Auxiliary items follow their owner and are never
+    /// linked on their own.
+    func adventureLinkReference(for child: FoundryDocument) -> FoundryImportMappingReference? {
+        let references = mappingReferences[child.id] ?? []
+        if let destination = predictedDestination(for: child),
+           let predicted = references.first(where: { $0.module == destination.module && $0.itemId == destination.itemId }) {
+            return predicted
+        }
+        let auxiliaryIds = Set(items.filter(\.isAuxiliary).map(\.id))
+        return references
+            .filter { !auxiliaryIds.contains($0.itemId) }
+            .min(by: mappingOrder)
     }
 
     func mapCombat(_ document: FoundryDocument) {
