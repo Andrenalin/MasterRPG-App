@@ -150,6 +150,7 @@ struct ListRootView: View {
             root: root,
             selection: $generationSelection
         )
+        .generateFromPhotoPresentation(root: root)
     }
 }
 

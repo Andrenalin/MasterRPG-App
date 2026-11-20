@@ -1,6 +1,193 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Character Cloned" : {
+      "comment" : "Title of the alert after a Character was cloned with a photo in the editor.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter geklont"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โคลนตัวละครแล้ว"
+          }
+        }
+      }
+    },
+    "Character Created" : {
+      "comment" : "Title of the alert after a Character was created from a photo in the editor.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter erstellt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครแล้ว"
+          }
+        }
+      }
+    },
+    "Clone Character" : {
+      "comment" : "Title of the sheet where the Character to clone is chosen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter klonen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โคลนตัวละคร"
+          }
+        }
+      }
+    },
+    "Generate Clone Character…" : {
+      "comment" : "Photo context menu entry that asks for a Character, copies it and gives the copy the photo as its portrait.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter-Klon erzeugen …"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครโคลน…"
+          }
+        }
+      }
+    },
+    "Generate New Character" : {
+      "comment" : "Photo context menu entry that creates a new Character with the photo as its portrait.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuen Charakter erzeugen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครใหม่"
+          }
+        }
+      }
+    },
+    "Go to Character" : {
+      "comment" : "Alert button that opens the Character module with the Character that was just generated from a photo.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Charakter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไปที่ตัวละคร"
+          }
+        }
+      }
+    },
+    "Go to Map" : {
+      "comment" : "Alert button that opens the Map module with the map that was just created from a photo.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Karte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไปที่แผนที่"
+          }
+        }
+      }
+    },
+    "Map Created" : {
+      "comment" : "Title of the alert after a map was created from a photo in the editor.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte erstellt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างแผนที่แล้ว"
+          }
+        }
+      }
+    },
+    "The character %@ was cloned and now uses the photo. Go to the character?" : {
+      "comment" : "Message of the alert after a Character was cloned with a photo; the argument is the copy's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Charakter %@ wurde geklont und verwendet jetzt das Foto. Zum Charakter wechseln?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โคลนตัวละคร %@ และใช้รูปภาพนี้แล้ว ไปที่ตัวละครหรือไม่?"
+          }
+        }
+      }
+    },
+    "The character %@ was created from the photo. Go to the character?" : {
+      "comment" : "Message of the alert after a Character was created from a photo; the argument is the Character's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Charakter %@ wurde aus dem Foto erstellt. Zum Charakter wechseln?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละคร %@ จากรูปภาพแล้ว ไปที่ตัวละครหรือไม่?"
+          }
+        }
+      }
+    },
+    "The map %@ was created from the photo. Go to the map?" : {
+      "comment" : "Message of the alert after a map was created from a photo; the argument is the map's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Karte %@ wurde aus dem Foto erstellt. Zur Karte wechseln?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างแผนที่ %@ จากรูปภาพแล้ว ไปที่แผนที่หรือไม่?"
+          }
+        }
+      }
+    },
     "—" : {
       "comment" : "A placeholder text that is displayed when there are no tags.",
       "isCommentAutoGenerated" : true,
@@ -3647,7 +3834,7 @@
       }
     },
     "Generate Map" : {
-      "comment" : "A context menu button in a photo list during a game that creates a temporary map from the photo and shows it to the players.",
+      "comment" : "A context menu button in a photo list that creates a map from the photo: a temporary one shown to the players during a game, a saved one in the editor.",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -76,11 +76,12 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.mapActions, appModel.mapRoot.mapActions)
+            .environment(\.valueActions, appModel.characterRoot.valueActions)
             .environment(\.routeActions, appModel.routeActions)
             .environment(\.networkActions, appModel.gameRoot.networkActions)
             .environment(\.isGamePlayer, appModel.gameRoot.isGamePlayer)
             .environment(\.quickDiceSlots, appModel.gameRoot.quickDiceSlots)
-            .environment(\.generateMapAction, appModel.gameRoot.generateMapAction)
+            .environment(\.generateFromPhotoAction, appModel.gameRoot.generateFromPhotoAction)
             .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
 #if os(visionOS)

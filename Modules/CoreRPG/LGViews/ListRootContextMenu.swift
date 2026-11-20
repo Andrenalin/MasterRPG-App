@@ -20,7 +20,8 @@ struct ListRootContextMenu: View {
     @Environment(\.navigator) private var navigator
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.itemGenerationAction) private var itemGenerationAction
-    
+    @Environment(\.generateFromPhotoAction) private var generateFromPhotoAction
+
     var body: some View {
         let parent = self.parent
         EditItemView(root: root, title: title)
@@ -50,6 +51,9 @@ struct ListRootContextMenu: View {
         MoveIntoGroupMenu(root: root, controller: controller, currentSelected: currentSelected, listController: listController, title: title)
         if canGenerate {
             GenerateItemView(currentSelected: currentSelected, title: title)
+        }
+        if canGenerateFromPhoto, let currentSelected {
+            GenerateFromPhotoMenu(photoId: currentSelected)
         }
         #if !os(tvOS)
         if root.viewControllable.supportsBatchExtraction {
@@ -84,6 +88,17 @@ private extension ListRootContextMenu {
             return false
         }
         return root.configurable.module == .table && !item.specialCategory
+    }
+
+    /// Only one photo item (not a folder or collection).
+    var canGenerateFromPhoto: Bool {
+        guard generateFromPhotoAction.isEnabled,
+              let currentSelected,
+              let item = root.itemControllable.itemSync(for: currentSelected)
+        else {
+            return false
+        }
+        return root.configurable.module == .photo && !item.specialCategory
     }
 }
 

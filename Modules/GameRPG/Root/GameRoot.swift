@@ -296,12 +296,13 @@ public final class GameRoot {
     }
     
     /// "Generate Map" in the photo list: a map made from the photo in game memory only, shown to
-    /// the players. Only the game master of a running game gets it.
-    public var generateMapAction: GenerateMapAction {
-        GenerateMapAction(
+    /// the players. Only the game master of a running game gets it, and only the map: Characters
+    /// are made in the editor.
+    public var generateFromPhotoAction: GenerateFromPhotoAction {
+        GenerateFromPhotoAction(
             id: .object(ObjectIdentifier(self)),
-            isEnabled: gameModel.gameConfig.isMaster && gameModel.gameConfig.state != .stopped
-        ) { [weak self] photoId in
+            kinds: gameModel.gameConfig.isMaster && gameModel.gameConfig.state != .stopped ? [.map] : []
+        ) { [weak self] _, photoId in
             guard let store = self?.gameModel.masterController else { return }
             self?.scheduleNetworkAction { [weak self] in
                 guard let reference = await self?.mapRoot.mapGameControllable.createTemporaryMap(photoId: photoId) else { return }

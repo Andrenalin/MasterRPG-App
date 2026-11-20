@@ -83,3 +83,28 @@ extension EditController {
         return (duplicates, copyItem.id, mapper)
     }
 }
+
+// MARK: - Generated from a photo
+
+extension EditController {
+    /// A saved Character named `name` whose portrait is the photo. "Generate" in the photo list.
+    @MainActor
+    func generateQuickCharacter(name: String, photoId: UUID) async -> UUID? {
+        let character = ValueModel(id: UUID(), name: name, category: .item, photoId: photoId, photos: [photoId])
+        itemController.replace(model: character, isInsert: true)
+        return character.id
+    }
+
+    /// A copy of the Character `itemId` whose photo is replaced by `photoId`: the copy's photo
+    /// list is exactly that photo. `nil` when `itemId` is gone or a folder or collection, whose
+    /// copy would be a different thing than a Character with a new portrait.
+    @MainActor
+    func cloneCharacter(itemId: UUID, photoId: UUID) async -> UUID? {
+        guard let original = folderEditModel(for: itemId, scope: .library),
+              !original.specialCategory else { return nil }
+        let copyId = await duplicate(itemId: itemId, withCopy: true)
+        placeDuplicate(copyId, of: original)
+        add(selection: [WindowItemSelection(itemId: photoId)], itemId: copyId)
+        return copyId
+    }
+}

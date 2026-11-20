@@ -139,6 +139,7 @@ public struct LinkItemListView: View {
                 root: root,
                 selection: $generationSelection
             )
+            .generateFromPhotoPresentation(root: root)
         }
     }
 }

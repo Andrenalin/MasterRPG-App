@@ -318,3 +318,14 @@ extension CharacterRootModel {
     }
 
 }
+
+extension CharacterRootModel {
+    @MainActor
+    public var valueActions: ValueActions {
+        ValueActions(
+            id: .object(ObjectIdentifier(self)),
+            quickCharacter: editController.generateQuickCharacter(name:photoId:),
+            cloneCharacter: editController.cloneCharacter(itemId:photoId:)
+        )
+    }
+}
