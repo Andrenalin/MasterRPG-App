@@ -45,7 +45,7 @@ struct GameIntentGuardTests {
     @Test("Next turn without a battle says so, as master and as player", arguments: [true, false])
     func nextTurnWithoutBattle(master: Bool) async throws {
         let root = try await makeRoot(master: master)
-        var intent = NextTurnIntent()
+        let intent = NextTurnIntent()
         intent.root = root
 
         let result = try await intent.perform()
@@ -56,7 +56,7 @@ struct GameIntentGuardTests {
     @Test("Next round without a battle says so", arguments: [true, false])
     func nextRoundWithoutBattle(master: Bool) async throws {
         let root = try await makeRoot(master: master)
-        var intent = NextRoundIntent()
+        let intent = NextRoundIntent()
         intent.root = root
 
         let result = try await intent.perform()
@@ -67,7 +67,7 @@ struct GameIntentGuardTests {
     @Test("End battle without a battle says so before it asks for a confirmation", arguments: [true, false])
     func endBattleWithoutBattle(master: Bool) async throws {
         let root = try await makeRoot(master: master)
-        var intent = EndBattleIntent()
+        let intent = EndBattleIntent()
         intent.root = root
 
         let result = try await intent.perform()
@@ -78,7 +78,7 @@ struct GameIntentGuardTests {
     @Test("Stop game with no running game says so and changes no flags")
     func stopGameWithoutGame() async throws {
         let root = try await makeRoot(master: true, started: false)
-        var intent = StopGameIntent()
+        let intent = StopGameIntent()
         intent.root = root
         var flagChanges = 0
         let previous = IntentGameContext.setGameState
@@ -94,7 +94,7 @@ struct GameIntentGuardTests {
     @Test("A player cannot stop the game of the master")
     func playerCannotStopTheGame() async throws {
         let root = try await makeRoot(master: false)
-        var intent = StopGameIntent()
+        let intent = StopGameIntent()
         intent.root = root
         var flagChanges = 0
         let previous = IntentGameContext.setGameState

@@ -233,7 +233,7 @@ struct RoutingTableTests {
     private func deeplink(_ module: NetworkModules, item: UUID? = nil, entry: UUID? = nil) -> URL {
         var text = "RPG://\(module.token)/0"
         if let item { text += "/\(item.uuidString)" }
-        if let item, let entry { text += "/\(entry.uuidString)" }
+        if item != nil, let entry { text += "/\(entry.uuidString)" }
         return URL(string: text).unsafelyUnwrapped
     }
 

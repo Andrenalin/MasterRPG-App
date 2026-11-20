@@ -101,7 +101,7 @@ public final class ConversationEngine {
             )
             await updateTokenCount()
             return response
-        } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
+        } catch let error where Self.isContextOverflow(error) {
             return try await recoverFromContextOverflow(
                 userMessage: prompt,
                 generationOptions: generationOptions,
@@ -109,6 +109,22 @@ public final class ConversationEngine {
                 onPartialResponse: onPartialResponse
             )
         }
+    }
+
+    /// Whether `error` says the prompt no longer fits the context window. iOS 27 reports it as
+    /// `LanguageModelError.contextSizeExceeded`; the deprecated
+    /// `GenerationError.exceededContextWindowSize` is still recognised.
+    nonisolated static func isContextOverflow(_ error: any Error) -> Bool {
+        #if !os(tvOS)
+        if #available(iOS 27, macOS 27, visionOS 27, *),
+            let error = error as? LanguageModelError, case .contextSizeExceeded = error {
+            return true
+        }
+        #endif
+        if let error = error as? LanguageModelSession.GenerationError, case .exceededContextWindowSize = error {
+            return true
+        }
+        return false
     }
 
     func sendMessage(
@@ -125,7 +141,7 @@ public final class ConversationEngine {
             let response = try await respond(to: prompt, generationOptions: generationOptions)
             await updateTokenCount()
             return response
-        } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
+        } catch let error where Self.isContextOverflow(error) {
             return try await recoverFromContextOverflow(
                 userMessage: prompt,
                 generationOptions: generationOptions,

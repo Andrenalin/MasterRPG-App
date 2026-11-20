@@ -19,7 +19,7 @@ struct ExportEngineHelperTests {
     }
 
     private func makeRoot() async throws -> DiceRootModel {
-        let root = await DiceRootModel.testRoot()
+        let root = DiceRootModel.testRoot()
         await root.itemController.resetData()
         return root
     }

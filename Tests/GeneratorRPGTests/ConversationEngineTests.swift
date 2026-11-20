@@ -17,8 +17,8 @@ import Testing
 struct ConversationEngineTests {
     private struct ModelFailure: Error, Equatable {}
 
-    private func overflow() -> LanguageModelSession.GenerationError {
-        .exceededContextWindowSize(.init(debugDescription: "test overflow"))
+    private func overflow() -> LanguageModelError {
+        .contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "test overflow"))
     }
 
     private func engine(overflowResetMessage: String? = nil) -> ConversationEngine {
@@ -77,7 +77,7 @@ struct ConversationEngineTests {
         var summarizingDuringSummary: Bool?
         engine.hooks.respond = { prompt in
             calls.prompts.append(prompt)
-            if calls.prompts.count == 1 { throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+            if calls.prompts.count == 1 { throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
             return "recovered"
         }
         engine.hooks.summarize = { [summary] in
@@ -104,12 +104,12 @@ struct ConversationEngineTests {
     func streamingOverflowRecovers() async throws {
         let engine = engine()
         let calls = Calls()
-        engine.hooks.streamedContent = { [summary = summary] prompt in
+        engine.hooks.streamedContent = { prompt in
             calls.prompts.append(prompt)
             let isFirst = calls.prompts.count == 1
             return AsyncThrowingStream { continuation in
                 if isFirst {
-                    continuation.finish(throwing: LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")))
+                    continuation.finish(throwing: LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")))
                 } else {
                     continuation.yield("Part")
                     continuation.yield("Part two")
@@ -131,9 +131,9 @@ struct ConversationEngineTests {
     @Test("When the summary fails the session is reset and the reset message answers")
     func summaryFailureResetsWithMessage() async throws {
         let engine = engine(overflowResetMessage: "  The conversation was reset.  ")
-        engine.hooks.respond = { _ in throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+        engine.hooks.respond = { _ in throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
         engine.hooks.streamedContent = { _ in
-            AsyncThrowingStream { $0.finish(throwing: LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x"))) }
+            AsyncThrowingStream { $0.finish(throwing: LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x"))) }
         }
         engine.hooks.summarize = { throw ModelFailure() }
         var partials: [String] = []
@@ -152,7 +152,7 @@ struct ConversationEngineTests {
     @Test("Without a reset message a failing summary rethrows its error, after the session was reset")
     func summaryFailureRethrows() async {
         let engine = engine(overflowResetMessage: nil)
-        engine.hooks.respond = { _ in throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+        engine.hooks.respond = { _ in throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
         engine.hooks.summarize = { throw ModelFailure() }
 
         await #expect(throws: ModelFailure.self) { try await engine.sendMessage("Hello") }
@@ -164,7 +164,7 @@ struct ConversationEngineTests {
     @Test("A blank reset message counts as none")
     func blankResetMessageIsNone() async {
         let engine = engine(overflowResetMessage: "   ")
-        engine.hooks.respond = { _ in throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+        engine.hooks.respond = { _ in throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
         engine.hooks.summarize = { throw ModelFailure() }
 
         await #expect(throws: ModelFailure.self) { try await engine.sendMessage("Hello") }
@@ -173,7 +173,7 @@ struct ConversationEngineTests {
     @Test("A cancelled summary does not reset the session another call may be using")
     func cancelledSummaryKeepsTheSession() async {
         let engine = engine(overflowResetMessage: "reset")
-        engine.hooks.respond = { _ in throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+        engine.hooks.respond = { _ in throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
         engine.hooks.summarize = { throw CancellationError() }
 
         await #expect(throws: CancellationError.self) { try await engine.sendMessage("Hello") }
@@ -308,7 +308,7 @@ struct ConversationEngineTests {
     @Test("Rebuilding starts over: one session, no tokens, nothing summarising")
     func rebuildResets() async throws {
         let engine = engine(overflowResetMessage: "reset")
-        engine.hooks.respond = { _ in throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+        engine.hooks.respond = { _ in throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
         engine.hooks.summarize = { throw ModelFailure() }
         _ = try await engine.sendMessage("Hello")
         #expect(engine.sessionCount == 2)
@@ -326,7 +326,7 @@ struct ConversationEngineTests {
         var notifications = 0
         engine.onStateChange = { notifications += 1 }
         engine.hooks.respond = { prompt in
-            if prompt == "Hello" { throw LanguageModelSession.GenerationError.exceededContextWindowSize(.init(debugDescription: "x")) }
+            if prompt == "Hello" { throw LanguageModelError.contextSizeExceeded(.init(contextSize: 4096, tokenCount: 5000, debugDescription: "x")) }
             return "ok"
         }
         engine.hooks.summarize = { ConversationSummary(summary: "S", keyTopics: [], userPreferences: []) }
