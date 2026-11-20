@@ -17,9 +17,24 @@ struct TableSheetView: View {
         @Bindable var model = model
 
         TableSheetListContentView(root: root, model: model, scrollPosition: $scrollPosition)
-            .applyIf(addSearchable && searchBarVisibleModel.isVisible) {
+            .applyIf(showsSearchable) {
                 $0.searchable(text: $model.searchText, placement: .automatic, prompt: Text("Find in", bundle: .module))
             }
+    }
+}
+
+private extension TableSheetView {
+    /// `applyIf` swaps the view's structure with its condition, which rebuilds everything below
+    /// it: the scroll view, its position and the sheet. So the condition must not follow the game
+    /// sidebar's visibility where the sheet stays mounted while hidden (iOS: the panel only
+    /// slides out, and keeps its scroll position and navigation). Only macOS needs the flag,
+    /// where a `.searchable` can outlive the removed sheet (see `SearchBarVisibleModel`).
+    var showsSearchable: Bool {
+#if os(macOS)
+        addSearchable && searchBarVisibleModel.isVisible
+#else
+        addSearchable
+#endif
     }
 }
 
