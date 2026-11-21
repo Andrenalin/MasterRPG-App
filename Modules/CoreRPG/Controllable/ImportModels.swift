@@ -145,6 +145,10 @@ public final class ItemDataImportModel {
     /// or cancelled. See CODE_AUDIT_Folder §5.2.
     var reviewFileWrites: [(module: NetworkModules, itemId: UUID, write: ImportedFileWrite)] = []
 
+    /// Group items an imported item no longer references (group item id → owner id), deleted once
+    /// the import is applied. See `ImportControllable.removeStaleGroups`.
+    var staleGroupOwners: [UUID: UUID] = [:]
+
     func recordApplied(_ itemId: UUID, module: NetworkModules) {
         appliedItemIds[module, default: []].insert(itemId)
     }

@@ -199,6 +199,7 @@ public extension ImportControllable {
             // Validate. See CODE_AUDIT_Folder §3.3.
             await repairFolders(folderRepairIds)
             if policy.repairsImportedItems {
+                await removeStaleGroups(importModel: importModel)
                 await repairImportedItems(importedIds)
             }
             throw error
@@ -213,6 +214,7 @@ public extension ImportControllable {
                 await appendDeletionReviewItem(deletedId: deletedId, module: module, itemController: ic, importModel: importModel)
             }
         } else if policy.repairsImportedItems {
+            await removeStaleGroups(importModel: importModel)
             await repairImportedItems(importedIds)
         }
 
@@ -438,6 +440,7 @@ private extension ImportControllable {
         var needsFolderRepair = false
         switch policy.mode {
         case .merge:
+            let groupsBefore = groupItemIdsBeforeImport(id: id, policy: policy)
             var finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory)
             if !policy.writesGameMemory {
                 let merged = finalItem
@@ -450,13 +453,16 @@ private extension ImportControllable {
             }
             if let finalItem {
                 itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
+                recordStaleGroups(before: groupsBefore, after: finalItem, ownerId: id, importModel: importModel)
                 needsFolderRepair = true
                 importModel.recordApplied(id, module: itemController.config.module)
             }
 
         case .overwrite:
+            let groupsBefore = groupItemIdsBeforeImport(id: id, policy: policy)
             let finalItem = policy.writesGameMemory ? importableItem : itemController.keepingLocalFolderChildren(importableItem)
             itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
+            recordStaleGroups(before: groupsBefore, after: finalItem, ownerId: id, importModel: importModel)
             needsFolderRepair = true
             importModel.recordApplied(id, module: itemController.config.module)
 
@@ -475,6 +481,34 @@ private extension ImportControllable {
 
         importModel.importedItems += 1
         return needsFolderRepair
+    }
+
+    /// The groups the library item `id` has right now. Empty for a game-memory delivery: it never
+    /// touches the library, so it must not remove a library group either.
+    @MainActor
+    private func groupItemIdsBeforeImport(id: UUID, policy: ImportApplyPolicy) -> Set<UUID> {
+        guard !policy.writesGameMemory,
+              let existing = itemControllable.itemSync(for: id, noGame: true) else { return [] }
+        return editControllable.groupItemIds(of: existing)
+    }
+
+    /// Remembers the groups the written item `after` dropped, so `removeStaleGroups` deletes them.
+    @MainActor
+    private func recordStaleGroups(before: Set<UUID>, after: ModelType, ownerId: UUID, importModel: ItemDataImportModel) {
+        guard !before.isEmpty, let after = after as? any ItemDataAccessible else { return }
+        for groupId in before.subtracting(editControllable.groupItemIds(of: after)) {
+            importModel.staleGroupOwners[groupId] = ownerId
+        }
+    }
+
+    /// Deletes the groups newer imported items no longer reference. The merged entry is plain, so
+    /// the group item would stay behind hidden and unreachable.
+    @MainActor
+    func removeStaleGroups(importModel: ItemDataImportModel) async {
+        let groupOwners = importModel.staleGroupOwners
+        guard !groupOwners.isEmpty else { return }
+        importModel.staleGroupOwners = [:]
+        await editControllable.removeStaleGroups(groupOwners)
     }
 
     @MainActor

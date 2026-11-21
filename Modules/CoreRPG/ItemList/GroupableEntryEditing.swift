@@ -144,4 +144,23 @@ public extension EditControllable where Model: GroupableModel, Model.Entry: Grou
             await delete(itemId: groupItemId)
         }
     }
+
+    @MainActor func groupItemIds(of item: any ItemDataAccessible) -> Set<UUID> {
+        guard let item = item as? Model, item.category != .folder else { return [] }
+        return Set(item.entries.compactMap(\.groupItemId))
+    }
+
+    /// An import that turned a group entry into a plain one left the group item behind: hidden,
+    /// owned by the item and shown nowhere. Only a group that still names `owner` as its `groupId`
+    /// goes; `delete` takes the groups nested in it along.
+    @MainActor func removeStaleGroups(_ groupOwners: [UUID: UUID]) async {
+        for (groupItemId, ownerId) in groupOwners {
+            guard let group = itemControllable.itemSync(for: groupItemId, noGame: true) as? Model,
+                  group.groupId == ownerId else { continue }
+            // The owner may have gained the group again by a later item of the same import.
+            if let owner = itemControllable.itemSync(for: ownerId, noGame: true) as? Model,
+               groupItemIds(of: owner).contains(groupItemId) { continue }
+            await delete(itemId: groupItemId)
+        }
+    }
 }

@@ -21,6 +21,14 @@ public protocol EditControllable: Sendable {
     @MainActor func isOrphanedHidden(itemId: UUID) -> Bool
     @MainActor func willRepairOrphan(itemId: UUID)
 
+    /// The ids of the group items `item`'s entries stand for. Empty for a module without groups.
+    @MainActor func groupItemIds(of item: any ItemDataAccessible) -> Set<UUID>
+
+    /// Deletes group items (key) that were owned by an item (value) whose newer version no longer
+    /// references them, together with the groups nested in them. A group that another item owns
+    /// now is kept. Does nothing for a module without groups.
+    @MainActor func removeStaleGroups(_ groupOwners: [UUID: UUID]) async
+
     /// Creates a new real, persisted item from a sheet built elsewhere
     /// (e.g. a generated table outcome) — the sheet's `name`/`description`
     /// become the new item's, and its `entries` become the new item's own
@@ -62,6 +70,8 @@ public extension EditControllable {
 
     @MainActor func validateBeforeSave(model: Model) {}
     @MainActor func willDeleteChildren(of item: Model) async {}
+    @MainActor func groupItemIds(of item: any ItemDataAccessible) -> Set<UUID> { [] }
+    @MainActor func removeStaleGroups(_ groupOwners: [UUID: UUID]) async {}
     @MainActor func willRestore(item: inout Model) {}
     @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID? { nil }
 
