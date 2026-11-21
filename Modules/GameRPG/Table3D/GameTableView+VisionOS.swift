@@ -410,7 +410,11 @@ public struct GameTableView: View {
         Self.applyFocusedDice(from: root.diceRoot, to: game)
     }
 
+    /// Mirrors the focused dice set onto the table: its roll, and the colors of the dice. The colors
+    /// follow here too, because the local seat they depend on is TabletopKit state nothing in the
+    /// view observes: a die claimed after the first color pass stayed plain grey until a toss.
     private static func applyFocusedDice(from diceRoot: DiceRootModel, to game: GameTableModel) {
+        defer { game.applyDieColors(currentDieColors(from: diceRoot, game: game)) }
         guard let focusId = diceRoot.diceGameControllable.gameModel.focusItemIds.first,
               let diceModel = diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
             game.applyDiceRoll(.empty)
@@ -454,7 +458,11 @@ public struct GameTableView: View {
     /// The d6 color of every pool slot, as the sets this device knows have it.
     private var dieColors: TableDieColors {
         guard let game else { return TableDieColors() }
-        let diceRoot = root.diceRoot.diceGameControllable
+        return Self.currentDieColors(from: root.diceRoot, game: game)
+    }
+
+    private static func currentDieColors(from diceRoot: DiceRootModel, game: GameTableModel) -> TableDieColors {
+        let diceRoot = diceRoot.diceGameControllable
         let focused = diceRoot.gameModel.focusItemIds.first
             .flatMap { diceRoot.gameModel.itemData[$0] as? DiceModel }
         return game.dieColors(focused: focused, shared: diceRoot.sharedPlayerDice)

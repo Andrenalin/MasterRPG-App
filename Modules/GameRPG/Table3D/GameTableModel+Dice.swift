@@ -185,8 +185,10 @@ extension GameTableModel {
     /// local material and not part of the synced die state; a slot with no color keeps the one it
     /// has, since it lies parked until a set claims it.
     func applyDieColors(_ colors: TableDieColors) {
-        dieColorTask?.cancel()
+        // No colors known yet (before the seat is claimed, say) must not cancel an application
+        // that is still building textures: the dice would stay plain grey until the next change.
         guard !colors.slots.isEmpty else { return }
+        dieColorTask?.cancel()
         dieColorTask = Task { [weak self] in
             var materials: [TableDieKind: [String: PhysicallyBasedMaterial]] = [:]
             for (kind, bySeat) in colors.slots {
