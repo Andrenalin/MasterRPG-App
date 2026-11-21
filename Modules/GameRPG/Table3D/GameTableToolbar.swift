@@ -77,7 +77,7 @@ private struct GameTableToolbarActions: View {
 
 /// Takes the game master's weather off every table.
 @MainActor
-private struct GameTableClearWeatherButton: View {
+struct GameTableClearWeatherButton: View {
     let root: GameRoot
 
     var body: some View {

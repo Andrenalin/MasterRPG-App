@@ -57,6 +57,7 @@ extension GameTableModel {
             updateDiePool(kind, ids: dieIds, targets: targets[kind] ?? [:])
         }
         mirroredSheet = (diceModel.id, sheetDieIds)
+        setSeatDice(setIndices: slots.map(\.index))
 
         let overflowCount = diceModel.dice.count - slots.count
         diceOverflowCount = overflowCount > 0 ? overflowCount : nil

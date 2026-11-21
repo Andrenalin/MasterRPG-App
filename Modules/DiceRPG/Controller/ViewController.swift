@@ -67,6 +67,27 @@ public extension ViewController {
             .environment(root)
     }
 
+    /// The dice bag of the 3D table's dice edit mode: the kinds in `supportedSides` with their
+    /// count in the focused set out of `poolSize`, tapping adds one to the set; with the buttons
+    /// that close the mode and that roll.
+    @MainActor func diceTableBagView(root: DiceRootModel, supportedSides: Set<Int>, poolSize: Int) -> some View {
+        DiceTableBag(supportedSides: supportedSides, poolSize: poolSize)
+            .environment(root)
+    }
+
+    /// The button that enters the 3D table's dice edit mode (`DiceDisplayModel.isEditing`).
+    @MainActor func diceTableEditButtonView(root: DiceRootModel) -> some View {
+        DiceTableEditButton()
+            .environment(root)
+    }
+
+    /// The button over one die of the focused set, at `setIndex`, in the table's dice edit mode:
+    /// removes the die.
+    @MainActor func diceTableRemoveButtonView(root: DiceRootModel, setIndex: Int) -> some View {
+        DiceTableRemoveButton(setIndex: setIndex)
+            .environment(root)
+    }
+
     @MainActor func diceResultView(root: DiceRootModel) -> some View {
         DiceFocusResult()
             .environment(root)

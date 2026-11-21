@@ -23,6 +23,8 @@ extension GameTableModel {
             task = newest
             await newest.value
         }
+        // The seat's panels start where the map does.
+        refreshSeatPanelPositions()
     }
 
     /// Re-renders the board's fog for a remote map update. Sets the role, then goes through the

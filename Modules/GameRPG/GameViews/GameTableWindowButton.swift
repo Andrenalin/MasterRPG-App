@@ -80,14 +80,13 @@ struct GameTableWindowButton: View {
             // the map/table in place within one window), these are separate
             // windows there, so leaving the game window open behind the
             // table would just be redundant clutter.
-            pushWindow(id: SceneId.gameRecover.rawValue)
-            // The table opens only once the recover window stands where the game window was:
-            // the system opens a new window in front of the app's existing windows, so the table
-            // now lands in front of the recover window instead of in front of a game window that
-            // is about to be pushed away.
             isOpeningTable = true
             Task {
-                await openTableOnceRecoverWindowStands()
+                await GameTableLauncher.open(
+                    scenesManager: scenesManager,
+                    appSettingsModel: appSettingsModel,
+                    pushWindow: pushWindow
+                )
                 isOpeningTable = false
             }
             // Also close the floating adventure/character window
@@ -119,20 +118,6 @@ struct GameTableWindowButton: View {
 #endif
     }
 }
-
-#if os(visionOS)
-private extension GameTableWindowButton {
-    /// Waits (at most about a second) until the pushed-in recover window is on screen, then opens
-    /// the table. Opens it anyway on a timeout, so the table can never be left unreachable.
-    func openTableOnceRecoverWindowStands() async {
-        for _ in 0..<20 {
-            if scenesManager.getSceneState(for: SceneId.gameRecover) == .opened { break }
-            guard (try? await Task.sleep(for: .milliseconds(50))) != nil else { break }
-        }
-        scenesManager.openWindow(SceneId.gameTable)
-    }
-}
-#endif
 
 #Preview(traits: .mockData) {
     GameTableWindowButton(root: .preview, isMaster: true)

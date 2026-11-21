@@ -24,7 +24,7 @@ extension GameTableModel {
 
     /// The box over the map the weather fills, in the weather entity's parent space.
     var weatherVolume: WeatherVolume {
-        let footprint = weatherFootprint
+        let footprint = mapFootprint
 #if os(visionOS)
         // On the table top, under the 1.5 m tall volume's ceiling.
         return WeatherVolume(
@@ -47,7 +47,7 @@ extension GameTableModel {
     }
 
     /// The map's plane on the table, or the largest map's before one is loaded.
-    private var weatherFootprint: (width: Float, depth: Float) {
+    var mapFootprint: (width: Float, depth: Float) {
         guard let mapImage = currentMapImage,
               let canvasSize = MapTableProjection.canvasSize(
                   map: currentMapModel(),

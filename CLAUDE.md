@@ -177,6 +177,7 @@ Rules for this module:
 - Fog/board renders go through `replaceFogOfWarTask()` / `handleMapChange` (cancel-then-replace). Never call the render pipeline directly from another module; use `refreshFogOfWar(isGameMaster:)`.
 - A closure stored on the model must never capture a SwiftUI view value (its `@State` storage holds the model).
 - Keep syncs idempotent: `PinPawn.update`, `RoomHitArea.update` and `applyDiceRoll` skip unchanged state because they run on every map sync (each TabletopKit action is a SharePlay message).
+- On visionOS a started game opens the table by itself: `MasterGameScreen`/`PlayerGameScreen` call `GameTableLauncher.open` (decided by `GameTableAutoOpenPolicy`, one shot per game screen). The 2D game screen must stay alive behind it (it hosts the game logic and quits the game on disappear), so it is pushed aside by the Recover window, never dismissed.
 - Put decisions that don't need TabletopKit/RealityKit in pure types (`TableSeatAssignment`, `MapTableProjection`) so they can be unit-tested on iOS.
 
 ## Platform Conditionals

@@ -39,7 +39,9 @@ struct GameDiceResultPopover: View {
         let playerNames: [String]
         switch group {
         case .seat(let seat) where seat == game.localSeat:
-            guard let focusId = dice.gameModel.focusItemIds.first else { return nil }
+            // The edit mode has the dice bag and the dice's remove popovers instead.
+            guard !diceDisplayModel.isEditing,
+                  let focusId = dice.gameModel.focusItemIds.first else { return nil }
             return .own(showsResult: dice.showsResult(for: focusId))
         case .seat(let seat):
             guard isVisible(isMasterSeat: seat == Self.masterSeat) else { return nil }
@@ -129,6 +131,8 @@ private struct GameDiceResultContent: View {
             // Top-aligned: the result's quick value editor opens below it, not below the button.
             HStack(alignment: .top) {
                 root.diceRoot.viewController.diceRollButtonView(root: root.diceRoot)
+                // Enters the dice edit mode: see `GameDiceBagPopover`.
+                root.diceRoot.viewController.diceTableEditButtonView(root: root.diceRoot)
                 if showsResult {
                     root.diceRoot.viewController.diceResultView(root: root.diceRoot)
                 }

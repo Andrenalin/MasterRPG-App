@@ -16,9 +16,6 @@ import TabletopKit
 public struct GameTableView: View {
     let root: GameRoot
 
-    /// How far the front ornament is lifted clear of the window's grab handle.
-    private static let handleClearance: CGFloat = 16
-
     /// Handed on to the dice result attachments, which host the dice overlay's own views.
     @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
     @Environment(\.networkActions) private var networkActions
@@ -32,7 +29,7 @@ public struct GameTableView: View {
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
-    /// Backs `WindowOpenButton` and `GameTableSideMenu` (front ornament,
+    /// Backs `WindowOpenButton` and `GameTableSideMenu` (the game seat panel,
     /// row 1) — mirrors `MasterGameScreen`/
     /// `PlayerGameScreen`'s own `gameScreenModel`, likewise owned per-screen
     /// rather than shared through `GameRoot`.
@@ -88,6 +85,19 @@ public struct GameTableView: View {
                             loadedGame.registerAttachment(popover, for: kind)
                         }
                     }
+                    if let diceBag = attachments.entity(for: GameDiceBagPopover.attachmentId) {
+                        loadedGame.registerDiceBag(diceBag)
+                    }
+                    for index in 0 ..< GameTableModel.maxRemovePopovers {
+                        if let remove = attachments.entity(for: GameDiceRemovePopover.attachmentId(at: index)) {
+                            loadedGame.registerDiceRemove(remove, at: index)
+                        }
+                    }
+                    for panel in TableSeatPanel.allCases {
+                        if let seatPanel = attachments.entity(for: panel.attachmentId) {
+                            loadedGame.registerSeatPanel(seatPanel, for: panel)
+                        }
+                    }
                     for group in loadedGame.diceResultGroups {
                         if let diceResult = attachments.entity(for: GameDiceResultPopover.attachmentId(for: group)) {
                             loadedGame.registerDiceResultAttachment(diceResult, for: group)
@@ -99,7 +109,43 @@ public struct GameTableView: View {
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                     loadedGame.updateAttachmentPositions()
+                    loadedGame.updateSeatPanelPositions()
                 } attachments: {
+                    Attachment(id: TableSeatPanel.dock.attachmentId) {
+                        GameSeatDockPanel(game: loadedGame)
+                            .environment(gameScreenModel)
+                    }
+                    ForEach(TableSeatGroup.allCases, id: \.self) { group in
+                        Attachment(id: group.panel.attachmentId) {
+                            GameSeatGroupPanel(root: root, game: loadedGame, group: group, gameScreenModel: gameScreenModel)
+                        }
+                    }
+                    Attachment(id: GameDiceBagPopover.attachmentId) {
+                        GameDiceBagPopover(
+                            root: root,
+                            game: loadedGame,
+                            diceDisplayModel: diceDisplayModel,
+                            appGameStateModel: appGameStateModel,
+                            networkActions: networkActions
+                        )
+                    }
+                    ForEach(0 ..< GameTableModel.maxRemovePopovers, id: \.self) { index in
+                        Attachment(id: GameDiceRemovePopover.attachmentId(at: index)) {
+                            GameDiceRemovePopover(
+                                root: root,
+                                game: loadedGame,
+                                diceDisplayModel: diceDisplayModel,
+                                appGameStateModel: appGameStateModel,
+                                index: index
+                            )
+                        }
+                    }
+                    Attachment(id: TableSeatPanel.mapDock.attachmentId) {
+                        GameSeatMapDockPanel(root: root, game: loadedGame)
+                    }
+                    Attachment(id: TableSeatPanel.map.attachmentId) {
+                        GameSeatMapPanel(root: root, game: loadedGame, gameScreenModel: gameScreenModel)
+                    }
                     Attachment(id: TablePopoverKind.pinMenu.attachmentId) {
                         GamePinActionMenu(game: loadedGame)
                     }
@@ -201,54 +247,6 @@ public struct GameTableView: View {
                 )
             }
         }
-        // The table's window controls and map toolbar, as one ornament (the iOS/macOS table has them
-        // in `GameTableToolbar`). Anchored to `GeometryReader3D`, the whole scene: inside the
-        // `if let loadedGame` branch it anchored to the RealityView's own subtree.
-        // `.parent(.bottomFront)` pins the front face: the 2D `.scene(.bottom)` anchor has no Z and
-        // landed mid-volume. Needs `AppWindowSizeModel`, `\.networkActions` and `AppGameStateModel`
-        // on the scene (see `WindowVisionList`).
-        // Row 1: every window-opening button (`WindowOpenButton`, `GameTableSideMenu`); row 2: the
-        // map toolbar. No dice action bar: the table shows the dice themselves. No manual Y offset:
-        // an estimate of the row heights clipped the ornament against the volume's bounds.
-        .ornament(attachmentAnchor: .parent(.bottomFront), contentAlignment: .top) {
-            if let game {
-                VStack(alignment: .leading) {
-                    // `GameTableSideMenu` is deliberately bare (no own
-                    // `HStack`/`GlassEffectContainerAll`) so it and
-                    // `WindowOpenButton` share this one glass group instead
-                    // of nesting one inside another — see that struct's own
-                    // doc. No extra `.padding()` here, matching row 2
-                    // (`GameTableToolbar`) — this row stays flush with it
-                    // under the shared VStack's leading alignment instead of
-                    // indenting itself.
-                    GlassEffectContainerAll {
-                        HStack {
-                            WindowOpenButton(root: root)
-
-                            GameTableSideMenu(root: root, isMaster: root.gameModel.gameConfig.isMaster)
-
-                            // The last button of row 1, after the dice. The map toolbar (and
-                            // the game master's extra map buttons) stay in row 2.
-                            GameTableWindowButton(root: root, isMaster: root.gameModel.gameConfig.isMaster)
-                        }
-                    }
-                    .environment(gameScreenModel)
-
-                    // GameTableToolbar itself keeps the table/map window
-                    // toggle always visible and only hides the shared
-                    // map-specific controls until a map is loaded.
-                    GameTableToolbar(root: root, game: game)
-                        .environment(gameScreenModel)
-
-                    GameTableNoticesView(game: game)
-                }
-                .padding(.top)
-                // Lifts the whole stack off the window's grab handle, which sits at the
-                // front edge just below it; row 1 keeps a fixed position whether or not row 2
-                // (the map toolbar) is shown, because the stack hangs from its top.
-                .offset(y: -Self.handleClearance)
-            }
-        }
         .task {
             await initializeGameIfNeeded()
         }
@@ -267,6 +265,10 @@ public struct GameTableView: View {
         // `focusItemIds` alone — re-rolling the already-focused dice
         // mutates `DiceModel.dice[].result` in place without the focus id
         // array itself changing, so that alone wouldn't fire this.
+        // The dice edit mode: the dice bag and the remove popovers stand over the seat's dice.
+        .onChange(of: diceDisplayModel.isEditing, initial: true) { _, isEditing in
+            game?.setDiceEditing(isEditing)
+        }
         .onChange(of: focusedDice, initial: false) { _, _ in
             guard let game else { return }
             applyCurrentFocusedDiceRoll(to: game)
@@ -298,6 +300,8 @@ public struct GameTableView: View {
             // `RealityView` mount's `content.add(renderer.root)` to walk back
             // over. See `TablePopoverAnchor.register(_:in:)`'s doc.
             game?.detachAttachments()
+            game?.detachSeatPanels()
+            game?.detachDiceEditing()
             game?.detachDiceResultAttachments()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()

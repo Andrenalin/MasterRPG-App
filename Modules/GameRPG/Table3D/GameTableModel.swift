@@ -166,6 +166,29 @@ final class GameTableModel: Sendable {
     /// Where each popover (pin menu, pin photo, map photo) stands as a RealityKit attachment,
     /// on visionOS. See `GameTableModel+Popovers.swift`.
     let popoverAnchors = TablePopoverAnchors()
+    /// Where the control panels of the local seat stand beside its dice (visionOS). See
+    /// `GameTableModel+SeatControls.swift`.
+    let seatPanelAnchors = TableSeatPanelAnchors()
+    /// How many dice the local seat's row holds, which pushes its control panels outward.
+    var seatDiceCount = 0
+    /// The control group whose panel is open above the seat's dock, if any.
+    var openSeatGroup: TableSeatGroup?
+    /// Whether the map controls are open above the map dock. Opens by itself the first time a
+    /// map is shown (`openMapControlsOnFirstMap()`), after that it is the game master's.
+    var isMapControlsOpen = false
+    /// Whether the map controls have opened by themselves for a map yet.
+    @ObservationIgnored
+    var didOpenMapControlsForMap = false
+    /// The set index of each die of the local seat's row, in the order they lie.
+    var seatDiceSetIndices: [Int] = []
+    /// Whether the dice edit mode is on: the dice bag stands over the dice and each die has its
+    /// remove popover. Follows `DiceDisplayModel.isEditing`. See `GameTableModel+DiceEditing.swift`.
+    var isDiceEditing = false
+    /// The dice bag popover, and one remove popover per die of the row.
+    let diceBagAnchor = TablePopoverAnchor(name: "DiceBagAnchor")
+    let diceRemoveAnchors = (0 ..< GameTableModel.maxRemovePopovers).map { TablePopoverAnchor(name: "DiceRemoveAnchor\($0)") }
+    /// The table scale the panels cancel (`GameRenderer.applyScale`).
+    var seatPanelTableScale: Float = 1
 #if !os(visionOS)
     /// Where each open popover points: its target's frame in the table view. Recomputed every
     /// rendered frame, because the system's camera controls move the camera without telling

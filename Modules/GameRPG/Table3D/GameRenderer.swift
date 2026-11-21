@@ -106,7 +106,11 @@ final class GameRenderer: TabletopGame.RenderDelegate {
     /// Applies a uniform scale to the complete table scene.
     func applyScale(_ scale: Float) {
         root.scale = SIMD3<Float>(repeating: scale)
+        scaleDidChange?(scale)
     }
+
+    /// Called with the new scale after every `applyScale(_:)`: the seat control panels cancel it.
+    var scaleDidChange: ((Float) -> Void)?
 
     /// Positions the table scene at the actual bottom of the volumetric window.
     /// RealityView's origin is the volume center and content outside the bounds

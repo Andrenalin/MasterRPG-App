@@ -1398,6 +1398,22 @@
         }
       }
     },
+    "Closed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geschlossen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
+          }
+        }
+      }
+    },
     "code" : {
       "localizations" : {
         "de" : {
@@ -2737,6 +2753,22 @@
         }
       }
     },
+    "Game Controls" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielsteuerung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวควบคุมเกม"
+          }
+        }
+      }
+    },
     "Game is not running" : {
       "localizations" : {
         "de" : {
@@ -2989,6 +3021,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เมนูมุมมองเกม"
+          }
+        }
+      }
+    },
+    "Game Windows" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielfenster"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้าต่างเกม"
           }
         }
       }
@@ -3819,6 +3867,22 @@
         }
       }
     },
+    "Map Controls" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartensteuerung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวควบคุมแผนที่"
+          }
+        }
+      }
+    },
     "Map pin %@" : {
       "localizations" : {
         "de" : {
@@ -3999,6 +4063,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ข้อมูลเชิงลึกเพิ่มเติม"
+          }
+        }
+      }
+    },
+    "More Windows" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere Fenster"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้าต่างเพิ่มเติม"
           }
         }
       }
@@ -4535,6 +4615,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เฉพาะเกมมาสเตอร์เท่านั้นที่สามารถจัดการยกการต่อสู้ได้"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geöffnet"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิด"
           }
         }
       }

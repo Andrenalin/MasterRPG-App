@@ -69,6 +69,9 @@ struct GameToolBar<Session: GameToolBarSession, Header: View>: View {
         header
 
         HStack {
+#if !os(visionOS)
+            // On visionOS the toolbar sits in a panel the seat's map button opens and closes,
+            // so it has no collapse button of its own.
             if isMaster {
                 Button {
                     withAnimation(reduceMotion ? nil : .default) { showToolBar.toggle() }
@@ -83,6 +86,7 @@ struct GameToolBar<Session: GameToolBarSession, Header: View>: View {
                     isSelected: showToolBar
                 )
             }
+#endif
             HStack {
                 if showToolBar {
                     HStack {
