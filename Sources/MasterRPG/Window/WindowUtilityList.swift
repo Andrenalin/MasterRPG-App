@@ -120,6 +120,23 @@ struct WindowUtilityList: Scene {
             .defaultLaunchBehavior(.suppressed)
 #endif
 
+#if os(visionOS)
+            BaseWindow("Table Players", id: SceneId.tablePlayers.rawValue) {
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    GameFactory.tablePlayersView(root: appModel.gameRoot)
+                        .sceneTracker(for: SceneId.tablePlayers)
+                        .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .game))
+                }
+                .environment(appModel.scenesManager)
+                .environment(appModel)
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
+            .restorationBehaviorAll(.disabled)
+            .defaultSize(CGSize(width: 600, height: 800))
+            .defaultLaunchBehavior(.suppressed)
+#endif
+
 #if os(macOS) || os(visionOS)
             BaseWindow("Game Statistics", id: SceneId.gameStatistics.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in

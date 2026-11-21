@@ -69,7 +69,7 @@ enum GameWindowToggle {
         let moduleScenes = NetworkModules.allCases
             .filter { $0.linkWindowId != "NoWindow" }
             .flatMap { [SceneId.sceneId(for: $0), SceneId.viewerId(for: $0)] }
-        return moduleScenes + [.battleRound, .gameTable, .gameRecover, .imageSpaceViewer, .weatherSpaceViewer]
+        return moduleScenes + [.battleRound, .tablePlayers, .gameTable, .gameRecover, .imageSpaceViewer, .weatherSpaceViewer]
     }
 
     /// Closes every secondary window and the immersive space when the game quits, so none stays

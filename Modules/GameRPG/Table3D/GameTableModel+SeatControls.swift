@@ -32,7 +32,8 @@ extension GameTableModel {
         isMapControlsOpen = true
     }
 
-    /// Brings the seat's panels in step with the map they start and end at.
+    /// Called when the shown map changes: opens the map controls for the first map. The panels
+    /// themselves stand at the margins of the biggest map the table takes, so they do not move.
     func refreshSeatPanelPositions() {
         openMapControlsOnFirstMap()
 #if os(visionOS)
@@ -86,14 +87,13 @@ extension GameTableModel {
     private static let seatPanelGap = 0.03
 
     /// Stands the panels at the local seat, at a constant physical size: the dock and the groups'
-    /// panels where the map starts, the map dock and the map controls where it ends.
+    /// panels where the biggest map starts, the map dock and the map controls where it ends.
     func updateSeatPanelPositions() {
         let radians = localSeatPose.rotation.radians
         let scale = max(seatPanelTableScale, 0.01)
         // A panel's width in table meters: the table's own scale shrinks it, its counter-scale
         // brings that back to the world size the view reported.
         let counter = 1 / scale
-        let footprint = mapFootprint
 
         for panel in TableSeatPanel.allCases {
             let anchor = seatPanelAnchors[panel]
@@ -107,11 +107,13 @@ extension GameTableModel {
             anchor.place(TableSeatControlsLayout.edgeAlignedPlacement(
                 side: panel.side,
                 rotation: radians,
+                // The biggest map the table takes, not the shown one: the panels stay at the
+                // margins whatever the map's size.
                 edgeLateral: TableSeatControlsLayout.mapEdge(
                     panel.side,
                     rotation: radians,
-                    planeWidth: Double(footprint.width),
-                    planeDepth: Double(footprint.depth)
+                    planeWidth: Double(MapTableProjection.maxPlaneWidth),
+                    planeDepth: Double(MapTableProjection.maxPlaneDepth)
                 ),
                 width: width,
                 stackedAbove: stack

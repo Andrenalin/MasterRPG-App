@@ -20,6 +20,8 @@ extension SceneId {
     public static var photoViewer: Self { .init(rawValue: "photoViewer") }
     public static var search: Self { .init(rawValue: "search") }
     public static var settings: Self { .init(rawValue: "settings") }
+    /// visionOS: the game master's players / a player's companions, as a window instead of a popover.
+    public static var tablePlayers: Self { .init(rawValue: "tablePlayers") }
     public static var spaceViewer: Self { .init(rawValue: "spaceViewer") }
     public static var tableViewer: Self { .init(rawValue: "tableViewer") }
     public static var tableGenerator: Self { .init(rawValue: "tableGenerator") }

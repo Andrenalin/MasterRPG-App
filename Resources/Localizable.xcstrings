@@ -651,6 +651,23 @@
         }
       }
     },
+    "Table Players" : {
+      "comment" : "The title of the window that lists the players and companions at the table.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spieler am Tisch"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ผู้เล่นที่โต๊ะ"
+          }
+        }
+      }
+    },
     "Table Unavailable" : {
       "localizations" : {
         "de" : {

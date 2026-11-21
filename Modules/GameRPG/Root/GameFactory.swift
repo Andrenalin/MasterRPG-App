@@ -52,6 +52,13 @@ public enum GameFactory {
         )
     }
 
+#if !os(tvOS)
+    /// The players / companions list as the content of its own window (visionOS).
+    @MainActor public static func tablePlayersView(root: GameRoot) -> some View {
+        TablePlayersWindowView(root: root)
+    }
+#endif
+
     @MainActor public static func battleRoundView(root: GameRoot) -> some View {
         BattleRoundWindowView(root: root)
     }
