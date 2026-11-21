@@ -83,17 +83,22 @@ struct PinPawnStandeeTests {
         let standee = try Self.standee(of: pawn)
         let uprightExtent = try Self.collisionBox(of: pawn).extents.y
         #expect(abs(standee.position.y - PinStandeeLayout.bottomY) < 1e-6)
+        // Alive: turned toward the camera of the device that renders it.
+        #expect(standee.components[BillboardComponent.self]?.blendFactor == 1)
 
         pin.isDead = true
         pawn.update(pin: pin, position: .zero, hiddenForMaster: false, pointsToMeters: Self.pointsToMeters)
 
         #expect(abs(standee.position.y - PinStandeeLayout.fallenY) < 1e-6)
+        // Dead: lying still, not billboarded.
+        #expect(standee.components[BillboardComponent.self]?.blendFactor == 0)
         #expect(abs(try Self.collisionBox(of: pawn).extents.y - PinStandeeLayout.flatCollisionHeight) < 1e-5)
 
         pin.isDead = false
         pawn.update(pin: pin, position: .zero, hiddenForMaster: false, pointsToMeters: Self.pointsToMeters)
 
         #expect(abs(standee.position.y - PinStandeeLayout.bottomY) < 1e-6)
+        #expect(standee.components[BillboardComponent.self]?.blendFactor == 1)
         #expect(abs(try Self.collisionBox(of: pawn).extents.y - uprightExtent) < 1e-5)
     }
 

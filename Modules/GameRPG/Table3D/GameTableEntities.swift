@@ -121,10 +121,10 @@ final class PinPawn {
     private let photoPlane: ModelEntity
     private let highlightModel: ModelEntity
     private let deathMarkModels: [ModelEntity]
-    /// The upright photo cutout on the base (two printed faces), see `setStandee(_:)`.
+    /// The upright photo cutout on the base, see `setStandee(_:)`. Its `BillboardComponent` turns
+    /// the figure toward the camera of each device while the pin is alive.
     private let standeeRoot: Entity
     private let standeeFront: ModelEntity
-    private let standeeBack: ModelEntity
     /// Width / height of the shown cutout; `nil` while the token has no standee.
     private var standeeAspect: Float?
     /// Whether a shown standee lies down because the pin is dead.
@@ -216,21 +216,22 @@ final class PinPawn {
         deathMarkModels = [firstDeathBar, secondDeathBar]
 
         // Disabled until `setStandee(_:)`. The root's origin is the standee's bottom edge, the
-        // planes (XY, facing +Z) are lifted by half their height in `applyStandeeLayout()`. The
-        // back face is turned around so the artwork reads correctly from behind too.
+        // plane (XY, facing +Z) is lifted by half its height in `applyStandeeLayout()`.
+        //
+        // The billboard keeps +Z pointed at the active camera, which is the camera of the device
+        // that renders it: every player sees the figure face them, and nothing is synced. It turns
+        // around the root's origin (the feet) and, like the popovers' `TablePopoverAnchor`, on every
+        // axis, so a figure seen from above leans toward the viewer. Its result is not readable from
+        // the transform, which is why the hit-test box lives on the pin entity, not here.
         let front = ModelEntity(mesh: .generatePlane(width: diameter, height: diameter), materials: [UnlitMaterial()])
         front.name = "PinStandeeFront"
-        let back = ModelEntity(mesh: .generatePlane(width: diameter, height: diameter), materials: [UnlitMaterial()])
-        back.name = "PinStandeeBack"
-        back.orientation = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
         let standee = Entity()
         standee.name = "PinStandee"
         standee.addChild(front)
-        standee.addChild(back)
+        standee.components.set(BillboardComponent())
         standee.isEnabled = false
         standeeRoot = standee
         standeeFront = front
-        standeeBack = back
 
         let pinEntity = Entity()
         pinEntity.name = "Pin-\(pin.name)"
@@ -392,7 +393,6 @@ final class PinPawn {
         // pins, at the price of a hard edge.
         material.opacityThreshold = 0.5
         standeeFront.model?.materials = [material]
-        standeeBack.model?.materials = [material]
         standeeAspect = Float(cutout.width) / Float(cutout.height)
         applyStandeeLayout()
         applyStandeePose()
@@ -429,24 +429,26 @@ final class PinPawn {
     private func applyStandeeLayout() {
         guard let aspect = standeeAspect else { return }
         let layout = PinStandeeLayout(aspect: aspect, diameter: diameter)
-        let mesh = MeshResource.generatePlane(width: layout.width, height: layout.height)
-        standeeFront.model?.mesh = mesh
-        standeeBack.model?.mesh = mesh
-        standeeFront.position = SIMD3(0, layout.height / 2, PinStandeeLayout.faceOffset)
-        standeeBack.position = SIMD3(0, layout.height / 2, -PinStandeeLayout.faceOffset)
+        standeeFront.model?.mesh = .generatePlane(width: layout.width, height: layout.height)
+        standeeFront.position = SIMD3(0, layout.height / 2, 0)
     }
 
-    /// Upright on the base, or lying down on it while the pin is dead.
+    /// Upright on the base and turned toward the camera, or lying down on it, face up and no
+    /// longer billboarded, while the pin is dead.
     private func applyStandeePose() {
         guard let aspect = standeeAspect else { return }
+        var billboard = standeeRoot.components[BillboardComponent.self] ?? BillboardComponent()
         if isStandeeFallen {
             let layout = PinStandeeLayout(aspect: aspect, diameter: diameter)
+            billboard.blendFactor = 0
             standeeRoot.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
             standeeRoot.position = SIMD3(0, PinStandeeLayout.fallenY, layout.fallenRootZ)
         } else {
+            billboard.blendFactor = 1
             standeeRoot.orientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
             standeeRoot.position = SIMD3(0, PinStandeeLayout.bottomY, 0)
         }
+        standeeRoot.components.set(billboard)
     }
 
     /// The hit-test box: covers the upright figure, or the flat token otherwise (also when the

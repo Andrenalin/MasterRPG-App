@@ -74,7 +74,7 @@ final class GameSetup {
 
     /*
      A 1.5 m × 2 m table (`GameMetrics.tableWidth`/`tableLength`, X/Z
-     respectively) with the map centered in a 0.25 m margin
+     respectively) with the map centered in a 0.15 m margin
      (`GameMetrics.mapMargin`) and six seats around it: the master centered
      on the near (+Z, South) short edge — the side the volumetric window's
      own default viewing position, and this view's ornament,
@@ -96,13 +96,13 @@ final class GameSetup {
                          |#6|
                          +--+
        +----------------------------------+
-       |          0.25 m margin            |
+       |          0.15 m margin            |
   +--+ |   +--------------------+          | +--+
   |#3| |   |                    |          | |#4|
   +--+ |   |        map         |          | +--+
  (west)|   |                    |          |(east)
   +--+ |   +--------------------+          | +--+
-  |#1| |          0.25 m margin            | |#2|
+  |#1| |          0.15 m margin            | |#2|
   +--+ +----------------------------------+ +--+
  (west)                                    (east)
                          +--+

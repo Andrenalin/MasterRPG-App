@@ -13,8 +13,6 @@ struct PinStandeeLayout: Equatable {
     static let maximumWidthFactor: Float = 1.3
     /// Local Y of the standee's bottom edge: the top of the photo disc on the base.
     static let bottomY: Float = 0.004
-    /// Half the gap between the two printed faces, so they never z-fight.
-    static let faceOffset: Float = 0.0003
     /// Local Y of the lying (dead) standee, above the disc and below the death-mark bars.
     static let fallenY: Float = 0.0046
     /// Collision height of a token without a standee (and of a fallen one).
@@ -37,9 +35,12 @@ struct PinStandeeLayout: Equatable {
         self.height = height
     }
 
-    /// Hit-test box of an upright standee: covers the figure and the base.
+    /// Hit-test box of an upright standee: covers the figure and the base. The footprint is
+    /// square, because the billboard turns the figure to any direction and the box (on the pin
+    /// entity, which does not turn) has to cover it from all of them.
     func collisionSize(diameter: Float) -> SIMD3<Float> {
-        SIMD3(max(width, diameter), Self.bottomY + height, diameter)
+        let footprint = max(width, diameter)
+        return SIMD3(footprint, Self.bottomY + height, footprint)
     }
 
     /// Centre of `collisionSize`, so the box starts at the table surface.

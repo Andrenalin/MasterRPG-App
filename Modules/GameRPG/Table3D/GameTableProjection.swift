@@ -334,15 +334,10 @@ struct MapTableProjection: Equatable {
     /// Whether the map lies turned by 90° clockwise (seen from above) on the table.
     let isQuarterTurned: Bool
 
-    /// visionOS turns a landscape map a quarter turn so it fills the table's long side: the table
-    /// is longer than wide, and a landscape map would leave most of its length unused.
-    static var rotatesLandscapeMapsByDefault: Bool {
-#if os(visionOS)
-        true
-#else
-        false
-#endif
-    }
+    /// Every platform turns a landscape map a quarter turn clockwise so it fills the table's long
+    /// side: the table is longer than wide, and a landscape map would leave most of its length
+    /// unused. The iOS/macOS camera looks along the same long axis as the visionOS volume.
+    static var rotatesLandscapeMapsByDefault: Bool { true }
 
     /// The map image's extents before the quarter turn — what the image plane's mesh is built with.
     var imagePlaneWidth: Float { isQuarterTurned ? planeDepth : planeWidth }

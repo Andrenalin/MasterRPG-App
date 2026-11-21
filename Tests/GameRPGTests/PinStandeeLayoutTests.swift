@@ -47,7 +47,8 @@ struct PinStandeeLayoutTests {
         #expect(abs(bottom) < 1e-6)
         #expect(top >= PinStandeeLayout.bottomY + layout.height - 1e-6)
         #expect(size.x >= diameter)
-        #expect(size.z == diameter)
+        // Square footprint: the figure is billboarded and can face any direction.
+        #expect(size.z == size.x)
     }
 
     @Test("A fallen figure is centred on the base and sits between the disc and the death marks")
@@ -57,7 +58,7 @@ struct PinStandeeLayoutTests {
         #expect(abs(layout.fallenRootZ - layout.height / 2) < 1e-6)
         #expect(PinStandeeLayout.fallenY > PinStandeeLayout.bottomY)
         // The death-mark bars are at local Y 0.006 with a 1 mm height.
-        #expect(PinStandeeLayout.fallenY + PinStandeeLayout.faceOffset < 0.0055)
+        #expect(PinStandeeLayout.fallenY < 0.0055)
     }
 }
 #endif

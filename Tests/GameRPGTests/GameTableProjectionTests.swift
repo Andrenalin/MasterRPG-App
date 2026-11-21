@@ -72,6 +72,23 @@ struct GameTableProjectionTests {
         #expect(abs(projection.metersPerPoint * 1200 - projection.planeDepth) < 0.0001)
     }
 
+    @Test("Every platform turns a landscape map by default, not only visionOS")
+    func landscapeMapIsTurnedByDefaultOnEveryPlatform() {
+        #expect(MapTableProjection.rotatesLandscapeMapsByDefault)
+        #expect(MapTableProjection(imageSize: CGSize(width: 1200, height: 800)).isQuarterTurned)
+        #expect(!MapTableProjection(imageSize: CGSize(width: 800, height: 1200)).isQuarterTurned)
+    }
+
+    @Test("The map margin leaves the dice their room between the map and the table's rim")
+    func marginCoversTheDice() {
+        // Dice lie `diceEdgeInset` from the rim; their far side reaches half a die further.
+        let diceReach = GameMetrics.diceEdgeInset + GameMetrics.maximumDieExtent / 2
+        #expect(GameMetrics.mapMargin > diceReach)
+        // The bigger map: the board is the table less the margin on each side.
+        #expect(abs(MapTableProjection.maxPlaneWidth - (GameMetrics.tableWidth - 2 * GameMetrics.mapMargin)) < 1e-6)
+        #expect(abs(MapTableProjection.maxPlaneDepth - (GameMetrics.tableLength - 2 * GameMetrics.mapMargin)) < 1e-6)
+    }
+
     @Test("Portrait and square maps stay as they are")
     func portraitMapIsNotTurned() {
         for size in [CGSize(width: 800, height: 1200), CGSize(width: 900, height: 900)] {

@@ -20,7 +20,12 @@ enum GameMetrics {
     /// Inset from the map's own edge (`MapTableProjection`'s fit-box) to the
     /// table's physical edge, on every side — leaves room for each seat's
     /// dice (`PlayerSeat.diceLayout`) between the map and the table's rim.
-    static let mapMargin: Float = 0.25
+    /// The dice lie `diceEdgeInset` from the rim and are at most `maximumDieExtent` across,
+    /// so they reach `diceEdgeInset + maximumDieExtent / 2` into the table; the rest is slack
+    /// for a die that settles a little off its slot.
+    static let mapMargin: Float = 0.15
+    /// The widest a die is (the d20, 3 to 3.75 cm; see `TableSeatDice.spacing`).
+    static let maximumDieExtent: Float = 0.0375
     /// Inset from a seat's own near table edge to where its dice rest — see
     /// `PlayerSeat.diceLayout`.
     static let diceEdgeInset: Float = 0.06
