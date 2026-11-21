@@ -289,6 +289,7 @@ public struct GameTableView: View {
         .task {
             await scaleController.start()
         }
+        .gameTableGameHost(root: root)
         .onDisappear {
             roomActionCoordinator.cancel()
             accessibilitySubscriptions.removeAll()

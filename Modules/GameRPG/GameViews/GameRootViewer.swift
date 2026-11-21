@@ -30,7 +30,6 @@ struct GameRootViewer: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.appTheme) private var theme
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(ScenesManager.self) private var scenesManager
 #if os(iOS) || os(macOS)
     @Environment(AppSettingsModel.self) private var appSettingsModel
 #endif
@@ -94,61 +93,6 @@ struct GameRootViewer: View {
             guard phase == .active, contentType != .externalPlayer else { return }
             root.applicationBecameActive()
         }
-#if os(visionOS)
-        // Follows the presented photo, not the photo module's `currentItemId`: only a
-        // show-photo event sets it, so a photo a map merely stored never opens the viewer.
-        .onChange(of: root.photoRoot.photoGameControllable.presentedPhotoId) { _, photoId in
-            guard let photoId else { return }
-            root.photoRoot.imagePresentationModel.selectedItemId = photoId
-            scenesManager.openWindow(SceneId.imageSpaceViewer)
-        }
-        // A photo over the map that goes full screen: the presented photo may be the same as
-        // before, so the switch itself opens the viewer.
-        .onChange(of: playerController.gameModel.mapPhoto.fullScreenRequest) {
-            guard let presentation = playerController.gameModel.mapPhoto.presentation,
-                  presentation.module == .photo,
-                  playerController.gameModel.mapPhoto.mode == .fullScreen
-            else { return }
-            root.photoRoot.imagePresentationModel.selectedItemId = presentation.itemId
-            scenesManager.openWindow(SceneId.imageSpaceViewer)
-        }
-        // A weather shown full screen also opens in the weather window: its photo in spatial
-        // 3D with the weather in front of it.
-        .onChange(of: playerController.gameModel.weatherWindowRequest) {
-            guard playerController.gameModel.gameUpdateType == .weather,
-                  let weatherId = root.weatherRoot.gameControllable.gameModel.currentItemId
-            else { return }
-            root.weatherRoot.showSpatialWeather(itemId: weatherId)
-            scenesManager.openWindow(SceneId.weatherSpaceViewer)
-        }
-        // Goes straight to the immersive space instead of routing through the
-        // `otherViews` reveal panel (see the `.space` case below): that panel
-        // is a full-window 2D overlay meant for bounded content (pdf/photo/
-        // table/weather); on visionOS it was hosting only SpaceQuickLook's
-        // near-invisible trigger button, which briefly blanked the game
-        // window while the real `ImmersiveSpace` opened in the background.
-        //
-        // Always opens, even while the volumetric game-table window is open —
-        // the table no longer renders the shared object into its own
-        // TabletopKit scene, so this is never a duplicate.
-        .onChange(of: root.spaceRoot.gameControllable.gameModel.currentItemId) {
-            guard let spaceId = root.spaceRoot.gameControllable.gameModel.currentItemId else {
-                // The GM un-revealed the space entirely — clear any earlier
-                // explicit dismiss so a future re-reveal (even of the same
-                // item) opens fresh instead of staying permanently suppressed.
-                scenesManager.clearExplicitlyDismissedSpaceItem()
-                return
-            }
-            // A player who explicitly closed this exact reveal (the space
-            // viewer's own close button) shouldn't have it popped back open
-            // by a resync that re-broadcasts the same still-revealed item —
-            // see `ScenesManager.explicitlyDismissedSpaceItemId`.
-            guard scenesManager.explicitlyDismissedSpaceItemId != spaceId else { return }
-            Task {
-                await scenesManager.showSpaceViewer(selection: ItemSelection(itemId: spaceId, entryId: nil))
-            }
-        }
-#endif
     }
 
     @ViewBuilder

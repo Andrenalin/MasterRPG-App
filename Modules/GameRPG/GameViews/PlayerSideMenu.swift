@@ -25,7 +25,7 @@ struct PlayerSideMenu: View {
                 }
 #if os(visionOS)
                 // The companions button is in the top ornament's menu; this one is the last window button.
-                GameTableWindowButton(root: root, isMaster: false)
+                GameTableWindowButton(root: root)
 #endif
             }
         }

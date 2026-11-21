@@ -192,8 +192,8 @@ private struct GameSeatWindowButtons: View {
     }
 }
 
-/// Leaves the game, after a confirmation. The game master's "Save and Quit" stays on the 2D
-/// window's alert.
+/// Leaves the game, after a confirmation, and returns to the start window. (The game master's
+/// "Save and Quit" lives in the 2D game window, which visionOS does not show during a game.)
 @MainActor
 private struct GameSeatQuitButton: View {
     let root: GameRoot
@@ -217,11 +217,10 @@ private struct GameSeatQuitButton: View {
         .frame(minWidth: 44, minHeight: 44)
         .alert(Text("Quit Game?", bundle: .module), isPresented: $isConfirming) {
             Button {
-                appGameStateModel?.isGameRunning = false
-                Task {
-                    await GameWindowToggle.closeSecondaryWindows(scenesManager: scenesManager)
-                    await root.stopGame()
-                }
+                let controller = GameTablePresentationController(
+                    root: root, scenesManager: scenesManager, appGameStateModel: appGameStateModel
+                )
+                Task { await controller.endGame() }
             } label: {
                 Text("Quit", bundle: .module)
             }

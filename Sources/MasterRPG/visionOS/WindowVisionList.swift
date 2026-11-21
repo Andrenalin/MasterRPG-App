@@ -67,18 +67,6 @@ struct WindowVisionList: Scene {
         // to keep the table's depth placement stable.
         .restorationBehavior(.disabled)
 
-        WindowGroup(id: SceneId.gameRecover.rawValue) {
-            Text("Recover", bundle: .main)
-                // Tells `GameTableWindowButton` when this window stands where the game window
-                // was, so the table can open in front of it.
-                .sceneTracker(for: SceneId.gameRecover)
-                .environment(appModel.scenesManager)
-        }
-        .windowResizability(.contentSize)
-        .windowStyle(.plain)
-        .restorationBehavior(.disabled)
-
-
         WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()

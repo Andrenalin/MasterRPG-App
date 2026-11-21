@@ -64,7 +64,7 @@ private struct GameTableToolbarActions: View {
             // and this 3D game table, so it must stay reachable even before
             // a map is loaded onto the table. On visionOS it ends the window
             // buttons' row above this one (`GameTableView`'s front ornament).
-            GameTableWindowButton(root: root, isMaster: game.isGameMaster)
+            GameTableWindowButton(root: root)
 #endif
 
             if game.isGameMaster,

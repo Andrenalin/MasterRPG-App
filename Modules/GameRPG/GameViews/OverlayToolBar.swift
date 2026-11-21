@@ -32,11 +32,11 @@ struct OverlayToolBar: View {
                 GameToolBarCompactSwitch {
                     // The switch is a row of the toolbar, directly above its buttons.
                     root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster) {
-                        GameTableWindowButton(root: root, isMaster: isMaster)
+                        GameTableWindowButton(root: root)
                     }
                 } regular: {
                     HStack {
-                        GameTableWindowButton(root: root, isMaster: isMaster)
+                        GameTableWindowButton(root: root)
                         root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
                     }
                 }

@@ -28,6 +28,12 @@ private struct GameView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         Group {
+#if os(visionOS)
+            // The game lives at the 3D table; this window only starts it.
+            if root.gameModel.playerController != nil {
+                GameTableLaunchView(root: root)
+            }
+#else
             if let playerController = root.gameModel.playerController {
                 if root.gameModel.gameConfig.isMaster {
                     if let adventureId = root.gameModel.gameConfig.master.adventureId {
@@ -37,6 +43,7 @@ private struct GameView: View {
                     PlayerGameScreen(root: root, playerController: playerController)
                 }
             }
+#endif
         }
         .modifier(GameActionEnvironmentSetUpViewModifier(root: root))
 

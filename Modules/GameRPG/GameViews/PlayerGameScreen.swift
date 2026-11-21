@@ -13,16 +13,9 @@ struct PlayerGameScreen: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(ScenesManager.self) private var scenesManager
-#if os(visionOS)
-    @Environment(\.pushWindow) private var pushWindow
-#endif
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     @State private var gameScreenModel = GameScreenModel()
-#if os(visionOS)
-    /// One shot per game: a table the user closes stays closed.
-    @State private var didOpenTable = false
-#endif
     @State private var diceShowOptionModel = DiceDisplayModel()
 
     var body: some View {
@@ -85,25 +78,11 @@ struct PlayerGameScreen: View {
             gameScreenModel: gameScreenModel,
             diceDisplayModel: diceShowOptionModel
         )
-#if os(visionOS)
-        .gameScreenOrnaments(
-            root: root,
-            gameScreenModel: gameScreenModel,
-            diceShowOptionModel: diceShowOptionModel,
-            playerController: playerController,
-            isMaster: false
-        ) {
-            PlayerSideMenu(root: root)
-        }
-#endif
     }
 }
 
 private extension PlayerGameScreen {
     func prepareWindows() async {
-#if os(visionOS)
-        await openTableAtGameStart()
-#endif
         do {
             try await Task.sleep(for: GameWindowToggle.windowPrepDelay)
         } catch {
@@ -112,15 +91,7 @@ private extension PlayerGameScreen {
         // The game may have been quit during the delay: its windows must not open then.
         guard appGameStateModel.isGameRunning, !root.isStopping, root.gameModel.gameConfig.state != .stopped else { return }
 
-#if os(visionOS)
-        // The character game view never appears inline on visionOS; it always
-        // opens in its own external window, and nothing is persisted to
-        // UserDefaults. The 3D table has been requested first (`openTableAtGameStart`), so this
-        // window opens next to it.
-        if let characterId = root.gameModel.selectedCharacter {
-            scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
-        }
-#elseif os(macOS)
+#if os(macOS)
         if gameScreenModel.restoreMainTab(
             savedMode: appSettingsModel.playerMainTabDisplayMode,
             tab: .value,
@@ -152,40 +123,11 @@ private extension PlayerGameScreen {
     func endGame() {
         appGameStateModel.isGameRunning = false
         Task {
-#if os(visionOS)
-            await GameWindowToggle.closeSecondaryWindows(scenesManager: scenesManager)
-#endif
             await root.stopGame()
         }
     }
 
 }
-
-#if os(visionOS)
-private extension PlayerGameScreen {
-    /// A game starts at the 3D table: the table opens at once and the 2D game screen, which has
-    /// to stay alive behind it, is pushed aside. See `GameTableLauncher`.
-    func openTableAtGameStart() async {
-        // The screen can appear a moment before the game state turns to started.
-        for _ in 0..<20 where !(appGameStateModel.isGameRunning && root.gameModel.gameConfig.state == .started) {
-            guard (try? await Task.sleep(for: .milliseconds(50))) != nil else { return }
-        }
-        guard GameTableAutoOpenPolicy.shouldOpen(
-            isGameRunning: appGameStateModel.isGameRunning,
-            isStopping: root.isStopping,
-            gameState: root.gameModel.gameConfig.state,
-            tableSceneState: scenesManager.getSceneState(for: SceneId.gameTable),
-            alreadyOpened: didOpenTable
-        ) else { return }
-        didOpenTable = true
-        await GameTableLauncher.open(
-            scenesManager: scenesManager,
-            appSettingsModel: appSettingsModel,
-            pushWindow: pushWindow
-        )
-    }
-}
-#endif
 
 #Preview(traits: .mockData) {
     let root = GameRoot.previewFixture(game: .player)

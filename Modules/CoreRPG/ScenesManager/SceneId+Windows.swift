@@ -8,7 +8,6 @@ extension SceneId {
     public static var battleRound: Self { .init(rawValue: "battleRound") }
     public static var editor: Self { .init(rawValue: "editor") }
     public static var game: Self { .init(rawValue: "game") }
-    public static var gameRecover: Self { .init(rawValue: "gameRecover") }
     
     public static var gameStatistics: Self { .init(rawValue: "gameStatistics") }
     public static var gameTable: Self { .init(rawValue: "gameTable") }

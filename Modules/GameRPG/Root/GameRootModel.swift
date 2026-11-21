@@ -26,6 +26,8 @@ final class GameRootModel: Sendable {
     }
 
     var gameConfig: GameConfigModel = .empty
+    /// What presenting the 3D table remembers; see `GameTablePresentationController`.
+    let tablePresentation = GameTablePresentationModel()
     var gameRoster: GameRosterModel = .empty
     var gameControl: GameControlModel = .empty
     /// The players who shared a dice roll from a device without the 3D table, with the name the
