@@ -121,6 +121,14 @@ final class PinPawn {
     private let photoPlane: ModelEntity
     private let highlightModel: ModelEntity
     private let deathMarkModels: [ModelEntity]
+    /// The upright photo cutout on the base (two printed faces), see `setStandee(_:)`.
+    private let standeeRoot: Entity
+    private let standeeFront: ModelEntity
+    private let standeeBack: ModelEntity
+    /// Width / height of the shown cutout; `nil` while the token has no standee.
+    private var standeeAspect: Float?
+    /// Whether a shown standee lies down because the pin is dead.
+    private var isStandeeFallen = false
     var loadedPhotoId: UUID?
     private var currentSize: MapPinModel.MapPinSize
     private var currentPointsToMeters: Float
@@ -135,6 +143,7 @@ final class PinPawn {
         let name: String
         let isShown: Bool
         let color: Color
+        let hasStandee: Bool
     }
     private var appliedVisual: AppliedVisual?
 
@@ -206,11 +215,29 @@ final class PinPawn {
         secondDeathBar.isEnabled = false
         deathMarkModels = [firstDeathBar, secondDeathBar]
 
+        // Disabled until `setStandee(_:)`. The root's origin is the standee's bottom edge, the
+        // planes (XY, facing +Z) are lifted by half their height in `applyStandeeLayout()`. The
+        // back face is turned around so the artwork reads correctly from behind too.
+        let front = ModelEntity(mesh: .generatePlane(width: diameter, height: diameter), materials: [UnlitMaterial()])
+        front.name = "PinStandeeFront"
+        let back = ModelEntity(mesh: .generatePlane(width: diameter, height: diameter), materials: [UnlitMaterial()])
+        back.name = "PinStandeeBack"
+        back.orientation = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+        let standee = Entity()
+        standee.name = "PinStandee"
+        standee.addChild(front)
+        standee.addChild(back)
+        standee.isEnabled = false
+        standeeRoot = standee
+        standeeFront = front
+        standeeBack = back
+
         let pinEntity = Entity()
         pinEntity.name = "Pin-\(pin.name)"
         pinEntity.addChild(highlight)
         pinEntity.addChild(baseModel)
         pinEntity.addChild(photoPlane)
+        pinEntity.addChild(standee)
         pinEntity.addChild(firstDeathBar)
         pinEntity.addChild(secondDeathBar)
         pinEntity.components.set(PinComponent(pinId: pin.id))
@@ -292,7 +319,8 @@ final class PinPawn {
             healthColor: healthColor,
             name: pin.name,
             isShown: pin.isShown,
-            color: pin.color
+            color: pin.color,
+            hasStandee: standeeAspect != nil
         )
         guard visual != appliedVisual else { return }
         appliedVisual = visual
@@ -315,10 +343,16 @@ final class PinPawn {
         highlightModel.model?.materials = [highlightMaterial]
         // Without a photo the face shows the pin's own colour, which can be edited after the
         // token was created. See CODE_AUDIT_26 §5.81.
-        if loadedPhotoId == nil {
+        // A standee stands on that colour as its plinth.
+        if loadedPhotoId == nil || standeeAspect != nil {
             var faceMaterial = UnlitMaterial()
             faceMaterial.color = .init(tint: GameTablePlatformColor(pin.color))
             photoPlane.model?.materials = [faceMaterial]
+        }
+        if isStandeeFallen != pin.isDead {
+            isStandeeFallen = pin.isDead
+            applyStandeePose()
+            refreshCollision()
         }
         highlightModel.isEnabled = true
         deathMarkModels.forEach { $0.isEnabled = pin.isDead }
@@ -340,7 +374,42 @@ final class PinPawn {
         var material = UnlitMaterial()
         material.color = .init(texture: .init(texture))
         photoPlane.model?.materials = [material]
+        // A new photo: the standee of the previous one must not stay until its own cutout is made.
+        clearStandee()
         return true
+    }
+
+    /// Stands the photo's subject (`cutout`, with a transparent background) upright on the base,
+    /// like an acrylic miniature. The disc below turns into a plain plinth in the pin's color.
+    /// - Returns: whether the texture was made; on failure the token stays as it was.
+    @discardableResult
+    func setStandee(_ cutout: CGImage) -> Bool {
+        guard cutout.width > 0, cutout.height > 0,
+              let texture = try? TextureResource(image: cutout, options: .init(semantic: .color)) else { return false }
+        var material = UnlitMaterial()
+        material.color = .init(texture: .init(texture))
+        // Alpha-clipped rather than blended: stable ordering against the ring, the disc and other
+        // pins, at the price of a hard edge.
+        material.opacityThreshold = 0.5
+        standeeFront.model?.materials = [material]
+        standeeBack.model?.materials = [material]
+        standeeAspect = Float(cutout.width) / Float(cutout.height)
+        applyStandeeLayout()
+        applyStandeePose()
+        standeeRoot.isEnabled = true
+        refreshCollision()
+        var plinth = UnlitMaterial()
+        plinth.color = .init(tint: GameTablePlatformColor(appliedVisual?.color ?? .gray))
+        photoPlane.model?.materials = [plinth]
+        return true
+    }
+
+    /// Removes the standee. The disc keeps the face it has; callers set that themselves.
+    func clearStandee() {
+        guard standeeAspect != nil else { return }
+        standeeAspect = nil
+        standeeRoot.isEnabled = false
+        refreshCollision()
     }
 
     /// Back to the pin's color after its photo was removed.
@@ -348,7 +417,51 @@ final class PinPawn {
         var material = UnlitMaterial()
         material.color = .init(tint: GameTablePlatformColor(pin.color))
         photoPlane.model?.materials = [material]
+        clearStandee()
         loadedPhotoId = nil
+    }
+
+    private var diameter: Float {
+        Self.radius(for: currentSize, pointsToMeters: currentPointsToMeters) * 1.8
+    }
+
+    /// Sizes the two faces to the cutout's aspect inside the token's limits.
+    private func applyStandeeLayout() {
+        guard let aspect = standeeAspect else { return }
+        let layout = PinStandeeLayout(aspect: aspect, diameter: diameter)
+        let mesh = MeshResource.generatePlane(width: layout.width, height: layout.height)
+        standeeFront.model?.mesh = mesh
+        standeeBack.model?.mesh = mesh
+        standeeFront.position = SIMD3(0, layout.height / 2, PinStandeeLayout.faceOffset)
+        standeeBack.position = SIMD3(0, layout.height / 2, -PinStandeeLayout.faceOffset)
+    }
+
+    /// Upright on the base, or lying down on it while the pin is dead.
+    private func applyStandeePose() {
+        guard let aspect = standeeAspect else { return }
+        if isStandeeFallen {
+            let layout = PinStandeeLayout(aspect: aspect, diameter: diameter)
+            standeeRoot.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+            standeeRoot.position = SIMD3(0, PinStandeeLayout.fallenY, layout.fallenRootZ)
+        } else {
+            standeeRoot.orientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
+            standeeRoot.position = SIMD3(0, PinStandeeLayout.bottomY, 0)
+        }
+    }
+
+    /// The hit-test box: covers the upright figure, or the flat token otherwise (also when the
+    /// figure lies down).
+    private func refreshCollision() {
+        let diameter = diameter
+        let shape: ShapeResource
+        if let aspect = standeeAspect, !isStandeeFallen {
+            let layout = PinStandeeLayout(aspect: aspect, diameter: diameter)
+            let size = layout.collisionSize(diameter: diameter)
+            shape = .generateBox(size: size).offsetBy(translation: SIMD3(0, layout.collisionCenterY(), 0))
+        } else {
+            shape = .generateBox(width: diameter, height: PinStandeeLayout.flatCollisionHeight, depth: diameter)
+        }
+        entity.components.set(CollisionComponent(shapes: [shape]))
     }
 
     private func applySize(_ size: MapPinModel.MapPinSize, pointsToMeters: Float) {
@@ -362,7 +475,9 @@ final class PinPawn {
         deathMarkModels.forEach {
             $0.model?.mesh = .generateBox(width: deathBarLength, height: 0.001, depth: deathBarThickness)
         }
-        entity.components.set(CollisionComponent(shapes: [.generateBox(width: diameter, height: 0.02, depth: diameter)]))
+        applyStandeeLayout()
+        applyStandeePose()
+        refreshCollision()
     }
 
     private func updateAccessibility(for pin: MapPinModel) {

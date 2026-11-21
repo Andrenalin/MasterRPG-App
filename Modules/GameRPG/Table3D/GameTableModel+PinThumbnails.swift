@@ -107,6 +107,26 @@ extension GameTableModel {
         pinPhotoRetryTasks[pinId]?.cancel()
         pinPhotoRetryTasks[pinId] = nil
         pawn.loadedPhotoId = photoId
+        await standUpPinSubject(pinId: pinId, photoId: photoId)
+    }
+
+    /// Second load stage: stands the photo's subject on the token. Without a usable subject (or
+    /// when it cannot be made) the flat photo disc from the first stage stays, which is final
+    /// for this photo version, so no retry bookkeeping.
+    private func standUpPinSubject(pinId: UUID, photoId: UUID) async {
+        guard !Task.isCancelled,
+              let item = await photoRoot.itemControllable.item(for: photoId),
+              let cutout = await photoRoot.pinCutout(for: photoId, item: item),
+              !Task.isCancelled else { return }
+        let currentPhotoId = currentMapModel().flatMap { mapModel in
+            pinId == mapModel.pointer.id
+                ? mapModel.pointer.photoId
+                : mapModel.mapPins.first(where: { $0.id == pinId })?.photoId
+        }
+        guard currentPhotoId == photoId,
+              let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }),
+              pawn.loadedPhotoId == photoId else { return }
+        pawn.setStandee(cutout)
     }
 
     /// Starts the bookkeeping of a thumbnail load and returns the token that load must present to
