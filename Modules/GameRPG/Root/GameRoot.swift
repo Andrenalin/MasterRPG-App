@@ -384,6 +384,7 @@ public final class GameRoot {
         networkActionTailID = nil
         demoTask?.cancel()
         demoTask = nil
+        mapRoot.rootModel.cancelMapContentSends()
     }
 }
 

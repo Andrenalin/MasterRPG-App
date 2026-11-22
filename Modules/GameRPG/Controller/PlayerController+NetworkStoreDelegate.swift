@@ -10,9 +10,10 @@ import PhotoRPG
 import SpaceRPG
 
 // MARK: - Send PlayerNetworkStoreDelegate
+
 // Conformance itself is declared alongside the class in PlayerController.swift (Swift requires
 // same-file `Sendable` conformance for a class); this extension supplies the requirements.
-
+// Do not move the conformance here, see the note there.
 extension PlayerController {
     func incompatibleVersion(_ mismatch: GameVersionMismatch) async {
         root.logGameController.addNote(mismatch.logText)
@@ -71,7 +72,7 @@ extension PlayerController {
         gameModel.reset(lostMaster: false)
         await sendAudioList()
         await sendFileLists()
-        await scheduleSendCharacter()
+        scheduleSendCharacter()
     }
 
     func receivedFile(_ model: GameNetworkModel) async {

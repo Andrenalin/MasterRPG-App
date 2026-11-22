@@ -65,7 +65,7 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
                 // `sendDataReportingLoss` is itself `@MainActor` — `await` alone hops there.
                 await sharePlayStore.sendDataReportingLoss(gameData)
             }
-            await model.masterDelegate?.received(gameData, origin: origin)
+            await model.masterDelegate?.receivedAccepted(gameData, origin: origin)
         }
     }
 }

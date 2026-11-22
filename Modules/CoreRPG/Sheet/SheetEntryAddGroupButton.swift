@@ -8,10 +8,15 @@ struct SheetEntryAddGroupButton: View {
     let onlyIcon: Bool
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    /// A second tap while the group is being added would add another one. See CODE_AUDIT_28 §3.4.
+    @State private var isAdding = false
 
     var body: some View {
         Button {
+            guard !isAdding else { return }
+            isAdding = true
             Task {
+                defer { isAdding = false }
                 let entryId = await rootModel.addNewGroup(in: parentModel)
                 withAnimation(accessibilityReduceMotion ? nil : .default) {
                     rootModel.updateParent(parentModel)
@@ -29,6 +34,7 @@ struct SheetEntryAddGroupButton: View {
                 $0.labelStyle(.iconOnly)
             }
         }
+        .disabled(isAdding)
     }
 }
 

@@ -51,4 +51,7 @@ final class PlayerController {
 // class's `Sendable` conformance (inherited here via `PlayerNetworkStoreDelegate: Sendable`) to
 // be declared alongside the class, even though the actual protocol requirements are implemented
 // in `PlayerController+NetworkStoreDelegate.swift`.
+// DO NOT MOVE OR REMOVE THIS IN A CODE AUDIT: moving it into the other file compiles but warns
+// ("Conformance to 'Sendable' must occur in the same source file", an error in a future Swift
+// language mode). It looks redundant and is not. (CODE_AUDIT_28 §3.5 got this wrong once.)
 extension PlayerController: PlayerNetworkStoreDelegate {}

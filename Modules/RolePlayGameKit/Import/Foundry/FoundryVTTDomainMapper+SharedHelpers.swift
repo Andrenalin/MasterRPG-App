@@ -274,7 +274,8 @@ extension FoundryMappingState {
     }
 
     func sanitizedFoundryText(_ optionalHTML: String?) -> String {
-        FoundryTextDecoder.plainText(fromHTML: optionalHTML)
+        if let optionalHTML, let cached = plainTextCache[optionalHTML] { return cached }
+        return FoundryTextDecoder.plainText(fromHTML: optionalHTML)
     }
 
     func safeText(_ optionalHTML: String?) -> String {

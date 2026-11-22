@@ -118,7 +118,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
                 // local-network players get it from the game master.
                 await model.masterStore?.sendResponse(data: message)
             }
-            await masterDelegate.received(message, origin: origin)
+            await masterDelegate.receivedAccepted(message, origin: origin)
             return
         }
 

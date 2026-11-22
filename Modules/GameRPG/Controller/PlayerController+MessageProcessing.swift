@@ -248,7 +248,7 @@ extension PlayerController {
             }
             await root.networkProxyStore.sendPlayer(data: forwarded)
         }
-        await scheduleSendCharacter()
+        scheduleSendCharacter()
     }
 
     /// The pipeline's drain loop; it runs only in the pipeline's own worker task (see

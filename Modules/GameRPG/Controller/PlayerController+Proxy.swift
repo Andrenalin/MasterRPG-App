@@ -16,7 +16,7 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
         gameModel.reset(lostMaster: false)
         await sendAudioList()
         await sendFileLists()
-        await scheduleSendCharacter()
+        scheduleSendCharacter()
     }
 
     func receivedProxy(_ model: GameNetworkModel) async {
@@ -38,7 +38,7 @@ extension PlayerController {
         else { return nil }
 
         try await root.characterRoot.gameControllable.updateGame(data: model.data, hide: false, deep: true)
-        await scheduleProxyFocus(characterId: model.data.id)
+        scheduleProxyFocus(characterId: model.data.id)
         return nil
     }
 }
@@ -50,7 +50,7 @@ extension PlayerController {
     /// complete and clears the tracking task. See CODE_AUDIT §9.14.
     private static let proxyFocusSettleDelay: Duration = .seconds(1)
 
-    func scheduleProxyFocus(characterId: UUID) async {
+    func scheduleProxyFocus(characterId: UUID) {
         scheduleProxyFocusTask(characterId: characterId)
     }
 

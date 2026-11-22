@@ -31,6 +31,8 @@ public struct GameShareView<Content: View>: View {
 
     /// The size of the item's file, read on the game master's device while a game runs.
     @State private var fileByteCount: Int?
+    /// A share that is being prepared: a second tap would send it again. See CODE_AUDIT_28 §3.4.
+    @State private var isSharing = false
 
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
@@ -154,7 +156,10 @@ public struct GameShareView<Content: View>: View {
     }
 
     func shareAction() {
+        guard !isSharing else { return }
+        isSharing = true
         Task {
+            defer { isSharing = false }
             if appGameStateModel.gameModus == .master {
                 await networkActions?.shareId(root.gameControllable.share(id: itemId))
             } else {

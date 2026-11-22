@@ -240,7 +240,7 @@ struct PlayerCompanionsTests {
             }
         }
 
-        await env.player.scheduleSendCharacter()
+        env.player.scheduleSendCharacter()
         await env.player.gameModel.sendCharacterTask?.value
         env.playerNetworkSpy.onRequest = nil
 

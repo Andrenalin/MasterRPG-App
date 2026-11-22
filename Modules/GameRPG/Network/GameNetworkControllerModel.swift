@@ -24,6 +24,9 @@ protocol MasterNetworkStoreDelegate: Sendable & AnyObject {
     func accepts(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool
     func ready(for origin: GameMessageOrigin) async
     func received(_ model: GameNetworkModel, origin: GameMessageOrigin) async
+    /// `received` for a message the caller already passed through `accepts`, so the checks (and
+    /// the route binding) run once per message. See CODE_AUDIT_28 §3.5.
+    func receivedAccepted(_ model: GameNetworkModel, origin: GameMessageOrigin) async
     func receivedFile(_ model: GameNetworkModel) async
     func lostPlayer(for connectionId: ConnectionController.ID) async
     /// Whether a player's group event may be relayed to the other players: the master checks the
@@ -35,6 +38,10 @@ protocol MasterNetworkStoreDelegate: Sendable & AnyObject {
 }
 
 extension MasterNetworkStoreDelegate {
+    func receivedAccepted(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
+        await received(model, origin: origin)
+    }
+
     func mayRelay(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool { true }
 
     func incompatibleVersion(_ mismatch: GameVersionMismatch) async {}

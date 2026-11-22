@@ -36,11 +36,18 @@ public final class RootModel: Sendable {
     @ObservationIgnored
     @MainActor private var mapContentSendTail: Task<Void, Never>?
 
+    /// Ends the send chain with the game: queued sends no longer run. See CODE_AUDIT_28 §3.4.
+    @MainActor public func cancelMapContentSends() {
+        mapContentSendTail?.cancel()
+        mapContentSendTail = nil
+    }
+
     /// Runs `work` after every earlier enqueued send has finished.
     @MainActor public func enqueueMapContentSend(_ work: @escaping @MainActor () async -> Void) {
         let previous = mapContentSendTail
         mapContentSendTail = Task { @MainActor in
             await previous?.value
+            guard !Task.isCancelled else { return }
             await work()
         }
     }

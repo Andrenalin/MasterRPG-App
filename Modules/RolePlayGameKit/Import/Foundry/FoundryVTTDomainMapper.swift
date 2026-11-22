@@ -262,11 +262,16 @@ final class FoundryMappingState {
     var privacyFilteredDocumentsByID: [String: FoundryDocument] = [:]
     var emittedGeometryWarnings = Set<FoundryGeometryWarning>()
     var cooperativeWorkCount = 0
+    /// Plain text of the document and rule descriptions, computed off the main actor by
+    /// `FoundryTextPrepass` before the models are built. A string that is not in it is converted
+    /// on demand.
+    var plainTextCache: [String: String] = [:]
     /// How many units of mapping work run between `Task.yield()` calls in
-    /// `cooperativeCheckpoint()`. The whole mapping pass runs on the Main Actor (its models are
+    /// `cooperativeCheckpoint()`. The model construction runs on the Main Actor (the models are
     /// @MainActor @Observable classes, so it can't move to a background actor without a much
-    /// larger rewrite — see CODE_AUDIT.md §3.7), so this is what keeps SwiftUI's render loop and
-    /// other Main Actor work interleaved during a large import instead of one long unbroken run.
+    /// larger rewrite), and the HTML to plain text conversion of the descriptions already ran off
+    /// it (`FoundryTextPrepass`). This keeps SwiftUI's render loop and other Main Actor work
+    /// interleaved during a large import instead of one long unbroken run.
     /// Lowered from 64 to yield more often, at the cost of slightly more yield overhead.
     private static let cooperativeYieldInterval = 16
 
@@ -276,6 +281,11 @@ final class FoundryMappingState {
         try await cooperativeCheckpoint()
         try await indexDocuments()
         try await cooperativeCheckpoint()
+        plainTextCache = await FoundryTextPrepass.plainTexts(of: FoundryTextPrepass.htmlSources(
+            documents: allDocuments,
+            rulePackage: selectedCategories.contains(.rules) ? privacyFilteredPackage.rulePackage : nil
+        ))
+        try Task.checkCancellation()
         try await createFolders()
         try await cooperativeCheckpoint()
         if selectedCategories.contains(.rules) {

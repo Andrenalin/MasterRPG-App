@@ -15,9 +15,10 @@ import TableRPG
 import WeatherRPG
 
 // MARK: - MasterNetworkStoreDelegate
+
 // Conformance itself is declared alongside the class in MasterController.swift (Swift requires
 // same-file `Sendable` conformance for a class); this extension supplies the requirements.
-
+// Do not move the conformance here, see the note there.
 extension MasterController {
     /// The checks every inbound message passes before it is relayed or processed. They need
     /// nothing from the sender but the envelope: a remote peer can never be the master, its
@@ -158,9 +159,12 @@ extension MasterController {
     /// `receivedServerProxy(_:connectionId:)` also calls this directly, from a
     /// different file.
     func received(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
-        Logger.networking.debug("MasterController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-
         guard await accepts(model, origin: origin) else { return }
+        await receivedAccepted(model, origin: origin)
+    }
+
+    func receivedAccepted(_ model: GameNetworkModel, origin: GameMessageOrigin) async {
+        Logger.networking.debug("MasterController: Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
 
         await messagePipeline.submit(GameMessageEvent(model: model, origin: origin), prefix: "MasterController") { [weak self] in
             await self?.processMessages()

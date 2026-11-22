@@ -105,6 +105,7 @@ final class GameCenterController: Sendable {
     private let evaluator = GameCenterAchievementEvaluator()
     private let service: any GameCenterService
     private var authenticationHandlerInstalled = false
+    private var reportTail: Task<Void, Never>?
 
     init(model: GameCenterModel, service: any GameCenterService = GameKitGameCenterService()) {
         self.model = model
@@ -128,7 +129,19 @@ final class GameCenterController: Sendable {
         }
     }
 
+    /// Reports one summary after another, so two game ends close together do not overlap their
+    /// load, report and `isReportingAchievements` state. See CODE_AUDIT_28 §3.4.
     func reportAchievements(from summary: GameStatisticsSummary) async {
+        let previous = reportTail
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            await self?.performReport(from: summary)
+        }
+        reportTail = task
+        await task.value
+    }
+
+    private func performReport(from summary: GameStatisticsSummary) async {
         guard service.isAuthenticated else { return }
         model.beginReporting()
         do {

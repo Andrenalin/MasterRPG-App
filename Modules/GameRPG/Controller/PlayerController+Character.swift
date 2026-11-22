@@ -10,7 +10,7 @@ import CharacterRPG
 // message handling. See CODE_AUDIT_Game §9.24.
 
 extension PlayerController {
-    func scheduleSendCharacter() async {
+    func scheduleSendCharacter() {
         scheduleSendCharacterTask()
     }
 
@@ -82,7 +82,7 @@ extension PlayerController {
     func announceCompanions() async {
         gameModel.noteCompanionsChanged()
         gameModel.reset(sendPlayer: false)
-        await scheduleSendCharacter()
+        scheduleSendCharacter()
     }
 
     /// Advertises each enabled companion like the Character: id and version only, the master

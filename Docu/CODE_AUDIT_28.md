@@ -40,7 +40,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - §6.1 Relocate every `.local` import reference that has no `Documents` component.
 - §8.2 Pass the module bundle for the Rule entry-kind titles and source-metadata labels.
 - §9.1, §9.2, §9.3 Delete the unreachable visionOS 2D game-screen code, the unreachable `OverlayGameMenu` variants and the dead PDF-selection plumbing (about 700 lines).
-- §3.1 Store and cancel the handshake/dial deadline tasks.
+- §3.1 Store and cancel the handshake/dial deadline tasks (fixed 2026-11-22).
 
 ## 3. Concurrency
 
@@ -50,6 +50,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Under connection churn every attempt leaves a sleeping task; they are unbounded in number and do not stop on `stopStreaming`. The guards re-check state, so correctness holds.
 - **Action:** Keep the tasks in a dictionary keyed by connection id, cancel on authenticate/remove/stop, clear in the hosting teardown.
 - **Severity:** Medium
+- **Status 2026-11-22:** fixed. `deadlineTasks` per connection id; cancelled on authenticate (`readyConnection`), `removeConnection` and `resetConnections`. Test: `MasterNetworkControllerTests.handshakeDeadlineTaskIsCancelledWithConnection`.
 - **Known:** audit 27 §3.5 (deadline part), still open.
 
 ### 3.2 Audio route-change pause and interruption auto-resume act on the coordinated player, so under SharePlay they affect the whole group
@@ -58,6 +59,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** One player's Bluetooth headset disconnecting pauses the music for the GM and everyone; after a phone call the auto-resume restarts music the GM had paused. LAN play behaves correctly, so it is easy to miss in testing.
 - **Action:** In a running game on a player/observer device, suspend or mute locally instead of using the coordinated transport, or route the pause through the game. Verify on two devices in a SharePlay session.
 - **Severity:** Medium (Likely; AVPlayerPlaybackCoordinator propagation not tested on device)
+- **Status 2026-11-22:** fixed in code, not verified on two devices. With other SharePlay participants (`AudioPlayerModel.isPlaybackShared`) a route change mutes locally (`volume = 0`) instead of pausing, an interruption does not pause explicitly, and its end does not call `play()`. Unverified: that the playback coordinator rejoins a suspended device by itself; no automatic unmute when the route returns. Test: `AudioControllerTests.routeChangesAndInterruptionsStayLocalInSharedPlayback`.
 
 ### 3.3 The whole Foundry mapping pass runs on the main actor
 - **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper.swift:179-200, 265-271, 339-346`, `UniversalVTTDomainMapper.swift:10-19`, per-item work in `FoundryVTTDomainMapper+Documents.swift`, `+SharedHelpers.swift:303-335`
@@ -65,6 +67,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A package with tens of thousands of documents does regex link rewriting, HTML sanitising, id hashing and index building on the UI thread during "Preparing import review"; total main-thread time is large and animation stutters.
 - **Action:** Keep model construction on the main actor but move the pure parts (text sanitising, id derivation, value-hierarchy flattening, alias indexing) into a nonisolated pre-pass; fix the stale comment.
 - **Severity:** Medium (Likely)
+- **Status 2026-11-22:** partly fixed. `FoundryTextPrepass` converts the document and rule description HTML to plain text off the main actor (`@concurrent`) before the models are built; the stale comment is fixed. Still on the main actor: link rewriting (needs the destinations indexed during mapping), id hashing, value-hierarchy flattening and model construction; rule-entry text only exists after the factory built the models. Not measured on a large package.
 
 ### 3.4 Unowned fire-and-forget tasks (grouped)
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:421-465` (message loop awaits `handleUpdate` inline, Known audit 27 §3.4); `Modules/MapRPG/Root/MapRootModel.swift:36-46` (content-send chain never cancelled); `Modules/MapRPG/Controller/EditController.swift:310-314`, `MapEditorCanvasGestures.swift:214-218`; `Modules/CoreRPG/Sheet/SheetEntryAddGroupButton.swift:14-22`, `SheetEntryConvertToGroupView.swift:103, 118`, `LGViews/GameShareView.swift:156-171`, `LGViews/FileImporterView.swift:59, 153` (button `Task {}` allows double-fire); `Modules/GameRPG/Statistics/Model/GameStatisticsModel.swift:131-184` (flush tasks pile up while a save is slow), `GameCenter/GameCenterController.swift:131-146` (overlapping achievement reports, Known §3.6); `Modules/SpaceRPG/Record/AppDataModel.swift:103, 452`, `Space/SpaceViewer+Handoff.swift:70-85`, `Modules/PdfRPG/Pdf/PdfWrapperView.swift:68-71`; `Modules/GameRPG/Root/GameRoot.swift:352-367` (one hung operation blocks the serial network-action chain, partly Known)
@@ -72,6 +75,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Rare double actions and unbounded task buildup under slow I/O; none is a data race.
 - **Action:** Store the handle where a second start is possible (as the sibling Summary views already do), cancel on teardown, add a timeout to the serial action chain.
 - **Severity:** Low
+- **Status 2026-11-22:** partly fixed. Fixed: map content-send chain cancelled with the game (`cancelMapContentSends`, called from `GameRoot.cancelOwnedTasks`); one full-buffer statistics flush task at a time; Game Center reports serialized; re-entry guards on `SheetEntryAddGroupButton` and `GameShareView.shareAction`. Not changed on purpose: the SharePlay message loop (inline `handleUpdate` keeps the message order, Known 27 §3.4); `EditController` thumbnail invalidation (documented as intentional); `SheetEntryConvertToGroupView` (already guarded by `isConverting`); `FileImporterView` (picker and alert close on the first tap); `AppDataModel`, `SpaceViewer+Handoff`, `PdfWrapperView` (harmless); a timeout on the `GameRoot` action chain (a hung `@MainActor` operation cannot be timed out; the chain is cancelled with the game).
 
 ### 3.5 Redundant `Sendable` conformances and `async` functions that never suspend (grouped)
 - **Location:** `Modules/GameRPG/Controller/MasterController.swift:104-108`, `PlayerController.swift:57-61`, `Player/PlayerNetworkModel.swift:11-15`, `Master/MasterNetworkModel.swift:11-16`; `Modules/GameRPG/Controller/PlayerController+Character.swift:14-16`, `PlayerController+Proxy.swift:57-59`; `Modules/GameRPG/Network/GameNetworkController+MasterDelegate.swift:30-36` (acceptance check runs twice per LAN message)
@@ -79,6 +83,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Noise, extra hops, a duplicated check per message.
 - **Action:** Drop the redundant conformances and `async`; run the acceptance check once.
 - **Severity:** Low
+- **Status 2026-11-22:** partly fixed, and the finding was partly wrong. **Do not remove or move the `extension MasterController: MasterNetworkStoreDelegate {}` and `extension PlayerController: PlayerNetworkStoreDelegate {}` in `MasterController.swift` / `PlayerController.swift`.** They are not redundant `Sendable` declarations: the class gets `Sendable` through the protocol, and Swift requires that conformance in the class's own file (moving it compiles but warns "Conformance to 'Sendable' must occur in the same source file", an error in a future language mode). The `Sendable & AnyObject` on `MasterNetworkControllerDelegate`/`PlayerNetworkControllerDelegate`/`MasterNetworkControllable`/`PlayerNetworkControllable` is also needed (the build fails without it: non-Sendable existential leaves the main actor). Fixed: `scheduleSendCharacter` and `scheduleProxyFocus` are no longer `async`; the acceptance check runs once per LAN/SharePlay message (`receivedAccepted`; `received` still checks first for other callers).
 
 ## 4. API modernity
 

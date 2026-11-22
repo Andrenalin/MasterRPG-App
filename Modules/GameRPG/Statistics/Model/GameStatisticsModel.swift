@@ -41,6 +41,8 @@ final class GameStatisticsModel: Sendable {
     @ObservationIgnored private var pendingRoster: [GameStatisticParticipantDraft]?
     @ObservationIgnored private var lastCheckpointedRosterIds: Set<UUID> = []
     @ObservationIgnored private var flushTask: Task<Void, Never>?
+    /// The flush a full buffer started, while it runs.
+    @ObservationIgnored private var bufferFlushTask: Task<Void, Never>?
     /// Serializes flushes: `finishSession`/`beginSession` await any flush still in flight
     /// instead of finding an empty buffer and running ahead of it. See CODE_AUDIT_18 §3.10.
     @ObservationIgnored private var flushChain: Task<Void, Never>?
@@ -160,9 +162,12 @@ final class GameStatisticsModel: Sendable {
             pendingRoster = participants
         }
 
-        if pendingEvents.count >= Self.maximumBufferedEvents {
-            Task { [weak self] in
+        if pendingEvents.count >= Self.maximumBufferedEvents, bufferFlushTask == nil {
+            // One full-buffer flush at a time: while a slow save runs, the events that fill the
+            // buffer again wait for the timer instead of starting a task each. See CODE_AUDIT_28 §3.4.
+            bufferFlushTask = Task { [weak self] in
                 await self?.flushPendingEvents()
+                self?.bufferFlushTask = nil
             }
         } else {
             scheduleFlush()
