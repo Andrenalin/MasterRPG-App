@@ -297,6 +297,10 @@ extension CharacterRootModel {
             // item must stay without a dice anyway. See CODE_AUDIT_26 §5.107.
         }
 
+        // A group no entry points to any more (left behind by an import before the fix in
+        // ImportControllable.removeStaleGroups) is hidden and reachable by nobody.
+        await removeStaleGroups()
+
         let cc = ConvertController(itemController: itemController, editController: editController)
         await cc.repairHiddenAndFolders(reportModel: reportModel)
     }
