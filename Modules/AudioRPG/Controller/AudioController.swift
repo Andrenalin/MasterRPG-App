@@ -360,8 +360,15 @@ extension AudioController {
 // MARK: - AudioPlayerSessionDelegate
 
 extension AudioController: AudioPlayerSessionDelegate {
+    /// A pause is a transport action: with other SharePlay participants it would stop the music
+    /// for the whole group because one device lost its headset. There the output is muted on this
+    /// device only; the volume bar shows it and an unmute restores the level.
+    /// See CODE_AUDIT_28 §3.2.
     @MainActor func routeChanged() {
-        if model.isPlaying {
+        guard model.isPlaying else { return }
+        if model.isPlaybackShared {
+            model.volume = 0
+        } else {
             pause()
         }
     }
@@ -373,7 +380,11 @@ extension AudioController: AudioPlayerSessionDelegate {
         // A play that is on its way (activating the session) must not start inside the interruption.
         model.playbackGeneration += 1
         guard model.wantsPlayback else { return false }
-        model.player.pause()
+        // The system already stopped the output; an explicit pause would also be sent to the
+        // group, whose playback coordinator suspends and rejoins this device by itself.
+        if !model.isPlaybackShared {
+            model.player.pause()
+        }
         return true
     }
 
@@ -382,6 +393,9 @@ extension AudioController: AudioPlayerSessionDelegate {
     /// play is given up, so a seek or a command that reads it does not start the audio on its
     /// own. See CODE_AUDIT_Audio2 §5.12.
     @MainActor func endInterruption(wasPlaying: Bool) {
+        // With other participants the group decides: a `play()` here would restart music the game
+        // master paused during the interruption, for everyone.
+        guard !model.isPlaybackShared else { return }
         if wasPlaying {
             play()
         } else if !model.isPlaying {

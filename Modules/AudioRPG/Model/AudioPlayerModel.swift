@@ -105,6 +105,14 @@ public final class AudioPlayerModel: Sendable {
     // MARK: Internal
     var audioSession: AudioPlayerSession?
     var coordinator: AudioListenerCoordinator?
+    /// Tests set it; `nil` asks the coordinator.
+    @ObservationIgnored var sharedPlaybackOverride: Bool?
+    /// Whether this player's transport actions reach other devices (a SharePlay session with
+    /// other participants). Route changes and interruptions are local events and must not use
+    /// the transport then. See CODE_AUDIT_28 §3.2.
+    var isPlaybackShared: Bool {
+        sharedPlaybackOverride ?? coordinator?.hasOtherParticipants ?? false
+    }
     var isInitialized = false
     var player = AVPlayer()
 

@@ -128,6 +128,32 @@ struct AudioControllerTests {
         #expect(model.wantsPlayback)
     }
 
+    // CODE_AUDIT_28 §3.2: a pause or play on a coordinated player is sent to the whole group.
+    @Test("Route changes and interruptions stay local while SharePlay participants listen")
+    func routeChangesAndInterruptionsStayLocalInSharedPlayback() async throws {
+        let root = AudioRootModel.testRoot()
+        let sut = root.audioController
+        let model = root.audioPlayerModel
+        model.sharedPlaybackOverride = true
+        model.volume = 0.5
+
+        // A lost headset mutes this device, the transport (and the intent) is untouched.
+        sut.play()
+        model.isPlaying = true
+        sut.routeChanged()
+        #expect(model.wantsPlayback)
+        #expect(model.volume == 0)
+        #expect(model.previousVolume == 0.5)
+
+        // The end of an interruption does not play or give up anything: the group decides.
+        #expect(sut.beginInterruption())
+        sut.endInterruption(wasPlaying: false)
+        #expect(model.wantsPlayback)
+        model.wantsPlayback = false
+        sut.endInterruption(wasPlaying: true)
+        #expect(!model.wantsPlayback)
+    }
+
     @Test("Remote commands are dispatched to controller actions")
     func remoteCommands() async throws {
         let root = AudioRootModel.testRoot()

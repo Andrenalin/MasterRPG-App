@@ -59,6 +59,13 @@ public final class AudioListenerCoordinator {
         return participants.isEmpty ? "none" : participants.joined(separator: "; ")
     }
 
+    /// Whether other devices take part in the coordinated playback right now: a transport action
+    /// on this player (pause, play) is then sent to them as well. Empty on LAN play and when this
+    /// device is alone in the SharePlay session.
+    var hasOtherParticipants: Bool {
+        !playbackCoordinator.otherParticipants.isEmpty
+    }
+
     func coordinatePlayback(of audioId: UUID) {
         guard audioId != sharedAudioId else { return }
         coordinatorDelegate.setAudioId(audioId)

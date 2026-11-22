@@ -45,7 +45,7 @@ struct DiceRollSoundTests {
 
         let player = sut.diceGameModel.audioPlayer
         // `replaceCurrentItem` takes effect asynchronously.
-        try await awaitCondition { player.currentItem != nil }
+        let _ = await awaitCondition { player.currentItem != nil }
         #expect(player.volume == GameController.diceSoundVolume)
     }
 
