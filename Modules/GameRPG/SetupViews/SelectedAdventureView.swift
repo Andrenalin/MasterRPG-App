@@ -66,7 +66,10 @@ struct SelectedAdventureView: View {
             updateTipSelection(root.gameModel.selectedAdventure)
         }
         .onChange(of: lastAdventureUUID, initial: true) {
-            root.gameModel.selectedAdventure <=> selection.itemId
+            // The stored value is the source: a choice made elsewhere (the Siri "Start Adventure
+            // Game" intent, the game import) changes it while this screen is visible, and the
+            // picker's still old selection must not be written back over it. See CODE_AUDIT §5.1.
+            root.resetSelectedAdventure(uuidString: lastAdventureUUID)
         }
         .onChange(of: selection.itemId) {
             root.gameModel.selectedAdventure <=> selection.itemId

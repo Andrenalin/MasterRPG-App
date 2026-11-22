@@ -8,7 +8,7 @@ import AppIntents
 public struct StartAdventureGameIntent: AppIntent {
     public static let title: LocalizedStringResource = "Start Adventure Game"
     public static let description = IntentDescription(
-        "Starts the game mode with an adventure, so players can join on their devices.",
+        "Opens the Game tab with this adventure chosen, ready to start for your players.",
         categoryName: "Game",
         searchKeywords: ["session", "play", "campaign", "game master"]
     )
@@ -31,10 +31,15 @@ public struct StartAdventureGameIntent: AppIntent {
         try await requireReadyDatabase()
         // `target` may have been deleted since it was cached. See CODE_AUDIT_21 §5.28.
         try requiredIntentTarget(root.itemController.itemSync(for: target.id), parameter: $target, prompt: .localized("Which adventure to run?", bundle: .module))
-        await root.adventureGameControllable.startGame(with: target.id)
-        root.startGame()
+        // Only chooses the adventure and opens the Game tab: the game master starts the game
+        // there. Putting the modules into game mode here, without a started game, sent every
+        // later edit to game memory only, and the chosen target was ignored. See CODE_AUDIT §5.1.
+        let isChosen = root.selectAdventureForGame?(target.id) ?? false
         navigator.perform(route: KnownRoutes.game)
-        return .result(dialog: .localized("Starting \"\(target.name)\".", bundle: .module))
+        guard isChosen else {
+            return .result(dialog: .localized("A game is already running.", bundle: .module))
+        }
+        return .result(dialog: .localized("\"\(target.name)\" is ready to start.", bundle: .module))
     }
 }
 

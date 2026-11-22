@@ -104,6 +104,9 @@ public final class GameRoot {
             await gameCenterController?.reportAchievements(from: summary)
         }
         restoreSelectedCharacter()
+        adventureRoot.selectAdventureForGame = { [weak self] adventureId in
+            self?.selectAdventureForGame(adventureId) ?? false
+        }
     }
 
     // Force-unwrapped with `!` rather than `.unsafelyUnwrapped`: both backing
@@ -387,6 +390,20 @@ public final class GameRoot {
 // MARK: - Master / Player selection views and handling
 
 extension GameRoot {
+    /// Chooses the adventure the Game screen starts with, as picking it there does: the Siri and
+    /// Shortcuts "Start Adventure Game" intent only prepares the game, the game master starts it.
+    /// The choice is also stored where the setup screen restores it from, because a setup screen
+    /// that is not on screen yet reads the stored value when it appears. Nothing is changed while
+    /// a game is starting or running. Returns whether the adventure was chosen.
+    /// See CODE_AUDIT §5.1.
+    @discardableResult
+    func selectAdventureForGame(_ adventureId: UUID) -> Bool {
+        guard gameModel.gameConfig.state == .stopped, !isStartingMaster, !isStartingGame else { return false }
+        UserDefaults.standard.set(adventureId.uuidString, forKey: GameStorageKeys.lastAdventureUUID)
+        gameModel.selectedAdventure <=> adventureId
+        return true
+    }
+
     func resetSelectedAdventure(uuidString: String) {
         guard let uuid = UUID(uuidString: uuidString) else {
             if gameModel.selectedAdventure != nil {

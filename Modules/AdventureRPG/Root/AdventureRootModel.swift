@@ -229,6 +229,14 @@ public final class AdventureRootModel {
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored let playerLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel
+
+    /// Chooses the adventure the Game screen starts with. The game root (GameRPG, which depends
+    /// on this module and not the other way round) installs it. The "Start Adventure Game"
+    /// intent calls it instead of putting the modules into game mode itself: only a started game
+    /// may do that, otherwise every later edit goes to game memory only. Returns `false` when
+    /// the adventure cannot be chosen now (a game is running or starting) or nobody installed the
+    /// hook. See CODE_AUDIT §5.1.
+    @MainActor @ObservationIgnored public var selectAdventureForGame: (@MainActor (UUID) -> Bool)?
 }
 
 @MainActor
