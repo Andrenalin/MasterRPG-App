@@ -85,12 +85,10 @@ extension MasterNetworkController: ListenerManagerDelegate {
     /// Drops an inbound connection still unauthenticated after `GameLimits.handshakeDeadline`, so
     /// idle sockets cannot hold the pending-handshake slots. See CODE_AUDIT_16 §6.2.
     private func enforceHandshakeDeadline(for id: ConnectionController.ID) {
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: GameLimits.handshakeDeadline)
-            guard let self, await connectionThrottle.isPending(id: id) else { return }
+        startDeadline(for: id) { controller in
+            guard await controller.connectionThrottle.isPending(id: id) else { return }
             Logger.networking.debug("MasterNetworkController: Handshake deadline expired")
-            guard let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
-            await stale.cancel()
+            await controller.cancelConnection(id: id)
         }
     }
 

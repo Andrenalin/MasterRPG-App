@@ -77,6 +77,7 @@ extension MasterNetworkController {
 
         networkModel.connectionStartTasks[id]?.cancel()
         networkModel.connectionStartTasks.removeValue(forKey: id)
+        cancelDeadline(for: id)
         let wasEstablished = establishedConnectionIds.remove(id) != nil
         if let endpoint = browserConnectionEndpoints.removeValue(forKey: id),
            !browserConnectionEndpoints.values.contains(endpoint) {
@@ -119,13 +120,36 @@ extension MasterNetworkController {
     /// Cancels a dial that has not connected after `GameLimits.handshakeDeadline`, so a peer that accepts the
     /// connection and then stalls cannot hold its slot forever.
     func enforceDialDeadline(for id: ConnectionController.ID) {
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: GameLimits.handshakeDeadline)
-            guard let self, !establishedConnectionIds.contains(id),
-                  let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
+        startDeadline(for: id) { controller in
+            guard !controller.establishedConnectionIds.contains(id) else { return }
             Logger.networking.debug("MasterNetworkController: Dial deadline expired")
-            await stale.cancel()
+            await controller.cancelConnection(id: id)
         }
+    }
+
+    /// Runs `expired` once `GameLimits.handshakeDeadline` passes, unless the deadline is
+    /// cancelled first (authenticated, removed, hosting stopped). The task is kept per connection
+    /// so churn cannot pile up sleeping tasks. See CODE_AUDIT_28 §3.1.
+    func startDeadline(
+        for id: ConnectionController.ID,
+        expired: @escaping @MainActor (MasterNetworkController) async -> Void
+    ) {
+        deadlineTasks[id]?.cancel()
+        deadlineTasks[id] = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: GameLimits.handshakeDeadline)
+            guard !Task.isCancelled, let self else { return }
+            deadlineTasks.removeValue(forKey: id)
+            await expired(self)
+        }
+    }
+
+    func cancelDeadline(for id: ConnectionController.ID) {
+        deadlineTasks.removeValue(forKey: id)?.cancel()
+    }
+
+    func cancelConnection(id: ConnectionController.ID) async {
+        guard let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
+        await stale.cancel()
     }
 
     func addNew(_ connection: any ConnectionControllable) {

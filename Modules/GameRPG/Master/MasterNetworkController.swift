@@ -29,6 +29,9 @@ final class MasterNetworkController: Sendable {
     /// Failed redials per fallback endpoint since it last connected, and the pending retry.
     var redialAttempts: [NWEndpoint: Int] = [:]
     var redialTasks: [NWEndpoint: Task<Void, Never>] = [:]
+    /// The pending handshake (inbound) or dial (outbound) deadline per connection. Cancelled when
+    /// the connection authenticates, is removed, or hosting stops. See CODE_AUDIT_28 §3.1.
+    var deadlineTasks: [ConnectionController.ID: Task<Void, Never>] = [:]
     var listenerRestarts = ListenerRestartScheduler()
     /// Serializes outbound sends: each send encodes off the main actor and only hands its
     /// frame to the connections after the previous send did, so a small message sent after
@@ -169,6 +172,8 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.observeConnectionsTask = nil
         networkModel.connectionStartTasks.values.forEach { $0.cancel() }
         networkModel.connectionStartTasks.removeAll()
+        deadlineTasks.values.forEach { $0.cancel() }
+        deadlineTasks = [:]
         networkModel.browserManager?.stop()
         networkModel.browserManager = nil
         networkModel.listener?.stopListening()
@@ -282,6 +287,7 @@ extension MasterNetworkController: ConnectionControllerDelegate {
     @MainActor
     func readyConnection(for id: ConnectionController.ID) async {
         await connectionThrottle.resolve(id: id, succeeded: true)
+        cancelDeadline(for: id)
         establishedConnectionIds.insert(id)
         if let endpoint = browserConnectionEndpoints[id] {
             redialAttempts.removeValue(forKey: endpoint)

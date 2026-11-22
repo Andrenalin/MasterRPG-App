@@ -330,6 +330,30 @@ struct MasterNetworkControllerTests {
         #expect(env.delegateSpy.calledLostPlayer == 1)
     }
 
+    @Test("The handshake deadline task ends with its connection and with hosting")
+    func handshakeDeadlineTaskIsCancelledWithConnection() async throws {
+        // Arrange
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        env.controller.startStreaming(passcode: "1234")
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
+        let ids = env.controller.networkModel.connections.map(\.id)
+        try #require(ids.count == 2)
+        #expect(env.controller.deadlineTasks.count == 2)
+
+        // Act / Assert: authenticated, then lost
+        await env.controller.readyConnection(for: ids[0])
+        #expect(env.controller.deadlineTasks[ids[0]] == nil)
+        await env.controller.failed(with: "Error", for: ids[1])
+        #expect(env.controller.deadlineTasks.isEmpty)
+
+        // Act / Assert: stopping hosting drops a pending one
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
+        #expect(env.controller.deadlineTasks.count == 1)
+        env.controller.stopStreaming()
+        #expect(env.controller.deadlineTasks.isEmpty)
+    }
+
     @Test("Failed fallback connection releases endpoint for another reconnect")
     func failedFallbackConnectionAllowsReconnect() async throws {
         // Arrange
