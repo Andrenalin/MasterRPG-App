@@ -46,7 +46,13 @@ struct GameDiceResultPopover: View {
         case .seat(let seat):
             guard isVisible(isMasterSeat: seat == Self.masterSeat) else { return nil }
             // Several players can share a seat; the overlay lists one result per player.
-            playerNames = game.seatPlayerNames[seat] ?? []
+            var names = game.seatPlayerNames[seat] ?? []
+            // A master without a table has its dice at its own seat, named by its roll: the seat's
+            // names only know it once this device has learned which participant is the master.
+            if seat == Self.masterSeat, let name = game.masterGuestGroup?.name, !names.contains(name) {
+                names.insert(name, at: 0)
+            }
+            playerNames = names
         case .guest(let index):
             guard game.guestGroups.indices.contains(index),
                   isVisible(isMasterSeat: game.guestGroups[index].isGameMaster) else { return nil }

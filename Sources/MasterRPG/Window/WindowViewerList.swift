@@ -24,11 +24,11 @@ struct WindowViewerList: Scene {
     var body: some Scene {
         Group {
             windowGroup(model: appModel, module: .adventure) { selection in
-                appModel.adventureRoot.viewController.viewer(root: appModel.adventureRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
+                appModel.adventureRoot.viewController.windowViewer(root: appModel.adventureRoot, selection: selection, closeButton: closeButton)
             }
 
             windowGroup(model: appModel, module: .value) { selection in
-                appModel.characterRoot.viewController.viewer(root: appModel.characterRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
+                appModel.characterRoot.viewController.windowViewer(root: appModel.characterRoot, selection: selection, closeButton: closeButton)
             }
             
             windowGroup(model: appModel, module: .generator) { selection in

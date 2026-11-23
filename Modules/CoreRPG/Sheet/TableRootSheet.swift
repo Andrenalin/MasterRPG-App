@@ -103,7 +103,7 @@ private struct TableRootSheetContent: View {
             .toolbar {
                 toolbarContent
             }
-            .applyIf(!configuration.isGame) {
+            .applyIf(!configuration.isGame || configuration.isWindow) {
                 $0.navigationTitle(Text(verbatim: sheetRootModel.sheetModel.name))
             }
             .navigationVisibility(true)

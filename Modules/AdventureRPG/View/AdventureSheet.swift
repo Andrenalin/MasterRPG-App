@@ -46,9 +46,17 @@ struct AdventureSheet: View {
 #endif
         }
         .onChange(of: model.id, initial: true) {
-            guard configuration.isGame else { return }
-            resolvedGameSheetRootModel = root.resolveGameSheetRootModel(for: model.id)
+            resolveGameSheetRootModel()
         }
+        // A window turns into the game view when a game starts while it is open.
+        .onChange(of: configuration.isGame) {
+            resolveGameSheetRootModel()
+        }
+    }
+
+    private func resolveGameSheetRootModel() {
+        guard configuration.isGame else { return }
+        resolvedGameSheetRootModel = root.resolveGameSheetRootModel(for: model.id)
     }
 
     /// A plain read: the model resolved for this selection, or the stored one on the first render.

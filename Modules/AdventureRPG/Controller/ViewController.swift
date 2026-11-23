@@ -67,6 +67,11 @@ public extension ViewController {
         )
     }
     
+    /// The content of an adventure viewer window; the game view while a game shows the adventure.
+    @MainActor func windowViewer(root: AdventureRootModel, selection: WindowItemSelection, closeButton: Bool) -> some View {
+        AdventureWindowViewer(root: root, itemId: selection.itemId, closeButton: closeButton)
+    }
+
     @MainActor func gameView(
         root: AdventureRootModel,
         focusedIds: [UUID]

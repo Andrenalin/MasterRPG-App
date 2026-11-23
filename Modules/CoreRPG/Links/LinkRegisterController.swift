@@ -124,6 +124,19 @@ public extension LinkRegisterController {
         return model.sourceItems[source.itemId, default: []].filter { $0.source == source }
     }
     
+    /// Triggers `validateLinks` on every source item that has a registered link pointing to the
+    /// entry `entry` (its former item and id) — call after the entry moved to another item. The
+    /// links name the item the entry left, so validation replaces them with the entry's new item.
+    @MainActor func repairLinks(forEntry entry: ItemRowModel) {
+        guard let entryId = entry.entryId else { return }
+        let sources = model.items[entry.itemId, default: []]
+            .filter { $0.destination.entryId == entryId && $0.destination.typeId == entry.typeId }
+            .map { ItemRowModel(itemId: $0.source.itemId, typeId: $0.source.typeId) }
+        for source in Set(sources) {
+            root?.itemRootController(for: source.typeId)?.linkControllable.validateLinks(on: source.itemId)
+        }
+    }
+
     /// Triggers `validateLinks` on every source module that has a registered link pointing to any of `items` — call on deletion or move.
     @MainActor func repairLinks(for items: [ItemRowModel]) {
         for item in items {

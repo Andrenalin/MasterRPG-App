@@ -48,6 +48,11 @@ public extension ViewController {
         )
     }
     
+    /// The content of a character viewer window; the game view while a game shows the character.
+    @MainActor func windowViewer(root: CharacterRootModel, selection: WindowItemSelection, closeButton: Bool) -> some View {
+        CharacterWindowViewer(root: root, itemId: selection.itemId, closeButton: closeButton)
+    }
+
     @MainActor func dropChooseView(model: ItemSelectionModel) -> some View {
         DropChooseView(selectionModel: model)
             .environment(model)

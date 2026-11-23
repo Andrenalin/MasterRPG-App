@@ -26,13 +26,15 @@ public struct ViewerConfiguration: Hashable, Sendable {
         addToolbar: Bool = true,
         isGame: Bool = false,
         aiExtractor: Bool = false,
-        canBookmark: Bool = false
+        canBookmark: Bool = false,
+        isWindow: Bool = false
     ) {
         self.closeButton = closeButton
         self.addToolbar = addToolbar
         self.isGame = isGame
         self.aiExtractor = aiExtractor
         self.canBookmark = canBookmark
+        self.isWindow = isWindow
     }
     
     public let closeButton: Bool
@@ -40,6 +42,9 @@ public struct ViewerConfiguration: Hashable, Sendable {
     public let isGame: Bool
     public let aiExtractor: Bool
     public let canBookmark: Bool
+    /// The viewer fills its own window (Mac, visionOS, iPad), so the window title names the item
+    /// even when `isGame` is set: the 2D game screen supplies its own title, a window does not.
+    public let isWindow: Bool
 }
 
 public protocol ViewControllable: Sendable {

@@ -394,6 +394,7 @@ public extension EntryDataEditable {
         item.entries.append(entry)
         save(updated: otherItem, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
         save(updated: item, message: String(localized: "add entry", bundle: .module), forceSave: forceSave)
+        repairLinks(toMovedEntry: entryId, from: itemId)
         return true
     }
 
@@ -406,6 +407,13 @@ public extension EntryDataEditable {
         group.entries.append(entry)
         save(updated: item, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
         save(updated: group, message: String(localized: "move entry", bundle: .module), forceSave: forceSave)
+        repairLinks(toMovedEntry: sourceEntryId, from: itemId)
+    }
+
+    /// A moved entry keeps its id, but the links to it still name the item it left. Replaces the
+    /// links the register knows for it with links to its new item.
+    @MainActor private func repairLinks(toMovedEntry entryId: UUID, from itemId: UUID) {
+        linkRegisterController.repairLinks(forEntry: ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module))
     }
 
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? { nil }
@@ -418,6 +426,7 @@ public extension EntryDataEditable {
         parentItem.entries.append(entry)
         save(updated: group, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
         save(updated: parentItem, message: String(localized: "move entry out", bundle: .module), forceSave: forceSave)
+        repairLinks(toMovedEntry: sourceEntryId, from: itemId)
     }
 }
 

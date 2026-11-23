@@ -67,8 +67,12 @@ private extension ListModelUpdatesViewModifier {
     func updateStreamChanges() async {
         let stream = Observations {
             if let parentModel {
-                // Detail context: watch the folder/collection's own entries for add/remove changes.
+                // Detail context: watch the folder/collection's own entries for add/remove changes,
+                // and the entries of its group items, which the inspector lists under the group
+                // entry (an entry moved between groups changes neither of the parent's own entries).
                 parentModel.entries.map(\.childId)
+                    + parentModel.entries.compactMap { ($0 as? any GroupableEntry)?.groupItemId }
+                        .flatMap { itemControllable.itemSync(for: $0)?.entries.map(\.id) ?? [] }
             } else {
                 itemControllable.itemDataModel.items
             }

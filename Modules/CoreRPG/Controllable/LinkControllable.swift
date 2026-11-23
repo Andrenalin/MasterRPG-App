@@ -270,7 +270,15 @@ public extension LinkControllable {
 
         Logger.linkController.info("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .private) is gone")
 
-        if link.entryId != nil {
+        if let entryId = link.entryId {
+            // A moved entry keeps its id: follow it to the item that holds it now (a group, or the
+            // item the group belongs to), before falling back to the entry's name.
+            if let owner = itemControllable.itemDataModel.items.lazy
+                .compactMap({ itemControllable.itemSync(for: $0) })
+                .first(where: { $0.entries.contains { $0.id == entryId } }) {
+                return content.replacing(link.markDown, with: owner.url(linkNumber: link.linkNumber, entryId: entryId))
+            }
+
             // Is item available for the entry? If not recovery not possible
             guard let model = itemControllable.itemSync(for: link.itemId) else {
                 Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .private) cannot recover entry because item is missing.")

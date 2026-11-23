@@ -99,11 +99,15 @@ private struct ReaderSheetView: View {
             }
         }
         .onChange(of: model.id, initial: true) {
-            guard configuration.isGame else { return }
+            resolveGameSheetRootModel()
+        }
+        // A window turns into the game view when a game starts while it is open.
+        .onChange(of: configuration.isGame) {
             resolveGameSheetRootModel()
         }
     }
     private func resolveGameSheetRootModel() {
+        guard configuration.isGame else { return }
         resolvedGameSheetRootModel = root.resolveGameSheetRootModel(for: model.id)
     }
 }

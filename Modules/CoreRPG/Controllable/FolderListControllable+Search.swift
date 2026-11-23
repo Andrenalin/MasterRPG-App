@@ -151,6 +151,12 @@ extension FolderListControllable {
                 && searchRootControllable is SearchLinkController
                 && canExpandValueResult(result))
         if let cached = target.cacheListModels[id] {
+            // An entry that moved to another item keeps its id, so its cached row would keep
+            // naming the item it left, resolve an empty entry there and show nothing.
+            let source = ItemRowModel(itemId: result.itemId, entryId: result.entryId, typeId: result.module)
+            if cached.source != source {
+                cached.source = source
+            }
             cached.level = level
             cached.canOpen = canOpen
             cached.childFocusId = result.childFocusId

@@ -295,7 +295,9 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     
     // identifier
     public let id: UUID
-    public let source: ItemRowModel // for reference it could be link to another module
+    /// For reference it could be link to another module. Changes only when the entry the row stands
+    /// for moved to another item (`FolderListControllable.mapResult` follows it).
+    public internal(set) var source: ItemRowModel
     public var level: Int
 
     // display state
