@@ -55,9 +55,11 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 Button(action: performPrimaryAction) {
                     SheetEntryRowContentView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult, isEditTypePickerPresented: $isEditTypePickerPresented)
                         .contentShape(.rect)
+#if os(visionOS)
                         // The hover highlight of the plain button follows the label's shape, which is a capsule by
                         // default on visionOS; the rows are rounded rectangles.
                         .contentShape(.hoverEffect, .rect(cornerRadius: 8, style: .continuous))
+#endif
                 }
                 .buttonStyle(.plain)
 #if os(visionOS)

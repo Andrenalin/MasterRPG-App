@@ -27,6 +27,9 @@ enum TableSeatPanel: CaseIterable, Hashable, Sendable {
     case dock
     /// The panels of the groups, which open above the dock, one at a time.
     case controls, windowsOne, windowsTwo
+    /// A player's volume slider, which opens above the controls panel while the volume button in
+    /// it is on.
+    case volume
     /// The game master's button that opens the map controls, at the map's end.
     case mapDock
     /// The map controls, which open above the map dock.
@@ -38,6 +41,7 @@ enum TableSeatPanel: CaseIterable, Hashable, Sendable {
         case .controls: "seat-panel-controls"
         case .windowsOne: "seat-panel-windows-one"
         case .windowsTwo: "seat-panel-windows-two"
+        case .volume: "seat-panel-volume"
         case .mapDock: "seat-panel-map-dock"
         case .map: "seat-panel-map"
         }
@@ -46,7 +50,7 @@ enum TableSeatPanel: CaseIterable, Hashable, Sendable {
     /// The end of the map the panel stands at: the dock at its start, the map dock at its end.
     var side: TableSeatControlsLayout.Side {
         switch self {
-        case .dock, .controls, .windowsOne, .windowsTwo: .leading
+        case .dock, .controls, .windowsOne, .windowsTwo, .volume: .leading
         case .mapDock, .map: .trailing
         }
     }
@@ -55,6 +59,7 @@ enum TableSeatPanel: CaseIterable, Hashable, Sendable {
     var opensAbove: TableSeatPanel? {
         switch self {
         case .controls, .windowsOne, .windowsTwo: .dock
+        case .volume: .controls
         case .map: .mapDock
         case .dock, .mapDock: nil
         }
@@ -66,6 +71,7 @@ enum TableSeatPanel: CaseIterable, Hashable, Sendable {
         case .controls: "SeatPanelControlsAnchor"
         case .windowsOne: "SeatPanelWindowsOneAnchor"
         case .windowsTwo: "SeatPanelWindowsTwoAnchor"
+        case .volume: "SeatPanelVolumeAnchor"
         case .mapDock: "SeatPanelMapDockAnchor"
         case .map: "SeatPanelMapAnchor"
         }

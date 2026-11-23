@@ -4,6 +4,7 @@
 import CoreRPG
 import Foundation
 import GroupActivities
+import Spatial
 import TabletopKit
 import os.log
 
@@ -39,6 +40,27 @@ extension GameTableModel {
             result = snapshot.seat(of: PlayerSeat.self, for: tabletopGame.localPlayer)?.0.id
         }
         return result
+    }
+}
+
+extension GameTableModel {
+    /// Turns the table so the local seat is in front of the viewer, unless the system already
+    /// does (`isLocalSeatPlacedBySystem`). Seat 0 (the master, and every player without a seat
+    /// yet) leaves the table as it is. See `GameRenderer.orientTable(toSeatRotation:)`.
+    ///
+    /// - Parameter seat: the seat just claimed, straight from `GameObserver.playerChangedSeats`;
+    ///   a snapshot read right after a claim can still miss it. Without it the seat of the
+    ///   current snapshot is used.
+    func orientTableToLocalSeat(seat: TableSeatIdentifier? = nil) {
+        if let seat { lastOrientedSeat = seat }
+        let seatId = seat ?? lastOrientedSeat ?? localSeat
+        let pose = seatId.flatMap { id in setup.seats.first(where: { $0.id == id })?.initialState.pose }
+            ?? PlayerSeat.seatPoses[0]
+        let radians = isLocalSeatPlacedBySystem ? 0 : pose.rotation.radians
+        Logger.sharePlay.debug("Orienting the table: seat \(seatId.map { String(describing: $0) } ?? "none", privacy: .public), placed by system: \(self.isLocalSeatPlacedBySystem, privacy: .public), turn: \(radians, privacy: .public) rad")
+        renderer.orientTable(toSeatRotation: radians)
+        // The panels stand beside the local seat's dice, so they move with the seat.
+        updateSeatPanelPositions()
     }
 }
 

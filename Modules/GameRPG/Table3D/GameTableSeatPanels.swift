@@ -152,12 +152,36 @@ struct GameSeatGroupPanel: View {
                         .tint(Color.accentColor)
                         .frame(minWidth: 44, minHeight: 44)
                 } else {
-                    root.audioRoot.viewController.viewVolume(root: root.audioRoot, alignment: .top)
+                    // The slider is a panel of its own (`GameSeatVolumePanel`), so it does not
+                    // widen this one; the button only toggles it.
+                    root.audioRoot.viewController.volumeToggleButton(
+                        root: root.audioRoot,
+                        isOpen: Binding(get: { game.isVolumeOpen }, set: { game.isVolumeOpen = $0 })
+                    )
                 }
             }
         case .windowsOne, .windowsTwo:
             GameSeatWindowButtons(root: root, isMaster: isMaster, modules: group.windowModules)
         }
+    }
+}
+
+/// A player's volume slider, as a panel of its own above the controls panel. It shows while the
+/// controls group is open and the volume button in it is on.
+@MainActor
+struct GameSeatVolumePanel: View {
+    let root: GameRoot
+    let game: GameTableModel
+
+    var body: some View {
+        ZStack {
+            if game.isVolumeOpen, game.openSeatGroup == .controls, !game.isGameMaster {
+                root.audioRoot.viewController.volumeSlider(root: root.audioRoot)
+                    .modifier(SeatPanelGlass())
+            }
+        }
+        // Outside the condition: a closed panel reports no size.
+        .modifier(ReportsSeatPanelSize(game: game, panel: .volume))
     }
 }
 

@@ -716,6 +716,7 @@ extension RPGSharePlayController {
         #if os(visionOS)
         tabletopGame?.detachNetworkCoordinator()
         systemCoordinator = nil
+        spatialTemplatePreferenceBeforeWindowOverride = nil
         coordinatedTabletopGame = nil
         gameModel?.shareState.isSharePlayActive = false
         #endif

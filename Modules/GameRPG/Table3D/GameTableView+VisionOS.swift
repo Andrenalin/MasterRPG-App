@@ -120,6 +120,9 @@ public struct GameTableView: View {
                             GameSeatGroupPanel(root: root, game: loadedGame, group: group, gameScreenModel: gameScreenModel)
                         }
                     }
+                    Attachment(id: TableSeatPanel.volume.attachmentId) {
+                        GameSeatVolumePanel(root: root, game: loadedGame)
+                    }
                     Attachment(id: GameDiceBagPopover.attachmentId) {
                         GameDiceBagPopover(
                             root: root,
@@ -325,6 +328,7 @@ public struct GameTableView: View {
             scaleController.renderer = game.renderer
             root.gameModel.shareState.mode = .tabletop
             root.networkStore.sharePlayStore.applyShareState()
+            game.orientTableToLocalSeat()
             game.configureSession(from: root)
             game.applyFocusedDiceRollForLocalSeat = Self.focusedDiceHandler(for: game, diceRoot: root.diceRoot)
             await game.handleMapChange(isGameMaster: game.isGameMaster)

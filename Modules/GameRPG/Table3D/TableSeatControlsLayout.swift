@@ -14,6 +14,9 @@ struct TableSeatControlsLayout: Equatable {
     enum Side: Sendable {
         case leading, trailing
 
+        /// The other end of the edge.
+        var opposite: Side { self == .leading ? .trailing : .leading }
+
         /// Which way along the seat's lateral axis (to the player's right) the side lies.
         fileprivate var sign: Double {
             switch self {
@@ -86,6 +89,50 @@ struct TableSeatControlsLayout: Equatable {
         let centre = min(max(edgeLateral - side.sign * width / 2, -limit), limit)
         return standing(
             direction: direction, lateral: lateral, radius: halfExtent - edgeInset, centre: centre,
+            radians: radians, stackedAbove: stackedAbove, surfaceY: surfaceY
+        )
+    }
+
+    /// A seat's lateral coordinate along its own edge, as the seated player sees it: negative to
+    /// their left, positive to their right. 0 for a seat centred on its edge (the master's and the
+    /// guest's), ±0.5 for the side seats, which share a long side.
+    static func seatLateral(seatPosition: (x: Double, z: Double), rotation radians: Double) -> Double {
+        seatPosition.x * cos(radians) - seatPosition.z * sin(radians)
+    }
+
+    /// The side of a seat that lies toward the end of its table edge: the player's right for a
+    /// seat right of its edge's centre, their left for one left of it. `nil` for a centred seat.
+    /// The near west seat is trailing, the near east one leading, the far west one leading and the
+    /// far east one trailing.
+    static func outerSide(seatLateral: Double) -> Side? {
+        guard abs(seatLateral) > 0.01 else { return nil }
+        return seatLateral > 0 ? .trailing : .leading
+    }
+
+    /// A panel that stands right beside the seat's dice row on `side`: `gap` clear of the row's
+    /// end, reaching away from it toward the table's corner (the panel is kept between the
+    /// corners, so a long row or a wide panel pushes it back over the row's end instead of off the
+    /// table). `rowWidth` is the dice row's extent along the edge; the row is centred on
+    /// `seatLateral` (`TableSeatDice.positions`). It stacks like `edgeAlignedPlacement`.
+    static func besideDiceRowPlacement(
+        side: Side,
+        rotation radians: Double,
+        seatLateral: Double,
+        rowWidth: Double,
+        width: Double,
+        gap: Double = 0.04,
+        stackedAbove: Double = 0,
+        surfaceY: Float = GameMetrics.tableThickness
+    ) -> Placement {
+        let direction: (x: Double, z: Double) = (sin(radians), cos(radians))
+        let lateral: (x: Double, z: Double) = (direction.z, -direction.x)
+        let halfExtent = abs(direction.x) * Double(GameMetrics.tableWidth / 2)
+            + abs(direction.z) * Double(GameMetrics.tableLength / 2)
+        let limit = max(0, edgeHalfLength(rotation: radians) - cornerClearance - width / 2)
+        let wanted = seatLateral + side.sign * (rowWidth / 2 + gap + width / 2)
+        return standing(
+            direction: direction, lateral: lateral, radius: halfExtent - edgeInset,
+            centre: min(max(wanted, -limit), limit),
             radians: radians, stackedAbove: stackedAbove, surfaceY: surfaceY
         )
     }

@@ -106,6 +106,19 @@ final class GameTableModel: Sendable {
     /// runs this afterwards. The model owns this closure, so it must never capture the view (a
     /// SwiftUI view value holds `@State` storage that holds this model — a retain cycle).
     var applyFocusedDiceRollForLocalSeat: (() -> Void)?
+    /// `true` while the system itself seats the local participant (a spatial Persona with a seat
+    /// of TabletopKit's spatial template): it turns the shared volume toward that seat, so the
+    /// table must not be turned a second time. Otherwise `orientTableToLocalSeat()` does it.
+    /// Set by `RPGSharePlayController` from `SystemCoordinator.localParticipantStates`.
+    /// The seat the local player claimed last, as `GameObserver.playerChangedSeats` reported it.
+    @ObservationIgnored
+    var lastOrientedSeat: TableSeatIdentifier?
+    var isLocalSeatPlacedBySystem = false {
+        didSet {
+            guard isLocalSeatPlacedBySystem != oldValue else { return }
+            orientTableToLocalSeat()
+        }
+    }
 #endif
 
     /// The game master's weather in 3D over the map. See `GameTableModel+Weather.swift`.
@@ -176,6 +189,9 @@ final class GameTableModel: Sendable {
     var seatDiceCount = 0
     /// The control group whose panel is open above the seat's dock, if any.
     var openSeatGroup: TableSeatGroup?
+    /// Whether a player's volume slider is open above the controls panel (its own seat panel,
+    /// toggled by the volume button in that panel).
+    var isVolumeOpen = false
     /// Whether the map controls are open above the map dock. Opens by itself the first time a
     /// map is shown (`openMapControlsOnFirstMap()`), after that it is the game master's.
     var isMapControlsOpen = false

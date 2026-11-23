@@ -108,7 +108,7 @@ extension GameTablePresentationController {
         appGameStateModel?.isGameRunning = false
         root.mapRoot.rootModel.clearGameEditorSession()
         // The start window first, so the app never has no window while the table closes.
-        scenesManager.openWindow(SceneId.game)
+        showStartWindowIfNeeded()
         await GameWindowToggle.closeSecondaryWindows(scenesManager: scenesManager)
         await root.stopGame()
     }
@@ -119,7 +119,18 @@ extension GameTablePresentationController {
     func tableDidDisappear() {
         guard root.gameModel.gameConfig.state != .stopped, !model.isEndingGame else { return }
         model.asksToQuit = true
-        scenesManager.openWindow(SceneId.game)
+        showStartWindowIfNeeded()
+    }
+
+    /// Opens the start window only when it is not on screen. The start window is a window group
+    /// that can have several windows, and `ScenesManager.openWindow(_:)` asks SwiftUI again for a
+    /// window that is already open (to raise it): that opened a second start window next to the
+    /// one that asked "Quit Game?", so after Quit the main window had to be closed twice.
+    private func showStartWindowIfNeeded() {
+        switch scenesManager.getSceneState(for: SceneId.game) {
+        case .closed, .closing: scenesManager.openWindow(SceneId.game)
+        case .opening, .opened: break
+        }
     }
 
     /// The start window went away with no table open: nothing of the game is left on screen to

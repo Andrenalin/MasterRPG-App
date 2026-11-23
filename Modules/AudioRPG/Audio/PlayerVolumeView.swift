@@ -37,6 +37,22 @@ struct PlayerVolumeView: View {
     }
 }
 
+/// The volume slider alone, for a panel of its own (the game table's seat panel on visionOS),
+/// opened and closed by a `PlayerVolumeButtonView`.
+struct PlayerVolumeSliderView: View {
+    let root: AudioRootModel
+
+    @ScaledMetric(relativeTo: .body) private var sliderWidth = 160
+
+    var body: some View {
+        @Bindable var model = root.audioController.model
+
+        VolumeSlider(volume: $model.volume)
+            .frame(width: sliderWidth)
+            .tint(Color.accentColor)
+    }
+}
+
 /// The volume slider popover.
 private struct PlayerVolumeChangeView: View {
     let root: AudioRootModel
@@ -67,7 +83,7 @@ private struct PlayerVolumeChangeView: View {
 
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
-private struct PlayerVolumeButtonView: View {
+struct PlayerVolumeButtonView: View {
     let root: AudioRootModel
     @Binding var showVolume: Bool
 

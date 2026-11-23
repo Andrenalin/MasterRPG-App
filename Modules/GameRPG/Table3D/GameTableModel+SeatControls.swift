@@ -89,7 +89,13 @@ extension GameTableModel {
     /// Stands the panels at the local seat, at a constant physical size: the dock and the groups'
     /// panels where the biggest map starts, the map dock and the map controls where it ends.
     func updateSeatPanelPositions() {
-        let radians = localSeatPose.rotation.radians
+        let pose = localSeatPose
+        let radians = pose.rotation.radians
+        let seatLateral = TableSeatControlsLayout.seatLateral(
+            seatPosition: (pose.position.x, pose.position.z), rotation: radians
+        )
+        // The dice row's extent along the edge, plus a die's own width at each end.
+        let diceRowWidth = seatDiceCount > 0 ? TableSeatDice.spacing * Double(seatDiceCount) : 0
         let scale = max(seatPanelTableScale, 0.01)
         // A panel's width in table meters: the table's own scale shrinks it, its counter-scale
         // brings that back to the world size the view reported.
@@ -101,9 +107,22 @@ extension GameTableModel {
             guard width > 0 else { continue }
             anchor.setScale(counter)
             // A panel that opens above a dock continues the dock's slope.
-            let stack = panel.opensAbove.map {
-                Double(seatPanelAnchors[$0].size.y * counter) + Self.seatPanelGap * Double(counter)
-            } ?? 0
+            let stack = stackHeight(above: panel, counter: counter)
+            // A seat on a long side stands off-centre on its edge. Its panels belong beside its
+            // own dice, toward the corner: the controls on the outer side of the seat, the map
+            // controls (the game master's, who is never on a side) on the other.
+            if let outer = TableSeatControlsLayout.outerSide(seatLateral: seatLateral) {
+                anchor.place(TableSeatControlsLayout.besideDiceRowPlacement(
+                    side: panel.side == .leading ? outer : outer.opposite,
+                    rotation: radians,
+                    seatLateral: seatLateral,
+                    rowWidth: diceRowWidth,
+                    width: width,
+                    gap: Self.seatPanelGap * Double(counter),
+                    stackedAbove: stack
+                ))
+                continue
+            }
             anchor.place(TableSeatControlsLayout.edgeAlignedPlacement(
                 side: panel.side,
                 rotation: radians,
@@ -119,6 +138,22 @@ extension GameTableModel {
                 stackedAbove: stack
             ))
         }
+    }
+
+    /// How high up the slope a panel stands: the heights of the panels it opens above, and the
+    /// ones those open above (the volume slider stands over the controls panel, over the dock),
+    /// with a gap each. A closed panel has no height and no gap.
+    private func stackHeight(above panel: TableSeatPanel, counter: Float) -> Double {
+        var total = 0.0
+        var below = panel.opensAbove
+        while let current = below {
+            let height = Double(seatPanelAnchors[current].size.y * counter)
+            if height > 0 {
+                total += height + Self.seatPanelGap * Double(counter)
+            }
+            below = current.opensAbove
+        }
+        return total
     }
 
     /// The local seat's pose; the game master's own seat for an observer without one.

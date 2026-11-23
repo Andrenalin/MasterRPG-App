@@ -119,5 +119,54 @@ struct TableSeatControlsLayoutTests {
     func panelStandsOnTheSurface() {
         #expect(placement(.trailing, 0).position.y == GameMetrics.tableThickness)
     }
+
+    // MARK: - Panels beside the dice of a side seat
+
+    /// `PlayerSeat.seatPoses`: position (x, z) and rotation in degrees of the master, the near and
+    /// far west and east seats, and the guest.
+    private static let seats: [(x: Double, z: Double, degrees: Double)] = [
+        (0, 2, 0), (-1.5, 0.5, 270), (1.5, 0.5, 90), (-1.5, -0.5, 270), (1.5, -0.5, 90), (0, -2, 180)
+    ]
+
+    @Test("The controls stand on the outer side of a side seat: near west trailing, near east leading, far west leading, far east trailing")
+    func outerSides() {
+        let expected: [TableSeatControlsLayout.Side?] = [nil, .trailing, .leading, .leading, .trailing, nil]
+        for (index, seat) in Self.seats.enumerated() {
+            let lateral = TableSeatControlsLayout.seatLateral(
+                seatPosition: (seat.x, seat.z), rotation: seat.degrees * .pi / 180
+            )
+            #expect(TableSeatControlsLayout.outerSide(seatLateral: lateral) == expected[index])
+        }
+    }
+
+    @Test("A panel beside the dice stands past the row's end, toward the corner, never off the table")
+    func besideTheDiceRow() {
+        for (index, seat) in Self.seats.enumerated() where index >= 1 && index <= 4 {
+            let radians = seat.degrees * .pi / 180
+            let lateral = TableSeatControlsLayout.seatLateral(seatPosition: (seat.x, seat.z), rotation: radians)
+            let outer = TableSeatControlsLayout.outerSide(seatLateral: lateral)!
+            let sign: Double = outer == .trailing ? 1 : -1
+            let result = TableSeatControlsLayout.besideDiceRowPlacement(
+                side: outer, rotation: radians, seatLateral: lateral, rowWidth: 0.15, width: 0.2
+            )
+            let position = lateralPosition(result, radians)
+            // Clear of the row (half 0.075) on the corner side of the seat...
+            #expect((position - lateral) * sign >= 0.075 + 0.1 - 1e-6)
+            // ...and still between the table's corners.
+            #expect(abs(position) <= TableSeatControlsLayout.edgeHalfLength(rotation: radians))
+        }
+    }
+
+    @Test("A long row pushes the panel back to the corner clearance instead of off the table")
+    func longRowIsClamped() {
+        let seat = Self.seats[1]
+        let radians = seat.degrees * .pi / 180
+        let lateral = TableSeatControlsLayout.seatLateral(seatPosition: (seat.x, seat.z), rotation: radians)
+        let result = TableSeatControlsLayout.besideDiceRowPlacement(
+            side: .trailing, rotation: radians, seatLateral: lateral, rowWidth: 1.2, width: 0.3
+        )
+        let limit = TableSeatControlsLayout.edgeHalfLength(rotation: radians) - TableSeatControlsLayout.cornerClearance - 0.15
+        #expect(abs(lateralPosition(result, radians) - limit) < 1e-5)
+    }
 }
 #endif

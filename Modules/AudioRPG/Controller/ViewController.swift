@@ -58,6 +58,17 @@ public extension ViewController {
         PlayerVolumeView(root: root, alignment: alignment)
     }
 
+    /// The volume button of a player's game controls, for a slider that stands in a panel of its
+    /// own (`volumeSlider(root:)`): it only toggles `isOpen`.
+    @MainActor func volumeToggleButton(root: AudioRootModel, isOpen: Binding<Bool>) -> some View {
+        PlayerVolumeButtonView(root: root, showVolume: isOpen)
+    }
+
+    /// The volume slider alone, to stand in its own panel next to `volumeToggleButton(root:isOpen:)`.
+    @MainActor func volumeSlider(root: AudioRootModel) -> some View {
+        PlayerVolumeSliderView(root: root)
+    }
+
     /// The volume button of the game toolbar. Its popover shows the full audio player for the game
     /// master (`showsPlayer`), and only the volume slider for the players.
     @MainActor func toolbarVolumeButton(root: AudioRootModel, showsPlayer: Bool) -> some View {

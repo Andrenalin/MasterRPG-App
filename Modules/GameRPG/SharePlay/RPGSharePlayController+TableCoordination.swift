@@ -30,6 +30,7 @@ extension RPGSharePlayController {
 
         Logger.sharePlay.debug("Setting up SharePlay seat assignment (isMaster: \(isMaster, privacy: .public))")
         seatingGameTableModel = gameTableModel
+        gameTableModel.isLocalSeatPlacedBySystem = isLocalSeatPlacedBySystem
         let masterId = await masterParticipantId(in: groupSession, isMaster: isMaster)
         // The session may have been replaced while the delegate lookup suspended.
         guard self.groupSession?.id == groupSession.id else { return }

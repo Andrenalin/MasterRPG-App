@@ -107,6 +107,13 @@ final class RPGSharePlayController {
 
     #if os(visionOS)
     var systemCoordinator: SystemCoordinator?
+    /// Whether the system seats the local participant (`localParticipantState.seat != nil`): then it
+    /// turns the shared volume toward that seat itself. See `GameTableModel.isLocalSeatPlacedBySystem`.
+    var isLocalSeatPlacedBySystem = false
+    /// The `spatialTemplatePreference` the coordinator had before `applyShareState()` forced
+    /// `.sideBySide` for the window/immersive presentation; restored when the table is shown
+    /// again. `nil` while no override is active. See `applyShareState()`.
+    var spatialTemplatePreferenceBeforeWindowOverride: SpatialTemplatePreference?
     /// Identifies the `TabletopGame` instance `deferCoordinateAndAssignSeats`
     /// has already coordinated, so the two independent triggers that can both
     /// reach it — `setup(tabletopGame:gameTableModel:)` (table view opens

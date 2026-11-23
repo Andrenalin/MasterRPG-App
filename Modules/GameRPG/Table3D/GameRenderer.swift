@@ -103,10 +103,52 @@ final class GameRenderer: TabletopGame.RenderDelegate {
         game?.updateDiceResults(snapshot: snapshot, visualState: visualState)
     }
 
+    /// The scale the pinch gesture asked for (1 = original size). The table's own scale is that
+    /// times `orientationFitScale`.
+    private(set) var pinchScale: Float = 1
+    /// Shrinks a table turned to a long-side seat so that it fits the fixed width of the volume.
+    private(set) var orientationFitScale: Float = 1
+    /// The turn (radians, around the vertical axis) that brings the local seat in front of the
+    /// viewer; see `orientTable(toSeatRotation:)`.
+    private(set) var orientationRadians: Double = 0
+
     /// Applies a uniform scale to the complete table scene.
     func applyScale(_ scale: Float) {
+        pinchScale = scale
+        applyEffectiveScale()
+    }
+
+    private func applyEffectiveScale() {
+        let scale = pinchScale * orientationFitScale
         root.scale = SIMD3<Float>(repeating: scale)
         scaleDidChange?(scale)
+    }
+
+    /// Turns the table so the seat with the given pose rotation (`PlayerSeat.seatPoses`) sits at the
+    /// near edge, in front of the viewer — the way the master's seat 0 (rotation 0, at +Z) does.
+    ///
+    /// A seat's rotation turns the seat from the near edge to its own place, so the table turns
+    /// the opposite way. TabletopKit does not do this: with spatial Personas the system seats the
+    /// Persona at the table's seat, but without them (a Vision Pro among iPad and Mac players, or
+    /// a Persona that is not spatial) the volume keeps its place and the player would look at the
+    /// master's seat. The volume has a fixed size (`GameTableView.volumeSize`), so a table turned
+    /// to a long side (X becomes the long axis) is shrunk to fit its width, and its front edge
+    /// is kept at `frontClearance` like the unturned table's.
+    func orientTable(toSeatRotation radians: Double) {
+        let width = Double(GameMetrics.tableWidth)
+        let length = Double(GameMetrics.tableLength)
+        let cosine = abs(cos(radians))
+        let sine = abs(sin(radians))
+        let extentX = width * cosine + length * sine
+        let extentZ = width * sine + length * cosine
+        let fit = Float(min(1, GameTableView.volumeSize.width / extentX))
+        let nextRadians = (radians * 1000).rounded() / 1000
+        guard nextRadians != orientationRadians || fit != orientationFitScale else { return }
+        orientationRadians = nextRadians
+        orientationFitScale = fit
+        root.orientation = simd_quatf(angle: -Float(nextRadians), axis: [0, 1, 0])
+        root.transform.translation.z = Float(Self.volumeDepth / 2 - Self.frontClearance - extentZ * Double(fit) / 2)
+        applyEffectiveScale()
     }
 
     /// Called with the new scale after every `applyScale(_:)`: the seat control panels cancel it.

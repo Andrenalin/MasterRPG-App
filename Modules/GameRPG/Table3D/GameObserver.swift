@@ -47,8 +47,11 @@ final class GameObserver: TabletopGame.Observer {
         // several more `addAction` calls — mutating the session reentrantly from a callback that
         // is already mid-dispatch corrupted it outright.
         if player.id == tabletop.localPlayer.id, newSeat != nil {
+            let seatId = newSeat?.id
             Task { @MainActor [renderer] in
                 renderer.game?.applyFocusedDiceRollForLocalSeat?()
+                // The seat is the one the player looks from: turn the table toward it.
+                renderer.game?.orientTableToLocalSeat(seat: seatId)
             }
         }
 
