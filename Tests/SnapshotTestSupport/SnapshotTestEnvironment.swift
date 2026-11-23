@@ -162,6 +162,7 @@ func assertRepositorySnapshot<Value, Format>(
     line: UInt = #line,
     column: UInt = #column
 ) {
+    SnapshotTestEnvironment.pinProcessTimeZone()
     let resolvedRecordMode = record ?? SnapshotTestRecordingMode.current
     let failure = verifySnapshot(
         of: try value(),
@@ -199,6 +200,28 @@ enum SnapshotTestEnvironment {
     static let locale = Locale(identifier: "en_US")
 
     static let timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+
+    private static var isProcessTimeZonePinned = false
+
+    /// Makes the process default time zone the snapshot time zone, once.
+    ///
+    /// The `\.timeZone` environment value reaches SwiftUI, but not everything that draws with a
+    /// calendar: the Charts framework puts its month gridlines and axis labels where midnight
+    /// falls in the process time zone, so the same chart moved by a few pixels between a
+    /// developer machine (UTC+7, where the references were recorded) and Xcode Cloud (US
+    /// Pacific): `GameStatisticsActivityChart` matched 0.9958 of its pixels there and
+    /// `GameStatisticsPreviewDashboardView` 0.8811, exactly what `TEST_RUNNER_TZ=America/Los_Angeles`
+    /// reproduces locally.
+    static func pinProcessTimeZone() {
+        guard !isProcessTimeZonePinned else { return }
+        isProcessTimeZonePinned = true
+        // `TZ` is what the system time zone is read from; the caches are reset so a zone that
+        // was already read (`Calendar.current`, `TimeZone.current`) is read again.
+        setenv("TZ", timeZone.identifier, 1)
+        tzset()
+        NSTimeZone.resetSystemTimeZone()
+        NSTimeZone.default = timeZone
+    }
 
     static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

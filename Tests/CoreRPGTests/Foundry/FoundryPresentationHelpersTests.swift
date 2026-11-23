@@ -53,7 +53,9 @@ struct FoundryPresentationHelpersTests {
             _ = FoundryTextDecoder.plainText(fromHTML: openers)
             _ = FoundryTextDecoder.decodedText(ampersands)
         }
-        #expect(elapsed < .seconds(10))
+        // Generous on purpose: this guards against quadratic scanning (minutes at this size), not
+        // against a slow runner. It takes ~1 s alone and measured 10.6 s under a loaded full run.
+        #expect(elapsed < .seconds(30))
     }
 
     // CODE_AUDIT_28 §6.3: the generic tag patterns scanned to the end for every `<` without a `>`.
@@ -65,7 +67,8 @@ struct FoundryPresentationHelpersTests {
         let elapsed = clock.measure {
             result = FoundryTextDecoder.plainText(fromHTML: run + " tail")
         }
-        #expect(elapsed < .seconds(2))
+        // Quadratic scanning takes minutes here; the bound only has to survive a loaded runner.
+        #expect(elapsed < .seconds(30))
         #expect(result.hasSuffix("tail"))
     }
 

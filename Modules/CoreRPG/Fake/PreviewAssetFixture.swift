@@ -114,12 +114,21 @@ public enum PreviewAssetFixture {
         guard let data = image(photo)?.jpegData(compressionQuality: JPEGQuality.export) else {
             return nil
         }
-        return FileUrl(
-            string: "",
+        // A fixed, machine independent path. `FileUrl(string: "", unconvertedData:)` stores
+        // `URL(filePath: "")`, which resolves to the working directory of the process, and the
+        // detail editor prints that path: the simulator's data folder, with the user name and the
+        // device UUID of whoever recorded the snapshot (CI rendered `Users/local/.../<its UUID>`).
+        // No file extension, as before: `ConvertImageEditor` offers "Convert to JPEG" only for a
+        // file that is not a JPEG yet, and the snapshots of it rely on that.
+        var fileUrl = FileUrl(
             fileId: fileId,
+            url: URL(filePath: "/Preview/\(module)/\(fileId.uuidString)"),
+            location: .appCloud,
             module: module,
-            unconvertedData: data
+            relativeUrl: nil
         )
+        fileUrl.resetData(data)
+        return fileUrl
     }
 
     @MainActor
