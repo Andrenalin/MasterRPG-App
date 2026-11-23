@@ -146,6 +146,9 @@ final class GameTableModel: Sendable {
                 mapRoot.rootModel.gameDisplayMode = displayMode
             }
             replaceFogOfWarTask()
+            // The pin filter reads the same render role as the fog, so the tokens follow the
+            // lens at once instead of at the next unrelated sync. See CODE_AUDIT_28 §5.15.
+            syncPawnsWithMapPins()
         }
     }
     var lastPinScale: CGFloat = 1

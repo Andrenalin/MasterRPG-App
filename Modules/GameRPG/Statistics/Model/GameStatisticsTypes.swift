@@ -621,6 +621,25 @@ extension GameStatisticEventDraft {
 }
 
 extension GameStatisticSessionSnapshot {
+    /// The session with its duration (and end) limited to `limit` seconds.
+    func capped(to limit: TimeInterval) -> Self {
+        guard duration > limit else { return self }
+        return Self(
+            id: id,
+            startedAt: startedAt,
+            endedAt: min(endedAt, startedAt.addingTimeInterval(limit)),
+            duration: limit,
+            role: role,
+            localName: localName,
+            characterId: characterId,
+            characterName: characterName,
+            adventureId: adventureId,
+            adventureTitle: adventureTitle,
+            masterName: masterName,
+            maxParticipantCount: maxParticipantCount
+        )
+    }
+
     static func fixture(
         id: UUID = GameStatisticsFixture.sessionId,
         startedAt: Date = GameStatisticsFixture.date,

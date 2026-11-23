@@ -150,6 +150,21 @@ struct UntrustedImportTests {
         #expect(normalizedPath(resolved).hasPrefix(normalizedPath(controller.moduleUrl) + "/"))
     }
 
+    // CODE_AUDIT_28 §6.1
+    @Test("An imported .local reference without a Documents folder is relocated, not resolved as an absolute path", arguments: [
+        "file:///etc/hosts",
+        "/private/var/mobile/Containers/Data/Application/X/Library/Application Support/store.sqlite"
+    ])
+    func localAbsolutePathIsRelocated(path: String) throws {
+        let hostile = FileUrl(fileId: UUID(), url: try #require(URL(string: path)), location: .local, module: "Photos", relativeUrl: nil)
+
+        let sanitized = hostile.sanitizedForImport()
+
+        #expect(sanitized.location == .newCloud)
+        #expect(sanitized.rawUrl.lastPathComponent == (path as NSString).lastPathComponent)
+        #expect(sanitized.rawUrl.path != path)
+    }
+
     @Test("sanitizedForImport keeps a file in a folder named Documents untouched")
     func sanitizedKeepsDocumentsFolder() throws {
         let clean = FileUrl(fileId: UUID(), url: try #require(URL(string: "Documents/Rules.pdf")), location: .newCloud, module: "Pdfs", relativeUrl: nil)

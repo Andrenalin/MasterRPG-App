@@ -148,7 +148,7 @@ private struct SheetNameRowLabelView: View {
 
             LinkHighlightTextView(
                 model: rootModel.linkTextModel(
-                    for: .item(sheetModel.source.itemId),
+                    for: .item(sheetModel.source.itemId, occurrence: sheetModel.id),
                     text: sheetModel.name,
                     shareResults: shareResult
                 )
@@ -232,7 +232,7 @@ private struct SheetSecondaryRowView: View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
             LinkHighlightTextView(
                 model: rootModel.linkTextModel(
-                    for: .itemContent(sheetModel.source.itemId),
+                    for: .itemContent(sheetModel.source.itemId, occurrence: sheetModel.id),
                     text: description,
                     shareResults: shareResult
                 )

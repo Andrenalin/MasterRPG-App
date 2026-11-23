@@ -22,13 +22,23 @@ extension GameTableModel {
     /// Awaits one `SceneEvents.Update` from `renderer.root.scene` — proof that a frame has
     /// actually rendered, needed before SharePlay coordination can safely run (see the call
     /// site in `GameTableView` for why a fixed number of `Task` turns wasn't reliably enough
-    /// of a wait). A no-op if the scene isn't attached yet, rather than hanging forever.
+    /// of a wait). It first waits (bounded) for the scene to be attached: the root has none until
+    /// the RealityView's `make` ran, and returning then would let the caller join SharePlay
+    /// before the mount. See CODE_AUDIT_28 §5.16.
+    ///
+    /// - Returns: `false` when the scene never came up or the wait was cancelled; the caller must
+    ///   not start coordination then.
     ///
     /// Cancellation-safe: if the awaiting `Task` is cancelled (e.g. the view is dismissed
     /// before any frame renders), the pending continuation is resumed and the RealityKit
     /// subscription torn down here instead of leaking for the process lifetime.
-    func waitForFirstRenderedFrame() async {
-        guard let scene = renderer.root.scene else { return }
+    @discardableResult
+    func waitForFirstRenderedFrame() async -> Bool {
+        guard await SceneAttachmentWait.wait(isAttached: { renderer.root.scene != nil }),
+              let scene = renderer.root.scene else {
+            Logger.gameTable.error("Table scene not attached in time; SharePlay coordination is not started")
+            return false
+        }
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 // A second concurrent wait must not orphan the first one's continuation.
@@ -43,6 +53,7 @@ extension GameTableModel {
                 self?.resumePendingRenderWait()
             }
         }
+        return !Task.isCancelled
     }
 
     private func resumePendingRenderWait() {

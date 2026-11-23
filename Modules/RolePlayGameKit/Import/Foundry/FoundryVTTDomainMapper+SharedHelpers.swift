@@ -278,16 +278,28 @@ extension FoundryMappingState {
         return FoundryTextDecoder.plainText(fromHTML: optionalHTML)
     }
 
+    /// Imported text must not form a link of its own, a web link or one of the app's item links:
+    /// `](` and `://` are split by a zero-width space, as the rule factory's text boundary does.
+    /// It runs after the decoder (which strips the zero-width space) and before the Foundry
+    /// links are rewritten, so only the links the mapper itself writes stay live.
+    /// See CODE_AUDIT_28 §6.2.
+    nonisolated static func neutralizingLinks(_ text: String) -> String {
+        guard text.contains("](") || text.contains("://") else { return text }
+        return text
+            .replacing("](", with: "]\u{200B}(")
+            .replacing("://", with: ":\u{200B}//")
+    }
+
     func safeText(_ optionalHTML: String?) -> String {
-        rewriteFoundryLinks(sanitizedFoundryText(optionalHTML))
+        rewriteFoundryLinks(Self.neutralizingLinks(sanitizedFoundryText(optionalHTML)))
     }
 
     func decodedFoundryText(_ text: String?) -> String {
         guard let text else { return "" }
-        return rewriteFoundryLinks(
+        return rewriteFoundryLinks(Self.neutralizingLinks(
             FoundryTextDecoder.decodedText(text)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-        )
+        ))
     }
 
     func prepareGenericRuleProjection(_ model: RuleModel, descriptionHTML: String?) {
@@ -346,13 +358,11 @@ extension FoundryMappingState {
     }
 
     func markdownLink(name: String, module: NetworkModules, itemId: UUID) -> String {
-        let escapedName = name
-            .replacing("\\", with: "\\\\")
-            .replacing("[", with: "\\[")
-            .replacing("]", with: "\\]")
+        // `LinkBuilder.markdown` escapes the brackets; a line break would end the link.
+        let singleLine = name
             .replacing("\n", with: " ")
             .replacing("\r", with: " ")
-        return LinkBuilder.markdown(name: escapedName, module: module, itemId: itemId)
+        return LinkBuilder.markdown(name: singleLine, module: module, itemId: itemId)
     }
 
     func inertCodeBlock(_ source: String) -> String {

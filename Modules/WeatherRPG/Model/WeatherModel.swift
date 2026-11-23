@@ -275,9 +275,12 @@ extension WeatherModel: nonisolated ItemDataAccessible {
         }
     }
 
-    /// Whether any value that the weather stamp covers differs.
+    /// Whether any value that the weather stamp covers differs. The linked photo is one of them:
+    /// merge decides `photoId` by this stamp, so a photo edit that did not move it was reverted
+    /// by a device that kept its old value. See CODE_AUDIT_28 §5.8.
     @MainActor func hasDifferentWeather(than other: WeatherModel) -> Bool {
-        time != other.time
+        photoId != other.photoId
+            || time != other.time
             || cloudThickness != other.cloudThickness
             || stormType != other.stormType
             || rainAngle != other.rainAngle

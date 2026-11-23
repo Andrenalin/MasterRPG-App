@@ -6,6 +6,15 @@ import Foundation
 
 struct GameStatisticsController: Sendable {
     static let minimumCountedSessionDuration: TimeInterval = 15 * 60
+    /// The longest a single session counts: a game left open overnight or a device clock that
+    /// jumped must not become days of play time and an achievement that is never taken back.
+    /// See CODE_AUDIT_28 §5.17.
+    static let maximumCountedSessionDuration: TimeInterval = 12 * 3_600
+    /// A normal stop that comes this long after the last activity books the end at the last
+    /// activity: the time in between was nobody playing.
+    static let idleTailLimit: TimeInterval = 30 * 60
+    /// A safety bound of the time-bucket loop; a counted session never needs more.
+    private static let maximumSplitSegments = 10_000
     /// Roles whose games are never recorded: an observer or proxy only relays someone else's game.
     static let uncountedRoles: Set<GameStatisticRole> = [.observer, .proxy]
 
@@ -102,6 +111,7 @@ struct GameStatisticsController: Sendable {
         let sessions = dataSet.sessions.filter {
             $0.duration >= Self.minimumCountedSessionDuration && !Self.uncountedRoles.contains($0.role)
         }
+        .map { $0.capped(to: Self.maximumCountedSessionDuration) }
         let countedSessionIDs = Set(sessions.map(\.id))
         let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionId) }
         let participants = dataSet.participants.filter { countedSessionIDs.contains($0.sessionId) }
@@ -261,12 +271,15 @@ struct GameStatisticsController: Sendable {
     ) {
         var cursor = start
         let safeEnd = max(start, end)
+        var segments = 0
         while cursor < safeEnd,
+              segments < Self.maximumSplitSegments,
               let bucket = calendar.dateInterval(of: component, for: cursor) {
             let segmentEnd = min(bucket.end, safeEnd)
             body(bucket.start, max(0, segmentEnd.timeIntervalSince(cursor)))
             guard segmentEnd > cursor else { break }
             cursor = segmentEnd
+            segments += 1
         }
     }
 

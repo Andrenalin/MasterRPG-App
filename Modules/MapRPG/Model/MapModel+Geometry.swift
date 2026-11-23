@@ -30,6 +30,13 @@ public extension MapModel {
     func isPinVisibleToPlayers(_ pin: MapPinModel) -> Bool {
         pin.isVisibleToPlayers(hiddenBy: entries)
     }
+
+    /// Whether `pin` stands in `room`. A pin without a location is drawn in the map's first room
+    /// (`MapPinPlacement.displayPins`), so it belongs there and nowhere else. See CODE_AUDIT_28 §5.6.
+    func isPin(_ pin: MapPinModel, in room: MapEntryModel) -> Bool {
+        if pin.location == .zero { return entries.first?.id == room.id }
+        return room.contains(pin.location)
+    }
 }
 
 public extension MapModel {
@@ -50,6 +57,9 @@ public extension MapPinModel {
     func isVisibleToPlayers(hiddenBy entries: [MapEntryModel]) -> Bool {
         guard isShown else { return false }
         if isPlayer { return true }
+        // A pin without a location is drawn in the map's first room, so that room decides.
+        // See CODE_AUDIT_28 §5.6.
+        if location == .zero, let first = entries.first { return first.isShown }
         return !entries.contains { !$0.isShown && $0.contains(location) }
     }
 }

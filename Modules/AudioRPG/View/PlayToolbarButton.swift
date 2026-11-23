@@ -11,11 +11,14 @@ import SwiftUI
 struct PlayToolbarButton: View {
     let root: AudioRootModel
     let model: AudioModel
-    
+
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
+
     var body: some View {
         Button {
             Task {
-                await root.playItem(id: model.id)
+                await root.playItem(id: model.id, isGameRunning: appGameStateModel?.isGameRunning == true, networkActions: networkActions)
             }
         } label: {
             Label {

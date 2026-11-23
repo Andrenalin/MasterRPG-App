@@ -449,6 +449,17 @@ public extension EditControllable {
         // ("Add <tag>"). See CODE_AUDIT_Folder §6.5.
         trackOperation("EditControllable.saveChanges(to:name:)")
 
+        updateLinkRegister(to: newValue)
+
+        editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
+        itemControllable.replace(model: newValue, isInsert: false, forceSave: forceSave)
+    }
+
+    /// Brings the link register in line with `newValue`: the links the item's stored value had and
+    /// `newValue` has not are removed, the new ones added. Shared by `saveChanges` and undo/redo,
+    /// which restore a stored value and must leave the register as a save would.
+    /// See CODE_AUDIT_28 §5.3.
+    @MainActor func updateLinkRegister(to newValue: Model) {
         if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
             let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
 
@@ -458,9 +469,20 @@ public extension EditControllable {
             let added = newValue.linkRegisterModels
             linkRegisterController.register(links: added)
         }
+    }
 
-        editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
-        itemControllable.replace(model: newValue, isInsert: false, forceSave: forceSave)
+    /// Brings the tag counts in line with `newValue`. A trashed item counts no tags (trashing
+    /// removes them, restoring adds them back), so the difference is taken between what the stored
+    /// value counts and what `newValue` counts. Used by undo/redo; the edits that change tags
+    /// adjust the counts themselves. See CODE_AUDIT_28 §5.3.
+    @MainActor func updateTagCounts(to newValue: Model) {
+        let counted: (Model?) -> Set<String> = { model in
+            guard let model, !model.isHidden else { return [] }
+            return Set(model.tags)
+        }
+        let before = counted(itemControllable.itemSync(for: newValue.id) as? Model)
+        let after = counted(newValue)
+        updateTags(addedTags: Array(after.subtracting(before)), removedTags: Array(before.subtracting(after)))
     }
 
     @MainActor func save(updated: any Observable) {

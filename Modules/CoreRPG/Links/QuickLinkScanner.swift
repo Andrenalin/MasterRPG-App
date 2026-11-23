@@ -95,7 +95,7 @@ public enum QuickLinkScanner {
     /// its own casing. See CODE_AUDIT_Since_3.0.1 §5.9.
     private static func relabeled(_ markdownLink: String, as label: Substring) -> String {
         guard let addressStart = markdownLink.range(of: "](") else { return markdownLink }
-        return "[\(label)" + markdownLink[addressStart.lowerBound...]
+        return "[\(LinkBuilder.escapedLabel(String(label)))" + markdownLink[addressStart.lowerBound...]
     }
 
     /// A match is a whole word when it isn't glued to a letter or digit on a side where the

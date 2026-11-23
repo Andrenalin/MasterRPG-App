@@ -22,7 +22,7 @@ public struct ReferenceTableLink: Equatable, Hashable {
     }
 
     public func markDown(for scheme: String) -> String {
-        "[\(name)]\(url(for: scheme))"
+        "[\(LinkBuilder.escapedLabel(name))]\(url(for: scheme))"
     }
 }
 
@@ -48,7 +48,7 @@ public struct ReferenceEntryLink: Equatable, Hashable {
     }
 
     public func markDown(for scheme: String) -> String {
-        "[\(name)]\(url(for: scheme))"
+        "[\(LinkBuilder.escapedLabel(name))]\(url(for: scheme))"
     }
 }
 

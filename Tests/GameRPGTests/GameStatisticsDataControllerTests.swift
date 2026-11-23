@@ -254,6 +254,48 @@ struct GameStatisticsDataControllerTests {
         #expect(persisted.duration == 3_600, "two idle days must not count as play time")
     }
 
+    // CODE_AUDIT_28 §5.17
+    @Test("a stop long after the last activity books the end at the last activity")
+    func stopAfterIdleTailEndsAtLastActivity() async throws {
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let sessionId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 41))
+        let participant = GameStatisticParticipantDraft.fixture()
+        try await sut.beginSession(.fixture(id: sessionId, startedAt: startedAt, participants: [participant]), in: store.context)
+        try await sut.checkpointSession(id: sessionId, participants: [participant], at: startedAt.addingTimeInterval(3_600), in: store.context)
+        // The stop's own checkpoint (roster and details) is no activity.
+        try await sut.checkpointSession(
+            id: sessionId,
+            participants: [participant],
+            at: startedAt.addingTimeInterval(10 * 3_600),
+            advancesActivity: false,
+            in: store.context
+        )
+
+        try await sut.finishSession(id: sessionId, at: startedAt.addingTimeInterval(10 * 3_600), reason: .stopped, in: store.context)
+        let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+
+        let persisted = try #require(dataSet.sessions.first)
+        #expect(persisted.duration == 3_600, "the idle night is not play time")
+    }
+
+    @Test("a stop shortly after the last activity keeps the stop time")
+    func stopWithinIdleLimitKeepsStopTime() async throws {
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
+        let sessionId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42))
+        let participant = GameStatisticParticipantDraft.fixture()
+        try await sut.beginSession(.fixture(id: sessionId, startedAt: startedAt, participants: [participant]), in: store.context)
+        try await sut.checkpointSession(id: sessionId, participants: [participant], at: startedAt.addingTimeInterval(3_600), in: store.context)
+
+        try await sut.finishSession(id: sessionId, at: startedAt.addingTimeInterval(3_600 + 10 * 60), reason: .stopped, in: store.context)
+        let dataSet = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+
+        #expect(try #require(dataSet.sessions.first).duration == 4_200)
+    }
+
     @Test("completed observer and proxy sessions are deleted regardless of duration")
     func deletesUncountedRoleSessions() async throws {
         // Given
@@ -268,6 +310,7 @@ struct GameStatisticsDataControllerTests {
         ]
         for (id, role) in roles {
             try await sut.beginSession(.fixture(id: id, startedAt: startedAt, role: role), in: store.context)
+            try await sut.checkpointSession(id: id, participants: [], at: startedAt.addingTimeInterval(3_600), in: store.context)
             try await sut.finishSession(
                 id: id,
                 at: startedAt.addingTimeInterval(3_600),

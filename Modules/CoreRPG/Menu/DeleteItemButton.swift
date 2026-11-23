@@ -5,6 +5,7 @@ import SwiftUI
 #if !os(tvOS)
 struct DeleteItemButton: View {
     let root: any ItemRootControllable
+    var isListFocused = true
 
     var body: some View {
         Button(role: .destructive) {
@@ -17,7 +18,7 @@ struct DeleteItemButton: View {
             }
         }
         .keyboardShortcut(.delete, modifiers: .command)
-        .disabled(root.currentSelectedItemId == nil)
+        .disabled(!ModuleMenuPolicy.isDeleteEnabled(hasSelection: root.currentSelectedItemId != nil, isListFocused: isListFocused))
     }
 
     private var item: (any ItemDataAccessible)? {

@@ -66,6 +66,21 @@ struct FoundryVTTDomainMapperRuleTests {
         })
     }
 
+    // CODE_AUDIT_28 §6.2: the factory's neutralisation was overwritten by the mapper's plain text.
+    @Test("A web link and an app link in an imported description cannot become live links")
+    func descriptionLinksAreInert() async throws {
+        let html = "<p>[Click](https://evil.example/x) and [Item](masterrpg://item/1/\(UUID().uuidString)) and https://plain.example</p>"
+        let fixture = makePackage(descriptionHTML: html)
+
+        let mapped = try await map(fixture.package, sourceScopeID: UUID())
+
+        let rule = try #require(mapped.batch.items.compactMap { $0.model as? RuleModel }.first { $0.category != .folder })
+        #expect(!rule.description.contains("](" ))
+        #expect(!rule.description.contains("://"))
+        #expect(rule.description.contains("Click"))
+        #expect(rule.description.contains("evil.example"))
+    }
+
     @Test("Separate Foundry sources cannot collide in rule or entry identity")
     func scopesRuleIdentityToSource() async throws {
         // Given

@@ -25,6 +25,28 @@ struct EditControllerTests {
         #expect(!ids.contains(catalogDie.id))
     }
 
+    // CODE_AUDIT_28 §5.24
+    @Test func sameOptionsAreNotAddedTwice() async throws {
+        let root = DiceRootModel.testRoot()
+        await root.itemController.resetData()
+        let sut = root.editController
+        let itemId = UUID()
+        root.itemController.replace(model: DiceModel(id: itemId, name: "Bag", dice: [DieModel(id: UUID(), die: .twenty)]), isInsert: true)
+
+        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId)
+        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId)
+        sut.add(fumble: 1, isDiceValueFumble: false, itemId: itemId)
+        sut.add(fumble: 1, isDiceValueFumble: false, itemId: itemId)
+        sut.add(reroll: 1, value: 3, isMaxDiceValue: false, itemId: itemId)
+        sut.add(reroll: 1, value: 4, isMaxDiceValue: true, itemId: itemId)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        #expect(item.coupValues.count == 1)
+        #expect(item.fumbleValues.count == 1)
+        #expect(item.rerollOptions.count == 1)
+        #expect(item.rerollOptions.first?.value == 4)
+    }
+
     @Test func diceOptionsCanBeAddedRemovedAndReset() async throws {
         let root = DiceRootModel.testRoot()
         await root.itemController.resetData()

@@ -83,6 +83,40 @@ struct FoundryImportModelTests {
         #expect(model.selectedCategories == FoundryImportCategory.privacySafeDefaults, "the toggles of the old file do not carry over")
     }
 
+    // CODE_AUDIT_28 §5.21
+    @Test("Loading again after the view re-appears keeps the loaded state and reads nothing")
+    func reloadingIsANoOp() async throws {
+        let folder = try Folder()
+        let model = makeModel(in: folder)
+        let url = try universalVTT(folder)
+        _ = model.select(url: url)
+        await model.loadSelectedArtifact()
+        #expect(model.loadState == .preflight)
+        try FileManager.default.removeItem(at: url)
+
+        await model.loadSelectedArtifact()
+
+        #expect(model.loadState == .preflight)
+        #expect(model.universalVTT != nil)
+    }
+
+    @Test("A failed load starts again with a new selection")
+    func failedLoadRetriesWithNewSelection() async throws {
+        let folder = try Folder()
+        let model = makeModel(in: folder)
+        _ = model.select(url: folder.url.appending(path: "missing.uvtt"))
+        await model.loadSelectedArtifact()
+        guard case .failed = model.loadState else {
+            Issue.record("expected a failure, got \(model.loadState)")
+            return
+        }
+
+        _ = model.select(url: try universalVTT(folder))
+        await model.loadSelectedArtifact()
+
+        #expect(model.loadState == .preflight)
+    }
+
     @Test("Loading without a selection does nothing")
     func loadWithoutSelection() async {
         let model = FoundryImportModel()

@@ -15,9 +15,12 @@ extension PhotoEntity {
     }
 
     private func loadAssetData() async throws -> Data {
-        guard let url = await root.itemController.loadableUrl(itemId: id) else {
+        guard let url = await root.itemController.downloadedLoadableUrl(itemId: id) else {
             throw PhotoEntityAssetUnavailableError()
         }
+        // The scope of a picked file must last until the bytes are read. See CODE_AUDIT_28 §6.7.
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         return try await Self.readFile(at: url)
     }
 

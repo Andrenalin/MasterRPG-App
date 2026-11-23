@@ -193,6 +193,9 @@ public extension ItemControllable {
                 // The row survives on disk and in CloudKit and comes back at the next launch or
                 // sync, so its file must stay and the item stays usable. See CODE_AUDIT_23 §5.6.
                 announcedFileDeletion?.withdraw()
+                // The failed flush put the deletion back in the queue: the next save would
+                // remove the row the item was just restored for. See CODE_AUDIT_28 §5.5.
+                await dataControllable?.removePendingOperations(for: itemId)
                 resetModel(with: item)
                 return
             }
@@ -475,7 +478,14 @@ public extension ItemControllable {
         // rollback's second save commits the item the import just rolled back.
         // See CODE_AUDIT_19 §5.1.
         await dataControllable?.removePendingOperations(for: item.id)
-        try await dataControllable?.delete(id: item.id)
+        do {
+            try await dataControllable?.delete(id: item.id)
+        } catch {
+            // The failed flush queued the deletion again, and the item stays in memory.
+            // See CODE_AUDIT_28 §5.5.
+            await dataControllable?.removePendingOperations(for: item.id)
+            throw error
+        }
 
         for entry in item.entries {
             await cacheControllable?.remove(itemId: entry.id)

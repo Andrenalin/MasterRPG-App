@@ -99,7 +99,7 @@ extension PdfEntity: Transferable {
         // Description placeholder — so Shortcuts/Share Sheet/drag-out hand
         // the real document to whatever consumes it.
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            guard let url = await item.root.itemController.loadableUrl(itemId: item.id) else {
+            guard let url = await item.root.itemController.downloadedLoadableUrl(itemId: item.id) else {
                 throw PdfEntityAssetUnavailableError()
             }
             return .init(url)

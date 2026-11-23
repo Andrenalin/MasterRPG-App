@@ -92,6 +92,7 @@ final class FoundryImportModel {
         guard !isSourceSelectionLocked else { return false }
         selectedUrl = url
         selectionId = UUID()
+        loadState = .notStarted
         artifact = nil
         package = nil
         universalVTT = nil
@@ -109,6 +110,11 @@ final class FoundryImportModel {
 
     func loadSelectedArtifact() async {
         guard let requestedUrl = selectedUrl else { return }
+        // The view calls this on every appearance (flipping the source picker removes and adds
+        // it again): a prepared review, the user's decisions or a result must not fall back to
+        // the preflight and read the archive again. A new selection starts from `.notStarted`.
+        // See CODE_AUDIT_28 §5.21.
+        guard loadState == .notStarted else { return }
         let requestedSelectionId = selectionId
         loadState = .loading
         do {

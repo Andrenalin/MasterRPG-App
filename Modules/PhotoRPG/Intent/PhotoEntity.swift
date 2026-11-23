@@ -101,7 +101,7 @@ extension PhotoEntity: Transferable {
         // mismatch the actual bytes for PNG/HEIC/TIFF-sourced photos. See
         // CODE_AUDIT §5.2.
         FileRepresentation(exportedContentType: .image) { @MainActor item in
-            guard let url = await item.root.itemController.loadableUrl(itemId: item.id) else {
+            guard let url = await item.root.itemController.downloadedLoadableUrl(itemId: item.id) else {
                 throw PhotoEntityAssetUnavailableError()
             }
             return .init(url)

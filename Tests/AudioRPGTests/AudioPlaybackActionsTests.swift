@@ -54,6 +54,22 @@ struct AudioPlaybackActionsTests {
         #expect(root.audioPlayerModel.currentId == nil)
     }
 
+    // CODE_AUDIT_28 §5.18
+    @Test("The detail's Play button asks the game in a game and sends nothing outside one")
+    func playButtonIsGameAware() async {
+        let root = AudioRootModel.testRoot()
+        let sent = Sent()
+        let id = UUID()
+
+        await root.playItem(id: id, isGameRunning: true, networkActions: sent.actions)
+        #expect(sent.playRequestIds == [id])
+        #expect(sent.requests.first?.shouldPlay == true)
+
+        let outside = Sent()
+        await root.playItem(id: UUID(), isGameRunning: false, networkActions: outside.actions)
+        #expect(outside.playRequestIds.isEmpty)
+    }
+
     @Test("Outside a game the item becomes current here and nothing is sent")
     func playRunsLocallyOutsideAGame() {
         let root = AudioRootModel.testRoot()

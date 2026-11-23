@@ -58,6 +58,9 @@ public extension EditControllable {
         if editorModel.isLibraryScopedUndo(model) {
             itemControllable.persistMembershipChange(model: model)
         } else {
+            // The same register and tag count steps as a save, before the stored value is replaced.
+            updateLinkRegister(to: model)
+            updateTagCounts(to: model)
             itemControllable.replace(model: model, isInsert: false)
         }
         editorModel.cacheItemListModel.reset(itemId: model.id)

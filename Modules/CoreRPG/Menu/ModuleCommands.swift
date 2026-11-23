@@ -55,7 +55,7 @@ public struct ModuleCommands: Commands {
                 AddItemIntoButton(root: root)
                 MoveItemIntoButton(root: root)
                 Divider()
-                DeleteItemButton(root: root)
+                DeleteItemButton(root: root, isListFocused: moduleListIsFocused == true)
                 Divider()
             }
         }
@@ -97,7 +97,7 @@ public struct ModuleCommands: Commands {
                 } label: {
                     Text("Fit to Window", bundle: .module)
                 }
-                .keyboardShortcut("0", modifiers: .command)
+                .keyboardShortcut(ModuleMenuPolicy.fitToWindowKey, modifiers: ModuleMenuPolicy.fitToWindowModifiers)
             }
         }
         CommandGroup(before: .sidebar) {

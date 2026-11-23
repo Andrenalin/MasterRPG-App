@@ -107,3 +107,55 @@ struct ScenesManagerObservationTests {
         #expect(sut.getSceneState(for: .battleRound) == .opened)
     }
 }
+
+#if !os(tvOS)
+// CODE_AUDIT_28 §5.14
+@MainActor
+@Suite("Scenes manager window requests")
+struct ScenesManagerOpenWindowTests {
+    private final class Clock {
+        var current = ContinuousClock.now
+    }
+
+    private func makeSut() -> (sut: ScenesManager, requests: () -> [String], clock: Clock) {
+        let sut = ScenesManager()
+        let clock = Clock()
+        var requested: [String] = []
+        sut.windowOpener = { requested.append($0) }
+        sut.now = { clock.current }
+        return (sut, { requested }, clock)
+    }
+
+    @Test("An open window is asked for again, so it comes to the front")
+    func openWindowIsRaised() {
+        let (sut, requests, _) = makeSut()
+        sut.setSceneState(.opened, for: .battleRound)
+
+        sut.openWindow(.battleRound)
+
+        #expect(requests() == [SceneId.battleRound.rawValue])
+    }
+
+    @Test("A second call in the same turn does not open twice")
+    func doubleCallIsIgnored() {
+        let (sut, requests, _) = makeSut()
+
+        sut.openWindow(.battleRound)
+        sut.openWindow(.battleRound)
+
+        #expect(requests().count == 1)
+        #expect(sut.getSceneState(for: .battleRound) == .opening)
+    }
+
+    @Test("A scene stuck in opening is asked again after the timeout")
+    func stuckOpeningRecovers() {
+        let (sut, requests, clock) = makeSut()
+        sut.openWindow(.battleRound)
+
+        clock.current = clock.current.advanced(by: ScenesManager.openingTimeout + .seconds(1))
+        sut.openWindow(.battleRound)
+
+        #expect(requests().count == 2)
+    }
+}
+#endif

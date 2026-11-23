@@ -205,7 +205,11 @@ struct FolderOperationAuditTests {
         let secondId = await addItem(root, name: "Second")
         sut.addItem(itemId: firstId, parentId: collectionId)
         sut.addItem(itemId: secondId, parentId: collectionId)
-        sut.addItem(itemId: firstId, parentId: collectionId)
+        // `addItem` rejects a second add (CODE_AUDIT_28 §5.2); a sync or an old file can still
+        // bring the same member in twice, which is what this test is about.
+        let withDuplicate = try #require(root.itemController.itemSync(for: collectionId)).copy()
+        withDuplicate.entries.append(.newChild(id: firstId))
+        root.itemController.replace(model: withDuplicate, isInsert: false)
         #expect(childIds(root, of: collectionId) == [firstId, secondId, firstId])
 
         let collection = try #require(root.itemController.itemSync(for: collectionId))

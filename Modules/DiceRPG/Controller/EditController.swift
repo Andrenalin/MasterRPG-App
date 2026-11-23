@@ -62,6 +62,9 @@ extension EditController {
                 editModel[keyPath: onlyOnFirstDie] = false
             }
         }
+        // The option's id is its text: a second one with it would be a duplicate `ForEach` id.
+        // See CODE_AUDIT_28 §5.24.
+        guard !editModel[keyPath: values].contains(newOption) else { return }
         editModel[keyPath: values].append(newOption)
         save(updated: editModel, message: message)
     }
@@ -77,7 +80,13 @@ extension EditController {
     @MainActor func add(reroll: Int, value: Int, isMaxDiceValue: Bool, itemId: UUID) {
         guard let editModel = editModel(for: itemId) else { return }
         let rerollOption = DiceModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
-        editModel.rerollOptions.append(rerollOption)
+        // A reroll is identified by its number: adding it again replaces the earlier one.
+        if let index = editModel.rerollOptions.firstIndex(where: { $0.id == rerollOption.id }) {
+            guard editModel.rerollOptions[index] != rerollOption else { return }
+            editModel.rerollOptions[index] = rerollOption
+        } else {
+            editModel.rerollOptions.append(rerollOption)
+        }
         save(updated: editModel, message: String(localized: "Add reroll options", bundle: .module))
     }
 

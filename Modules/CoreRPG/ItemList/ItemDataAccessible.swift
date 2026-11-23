@@ -145,10 +145,10 @@ public extension ItemDataAccessible {
     }
 
     func url(linkNumber: Int) -> String {
-        "[\(urlName())](\(urlAdr(linkNumber: linkNumber)))"
+        "[\(LinkBuilder.escapedLabel(urlName()))](\(urlAdr(linkNumber: linkNumber)))"
     }
 
     func url(linkNumber: Int, entryId: UUID) -> String {
-        "[\(urlName(entryId: entryId))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
+        "[\(LinkBuilder.escapedLabel(urlName(entryId: entryId)))](\(urlAdr(linkNumber: linkNumber, entryId: entryId)))"
     }
 }

@@ -39,10 +39,13 @@ public struct PdfContentExtractionView: View {
     // MARK: - Subviews
 
     private func analyze() {
-        guard !model.isExtracting else { return }
+        // One extraction at a time: a fast second tap would start another before the first
+        // one set `isExtracting`. See CODE_AUDIT_28 §5.22.
+        guard !model.isExtracting, analysisTask == nil else { return }
         analysisTask = Task {
-            let content = await model.extractWithProgress(from: pdfDocument)
-            guard !Task.isCancelled else { return }
+            defer { analysisTask = nil }
+            let content = await model.extractForDelivery(from: pdfDocument)
+            guard !Task.isCancelled, let content else { return }
             onContentExtracted(content)
         }
     }

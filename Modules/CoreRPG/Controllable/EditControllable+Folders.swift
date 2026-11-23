@@ -67,6 +67,13 @@ extension EditControllable {
         // search/list tree-builder (`buildFolderTreeNode`, `appendToFlat`, …) walks this exact
         // `entries`/`childId` graph assuming it's acyclic and has no cycle guard of its own.
         guard !isDescendant(parentId, of: itemId) else { return }
+        // A collection lists a member once: in seven modules the entry id is the member id, so a
+        // second entry is one row with one uuid twice, which the database cannot keep.
+        // See CODE_AUDIT_28 §5.2.
+        if parentItem.category != .item, parentItem.category != .folder,
+           parentItem.entries.contains(where: { $0.childId == itemId }) {
+            return
+        }
         if parentItem.isFolder && item.parentId != nil {
             removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false, scope: scope)
             guard let refreshed = folderEditModel(for: itemId, scope: scope) else { return }
@@ -83,7 +90,7 @@ extension EditControllable {
             if parentItem.category == .folder {
                 entries.removeAll { $0.childId == itemId }
             }
-            // A collection only references its members and may list one several times.
+            // A collection only references its members, once each (guarded above).
             entries.append(entry)
             if parentItem.category == .folder {
                 // Names are looked up once per entry, not twice per comparison (§7.27).

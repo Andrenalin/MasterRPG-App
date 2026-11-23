@@ -161,7 +161,30 @@ struct PinPhotoShareAndPlacementTests {
 
         _ = fixture.sut.saveAll()
 
-        #expect(fixture.sut.gameItem(for: fixture.map.id).mapPins.allSatisfy { !$0.isPhotoShared })
+        let saved = try #require(try fixture.sut.exportController.savedGameExportData(for: fixture.map.id))
+        let savedMap = try JSONCoding.decoder.decode(MapModel.self, from: saved)
+        #expect(savedMap.mapPins.allSatisfy { !$0.isPhotoShared })
+    }
+
+    // CODE_AUDIT_28 §5.7
+    @Test("Save Game keeps clone Character ids out of the file and the running game as it is")
+    func saveGameWritesLibraryPinsOnACopy() async throws {
+        let fixture = try await makeFixture(playerCount: 1)
+        #expect(fixture.sut.synchronizePlayerPins(for: fixture.map.id))
+        let cloneId = UUID()
+        let sourceId = UUID()
+        fixture.sut.mapGameModel.registerBattleCharacterCopy(cloneId, source: sourceId)
+        let monster = MapPinModel(id: UUID(), name: "Goblin", characterId: cloneId, location: CGPoint(x: 120, y: 120), isShown: true)
+        fixture.map.mapPins.append(monster)
+        let livePins = fixture.map.mapPins
+
+        _ = fixture.sut.saveAll()
+        let saved = try #require(try fixture.sut.exportController.savedGameExportData(for: fixture.map.id))
+        let savedMap = try JSONCoding.decoder.decode(MapModel.self, from: saved)
+
+        #expect(savedMap.mapPins.first { $0.id == monster.id }?.characterId == sourceId, "the clone is gone after the game")
+        #expect(savedMap.mapPins.allSatisfy { !$0.isPlayer })
+        #expect(fixture.map.mapPins == livePins, "a cancelled save must leave the running game its player pins and clones")
     }
 
     // MARK: - §5.8 Placement

@@ -320,7 +320,9 @@ extension EditController {
         // Only a plain number makes a number entry. Text that merely uses number characters
         // ("5-10", "3/4", "1,2,3") is a range, a fraction or a list and stays text.
         // See CODE_AUDIT_22 §5.12.
-        if content.allSatisfy(\.isWhitespace) { return .number }
+        // Blank content keeps the type: clearing a text note must not turn it into a number entry
+        // (which the sheet shows as "= 0 Error"). See CODE_AUDIT_28 §5.9.
+        if content.allSatisfy(\.isWhitespace) { return currentType }
         if parseInteger(from: content) != nil { return .number }
         if parseDouble(from: content) != nil { return .decimal }
         return currentType

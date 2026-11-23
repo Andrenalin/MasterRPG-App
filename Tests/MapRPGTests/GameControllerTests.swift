@@ -122,7 +122,10 @@ struct GameControllerTests {
 
         _ = sut.demoNextMap(itemId: mapId, restart: true)
         _ = sut.saveAll()
-        #expect(sut.gameItem(for: mapId).mapPins.allSatisfy { !$0.isPlayer })
+        // The saved copy has no player pins; the running game keeps its own (CODE_AUDIT_28 §5.7).
+        let saved = try #require(try sut.exportController.savedGameExportData(for: mapId))
+        let savedMap = try JSONCoding.decoder.decode(MapModel.self, from: saved)
+        #expect(savedMap.mapPins.allSatisfy { !$0.isPlayer })
 
         sut.resetGameState()
         #expect(sut.mapGameModel.playerPins.isEmpty)

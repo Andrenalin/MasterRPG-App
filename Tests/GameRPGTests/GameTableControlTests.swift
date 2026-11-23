@@ -161,6 +161,22 @@ struct GameTableControlTests {
         #expect(nextModel.displayMode == .player)
     }
 
+    /// CODE_AUDIT_28 §5.15: the lens re-rendered the fog but left the hidden pins on the table.
+    @Test("Previewing as a player removes the hidden pin tokens at once")
+    func playerLensRemovesHiddenPins() async throws {
+        let fixture = try await makeFixture(entries: [], isGameMaster: true)
+        let hiddenId = UUID()
+        fixture.liveMap.mapPins = [MapPinModel(id: hiddenId, name: "Ambush", isShown: false)]
+        fixture.game.syncPawnsWithMapPins()
+        #expect(fixture.game.setup.pinPawns.contains { $0.pinId == hiddenId })
+
+        fixture.game.displayMode = .player
+        #expect(!fixture.game.setup.pinPawns.contains { $0.pinId == hiddenId })
+
+        fixture.game.displayMode = .master
+        #expect(fixture.game.setup.pinPawns.contains { $0.pinId == hiddenId })
+    }
+
     /// CODE_AUDIT_19 §5.17: the reshare baseline starts at the map's values, not the defaults.
     @Test("Resetting the reshare baseline leaves nothing to reshare")
     func resetReshareMatchesCurrentMap() async throws {

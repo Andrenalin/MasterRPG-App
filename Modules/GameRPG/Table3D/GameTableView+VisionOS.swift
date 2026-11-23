@@ -179,7 +179,7 @@ public struct GameTableView: View {
                 // per-frame tick, so waiting for one rendered frame is a stronger guarantee than any
                 // fixed number of Task turns. See `setUpSharePlayCoordinationIfNeeded(for:)`.
                 .task {
-                    await loadedGame.waitForFirstRenderedFrame()
+                    guard await loadedGame.waitForFirstRenderedFrame() else { return }
                     setUpSharePlayCoordinationIfNeeded(for: loadedGame)
                 }
                 // Pin drag: the handlers guard permissions — the master moves

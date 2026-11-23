@@ -38,6 +38,11 @@ public protocol ExportControllable: Sendable {
     /// a Save Game or a library export. A module with game-master-only content (Map: hidden rooms
     /// and pins) overrides this.
     @MainActor func playerExportData(for itemId: UUID) throws -> Data?
+    /// The encoded item as a Save Game keeps it, or `nil` for the item as it is. Only called in a
+    /// running game for an export that is not a package for players; the item in the running game
+    /// stays as it is (Map drops the session-only pins on the copy it writes).
+    /// See CODE_AUDIT_28 §5.7.
+    @MainActor func savedGameExportData(for itemId: UUID) throws -> Data?
 }
 
 /// An `ExportControllable` conformer that resolves `hubControllable` through a
@@ -87,6 +92,10 @@ public extension ExportControllable {
     }
 
     @MainActor func playerExportData(for itemId: UUID) throws -> Data? {
+        nil
+    }
+
+    @MainActor func savedGameExportData(for itemId: UUID) throws -> Data? {
         nil
     }
 
@@ -419,6 +428,10 @@ public extension ExportControllable {
     @MainActor
     private func encodedForExport<T: Encodable>(_ item: T, id itemId: UUID) throws -> Data {
         if ExportAudience.isPlayerPackage, let data = try playerExportData(for: itemId) {
+            return data
+        }
+        if !ExportAudience.isPlayerPackage, itemControllable.itemDataModel.isGameMode,
+           let data = try savedGameExportData(for: itemId) {
             return data
         }
         return try encoded(item)

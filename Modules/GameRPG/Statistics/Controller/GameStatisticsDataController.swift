@@ -70,6 +70,7 @@ struct GameStatisticsDataController: Sendable {
         participants: [GameStatisticParticipantDraft],
         at date: Date,
         details: GameStatisticSessionDetails? = nil,
+        advancesActivity: Bool = true,
         in context: NSManagedObjectContext
     ) async throws {
         try await context.perform {
@@ -85,14 +86,17 @@ struct GameStatisticsDataController: Sendable {
                     session.masterName = details.masterName
                 }
             }
-            let lastActivityAt = max(session.lastActivityAt ?? date, date)
+            // The checkpoint of a stop only refreshes the roster and details: counting it as
+            // activity would hide the idle time before the stop. See CODE_AUDIT_28 §5.17.
+            let effectiveDate = advancesActivity ? date : min(date, session.lastActivityAt ?? date)
+            let lastActivityAt = max(session.lastActivityAt ?? effectiveDate, effectiveDate)
             session.lastActivityAt = lastActivityAt
             session.durationSeconds = max(
                 session.durationSeconds,
                 max(0, lastActivityAt.timeIntervalSince(session.startedAt ?? lastActivityAt))
             )
             session.maxParticipantCount = max(session.maxParticipantCount, Int16(clamping: participants.count))
-            try self.synchronizeParticipants(participants, sessionID: id, session: session, at: date, in: context)
+            try self.synchronizeParticipants(participants, sessionID: id, session: session, at: effectiveDate, in: context)
             try self.saveIfNeeded(context)
         }
     }
@@ -105,12 +109,20 @@ struct GameStatisticsDataController: Sendable {
     ) async throws {
         try await context.perform {
             guard let session = try self.fetchSession(id: id, in: context) else { return }
-            session.endedAt = date
-            session.lastActivityAt = date
-            session.durationSeconds = max(0, date.timeIntervalSince(session.startedAt ?? date))
+            // A stop long after the last activity (a game left open overnight) ends at that
+            // activity: the idle tail was not play time. See CODE_AUDIT_28 §5.17.
+            let startedAt = session.startedAt ?? date
+            var end = date
+            if let lastActivity = session.lastActivityAt,
+               date.timeIntervalSince(lastActivity) > GameStatisticsController.idleTailLimit {
+                end = max(lastActivity, startedAt)
+            }
+            session.endedAt = end
+            session.lastActivityAt = end
+            session.durationSeconds = max(0, end.timeIntervalSince(startedAt))
             session.endedReasonRaw = reason.rawValue
             session.isComplete = true
-            self.closeParticipants(for: id, in: context, at: date)
+            self.closeParticipants(for: id, in: context, at: end)
             try self.saveIfNeeded(context)
         }
     }

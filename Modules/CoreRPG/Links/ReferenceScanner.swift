@@ -24,7 +24,9 @@ public enum ReferenceScanner {
 }
 
 private extension ReferenceScanner {
-    static let namePattern = "[^\\]]*"
+    /// A label with backslash escapes (`LinkBuilder.escapedLabel`): `\x` or any character that is
+    /// neither `]` nor `\`.
+    static let namePattern = "(?:\\\\.|[^\\]\\\\])*"
     static let uuidPattern = "[a-zA-Z0-9\\-]+"
     static let modulePattern = "[a-zA-Z]+"
     static let numberPattern = "[0-9]+"
@@ -59,7 +61,7 @@ private extension ReferenceScanner {
         let results = RegularExpressionParser.parse(content, with: pattern, extract: groups)
         return stride(from: 0, to: results.count - groups.count + 1, by: groups.count).compactMap { start in
             let match = LinkMatch(
-                name: results[start],
+                name: LinkBuilder.unescapedLabel(results[start]),
                 module: results[start + 1],
                 link: results[start + 2],
                 table: results[start + 3],

@@ -75,6 +75,9 @@ public extension LocationFileManager {
             return add(relative: url, to: rootNewCloud, module: mapModule(name: module))
         case .local:
             guard let rootLocal else { return nil }
+            // Imported references never get here without a `Documents` component:
+            // `FileUrl.sanitizedForImport` relocates them (CODE_AUDIT_28 §6.1). The resolver keeps
+            // the absolute path for the app's own `.local` files outside it.
             guard let documentsIndex = url.pathComponents.firstIndex(of: CloudDocumentController.documentDirName) else {
                 return url
             }

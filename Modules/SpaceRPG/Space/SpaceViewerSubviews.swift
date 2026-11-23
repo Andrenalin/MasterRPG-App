@@ -15,6 +15,7 @@ import SwiftUI
 
 struct SpaceViewerErrorView: View {
     let message: String
+    var retry: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -28,6 +29,16 @@ struct SpaceViewerErrorView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+            if let retry {
+                Button(action: retry) {
+                    Label {
+                        Text("Try Again", bundle: .module)
+                    } icon: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

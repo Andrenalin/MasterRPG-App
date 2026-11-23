@@ -142,6 +142,18 @@ extension AdventureModel: nonisolated ItemLinkRegistrable {
             }
         }
 
+        // The adventure's dice set is a link like its photo: deleting or moving the Dice item must
+        // warn and repair the adventure. See CODE_AUDIT_28 §5.19.
+        if oldValue.diceId != diceId {
+            let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
+            if let diceId {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: diceId, typeId: .dice)))
+            }
+            if let oldDiceId = oldValue.diceId {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldDiceId, typeId: .dice)))
+            }
+        }
+
         if oldValue.tablePlayers.map(\.characterId) != tablePlayers.map(\.characterId) {
             let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
             let newCharacterIds = Set(tablePlayers.map(\.characterId))

@@ -32,7 +32,7 @@ extension GameController {
             ?? map.entries.first(where: \.focused)
             ?? map.entries.first
         let roomPins = room.map { selectedRoom in
-            map.mapPins.filter { !$0.isPlayer && selectedRoom.contains($0.location) }
+            map.mapPins.filter { !$0.isPlayer && map.isPin($0, in: selectedRoom) }
         } ?? map.mapPins.filter { !$0.isPlayer }
 
         guard !playerPins.isEmpty || !roomPins.isEmpty else { return nil }

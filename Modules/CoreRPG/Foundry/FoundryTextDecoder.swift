@@ -25,33 +25,71 @@ public enum FoundryTextDecoder {
         // closer at most once per name. The other patterns are compiled once. See
         // CODE_AUDIT_26 §7.4.
         source = removingNonVisibleBlocks(from: source)
-        for (expression, replacement) in markupSubstitutions {
-            let range = NSRange(source.startIndex..<source.endIndex, in: source)
-            source = expression.stringByReplacingMatches(
-                in: source,
-                range: range,
-                withTemplate: replacement
-            )
-        }
+        source = strippingTags(from: source)
 
         return normalizedParagraphs(in: decodedText(source))
     }
 }
 
 private extension FoundryTextDecoder {
-    static let markupSubstitutions: [(NSRegularExpression, String)] = {
-        let patterns: [(String, String)] = [
-            (#"(?i)<\s*(?:br|hr)\b[^>]*>"#, "\n"),
-            (
-                #"(?i)<\s*/\s*(?:address|article|aside|blockquote|dd|div|dl|dt|fieldset|figcaption|figure|footer|form|h[1-6]|header|li|main|nav|ol|p|pre|section|table|tbody|td|tfoot|th|thead|tr|ul)\s*>"#,
-                "\n\n"
-            ),
-            (#"(?is)<\s*/?\s*[A-Za-z][^>]*>"#, ""),
-        ]
-        return patterns.compactMap { pattern, replacement in
-            (try? NSRegularExpression(pattern: pattern)).map { ($0, replacement) }
+    static let blockElementNames: Set<String> = [
+        "address", "article", "aside", "blockquote", "dd", "div", "dl", "dt", "fieldset", "figcaption",
+        "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header", "li", "main", "nav",
+        "ol", "p", "pre", "section", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "ul",
+    ]
+
+    /// Replaces `<br>`/`<hr>` by a line break, the end of a block element by a paragraph break
+    /// and removes every other tag, in one linear pass over the UTF-8 bytes. The regular
+    /// expressions this replaces (`<\s*/?\s*[A-Za-z][^>]*>`) scanned to the end of the text for
+    /// every `<` that has no `>` after it, which is quadratic: a crafted description froze the
+    /// import for minutes. Once a `<` finds no `>`, no later one can. See CODE_AUDIT_28 §6.3.
+    static func strippingTags(from source: String) -> String {
+        let bytes = Array(source.utf8)
+        guard bytes.contains(UInt8(ascii: "<")) else { return source }
+        var output: [UInt8] = []
+        output.reserveCapacity(bytes.count)
+        var hasNoCloserAhead = false
+        var index = 0
+        while index < bytes.count {
+            let byte = bytes[index]
+            guard byte == UInt8(ascii: "<"), !hasNoCloserAhead else {
+                output.append(byte)
+                index += 1
+                continue
+            }
+            var cursor = skippingWhitespace(in: bytes, from: index + 1)
+            let isClosing = cursor < bytes.count && bytes[cursor] == UInt8(ascii: "/")
+            if isClosing { cursor = skippingWhitespace(in: bytes, from: cursor + 1) }
+            let nameStart = cursor
+            guard cursor < bytes.count, isASCIILetter(bytes[cursor]) else {
+                output.append(byte)
+                index += 1
+                continue
+            }
+            guard let close = bytes[cursor...].firstIndex(of: UInt8(ascii: ">")) else {
+                hasNoCloserAhead = true
+                output.append(byte)
+                index += 1
+                continue
+            }
+            while cursor < close, isASCIILetter(bytes[cursor]) || (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(bytes[cursor]) {
+                cursor += 1
+            }
+            let name = String(decoding: bytes[nameStart..<cursor].map(lowercased), as: UTF8.self)
+            let rest = bytes[cursor..<close]
+            if !isClosing, name == "br" || name == "hr", !isWordByte(bytes, at: cursor) {
+                output.append(UInt8(ascii: "\n"))
+            } else if isClosing, blockElementNames.contains(name), rest.allSatisfy({ [0x20, 0x09, 0x0A, 0x0B, 0x0C, 0x0D].contains($0) }) {
+                output.append(contentsOf: [UInt8(ascii: "\n"), UInt8(ascii: "\n")])
+            }
+            index = close + 1
         }
-    }()
+        return String(decoding: output, as: UTF8.self)
+    }
+
+    static func isASCIILetter(_ byte: UInt8) -> Bool {
+        (UInt8(ascii: "a")...UInt8(ascii: "z")).contains(lowercased(byte))
+    }
 
     static let invisibleBlockNames: [[UInt8]] = ["script", "style", "template", "noscript"].map { Array($0.utf8) }
 

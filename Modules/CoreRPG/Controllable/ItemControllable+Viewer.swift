@@ -43,6 +43,23 @@ public extension ItemControllable {
         return item.name
     }
     
+    /// `loadableUrl` after the file's iCloud download was requested, for an export that hands the
+    /// URL to another app: a placeholder that is not downloaded yet would be handed out empty.
+    /// A failed download does not stop the export, a file that is local already still exports.
+    /// See CODE_AUDIT_28 §6.7.
+    @MainActor func downloadedLoadableUrl(itemId: UUID) async -> URL? {
+        if let fileUrl = await self.item(for: itemId)?.fileUrl {
+            do {
+                try await fileUrlDataController?.download(fileUrl: fileUrl)
+            } catch is CancellationError {
+                return nil
+            } catch {
+                Logger.itemController.error("Could not download the file before the export: \(error.localizedDescription, privacy: .private)")
+            }
+        }
+        return await loadableUrl(itemId: itemId)
+    }
+
     @MainActor func loadableUrl(itemId: UUID) async -> URL? {
         guard let fileUrl = await self.item(for: itemId)?.fileUrl else { return nil }
         return await fileUrlDataController?.url(for: fileUrl, action: { $0 })

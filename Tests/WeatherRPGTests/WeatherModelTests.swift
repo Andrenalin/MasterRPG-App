@@ -65,6 +65,27 @@ struct WeatherModelTests {
         #expect(sut.weatherUpdate_.wrappedValue == stamp)
     }
 
+    // CODE_AUDIT_28 §5.8: the photo is merged by the weather stamp, which a photo edit never moved.
+    @Test func linkingAPhotoWinsTheMergeOverADeviceThatKeptNoPhoto() async throws {
+        let device = try await setUp()
+        let other = device.duplicate()
+        let edited = device.copy()
+        let photoId = UUID()
+        let incoming = edited.copy()
+        incoming.photoId = photoId
+        _ = edited.replace(with: incoming)
+
+        let merged = other.merge(edited)
+        #expect(merged.photoId == photoId)
+        // The device that kept its value merges the other way round, too.
+        #expect(edited.merge(other).photoId == photoId)
+
+        let removal = edited.copy()
+        removal.photoId = nil
+        _ = edited.replace(with: removal)
+        #expect(merged.merge(edited).photoId == nil)
+    }
+
     @Test func changingAWeatherValueMovesTheWeatherStamp() async throws {
         let sut = try await setUp()
         let incoming = sut.duplicate()

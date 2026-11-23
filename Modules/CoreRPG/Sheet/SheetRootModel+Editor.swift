@@ -18,11 +18,7 @@ extension SheetRootModel {
             entry.source.typeId == entryModel.source.typeId
         })
         // Use source identifiers for linkTextModel cleanup
-        if let entryId = entryModel.source.entryId {
-            linkTextModel[.entry(entryId)] = nil
-        } else {
-            linkTextModel[.entry(entryModel.source.itemId)] = nil
-        }
+        removeLinkText([.entry], sourceId: entryModel.source.entryId ?? entryModel.source.itemId)
         updateFilteredEntries()
         updateParent(parentModel)
     }
@@ -40,8 +36,8 @@ extension SheetRootModel {
     func updateSheetModel(entryModel: SheetModel, parentModel: SheetModel, updatedText: String) {
         entryModel.description = updatedText
         let lookupId = entryModel.source.entryId ?? entryModel.source.itemId
-        linkTextModel[.entry(lookupId)]?.reset(text: entryModel.name)
-        linkTextModel[.entryContent(lookupId)]?.reset(text: entryModel.description)
+        resetLinkText([.entry], sourceId: lookupId, text: entryModel.name)
+        resetLinkText([.entryContent], sourceId: lookupId, text: entryModel.description)
         scheduleParentReconcile(parentModel)
     }
 
@@ -91,8 +87,8 @@ extension SheetRootModel {
         // without this the row keeps rendering the pre-conversion text until its view is
         // torn down and rebuilt.
         if let entryModel = findEntryModel(entryId: entryId, in: sheetModel) {
-            linkTextModel[.entry(entryId)]?.reset(text: entryModel.name)
-            linkTextModel[.entryContent(entryId)]?.reset(text: entryModel.description)
+            resetLinkText([.entry], sourceId: entryId, text: entryModel.name)
+            resetLinkText([.entryContent], sourceId: entryId, text: entryModel.description)
         }
 
         // Turning an existing item into a hidden group (or creating a new hidden one) only
@@ -114,8 +110,8 @@ extension SheetRootModel {
         updateFromRoot()
 
         guard let entryId = source.entryId, let entryModel = findEntryModel(entryId: entryId, in: sheetModel) else { return }
-        linkTextModel[.entry(entryId)]?.reset(text: entryModel.name)
-        linkTextModel[.entryContent(entryId)]?.reset(text: entryModel.description)
+        resetLinkText([.entry], sourceId: entryId, text: entryModel.name)
+        resetLinkText([.entryContent], sourceId: entryId, text: entryModel.description)
     }
 
     private func findEntryModel(entryId: UUID, in model: SheetModel) -> SheetModel? {
@@ -145,8 +141,8 @@ extension SheetRootModel {
         entryModel.isEditing = false
 
         let lookupId = entryModel.source.entryId ?? entryModel.source.itemId
-        linkTextModel[.entry(lookupId)]?.reset(text: entryModel.name)
-        linkTextModel[.entryContent(lookupId)]?.reset(text: entryModel.description)
+        resetLinkText([.entry], sourceId: lookupId, text: entryModel.name)
+        resetLinkText([.entryContent], sourceId: lookupId, text: entryModel.description)
     }
 
     /// Set the current item in the edit controller (keeps ItemEditorModel in sync for scroll/other consumers)

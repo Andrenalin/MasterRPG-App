@@ -198,6 +198,11 @@ public extension FileUrl {
         case .other:
             return relocatedToAppStorage()
         case .appCloud, .icloud, .local, .newCloud:
+            // The resolver of `.local` has no root to rebuild below when there is no `Documents`
+            // component; the reference would be an arbitrary absolute path. See CODE_AUDIT_28 §6.1.
+            if location == .local, !_url.pathComponents.contains(CloudDocumentController.documentDirName) {
+                return relocatedToAppStorage()
+            }
             guard namesFileBelowStorageRoot else { return relocatedToAppStorage() }
             guard CloudDocumentController.hasTraversalComponents(_url) else { return self }
             var copy = self

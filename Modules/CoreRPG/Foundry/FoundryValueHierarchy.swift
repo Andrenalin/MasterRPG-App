@@ -59,13 +59,20 @@ public enum FoundryValueHierarchy {
         }
     }
 
+    /// The most components of a dotted path that become nesting levels.
+    static let maximumPathComponents = 64
+
     public static func nodes(from values: [FoundryRuleValue]) -> [FoundryValueNode] {
         var root = NodeBuilder()
         for value in values {
-            let components = value.path
+            var components = value.path
                 .split(separator: ".", omittingEmptySubsequences: true)
                 .map(String.init)
             guard !components.isEmpty else { continue }
+            // `insert` recurses once per component and `materialized` copies the path at every
+            // level: a key with tens of thousands of dots overflowed the stack. An over-long path
+            // stays one literal component. See CODE_AUDIT_28 §6.4.
+            if components.count > maximumPathComponents { components = [value.path] }
             root.insert(value.value, at: ArraySlice(components))
         }
         return root.materializedChildren(parentPath: [])

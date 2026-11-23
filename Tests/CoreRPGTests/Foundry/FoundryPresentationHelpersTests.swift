@@ -56,6 +56,36 @@ struct FoundryPresentationHelpersTests {
         #expect(elapsed < .seconds(10))
     }
 
+    // CODE_AUDIT_28 §6.3: the generic tag patterns scanned to the end for every `<` without a `>`.
+    @Test("A long run of unterminated tags finishes quickly")
+    func unterminatedTagsAreLinear() {
+        let run = String(repeating: "<a", count: 60_000)
+        let clock = ContinuousClock()
+        var result = ""
+        let elapsed = clock.measure {
+            result = FoundryTextDecoder.plainText(fromHTML: run + " tail")
+        }
+        #expect(elapsed < .seconds(2))
+        #expect(result.hasSuffix("tail"))
+    }
+
+    @Test(
+        "Tags become text, line breaks and paragraph breaks",
+        arguments: [
+            ("a<br>b", "a\nb"),
+            ("a<BR/>b", "a\nb"),
+            ("a< hr >b", "a\nb"),
+            ("<p>a</p><p>b</p>", "a\n\nb"),
+            ("x<b>bold</b>y", "xboldy"),
+            ("<a href=\"u\">link</a>", "link"),
+            ("1 < 2 and 3 > 2", "1 < 2 and 3 > 2"),
+            ("a<brx>b", "ab"),
+        ]
+    )
+    func stripsTags(input: String, expected: String) {
+        #expect(FoundryTextDecoder.plainText(fromHTML: input) == expected)
+    }
+
     @Test(
         "Entity decoding handles named, decimal, hexadecimal, and unknown entities",
         arguments: [
@@ -132,5 +162,23 @@ struct FoundryPresentationHelpersTests {
         #expect(body.children.first?.value == .integer(5))
         #expect(attributes.valueCount == 3)
         #expect(nodes[1].children.map(\.component) == ["2", "10"])
+    }
+
+    // CODE_AUDIT_28 §6.4
+    @Test("A key of a hundred thousand dots stays one literal component")
+    func overLongPathIsOneComponent() {
+        let path = String(repeating: "a.", count: 100_000) + "a"
+        let values = [
+            FoundryRuleValue(path: path, value: .integer(1)),
+            FoundryRuleValue(path: "attributes.body", value: .integer(2)),
+        ]
+
+        let nodes = FoundryValueHierarchy.nodes(from: values)
+
+        #expect(nodes.count == 2)
+        let long = nodes.first { $0.component == path }
+        #expect(long?.value == .integer(1))
+        #expect(long?.children.isEmpty == true)
+        #expect(nodes.first { $0.component == "attributes" }?.children.first?.component == "body")
     }
 }

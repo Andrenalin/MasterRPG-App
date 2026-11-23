@@ -203,6 +203,33 @@ struct GameStatisticsBucketingTests {
         #expect(result.schedule.isEmpty)
     }
 
+    // CODE_AUDIT_28 §5.17
+    @Test("One session counts at most twelve hours, in the totals and in the buckets")
+    func sessionDurationIsCapped() throws {
+        let calendar = try calendar()
+        let start = try date("2024-01-02T08:00:00Z")
+        let multiDay = GameStatisticSessionSnapshot.fixture(id: id(1), startedAt: start, duration: 5 * 24 * 3_600)
+
+        let result = summary(sessions: [multiDay], calendar: calendar)
+
+        #expect(result.totalDuration == 12 * 3_600)
+        #expect(result.longestDuration == 12 * 3_600)
+        #expect(result.activity.reduce(0) { $0 + $1.duration } == 12 * 3_600)
+        #expect(result.schedule.reduce(0) { $0 + $1.duration } == 12 * 3_600)
+    }
+
+    @Test("A session of years does not loop over every hour")
+    func absurdDurationTerminates() throws {
+        let calendar = try calendar()
+        let start = try date("2000-01-01T00:00:00Z")
+        let session = GameStatisticSessionSnapshot.fixture(id: id(1), startedAt: start, duration: 25 * 365 * 24 * 3_600)
+
+        let result = summary(sessions: [session], calendar: calendar)
+
+        // The heat map splits at every hour: capped, it books twelve of them.
+        #expect(result.schedule.reduce(0) { $0 + $1.duration } == 12 * 3_600)
+    }
+
     // MARK: - Heat map
 
     @Test("The heat map splits at each hour and sorts by weekday, then hour")

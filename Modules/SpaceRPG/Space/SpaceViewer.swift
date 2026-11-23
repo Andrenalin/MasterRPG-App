@@ -19,6 +19,8 @@ struct SpaceViewer: View {
     let id: UUID
     let isModal: Bool
     var isImmersiveSpace: Bool = false
+    /// Tries the load again after it failed; the owner re-creates the viewer.
+    var retry: (() -> Void)?
 
     @Environment(ScenesManager.self) var scenesManager
 
@@ -100,7 +102,7 @@ struct SpaceViewer: View {
             if handedOffToImmersive {
                 SpaceViewerMovedToImmersiveSpaceView()
             } else if let loadError {
-                SpaceViewerErrorView(message: loadError)
+                SpaceViewerErrorView(message: loadError, retry: retry)
             } else {
                 SpaceViewerProgressView(hasLoaded: hasLoaded)
 
@@ -124,7 +126,7 @@ struct SpaceViewer: View {
             }
 #else
             if let loadError {
-                SpaceViewerErrorView(message: loadError)
+                SpaceViewerErrorView(message: loadError, retry: retry)
             } else {
                 SpaceViewerProgressView(hasLoaded: hasLoaded)
 

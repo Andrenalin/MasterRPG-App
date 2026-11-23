@@ -60,6 +60,26 @@ extension ExportController: ExportModelBacked {
         return try JSONCoding.encoder.encode(redacted)
     }
 
+    /// The map as a Save Game writes it: without the player, companion and table-player pins and
+    /// the shared photo flag, with the battle monsters pointing at their library Character again
+    /// (the clone is gone after the game). A copy: the running game keeps its pins.
+    /// See CODE_AUDIT_28 §5.7.
+    @MainActor public func savedGameExportData(for itemId: UUID) throws -> Data? {
+        guard let item = itemController.itemSync(for: itemId) else { return nil }
+        let copy = item.copy()
+        copy.mapPins = Self.savedGamePins(of: item.mapPins, sources: root.gameController.mapGameModel.battleCopySources)
+        return try JSONCoding.encoder.encode(copy)
+    }
+
+    static func savedGamePins(of pins: [MapPinModel], sources: [UUID: UUID]) -> [MapPinModel] {
+        GameController.libraryPins(of: pins, sources: sources).map { pin in
+            // `isPhotoShared` is a session-only share (the game master's open pin photo).
+            var pin = pin
+            pin.isPhotoShared = false
+            return pin
+        }
+    }
+
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var audioIds: Set<UUID> = []
         var diceIds: Set<UUID> = []

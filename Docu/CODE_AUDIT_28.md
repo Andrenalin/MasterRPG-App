@@ -132,6 +132,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Look up already-created children inside the loop (accepting that duplicates collapse), or give entries their own id in those seven modules as Photo/Audio/Space already do, or reject the second add. Decide with the user; add a save/reload regression test.
 - **Severity:** Medium (Likely)
 - **Known:** Docu/CODE_AUDIT_Folder.md §5.17 (marked Fixed, but only the row-id part).
+- **Status 2026-11-22:** fixed for new adds: `EditControllable.addItem` rejects a second add of the same member to a collection (user decision). A duplicate that arrives by sync or an old file is still handled by row id; the Core Data relationship mapping (`CoreDataRelationship.swift`) was not changed. Tests: `CollectionDuplicateMemberTests`; `FolderOperationAuditTests.collectionMembersByRowId` now builds its duplicate directly.
 
 ### 5.3 Undo and redo skip the side effects of `saveChanges`
 - **Location:** `Modules/CoreRPG/Controllable/EditControllable+Undo.swift:56-64`, versus `EditControllable.swift:447-464` (`saveChanges`) and `:168-177`, `EditControllable+Delete.swift:222-231, 242-298`
@@ -139,6 +140,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Add a link then undo: "used by" and the delete-impact panel still list the removed link. Trash an item then undo: it is visible again but its tags no longer count and drop out of suggestions. The error survives until Validate & Repair or relaunch.
 - **Action:** Route the restored value through the same register-diff and tag-count step as `saveChanges` (extract it so the two cannot drift). Test add-link/add-tag, undo, check register and counts.
 - **Severity:** Medium (Verified: both paths read, no other register update on the undo path)
+- **Status 2026-11-22:** fixed. `applyUndoValue` now runs `updateLinkRegister(to:)` and the new `updateTagCounts(to:)` (a trashed item counts no tags), the same pieces `saveChanges` uses. Test: `UndoSideEffectsTests` (red before).
 
 ### 5.4 An unreadable stored CRDT register becomes a default stamped "now" and wins the next merge
 - **Location:** `Modules/CoreRPG/CRDT/CRDT.swift:25-27, 61-66`; about 113 call sites, e.g. `Modules/PdfRPG/Controller/DataController.swift:29-33`, `Modules/DiceRPG/Controller/DataController.swift:26-42`, `Modules/WeatherRPG/Controller/DataController.swift:26-27`
@@ -147,6 +149,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** At the DataController mapping boundary treat "non-empty but undecodable" as unreadable: keep the raw string and the epoch-stamped state, do not write it back, log once. Keep the legacy plain-text tag fallback as the migration path.
 - **Severity:** Medium (Likely; cross-version scenario not reproduced)
 - **Known:** audit 24 §5.9 (fixed only for table players).
+- **Status 2026-11-22:** fixed. A string that is a serialized register but cannot be decoded as `T` becomes an epoch-stamped default (loses every merge) and keeps its raw text (`unreadableRawValue`), which `rawValue` writes back until the value is set again; plain legacy text keeps the old fallback. Test: `CRDTUnreadableRegisterTests` (red before).
 
 ### 5.5 A failed database delete leaves its deletion queued, so the next save removes the row the item was restored for
 - **Location:** `Modules/CoreRPG/Controllable/ItemControllable.swift:187-198`, `Modules/CoreRPG/Persistence/CoreDataController.swift:229-232, 261-304`
@@ -155,6 +158,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Drop the queued deletion for the id in the failure branch (and mirror it in `deleteForExternalImport`); test with a flush that throws.
 - **Severity:** Medium (Likely)
 - **Known:** audit 23 §5.6 fixed the file half only.
+- **Status 2026-11-22:** fixed. The failed-delete branch and `deleteForExternalImport` call `removePendingOperations(for:)` before the model is restored. Test: `FailedDeleteQueuedDeletionTests` (red before).
 
 ### 5.6 Unplaced pins are drawn in the first room but judged by their raw location
 - **Location:** `Modules/MapRPG/Map/MapPinPlacement.swift:20-28`, `Modules/MapRPG/Model/MapModel+Geometry.swift:48-53`, `MapSnapshot.swift:168`, `Controller/GameController+Sync.swift:44`, `GameController+Pins.swift:402, 428, 566-580`, `GameController+Battle.swift:31-34`, `Map/ChooseMapPinsButton.swift:80-114`
@@ -162,6 +166,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A monster the GM placed (visually) in an unrevealed first room is sent to players with name, portrait id and character link; the 2D player view hides it only through fog layering, and the shared-photo layer above fog can show it. Battle start skips pins that look like they are inside the room.
 - **Action:** Resolve the display location once (or persist a real location when a pin is added in game mode) and use it in every rule.
 - **Severity:** Medium (Likely: the display placement was read by the lead; the player-side rules were traced by the agent)
+- **Status 2026-11-22:** fixed. `MapPinModel.isVisibleToPlayers` judges a pin at `.zero` by the first room; `MapModel.isPin(_:in:)` gives the same rule to battle membership (`battleStartPins`). Not changed: `ChooseMapPinsButton`. Two existing fixtures that relied on the old behaviour were updated (`ExportControllerTests.playerExportDataIsRedacted`, `MapMasterMessageFlowTests.proxyMapRepairRejectsMissingPinPhotoData`). Test: `UnplacedPinRoomTests`.
 
 ### 5.7 Save Game keeps battle-clone Character ids in the saved pins and mutates the live maps
 - **Location:** `Modules/MapRPG/Controller/GameController+Metadata.swift:463-477` (`saveAll`) versus `:297-330` (library path restores source ids)
@@ -169,6 +174,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A saved game written during or after a battle links monsters to Characters that do not exist after loading; a cancelled save leaves the running game without its player/companion pins until the next roster sync.
 - **Action:** Build the saved copy from the library-pin function on copies of the maps; share one function between library write and Save Game.
 - **Severity:** Medium
+- **Status 2026-11-22:** fixed. Save Game no longer mutates the live map: `ExportControllable.savedGameExportData(for:)` (new requirement, default nil) encodes a copy with library pins (`GameController.libraryPins`, `isPhotoShared = false`); `saveAll()` only exports. Tests: `GameControllerTests`, `PinPhotoShareAndPlacementTests` (`saveGameWritesLibraryPinsOnACopy`). The tests use the new API, so the red check was compile-level only.
 
 ### 5.8 Weather's linked photo is merged by a stamp a photo edit never moves
 - **Location:** `Modules/WeatherRPG/Model/WeatherModel+Sync.swift:7-36`, `WeatherModel.swift:279-314`, `Controller/EditController.swift:36-40`
@@ -177,6 +183,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Make `photoId` its own register or include it in the stamp-moving comparison; add a photo-only merge test.
 - **Severity:** Medium
 - **Known:** audit 27 §5.21, still open.
+- **Status 2026-11-22:** fixed. `WeatherModel.hasDifferentWeather` includes `photoId`, so a photo edit moves the stamp that `merge` decides the photo by. Test: `WeatherModelTests.linkingAPhotoWinsTheMergeOverADeviceThatKeptNoPhoto` (red before).
 
 ### 5.9 Blank text entries silently become number entries and show "= 0 Error"
 - **Location:** `Modules/CharacterRPG/Controller/EditController.swift:301-327` (`update`, `termineType`), `EditController+InlineEditor.swift:144-146`, callers `Modules/CoreRPG/EntryEditor/EntryEditorHeaderView.swift:53-62, 88-97`, `CharacterRPG/View/CharacterAddEntryOverlay.swift:127-131`, `Intent/CharacterManagementIntents.swift:99-102`
@@ -184,6 +191,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** The type change is synced, invisible, and later prose stays in a number entry.
 - **Action:** Treat empty content as "keep the current type"; give number entries an explicit "0" base on create; test blank save and blank create.
 - **Severity:** Medium (Verified for the type flip; the "= 0 Error" display traced, not seen)
+- **Status 2026-11-22:** fixed. `termineType` keeps the type for blank content (a quick entry without content is text). Test: `BlankEntryTypeTests` (red before).
 
 ### 5.10 Item or entry names with balanced square brackets generate links nothing recognises
 - **Location:** `Modules/CoreRPG/ItemList/ItemDataAccessible.swift:139-153`, `ItemList/EntryDataEditable.swift:157`, `Inspector/InspectorRowView.swift:62-67, 110-115`, `Model/EditorLinkModel.swift:159`
@@ -191,6 +199,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** The user sees raw markdown instead of a link chip, and the link is not registered, so usage tracking and deletion warnings do not apply.
 - **Action:** Decide one grammar for bracketed names (sanitise at creation or accept escaped brackets in both patterns) and use a single builder entry point everywhere, including the Foundry mapper; add a round-trip test.
 - **Severity:** Medium (Verified for the pattern behaviour; Likely end to end)
+- **Status 2026-11-22:** fixed (user decision: escape at the builder). `LinkBuilder.markdown` escapes `\`, `[` and `]` through `escapedLabel`; `markdownLinkPattern`, the reference scanner and `LinkBuilder.labels` read the escapes back (`unescapedLabel`). `ItemDataAccessible.url(...)`, `ReferenceLink.markDown`, the intent text helper, the Quick Link relabel and the Foundry mapper (`markdownLink` no longer escapes itself) use the one entry point. Not changed: `EditorLinkModel`/`InspectorRowView` only read names. Tests: `BracketedLinkNameTests` (red before).
 
 ### 5.11 Link toggles act on the first occurrence when the same item appears twice in a sheet tree
 - **Location:** `Modules/CoreRPG/Sheet/SheetRootModel+Links.swift:11-121`, keys built at `Sheet/SheetEntryRowViews.swift:189, 206, 268`, `Sheet/SheetView.swift:151, 236`
@@ -198,6 +207,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Tapping a link inside the second copy expands or collapses the first copy (maybe off-screen) and both rows share one cached model, so the second looks dead.
 - **Action:** Key the cache and togglers by occurrence id (`SheetModel.id`) and resolve the target by it.
 - **Severity:** Medium (Likely)
+- **Status 2026-11-22:** fixed. `LinkHighlightTextModelId` carries the `SheetModel.id` of the row it is shown in (`occurrence`); a link tap acts on that row (`toggleLink(in:)`); cache resets and cleanups go by source id and reach every occurrence. Tests: `SheetRootModelSelectionTests.linkTapActsOnTheOccurrenceItWasTappedIn` (red before), `cachedLinkTextOfEveryOccurrenceIsReset`.
 
 ### 5.12 Cmd-0 is bound twice: "Show Weather" and the map editor's "Fit to Window"
 - **Location:** `Modules/CoreRPG/Menu/ModuleCommands.swift:30-32, 95-100`, `Menu/NavigateButton.swift:17`, `Modules/WeatherRPG/Menu/WeatherCommands.swift:20`
@@ -205,6 +215,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** With the map editor focused two menu items own the shortcut; either Fit to Window does nothing or the app jumps to Weather.
 - **Action:** Give Weather another key or move the zoom reset.
 - **Severity:** Medium (Verified by reading both declarations; runtime pick not tested)
+- **Status 2026-11-22:** fixed in code, menu pick not verified at runtime. "Fit to Window" moved to Command-Option-0 (`ModuleMenuPolicy`), Command-0 stays "Show Weather". Test: `ModuleMenuPolicyTests` (guards the two modifier sets).
 
 ### 5.13 Cmd-Delete "Delete item" is not gated by list focus
 - **Location:** `Modules/CoreRPG/Menu/DeleteItemButton.swift:19-20`, `Menu/ModuleCommands.swift:58`
@@ -212,6 +223,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** On macOS and iPad with a keyboard, Cmd-Delete is also "delete to start of line"; with an item selected and the cursor in a detail text field the menu command runs first and opens the removal panel.
 - **Action:** Disable unless the module list is focused, as `SpaceActionButton` does.
 - **Severity:** Medium (Likely)
+- **Status 2026-11-22:** fixed. `DeleteItemButton` is enabled only with a selection and the module list focused (`ModuleMenuPolicy.isDeleteEnabled`). Test: `ModuleMenuPolicyTests`.
 
 ### 5.14 `ScenesManager.openWindow` cannot raise an open window and has no way out of a stuck `.opening`
 - **Location:** `Modules/CoreRPG/ScenesManager/ScenesManager.swift:230-244, 275-286`, `Menu/LinkWindowCommandView.swift:21-23`, `Menu/MenuWindowButtonView.swift:17-23`
@@ -219,6 +231,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** The menu command does nothing for a window open behind others; a scene that never activates leaves the state stuck so later opens are ignored and the game menu shows the window as open until restart.
 - **Action:** For single-instance scenes always forward to `openWindow(id:)`, guard only same-turn double calls, and clear `.opening` on a timeout or inactive phase.
 - **Severity:** Medium (Likely)
+- **Status 2026-11-22:** fixed. `openWindow(_:)` asks SwiftUI again for an `.opened` scene (raises it), ignores only a second call within `openingTimeout` (3 s) and asks again for a scene stuck in `.opening`. Not changed: the clearing of `.opening` on an inactive phase (no signal available). Tests: `ScenesManagerOpenWindowTests`. Not run on a device; multi-instance `WindowGroup` scenes opened without a selection would now open a further window while open (none found).
 
 ### 5.15 GM "preview as player" toggle does not re-sync the pin tokens
 - **Location:** `Modules/GameRPG/Table3D/GameTableModel.swift:141-150`, `GameTableProjection.swift:249-262`, `GameTableModel+MapSync.swift:226-228`, toggle at `Modules/MapRPG/Map/GameToolBar.swift:99`
@@ -226,6 +239,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** After switching to the player lens the fog is the players' but hidden pins stay on the table until an unrelated sync, so the lens shows a mix of roles. Local to the GM device; nothing is leaked.
 - **Action:** Call the pin sync after scheduling the fog task; add a test next to `GameTableControlTests.displayModeOutlivesTableModel`.
 - **Severity:** Medium (Verified)
+- **Status 2026-11-22:** fixed. `displayMode.didSet` runs `syncPawnsWithMapPins()` after scheduling the fog task. Test: `GameTableControlTests.playerLensRemovesHiddenPins` (red before).
 
 ### 5.16 SharePlay coordination wait silently skips when the scene is not attached yet
 - **Location:** `Modules/GameRPG/Table3D/GameTableModel+RenderingReadiness.swift:30-44`, caller `GameTableView+VisionOS.swift:181-184`
@@ -233,6 +247,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** If the task wins the race against the RealityView `make`, the documented crash path reopens, intermittently.
 - **Action:** Wait for the scene (bounded poll or a signal from `make`) before waiting for the frame; give up after a deadline with a log line.
 - **Severity:** Medium (Unverified; ordering not proven)
+- **Status 2026-11-22:** fixed in code, visionOS build verified, not run on a device. `waitForFirstRenderedFrame()` first waits up to 10 s for the renderer scene (`SceneAttachmentWait`), returns `false` otherwise and the caller then does not start SharePlay coordination (logged). Test: `SceneAttachmentWaitTests`.
 
 ### 5.17 Session duration has no upper bound; idle time and clock jumps become play time and irrevocable Game Center progress
 - **Location:** `Modules/GameRPG/Statistics/Controller/GameStatisticsDataController.swift:100-116`, `Modules/GameRPG/Root/GameRoot+Stop.swift:68-69`, consumers `GameStatisticsController.swift:108-134, 255-271`, `GameCenterController.swift:206-245`
@@ -240,6 +255,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A game left open overnight or a wrong device clock yields a multi-day session, inflating play time and the 8-hour and 100-hour achievements, which are reported once and never lowered; `splitInterval` also loops per hour on the main actor.
 - **Action:** Book a stop from the last activity or clamp the idle tail; cap the loop and the session length in the summary; decide a maximum that counts towards achievements.
 - **Severity:** Medium (Likely)
+- **Status 2026-11-22:** fixed (user decision). The stop's own checkpoint no longer counts as activity (`advancesActivity: false`), so `finishSession` books the end at the last activity when the idle tail exceeds 30 min; a session counts at most 12 h in the summary and achievements (`GameStatisticSessionSnapshot.capped`); `splitInterval` is bounded at 10 000 segments. Stored rows are not rewritten; existing multi-day sessions are only capped in the summary. Tests: `GameStatisticsDataControllerTests`, `GameStatisticsBucketingTests`. Achievements already reported are not lowered.
 
 ### 5.18 Audio detail toolbar "Play" plays only on this device while a game runs
 - **Location:** `Modules/AudioRPG/View/PlayToolbarButton.swift:11-27`, `View/DetailListView.swift:22-27`
@@ -247,6 +263,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** The GM hears the music, no player gets it, and later GM pause commands act on audio the players never started.
 - **Action:** Route through the same game-aware entry point.
 - **Severity:** Medium
+- **Status 2026-11-22:** fixed. The detail toolbar's Play goes through `AudioRootModel.playItem(id:isGameRunning:networkActions:)` (game-aware `startPlayback`). Test: `AudioPlaybackActionsTests.playButtonIsGameAware`.
 
 ### 5.19 Adventure `diceId` is not in the link register
 - **Location:** `Modules/AdventureRPG/Model/AdventureModel.swift:131-179`, consumers `Controller/LinkController.swift:120-125`, `ExportController.swift:74-76`, `GameController.swift:71-77`, `Modules/DiceRPG/Controller/GameController.swift:247-255`
@@ -254,6 +271,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Deleting or moving a Dice item neither warns nor repairs the adventure; starting the game then focuses an empty dice set instead of the default d20.
 - **Action:** Add `diceId` to the register diff and add a delete-impact test.
 - **Severity:** Medium
+- **Status 2026-11-22:** fixed. `AdventureModel.changedLinkRegisterModels` registers and unregisters `diceId` (module `.dice`). Tests: `AdventureTablePlayersTests` (red before). The delete-impact warning itself is not tested end to end.
 
 ### 5.20 Space viewer never reloads when the item's file is replaced, and a load error is permanent
 - **Location:** `Modules/SpaceRPG/Root/ViewerRootView.swift:20-24`, `Space/SpaceViewer+Loading.swift:21-62, 117-131`, `Space/SpaceViewer.swift:102-105`, `Modules/GameRPG/GameViews/GameRootViewer.swift:215-222`
@@ -261,6 +279,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A replaced USDZ keeps showing the old model until the viewer closes; an item whose file was momentarily unreadable stays on "Failed to Load 3D Model".
 - **Action:** Key the viewer on id plus version as `PdfViewerLoadKey` does and make the error state retryable.
 - **Severity:** Medium
+- **Status 2026-11-22:** fixed in code, not run on visionOS or a device. The viewer is keyed on `SpaceViewerLoadKey(id, version, attempt)` and the error view has "Try Again", which re-creates the viewer. The new "Try Again" key is not yet in `Localizable.xcstrings` (Xcode adds it on the next catalog sync). Test: `SpaceViewerLoadKeyTests` (key only).
 
 ### 5.21 Foundry import view reloads the whole source whenever it re-appears
 - **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryImportView.swift:65-67`, `FoundryRuleImportModel.swift:110-166`, `Modules/RolePlayGameKit/View/AppImportView.swift:49-74`
@@ -268,6 +287,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A prepared review with the user's Skip/Merge/Replace decisions or a completed result silently falls back to preflight and the archive is read again.
 - **Action:** Make the load a no-op unless the state is not started (or an explicit retry from failed).
 - **Severity:** Medium (Verified)
+- **Status 2026-11-22:** fixed. `loadSelectedArtifact()` is a no-op unless the state is `.notStarted`; `select(url:)` resets it. Tests: `FoundryImportModelTests.reloadingIsANoOp` (red before), `failedLoadRetriesWithNewSelection`.
 
 ### 5.22 PDF block extraction hides every failure and swaps the screen to an empty result
 - **Location:** `Modules/GeneratorRPG/View/PdfContentExtractionView.swift:38-48`, `Modules/PdfRPG/View/ContentExtractionView.swift:112-123`, `Modules/GeneratorRPG/BasicAI/Model/PdfContentExtractionModel.swift:25-52`
@@ -276,6 +296,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Return a result type (blocks, failed pages, error) or call back only when blocks exist and no error is pending; add the task-handle guard.
 - **Severity:** Medium (Verified)
 - **Known:** audit 21 §5.28 (extractor fixed, view path not).
+- **Status 2026-11-22:** fixed. `PdfContentExtractionModel.extractForDelivery` returns blocks only for a clean extraction (a failure or lost pages keep the screen with the banner; a PDF without text is a clean empty result); the view has a task-handle guard against a second start. Partial results are therefore not accepted from this screen; a retry is. Test: `PdfContentExtractionModelTests`.
 
 ### 5.23 Persistence and sync Lows (grouped)
 - **Location:** `Modules/CoreRPG/Controllable/ItemControllable+Sync.swift:101-135` (`updates()` ignores `deletingIds`); `Modules/CoreRPG/Persistence/PersistentHistoryTrackerManager.swift:208-218, 279-285, 318-334` (history cursor is a `Date`, not a token); `Modules/CoreRPG/App/AppEntityIndexLedger.swift:23-46` (indexed ids can overwrite a newer cached list after an await); `Modules/CoreRPG/Intent/IntentEntityHelpers.swift:386-404, 485-499` (Spotlight delete failures forgotten by the ledger); `Modules/AudioRPG/Model/AudioModel.swift:149-153`, `Modules/PhotoRPG/Model/PhotoModel.swift:136-153`, `Modules/TableRPG/Model/TableModel+Persistence.swift:30-52` (positional `isSame`, Known audit 27 §5.31)
@@ -283,6 +304,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Rare stale or repeated sync work; a history cursor by date can skip or repeat transactions with equal timestamps.
 - **Action:** Honour `deletingIds`, use persistent history tokens, compare by id in `isSame`.
 - **Severity:** Low
+- **Status 2026-11-22:** not fixed. Each item needs a design decision or a larger change (persistent history tokens instead of a date cursor, `isSame` by id for Audio/Photo/Table — Known audit 27 §5.31, ledger ordering).
 
 ### 5.24 Editing, Character and Dice Lows (grouped)
 - **Location:** `Modules/CoreRPG/ItemList/EntryDataEditable.swift:210-217, 402-422` (a stale entry id appends a blank entry), `ItemList/GroupableEntryEditing.swift:38-72` (`convertToGroup` creates a new group when the chosen item cannot be edited); `Modules/DiceRPG/Model/DiceModel+Options.swift:96-100, 132-142` with `Controller/EditController.swift:48-75` (reroll/coup/fumble options can be added twice, duplicate `ForEach` ids); `Modules/DiceRPG/Model/DiceResultModel.swift:88-100` (rolls of sets over 100 dice dropped without feedback, Known audit 22 §5.12); `Modules/DiceRPG/Controller/GameController.swift:137-176, 294-312` (one leaked dice model per player roll, Known audit 22 §5.12); `Modules/CharacterRPG/Controller/GameController.swift:262-282`, `GameController+Dice.swift:35-60` (battle-clone dice never removed); `Modules/CharacterRPG/Controller/EditController.swift:147-165` (table link drop overwrites the entry name); `Modules/DiceRPG/Controller/DataController.swift:62-77` (Core Data narrows values the decoder accepts, Known audit 27 §5.23); `Modules/DiceRPG/Game/Detail/DiceRoll.swift:36-45` (single-die tap appends to earlier results); `Modules/DiceRPG/View/DiceInline.swift:165-169` (random die built in `body`)
@@ -290,6 +312,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Duplicate identities, silent loss of large rolls, slow growth of game-session memory on the master.
 - **Action:** Add the guards, report dropped rolls to the roller, release replaced and clone dice.
 - **Severity:** Low
+- **Status 2026-11-22:** partly fixed. Fixed: a coup, fumble or reroll option cannot be added twice (a reroll replaces the one with the same number); test `EditControllerTests.sameOptionsAreNotAddedTwice` (red before). Not fixed: the table link drop that replaces the entry name (append or replace is a product decision), the stale-entry-id and `convertToGroup` guards, dice feedback for sets over 100 dice, leaked/clone dice models, `DiceRoll` single-die tap, random die in `body`, Core Data narrowing (need UI or device verification or a decision).
 
 ### 5.25 Game, statistics and network Lows (grouped)
 - **Location:** `Modules/GameRPG/GameCenter/GameCenterController.swift:114-146` and `Statistics/View/GameCenterStatusView.swift:34-45` (no report when sign-in completes, Sign In inert after the first call, error message never shown); `Modules/GameRPG/Statistics/Model/GameStatisticsModel.swift:89-108, 275-293` (a stop racing `beginSession` leaves an open session); `Modules/GameRPG/BattleRound/BattleRoundSettingsView.swift:131-141` (removing a pattern does not re-scan); `Modules/GameRPG/Intent/GameIntents.swift:202-214` (`JoinGameIntent` reports an ignored start as "already running", Known §5.30); `Modules/GameRPG/Search/SearchGlobalController.swift:28-33` and siblings (small search issues, Known §8.5); `Modules/GameRPG/Network/GameNetworkController+Delivery.swift:86-91` (`.direct(nil)` asset answer broadcasts, Known §6.6); `Modules/GameRPG/Root/GameRootSetupView.swift:66-68` vs `GameRootView.swift:17-21` (different stop guards writing `AppGameStateModel`)
@@ -297,6 +320,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Misleading status, orphan sessions, a broadcast where a direct answer was meant.
 - **Action:** Close each gap as described by the agent notes in the scope findings.
 - **Severity:** Low
+- **Status 2026-11-22:** not fixed. Sign-in report, stop-vs-`beginSession` race, pattern re-scan, `JoinGameIntent` wording, search and delivery details need UI or two-device verification, or are Known items with their own decisions.
 
 ### 5.26 File viewer, Photo, Table and Weather Lows (grouped)
 - **Location:** `Modules/PdfRPG/Controller/ItemController.swift:54-68`, `Root/ViewerRootView.swift:97-120` (locked PDFs open blank); `Modules/PdfRPG/Pdf/PdfWrapperView.swift:187-200` (stale highlight task); `Modules/SpaceRPG/Space/SpaceViewer+Loading.swift:68-74` (size limit only at open, not at attach); `Modules/TableRPG/Controller/TableGenerationController+OutcomeEditing.swift:49-67` (stale `editedOutcome` after selection change); `Modules/PhotoRPG/Controller/PinCutoutCache.swift:50-65, 67-90` (transient failure memoised as "no subject", disk files never pruned); `Modules/PhotoRPG/Photo/AsyncImageViewer.swift:90-122` (cancelled load runs its error tail); `Modules/WeatherRPG/Weather/StormView.swift:24-37`, `Lightning.swift:96-135` (per-drop context copies, Known §5.34/§7.10)
@@ -304,6 +328,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Blank viewers without a message, stale previews, cached failures.
 - **Action:** Show a password-needed state, clear stale state on selection change, do not memoise transient failures.
 - **Severity:** Low
+- **Status 2026-11-22:** not fixed. Locked-PDF state, stale highlight/outcome state, cutout cache failure memoisation and the load tails need UI states or verification on a device.
 
 ### 5.27 Import and routing Lows (grouped)
 - **Location:** `Modules/RolePlayGameKit/Route/WindowRouter.swift:89-233`, `Route/RootURLHandler.swift:34-48`, `Model/AppModel+Routing.swift:49-235` (entry ids accepted by every route entry point and then dropped, so entry deep links stop at the item); `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper+Indexes.swift:280-300` (cyclic folder members both lose their parent); `Modules/CoreRPG/Foundry/FoundryZIPArchive.swift:166, 238, 371` vs `:467-481` (Data slice index mix, latent); `Modules/RuleRPG/Intent/RuleManagementIntents.swift:42-46` (`CreateRuleIntent` drops description formatting); hard-coded English in stored import text (`FoundryVTTDomainMapper+Documents.swift:540-603`, `+SharedHelpers.swift:405-407`, Known §5.29)
@@ -311,6 +336,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Deep links land on the wrong level; hostile cyclic folders lose members.
 - **Action:** Thread `entryId` through the router; keep cyclic members under the root.
 - **Severity:** Low
+- **Status 2026-11-22:** not fixed. Threading `entryId` through the router, cyclic Foundry folders (the current rule puts every member of a cycle at the root, the finding's expectation needs a decision), the ZIP slice indexes (latent), `CreateRuleIntent` formatting and the English import text (Known §5.29).
 
 ## 6. Security
 
@@ -321,6 +347,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Relocate every `.local` import reference without a `Documents` component to app storage (or all `.local`, since nothing creates it any more) and return nil from `absoluteUrl` for it. Add a test for `file:///etc/hosts` as `.local`.
 - **Severity:** Medium (Likely; sanitiser and resolver read by the lead and the described path holds; end-to-end send not run)
 - **Known:** the delete side is audit 27 §6.4; the read side was not reported there.
+- **Status 2026-11-22:** fixed at the import gate. `FileUrl.sanitizedForImport` relocates a `.local` reference without a `Documents` component to app storage (named after its last component). Not done: returning nil from `LocationFileManager.absoluteUrl` for it — the app's own `.local` files outside `Documents` (test fixtures, `hasAccess`, existing-file lookup) resolve through it, and every imported or peer reference goes through the sanitiser. Test: `UntrustedImportTests.localAbsolutePathIsRelocated` (red before).
 
 ### 6.2 Foundry text neutralisation in the rule factory is undone by the mapper
 - **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper+Rules.swift:167-215`, `+Documents.swift:148-152`, `+SharedHelpers.swift:280-301`; defence being overwritten `Modules/RuleRPG/Model/RuleModel+FoundryFactory.swift:187-229`; `Modules/CoreRPG/Foundry/FoundryTextDecoder.swift:409-431` (strips the zero-width space)
@@ -329,6 +356,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Apply the same neutralisation at the mapper's text helpers while keeping rewritten item links, or remove the dead escaping and document the mapper as owner; add a mapper-level test with both link kinds.
 - **Severity:** Medium (Likely)
 - **Known:** audit 22 §6.5 / 22a §5.10, reported fixed, still open on the mapper path.
+- **Status 2026-11-22:** fixed for descriptions and values. `FoundryVTTDomainMapper.safeText` and `decodedFoundryText` split `](` and `://` with a zero-width space after the decoder and before the Foundry links are rewritten, so the mapper's own item links stay live. Not covered: the composed rule contents (`projectedRuleReferenceContent`, effect and embedded-rule text) and plain names. Test: `FoundryVTTDomainMapperRuleTests.descriptionLinksAreInert` (red before).
 
 ### 6.3 Quadratic HTML tag regex freezes the Foundry import on the main actor
 - **Location:** `Modules/CoreRPG/Foundry/FoundryTextDecoder.swift:42-56` (patterns at lines 44 and 49, applied at 28-34), callers `FoundryVTTDomainMapper+SharedHelpers.swift:277`, `FoundryVTTDomainMapper.swift:219`, `Modules/RuleRPG/Model/RuleModel+FoundryFactory.swift:409, 427`
@@ -336,6 +364,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A crafted description freezes the import on the main thread for minutes; `NSRegularExpression` is not cancellation-aware, so Cancel does not stop it; on iOS the watchdog can kill the app. It needs the user to import the package.
 - **Action:** Replace both patterns with the linear byte scanner used for comments (or bound the tag length), cap the string length, add a timing test with an unterminated run.
 - **Severity:** Medium (pattern read by the lead; timing measured by the agent; rated Medium, not High, because it needs a deliberately hostile or broken package)
+- **Status 2026-11-22:** fixed. `FoundryTextDecoder.strippingTags` replaces the three regular expressions with one linear byte pass (a `<` without a `>` ahead stops the search for all later ones); output is the same for the tested shapes. No string-length cap added. Tests: `FoundryPresentationHelpersTests.unterminatedTagsAreLinear` (34 s before, under 2 s after), `stripsTags`.
 
 ### 6.4 Dotted rule-value paths recurse and copy per component without a limit
 - **Location:** `Modules/CoreRPG/Foundry/FoundryValueHierarchy.swift:75-118`, path source `FoundrySystemPackageReader.swift:674-681`, consumers `Modules/RuleRPG/Model/RuleModel+FoundryFactory.swift:289-330`
@@ -343,6 +372,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A hostile package can overflow the stack (a crash, not a catchable error) or allocate gigabytes before the 500-value presentation cap applies.
 - **Action:** Cap components per path (keep an over-long path as one literal component), pass the parent path by reference or build iteratively; test a 100k-dot key.
 - **Severity:** Medium (Likely; recursion and missing limit read by the lead, not executed)
+- **Status 2026-11-22:** fixed. A dotted path of more than 64 components stays one literal component (`FoundryValueHierarchy.maximumPathComponents`); the recursion is not made iterative. Test: `overLongPathIsOneComponent` (a 100k-dot key; crashed the test process before).
 
 ### 6.5 Bookmark store is rewritten from a per-process copy and the save result is dropped
 - **Location:** `Modules/CoreRPG/Files/FileBookmarkController.swift:113-130`, second process `Modules/PhotoRPG/Controller/ShareImportPhotoController.swift:40, 58` via `Modules/RolePlayGameKit/Model/ShareExtensionSaveController.swift:45`
@@ -351,6 +381,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Re-read and merge inside `save`, or give the extension its own bookmark file; keep the pending flag set on a failed write.
 - **Severity:** Medium (Likely)
 - **Known:** audit 26 §5.56, still open.
+- **Status 2026-11-22:** fixed. `FileBookmarkModel.save` re-reads the stored file and writes the stored rows plus only this process's changes (and removals); a failed read or write keeps the changes pending instead of dropping the result. The share extension still has its own copy in memory; there is no cross-process lock, so two writes at the same moment can still race. Tests: `FileBookmarkControllerTests.writeKeepsBookmarksOfAnotherProcess` (red before), `removalIsMerged`.
 
 ### 6.6 Generator hardening gaps (grouped)
 - **Location:** `Modules/GeneratorRPG/BasicAI/Providers/PdfContentExtractor.swift:163-188`, `BasicAI/Engine/UntrustedPromptText.swift` (extractor prompt not fenced as untrusted); `Modules/GeneratorRPG/BasicAI/Providers/PhotoSummaryAnalyzer.swift:34-56`, `PrivateCloudComputeGate.swift` (the Private Cloud Compute path is permanently off: no target defines the flag and nothing calls the host declaration)
@@ -358,6 +389,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Prompt injection from PDF text affects only that user's own generation; the PCC path is dead weight with a consent dialog.
 - **Action:** Fence the extractor prompt like the other paths; decide whether PCC ships and remove or wire it.
 - **Severity:** Low
+- **Status 2026-11-22:** partly fixed. The PDF block extractor fences the page text and adds the untrusted-text instruction (`PdfContentExtractor.buildPrompt`; test `UntrustedPromptTextTests.extractorPromptIsFenced`). Not changed: the dormant Private Cloud Compute path (ship or remove is a product decision).
 
 ### 6.7 Security-scoped and iCloud reads outside their scope (grouped)
 - **Location:** `Modules/PhotoRPG/Space/Spatial3DImageState.swift:46-72, 109-137`, `Modules/PhotoRPG/Intent/PhotoEntity+Image.swift:17-29` (read after the security scope ended, Unverified); `Modules/PdfRPG/Intent/PdfEntity.swift:97-105`, `Modules/SpaceRPG/Intent/SpaceEntity.swift:94-101` (shared exports hand out the stored URL without starting an iCloud download)
@@ -365,6 +397,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Sporadic failures for picked or iCloud-only files.
 - **Action:** Hold the scope until the read finishes; request the download before exporting.
 - **Severity:** Low
+- **Status 2026-11-22:** partly fixed, untested. The Photo, Pdf and Space share/export representations request the iCloud download first (`ItemControllable.downloadedLoadableUrl`), and the photo bytes are read inside the security scope. No test: `FileUrlDataController` has no stub to observe the download. Not changed: `Spatial3DImageState` (its scope already spans the load; the finding was Unverified).
 
 ### 6.8 Hidden-room geometry is sent to players (design note)
 - **Location:** `Modules/MapRPG/Model/MapSnapshot.swift:150-199`
@@ -372,6 +405,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A modified client could see where hidden rooms are; players are trusted peers by design.
 - **Action:** Keep as documented; revisit only if the trust model changes.
 - **Severity:** Low
+- **Status 2026-11-22:** no change, as the finding recommends (design note).
 
 ## 7. Performance
 

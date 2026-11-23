@@ -55,7 +55,7 @@ private func markdownInline(_ text: String, run: AttributedString.Runs.Run) -> S
         if inline.contains(.strikethrough) { marked = "~~\(marked)~~" }
     }
     if let link = run.link {
-        marked = "[\(marked)](\(link.absoluteString))"
+        marked = "[\(LinkBuilder.escapedLabel(marked))](\(link.absoluteString))"
     }
     guard marked != core else { return text }
     let leading = text.prefix { $0 == " " }

@@ -17,10 +17,38 @@ extension SheetRootModel {
         return model
     }
 
+    /// Resets every cached model of `kinds` for `sourceId` (one per occurrence of the item).
+    func resetLinkText(_ kinds: Set<LinkHighlightTextModelId.Kind>, sourceId: UUID, text: String) {
+        for (id, model) in linkTextModel where id.sourceId == sourceId && kinds.contains(id.kind) {
+            model.reset(text: text)
+        }
+    }
+
+    func removeLinkText(_ kinds: Set<LinkHighlightTextModelId.Kind>, sourceId: UUID) {
+        for id in linkTextModel.keys where id.sourceId == sourceId && kinds.contains(id.kind) {
+            linkTextModel[id] = nil
+        }
+    }
+
+    /// The row with this occurrence id, searched depth-first from `sheet`.
+    func sheet(withOccurrence occurrence: UUID, in sheet: SheetModel) -> SheetModel? {
+        if sheet.id == occurrence { return sheet }
+        for entry in sheet.entries {
+            if let found = self.sheet(withOccurrence: occurrence, in: entry) { return found }
+        }
+        return nil
+    }
+
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules, linkNumber: Int) {
         withAnimation {
+            // A tap inside a known row acts on that row, also when the same item is listed again
+            // elsewhere in the tree.
+            if let occurrence = id.occurrence, let target = sheet(withOccurrence: occurrence, in: sheetModel) {
+                _ = toggleLink(in: target, linkId: itemId, module: module, linkNumber: linkNumber)
+                return
+            }
             switch id {
-            case .item(let uuid), .itemContent(let uuid):
+            case .item(let uuid, _), .itemContent(let uuid, _):
                 _ = toggleItemLink(
                     sheetModel: sheetModel,
                     sourceItemId: uuid,
@@ -28,9 +56,9 @@ extension SheetRootModel {
                     module: module,
                     linkNumber: linkNumber
                 )
-            case .entry(let uuid):
+            case .entry(let uuid, _):
                 _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module, linkNumber: linkNumber)
-            case .entryContent(let uuid):
+            case .entryContent(let uuid, _):
                 _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module, linkNumber: linkNumber)
             }
         }
@@ -44,29 +72,7 @@ extension SheetRootModel {
         linkNumber: Int
     ) -> Bool {
         if sheetModel.source.itemId == sourceItemId {
-            if let existingSheet = linkedSheet(
-                in: sheetModel.entries,
-                itemId: linkId,
-                linkNumber: linkNumber
-            ) {
-                unfold(sheetModel: existingSheet)
-                existingSheet.isShown.toggle()
-                return true
-            }
-            guard let rootModel = rootManager.rootModel(for: module) else { return false }
-            let newSheet = rootModel.sheetControllable.sheet(
-                root: rootManager,
-                itemId: linkId,
-                destination: sheetModel.destination,
-                level: sheetModel.level + 1,
-                isShown: true,
-                moduleDepth: 0,
-                isEditor: isEditor
-            )
-            newSheet.linkNumber = linkNumber
-            unfold(sheetModel: newSheet)
-            sheetModel.entries.append(newSheet)
-            return true
+            return toggleLink(in: sheetModel, linkId: linkId, module: module, linkNumber: linkNumber)
         }
         for entry in sheetModel.entries where toggleItemLink(
             sheetModel: entry,
@@ -78,6 +84,29 @@ extension SheetRootModel {
             return true
         }
         return false
+    }
+
+    /// Expands or collapses the sheet `linkId` shown under `sheet`, adding it when it is not there.
+    func toggleLink(in sheet: SheetModel, linkId: UUID, module: NetworkModules, linkNumber: Int) -> Bool {
+        if let existingSheet = linkedSheet(in: sheet.entries, itemId: linkId, linkNumber: linkNumber) {
+            unfold(sheetModel: existingSheet)
+            existingSheet.isShown.toggle()
+            return true
+        }
+        guard let rootModel = rootManager.rootModel(for: module) else { return false }
+        let newSheet = rootModel.sheetControllable.sheet(
+            root: rootManager,
+            itemId: linkId,
+            destination: sheet.destination,
+            level: sheet.level + 1,
+            isShown: true,
+            moduleDepth: 0,
+            isEditor: isEditor
+        )
+        newSheet.linkNumber = linkNumber
+        unfold(sheetModel: newSheet)
+        sheet.entries.append(newSheet)
+        return true
     }
 
     func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules, linkNumber: Int) -> Bool {

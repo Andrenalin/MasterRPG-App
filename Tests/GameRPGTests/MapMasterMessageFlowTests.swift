@@ -799,7 +799,9 @@ struct MapMasterMessageFlowTests {
                 id: UUID(),
                 name: "Photo pin",
                 photoId: pinPhotoId,
-                location: .zero
+                // Placed outside every room: an unplaced pin belongs to the first room, which may
+                // be hidden (CODE_AUDIT_28 §5.6).
+                location: CGPoint(x: 1_000_000, y: 1_000_000)
             )
         )
         let reference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)

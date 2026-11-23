@@ -57,16 +57,16 @@ extension SheetRootModel {
             let lookupId = sheetModel.source.entryId ?? sheetModel.source.itemId
             // Keys must match the ones `SheetView` renders with: `.item` for the header
             // name, `.itemContent` for the description row below it.
-            linkTextModel[.item(sheetModel.source.itemId)]?.reset(text: sheetModel.name)
-            linkTextModel[.itemContent(sheetModel.source.itemId)]?.reset(text: sheetModel.description)
-            linkTextModel[.entryContent(lookupId)]?.reset(text: sheetModel.description)
+            resetLinkText([.item], sourceId: sheetModel.source.itemId, text: sheetModel.name)
+            resetLinkText([.itemContent], sourceId: sheetModel.source.itemId, text: sheetModel.description)
+            resetLinkText([.entryContent], sourceId: lookupId, text: sheetModel.description)
             sheetModel.hasChanged = false
         }
         for entry in sheetModel.entries {
             if entry.hasChanged {
                 let lookupId = entry.source.entryId ?? entry.source.itemId
-                linkTextModel[.entry(lookupId)]?.reset(text: entry.name)
-                linkTextModel[.entryContent(lookupId)]?.reset(text: entry.description)
+                resetLinkText([.entry], sourceId: lookupId, text: entry.name)
+                resetLinkText([.entryContent], sourceId: lookupId, text: entry.description)
                 entry.hasChanged = false
             }
             for subEntry in entry.entries {

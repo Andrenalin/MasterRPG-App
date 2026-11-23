@@ -31,7 +31,7 @@ struct PdfContentExtractor: Sendable {
     ) {
         self.maxPages = maxPages
         self.maxCharacters = maxCharacters
-        self.instructions = instructions ?? Self.defaultInstructions
+        self.instructions = (instructions ?? Self.defaultInstructions) + "\n" + UntrustedPromptText.instruction
     }
     
     public func extractWithProgress(
@@ -157,12 +157,14 @@ struct PdfContentExtractor: Sendable {
         }
     }
     
-    private func buildPrompt(with text: String, pageNumber: Int, pageCount: Int) -> String {
+    /// The page text is fenced as untrusted material, like on every other path that sends imported
+    /// text to the model. See CODE_AUDIT_28 §6.6.
+    func buildPrompt(with text: String, pageNumber: Int, pageCount: Int) -> String {
         """
         Extract structured content blocks from this PDF document.
         This is page \(pageNumber) from \(pageCount)
-        
-        \(text)
+
+        \(UntrustedPromptText.fenced(text))
         """
     }
     

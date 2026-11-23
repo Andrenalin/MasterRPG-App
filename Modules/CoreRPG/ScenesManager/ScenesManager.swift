@@ -45,6 +45,18 @@ import OSLog
 #if !os(tvOS)
     private var openWindow: OpenWindowAction?
     private var dismissWindow: DismissWindowAction?
+
+    /// Asks SwiftUI to open or raise the window with this id. Set with the actions; tests set it
+    /// directly.
+    @ObservationIgnored var windowOpener: (@MainActor (String) -> Void)?
+    /// The time source of the `.opening` timeout; tests replace it.
+    @ObservationIgnored var now: @MainActor () -> ContinuousClock.Instant = { .now }
+    /// When each scene was last asked to open.
+    @ObservationIgnored private var openingSince: [SceneId: ContinuousClock.Instant] = [:]
+    /// How long a scene may stay `.opening`. A scene that was never activated (the system
+    /// refused the request, the app was in the background) would otherwise keep every later
+    /// open call ignored. See CODE_AUDIT_28 §5.14.
+    static let openingTimeout: Duration = .seconds(3)
 #endif
 
 #if os(macOS)
@@ -94,6 +106,7 @@ import OSLog
     ) {
         self.openWindow = openWindow
         self.dismissWindow = dismissWindow
+        windowOpener = { openWindow(id: $0) }
         self.openImmersiveSpace = openImmersiveSpace
         self.dismissImmersiveSpace = dismissImmersiveSpace
     }
@@ -107,6 +120,7 @@ import OSLog
         guard self.openWindow == nil else { return }
         self.openWindow = openWindow
         self.dismissWindow = dismissWindow
+        windowOpener = { openWindow(id: $0) }
     }
     
     
@@ -229,19 +243,36 @@ import OSLog
     @MainActor
     public func openWindow(_ scene: SceneId) {
 #if !os(tvOS)
-        guard let openWindow = openWindow else { return }
-        
-        // Check if we can open this window
+        guard let windowOpener else { return }
+
         switch getSceneState(for: scene) {
         case .closed, .closing:
             Logger.scenesManager.info("Opening window for scene \(scene.rawValue) with state opening")
-            storeSceneState(.opening, for: scene)
-            openWindow(id: scene.rawValue)
-        case .opening, .opened:
-            Logger.scenesManager.info("Window for scene \(scene.rawValue) is already open or opening")
+            requestOpen(scene, with: windowOpener)
+        case .opening:
+            // Only a second call in the same turn is ignored; a scene that has been opening for
+            // too long never came up and is asked again.
+            if let since = openingSince[scene], now() - since < Self.openingTimeout {
+                Logger.scenesManager.info("Window for scene \(scene.rawValue) is already opening")
+            } else {
+                Logger.scenesManager.info("Window for scene \(scene.rawValue) did not open in time, asking again")
+                requestOpen(scene, with: windowOpener)
+            }
+        case .opened:
+            // The window may be behind others: asking SwiftUI again brings it to the front.
+            Logger.scenesManager.info("Raising window for scene \(scene.rawValue)")
+            windowOpener(scene.rawValue)
         }
 #endif
     }
+
+#if !os(tvOS)
+    private func requestOpen(_ scene: SceneId, with opener: @MainActor (String) -> Void) {
+        storeSceneState(.opening, for: scene)
+        openingSince[scene] = now()
+        opener(scene.rawValue)
+    }
+#endif
 
     /// Opens a window with the specified scene identifier.
     ///

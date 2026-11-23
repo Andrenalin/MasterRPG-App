@@ -186,7 +186,7 @@ struct SheetEntryMainRowView: View {
             Group {
                 switch entryModel.sheetType {
                 case .item, .group:
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId, occurrence: entryModel.id), text: entryModel.name, shareResults: shareResult))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.headline)
 
@@ -203,7 +203,7 @@ struct SheetEntryMainRowView: View {
                 case .audio:
                     HStack {
                         SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
-                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
+                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId, occurrence: entryModel.id), text: audioDisplayText, shareResults: shareResult))
                     }
                     .font(.body)
                 }
@@ -265,7 +265,7 @@ struct SheetEntryContentRowView: View {
                 }
                 switch entryModel.sheetType {
                 case .item:
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.description, shareResults: shareResult))
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.source.entryId ?? entryModel.source.itemId, occurrence: entryModel.id), text: entryModel.description, shareResults: shareResult))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.body)
                 default:

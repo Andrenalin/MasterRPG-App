@@ -458,23 +458,11 @@ extension GameController {
         return pin
     }
 
-    /// Strips transient player pins before persisting/exporting every map —
-    /// moved here from `GameController+MapSync.swift` (renamed
-    /// `+Sync.swift`), since this is export/persistence, not live sync.
-    /// See CODE_AUDIT_Game §9.25.
+    /// The maps a Save Game writes. The running game is not changed: the export encodes each map
+    /// without its session-only pins (`ExportController.savedGameExportData`), so a cancelled or
+    /// failed save leaves the game as it was. See CODE_AUDIT_Game §9.25, CODE_AUDIT_28 §5.7.
     @MainActor
     func saveAll() -> ItemModuleIds {
-        for itemId in gameModel.items {
-            // `isPhotoShared` is a session-only share (the game master's open pin photo), like the
-            // player pins: a saved game must not reopen it.
-            gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins
-                .filter { !$0.isPlayer }
-                .map { pin in
-                    var pin = pin
-                    pin.isPhotoShared = false
-                    return pin
-                }
-        }
-        return exportController.exportingAll()
+        exportController.exportingAll()
     }
 }

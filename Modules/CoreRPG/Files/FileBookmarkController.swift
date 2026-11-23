@@ -29,6 +29,12 @@ actor FileBookmarkModel {
     /// bookmarks once a read succeeds and are never written over the unread file.
     private var pendingRemovals: Set<UUID> = []
     private var hasPendingChanges = false
+    /// What this process changed since its last successful write. The share extension keeps its
+    /// own copy of the same file, so a write re-reads the stored bookmarks and applies only
+    /// these changes on top. See CODE_AUDIT_28 §6.5.
+    private var changedFileBookmarks: [UUID: Data] = [:]
+    private var changedFolderBookmarks: [UUID: Data] = [:]
+    private var removedSinceSave: Set<UUID> = []
 
     func bookmarkData(for fileId: UUID, folder: Bool) async -> Data? {
         _ = await fetchIfNeeded()
@@ -38,10 +44,13 @@ actor FileBookmarkModel {
     func changeBookmarks(fileId: UUID, data: Data, folder: Bool) async {
         let isFetched = await fetchIfNeeded()
         pendingRemovals.remove(fileId)
+        removedSinceSave.remove(fileId)
         if folder {
             folderBookmarks[fileId] = data
+            changedFolderBookmarks[fileId] = data
         } else {
             fileBookmarks[fileId] = data
+            changedFileBookmarks[fileId] = data
         }
         guard isFetched else {
             hasPendingChanges = true
@@ -59,6 +68,9 @@ actor FileBookmarkModel {
         let isFetched = await fetchIfNeeded()
         fileBookmarks.removeValue(forKey: fileId)
         folderBookmarks.removeValue(forKey: fileId)
+        changedFileBookmarks.removeValue(forKey: fileId)
+        changedFolderBookmarks.removeValue(forKey: fileId)
+        removedSinceSave.insert(fileId)
         guard isFetched else {
             pendingRemovals.insert(fileId)
             hasPendingChanges = true
@@ -118,11 +130,35 @@ actor FileBookmarkModel {
         isSaving = true
         repeat {
             needsSave = false
-            let file = fileBookmarks
-            let folder = folderBookmarks
+            // The stored file may have been written by the other process since it was read.
+            guard await itemController.fetch(),
+                  await !itemController.isUndecodable(id: Self.deviceId),
+                  await !itemController.isUndecodable(id: Self.folderId) else {
+                Logger.bookmarkStore.error("The stored bookmarks cannot be read again; the changes stay pending")
+                hasPendingChanges = true
+                break
+            }
+            let storedFiles = await itemController.read(id: Self.deviceId)?.bookmarks ?? [:]
+            let storedFolders = await itemController.read(id: Self.folderId)?.bookmarks ?? [:]
+            var file = storedFiles.merging(changedFileBookmarks) { _, new in new }
+            var folder = storedFolders.merging(changedFolderBookmarks) { _, new in new }
+            for fileId in removedSinceSave {
+                file.removeValue(forKey: fileId)
+                folder.removeValue(forKey: fileId)
+            }
+            fileBookmarks = file
+            folderBookmarks = folder
             await itemController.replace(data: Bookmarks(id: Self.deviceId, bookmarks: file))
             await itemController.replace(data: Bookmarks(id: Self.folderId, bookmarks: folder))
-            await itemController.save()
+            if await itemController.save() {
+                changedFileBookmarks = [:]
+                changedFolderBookmarks = [:]
+                removedSinceSave = []
+            } else {
+                // A failed write keeps the changes to be written with the next one.
+                Logger.bookmarkStore.error("The bookmark store could not be written; the changes stay pending")
+                hasPendingChanges = true
+            }
         } while needsSave
         isSaving = false
     }

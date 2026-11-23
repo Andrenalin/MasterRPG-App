@@ -91,8 +91,9 @@ struct ExportControllerTests {
         let mapId = await root.itemController.addNew(type: .item)
         let map = root.itemController.itemOrEmpty(for: mapId)
         map.entries = [
-            MapEntryModel(id: UUID(), name: "Secret vault", content: "Hidden text", coordinates: [], isShown: false),
-            MapEntryModel(id: UUID(), name: "Entrance hall", content: "Shown text", coordinates: [], isShown: true)
+            // An unplaced pin sits in the first room (CODE_AUDIT_28 §5.6), so the shown room is first.
+            MapEntryModel(id: UUID(), name: "Entrance hall", content: "Shown text", coordinates: [], isShown: true),
+            MapEntryModel(id: UUID(), name: "Secret vault", content: "Hidden text", coordinates: [], isShown: false)
         ]
         map.mapPins = [
             MapPinModel(id: UUID(), name: "Hidden dragon", location: CGPoint(x: 7, y: 9), isShown: false),
@@ -110,7 +111,7 @@ struct ExportControllerTests {
         #expect(text.contains("Goblin"))
         // The master's own item keeps everything.
         #expect(root.itemController.itemOrEmpty(for: mapId).mapPins.count == 2)
-        #expect(root.itemController.itemOrEmpty(for: mapId).entries.first?.name == "Secret vault")
+        #expect(root.itemController.itemOrEmpty(for: mapId).entries.last?.name == "Secret vault")
     }
 
     @Test func exporting() async throws {

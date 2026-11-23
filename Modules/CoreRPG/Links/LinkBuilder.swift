@@ -35,19 +35,50 @@ public enum LinkBuilder {
         entryId: UUID? = nil,
         command: String? = nil
     ) -> String {
-        "[\(name)](\(address(module: module, linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)))"
+        "[\(escapedLabel(name))](\(address(module: module, linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)))"
+    }
+
+    /// A link label with `\`, `[` and `]` escaped by a backslash, so a name such as
+    /// "Dragon [Ancient]" is one label. Every builder of `[label](address)` goes through here
+    /// (or `markdown`), and the scanners read the escapes back with `unescapedLabel`.
+    /// See CODE_AUDIT_28 §5.10.
+    public static func escapedLabel(_ label: String) -> String {
+        label
+            .replacing("\\", with: "\\\\")
+            .replacing("[", with: "\\[")
+            .replacing("]", with: "\\]")
+    }
+
+    /// The label as the user wrote it: the backslash escapes of `escapedLabel` removed.
+    public static func unescapedLabel(_ label: String) -> String {
+        guard label.contains("\\") else { return label }
+        var result = ""
+        var escaped = false
+        for character in label {
+            if escaped {
+                if !"\\[]".contains(character) { result.append("\\") }
+                result.append(character)
+                escaped = false
+            } else if character == "\\" {
+                escaped = true
+            } else {
+                result.append(character)
+            }
+        }
+        if escaped { result.append("\\") }
+        return result
     }
 
     /// The one pattern that finds a markdown link `[label](target)` in text, of any target, not
-    /// only the app's. The label has no brackets, so in `[a [b](x)` only `[b](x)` is the link;
+    /// only the app's. The label has no unescaped brackets, so in `[a [b](x)` only `[b](x)` is the link;
     /// the target runs to the first `)`. `withoutLink()`, `IntentEntityText.readable` and the
     /// Quick Link scanner use it. See CODE_AUDIT_Since_3.0.1 §9.3.
     public static var markdownLinkPattern: Regex<(Substring, label: Substring, target: Substring)> {
-        #/\[(?<label>[^\[\]]*)\]\((?<target>[^)]*)\)/#
+        #/\[(?<label>(?:\\.|[^\[\]\\])*)\]\((?<target>[^)]*)\)/#
     }
 
     /// `text` with every markdown link replaced by its label.
     public static func labels(in text: String) -> String {
-        text.replacing(markdownLinkPattern) { String($0.output.label) }
+        text.replacing(markdownLinkPattern) { unescapedLabel(String($0.output.label)) }
     }
 }

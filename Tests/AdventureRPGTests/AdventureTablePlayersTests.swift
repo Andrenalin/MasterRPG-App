@@ -85,5 +85,30 @@ struct AdventureTablePlayersTests {
         #expect(added.allSatisfy { $0.destination.typeId == .value })
         #expect(removed.isEmpty)
     }
+
+    // CODE_AUDIT_28 §5.19
+    @Test func diceSetIsLinkedAndUnlinked() {
+        let diceId = UUID()
+        let old = adventure()
+        let new = old.copy()
+        new.diceId = diceId
+
+        let (added, removed) = new.changedLinkRegisterModels(oldValue: old)
+        #expect(added.map(\.destination.itemId) == [diceId])
+        #expect(added.allSatisfy { $0.destination.typeId == .dice })
+        #expect(removed.isEmpty)
+
+        let (added2, removed2) = old.changedLinkRegisterModels(oldValue: new)
+        #expect(added2.isEmpty)
+        #expect(removed2.map(\.destination.itemId) == [diceId])
+    }
+
+    @Test func registeredDiceLinkNamesTheAdventureAsAffected() {
+        let diceId = UUID()
+        let model = adventure()
+        model.diceId = diceId
+
+        #expect(model.linkRegisterModels.contains { $0.destination.itemId == diceId && $0.destination.typeId == .dice })
+    }
 }
 #endif

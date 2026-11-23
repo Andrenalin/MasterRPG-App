@@ -2,11 +2,41 @@
 
 import SwiftUI
 
+/// The key of a cached link text model. The id is the item's or entry's, and `occurrence` is the
+/// `SheetModel.id` of the row it is shown in: the same item can appear in several branches of one
+/// sheet, and a link tapped in one copy must act on that copy. The cache is cleaned and reset by
+/// source id (`resetLinkText`, `removeLinkText`), which reaches every occurrence.
+/// See CODE_AUDIT_28 §5.11.
 enum LinkHighlightTextModelId: Hashable {
-    case item(UUID)
-    case itemContent(UUID)
-    case entry(UUID)
-    case entryContent(UUID)
+    case item(UUID, occurrence: UUID? = nil)
+    case itemContent(UUID, occurrence: UUID? = nil)
+    case entry(UUID, occurrence: UUID? = nil)
+    case entryContent(UUID, occurrence: UUID? = nil)
+
+    enum Kind: Hashable {
+        case item, itemContent, entry, entryContent
+    }
+
+    var kind: Kind {
+        switch self {
+        case .item: .item
+        case .itemContent: .itemContent
+        case .entry: .entry
+        case .entryContent: .entryContent
+        }
+    }
+
+    var sourceId: UUID {
+        switch self {
+        case .item(let id, _), .itemContent(let id, _), .entry(let id, _), .entryContent(let id, _): id
+        }
+    }
+
+    var occurrence: UUID? {
+        switch self {
+        case .item(_, let occurrence), .itemContent(_, let occurrence), .entry(_, let occurrence), .entryContent(_, let occurrence): occurrence
+        }
+    }
 }
 
 /// Main-actor coordinator for one recursively rendered RPG sheet.

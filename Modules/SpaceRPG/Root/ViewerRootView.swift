@@ -11,14 +11,15 @@ struct ViewerRootView: View {
     @Environment(SpaceRootModel.self) private var root
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var loadAttempt = 0
 
     var body: some View {
         VStack {
 #if os(tvOS)
             SpaceUnsupportedView()
 #else
-            SpaceViewer(root: root, id: model.id, isModal: configuration.addToolbar)
-                .id(model.id)
+            SpaceViewer(root: root, id: model.id, isModal: configuration.addToolbar, retry: { loadAttempt += 1 })
+                .id(SpaceViewerLoadKey(id: model.id, version: model.version, attempt: loadAttempt))
 #endif
         }
         .ignoresSafeArea(.container, edges: ignoredSafeAreaEdges)

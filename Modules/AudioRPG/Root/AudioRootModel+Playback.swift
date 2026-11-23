@@ -44,6 +44,18 @@ extension AudioRootModel {
         }
     }
 
+    /// The "Play" button of an item's detail: in a game it asks the game to play the item on every
+    /// device, else it plays here. Without this the button played on the game master's device
+    /// alone and later pause commands acted on audio the players never started.
+    /// See CODE_AUDIT_28 §5.18.
+    func playItem(id: UUID, isGameRunning: Bool, networkActions: NetworkActions?) async {
+        do {
+            try await startPlayback(id: id, isGameRunning: isGameRunning, networkActions: networkActions)
+        } catch {
+            Logger.audioController.error("Cannot play audio: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        }
+    }
+
     /// Plays or pauses the item `id` (a playlist item or a track): in a game the game decides
     /// for every device, else it pauses here while the item plays and starts it otherwise.
     func toggleItem(id: UUID, isGameRunning: Bool, networkActions: NetworkActions?) {

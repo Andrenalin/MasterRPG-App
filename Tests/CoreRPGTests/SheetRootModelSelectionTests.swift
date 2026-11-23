@@ -72,6 +72,45 @@ struct SheetRootModelSelectionTests {
         #expect(linkedSheet.isShown)
     }
 
+    // CODE_AUDIT_28 §5.11: the toggle searched the tree by the item id and acted on the first
+    // copy, so a link tapped in the second branch expanded the one in the first.
+    @Test func linkTapActsOnTheOccurrenceItWasTappedIn() {
+        let sharedItemId = UUID()
+        let linkedItemId = UUID()
+        let firstLinked = SheetModel(source: ItemRowModel(itemId: linkedItemId, typeId: .adventure), level: 2, isShown: false, name: "Linked", description: "", entries: [])
+        let secondLinked = SheetModel(source: ItemRowModel(itemId: linkedItemId, typeId: .adventure), level: 2, isShown: false, name: "Linked", description: "", entries: [])
+        let first = SheetModel(source: ItemRowModel(itemId: sharedItemId, typeId: .adventure), level: 1, name: "Shared", description: "", entries: [firstLinked])
+        let second = SheetModel(source: ItemRowModel(itemId: sharedItemId, typeId: .adventure), level: 1, name: "Shared", description: "", entries: [secondLinked])
+        let root = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: "Root", description: "", entries: [first, second])
+        let rootModel = SheetRootModel(
+            rootManager: ItemRootController.fake.rootManager!,
+            linkControllable: FakeLinkController.fake,
+            sheetControllable: FakeSheetController.fake,
+            sheetModel: root,
+            isEditor: false
+        )
+
+        rootModel.toggle(id: .itemContent(sharedItemId, occurrence: second.id), itemId: linkedItemId, module: .adventure, linkNumber: 0)
+
+        #expect(secondLinked.isShown)
+        #expect(!firstLinked.isShown)
+    }
+
+    @Test func cachedLinkTextOfEveryOccurrenceIsReset() {
+        let (rootModel, _) = makeRootModel()
+        let sheetModel = rootModel.sheetModel
+        let itemId = sheetModel.source.itemId
+        let one = rootModel.linkTextModel(for: .item(itemId, occurrence: UUID()), text: "Old")
+        let two = rootModel.linkTextModel(for: .item(itemId, occurrence: UUID()), text: "Old")
+
+        sheetModel.name = "Renamed"
+        sheetModel.hasChanged = true
+        rootModel.performReconcile()
+
+        #expect(one.text == "Renamed")
+        #expect(two.text == "Renamed")
+    }
+
     /// The header name and the description row cache their own `LinkHighlightTextModel`
     /// (`.item` / `.itemContent`), which ignores the `text` argument once cached — so a
     /// reconcile has to reset both, or a renamed description keeps showing the old text.
