@@ -67,7 +67,10 @@ struct WindowVisionList: Scene {
         // to keep the table's depth placement stable.
         .restorationBehavior(.disabled)
 
-        WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
+        // A single-instance `Window`, not a `WindowGroup`: every shown photo or weather replaces
+        // the content of the one open window, and `openWindow` raises it (or opens it again after
+        // the user closed it) instead of adding another window and leaving the old one empty.
+        Window(NetworkModules.photo.title, id: SceneId.imageSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()
                     .sceneTracker(for: SceneId.imageSpaceViewer)
@@ -90,7 +93,7 @@ struct WindowVisionList: Scene {
 
         // A weather's photo in spatial 3D with the weather in front of it, opened like the
         // spatial photo window above when the game shows a weather full screen.
-        WindowGroup(id: SceneId.weatherSpaceViewer.rawValue) {
+        Window(NetworkModules.weather.title, id: SceneId.weatherSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.weatherRoot.viewController.weatherSpaceView(root: appModel.weatherRoot)
                     .sceneTracker(for: SceneId.weatherSpaceViewer)
