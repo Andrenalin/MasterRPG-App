@@ -67,9 +67,11 @@ public extension ViewController {
 
     /// The game master's audio player (play, skip, seek, volume), to stand in its own panel next
     /// to `volumeToggleButton(root:isOpen:)`.
+#if !os(tvOS)
     @MainActor func audioPlayerPanel(root: AudioRootModel) -> some View {
         ToolbarAudioPlayerFullView(root: root)
     }
+#endif
 
     /// The volume slider alone, to stand in its own panel next to `volumeToggleButton(root:isOpen:)`.
     @MainActor func volumeSlider(root: AudioRootModel) -> some View {
