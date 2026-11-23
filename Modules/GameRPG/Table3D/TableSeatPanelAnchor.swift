@@ -27,8 +27,8 @@ enum TableSeatPanel: CaseIterable, Hashable, Sendable {
     case dock
     /// The panels of the groups, which open above the dock, one at a time.
     case controls, windowsOne, windowsTwo
-    /// A player's volume slider, which opens above the controls panel while the volume button in
-    /// it is on.
+    /// The game master's audio player or a player's volume slider: opens with the volume button of
+    /// the controls and then stands above whichever group panel is open, or above the dock.
     case volume
     /// The game master's button that opens the map controls, at the map's end.
     case mapDock

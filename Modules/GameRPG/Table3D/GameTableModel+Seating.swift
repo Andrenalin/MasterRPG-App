@@ -28,8 +28,18 @@ extension GameTableModel {
         } else {
             Logger.sharePlay.debug("Setting up seating for single-player")
             observer.canAutoClaimSeat = true
-            tabletopGame.claimAnySeat()
+            claimLocalSeat(isMaster: isMaster)
         }
+    }
+
+    /// The seat of a device with no SharePlay seat assignment (the local network, a solo table):
+    /// the game master's own seat 0 for the master, the first player seat for a player. Never
+    /// `claimAnySeat()`, which hands out seat 0: a player there would sit at the master's seat,
+    /// the table would not turn toward them, and the dice of a master without a table (which
+    /// lie at seat 0) would have no place. Nothing is synced between devices without a
+    /// session, so every device has its own table and its own player seat.
+    func claimLocalSeat(isMaster: Bool) {
+        tabletopGame.claimSeat(matching: isMaster ? TableSeatIdentifier(0) : PlayerSeat.firstPlayerSeat)
     }
 
     /// This device's own seat, however it was claimed. Read from TabletopKit's synchronized seat
@@ -96,7 +106,7 @@ extension GameTableModel {
             Logger.sharePlay.debug("No active GroupSession — claiming any seat for single player")
             sharedSeatPlayerCount = nil
             lastRequestedSeatAssignment = nil
-            tabletopGame.claimAnySeat()
+            claimLocalSeat(isMaster: isMaster)
             return
         }
 
@@ -119,7 +129,7 @@ extension GameTableModel {
             Logger.sharePlay.debug("Could not find local participant — claiming any seat")
             sharedSeatPlayerCount = nil
             lastRequestedSeatAssignment = nil
-            tabletopGame.claimAnySeat()
+            claimLocalSeat(isMaster: false)
             return
         }
 

@@ -147,18 +147,12 @@ struct GameSeatGroupPanel: View {
                 if root.offersTablePlayers(isMaster: isMaster) {
                     TablePlayersButton(root: root)
                 }
-                if isMaster {
-                    root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot, showsPlayer: true)
-                        .tint(Color.accentColor)
-                        .frame(minWidth: 44, minHeight: 44)
-                } else {
-                    // The slider is a panel of its own (`GameSeatVolumePanel`), so it does not
-                    // widen this one; the button only toggles it.
-                    root.audioRoot.viewController.volumeToggleButton(
-                        root: root.audioRoot,
-                        isOpen: Binding(get: { game.isVolumeOpen }, set: { game.isVolumeOpen = $0 })
-                    )
-                }
+                // The audio player (master) or the volume slider (player) is a panel of its own
+                // (`GameSeatVolumePanel`), so it does not widen this one; the button only toggles it.
+                root.audioRoot.viewController.volumeToggleButton(
+                    root: root.audioRoot,
+                    isOpen: Binding(get: { game.isVolumeOpen }, set: { game.isVolumeOpen = $0 })
+                )
             }
         case .windowsOne, .windowsTwo:
             GameSeatWindowButtons(root: root, isMaster: isMaster, modules: group.windowModules)
@@ -166,8 +160,9 @@ struct GameSeatGroupPanel: View {
     }
 }
 
-/// A player's volume slider, as a panel of its own above the controls panel. It shows while the
-/// controls group is open and the volume button in it is on.
+/// The game master's audio player or a player's volume slider, as a panel of its own with a close
+/// button. The volume button of the controls opens it; it then stays open when the controls group
+/// closes, standing above the dock, and above any group panel that is open.
 @MainActor
 struct GameSeatVolumePanel: View {
     let root: GameRoot
@@ -175,9 +170,26 @@ struct GameSeatVolumePanel: View {
 
     var body: some View {
         ZStack {
-            if game.isVolumeOpen, game.openSeatGroup == .controls, !game.isGameMaster {
-                root.audioRoot.viewController.volumeSlider(root: root.audioRoot)
-                    .modifier(SeatPanelGlass())
+            if game.isVolumeOpen {
+                HStack(alignment: .top) {
+                    if game.isGameMaster {
+                        root.audioRoot.viewController.audioPlayerPanel(root: root.audioRoot)
+                    } else {
+                        root.audioRoot.viewController.volumeSlider(root: root.audioRoot)
+                    }
+                    Button {
+                        game.isVolumeOpen = false
+                    } label: {
+                        Label {
+                            Text("Close", bundle: .module)
+                        } icon: {
+                            Image(systemName: "xmark")
+                        }
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonBorderShape(.circle)
+                }
+                .modifier(SeatPanelGlass())
             }
         }
         // Outside the condition: a closed panel reports no size.
@@ -265,18 +277,26 @@ private struct GameSeatConnectionButton: View {
     let isMaster: Bool
 
     var body: some View {
-        let playerController = isMaster ? nil : root.gameModel.playerController
         GameJoinCodeRevealButton(
             root: root,
             isMaster: isMaster,
-            connectionStatus: playerController.map {
-                GameConnectionStatusPresentation(
-                    lostMaster: $0.gameModel.lostMaster,
-                    sharePlayState: root.networkStore.sharePlayStore.connectionState,
-                    isReconnecting: root.isLocalNetworkReconnecting
-                )
-            } ?? root.hostingStatus(isMaster: isMaster)
+            connectionStatus: root.seatConnectionStatus(isMaster: isMaster)
         )
+    }
+}
+
+extension GameRoot {
+    /// What the connection button of the seat's controls shows: a player's link to the master,
+    /// the master's own hosting when that is degraded; `nil` for a healthy master.
+    func seatConnectionStatus(isMaster: Bool) -> GameConnectionStatusPresentation? {
+        let playerController = isMaster ? nil : gameModel.playerController
+        return playerController.map {
+            GameConnectionStatusPresentation(
+                lostMaster: $0.gameModel.lostMaster,
+                sharePlayState: networkStore.sharePlayStore.connectionState,
+                isReconnecting: isLocalNetworkReconnecting
+            )
+        } ?? hostingStatus(isMaster: isMaster)
     }
 }
 

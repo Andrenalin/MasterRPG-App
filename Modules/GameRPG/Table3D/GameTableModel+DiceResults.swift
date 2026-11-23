@@ -215,7 +215,8 @@ extension GameTableModel {
     /// game master's, when the master is at the table — also puts the dice there, and
     /// TabletopKit shares them with everyone.
     func applyGuestRolls(_ rolls: [TableGuestRoll]) {
-        let groups = TableGuestDice.groups(for: rolls, poolSize: GameSetup.maxDicePerType)
+        let (masterRoll, otherRolls) = TableGuestDice.split(rolls)
+        let groups = TableGuestDice.groups(for: otherRolls, poolSize: GameSetup.maxDicePerType)
         if groups != guestGroups {
             // A group's dice, and with them its popover, may now be someone else's.
             for index in guestGroups.indices {
@@ -223,6 +224,13 @@ extension GameTableModel {
                 hideDiceResult(for: .guest(index))
             }
             guestGroups = groups
+        }
+        // The master's last dice stay where they are while no roll of the master is known: a
+        // device that has lost the roll (a roster refresh) must not take the dice off the table.
+        if let masterRoll,
+           let group = TableGuestDice.groups(for: [masterRoll], poolSize: GameSetup.maxDicePerType).first,
+           group != masterGuestGroup {
+            masterGuestGroup = group
         }
         syncGuestDice()
     }
@@ -246,6 +254,33 @@ extension GameTableModel {
             guard let dieIds = setup.dieIds(kind, seat: PlayerSeat.guestSeat) else { continue }
             updateDiePool(kind, ids: dieIds, targets: targets[kind] ?? [:])
         }
+        syncMasterGuestDice()
+    }
+
+    /// Lays the game master's dice out at the master's seat, as a seated player's row, while no
+    /// device sits there (a master on Vision Pro has its own dice at that seat).
+    private func syncMasterGuestDice() {
+        let masterSeat = TableSeatIdentifier(0)
+        guard let group = masterGuestGroup, isSeatFree(masterSeat),
+              let pose = setup.seats.first(where: { $0.id == masterSeat })?.initialState.pose else { return }
+        let layout = PlayerSeat.diceLayout(inFrontOf: pose, count: group.dice.count)
+        var targets: [TableDieKind: [Int: DieTarget]] = [:]
+        for (die, diePose) in zip(group.dice, layout) {
+            targets[die.kind, default: [:]][die.slot] = (value: die.value, pose: diePose)
+        }
+        for kind in TableDieKind.allCases {
+            guard let dieIds = setup.dieIds(kind, seat: masterSeat) else { continue }
+            updateDiePool(kind, ids: dieIds, targets: targets[kind] ?? [:])
+        }
+    }
+
+    /// Whether nobody sits at `seat`.
+    func isSeatFree(_ seat: TableSeatIdentifier) -> Bool {
+        var isFree = false
+        tabletopGame.withCurrentSnapshot { snapshot in
+            isFree = snapshot.seats(of: PlayerSeat.self).first(where: { $0.0.id == seat })?.1.playerID == nil
+        }
+        return isFree
     }
 
     /// Whether this device sits at the lowest occupied seat. The master's seat is the lowest

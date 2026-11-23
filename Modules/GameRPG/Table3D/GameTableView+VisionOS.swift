@@ -281,6 +281,11 @@ public struct GameTableView: View {
         .onChange(of: guestRolls, initial: false) { _, rolls in
             game?.applyGuestRolls(rolls)
         }
+        // The wifi icon of the seat's controls changed to a broken connection: bring the controls
+        // up if they are closed, so the person sees it and can leave or wait.
+        .onChange(of: connectionStatus, initial: false) { old, new in
+            game?.openControlsForConnectionChange(from: old, to: new)
+        }
         // The dice keep the color their set has, on every seat: see `GameTableModel.dieColors`.
         .onChange(of: dieColors, initial: false) { _, colors in
             game?.applyDieColors(colors)
@@ -457,6 +462,11 @@ public struct GameTableView: View {
                 senderId: senderId
             )
         }
+    }
+
+    /// What the connection icon of the seat's controls shows.
+    private var connectionStatus: GameConnectionStatusPresentation? {
+        root.seatConnectionStatus(isMaster: root.gameModel.gameConfig.isMaster)
     }
 
     /// The d6 color of every pool slot, as the sets this device knows have it.

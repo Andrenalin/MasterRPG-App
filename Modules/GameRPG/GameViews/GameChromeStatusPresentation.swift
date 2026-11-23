@@ -41,6 +41,18 @@ enum GameConnectionStatusPresentation: Equatable, Sendable {
     }
 }
 
+extension GameConnectionStatusPresentation {
+    /// Whether the connection is broken or being restored, so that a device wants the person's
+    /// attention: the status that turns the wifi icon orange or red. Waiting for SharePlay is
+    /// the start of a session, not a loss.
+    var isConnectionProblem: Bool {
+        switch self {
+        case .localNetworkReconnecting, .localNetworkLost, .sharePlayLost: true
+        case .localNetworkConnected, .sharePlayWaiting, .sharePlayConnected: false
+        }
+    }
+}
+
 /// Shared presentation used by every connection-status icon, including the
 /// merged join-code/wifi button — see `GameJoinCodeRevealButton`.
 extension GameConnectionStatusPresentation {

@@ -63,7 +63,7 @@ final class GameObserver: TabletopGame.Observer {
     }
 
     /// Re-claims the seat the local player lost. A player goes back to the seat the deterministic
-    /// assignment gave them; `claimAnySeat()` is only the last resort, because it can hand out
+    /// assignment gave them (without one, the first player seat); `claimAnySeat()` is no option, because it can hand out
     /// seat 0, which belongs to the master.
     private func reclaimLocalSeat() {
         if isMaster {
@@ -71,7 +71,7 @@ final class GameObserver: TabletopGame.Observer {
         } else if let assignedSeat = renderer.game?.lastRequestedSeatAssignment?.seatId {
             tabletop.claimSeat(matching: assignedSeat)
         } else {
-            tabletop.claimAnySeat()
+            tabletop.claimSeat(matching: PlayerSeat.firstPlayerSeat)
         }
     }
 }

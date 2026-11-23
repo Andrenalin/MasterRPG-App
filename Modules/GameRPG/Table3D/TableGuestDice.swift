@@ -4,7 +4,7 @@
 import Foundation
 
 // The dice of the players without a table of their own (anyone not on Vision Pro, the game
-// master included), shown at the table's guest seat, opposite the game master's seat. Pure, so it is unit-tested on iOS: every device
+// master included). The others' dice are shown at the table's guest seat, opposite the game master's seat; the game master's own at the master's seat. Pure, so it is unit-tested on iOS: every device
 // derives the same groups from the same shared rolls, which lets one device place the dice and
 // every device label them.
 
@@ -29,6 +29,13 @@ struct TableGuestRoll: Equatable {
 }
 
 enum TableGuestDice {
+    /// Separates the game master's roll from the other guests': the master's dice lie at the
+    /// master's own seat on the near (south) edge, from a pool of their own, so no other guest's
+    /// dice can take their slots; the others share the guest seat's pool.
+    static func split(_ rolls: [TableGuestRoll]) -> (master: TableGuestRoll?, others: [TableGuestRoll]) {
+        (rolls.first(where: \.isGameMaster), rolls.filter { !$0.isGameMaster })
+    }
+
     /// One of a guest's dice on the table: a slot of the guest seat's d20 or d6 pool.
     struct Die: Equatable {
         let kind: TableDieKind

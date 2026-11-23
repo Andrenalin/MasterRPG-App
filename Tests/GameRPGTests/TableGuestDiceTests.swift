@@ -213,5 +213,24 @@ struct TableGuestDiceTests {
         #expect(!model.isTableGuestMaster(senderId: namesakeId))
         #expect(!model.isTableGuest(senderId: UUID()))
     }
+
+    @Test("The master's roll is split off, so the guests' dice cannot take its slots")
+    func masterRollHasItsOwnPool() {
+        let rolls = [
+            TableGuestRoll(name: "Zed", dice: [.init(kind: .d20, value: 3)], isGameMaster: true),
+            TableGuestRoll(name: "Anna", dice: Array(repeating: .init(kind: .d20, value: 7), count: 6)),
+            TableGuestRoll(name: "Ben", dice: [.init(kind: .d20, value: 11)])
+        ]
+        // In one pool, Anna's six d20 take every slot (names first): Ben and the master (named
+        // last) would be gone from the table.
+        #expect(TableGuestDice.groups(for: rolls, poolSize: 6).map(\.name) == ["Anna"])
+
+        let (master, others) = TableGuestDice.split(rolls)
+        #expect(master?.name == "Zed")
+        #expect(others.map(\.name) == ["Anna", "Ben"])
+        // The master's dice take the first slot of their own pool, whatever the guests rolled.
+        #expect(master.flatMap { TableGuestDice.groups(for: [$0], poolSize: 6).first }?.dice
+            == [.init(kind: .d20, slot: 0, value: 3)])
+    }
 }
 #endif

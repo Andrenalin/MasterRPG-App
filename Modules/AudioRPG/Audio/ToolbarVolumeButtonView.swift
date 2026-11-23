@@ -54,7 +54,7 @@ private struct ToolbarAudioPlayerPopoverView: View {
     }
 }
 
-private struct ToolbarAudioPlayerFullView: View {
+struct ToolbarAudioPlayerFullView: View {
     let root: AudioRootModel
 
     @ScaledMetric(relativeTo: .body) private var idealWidth = 520

@@ -18,6 +18,17 @@ extension GameTableModel {
     /// group's own button closes it.
     func toggleSeatGroup(_ group: TableSeatGroup) {
         openSeatGroup = openSeatGroup == group ? nil : group
+#if os(visionOS)
+        // The audio player / volume panel stands above the open group's panel.
+        updateSeatPanelPositions()
+#endif
+    }
+
+    /// The connection changed to a broken or recovering one (the wifi icon of the controls turned
+    /// orange or red): opens the controls group, which has that icon, if it is closed.
+    func openControlsForConnectionChange(from old: GameConnectionStatusPresentation?, to new: GameConnectionStatusPresentation?) {
+        guard old != new, new?.isConnectionProblem == true, openSeatGroup != .controls else { return }
+        openSeatGroup = .controls
     }
 
     func toggleMapControls() {
@@ -145,15 +156,22 @@ extension GameTableModel {
     /// with a gap each. A closed panel has no height and no gap.
     private func stackHeight(above panel: TableSeatPanel, counter: Float) -> Double {
         var total = 0.0
-        var below = panel.opensAbove
+        var below = panelBelow(panel)
         while let current = below {
             let height = Double(seatPanelAnchors[current].size.y * counter)
             if height > 0 {
                 total += height + Self.seatPanelGap * Double(counter)
             }
-            below = current.opensAbove
+            below = panelBelow(current)
         }
         return total
+    }
+
+    /// The panel `panel` stands on. The audio player / volume panel does not belong to one group:
+    /// it stands above the group panel that is open, so opening a window group pushes it up, and
+    /// above the dock when none is.
+    private func panelBelow(_ panel: TableSeatPanel) -> TableSeatPanel? {
+        panel == .volume ? (openSeatGroup?.panel ?? .dock) : panel.opensAbove
     }
 
     /// The local seat's pose; the game master's own seat for an observer without one.

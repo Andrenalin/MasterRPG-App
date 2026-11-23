@@ -168,5 +168,13 @@ struct TableSeatControlsLayoutTests {
         let limit = TableSeatControlsLayout.edgeHalfLength(rotation: radians) - TableSeatControlsLayout.cornerClearance - 0.15
         #expect(abs(lateralPosition(result, radians) - limit) < 1e-5)
     }
+
+    @Test("Only a broken or recovering connection counts as a problem that opens the controls")
+    func connectionProblems() {
+        let problems: [GameConnectionStatusPresentation] = [.localNetworkReconnecting, .localNetworkLost, .sharePlayLost]
+        let fine: [GameConnectionStatusPresentation] = [.localNetworkConnected, .sharePlayWaiting, .sharePlayConnected]
+        #expect(problems.allSatisfy { $0.isConnectionProblem })
+        #expect(!fine.contains { $0.isConnectionProblem })
+    }
 }
 #endif

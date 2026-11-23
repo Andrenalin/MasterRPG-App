@@ -150,6 +150,16 @@ extension GameTableModel {
                 colors.set(slots(of: dice), seat: seat.id.rawValue)
             }
         }
+        // The master's dice at its own seat (a master without a table): the colors of the roll
+        // itself, in case the master's name is not known at that seat yet.
+        let masterSeat = TableSeatIdentifier(0)
+        if let group = masterGuestGroup, isSeatFree(masterSeat) {
+            var masterSlots: [TableDieKind: [Int: String]] = [:]
+            for die in group.dice where TableDieColors.isColored(die.kind) {
+                masterSlots[die.kind, default: [:]][die.slot] = die.colorCode
+            }
+            colors.set(masterSlots, seat: masterSeat.rawValue)
+        }
         var guestSlots: [TableDieKind: [Int: String]] = [:]
         for group in guestGroups {
             for die in group.dice where TableDieColors.isColored(die.kind) {

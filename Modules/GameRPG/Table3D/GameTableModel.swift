@@ -74,6 +74,10 @@ final class GameTableModel: Sendable {
     /// The dice of the players without a table, at the guest seat: who has which dice of that
     /// seat's pool. Every device derives it from the rolls it knows (`applyGuestRolls(_:)`).
     var guestGroups: [TableGuestDice.Group] = []
+    /// The game master's last dice while the master rolls from a device without the 3D table:
+    /// they lie at the master's own seat (south), from that seat's pool, and stay there until
+    /// the master rolls again. Not part of `guestGroups`, so no guest can take their slots.
+    var masterGuestGroup: TableGuestDice.Group?
     /// The players sitting at each seat, by the name their game messages carry; the dice
     /// overlay lists a player's shared dice under the same name. Learned from SharePlay (see
     /// `RPGSharePlayController.refreshSeatPlayerNames()`); several players can share a seat.
@@ -189,8 +193,9 @@ final class GameTableModel: Sendable {
     var seatDiceCount = 0
     /// The control group whose panel is open above the seat's dock, if any.
     var openSeatGroup: TableSeatGroup?
-    /// Whether a player's volume slider is open above the controls panel (its own seat panel,
-    /// toggled by the volume button in that panel).
+    /// Whether the audio player (the game master's) or the volume slider (a player's) is open, in
+    /// a seat panel of its own that the volume button of the controls toggles. It stays open when
+    /// the controls group closes.
     var isVolumeOpen = false
     /// Whether the map controls are open above the map dock. Opens by itself the first time a
     /// map is shown (`openMapControlsOnFirstMap()`), after that it is the game master's.

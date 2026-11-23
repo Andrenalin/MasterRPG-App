@@ -46,6 +46,8 @@ struct PlayerSeat: TableSeat {
     /// The seat opposite the game master: the last of `seatPoses`. No device claims it; it is
     /// where the dice of the players without a table of their own are shown.
     @MainActor static var guestSeat: TableSeatIdentifier { TableSeatIdentifier(seatPoses.count - 1) }
+    /// The first seat of a player: the near west seat, right of the master's seat 0.
+    static let firstPlayerSeat = TableSeatIdentifier(1)
     /// The seats Vision Pro players are assigned to: all but the master's and the guest seat.
     @MainActor static var playerSeatCount: Int { seatPoses.count - 2 }
 
