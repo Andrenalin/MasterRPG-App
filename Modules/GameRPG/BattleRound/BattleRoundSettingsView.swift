@@ -14,6 +14,7 @@ struct BattleRoundSettingsView: View {
     let screenModel: BattleRoundScreenModel
 
     var body: some View {
+        @Bindable var settings = settings
         VStack(alignment: .leading, spacing: BattleRoundSpacing.loose) {
             BattleRoundPatternSection(
                 title: String(localized: "Initiative Pattern", bundle: .module),
@@ -46,6 +47,15 @@ struct BattleRoundSettingsView: View {
                 Label(
                     String(localized: "Initiative Order", bundle: .module),
                     systemImage: "arrow.up.arrow.down"
+                )
+            }
+
+            // A display choice only: no pin changes, so a pin that is revealed
+            // later shows up in the list and one that is hidden later leaves it.
+            Toggle(isOn: $settings.hidesHiddenAttackers) {
+                Label(
+                    String(localized: "Hide Hidden Attackers", bundle: .module),
+                    systemImage: "eye.slash"
                 )
             }
         }

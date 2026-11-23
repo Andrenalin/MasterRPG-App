@@ -216,6 +216,51 @@ struct BattleRoundScreenModelTests {
         )))
     }
 
+    // MARK: - Hidden attackers
+
+    @Test("With the option on, the list and the header leave out the hidden pins and follow their changes")
+    func hiddenAttackersFollowThePins() async throws {
+        // Given: the goblin's pin is hidden and has the turn.
+        let fixture = try await BattleScreenFixture.make()
+        let controller = fixture.controller
+        let sut = fixture.screenModel
+        let settings = controller.root.mapRoot.mapGameControllable.battleRoundSettings
+        // Kept in the standard defaults, shared with every other test and the host app.
+        settings.hidesHiddenAttackers = false
+        defer { settings.hidesHiddenAttackers = false }
+        let goblinPinId = fixture.goblin.pinId
+        // The fixture's room is not revealed yet, which would hide every pin in it.
+        let gameController = controller.root.mapRoot.gameController
+        let roomId = try #require(gameController.gameItem(for: fixture.mapId).entries.first?.id)
+        #expect(gameController.toggleRoom(itemId: fixture.mapId, roomId: roomId))
+        #expect(controller.root.mapRoot.gameController.togglePin(itemId: fixture.mapId, pinId: goblinPinId))
+        try #require(controller.nextRound())
+        while controller.model.activePinId != goblinPinId {
+            try #require(controller.nextAttacker())
+        }
+
+        // Then: off, the hidden goblin is listed and named.
+        #expect(controller.hiddenPinIds.isEmpty)
+        #expect(controller.model.cardPresentations(hidingPins: controller.hiddenPinIds).contains { $0.attacker.combatant.pinId == goblinPinId })
+        #expect(sut.activeAttackerName(hidingPins: controller.hiddenPinIds) == "Goblin")
+
+        // When
+        settings.hidesHiddenAttackers = true
+
+        // Then: on, it is neither listed nor named.
+        #expect(controller.hiddenPinIds == [goblinPinId])
+        #expect(!controller.model.cardPresentations(hidingPins: controller.hiddenPinIds).contains { $0.attacker.combatant.pinId == goblinPinId })
+        #expect(sut.activeAttackerName(hidingPins: controller.hiddenPinIds) == nil)
+
+        // When: the pin is revealed.
+        #expect(controller.root.mapRoot.gameController.togglePin(itemId: fixture.mapId, pinId: goblinPinId))
+
+        // Then: it is listed and named again, the option still on.
+        #expect(controller.hiddenPinIds.isEmpty)
+        #expect(controller.model.cardPresentations(hidingPins: controller.hiddenPinIds).contains { $0.attacker.combatant.pinId == goblinPinId })
+        #expect(sut.activeAttackerName(hidingPins: controller.hiddenPinIds) == "Goblin")
+    }
+
     // MARK: - Inspector prompt
 
 #if os(macOS)

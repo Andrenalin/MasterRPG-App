@@ -7316,6 +7316,23 @@
           }
         }
       }
+    },
+    "Hide Hidden Attackers" : {
+      "comment" : "A toggle in the battle round settings: leave out the attackers whose map pins are hidden from the players.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versteckte Angreifer ausblenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนผู้โจมตีที่ถูกซ่อน"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

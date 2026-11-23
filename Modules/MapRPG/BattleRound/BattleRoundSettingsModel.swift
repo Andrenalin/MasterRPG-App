@@ -17,6 +17,18 @@ public final class BattleRoundSettingsModel: Sendable {
         } else {
             initiativeOrder = .descending
         }
+        hidesHiddenAttackers = defaults.bool(forKey: Keys.hidesHiddenAttackers)
+    }
+
+    /// Whether the Battle Round leaves out the attackers whose pins are hidden
+    /// from the players. A display choice of the game master's own screen,
+    /// kept across launches: the pins themselves are never changed by it, so
+    /// a pin that is revealed later shows up and one that is hidden later
+    /// drops out by itself.
+    public var hidesHiddenAttackers: Bool {
+        didSet {
+            defaults.set(hidesHiddenAttackers, forKey: Keys.hidesHiddenAttackers)
+        }
     }
 
     /// Name aliases matched when auto-detecting a Character's initiative
@@ -79,5 +91,6 @@ public final class BattleRoundSettingsModel: Sendable {
         static let initiativeNames = "battleRound.initiativeNames"
         static let hitPointsNames = "battleRound.hitPointsNames"
         static let initiativeOrder = "battleRound.initiativeOrder"
+        static let hidesHiddenAttackers = "battleRound.hidesHiddenAttackers"
     }
 }

@@ -20,7 +20,7 @@ struct BattleRoundView: View {
                 BattleRoundHeader(
                     isRunning: controller.model.isRunning,
                     round: controller.model.roundCounter,
-                    activeAttackerName: screenModel.activeAttackerName,
+                    activeAttackerName: screenModel.activeAttackerName(hidingPins: controller.hiddenPinIds),
                     controller: controller,
                     isConfigurationExpanded: $screenModel.isConfigurationExpanded,
                     requestEnd: screenModel.requestEnd

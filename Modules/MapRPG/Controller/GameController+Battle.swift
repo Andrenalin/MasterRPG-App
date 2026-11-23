@@ -144,6 +144,16 @@ extension GameController {
     }
 
     @MainActor
+    func battleHiddenPinIds() -> Set<UUID> {
+        guard battleRoundSettings.hidesHiddenAttackers,
+              let mapId = battleRoundModel.mapId,
+              let map = gameModel.itemData[mapId] as? MapModel else {
+            return []
+        }
+        return map.hiddenPinIds
+    }
+
+    @MainActor
     func endBattle(itemId: UUID) -> Bool {
         guard battleRoundModel.isRunning,
               battleRoundModel.mapId == itemId,
@@ -209,7 +219,7 @@ extension GameController {
     @MainActor
     func nextBattleAttacker(itemId: UUID) -> Bool {
         guard battleRoundModel.mapId == itemId,
-              battleRoundModel.nextAttacker() else {
+              battleRoundModel.nextAttacker(skippingPins: battleHiddenPinIds()) else {
             return false
         }
         applyActiveBattleHighlights(itemId: itemId)
@@ -219,7 +229,7 @@ extension GameController {
     @MainActor
     func nextBattleRound(itemId: UUID) -> Bool {
         guard battleRoundModel.mapId == itemId,
-              battleRoundModel.nextRound() else {
+              battleRoundModel.nextRound(skippingPins: battleHiddenPinIds()) else {
             return false
         }
         applyActiveBattleHighlights(itemId: itemId)

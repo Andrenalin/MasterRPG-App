@@ -29,6 +29,12 @@ struct BattleRoundController: Sendable {
         root.mapRoot.mapGameControllable.battleRoundModel
     }
 
+    /// The pins the list leaves out: the hidden ones while "Hide Hidden Attackers" is on. Read
+    /// from the live map, so the list follows every reveal and hide on its own.
+    var hiddenPinIds: Set<UUID> {
+        root.mapRoot.mapGameControllable.battleHiddenPinIds()
+    }
+
     /// The running battle's map id, but only while this device is the game
     /// master — every mutating method below collapses its own
     /// `isMaster`/`mapId` guard to this single computed property so a future

@@ -55,9 +55,10 @@ final class BattleRoundScreenModel {
         model.activeEntry?.id
     }
 
-    var activeAttackerName: String? {
-        guard let entry = model.activeEntry else { return nil }
-        return model.attacker(for: entry)?.name
+    /// The attacker named in the header; not named while its pin is among the
+    /// pins the list leaves out (`BattleRoundController.hiddenPinIds`).
+    func activeAttackerName(hidingPins hiddenPinIds: Set<UUID>) -> String? {
+        model.activeAttackerName(hidingPins: hiddenPinIds)
     }
 
     // MARK: - Selection

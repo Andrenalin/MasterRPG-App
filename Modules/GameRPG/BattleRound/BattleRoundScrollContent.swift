@@ -19,7 +19,7 @@ struct BattleRoundScrollContent: View {
     var body: some View {
         let model = controller.model
         let showsCards = model.isRunning && !model.entries.isEmpty
-        let cards = showsCards ? model.cardPresentations : []
+        let cards = showsCards ? model.cardPresentations(hidingPins: controller.hiddenPinIds) : []
         let isConfigurationExpanded = screenModel.isConfigurationExpanded
 
         ScrollView {

@@ -97,3 +97,36 @@ public extension BattleRoundModel {
         return value
     }
 }
+
+public extension BattleRoundModel {
+    /// `cardPresentations` without the pins in `hiddenPinIds`: their cards are
+    /// dropped, they leave the target lists of the other cards, and the ranks
+    /// count only what is shown, so a gap in the numbering does not give away
+    /// a card that is left out. The model keeps every combatant: the turn order
+    /// itself is untouched, only this view of it is narrowed.
+    func cardPresentations(hidingPins hiddenPinIds: Set<UUID>) -> [BattleRoundCardPresentation] {
+        let cards = cardPresentations
+        guard !hiddenPinIds.isEmpty else { return cards }
+        return cards
+            .filter { !hiddenPinIds.contains($0.attacker.combatant.pinId) }
+            .enumerated()
+            .map { index, card in
+                BattleRoundCardPresentation(
+                    id: card.id,
+                    rank: index + 1,
+                    attacker: card.attacker,
+                    defenders: card.defenders.filter { !hiddenPinIds.contains($0.combatant.pinId) },
+                    isActive: card.isActive
+                )
+            }
+    }
+
+    /// The name of the attacker whose turn it is, or `nil` when nobody has the
+    /// turn or its pin is in `hiddenPinIds`.
+    func activeAttackerName(hidingPins hiddenPinIds: Set<UUID>) -> String? {
+        guard let entry = activeEntry,
+              let attacker = attacker(for: entry),
+              !hiddenPinIds.contains(attacker.pinId) else { return nil }
+        return attacker.name
+    }
+}

@@ -40,6 +40,12 @@ public extension MapModel {
 }
 
 public extension MapModel {
+    /// The pins the players cannot see: hidden themselves or standing in a room that is not
+    /// revealed. Read live from the map, so a reveal or a hide changes it at once.
+    var hiddenPinIds: Set<UUID> {
+        Set(mapPins.filter { !isPinVisibleToPlayers($0) }.map(\.id))
+    }
+
     /// Whether the game master's full-screen photo of `pin` may go to the players. The
     /// presentation carries the pin's name and position, so the same rule as for the pin itself
     /// applies (shown, not in an unrevealed room), and nothing is shared while "Share Map" is

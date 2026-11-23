@@ -147,16 +147,18 @@ extension BattleRoundModel {
         return true
     }
 
+    /// `skippingPins` are the pins the game master's list leaves out (hidden attackers while
+    /// "Hide Hidden Attackers" is on): their turns are passed over like a fallen combatant's.
     @discardableResult
-    func nextAttacker() -> Bool {
+    func nextAttacker(skippingPins skippedPinIds: Set<UUID> = []) -> Bool {
         guard isRunning, !entries.isEmpty else { return false }
         guard let activeAttackerId,
               let index = entries.firstIndex(where: { $0.attackerId == activeAttackerId }) else {
             // With nobody alive there is no turn to hand out.
-            guard let firstId = firstLivingAttackerId(from: 0) else { return false }
+            guard let firstId = firstLivingAttackerId(from: 0, skippingPins: skippedPinIds) else { return false }
             return activateAttacker(firstId)
         }
-        return advanceTurn(after: index)
+        return advanceTurn(after: index, skippingPins: skippedPinIds)
     }
 
     /// Hands the turn to the first living attacker after `index`. When nobody
@@ -166,12 +168,16 @@ extension BattleRoundModel {
     /// combatant about to leave the battle, which must not get the turn.
     /// Returns `false` — changing nothing — when no living attacker is left.
     @discardableResult
-    func advanceTurn(after index: Int, excluding excludedId: UUID? = nil) -> Bool {
-        if let nextId = firstLivingAttackerId(from: index + 1, excluding: excludedId) {
+    func advanceTurn(
+        after index: Int,
+        excluding excludedId: UUID? = nil,
+        skippingPins skippedPinIds: Set<UUID> = []
+    ) -> Bool {
+        if let nextId = firstLivingAttackerId(from: index + 1, excluding: excludedId, skippingPins: skippedPinIds) {
             setActiveAttacker(nextId)
             return true
         }
-        guard let firstId = firstLivingAttackerId(from: 0, excluding: excludedId) else {
+        guard let firstId = firstLivingAttackerId(from: 0, excluding: excludedId, skippingPins: skippedPinIds) else {
             return false
         }
         roundCounter += 1
@@ -189,11 +195,16 @@ extension BattleRoundModel {
     /// The id of the first entry's attacker at or after `startIndex` who
     /// isn't dead. `nil` when nobody in that range is alive (e.g. everyone
     /// remaining in the round has fallen).
-    private func firstLivingAttackerId(from startIndex: Int, excluding excludedId: UUID? = nil) -> UUID? {
+    private func firstLivingAttackerId(
+        from startIndex: Int,
+        excluding excludedId: UUID? = nil,
+        skippingPins skippedPinIds: Set<UUID> = []
+    ) -> UUID? {
         guard startIndex < entries.count else { return nil }
         for index in startIndex..<entries.count {
             guard entries[index].attackerId != excludedId,
-                  let attacker = attacker(for: entries[index]), !attacker.isDead else { continue }
+                  let attacker = attacker(for: entries[index]), !attacker.isDead,
+                  !skippedPinIds.contains(attacker.pinId) else { continue }
             return entries[index].attackerId
         }
         return nil
@@ -220,10 +231,10 @@ extension BattleRoundModel {
     }
 
     @discardableResult
-    func nextRound() -> Bool {
+    func nextRound(skippingPins skippedPinIds: Set<UUID> = []) -> Bool {
         guard isRunning else { return false }
         // Skip fallen combatants, as `nextAttacker()` does. See CODE_AUDIT_19 §5.8.
-        let firstId = firstLivingAttackerId(from: 0)
+        let firstId = firstLivingAttackerId(from: 0, skippingPins: skippedPinIds)
         // With every combatant fallen there is no round to start. A battle
         // without any combatant still counts rounds.
         guard firstId != nil || entries.isEmpty else { return false }

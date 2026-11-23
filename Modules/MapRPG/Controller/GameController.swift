@@ -96,6 +96,9 @@ final class MapGameModel {
 public protocol MapGameStorable: Sendable {
     @MainActor var battleRoundModel: BattleRoundModel { get }
     @MainActor var battleRoundSettings: BattleRoundSettingsModel { get }
+    /// The pins the Battle Round leaves out right now: the pins hidden from the players of the
+    /// battle's map while "Hide Hidden Attackers" is on, none otherwise.
+    @MainActor func battleHiddenPinIds() -> Set<UUID>
     /// Parses a Character entry's display value into a battle initiative; any
     /// integer is valid. Guards against a finite-but-out-of-`Int`-range value
     /// trapping `Int(_:)` — the single correct implementation, exposed here so
