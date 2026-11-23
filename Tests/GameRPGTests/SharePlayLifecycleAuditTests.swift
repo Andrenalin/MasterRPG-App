@@ -34,12 +34,13 @@ struct SharePlayLifecycleAuditTests {
         }
         await Task.yield()
 
-        let started = ContinuousClock.now
+        // No wall-clock bound on the wait: the callback is only released below, so a wait that
+        // did not honour its timeout would hang here, and `!idle` proves it gave up. A fixed
+        // bound only measures how long a loaded full run starves the main actor, which the
+        // timeout task needs (it flaked at 5.01 s).
         let idle = await coordinator.waitUntilIdle(sessionId: sessionId, timeout: .milliseconds(100))
-        let elapsed = ContinuousClock.now - started
 
         #expect(!idle)
-        #expect(elapsed < .seconds(5))
 
         // The hung callback is still admitted; releasing it makes a later wait return normally.
         gate.open()

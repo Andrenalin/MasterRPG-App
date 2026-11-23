@@ -30,17 +30,7 @@ struct QuickEntryEditor: View {
             root: root.pdfRoot,
             itemId: selectedPdf,
             entryId: nil,
-            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true),
-            onTextExtracted: { text in
-                withAnimation(reduceMotion ? nil : .default) {
-                    // Append to existing text or replace based on user preference
-                    if referenceText.input.isEmpty {
-                        referenceText.input = text
-                    } else {
-                        referenceText.input += "\n\n" + text
-                    }
-                }
-            }
+            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true)
         ) {
             withAnimation(reduceMotion ? nil : .default) {
                 root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil)

@@ -59,20 +59,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::GameMainTabButtonView
-    @Test("GameMainTabButtonView")
-    func snapshotGameMainTabButtonView() async throws {
-        try await assertPreviewSnapshot("GameMainTabButtonView") {
-            HStack {
-                GameRPG.GameMainTabButtonView(isMaster: true, displayMode: .constant(.hidden))
-                GameMainTabButtonView(isMaster: true, displayMode: .constant(.inline))
-                GameMainTabButtonView(isMaster: true, displayMode: .constant(.window))
-            }
-            .padding()
-            .background(.ultraThinMaterial)
-        }
-    }
-
     // snapshot-root: GameRPG::GameMainTabToggleButtonView
     @Test("GameMainTabToggleButtonView")
     func snapshotGameMainTabToggleButtonView() async throws {

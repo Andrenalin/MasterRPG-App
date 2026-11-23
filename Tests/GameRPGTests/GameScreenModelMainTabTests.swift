@@ -44,34 +44,5 @@ struct GameScreenModelMainTabTests {
         #expect(settings.autoShowPlayerMainTab)
         #expect(settings.autoShowMasterMainTab == masterBefore)
     }
-
-    @Test("Display mode inline shows the tab and hidden clears it, persisting each mode")
-    func displayModeInlineAndHidden() throws {
-        let (settings, cleanup) = try makeSettings()
-        defer { cleanup() }
-        let model = GameScreenModel()
-        let scenes = ScenesManager()
-
-        model.applyMainTabDisplayMode(.inline, isMaster: false, settings: settings, scenes: scenes, selectedItemId: nil)
-        #expect(model.showMainTab == .value)
-        #expect(settings.playerMainTabDisplayMode == GameMainTabDisplayMode.inline.rawValue)
-
-        model.applyMainTabDisplayMode(.hidden, isMaster: false, settings: settings, scenes: scenes, selectedItemId: nil)
-        #expect(model.showMainTab == .none)
-        #expect(settings.playerMainTabDisplayMode == GameMainTabDisplayMode.hidden.rawValue)
-    }
-
-    @Test("Display mode window hides the inline tab")
-    func displayModeWindow() throws {
-        let (settings, cleanup) = try makeSettings()
-        defer { cleanup() }
-        let model = GameScreenModel()
-        model.showMainTab = .game
-
-        model.applyMainTabDisplayMode(.window, isMaster: true, settings: settings, scenes: ScenesManager(), selectedItemId: UUID())
-
-        #expect(model.showMainTab == .none)
-        #expect(settings.masterMainTabDisplayMode == GameMainTabDisplayMode.window.rawValue)
-    }
 }
 #endif

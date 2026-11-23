@@ -76,29 +76,8 @@ extension GameTableModel {
         let parked: DieTarget = (value: TableDieValue.parked, pose: .parkedDicePose)
         for (slot, dieId) in ids.enumerated() {
             let target = targets[slot] ?? parked
-            switch kind {
-                case .d20:
-                    guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-                case .d3:
-                    guard let equipment = tabletopGame.equipment(of: Die3.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-                case .d4:
-                    guard let equipment = tabletopGame.equipment(of: Die4.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-                case .d12:
-                    guard let equipment = tabletopGame.equipment(of: Die12.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-                case .d10:
-                    guard let equipment = tabletopGame.equipment(of: Die10.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-                case .d8:
-                    guard let equipment = tabletopGame.equipment(of: Die8.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-                case .d6:
-                    guard let equipment = tabletopGame.equipment(of: Die6.self, matching: dieId) else { continue }
-                    updateDieSlot(equipment, target: target)
-            }
+            guard let equipment = PoolDieLookup.die(dieId, kind: kind, in: tabletopGame) else { continue }
+            updateDieSlot(equipment, target: target)
         }
     }
 
@@ -225,15 +204,7 @@ extension GameTableModel {
     }
 
     private func apply(material: PhysicallyBasedMaterial, to dieId: EquipmentIdentifier, kind: TableDieKind) {
-        switch kind {
-            case .d6: tabletopGame.equipment(of: Die6.self, matching: dieId)?.apply(material: material)
-            case .d8: tabletopGame.equipment(of: Die8.self, matching: dieId)?.apply(material: material)
-            case .d3: tabletopGame.equipment(of: Die3.self, matching: dieId)?.apply(material: material)
-            case .d4: tabletopGame.equipment(of: Die4.self, matching: dieId)?.apply(material: material)
-            case .d12: tabletopGame.equipment(of: Die12.self, matching: dieId)?.apply(material: material)
-            case .d10: tabletopGame.equipment(of: Die10.self, matching: dieId)?.apply(material: material)
-            case .d20: tabletopGame.equipment(of: Die20.self, matching: dieId)?.apply(material: material)
-        }
+        PoolDieLookup.die(dieId, kind: kind, in: tabletopGame)?.apply(material: material)
     }
 
     /// Whether `dieId` belongs to the pool of the guest seat.
@@ -243,13 +214,7 @@ extension GameTableModel {
 
     /// Whether `dieId` belongs to one of the table's dice pools.
     func isDie(_ dieId: EquipmentIdentifier) -> Bool {
-        tabletopGame.equipment(of: Die20.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die3.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die4.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die12.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die10.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die8.self, matching: dieId) != nil
-            || tabletopGame.equipment(of: Die6.self, matching: dieId) != nil
+        PoolDieLookup.die(dieId, in: tabletopGame) != nil
     }
 
     /// Whether `dieId` belongs to a seat's pools.
@@ -275,35 +240,10 @@ extension GameTableModel {
     func tossDieForAccessibility(dieId: EquipmentIdentifier, sides: Int) {
         guard canControlDie(dieId) else { return }
         let result = rollTossedDie(dieId) ?? Int.random(in: 1...sides)
-        if let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        } else if let equipment = tabletopGame.equipment(of: Die3.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        } else if let equipment = tabletopGame.equipment(of: Die4.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        } else if let equipment = tabletopGame.equipment(of: Die12.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        } else if let equipment = tabletopGame.equipment(of: Die10.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        } else if let equipment = tabletopGame.equipment(of: Die8.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        } else if let equipment = tabletopGame.equipment(of: Die6.self, matching: dieId) {
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
-        }
+        guard let equipment = PoolDieLookup.die(dieId, in: tabletopGame) else { return }
+        tabletopGame.addAction(
+            .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+        )
     }
 }
 #endif

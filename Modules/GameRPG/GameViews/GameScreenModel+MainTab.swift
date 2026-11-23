@@ -20,49 +20,7 @@ extension GameScreenModel {
         }
     }
 
-    /// Three-state display mode (hidden / inline / window): persists the mode, updates the inline
-    /// tab and opens or closes the matching viewer window.
-    func applyMainTabDisplayMode(
-        _ newValue: GameMainTabDisplayMode,
-        isMaster: Bool,
-        settings: AppSettingsModel,
-        scenes: ScenesManager,
-        selectedItemId: UUID?
-    ) {
-        if isMaster {
-            settings.masterMainTabDisplayMode = newValue.rawValue
-        } else {
-            settings.playerMainTabDisplayMode = newValue.rawValue
-        }
-
-        let viewerScene = isMaster ? SceneId.adventureViewer : SceneId.valueViewer
-        switch newValue {
-        case .hidden:
-            showMainTab = .none
-            closeIfOpen(viewerScene, scenes: scenes)
-        case .inline:
-            showMainTab = Self.inlineMainTab(isMaster: isMaster)
-            closeIfOpen(viewerScene, scenes: scenes)
-        case .window:
-            showMainTab = .none
-            #if os(macOS) || os(visionOS)
-            if scenes.getSceneState(for: viewerScene) == .closed, let selectedItemId {
-                scenes.openWindow(
-                    SceneId.viewerId(for: isMaster ? .adventure : .value),
-                    selection: WindowItemSelection(itemId: selectedItemId)
-                )
-            }
-            #endif
-        }
-    }
-
     private static func inlineMainTab(isMaster: Bool) -> NetworkModules {
         isMaster ? .game : .value
-    }
-
-    private func closeIfOpen(_ scene: SceneId, scenes: ScenesManager) {
-        if scenes.getSceneState(for: scene) == .opened {
-            scenes.dismissWindow(scene)
-        }
     }
 }

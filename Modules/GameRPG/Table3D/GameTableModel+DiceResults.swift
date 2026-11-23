@@ -126,22 +126,7 @@ extension GameTableModel {
         _ dieId: EquipmentIdentifier,
         snapshot: TableSnapshot
     ) -> (entity: Entity, value: Int)? {
-        switch kind {
-            case .d20:
-                snapshot.equipment(of: Die20.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-            case .d3:
-                snapshot.equipment(of: Die3.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-            case .d4:
-                snapshot.equipment(of: Die4.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-            case .d12:
-                snapshot.equipment(of: Die12.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-            case .d10:
-                snapshot.equipment(of: Die10.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-            case .d8:
-                snapshot.equipment(of: Die8.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-            case .d6:
-                snapshot.equipment(of: Die6.self, matching: dieId).map { ($0.0.entity, $0.1.value) }
-        }
+        PoolDieLookup.die(dieId, kind: kind, in: snapshot).map { ($0.die.entity, $0.state.value) }
     }
 
     /// A guest's dice on the table. `nil` unless every one of them shows the value this device

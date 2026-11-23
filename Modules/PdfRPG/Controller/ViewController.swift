@@ -27,9 +27,9 @@ public extension ViewController {
         LinkRootView(type: type, itemSelectionModel: itemSelectionModel)
     }
 
-    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) -> some View {
+    @MainActor func viewer(root: PdfRootModel, itemId: UUID, entryId: UUID?, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
-        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, onTextExtracted: onTextExtracted, dismissAction: dismissAction)
+        return ViewerRootView(model: model, entryId: entryId, configuration: configuration, dismissAction: dismissAction)
     }
     }
 

@@ -27,18 +27,6 @@ extension RPGSharePlayController {
         else { return }
         systemCoordinator = coordinator
         applyShareState()
-        
-        let immersionTask = Task { [weak self] in
-            for await immersionStyle in coordinator.groupImmersionStyle {
-                guard let self,
-                      !Task.isCancelled,
-                      self.sessionLifecycle.isCurrent(sessionId: sessionId),
-                      self.groupSession?.id == sessionId
-                else { return }
-                self.gameModel?.shareState.groupImmersionActive = immersionStyle != nil
-            }
-        }
-        tasks[UUID()] = immersionTask
     }
     
     /// `systemCoordinator` is a nonisolated async getter on the non-Sendable `GroupSession`, so

@@ -26,12 +26,8 @@ struct QuickDiceOverlay: View {
         .padding(.trailing, gameScreenModel.chromeTrailingSafeAreaInset)
 #endif
         .frame(width: gameScreenModel.sideBarWidth)
-#if os(visionOS)
-        .glassBackgroundEffect()
-#else
         .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
         .shadow(radius: 8)
-#endif
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.height
         } action: { height in

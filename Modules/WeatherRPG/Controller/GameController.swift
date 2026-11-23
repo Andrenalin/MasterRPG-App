@@ -18,7 +18,7 @@ final class WeatherGameModel {
     /// (e.g. a stale retransmit racing a newer update) so the "check availability,
     /// import, mark available" sequence can't interleave across two callers. See
     /// CODE_AUDIT_Weather §5.4.
-    private var inFlightReveals: [UUID: InFlightReveal] = [:]
+    private(set) var inFlightReveals: [UUID: InFlightReveal] = [:]
 
     /// A running reveal. `version` lets a caller with the same package join it, `token` keeps a
     /// finished reveal from clearing the entry of the newer one that replaced it.

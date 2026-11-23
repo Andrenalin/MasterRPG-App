@@ -30,7 +30,6 @@ struct DetailFolderListView: View {
                 itemId: itemId,
                 entryId: nil,
                 configuration: ViewerConfiguration(closeButton: true, canBookmark: true),
-                onTextExtracted: nil,
                 dismissAction: dismiss
             )
         }

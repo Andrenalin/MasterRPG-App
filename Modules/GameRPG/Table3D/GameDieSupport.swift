@@ -6,8 +6,86 @@ import CoreText
 import Foundation
 import RealityKit
 import Spatial
+import TabletopKit
 import UIKit
 import simd
+
+/// What the seven dice of a seat's pool share, so that "which die is this id" is asked once
+/// (`PoolDieLookup`) instead of in a chain of `if let … of: DieN.self` at every call site. A new
+/// die kind adds its struct, its `kind` and one entry in `PoolDieLookup.types`; per-kind geometry
+/// and atlas code stay with the kind. See CODE_AUDIT_28 §9.4.
+protocol PoolDie: EntityEquipment where State == DieState {
+    /// The kind of the pool the die belongs to.
+    static var kind: TableDieKind { get }
+    var audioPlaybackController: AudioPlaybackController? { get }
+    var representation: TossableRepresentation { get }
+    @MainActor func apply(material: PhysicallyBasedMaterial)
+    /// Plays the toss sound; kinds differ in whether a running sound is restarted.
+    @MainActor func playTossSound()
+}
+
+extension PoolDie {
+    /// The lookups of `PoolDieLookup` for one concrete kind. A static method, because TabletopKit's
+    /// `equipment(of:)` takes the die type as a generic parameter, which an existential metatype
+    /// only supplies through `Self`.
+    static func find(_ id: EquipmentIdentifier, in game: TabletopGame) -> (any PoolDie)? {
+        game.equipment(of: Self.self, matching: id)
+    }
+
+    static func find(_ id: EquipmentIdentifier, in snapshot: TableSnapshot) -> (die: any PoolDie, state: DieState)? {
+        snapshot.equipment(of: Self.self, matching: id).map { ($0.0, $0.1) }
+    }
+}
+
+extension PoolDie {
+    /// The sound waits for a running one to end. Only `Die20` restarts it unconditionally, a
+    /// difference kept from before the shared protocol (audit §9.4 lists it as unresolved).
+    @MainActor
+    func playTossSound() {
+        guard let audioPlaybackController else { return }
+        if !audioPlaybackController.isPlaying {
+            audioPlaybackController.seek(to: .zero)
+            audioPlaybackController.play()
+        }
+    }
+}
+
+/// The one lookup of a pool die by its equipment id, whatever its kind.
+enum PoolDieLookup {
+    /// Every kind of pool die, in lookup order.
+    /// Computed, not stored: an array of existential metatypes is not `Sendable`, so a stored
+    /// `static let` fails Swift 6's global-state check.
+    static var types: [any PoolDie.Type] {
+        [Die20.self, Die3.self, Die4.self, Die12.self, Die10.self, Die8.self, Die6.self]
+    }
+
+    static func type(of kind: TableDieKind) -> any PoolDie.Type {
+        types.first { $0.kind == kind } ?? Die20.self
+    }
+
+    static func die(_ id: EquipmentIdentifier, in game: TabletopGame) -> (any PoolDie)? {
+        for type in types {
+            if let die = type.find(id, in: game) { return die }
+        }
+        return nil
+    }
+
+    static func die(_ id: EquipmentIdentifier, kind: TableDieKind, in game: TabletopGame) -> (any PoolDie)? {
+        type(of: kind).find(id, in: game)
+    }
+
+    /// The die with its synced state.
+    static func die(_ id: EquipmentIdentifier, in snapshot: TableSnapshot) -> (die: any PoolDie, state: DieState)? {
+        for type in types {
+            if let found = type.find(id, in: snapshot) { return found }
+        }
+        return nil
+    }
+
+    static func die(_ id: EquipmentIdentifier, kind: TableDieKind, in snapshot: TableSnapshot) -> (die: any PoolDie, state: DieState)? {
+        type(of: kind).find(id, in: snapshot)
+    }
+}
 
 /// What the dice generated in code (`Die8`, `Die10`) have in common.
 enum GeneratedDie {

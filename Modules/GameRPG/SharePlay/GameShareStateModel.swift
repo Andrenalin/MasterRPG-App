@@ -17,7 +17,6 @@ final class GameShareStateModel {
     var mode: PresentationMode = .window
 
     var isSharePlayActive: Bool = false
-    var groupImmersionActive: Bool = false
     var isMaster: Bool = false
 }
 #endif

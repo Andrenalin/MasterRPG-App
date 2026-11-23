@@ -20,7 +20,7 @@ struct ViewControllerTests {
 
         _ = sut.rowViewer(source: source, destination: source)
         _ = sut.linkListView(type: .inspector, itemSelectionModel: selectionModel)
-        _ = sut.viewer(root: root, itemId: itemId, entryId: nil, configuration: ViewerConfiguration(canBookmark: true), onTextExtracted: { _ in }, dismissAction: {})
+        _ = sut.viewer(root: root, itemId: itemId, entryId: nil, configuration: ViewerConfiguration(canBookmark: true), dismissAction: {})
         _ = sut.gamePdfView(root: root)
 
         #expect(sut.sharingViewType == .share)

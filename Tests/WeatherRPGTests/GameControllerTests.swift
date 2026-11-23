@@ -170,9 +170,18 @@ struct GameControllerTests {
         playerRoot.itemController.itemDataModel.resetGame(start: true)
 
         // When
-        async let first = sut.revealWeather(itemId: weatherId, data: oldPackage)
-        async let second = sut.revealWeather(itemId: weatherId, data: newPackage)
-        _ = try await (first, second)
+        // The older package has to register first: with two `async let`s nothing orders the two
+        // registrations, and the newer one registering first makes the older one run after it.
+        // The package arrives "during" the reveal, so the newer one is only started once the
+        // older one is registered (running, or already finished and marked available).
+        let first = Task { try await sut.revealWeather(itemId: weatherId, data: oldPackage) }
+        let firstRegistered = await awaitCondition {
+            sut.weatherGameModel.inFlightReveals[weatherId] != nil
+                || sut.weatherGameModel.availableVersions[weatherId] != nil
+        }
+        try #require(firstRegistered, "the older reveal must register before the newer package arrives")
+        let second = Task { try await sut.revealWeather(itemId: weatherId, data: newPackage) }
+        _ = try await (first.value, second.value)
 
         // Then
         #expect(sut.isWeatherAvailable(itemId: weatherId, version: newPackage.version))

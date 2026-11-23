@@ -18,15 +18,9 @@ struct RoundGameControlStyle: ViewModifier {
                 .contentShape(.circle)
                 .modifier(GameWindowButtonAppearance(module: module, isWindowPresented: false))
         } else {
-#if os(tvOS)
+#if os(tvOS) || os(visionOS)
+            // visionOS has no 2D game screen, so no floating controls.
             content
-#elseif os(visionOS)
-            content
-                .buttonStyle(.plain)
-                .imageScale(.large)
-                .padding(8)
-                .contentShape(.circle)
-                .glassBackgroundEffect(in: .circle)
 #else
             content
                 .buttonStyle(.plain)

@@ -4737,6 +4737,7 @@
       }
     },
     "Open game view in window" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

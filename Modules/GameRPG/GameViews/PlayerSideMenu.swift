@@ -23,10 +23,6 @@ struct PlayerSideMenu: View {
                         sceneId: SceneId.sceneId(for: module)
                     )
                 }
-#if os(visionOS)
-                // The companions button is in the top ornament's menu; this one is the last window button.
-                GameTableWindowButton(root: root)
-#endif
             }
         }
 #if os(macOS)

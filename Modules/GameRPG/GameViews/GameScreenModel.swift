@@ -223,26 +223,17 @@ final class GameScreenModel {
     private(set) var quickDiceOverlayHeight: CGFloat = 0
 
     /// How far the sidebar stops short of the bottom edge to leave room for the quick dice overlay.
-    /// On visionOS the overlay lives in the trailing ornament, outside the window, so the window
-    /// keeps its full height. See CODE_AUDIT_Since_3.0.1 §5.14.
+    /// See CODE_AUDIT_Since_3.0.1 §5.14.
     var quickDiceBottomReservation: CGFloat {
-#if os(visionOS)
-        return 0
-#else
         // Above a bottom panel, not inside it: the panel keeps its full height.
         guard showQuickDice, quickDiceOverlayHeight > 0, !isBottomSidebar else { return 0 }
         return quickDiceOverlayHeight + chromeBottomSafeAreaInset + Self.quickDiceBottomInset + Self.mapOverlaySpacing
-#endif
     }
 
     /// How much of the trailing edge the quick dice toggle button leaves free, so it sits on the
     /// bottom leading side of whatever is at the trailing edge: the quick dice overlay, else the
-    /// inline sidebar, else nothing (the button is at the trailing screen edge). On visionOS the
-    /// button lives in the same ornament as the overlay, so it reserves nothing.
+    /// inline sidebar, else nothing (the button is at the trailing screen edge).
     var quickDiceToggleTrailingReservation: CGFloat {
-#if os(visionOS)
-        return 0
-#else
         if isBottomSidebar {
             // Beside the overlay, which sits above a shown bottom panel.
             return showQuickDice ? sideBarWidth : 0
@@ -250,7 +241,6 @@ final class GameScreenModel {
         if showQuickDice { return sideBarWidth }
         if isInlineSidebarVisible, inlineMainOverlayWidth > 0 { return inlineSidebarWidth }
         return 0
-#endif
     }
 
     func updateQuickDiceOverlayHeight(_ height: CGFloat) {

@@ -566,6 +566,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** About 400 lines of unreachable UI to maintain and snapshot, and a possible silent behaviour change: the debounced "follow the SharePlay group into or out of immersion" logic no longer runs on any path.
 - **Action:** Decide whether the follow behaviour is still wanted (apply the modifier in the table host, or delete it and its writers), delete the ornament button and the visionOS branches in the 2D-only views, keep the shared pieces the table uses.
 - **Severity:** Medium (dead status verified by grep; behavioural gap unverified on device)
+- **Status 2026-11-23:** fixed (user decision: delete, do not re-apply the follow behaviour). Removed `GameImmersiveSpaceSync.swift`, `GameOrnamentCloseButton.swift`, `GameShareStateModel.groupImmersionActive` with both writers (the `groupImmersionStyle` task in `RPGSharePlayController+VisionOSTemplate.swift` is gone), and the visionOS branches of the 2D-only views (`GameRootViewer`, `MasterSideMenu`, `PlayerSideMenu`, `OverlayGameLayout`, `GameSidePanelModifier`, `QuickDiceOverlay`, `GameScreenModel` reservations, `GameTableWindowButton`, which is now iOS/macOS only). `RoundGameControlStyle` and `BattleRoundSideOverlay` keep a compile-only visionOS fallback because `glassEffect` does not exist there. The Space viewer on visionOS is opened by the table host (`GameTableGameHost`), not by a group-immersion follow. Not device-verified.
 
 ### 9.2 `OverlayGameMenu` macOS/visionOS branches and the three-state menu views are unreachable
 - **Location:** `Modules/GameRPG/GameViews/OverlayGameMenu.swift:21-35, 56-169, 253-394`, `GameMainTabButtonView.swift`, `GameScreenModel+MainTab.swift:28-60`, `GameMainTabToggleButtonView.swift:11`, `MasterOverlayMenu.swift:16-20`, `PlayerOverlayMenu.swift:19-23`
@@ -573,6 +574,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** About 250 lines compile on every platform and previews hide drift.
 - **Action:** Reduce `OverlayGameMenu` to the tvOS path, delete the unused views and `applyMainTabDisplayMode` with its test; confirm the macOS toolbar still uses the display mode first.
 - **Severity:** Medium (Verified by grep of all callers)
+- **Status 2026-11-23:** fixed. `OverlayGameMenu` is now iOS (`IOSGameOverlayMenu`) and tvOS only; the macOS and visionOS menu views, the three-state `GameMainTabButtonView` (the `GameMainTabDisplayMode` enum moved to `GameMainTabDisplayMode.swift`), `applyMainTabDisplayMode` and its two tests are deleted. The macOS toolbar (`GameSidebarToolbarMenu`) sets the display mode itself and did not use `applyMainTabDisplayMode`. The generated snapshot test of the removed button is removed by hand.
 
 ### 9.3 Dead "use PDF selection / text extracted" plumbing between the viewer and four quick editors
 - **Location:** `Modules/PdfRPG/Root/ViewerRootView.swift:15, 25-30`, `Controller/ViewController.swift:30-32`, `View/DetailFolderListView.swift:33`, `Model/PdfViewerActions.swift:1-52`, writers `Modules/{Adventure,Character,Map,Table}RPG/View/QuickEntryEditor.swift`
@@ -581,6 +583,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Either restore the feature or delete the parameter, key and editor closures.
 - **Severity:** Medium (Verified by repository-wide grep)
 - **Known:** audit 26 §9.5.
+- **Status 2026-11-23:** fixed (user decision: delete). Removed `PdfViewerActions` (type and environment key), the `onTextExtracted` parameter of `ViewController.viewer` and `ViewerRootView`, and the closures and `usePdfSelection` in the four quick entry editors. Public API removed, so a clean build is needed once.
 
 ### 9.4 Seven copies of the die-type dispatch and of the generated-die boilerplate
 - **Location:** `Modules/GameRPG/Table3D/GameInteraction.swift:62-109`, `GameObserver.swift:29-48`, `GameTableModel+Dice.swift:75-307`, `GameTableModel+DiceResults.swift:124-145`, `GameDie{3,4,6,8,10,12,20}.swift` (about 2,000 lines)
@@ -588,6 +591,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Maintenance cost and silent divergence; a missed chain gives a die that can be picked up but not tossed.
 - **Action:** One protocol for pool dice with a single lookup per kind and one generic asset cache; keep per-kind geometry and atlas code only.
 - **Severity:** Medium (Verified)
+- **Status 2026-11-23:** partly fixed. One `PoolDie` protocol (in `GameDieSupport.swift`) and one `PoolDieLookup` replace the eight `if let … of: DieN.self` chains (`GameInteraction` ×2, `GameObserver`, `GameTableModel+Dice` ×4, `GameTableModel+DiceResults`); the seven `playTossSound` copies are one protocol default. A new die kind adds its struct, its `kind` and one entry in `PoolDieLookup.types`. Test (visionOS): `PoolDieLookupTests`. Not done: one generic asset cache and merging the per-kind structs. The toss-sound difference stays: only `Die20` restarts a running sound, the others wait for it to end (unchanged, unresolved). Not device-verified (toss, rest, sound).
 
 ### 9.5 Link drag/drop modifiers repeat the same 11-way module switch four times
 - **Location:** `Modules/CoreRPG/ViewModifiers/LinkDragViewModifier.swift:38-178`
@@ -596,6 +600,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** One generic helper keyed by tag type and one module table.
 - **Severity:** Medium (Verified)
 - **Known:** audit 26 §9.23, referenced in audit 27 §9.
+- **Status 2026-11-23:** fixed. The four modifiers are one `LinkTransferViewModifier` with a role (drag, drop, targeted drop); the module-to-tag `switch` exists once, and one generic helper builds the drag or drop for a link type. An existential-metatype table was tried first and does not compile (the opened tag type escapes as `any View`). No new test: the existing link tests pass and drag and drop need a UI run.
 
 ### 9.6 Oversized files with a clear split
 - **Location:** `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift` (1,282 lines), `FoundryRuleModels.swift` (849), `Controllable/ImportControllable.swift` (799), `Foundry/FoundrySystemPackageReader.swift` (754), `Modules/GameRPG/SharePlay/RPGSharePlayController+ChunkedTransport.swift` (746), `Modules/RolePlayGameKit/Import/Foundry/FoundryImportView.swift` (715), `Modules/GameRPG/Statistics/Model/GameStatisticsTypes.swift` (709), `Modules/MapRPG/Controller/GameController+Pins.swift` (672), `Modules/CoreRPG/Persistence/CoreDataController.swift` (636), `Controllable/ItemControllable.swift` (633), `Modules/GameRPG/Table3D/GameTableEntities.swift` (627), plus about ten more between 500 and 600 lines (for example `GameMessagePipeline.swift`, `SharePlayJournalPublicationQueue.swift`, `ExportControllable.swift`, `EditControllable.swift`)

@@ -32,29 +32,13 @@ struct QuickEntryEditor: View {
             root: root.pdfRoot,
             itemId: selectedPdf,
             entryId: nil,
-            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true),
-            onTextExtracted: { text in
-                withAnimation(reduceMotion ? nil : .default) {
-                    if referenceText.input.isEmpty {
-                        referenceText.input = text
-                    } else {
-                        referenceText.input += "\n\n" + text
-                    }
-                }
-            }
+            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true)
         ) {
             withAnimation(reduceMotion ? nil : .default) {
                 root.editController.valueEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil)
             }
         }
         .background(.primary)
-        .pdfViewerActions(PdfViewerActions(id: model.id, selectedText: usePdfSelection(selection:)))
-    }
-
-    private func usePdfSelection(selection: NSAttributedString) {
-        withAnimation(reduceMotion ? nil : .default) {
-            referenceText.input.append(selection.string)
-        }
     }
 }
 

@@ -72,7 +72,6 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                 .padding(.horizontal, horizontalPadding)
                 .zIndex(20)
 
-#if !os(visionOS)
             if offersQuickDice && gameScreenModel.showQuickDice {
                 QuickDiceOverlay(root: root)
 #if os(iOS)
@@ -123,7 +122,6 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
                     .transition(.move(edge: .leading))
                     .zIndex(30)
             }
-#endif
 
             toolBarOverlay()
                 .padding(.bottom, valueFor(iOS: 0, macOS: 12, tvOS: 0, visionOS: 0) + gameScreenModel.toolBarBottomReservation)

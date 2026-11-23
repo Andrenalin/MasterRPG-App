@@ -162,14 +162,7 @@ struct GameRootViewer: View {
                         controlsBottomInset: gameScreenModel?.fullScreenControlsBottomClearance ?? 0
                     )
                 case .space:
-                    // visionOS opens the immersive space directly from the
-                    // `.onChange` above instead of rendering anything here —
-                    // see that handler's comment.
-#if os(visionOS)
-                    EmptyView()
-#else
                     root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
-#endif
                 case .table:
                     root.tableRoot.viewController.gameViewer(root: root.tableRoot)
                     .padding(20)

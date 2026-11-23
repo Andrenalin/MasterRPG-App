@@ -12,7 +12,6 @@ struct ViewerRootView: View {
     let model: PdfModel
     var entryId: UUID? = nil
     let configuration: ViewerConfiguration
-    var onTextExtracted: ((String) -> Void)? = nil
     var dismissAction: (() -> Void)? = nil
 
     @Environment(PdfRootModel.self) private var root
@@ -22,11 +21,10 @@ struct ViewerRootView: View {
 
     @State private var searchModel = PdfSearchModel()
 
-    init(model: PdfModel, entryId: UUID? = nil, configuration: ViewerConfiguration, onTextExtracted: ((String) -> Void)? = nil, dismissAction: (() -> Void)? = nil) {
+    init(model: PdfModel, entryId: UUID? = nil, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) {
         self.model = model
         self.entryId = entryId
         self.configuration = configuration
-        self.onTextExtracted = onTextExtracted
         self.dismissAction = dismissAction
     }
     

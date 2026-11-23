@@ -718,7 +718,6 @@ extension RPGSharePlayController {
         systemCoordinator = nil
         coordinatedTabletopGame = nil
         gameModel?.shareState.isSharePlayActive = false
-        gameModel?.shareState.groupImmersionActive = false
         #endif
     }
 

@@ -30,20 +30,8 @@ final class GameObserver: TabletopGame.Observer {
         guard let action = action as? UpdateEquipmentAction<DieState> else { return }
 
         // A value of 0 is the table's "parked, unused slot" sentinel (see `Die20.init`), not a roll.
-        if let (die20, state) = newSnapshot.equipment(of: Die20.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die20.playTossSound() }
-        } else if let (die3, state) = newSnapshot.equipment(of: Die3.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die3.playTossSound() }
-        } else if let (die4, state) = newSnapshot.equipment(of: Die4.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die4.playTossSound() }
-        } else if let (die12, state) = newSnapshot.equipment(of: Die12.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die12.playTossSound() }
-        } else if let (die10, state) = newSnapshot.equipment(of: Die10.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die10.playTossSound() }
-        } else if let (die8, state) = newSnapshot.equipment(of: Die8.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die8.playTossSound() }
-        } else if let (die, state) = newSnapshot.equipment(of: Die6.self, matching: action.equipmentID) {
-            if state.value != TableDieValue.parked { die.playTossSound() }
+        if let (die, state) = PoolDieLookup.die(action.equipmentID, in: newSnapshot), state.value != TableDieValue.parked {
+            die.playTossSound()
         }
     }
 

@@ -98,7 +98,8 @@ enum Die8Assets {
 
 // MARK: - Die
 
-struct Die8: EntityEquipment {
+struct Die8: PoolDie {
+    static var kind: TableDieKind { .d8 }
     let id: ID
     let entity: Entity
     let audioPlaybackController: AudioPlaybackController?
@@ -170,15 +171,6 @@ struct Die8: EntityEquipment {
         guard var model = entity.components[ModelComponent.self] else { return }
         model.materials = model.materials.map { _ in material }
         entity.components.set(model)
-    }
-
-    @MainActor
-    func playTossSound() {
-        guard let audioPlaybackController else { return }
-        if !audioPlaybackController.isPlaying {
-            audioPlaybackController.seek(to: .zero)
-            audioPlaybackController.play()
-        }
     }
 }
 #endif

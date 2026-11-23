@@ -87,7 +87,8 @@ enum Die20Assets {
 
 // MARK: - Die
 
-struct Die20: EntityEquipment {
+struct Die20: PoolDie {
+    static var kind: TableDieKind { .d20 }
     let id: ID
     let entity: Entity
     let audioPlaybackController: AudioPlaybackController?
@@ -192,6 +193,7 @@ struct Die20: EntityEquipment {
         entity.components.set(model)
     }
 
+    /// Restarts a running sound, unlike the other kinds (see `PoolDie.playTossSound`).
     @MainActor
     func playTossSound() {
         guard let audioPlaybackController else { return }

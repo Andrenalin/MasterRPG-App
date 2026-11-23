@@ -155,13 +155,13 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
                 maxHeight: .infinity,
                 alignment: isBottomPanel
                     ? .bottom
-                    : content.valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
+                    : .trailing
             )
 #if os(iOS)
             .ignoresSafeArea()
             .clipShape(iOSShape)
             .background(.ultraThinMaterial, in: iOSShape)
-#elseif !os(visionOS)
+#else
             .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 #endif
             // Outside the background, so the panel itself ends above the quick dice overlay.
@@ -169,7 +169,7 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
             .offset(
                 x: isShown || isBottomPanel
                     ? 0
-                    : content.valueFor(iOS: width, macOS: width, tvOS: width, visionOS: -width),
+                    : width,
                 y: isShown || !isBottomPanel ? 0 : gameScreenModel.bottomPanelHeight
             )
             .opacity(isShown ? 1 : 0)

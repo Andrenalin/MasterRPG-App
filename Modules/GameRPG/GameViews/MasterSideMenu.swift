@@ -10,16 +10,7 @@ struct MasterSideMenu: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-#if os(visionOS)
-        VStack {
-            MasterModuleWindowMenu(adventureId: adventureId)
-
-            // The players button is in the top ornament's menu; this one is the last window button.
-            GameTableWindowButton(root: root)
-        }
-#else
         MasterModuleWindowMenu(adventureId: adventureId)
-#endif
     }
 }
 
