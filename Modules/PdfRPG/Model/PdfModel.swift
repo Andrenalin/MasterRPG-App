@@ -157,7 +157,9 @@ extension PdfModel: nonisolated ItemDiffComparable {
             fileUrl_.update == other.fileUrl_.update &&
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
-            entries.allSatisfy { otherEntriesById[$0.id] == $0 }
+            // The entry's own comparator: `==` includes CRDT clocks and actor ids that every load
+            // regenerates. See CODE_AUDIT_28 §7.12.
+            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
         }
     }
     

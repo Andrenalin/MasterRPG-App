@@ -33,7 +33,7 @@ public struct ImageCacheController: Sendable {
 
     /// Four bytes per pixel. `size` is in points, which undercounts a 3× image nine times
     /// over. See CODE_AUDIT_23 §7.6.
-    private static func bitmapCost(of image: AKImage) -> Int {
+    static func bitmapCost(of image: AKImage) -> Int {
         #if os(macOS)
         let pixelWidth = image.representations.map(\.pixelsWide).max() ?? 0
         let pixelHeight = image.representations.map(\.pixelsHigh).max() ?? 0

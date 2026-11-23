@@ -11,6 +11,25 @@ struct FoundationModelInputLimiter {
 
     static let truncationMarker = "\n[Content truncated...]"
 
+    /// The one characters-per-token estimate for Latin text, shared by every budget below.
+    static let charactersPerToken = 3
+    /// The on-device model's context window (input, instructions, schema and output together).
+    static let contextWindowTokens = 4_096
+
+    /// The characters of one page an extraction can send when the model writes the page back
+    /// as structured blocks: the page costs its tokens twice (in the prompt and in the answer),
+    /// next to the instructions, schema and framing (`overheadTokens`). A page that does not
+    /// fit overflows the context and is skipped. See CODE_AUDIT_28 §7.13.
+    static func reproducedPageCharacterBudget(overheadTokens: Int) -> Int {
+        max(1, (contextWindowTokens - overheadTokens) / 2 * charactersPerToken)
+    }
+
+    /// What the answer may use once the prompt of `inputCharacters` is in: the rest of the window.
+    static func responseTokenBudget(inputCharacters: Int, overheadTokens: Int) -> Int {
+        let inputTokens = (inputCharacters + charactersPerToken - 1) / charactersPerToken
+        return max(256, contextWindowTokens - overheadTokens - inputTokens)
+    }
+
     /// `maxCharacters` is a budget for Latin text (about three characters per token). Chinese,
     /// Japanese and Korean text costs about one token per character, so the same character count
     /// would overflow the model's context window and the whole analysis would fail; the budget

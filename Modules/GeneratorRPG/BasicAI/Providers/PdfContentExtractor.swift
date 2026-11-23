@@ -16,8 +16,20 @@ struct PdfContentExtractor: Sendable {
     /// Maximum number of pages to process
     private let maxPages: Int
     
-    /// Maximum characters to extract (targeting ~3000 tokens for input)
+    /// Maximum characters of one page. The model writes the page back as blocks, so the page
+    /// counts twice against the context window; see `defaultPageCharacters`.
     private let maxCharacters: Int
+
+    /// Tokens of the instructions, the schema and the prompt framing.
+    private static let overheadTokens = 900
+
+    /// The default page budget: input and the reproduced output fit the window together.
+    /// See CODE_AUDIT_28 §7.13.
+    static let defaultPageCharacters = FoundationModelInputLimiter.reproducedPageCharacterBudget(overheadTokens: overheadTokens)
+
+    static func responseTokenLimit(forPageText text: String) -> Int {
+        FoundationModelInputLimiter.responseTokenBudget(inputCharacters: text.count, overheadTokens: overheadTokens)
+    }
     
     /// Instructions for the model
     private let instructions: String
@@ -26,7 +38,7 @@ struct PdfContentExtractor: Sendable {
     
     public init(
         maxPages: Int = 20,
-        maxCharacters: Int = 7000,
+        maxCharacters: Int = Self.defaultPageCharacters,
         instructions: String? = nil
     ) {
         self.maxPages = maxPages
@@ -111,7 +123,8 @@ struct PdfContentExtractor: Sendable {
                 let response = try await session.respond(
                     to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pageCount),
                     generating: [BlockEntryGenModel].self,
-                    includeSchemaInPrompt: false
+                    includeSchemaInPrompt: false,
+                    options: GenerationOptions(maximumResponseTokens: Self.responseTokenLimit(forPageText: page.text))
                 )
                 blocks.append(contentsOf: response.content)
             } catch is CancellationError {

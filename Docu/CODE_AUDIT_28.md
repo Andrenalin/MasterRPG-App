@@ -415,6 +415,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A zoomed map with many photo pins, or paging through high-resolution scans, can pin gigabytes and end in a jetsam kill mid-session, losing unsaved game state; typical 12 MP photos are about 48 MB each, so 120 of them is about 5.7 GB.
 - **Action:** Give the cache a byte budget and trim on memory warning; decode a bounded intermediate size for 160-400 pt pins; drop the observable copy when the byte cache evicts.
 - **Severity:** Medium (Likely; not measured)
+- **Status 2026-11-23:** partly fixed. `ObservableImageCache` now has a byte budget next to the count (384 MiB of decoded bitmaps, least recently used leave first, the newest image is always kept) and drops all full images on a memory warning (iOS, tvOS, visionOS; thumbnails stay). Test: `ImageCacheTests.observableImageByteBudget`. Not done: a bounded intermediate decode for 160–400 pt pins, and dropping the observable copy when the byte cache evicts (both change what is on screen and need a device run).
 
 ### 7.2 Sync applies each changed row with its own fetch, hop and main-actor model build
 - **Location:** `Modules/CoreRPG/Controllable/SyncDataControllable.swift:120-153`, `CoreDataSnapshotPersistable.swift:62-66`, `Modules/CoreRPG/Persistence/CoreDataController.swift:350-356, 509-529`, `CoreDataChangeObserver.swift:88-100`
@@ -422,6 +423,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** First sync on a new device or a big import keeps the consumer busy and holds the main actor repeatedly.
 - **Action:** Fetch a batch with one `uuid IN` request and map all snapshots in one `perform`; read uuids without faulting. Profile with several thousand items.
 - **Severity:** Medium (Likely; unmeasured)
+- **Status 2026-11-23:** not changed: a batched `uuid IN` fetch across twelve module observers is a larger refactor, and the audit says to profile with several thousand items first.
 
 ### 7.3 Statistics reload and achievements fetch the whole event history twice per game end, aggregated on the main actor
 - **Location:** `Modules/GameRPG/Statistics/Model/GameStatisticsModel.swift:71-87, 275-323, 447-462`, `GameStatisticsDataController.swift:274-317`, `GameStatisticsController.swift:97-158`
@@ -430,6 +432,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Compute the summary once and derive achievements from it (or use grouped fetches), run the aggregation off the main actor, fetch only the needed kinds, add retention for old rows.
 - **Severity:** Medium (Verified by reading; not measured)
 - **Known:** audit 27 §7.4, still open.
+- **Status 2026-11-23:** partly fixed. A game start or end now fetches the whole history once and cuts the dashboard range out of it in memory (`GameStatisticsDataSet.filtered`), and the achievements come from the same set instead of a second fetch. The aggregation runs off the main actor (`summaryOffMainActor`). Test: `GameStatisticsDataControllerTests.filteredEqualsFetchedRange`. Not done: fetching only the needed event kinds and retention for old rows (needs a product decision).
 
 ### 7.4 Changing section order, visibility or metric re-runs the full statistics reload
 - **Location:** `Modules/GameRPG/Statistics/View/GameStatisticsDashboardView.swift:345-347`, `GameStatisticsTypes.swift:232-240`, `GameStatisticsModel.swift:295-323`
@@ -437,6 +440,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Toggling or dragging sections in Customize triggers a full fetch each time while the dashboard is visible.
 - **Action:** Key the task on a small hashable of the data-affecting fields.
 - **Severity:** Medium (Verified)
+- **Status 2026-11-23:** fixed. The dashboard reloads on `GameStatisticsDashboardConfiguration.dataKey` (date range, granularity, direction), not on section order, visibility or metric. Test: `GameStatisticsRiskTests.dataKeyIgnoresPresentationFields`.
 
 ### 7.5 The master recomputes the full content digest on every send
 - **Location:** `Modules/MapRPG/Controller/GameController+Metadata.swift:46-56, 119-126`, `Model/MapUpdatePayload.swift:44-48, 75-129`, callers `GameController+Sync.swift:68, 80, 89`, `GameController+BattleSync.swift:193`, `GameController+Pins.swift:388`
@@ -444,6 +448,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** On a 20,000-cell hex map each pin drag or room toggle costs an O(entries) copy, sort and hash on the main actor per message.
 - **Action:** Cache the content version keyed by a change counter, invalidated on structural edits only.
 - **Severity:** Medium
+- **Status 2026-11-23:** not changed: a cached content version needs an invalidation rule for every structural edit, and a stale version would stop map syncs; the audit itself asks to measure first, and the change needs a profile or a device run.
 
 ### 7.6 O(entries) equality checks in view bodies on large maps
 - **Location:** `Modules/MapRPG/Map/RootEditCanvasMap.swift:100-131`, `Map/MapEditor.swift:112-117`, `Model/MapModel+Sync.swift:105-140`
@@ -451,6 +456,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Editor and GM screens pay millisecond-scale comparisons per observation tick.
 - **Action:** Compare a cheap change token (the CRDT update ids) instead of the arrays.
 - **Severity:** Medium (not profiled)
+- **Status 2026-11-23:** not changed: replacing the array compare with a change token has the same risk as §7.5 and the audit marks it not profiled.
 
 ### 7.7 Sheet update re-projects every entry and its linked sheets on each change
 - **Location:** `Modules/CharacterRPG/Controller/SheetController.swift:104-197`, `Modules/AdventureRPG/Controller/SheetController.swift:146-199`
@@ -459,6 +465,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Skip entries whose source and linked entries are unchanged; build linked sheets lazily. Profile a 150-entry fixture before changing.
 - **Severity:** Medium (not profiled)
 - **Known:** the Rule twin is audit 27 §7.6, left open pending measurement.
+- **Status 2026-11-23:** not changed: the audit itself asks to measure first, and the change needs a profile or a device run. The audit asks for a 150-entry fixture profile first.
 
 ### 7.8 One RealityKit hit entity, collider and ribbon mesh per room, including every hex cell
 - **Location:** `Modules/GameRPG/Table3D/GameTableProjection.swift:114-151`, `GameTableEntities.swift:515-626`
@@ -466,6 +473,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** The default 100-200 cells is probably fine; a finer scale means thousands of meshes and colliders created at once (a visible hang on hex toggle or rescale) and thousands of transparent draw calls afterwards.
 - **Action:** Use one shared hit surface that resolves the cell from the hit point, or create areas lazily near the touch; skip per-cell outline meshes.
 - **Severity:** Medium (Likely; not measured)
+- **Status 2026-11-23:** not changed: the audit itself asks to measure first, and the change needs a profile or a device run.
 
 ### 7.9 Per-frame dice-result scan grew to seven die kinds and is still not short-circuited
 - **Location:** `Modules/GameRPG/Table3D/GameTableModel+DiceResults.swift:23-48, 111-145`, `GameRenderer.swift:102-104`, `GameTableModel+Popovers.swift:122-141`, `GameTableView+PlatformFlat.swift:400-410`
@@ -474,6 +482,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Action:** Keep the set of non-parked die ids and skip empty seats; project only when the camera or target moved.
 - **Severity:** Medium (frame cost unmeasured)
 - **Known:** audit 21 §7.7, still open.
+- **Status 2026-11-23:** not changed: the scan is visionOS-only TabletopKit code, which the iOS tests cannot run, and the frame cost is unmeasured.
 
 ### 7.10 252 always-live dice entities with spatial audio and about 50 SwiftUI attachments are created up front
 - **Location:** `Modules/GameRPG/Table3D/GameSetup.swift:126-213`, `GameDie20.swift:139-150`, `GameTableView+VisionOS.swift:113-172`, `GameTableModel+SeatControls.swift:15`
@@ -481,6 +490,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Constant memory and scene cost on a device near its budget; cost not measured.
 - **Action:** Measure first (RealityKit trace); share one prepared audio resource, prepare lazily on first toss, lower `maxRemovePopovers`, create guest-group attachments only for existing groups; keep dice parked by pose.
 - **Severity:** Medium (counts verified, cost unverified)
+- **Status 2026-11-23:** not changed: the audit itself asks to measure first, and the change needs a profile or a device run.
 
 ### 7.11 Collision shapes are generated on the main actor for every 3D viewer, including inline previews and iOS/macOS
 - **Location:** `Modules/SpaceRPG/Space/SpaceViewer+Loading.swift:213-249`, `Modules/SpaceRPG/View/InlineRowViewer.swift:22-24`
@@ -488,6 +498,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** A sheet with several linked objects freezes the UI per model; a dense peer-sent model can hang the main actor for seconds. The 256 MiB cap bounds file size, not mesh complexity.
 - **Action:** Skip collision generation for inline previews and platforms that do not use it; add a complexity budget.
 - **Severity:** Medium
+- **Status 2026-11-23:** not changed: skipping collision for inline previews also removes the hover highlight there, which needs a look on iOS, macOS and visionOS.
 
 ### 7.12 `PdfModel.isSame` compares entries with `==`, which includes CRDT clocks and actor ids that every load regenerates
 - **Location:** `Modules/PdfRPG/Model/PdfModel.swift:145-162`, `PdfEntryModel.swift:7-39, 81`, `Controller/DataController.swift:79-86`, `Modules/CoreRPG/CRDT/LWWRegister.swift:125-129`, consumer `Modules/CoreRPG/Controllable/ItemControllable+Sync.swift:25-29`
@@ -495,6 +506,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Every remote-change batch re-merges and re-applies each bookmarked PDF: needless saves and invalidation. No data loss expected.
 - **Action:** Use the entry's own `isSame` comparator.
 - **Severity:** Medium (Likely; not confirmed at runtime)
+- **Status 2026-11-23:** fixed. `PdfModel.isSame` compares entries with the entry's own `isSame` (no CRDT clocks and actor ids). Test: `PdfModelTests.isSameIgnoresRegeneratedEntryClocks` (red before).
 
 ### 7.13 The PDF block extractor budget exceeds the on-device context window by design
 - **Location:** `Modules/GeneratorRPG/BasicAI/Providers/PdfContentExtractor.swift:24-30, 108-135`, `BasicAI/Engine/FoundationModelInputLimiter.swift:14-24`, `PdfSummaryAnalyzer.swift:12-70`, `BasicAI/Model/PdfSummaryAnalysis.swift:25-31`
@@ -502,6 +514,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Dense pages fail with context overflow and are skipped (and, because of §5.22, silently).
 - **Action:** Size the per-page input to leave room for output using the model's context size and token counting, set `maximumResponseTokens` and a maximum count on sections, use one chars-per-token constant.
 - **Severity:** Medium (Likely; arithmetic from the module's own constants)
+- **Status 2026-11-23:** fixed. The default page budget is derived from the window: the page counts twice (prompt and reproduced answer) next to 900 tokens of overhead, so it is about 4,900 characters instead of 7,000; one `charactersPerToken` constant (3) and the window size live in `FoundationModelInputLimiter`; each page request sets `maximumResponseTokens` to the rest of the window. Test: `UntrustedPromptTextTests.extractorBudgetFitsTheWindow`. Not done: a maximum count on generated blocks.
 
 ### 7.14 Other performance Lows (grouped)
 - **Location:** `Modules/CoreRPG/Sheet/SheetRootView.swift:63` and `SheetRootModel+Selection.swift:161-190` (body walks the whole tree for the menu focus value); `Modules/CoreRPG/Links/ReferenceScanner.swift:27, 48`, `LinkBuilder.swift:48-50` (link scanners backtrack quadratically on long unterminated link text); `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:35-44, 1224-1234` (source parsed and hashed twice); `Modules/CoreRPG/EntryEditor/EntryEditorContent.swift:13`, `Buttons/InlineEditorView.swift:14`, `Modules/TableRPG/View/TableGenerationEntryRow.swift:6-23` (an `@Observable` allocated in `init` on every parent render); `Modules/PhotoRPG/Photo/InlineImporterView.swift:99-115` (PhotosPicker loads the whole original as `Data`, Known §7.8); `Modules/PdfRPG/Pdf/PdfBookmarkPage.swift:16-27` (every page label read on the main actor); `Sources/RPGShare/ItemProviderImporter.swift:19-31, 138-160` (thumbnail decoded on the main actor); `Modules/AudioRPG/Controller/AudioController.swift:152-236` (synchronous temp-file deletion on the main actor); `Modules/GameRPG/Table3D/GameBoard.swift:239-348` (fog recomposite redraws the full photo and replaces mesh and collider on every toggle); `Modules/RuleRPG/Model/RuleModel.swift:200-210, 307-308, 377-381` (`isSame` deep-compares the source payload)
@@ -509,6 +522,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Minor stalls on large inputs.
 - **Action:** Cache or hoist where noted; move the decodes off the main actor.
 - **Severity:** Low
+- **Status 2026-11-23:** partly fixed. The link scanner (`ReferenceScanner.parseLinks`) runs its pattern on one bounded window per `](scheme://` instead of the whole text; 80,000 unterminated labels took 292 s before and are linear now (test `ReferenceScannerTests.unterminatedLabelsAreLinear`, red before). `LinkBuilder.markdownLinkPattern` excludes `[` in labels and was not quadratic. Not changed: the other items (sheet focus walk, Foundry reader double parse — the reader already hands the parsed source on, per CODE_AUDIT_9 §7.3 —, `@Observable` in `init`, PhotosPicker data, bookmark page labels, share-extension thumbnail, audio temp-file deletion, fog recomposite, `RuleModel.isSame`): each needs a profile or a design decision.
 
 ## 8. SwiftUI / UI
 

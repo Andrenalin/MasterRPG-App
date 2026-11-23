@@ -342,7 +342,7 @@ private struct GameStatisticsDashboardContent: View {
         .refreshable {
             await model.repair()
         }
-        .task(id: model.configuration) {
+        .task(id: model.configuration.dataKey) {
             await model.reload()
         }
     }

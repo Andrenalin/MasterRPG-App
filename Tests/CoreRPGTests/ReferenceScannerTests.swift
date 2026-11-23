@@ -112,4 +112,18 @@ struct ReferenceScannerTests {
 
         #expect(links.tables.map(\.name) == ["Good"], "a link number must be digits")
     }
+
+    // CODE_AUDIT_28 §7.14: every `[` without a closing `]` scanned to the end of the text.
+    @Test("Long runs of unterminated link labels are scanned in linear time")
+    func unterminatedLabelsAreLinear() {
+        let text = String(repeating: "[a", count: 40_000) + " RPG://"
+        let clock = ContinuousClock()
+        var result = false
+        let elapsed = clock.measure {
+            result = ReferenceScanner.allUuidUrls(for: "RPG", in: text).tables.isEmpty
+            _ = text.withoutLink()
+        }
+        #expect(result)
+        #expect(elapsed < .seconds(2))
+    }
 }

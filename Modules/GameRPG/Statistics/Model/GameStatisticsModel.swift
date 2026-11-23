@@ -78,8 +78,7 @@ final class GameStatisticsModel: Sendable {
             do {
                 try await dataController.recoverInterruptedSessions(in: context)
                 await pruneShortSessions()
-                await reload()
-                await reportAchievements()
+                await reloadAndReportAchievements()
             } catch is CancellationError {
                 return
             } catch {
@@ -291,8 +290,7 @@ final class GameStatisticsModel: Sendable {
             self.activeSessionID = nil
             activeLocalParticipantID = nil
             await pruneShortSessions()
-            await reload()
-            await reportAchievements()
+            await reloadAndReportAchievements()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -310,7 +308,7 @@ final class GameStatisticsModel: Sendable {
                 direction: configuration.direction,
                 in: context
             )
-            let newSummary = statisticsController.summary(
+            let newSummary = await statisticsController.summaryOffMainActor(
                 from: dataSet,
                 configuration: configuration,
                 calendar: calendar
@@ -450,21 +448,43 @@ final class GameStatisticsModel: Sendable {
         defaults.set(data, forKey: DefaultsKey.dashboardConfiguration)
     }
 
-    private func reportAchievements() async {
-        guard let context, let achievementReporter else { return }
+    /// The reload and the achievements of a game start or end from one fetch of the whole history
+    /// (the dashboard range is cut from it in memory) instead of two. See CODE_AUDIT_28 §7.3.
+    func reloadAndReportAchievements(now: Date = .now, calendar: Calendar = .autoupdatingCurrent) async {
+        guard let context else { return }
+        await flushPendingEvents()
+        isLoading = true
+        defer { isLoading = false }
         do {
-            let dataSet = try await dataController.fetchDataSet(interval: nil, direction: nil, in: context)
-            var achievementConfiguration = GameStatisticsDashboardConfiguration.default
-            achievementConfiguration.dateRange = .allTime
-            let achievementSummary = statisticsController.summary(
-                from: dataSet,
-                configuration: achievementConfiguration,
-                calendar: .autoupdatingCurrent
+            let everything = try await dataController.fetchDataSet(interval: nil, direction: nil, in: context)
+            let interval = configuration.dateRange.interval(endingAt: now, calendar: calendar)
+            let newSummary = await statisticsController.summaryOffMainActor(
+                from: everything.filtered(interval: interval, direction: configuration.direction),
+                configuration: configuration,
+                calendar: calendar
             )
-            await achievementReporter(achievementSummary)
+            if summary != newSummary {
+                summary = newSummary
+            }
+            errorMessage = nil
+            await reportAchievements(from: everything)
+        } catch is CancellationError {
+            return
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func reportAchievements(from dataSet: GameStatisticsDataSet) async {
+        guard let achievementReporter else { return }
+        var achievementConfiguration = GameStatisticsDashboardConfiguration.default
+        achievementConfiguration.dateRange = .allTime
+        let achievementSummary = await statisticsController.summaryOffMainActor(
+            from: dataSet,
+            configuration: achievementConfiguration,
+            calendar: .autoupdatingCurrent
+        )
+        await achievementReporter(achievementSummary)
     }
 }
 

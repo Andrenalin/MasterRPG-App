@@ -10,6 +10,40 @@ import Testing
 @MainActor
 @Suite("Game statistics persistence")
 struct GameStatisticsDataControllerTests {
+    // CODE_AUDIT_28 §7.3: one fetch of everything serves the dashboard range and the achievements.
+    @Test("A range cut from the whole history equals fetching that range")
+    func filteredEqualsFetchedRange() async throws {
+        let store = try PersistentGameStatisticsTestStore()
+        let sut = GameStatisticsDataController()
+        let start = Date(timeIntervalSince1970: 1_704_067_200)
+        let participant = GameStatisticParticipantDraft.fixture()
+        for index in 0..<2 {
+            let sessionId = UUID()
+            let startedAt = start.addingTimeInterval(Double(index) * 40 * 86_400)
+            try await sut.beginSession(
+                .fixture(id: sessionId, startedAt: startedAt, localParticipantId: participant.participantId, participants: [participant]),
+                in: store.context
+            )
+            try await sut.recordEvents(
+                [(.fixture(id: UUID(), sessionId: sessionId, occurredAt: startedAt.addingTimeInterval(60), deduplicationKey: "e\(index)"), participant)],
+                in: store.context
+            )
+            try await sut.finishSession(id: sessionId, at: startedAt.addingTimeInterval(2_400), reason: .stopped, in: store.context)
+        }
+        let interval = DateInterval(start: start.addingTimeInterval(30 * 86_400), end: start.addingTimeInterval(60 * 86_400))
+
+        let everything = try await sut.fetchDataSet(interval: nil, direction: nil, in: store.context)
+        let fetched = try await sut.fetchDataSet(interval: interval, direction: nil, in: store.context)
+        let cut = everything.filtered(interval: interval, direction: nil)
+
+        #expect(everything.sessions.count == 2)
+        #expect(Set(cut.sessions.map(\.id)) == Set(fetched.sessions.map(\.id)))
+        #expect(Set(cut.events.map(\.id)) == Set(fetched.events.map(\.id)))
+        #expect(Set(cut.participants.map(\.sessionId)) == Set(fetched.participants.map(\.sessionId)))
+        #expect(cut.sessions.count == 1)
+        #expect(everything.filtered(interval: nil, direction: .incoming).events.isEmpty)
+    }
+
     @Test("session lifecycle persists once and excludes disconnected time")
     func persistsSessionLifecycle() async throws {
         // Given

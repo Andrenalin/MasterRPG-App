@@ -15,6 +15,21 @@ struct GameStatisticsRiskTests {
         try JSONDecoder().decode(GameStatisticsDashboardConfiguration.self, from: Data(json.utf8))
     }
 
+    // CODE_AUDIT_28 §7.4
+    @Test("Only the date range, granularity and direction change the data key")
+    func dataKeyIgnoresPresentationFields() {
+        var configuration = GameStatisticsDashboardConfiguration.default
+        let key = configuration.dataKey
+
+        configuration.sectionOrder.reverse()
+        configuration.hiddenSections = [.dice]
+        configuration.metric = .sessions
+        #expect(configuration.dataKey == key)
+
+        configuration.granularity = .month
+        #expect(configuration.dataKey != key)
+    }
+
     @Test("A saved dashboard from an older version keeps its values and defaults the rest")
     func olderConfigurationKeepsDefaults() throws {
         let configuration = try decode(#"{"granularity":2}"#)

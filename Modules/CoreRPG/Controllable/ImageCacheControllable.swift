@@ -257,7 +257,43 @@ extension ImageCacheControllable {
 /// lifetime (every full-resolution image ever displayed stayed resident). See CODE_AUDIT_9 §7.1.
 @MainActor @Observable
 public final class ObservableImageCache: Sendable {
-    public init() {}
+    /// `imageByteLimit` bounds the decoded bitmaps of the full images next to the count: a 12 MP
+    /// photo is about 48 MB and a decode can reach 200 MB, so 120 of them would be gigabytes.
+    /// See CODE_AUDIT_28 §7.1.
+    public init(imageByteLimit: Int = 384 * ByteUnit.mebibyte) {
+        self.imageByteLimit = imageByteLimit
+#if !os(macOS)
+        memoryWarningTask = Task { @MainActor [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: UIApplication.didReceiveMemoryWarningNotification) {
+                self?.trimImages()
+            }
+        }
+#endif
+    }
+
+#if !os(macOS)
+    @ObservationIgnored private var memoryWarningTask: Task<Void, Never>?
+
+    isolated deinit {
+        memoryWarningTask?.cancel()
+    }
+#endif
+
+    private let imageByteLimit: Int
+    private var imageCosts: [UUID: Int] = [:]
+    private var imageBytes = 0
+
+    /// Drops every full image (thumbnails stay): what a memory warning does. The views load the
+    /// ones still on screen again.
+    public func trimImages() {
+        imageCache.removeAll()
+        imageOrder.removeAll()
+        imageCosts.removeAll()
+        imageBytes = 0
+    }
+
+    /// The decoded bytes the full images hold.
+    var cachedImageBytes: Int { imageBytes }
 
     /// Full images are the expensive ones (decompressed, uncapped resolution), so this stays
     /// small; thumbnails are cheap and shown in list rows, so a larger bound is fine.
@@ -284,7 +320,13 @@ public final class ObservableImageCache: Sendable {
         }
         touch(itemId, in: &imageOrder, isNew: imageCache[itemId] == nil)
         imageCache[itemId] = image
-        evictLeastRecentlyUsed(cache: &imageCache, order: &imageOrder, limit: Self.imageCountLimit)
+        let cost = ImageCacheController.bitmapCost(of: image)
+        imageBytes += cost - (imageCosts.updateValue(cost, forKey: itemId) ?? 0)
+        // Over the count or the byte budget the least recently used images leave, but never the
+        // one just set.
+        while imageOrder.count > 1, imageOrder.count > Self.imageCountLimit || imageBytes > imageByteLimit {
+            removeImage(for: imageOrder[0])
+        }
     }
 
     public func setThumbnail(_ image: AKImage?, for itemId: UUID) {
@@ -300,6 +342,7 @@ public final class ObservableImageCache: Sendable {
     public func removeImage(for itemId: UUID) {
         imageCache.removeValue(forKey: itemId)
         imageOrder.removeAll { $0 == itemId }
+        imageBytes -= imageCosts.removeValue(forKey: itemId) ?? 0
     }
 
     public func removeThumbnail(for itemId: UUID) {

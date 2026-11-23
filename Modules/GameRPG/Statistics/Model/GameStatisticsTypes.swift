@@ -239,6 +239,18 @@ struct GameStatisticsDashboardConfiguration: Codable, Hashable, Sendable {
 
     static let `default` = GameStatisticsDashboardConfiguration()
 
+    /// The fields the loaded data depends on. The dashboard reloads when this changes, not when
+    /// a section is reordered, hidden or the metric switched. See CODE_AUDIT_28 §7.4.
+    struct DataKey: Hashable, Sendable {
+        let dateRange: GameStatisticsDateRange
+        let granularity: GameStatisticsGranularity
+        let direction: GameStatisticDirection?
+    }
+
+    var dataKey: DataKey {
+        DataKey(dateRange: dateRange, granularity: granularity, direction: direction)
+    }
+
     private enum CodingKeys: String, CodingKey {
         case dateRange, granularity, metric, direction, sectionOrder, hiddenSections
     }
@@ -425,6 +437,23 @@ struct GameStatisticsDataSet: Sendable {
     let events: [GameStatisticEventSnapshot]
 
     static let empty = GameStatisticsDataSet(sessions: [], participants: [], events: [])
+
+    /// What `fetchDataSet(interval:direction:)` would load, taken from an already loaded set, so
+    /// one fetch of everything serves the dashboard range and the achievements.
+    /// See CODE_AUDIT_28 §7.3.
+    func filtered(interval: DateInterval?, direction: GameStatisticDirection?) -> GameStatisticsDataSet {
+        let keptSessions = interval.map { interval in
+            sessions.filter { $0.startedAt >= interval.start && $0.startedAt <= interval.end }
+        } ?? sessions
+        let keptIds = Set(keptSessions.map(\.id))
+        return GameStatisticsDataSet(
+            sessions: keptSessions,
+            participants: participants.filter { keptIds.contains($0.sessionId) },
+            events: events.filter { event in
+                keptIds.contains(event.sessionId) && (direction.map { event.direction == $0 } ?? true)
+            }
+        )
+    }
 }
 
 struct GameStatisticTimePoint: Identifiable, Hashable, Sendable {

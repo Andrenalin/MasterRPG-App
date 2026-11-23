@@ -32,6 +32,40 @@ private extension ReferenceScanner {
     static let numberPattern = "[0-9]+"
     static let commandPattern = "[a-zA-Z]+"
     
+    /// The text around each `](scheme://` that can hold a link: from after the previous unescaped
+    /// `]` (a label has none) to the first `)` after the marker. The windows do not overlap, so
+    /// all of them together are scanned once.
+    static func linkWindows(for scheme: String, in content: String) -> [String] {
+        let marker = "](\(scheme)://"
+        let scalars = content.unicodeScalars
+        var windows: [String] = []
+        var searchStart = content.startIndex
+        while let found = content.range(of: marker, range: searchStart..<content.endIndex) {
+            var start = found.lowerBound
+            while start > searchStart {
+                let previous = scalars.index(before: start)
+                if scalars[previous] == "]", !isEscaped(previous, in: scalars) { break }
+                start = previous
+            }
+            let end = content.range(of: ")", range: found.upperBound..<content.endIndex)?.upperBound ?? content.endIndex
+            windows.append(String(content[start..<end]))
+            searchStart = end
+        }
+        return windows
+    }
+
+    /// Whether the scalar at `index` follows an odd number of backslashes.
+    static func isEscaped(_ index: String.Index, in scalars: String.UnicodeScalarView) -> Bool {
+        var count = 0
+        var current = index
+        while current > scalars.startIndex {
+            current = scalars.index(before: current)
+            guard scalars[current] == "\\" else { break }
+            count += 1
+        }
+        return count % 2 == 1
+    }
+
     /// One link match; `entry`/`command` are set when the pattern has those segments.
     struct LinkMatch {
         let name: String
@@ -58,7 +92,11 @@ private extension ReferenceScanner {
             groups.append("Command")
         }
         pattern += "\\)"
-        let results = RegularExpressionParser.parse(content, with: pattern, extract: groups)
+        // One bounded window per `](scheme://` instead of the whole text: a label may contain `[`,
+        // so every unterminated `[` of a long text scanned to its end. See CODE_AUDIT_28 §7.14.
+        let results = linkWindows(for: scheme, in: content).flatMap {
+            RegularExpressionParser.parse($0, with: pattern, extract: groups)
+        }
         return stride(from: 0, to: results.count - groups.count + 1, by: groups.count).compactMap { start in
             let match = LinkMatch(
                 name: LinkBuilder.unescapedLabel(results[start]),

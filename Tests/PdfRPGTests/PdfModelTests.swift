@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
+import CoreGraphics
 import CoreRPG
 import Foundation
 import Testing
@@ -27,6 +28,22 @@ struct PdfModelTests {
         let merged = sut.merge(a)
         #expect(merged == sut)
         #expect(merged != d)
+    }
+
+    // CODE_AUDIT_28 §7.12: `==` on an entry includes its CRDT clocks and actor ids, which a
+    // rebuild from Core Data regenerates, so a bookmarked PDF never counted as unchanged.
+    @Test func isSameIgnoresRegeneratedEntryClocks() async throws {
+        let entryId = UUID()
+        let original = PdfEntryModel(id: entryId, name: "Intro", content: "Text", pageNumber: "1", bounds: .zero)
+        let rebuilt = PdfEntryModel(id: entryId, name: "Intro", content: "Text", pageNumber: "1", bounds: .zero)
+        let local = PdfModel(id: UUID(), name: "Book", entries: [original])
+        let remote = local.copy()
+        remote.entries_ = CRDTDataUpdate(wrappedValue: [rebuilt], update: local.entries_.$update)
+
+        #expect(local.isSame(remote))
+
+        remote.entries_ = CRDTDataUpdate(wrappedValue: [PdfEntryModel(id: entryId, name: "Other", content: "Text", pageNumber: "1", bounds: .zero)], update: local.entries_.$update)
+        #expect(!local.isSame(remote))
     }
 }
 #endif

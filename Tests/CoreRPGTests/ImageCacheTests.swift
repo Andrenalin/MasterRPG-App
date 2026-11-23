@@ -197,6 +197,37 @@ struct ImageCacheTests {
         #expect(cache.image(for: ids[1]) == nil, "the least recently used one left instead")
     }
 
+    // CODE_AUDIT_28 §7.1
+    @Test("The observable image cache is bounded by bytes, keeps the newest image and trims on demand")
+    @MainActor
+    func observableImageByteBudget() {
+        let side = 100
+        let cost = ImageCacheController.bitmapCost(of: Self.image(side: side))
+        let cache = ObservableImageCache(imageByteLimit: cost * 2 + 1)
+        let ids = (0..<4).map { _ in UUID() }
+
+        for id in ids { cache.setImage(Self.image(side: side), for: id) }
+
+        #expect(cache.image(for: ids[0]) == nil)
+        #expect(cache.image(for: ids[1]) == nil)
+        #expect(cache.image(for: ids[2]) != nil)
+        #expect(cache.image(for: ids[3]) != nil)
+        #expect(cache.cachedImageBytes == cost * 2)
+
+        // A thumbnail with the same id does not touch the image's accounting.
+        cache.setThumbnail(Self.image(side: 2), for: ids[3])
+        cache.reset(for: ids[3], includeImage: false)
+        #expect(cache.cachedImageBytes == cost * 2)
+
+        cache.trimImages()
+        #expect(cache.image(for: ids[3]) == nil)
+        #expect(cache.cachedImageBytes == 0)
+
+        let huge = ObservableImageCache(imageByteLimit: 1)
+        huge.setImage(Self.image(side: side), for: ids[0])
+        #expect(huge.image(for: ids[0]) != nil, "a single image over the budget is still kept")
+    }
+
     @Test("The observable cache keeps 400 thumbnails, separately from the images")
     @MainActor
     func observableThumbnailsHaveTheirOwnLimit() {

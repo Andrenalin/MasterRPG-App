@@ -103,6 +103,17 @@ struct GameStatisticsController: Sendable {
         )
     }
 
+    /// `summary` off the caller's actor: the aggregation walks every session and event.
+    /// See CODE_AUDIT_28 §7.3.
+    @concurrent
+    func summaryOffMainActor(
+        from dataSet: GameStatisticsDataSet,
+        configuration: GameStatisticsDashboardConfiguration,
+        calendar: Calendar = .autoupdatingCurrent
+    ) async -> GameStatisticsSummary {
+        summary(from: dataSet, configuration: configuration, calendar: calendar)
+    }
+
     func summary(
         from dataSet: GameStatisticsDataSet,
         configuration: GameStatisticsDashboardConfiguration,
