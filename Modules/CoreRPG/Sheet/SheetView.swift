@@ -102,8 +102,16 @@ private struct SheetNameRowView: View {
         } label: {
             SheetNameRowLabelView(rootModel: rootModel, sheetModel: sheetModel, isEditor: isEditor, shareResult: shareResult)
                 .contentShape(.rect)
+                // The hover highlight of the plain button follows the label's shape, which is a capsule by
+                // default on visionOS; the rows are rounded rectangles.
+                .contentShape(.hoverEffect, .rect(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
+#if os(visionOS)
+        // The hover highlight of a plain button takes its shape from the border shape (a capsule by
+        // default); the rows are rounded rectangles.
+        .buttonBorderShape(.roundedRectangle(radius: 8))
+#endif
         .focused(focusedEntryId, equals: sheetModel.id)
         // Covers focus reaching this row without going through the tap action (e.g. Tab-key
         // navigation onto it, or the keyboard-arrow sync in SheetRootView) — keeps focusId and

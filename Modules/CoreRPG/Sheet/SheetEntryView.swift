@@ -55,8 +55,16 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 Button(action: performPrimaryAction) {
                     SheetEntryRowContentView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult, isEditTypePickerPresented: $isEditTypePickerPresented)
                         .contentShape(.rect)
+                        // The hover highlight of the plain button follows the label's shape, which is a capsule by
+                        // default on visionOS; the rows are rounded rectangles.
+                        .contentShape(.hoverEffect, .rect(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
+#if os(visionOS)
+                // The hover highlight of a plain button takes its shape from the border shape (a capsule by
+                // default); the rows are rounded rectangles.
+                .buttonBorderShape(.roundedRectangle(radius: 8))
+#endif
                 .focused(focusedEntryId, equals: entryModel.id)
                 // Covers focus reaching this row without going through `performPrimaryAction()`
                 // (e.g. Tab-key navigation onto it, or the keyboard-arrow sync in
