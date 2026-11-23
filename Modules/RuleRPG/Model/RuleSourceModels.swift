@@ -72,15 +72,21 @@ public enum RuleEntryKind: String, Codable, CaseIterable, Equatable, Hashable, S
     case effect
     case source
 
+    /// Looked up in the module's own catalog: a bare `LocalizedStringResource` uses the main
+    /// bundle, so the picker stayed English on German and Thai devices. See CODE_AUDIT_28 §8.2.
+    private static func title(_ key: String.LocalizationValue) -> LocalizedStringResource {
+        LocalizedStringResource(key, bundle: .forClass(Resources.self))
+    }
+
     public var localizedTitle: LocalizedStringResource {
         switch self {
-        case .text: "Sections"
-        case .group: "Groups"
-        case .value: "Values"
-        case .reference: "References"
-        case .embeddedRule: "Embedded Rules"
-        case .effect: "Effects"
-        case .source: "Source"
+        case .text: Self.title("Sections")
+        case .group: Self.title("Groups")
+        case .value: Self.title("Values")
+        case .reference: Self.title("References")
+        case .embeddedRule: Self.title("Embedded Rules")
+        case .effect: Self.title("Effects")
+        case .source: Self.title("Source")
         }
     }
 }

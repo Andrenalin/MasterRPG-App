@@ -38,6 +38,8 @@ public struct ItemHeaderEditorView: View {
     @State private var tags: [String]
     /// Triggers the save haptic (`sensoryFeedback` fires when its trigger changes).
     @State private var saveCount = 0
+    /// A second tap (or Return) during the settle delay before the dismissal would save again. See CODE_AUDIT_28 §8.4.
+    @State private var hasSaved = false
 
     private var isNameValid: Bool {
         !String(attributedName.characters).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -78,6 +80,8 @@ public struct ItemHeaderEditorView: View {
     }
 
     private func saveChanges() {
+        guard !hasSaved else { return }
+        hasSaved = true
         let trimmedName = String(attributedName.characters).trimmingCharacters(in: .whitespacesAndNewlines)
         editControllable.update(
             id: model.id,

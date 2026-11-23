@@ -8,6 +8,7 @@ struct PlayerOverlayMenu: View {
     let playerController: PlayerController
 
     @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -29,7 +30,7 @@ struct PlayerOverlayMenu: View {
                 PlayerSideMenu(root: root)
                     .offset(x: gameScreenModel.isInlineSidebarVisible ? -gameScreenModel.inlineMainOverlayWidth : 0)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
-                    .animation(.default, value: gameScreenModel.inlineMainOverlayWidth)
+                    .animation(reduceMotion ? nil : .default, value: gameScreenModel.inlineMainOverlayWidth)
             }
 #else
             EmptyView()

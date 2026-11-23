@@ -518,6 +518,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** "Modifying state during view update" faults, an extra invalidation pass, and tree rebuilds triggered by evaluation order.
 - **Action:** Port the Character pattern, ideally as a shared CoreRPG helper.
 - **Severity:** Medium (Likely; the runtime warning was not observed)
+- **Status 2026-11-23:** fixed. The resolution moved into the shared `ItemRootControllable.resolveGameSheetRootModel(for:)` (CoreRPG); `AdventureSheet` resolves it in `onChange(of: model.id, initial: true)` into `@State` like the Character twin (which now calls the same helper), and `body` only reads. The old `AdventureRootModel.gameSheetRootModel(for:)` is gone. The panel is empty for the first render when no model is stored yet. Tests: `GameSheetRootModelTests` (stores, reuses and moves the model; a read does not create it). Not red-verified: the helper is new API.
 
 ### 8.2 Rule entry-kind titles and source-metadata labels ignore the module bundle
 - **Location:** `Modules/RuleRPG/Model/RuleSourceModels.swift:75-85`, `Modules/RuleRPG/View/RuleSourceDisclosureView.swift:55-72`, used by `RuleQuickEntryEditor.swift:160`
@@ -525,6 +526,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** The section-kind picker and the whole "Rule Source" grid are English on German and Thai devices.
 - **Action:** Pass the module bundle for the resources and the row titles.
 - **Severity:** Medium (Verified by the agent against the catalog)
+- **Status 2026-11-23:** fixed. `RuleEntryKind.localizedTitle` builds its resources with the module bundle and the metadata row titles use `Text(title, bundle: .ruleModule)`. Test: `RuleLocalizationTests` (German titles; red before).
 
 ### 8.3 Hard-coded padding, spacing and fixed sizes (about 250 sites)
 - **Location:** `Modules/CoreRPG/LGViews/ItemHeaderEditorView.swift:253-419`, `CoreRPG/FileViews/SingleReview*Row*.swift` (about 78 sites), `Modules/GameRPG/GameViews/GameRootViewer.swift:175-176`, `GameViews/GameSidePanelModifier.swift:207, 214`, `Modules/SpaceRPG/Record/*` (about 35), `Modules/PdfRPG` (about 35), `Modules/AudioRPG/Audio/*` (27), `Modules/PhotoRPG`/`TableRPG` (35), `Sources/DiceRollerWidget/DiceRollerWidgetView.swift`, `Sources/RPGShare/SharingView.swift`, `Modules/GameRPG/Table3D/GameTableSeatPanels.swift:39, 111, 153, 217`
@@ -532,6 +534,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Style drift and Dynamic Type friction; no functional bug.
 - **Action:** Replace with defaults or shared theme tokens as files are touched.
 - **Severity:** Low
+- **Status 2026-11-23:** not changed (style sweep, to be done as files are touched, as the audit says).
 
 ### 8.4 Other SwiftUI Lows (grouped)
 - **Location:** `Modules/GeneratorRPG/View/SheetAIAssistantContext.swift:42-55`, `Root/GeneratorRootModel.swift:~139-178` (controllers created, reordered and torn down inside a view `body`); `Modules/CoreRPG/LGViews/CloudFolderScanView.swift:83-115` ("Cancel" offered while the sync keeps running); `LGViews/ItemHeaderEditorView.swift:80-100, 298-309` (can save twice); `Modules/CoreRPG/Navigator/Views/ManagedPresentationView.swift:73-77` (registers its navigator from `body`; a swiped sheet leaves `isPresenting` true, Known §8.2); `Modules/GameRPG/GameViews/MasterOverlayMenu.swift:30-34`, `PlayerOverlayMenu.swift:31-35` (macOS side-menu animation ignores Reduce Motion); `Modules/GameRPG/Table3D/GameDiceResultPopover.swift:35-37` (reads TabletopKit's seat in `body`, not observable); `Modules/GameRPG/Table3D/GameTableView+PlatformFlat.swift:63-147`, `GameTableView+VisionOS.swift:51-73` (accessibility subscriptions dropped on disappear); `Modules/GeneratorRPG/BasicAI/Model/PdfSummaryAnalysis.swift:47-49` (section id can collide in `ForEach`); `Modules/AudioRPG/Controller/AudioPlayerSession.swift:258-282` (resume bypasses the session queue; observer list never cleared)
@@ -539,6 +542,7 @@ Counts: Critical 0 · High 1 · Medium 52 · Low 17 grouped findings (about 115 
 - **Why:** Occasional wrong UI state or missed accessibility updates.
 - **Action:** Move work out of `body`, guard double actions, honour Reduce Motion, keep subscriptions for the view's lifetime.
 - **Severity:** Low
+- **Status 2026-11-23:** partly fixed. Fixed: audio session observers are cancelled and cleared before a new registration, so a second `initSession()` no longer doubles every notification (test `initialisingTwiceHandlesANotificationOnce`, red before); `ItemHeaderEditorView` saves once; Cancel in `CloudFolderScanView` is disabled while the sync runs; the macOS side-menu animation honours Reduce Motion (Master and Player); `SummaryPdfUpdateView` lists sections by offset so equal heading + page no longer collide (`PdfSection.id` itself unchanged). The last three have no test. Not changed: controllers created in `body` (`SheetAIAssistantContext`, `GeneratorRootModel`), `ManagedPresentationView` registration, `GameDiceResultPopover` seat read, the accessibility subscriptions, and the audio resume path bypassing the session queue — each needs a design change or device verification.
 
 ## 9. Dead code / duplication / refactor
 

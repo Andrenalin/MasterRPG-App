@@ -198,6 +198,9 @@ private extension AudioPlayerSession {
     /// `removeAllSessionObservers()`. See CODE_AUDIT_20 §4.3.
     @MainActor
     func registerSessionNotifications() {
+        // A second registration would leave the first observers running next to the new ones,
+        // so every notification was handled twice. See CODE_AUDIT_28 §8.4.
+        removeAllSessionObservers()
         let center = NotificationCenter.default
         let session = audioSession
         var observers: [Task<Void, Never>] = []
@@ -279,5 +282,6 @@ private extension AudioPlayerSession {
     @MainActor
     func removeAllSessionObservers() {
         model.audioSessionObservers.forEach { $0.cancel() }
+        model.reset(audioSessionObservers: [])
     }
 }

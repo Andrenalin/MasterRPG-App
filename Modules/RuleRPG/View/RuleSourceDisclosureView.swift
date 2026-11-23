@@ -59,7 +59,7 @@ private struct RuleSourceMetadataRow: View {
     var body: some View {
         if !value.isEmpty {
             GridRow {
-                Text(title)
+                Text(title, bundle: .ruleModule)
                     .foregroundStyle(.secondary)
 #if os(tvOS)
                 Text(verbatim: value)

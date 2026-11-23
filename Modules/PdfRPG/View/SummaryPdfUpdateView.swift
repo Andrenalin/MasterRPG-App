@@ -80,7 +80,7 @@ public struct SummaryPdfUpdateView: View {
                     }
 
                     if selectedProperties.applySections {
-                        ForEach(content.sections) { section in
+                        ForEach(content.sections.enumerated(), id: \.offset) { _, section in
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text(verbatim: section.heading)

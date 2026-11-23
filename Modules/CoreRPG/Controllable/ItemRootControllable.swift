@@ -39,6 +39,30 @@ public protocol ItemRootControllable: Sendable {
 }
 
 public extension ItemRootControllable {
+    /// The live game view's persistent sheet slot (`ItemEditorModel.gameSheetRootModel`): the
+    /// stored instance moved to `itemId`, or a new one stored for the next selection and
+    /// reappearance. It mutates observable state, so a view calls it from `onChange`, never from
+    /// `body`. `isGameEditor: true`: edits made in the game persist like the editor's. Cleared by
+    /// the module's `GameController.resetGameState()` when the game ends. `nil` while the root has
+    /// no root manager. See CODE_AUDIT_28 §8.1.
+    @MainActor func resolveGameSheetRootModel(for itemId: UUID) -> SheetRootModel? {
+        if let existing = editControllable.editorModel.gameSheetRootModel {
+            existing.reset(itemId: itemId)
+            return existing
+        }
+        guard let rootManager else { return nil }
+        let created = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: linkControllable,
+            sheetControllable: sheetControllable,
+            itemId: itemId,
+            isEditor: false,
+            isGameEditor: true
+        )
+        editControllable.editorModel.gameSheetRootModel = created
+        return created
+    }
+
     var searchModel: SearchModel { folderListControllable.searchModel }
     var rootManager: RootManager? { rootController.rootManager }
     var generationControllable: (any ItemGenerationControllable)? {

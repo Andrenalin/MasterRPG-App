@@ -50,6 +50,22 @@ struct AudioSessionStateMachineTests {
         return session
     }
 
+    // CODE_AUDIT_28 §8.4
+    @Test("Initialising the session again replaces the observers instead of doubling them")
+    func initialisingTwiceHandlesANotificationOnce() async throws {
+        let spy = DelegateSpy()
+        let session = makeSession(spy)
+        await session.waitUntilConfigured()
+        session.initSession()
+        await session.waitUntilConfigured()
+
+        post(interruption: .began)
+
+        #expect(await waitUntil { spy.beginCalls >= 1 })
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(spy.beginCalls == 1)
+    }
+
     @Test("An interruption that begins asks the delegate once and the session has to be activated again")
     func interruptionBegins() async {
         let spy = DelegateSpy()

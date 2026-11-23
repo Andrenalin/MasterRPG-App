@@ -103,38 +103,8 @@ private struct ReaderSheetView: View {
             resolveGameSheetRootModel()
         }
     }
-
-    /// The live game view's persistent sheet slot (`ItemEditorModel.gameSheetRootModel`)
-    /// — only ever needed, and so only ever created, while an actual game view
-    /// is on screen. Reuses the stored instance (moving it to `model.id` if the
-    /// player switched characters) or creates it here, seeded with the real
-    /// `model.id` directly rather than a throwaway placeholder, and stores it
-    /// back for the next selection/reappearance to reuse. Cleared again in
-    /// `GameController.resetGameState()` when the game ends.
-    ///
-    /// `isGameEditor: true` — unlike a typical live game view, character edits
-    /// made here (add/remove/move an entry, etc.) are meant to persist just
-    /// like the standalone editor's, not stay memory-only for the session; see
-    /// `SheetRootModel.persistsEdits`.
     private func resolveGameSheetRootModel() {
-        if let existing = root.editController.editorModel.gameSheetRootModel {
-            existing.reset(itemId: model.id)
-            resolvedGameSheetRootModel = existing
-            return
-        }
-        guard let rootManager = root.rootManager else {
-            preconditionFailure("ViewerRootView requires ItemRootController.rootManager to be set before presentation.")
-        }
-        let created = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: root.rootController.linkControllable,
-            sheetControllable: root.rootController.sheetControllable,
-            itemId: model.id,
-            isEditor: false,
-            isGameEditor: true
-        )
-        root.editController.editorModel.gameSheetRootModel = created
-        resolvedGameSheetRootModel = created
+        resolvedGameSheetRootModel = root.resolveGameSheetRootModel(for: model.id)
     }
 }
 

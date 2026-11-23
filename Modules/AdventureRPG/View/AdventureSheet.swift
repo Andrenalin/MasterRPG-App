@@ -23,22 +23,37 @@ struct AdventureSheet: View {
 
     @Environment(AdventureRootModel.self) private var root
 
-    @ViewBuilder
+    /// The game view's sheet model, resolved in `onChange` and only read by `body`: resolving it
+    /// in `body` wrote observable state during the view update, twice per pass.
+    /// See CODE_AUDIT_28 §8.1 and the Character twin.
+    @State private var resolvedGameSheetRootModel: SheetRootModel?
+
     var body: some View {
+        Group {
 #if os(tvOS)
-        ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
+            ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction, gameSheetRootModel: nil)
 #else
-        if configuration.isGame {
-            ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
-                .sheetAIAssistant(
-                    generatorRoot: root.generatorRoot,
-                    rootModel: root.gameSheetRootModel(for: model.id),
-                    module: root.configurable.module
-                )
-        } else {
-            ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
-        }
+            if configuration.isGame {
+                ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction, gameSheetRootModel: currentGameSheetRootModel)
+                    .sheetAIAssistant(
+                        generatorRoot: root.generatorRoot,
+                        rootModel: currentGameSheetRootModel,
+                        module: root.configurable.module
+                    )
+            } else {
+                ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction, gameSheetRootModel: nil)
+            }
 #endif
+        }
+        .onChange(of: model.id, initial: true) {
+            guard configuration.isGame else { return }
+            resolvedGameSheetRootModel = root.resolveGameSheetRootModel(for: model.id)
+        }
+    }
+
+    /// A plain read: the model resolved for this selection, or the stored one on the first render.
+    private var currentGameSheetRootModel: SheetRootModel? {
+        resolvedGameSheetRootModel ?? root.editController.editorModel.gameSheetRootModel
     }
 }
 
@@ -46,6 +61,7 @@ private struct ReaderSheetView: View {
     let model: AdventureModel
     let configuration: ViewerConfiguration
     let dismissAction: (() -> Void)?
+    let gameSheetRootModel: SheetRootModel?
 
     @Environment(AdventureRootModel.self) private var root
 
@@ -58,14 +74,19 @@ private struct ReaderSheetView: View {
     // selection would discard that reuse.
     var body: some View {
         if configuration.isGame {
-            TableRootSheet(
-                root: root.rootController,
-                itemId: model.id,
-                module: root.config.module,
-                configuration: configuration,
-                dismissAction: dismissAction,
-                externalSheetRootModel: root.gameSheetRootModel(for: model.id)
-            )
+            if let gameSheetRootModel {
+                TableRootSheet(
+                    root: root.rootController,
+                    itemId: model.id,
+                    module: root.config.module,
+                    configuration: configuration,
+                    dismissAction: dismissAction,
+                    externalSheetRootModel: gameSheetRootModel
+                )
+            } else {
+                // The model is resolved after the first render when none was stored yet.
+                Color.clear
+            }
         } else {
             TableRootSheet(
                 root: root.rootController,
@@ -76,42 +97,6 @@ private struct ReaderSheetView: View {
             )
             .id(model.id)
         }
-    }
-}
-
-private extension AdventureRootModel {
-    /// The live game view's persistent sheet slot (`ItemEditorModel.gameSheetRootModel`)
-    /// — only ever needed, and so only ever created, while an actual game view
-    /// is on screen. Reuses the stored instance (moving it to `itemId` if the
-    /// player switched selection) or creates it here, seeded with the real
-    /// `itemId` directly rather than a throwaway placeholder, and stores it
-    /// back for the next selection/reappearance to reuse. Cleared again in
-    /// `GameController.resetGameState()` when the game ends.
-    ///
-    /// `isGameEditor: true` — unlike a typical live game view, Adventure edits
-    /// made here are meant to persist just like the standalone editor's, not
-    /// stay memory-only for the session; see `SheetRootModel.persistsEdits`.
-    ///
-    /// Was duplicated verbatim between `AdventureSheet` and `ReaderSheetView`
-    /// — see CODE_AUDIT_13 §9.5.
-    func gameSheetRootModel(for itemId: UUID) -> SheetRootModel {
-        if let existing = editController.editorModel.gameSheetRootModel {
-            existing.reset(itemId: itemId)
-            return existing
-        }
-        guard let rootManager else {
-            preconditionFailure("AdventureSheet requires ItemRootController.rootManager to be set before presentation.")
-        }
-        let created = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: rootController.linkControllable,
-            sheetControllable: rootController.sheetControllable,
-            itemId: itemId,
-            isEditor: false,
-            isGameEditor: true
-        )
-        editController.editorModel.gameSheetRootModel = created
-        return created
     }
 }
 

@@ -86,6 +86,9 @@ struct CloudFolderScanView: View {
                     } label: {
                         Text(isFinished ? "Done" : "Cancel", bundle: .module)
                     }
+                    // The sync keeps running when the sheet is dismissed, so Cancel is not offered
+                    // while it runs. See CODE_AUDIT_28 §8.4.
+                    .disabled(isSyncing)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if case .found = model.phase {
@@ -105,6 +108,10 @@ struct CloudFolderScanView: View {
         .task {
             await model.scan(with: controller)
         }
+    }
+
+    private var isSyncing: Bool {
+        if case .syncing = model.phase { true } else { false }
     }
 
     private var isFinished: Bool {
