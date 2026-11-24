@@ -25,6 +25,7 @@ struct WeatherEffectLayers: View {
             if starOpacity > 0 {
                 StarsView()
                     .opacity(starOpacity)
+                    .allowsHitTesting(false)
             }
 
             if model.cloudThickness != .none {
@@ -34,6 +35,7 @@ struct WeatherEffectLayers: View {
                     bottomTint: WeatherViewer.cloudBottomStops.interpolated(amount: model.time)
                 )
                 .weatherLayerDepth(layerSpacing)
+                .allowsHitTesting(false)
             }
 
             LightningView(
@@ -54,6 +56,8 @@ struct WeatherEffectLayers: View {
                     strength: WeatherLimits.count(model.rainIntensity, in: WeatherLimits.rainIntensity)
                 )
                 .weatherLayerDepth(layerSpacing * 3)
+                // Drawn above the lightning: it must not take the tap meant for it.
+                .allowsHitTesting(false)
             }
         }
     }

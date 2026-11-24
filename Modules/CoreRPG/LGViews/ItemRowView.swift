@@ -38,11 +38,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
                     .font(.headline)
 
                 if listDisplayModel.displayMode == .regular {
-                    TagDisplayView(
-                        tags: model.tags,
-                        category: model.category,
-                        collectionCategory: root.itemControllable.collectionCategory
-                    )
+                    TagDisplayView(tags: model.tags)
                 }
                 GameShareView(root: root, itemId: model.id) {
                     actionBar

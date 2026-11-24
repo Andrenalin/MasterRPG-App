@@ -4,8 +4,6 @@ import SwiftUI
 
 struct TwoLineTagView: View {
     let tags: [String]
-    let category: ItemListCategory
-    let collectionCategory: ItemListCategory
 
     var body: some View {
         let half = tags.count / 2
@@ -13,9 +11,8 @@ struct TwoLineTagView: View {
         VStack(alignment: .leading, spacing: 4) {
             if half > 0 {
                 HStack(spacing: 4) {
-                    if category != .folder && category != collectionCategory {
-                        CategoryItemRow(category: category)
-                    }
+                    // Only tags: a category chip here showed "Entry" for items with more than four
+                    // tags and for no other item, and the detail view has no such chip.
                     TagItemRow(tags: Array(tags[0..<half]))
                 }
             }
@@ -30,6 +27,6 @@ struct TwoLineTagView: View {
 }
 
 #Preview("Many tags") {
-    TwoLineTagView(tags: ["Dungeon", "Encounter", "Important", "Combat", "Boss"], category: .folder, collectionCategory: .folder)
+    TwoLineTagView(tags: ["Dungeon", "Encounter", "Important", "Combat", "Boss"])
         .padding()
 }

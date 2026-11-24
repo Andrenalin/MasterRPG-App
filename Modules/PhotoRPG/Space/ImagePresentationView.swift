@@ -17,15 +17,21 @@ struct ImagePresentationView<Foreground: View>: View {
     /// `false` for the plain photo window: it then has no attachment and nothing to place.
     /// See CODE_AUDIT_24 §7.1.
     private let hasForeground: Bool
+    /// Called when the foreground is tapped; `nil` leaves it without a tap target. The tap is a
+    /// RealityKit input target over the photo, not a SwiftUI control in the attachment: the
+    /// attachment is a texture on a plane in the photo's scene, and a control in it does not
+    /// receive the pinch the scene's own entities take.
+    private let onForegroundTap: (() -> Void)?
 
-    init(model: ImagePresentationModel, foreground: Foreground) {
-        self.init(model: model, foreground: foreground, hasForeground: true)
+    init(model: ImagePresentationModel, foreground: Foreground, onForegroundTap: (() -> Void)? = nil) {
+        self.init(model: model, foreground: foreground, hasForeground: true, onForegroundTap: onForegroundTap)
     }
 
-    fileprivate init(model: ImagePresentationModel, foreground: Foreground, hasForeground: Bool) {
+    fileprivate init(model: ImagePresentationModel, foreground: Foreground, hasForeground: Bool, onForegroundTap: (() -> Void)? = nil) {
         self.model = model
         self.foreground = foreground
         self.hasForeground = hasForeground
+        self.onForegroundTap = onForegroundTap
     }
 
     @Environment(PhotoRootModel.self) private var root
@@ -92,6 +98,13 @@ struct ImagePresentationView<Foreground: View>: View {
                     }
                 }
             }
+            .gesture(
+                TapGesture().targetedToAnyEntity().onEnded { value in
+                    guard value.entity.name == ImagePresentationModel.foregroundTapTargetName else { return }
+                    onForegroundTap?()
+                },
+                including: onForegroundTap == nil ? .subviews : .all
+            )
             .task(id: model.selectedItemId) {
                 await model.createAndShowSpatial3DImage(root: root)
             }
@@ -194,6 +207,7 @@ struct ImagePresentationView<Foreground: View>: View {
             isPhotoChanging: model.spatial3DImageState != .generated
         )
         guard model.foregroundPlacementGate.needsPlacement(for: inputs) else { return }
+        placeForegroundTapTarget(on: foregroundEntity, extents: boundsInMeters.extents)
         let photoBounds = model.contentEntity.visualBounds(relativeTo: nil)
         let photoFront = photoBounds.isEmpty || !photoBounds.max.z.isFinite ? 0 : photoBounds.max.z
         let center = boundsInMeters.center
@@ -208,7 +222,26 @@ struct ImagePresentationView<Foreground: View>: View {
         }
     }
 
+    /// Keeps the tap target, a transparent plane over the whole window just in front of the
+    /// foreground, on the foreground entity and as large as the window.
+    private func placeForegroundTapTarget(on foregroundEntity: Entity, extents: SIMD3<Float>) {
+        guard onForegroundTap != nil, extents.x.isFinite, extents.y.isFinite, extents.x > 0, extents.y > 0 else { return }
+        let target = model.foregroundTapTarget
+        if target.parent !== foregroundEntity {
+            foregroundEntity.addChild(target)
+        }
+        // In front of the attachment's plane, so the pinch reaches the target first.
+        target.position = [0, 0, Self.foregroundTapTargetClearance]
+        target.components.set(CollisionComponent(shapes: [
+            .generateBox(width: extents.x, height: extents.y, depth: Self.foregroundTapTargetDepth),
+        ]))
+    }
+
     private static var foregroundAttachmentId: String { "ImagePresentationForeground" }
+    /// The tap target's distance in front of the foreground's plane, in meters.
+    private static var foregroundTapTargetClearance: Float { 0.005 }
+    /// The tap target's thickness, in meters.
+    private static var foregroundTapTargetDepth: Float { 0.002 }
     /// The gap between the photo's nearest point and the foreground, in meters.
     private static var foregroundClearance: Float { 0.01 }
     /// How far the photo's front may push the foreground out of the window, in meters.

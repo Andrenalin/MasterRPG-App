@@ -1058,7 +1058,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("TagDisplayView")
     func snapshotTagDisplayView() async throws {
         try await assertPreviewSnapshot("TagDisplayView") {
-            CoreRPG.TagDisplayView(tags: ["Dungeon", "Encounter", "Important"], category: .folder, collectionCategory: .folder)
+            CoreRPG.TagDisplayView(tags: ["Dungeon", "Encounter", "Important"])
                 .padding()
         }
     }
@@ -1080,7 +1080,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("TwoLineTagView")
     func snapshotTwoLineTagView() async throws {
         try await assertPreviewSnapshot("TwoLineTagView") {
-            CoreRPG.TwoLineTagView(tags: ["Dungeon", "Encounter", "Important", "Combat", "Boss"], category: .folder, collectionCategory: .folder)
+            CoreRPG.TwoLineTagView(tags: ["Dungeon", "Encounter", "Important", "Combat", "Boss"])
                 .padding()
         }
     }

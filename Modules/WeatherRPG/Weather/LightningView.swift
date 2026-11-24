@@ -57,11 +57,16 @@ struct LightningView: View {
             }
         }
         .buttonStyle(.plain)
+        // The canvas is transparent between strikes: the whole layer is the button's target.
+        .contentShape(.rect)
         .allowsHitTesting(isTapEnabled)
         .accessibilityHidden(true)
+        #if os(tvOS)
         // Hidden from accessibility, so it must not take focus either: on Apple TV the focus
         // engine could land on this invisible full-screen control. See CODE_AUDIT_20 §8.8.
+        // Not elsewhere: on visionOS an unfocusable control takes no gaze and pinch.
         .focusable(false)
+        #endif
         .ignoresSafeArea()
         .background {
             // Periodic auto-strike cadence, replacing a `Timer.publish`/Combine

@@ -32,6 +32,15 @@ enum Spatial3DImageState {
     var contentEntity: Entity = Entity()
     /// The view's foreground attachment, in front of the photo. Set by `ImagePresentationView`.
     @ObservationIgnored var foregroundEntity: Entity?
+    /// The invisible input target over the foreground that receives its taps. Added to the
+    /// foreground entity by `ImagePresentationView` when the foreground takes taps.
+    @ObservationIgnored let foregroundTapTarget: Entity = {
+        let target = Entity()
+        target.name = ImagePresentationModel.foregroundTapTargetName
+        target.components.set(InputTargetComponent())
+        return target
+    }()
+    static let foregroundTapTargetName = "ForegroundTapTarget"
     /// Keeps the foreground from being placed again on frames where nothing moved it.
     @ObservationIgnored var foregroundPlacementGate = ForegroundPlacementGate()
     var spatial3DImageState: Spatial3DImageState = .notGenerated

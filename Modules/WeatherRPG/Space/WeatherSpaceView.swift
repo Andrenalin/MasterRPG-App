@@ -41,15 +41,28 @@ private struct WeatherSpaceContent: View {
     let presentation: ImagePresentationModel
 
     @Environment(WeatherRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(\.isGamePlayer) private var isGamePlayer
+
+    @State private var incomingBolt: LightningBoltSpec?
+    /// Counts the game master's taps: `LightningView` starts a strike for each and shares it.
+    @State private var lightningTrigger = 0
 
     var body: some View {
         if let photoId = model.photoId {
-            root.photoRoot.viewController.spatialPhotoView(root: root.photoRoot, model: presentation) {
+            root.photoRoot.viewController.spatialPhotoView(
+                root: root.photoRoot,
+                model: presentation,
+                onForegroundTap: isGamePlayer ? nil : { lightningTrigger &+= 1 }
+            ) {
                 // In the photo's RealityKit scene, in front of the photo's depth: a SwiftUI
                 // overlay on the window's plane is covered by the spatial photo.
                 WeatherEffectLayers(
                     model: model,
-                    lightningTrigger: 0,
+                    lightningTrigger: lightningTrigger,
+                    incomingBolt: incomingBolt,
+                    onLightningTap: shareLightning,
+                    isLightningTapEnabled: !isGamePlayer,
                     layerSpacing: WeatherSpaceLayout.layerSpacing
                 )
                 .accessibilityHidden(true)
@@ -68,10 +81,21 @@ private struct WeatherSpaceContent: View {
                         presentation.selectedItemId = photoId
                     }
                 }
+                .onChange(of: root.receivedLightning) { _, received in
+                    guard let strike = received?.strike, strike.weatherId == model.id else { return }
+                    incomingBolt = strike.bolt
+                }
         } else {
             // Without a photo there is nothing to convert: the weather as the 2D viewer shows it.
             WeatherViewerContainer(model: model, useGame: true, isAnimating: .constant(true))
         }
+    }
+
+    /// Shares a strike a tap started with the players. A player's tap is turned off.
+    private func shareLightning(_ bolt: LightningBoltSpec) {
+        guard let networkActions else { return }
+        let strike = WeatherLightningStrike(weatherId: model.id, bolt: bolt)
+        networkActions.game(strike.networkData, .generic, nil)
     }
 }
 

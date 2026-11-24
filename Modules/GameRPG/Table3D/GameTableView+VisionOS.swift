@@ -156,7 +156,12 @@ public struct GameTableView: View {
                         GamePinPhotoPopover(game: loadedGame)
                     }
                     Attachment(id: TablePopoverKind.mapPhoto.attachmentId) {
+                        // A weather in this popover shares the game master's lightning taps:
+                        // it needs the game's actions and the role, which an attachment does
+                        // not inherit.
                         GameMapPhotoPopover(game: loadedGame)
+                            .environment(\.networkActions, networkActions)
+                            .environment(\.isGamePlayer, root.isGamePlayer)
                     }
                     // One per dice group: every seat's dice, and every guest's at the guest
                     // seat, can show a result at the same time.

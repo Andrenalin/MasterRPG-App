@@ -116,6 +116,9 @@ struct WindowUtilityList: Scene {
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
+#if os(visionOS)
+            .defaultSize(CGSize(width: 600, height: 800))
+#endif
 #if os(macOS) || os(visionOS)
             .defaultLaunchBehavior(.suppressed)
 #endif

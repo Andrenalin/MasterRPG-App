@@ -120,13 +120,15 @@ public extension ViewController {
     }
 
     /// The spatial photo with `foreground` in front of it, over the photo's whole area, such as
-    /// a weather. It stays in front of the photo's depth as the conversion runs.
+    /// a weather. It stays in front of the photo's depth as the conversion runs. The foreground
+    /// takes taps only when `onForegroundTap` is set; it then gets a RealityKit input target over the photo.
     @MainActor func spatialPhotoView<Foreground: View>(
         root: PhotoRootModel,
         model: ImagePresentationModel,
+        onForegroundTap: (() -> Void)? = nil,
         @ViewBuilder foreground: () -> Foreground
     ) -> some View {
-        ImagePresentationView(model: model, foreground: foreground())
+        ImagePresentationView(model: model, foreground: foreground(), onForegroundTap: onForegroundTap)
             .environment(root)
     }
 

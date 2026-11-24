@@ -4,12 +4,10 @@ import SwiftUI
 
 struct TagDisplayView: View {
     let tags: [String]
-    let category: ItemListCategory
-    let collectionCategory: ItemListCategory
 
     var body: some View {
         if tags.count > 4 {
-            TwoLineTagView(tags: tags, category: category, collectionCategory: collectionCategory)
+            TwoLineTagView(tags: tags)
         } else {
             HStack(spacing: 4) {
                 TagItemRow(tags: tags)
@@ -19,6 +17,6 @@ struct TagDisplayView: View {
 }
 
 #Preview("Tags") {
-    TagDisplayView(tags: ["Dungeon", "Encounter", "Important"], category: .folder, collectionCategory: .folder)
+    TagDisplayView(tags: ["Dungeon", "Encounter", "Important"])
         .padding()
 }
