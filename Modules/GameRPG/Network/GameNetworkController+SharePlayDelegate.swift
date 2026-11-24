@@ -93,6 +93,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
                 Logger.networking.debug("GameNetworkController: Rejected inbound SharePlay master message on the game-master device")
                 return
             }
+            sharePlayStore.bindMasterPlatform(hasTable: message.senderPlatform == .visionOS, participantId: id)
             await model.playerDelegate?.receivedSharePlay(message, participantId: id)
             return
         }

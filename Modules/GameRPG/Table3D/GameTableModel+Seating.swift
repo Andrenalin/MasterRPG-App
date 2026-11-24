@@ -54,6 +54,20 @@ extension GameTableModel {
 }
 
 extension GameTableModel {
+    /// Called every frame with the seat TabletopKit's snapshot gives the local player: turns the
+    /// table when that seat changes. It does not wait for `GameObserver.playerChangedSeats`, which
+    /// was never seen to run on a Vision Pro in a SharePlay session with a second Vision Pro (the
+    /// table stayed as it opened, the player's seat to the side). The turn itself is deferred:
+    /// this runs inside TabletopKit's frame callback.
+    func turnTableWhenLocalSeatChanged(to seat: TableSeatIdentifier?) {
+        guard seat != lastSnapshotLocalSeat else { return }
+        lastSnapshotLocalSeat = seat
+        guard let seat else { return }
+        Task { @MainActor [weak self] in
+            self?.orientTableToLocalSeat(seat: seat)
+        }
+    }
+
     /// Turns the table so the local seat is in front of the viewer, unless the system already
     /// does (`isLocalSeatPlacedBySystem`). Seat 0 (the master, and every player without a seat
     /// yet) leaves the table as it is. See `GameRenderer.orientTable(toSeatRotation:)`.
@@ -66,8 +80,9 @@ extension GameTableModel {
         let seatId = seat ?? lastOrientedSeat ?? localSeat
         let pose = seatId.flatMap { id in setup.seats.first(where: { $0.id == id })?.initialState.pose }
             ?? PlayerSeat.seatPoses[0]
-        let radians = isLocalSeatPlacedBySystem ? 0 : pose.rotation.radians
-        Logger.sharePlay.debug("Orienting the table: seat \(seatId.map { String(describing: $0) } ?? "none", privacy: .public), placed by system: \(self.isLocalSeatPlacedBySystem, privacy: .public), turn: \(radians, privacy: .public) rad")
+        let isPlacedBySystem = systemSeatPlacement?() ?? isLocalSeatPlacedBySystem
+        let radians = isPlacedBySystem ? 0 : pose.rotation.radians
+        Logger.sharePlay.debug("Orienting the table: seat \(seatId.map { String(describing: $0) } ?? "none", privacy: .public), placed by system: \(isPlacedBySystem, privacy: .public), turn: \(radians, privacy: .public) rad")
         renderer.orientTable(toSeatRotation: radians)
         // The panels stand beside the local seat's dice, so they move with the seat.
         updateSeatPanelPositions()

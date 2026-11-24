@@ -555,6 +555,23 @@ extension RPGSharePlayController {
         participantPlayers[participantId] = player
 #if os(visionOS)
         refreshSeatPlayerNames()
+        // Whether a nearby participant plays on Vision Pro decides whether the table is turned.
+        gameModel?.gameTableModel?.orientTableToLocalSeat()
+#endif
+    }
+
+    /// Records that the participant behind a message of the game master plays on Vision Pro (or
+    /// not). The master is no `participantPlayers` entry, but the table needs to know whether
+    /// another Vision Pro shares the session. See `currentSystemSeatPlacement()`.
+    func bindMasterPlatform(hasTable: Bool, participantId: UUID) {
+        guard participantsWithTable.contains(participantId) != hasTable else { return }
+        if hasTable {
+            participantsWithTable.insert(participantId)
+        } else {
+            participantsWithTable.remove(participantId)
+        }
+#if os(visionOS)
+        gameModel?.gameTableModel?.orientTableToLocalSeat()
 #endif
     }
 

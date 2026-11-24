@@ -58,11 +58,55 @@ extension RPGSharePlayController {
         trackSessionTask(remoteTask, key: Self.remoteParticipantSeatTaskKey)
     }
 
-    private func updateLocalSeatPlacement(of coordinator: SystemCoordinator) {
+    /// Whether the table must be left as it is, because the system seats this participant:
+    /// - another spatial Persona shares the space, or
+    /// - this participant has a seat of TabletopKit's template and another Vision Pro plays in
+    ///   the session. The system then puts the volume at that seat (the player stands at the
+    ///   seat's edge, the volume's handle to the side), even when the other Vision Pro's Persona
+    ///   is not spatial (`other spatial participants: 0` in the log). The app turning the table
+    ///   as well turned it twice: the seat's dice ended up at the player's side. Among iPad and
+    ///   Mac players the Vision Pro is alone and the volume stays as it opened, so the app turns
+    ///   the table itself, or
+    /// - another Vision Pro is physically nearby, where the volume is one object both look at.
+    /// The answer is sticky for the spatial case: a moment without a spatial remote participant
+    /// does not hand the turn to the app.
+    func currentSystemSeatPlacement() -> Bool {
+        guard let coordinator = systemCoordinator else { return false }
         let local = coordinator.localParticipantState
         let remoteSpatialCount = coordinator.remoteParticipantStates.values.count(where: \.isSpatial)
-        let placed = local.isSpatial && local.seat != nil && remoteSpatialCount > 0
-        Logger.sharePlay.debug("Local participant spatial: \(local.isSpatial, privacy: .public), system seat: \(local.seat != nil, privacy: .public), other spatial participants: \(remoteSpatialCount, privacy: .public) -> table turned by system: \(placed, privacy: .public)")
+        let sharesRoom = hasNearbyTableParticipant
+        let otherVisionPro = hasOtherTableParticipant
+        let placed = (local.isSpatial && remoteSpatialCount > 0)
+            || (local.isSpatial && local.seat != nil && otherVisionPro)
+            || (isLocalSeatPlacedBySystem && local.isSpatial && !sharesRoom)
+            || sharesRoom
+        Logger.sharePlay.debug("Local participant spatial: \(local.isSpatial, privacy: .public), system seat: \(local.seat != nil, privacy: .public), other spatial participants: \(remoteSpatialCount, privacy: .public), other Vision Pro: \(otherVisionPro, privacy: .public), Vision Pro nearby: \(sharesRoom, privacy: .public) -> table turned by system: \(placed, privacy: .public)")
+        return placed
+    }
+
+    /// Whether another participant of the session plays on Vision Pro, as their messages said.
+    private var hasOtherTableParticipant: Bool {
+        guard let groupSession else { return false }
+        return groupSession.activeParticipants.contains {
+            $0 != groupSession.localParticipant
+                && (participantsWithTable.contains($0.id) || participantPlayers[$0.id]?.hasTable == true)
+        }
+    }
+
+    /// Whether a participant in the same room plays on Vision Pro, so that the table is a shared
+    /// object. A participant whose messages have not said yet what device they play on counts as
+    /// a Vision Pro (`bindPlayer(named:hasTable:participantId:)` re-checks the table then).
+    private var hasNearbyTableParticipant: Bool {
+        guard let groupSession else { return false }
+        return groupSession.activeParticipants.contains {
+            $0 != groupSession.localParticipant
+                && $0.isNearbyWithLocalParticipant
+                && (participantPlayers[$0.id]?.hasTable ?? true)
+        }
+    }
+
+    private func updateLocalSeatPlacement(of coordinator: SystemCoordinator) {
+        let placed = currentSystemSeatPlacement()
         isLocalSeatPlacedBySystem = placed
         gameModel?.gameTableModel?.isLocalSeatPlacedBySystem = placed
     }

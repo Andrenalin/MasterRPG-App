@@ -23,6 +23,7 @@ extension GameTableModel {
     func updateDiceResults(snapshot: TableSnapshot, visualState: TableVisualState) {
         let now = ContinuousClock.now
         let localSeat = snapshot.seat(of: PlayerSeat.self, for: tabletopGame.localPlayer)?.0.id
+        turnTableWhenLocalSeatChanged(to: localSeat)
 
         for seat in setup.seats where seat.id != PlayerSeat.guestSeat {
             updateDiceResult(

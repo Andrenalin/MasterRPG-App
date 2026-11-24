@@ -16,7 +16,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("It starts idle without a download")
     func startsIdle() {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
 
         #expect(model.status == .idle)
         #expect(model.downloadedFile == nil)
@@ -25,7 +25,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("A blocked navigation shows blocked, an allowed one clears it")
     func blockedAndAllowed() {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
 
         model.navigationBlocked()
         #expect(model.status == .blocked)
@@ -35,7 +35,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("Starting a download shows the file name until it ends")
     func downloadingShowsTheName() async {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
 
         model.startDownload(of: privateBundle)
 
@@ -46,7 +46,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("Navigation events do not replace the status of a running download")
     func navigationDoesNotHideADownload() async {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
         model.startDownload(of: privateBundle)
 
         model.navigationBlocked()
@@ -58,7 +58,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("A second download while one runs is ignored")
     func oneDownloadAtATime() async {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
         model.startDownload(of: privateBundle)
 
         model.startDownload(of: URL(string: "http://127.0.0.1:9/Other.gmz")!)
@@ -69,7 +69,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("A download from a private address fails, delivers no file and allows a new try")
     func privateAddressFails() async {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
         model.startDownload(of: privateBundle)
 
         let failed = await awaitCondition {
@@ -86,7 +86,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("A cancelled download ends idle and a late result changes nothing")
     func cancelledDownloadStaysIdle() async {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
         model.startDownload(of: privateBundle)
 
         model.cancelDownload()
@@ -100,7 +100,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("Cancelling without a download changes nothing")
     func cancelWithoutDownload() {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
         model.navigationBlocked()
 
         model.cancelDownload()
@@ -110,7 +110,7 @@ struct GameBundleBrowserModelTests {
 
     @Test("A new download after a cancel is not cancelled by the old one finishing")
     func replacedDownloadKeepsItsOwnStatus() async {
-        let model = GameBundleBrowserModel()
+        let model = GameBundleBrowserModel(loadsStartPage: false)
         model.startDownload(of: privateBundle)
         model.cancelDownload()
 

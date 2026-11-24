@@ -117,6 +117,13 @@ final class GameTableModel: Sendable {
     /// The seat the local player claimed last, as `GameObserver.playerChangedSeats` reported it.
     @ObservationIgnored
     var lastOrientedSeat: TableSeatIdentifier?
+    /// The local seat the last frame's snapshot had, to find its changes. See `turnTableWhenLocalSeatChanged(to:)`.
+    @ObservationIgnored
+    var lastSnapshotLocalSeat: TableSeatIdentifier?
+    /// Asks the SharePlay session live whether the system seats the local participant; set by
+    /// `RPGSharePlayController` once seating is set up. It must capture the controller weakly.
+    @ObservationIgnored
+    var systemSeatPlacement: (() -> Bool)?
     var isLocalSeatPlacedBySystem = false {
         didSet {
             guard isLocalSeatPlacedBySystem != oldValue else { return }

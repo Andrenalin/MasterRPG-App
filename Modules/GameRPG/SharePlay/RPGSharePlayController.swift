@@ -219,6 +219,10 @@ final class RPGSharePlayController {
     @ObservationIgnored
     var participantPlayers: [UUID: ParticipantPlayer] = [:]
 
+    /// Participants whose messages said they play on Vision Pro (the game master's included).
+    @ObservationIgnored
+    var participantsWithTable: Set<UUID> = []
+
     struct ParticipantPlayer: Equatable {
         let name: String
         let hasTable: Bool

@@ -25,11 +25,16 @@
         /// later and must not clear the new one's task or status. See CODE_AUDIT_26 §3.4.
         @ObservationIgnored private var downloadToken: UUID?
 
-        init() {
+        /// `loadsStartPage: false` keeps the page idle. The start page's navigation decision reaches
+        /// `navigationAllowed()` at an unpredictable moment and would reset a `.failed` status, which
+        /// makes status tests flaky on a slow machine.
+        init(loadsStartPage: Bool = true) {
             let decider = GameBundleNavigationDecider()
             page = WebPage(navigationDecider: decider)
             decider.model = self
-            page.load(GameBundleBrowserPolicy.startUrl)
+            if loadsStartPage {
+                page.load(GameBundleBrowserPolicy.startUrl)
+            }
         }
 
         var isDownloading: Bool {

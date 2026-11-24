@@ -704,6 +704,7 @@ extension RPGSharePlayController {
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
         participantPlayers = [:]
+        participantsWithTable = []
         packageReceiver.reset()
         inboundByteBudget.reset()
         journalLoadBudget.reset()
