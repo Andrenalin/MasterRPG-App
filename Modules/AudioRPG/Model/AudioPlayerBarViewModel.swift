@@ -17,6 +17,12 @@ import UIKit
 final class AudioPlayerBarViewModel {
     var isScrubberVisible = false
     var isVolumeSliderVisible = false
+
+    /// The scrubber over the timeline shows only while the volume slider does not take the
+    /// timeline's place (the slider is dragged there, and so is the scrubber).
+    var isScrubberShown: Bool {
+        isScrubberVisible && !isVolumeSliderVisible
+    }
     var albumArtwork: Image?
 
     /// Loads the artwork of `item`. Awaited from the view's `.task(id:)`, so the system cancels it
@@ -76,12 +82,6 @@ final class AudioPlayerBarViewModel {
         guard let data,
               let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
         return ImageDownsampler.downsampledImage(from: source, maxPixelSize: maximumArtworkPixelSize)
-    }
-
-    func toggleMute(audioPlayerModel: AudioPlayerModel) {
-        // The volume before the mute lives on the player model (kept by `volume` itself), shared
-        // by every bar and by a slider dragged to zero.
-        audioPlayerModel.volume = audioPlayerModel.isMuted ? audioPlayerModel.previousVolume : 0
     }
 
     /// The app icon never changes while the app runs; it is looked up once, not on every body

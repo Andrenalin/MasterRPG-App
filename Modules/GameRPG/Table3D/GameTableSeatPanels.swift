@@ -171,23 +171,29 @@ struct GameSeatVolumePanel: View {
     var body: some View {
         ZStack {
             if game.isVolumeOpen {
-                HStack(alignment: .top) {
+                Group {
                     if game.isGameMaster {
-                        root.audioRoot.viewController.audioPlayerPanel(root: root.audioRoot)
+                        // The close button ends the row of the position slider, under the
+                        // volume button of the player.
+                        root.audioRoot.viewController.audioPlayerPanel(root: root.audioRoot) {
+                            game.isVolumeOpen = false
+                        }
                     } else {
-                        root.audioRoot.viewController.volumeSlider(root: root.audioRoot)
-                    }
-                    Button {
-                        game.isVolumeOpen = false
-                    } label: {
-                        Label {
-                            Text("Close", bundle: .module)
-                        } icon: {
-                            Image(systemName: "xmark")
+                        HStack(alignment: .top) {
+                            root.audioRoot.viewController.volumeSlider(root: root.audioRoot)
+                            Button {
+                                game.isVolumeOpen = false
+                            } label: {
+                                Label {
+                                    Text("Close", bundle: .module)
+                                } icon: {
+                                    Image(systemName: "xmark")
+                                }
+                            }
+                            .labelStyle(.iconOnly)
+                            .buttonBorderShape(.circle)
                         }
                     }
-                    .labelStyle(.iconOnly)
-                    .buttonBorderShape(.circle)
                 }
                 .modifier(SeatPanelGlass())
             }

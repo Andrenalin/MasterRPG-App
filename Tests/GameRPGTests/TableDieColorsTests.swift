@@ -51,6 +51,20 @@ struct TableDieColorsTests {
         #expect(TableDieColors.isColored(.d20))
     }
 
+    @Test("A seat nobody has rolled at yet still gets the fallback color, a known seat keeps its own")
+    func unknownSeatsGetTheFallback() {
+        var colors = TableDieColors()
+        colors.set([.d6: [0: "A", 1: "B"]], seat: 1)
+
+        colors.fillUnknown(seats: [0, 1], poolSize: 6)
+
+        #expect(colors.slots[.d6]?[1] == [0: "A", 1: "B"])
+        #expect(colors.slots[.d6]?[0]?.count == 6)
+        #expect(colors.slots[.d6]?[0]?.values.allSatisfy { $0 == TableDiePalette.fallbackCode } == true)
+        // The kinds the seat has no set for are filled too: the dice are there before any roll.
+        #expect(colors.slots[.d20]?[1]?.count == 6)
+    }
+
     @Test("Seat colors are kept per kind and seat")
     func setKeepsSeatsApart() {
         var colors = TableDieColors()

@@ -140,6 +140,20 @@ struct TableDieColors: Equatable {
         return colors
     }
 
+    /// Gives every slot of every kind the fallback colour for the seats whose dice no set of
+    /// this device has coloured yet. Until a player's first roll reaches a device, nothing tells
+    /// it that player's set: their dice stood there plain grey, without texture, and got their
+    /// colour only with the first roll. A seat's own colours replace these as soon as known.
+    mutating func fillUnknown(seats: [Int], poolSize: Int) {
+        for kind in TableDieKind.allCases where TableDieColors.isColored(kind) {
+            for seat in seats where slots[kind]?[seat] == nil {
+                slots[kind, default: [:]][seat] = Dictionary(
+                    uniqueKeysWithValues: (0..<poolSize).map { ($0, TableDiePalette.fallbackCode) }
+                )
+            }
+        }
+    }
+
     /// Adds a seat's slot colours.
     mutating func set(_ colors: [TableDieKind: [Int: String]], seat: Int) {
         for (kind, slotColors) in colors {

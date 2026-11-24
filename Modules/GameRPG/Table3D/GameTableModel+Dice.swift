@@ -167,6 +167,9 @@ extension GameTableModel {
             }
         }
         colors.set(guestSlots, seat: PlayerSeat.guestSeat.rawValue)
+        // A seat whose set this device has not seen yet (nobody rolled there so far) still gets
+        // textured dice, in the fallback colour, until its own colours arrive with its first roll.
+        colors.fillUnknown(seats: setup.seats.map(\.id.rawValue), poolSize: GameSetup.maxDicePerType)
         return colors
     }
 

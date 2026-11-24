@@ -56,12 +56,13 @@ private struct ToolbarAudioPlayerPopoverView: View {
 
 struct ToolbarAudioPlayerFullView: View {
     let root: AudioRootModel
+    var onClose: (() -> Void)?
 
     @ScaledMetric(relativeTo: .body) private var idealWidth = 520
     @ScaledMetric(relativeTo: .body) private var minimumWidth = 300
 
     var body: some View {
-        AudioPlayerBarView()
+        AudioPlayerBarView(onClose: onClose)
             .environment(root)
             .padding()
             .frame(minWidth: minimumWidth, idealWidth: idealWidth, maxWidth: idealWidth)

@@ -12,6 +12,14 @@ struct AudioPlayerBarView: View {
 
     @State private var viewModel = AudioPlayerBarViewModel()
 
+    /// A close button for a player that stands in a panel of its own. On visionOS it ends the
+    /// row of the position slider, under the volume button.
+    private let onClose: (() -> Void)?
+
+    init(onClose: (() -> Void)? = nil) {
+        self.onClose = onClose
+    }
+
     var body: some View {
 #if os(iOS)
         if horizontalSizeClass == .compact {
@@ -26,7 +34,7 @@ struct AudioPlayerBarView: View {
             }
         }
 #elseif os(visionOS)
-        AudioPlayerBarContentView(viewModel: viewModel)
+        AudioPlayerBarContentView(viewModel: viewModel, onClose: onClose)
 #else
         GlassEffectContainerAll {
             AudioPlayerBarContentView(viewModel: viewModel)
@@ -45,10 +53,41 @@ struct AudioPlayerBarView: View {
 
 private struct AudioPlayerBarContentView: View {
     @Bindable var viewModel: AudioPlayerBarViewModel
+    var onClose: (() -> Void)?
 
     @Environment(AudioRootModel.self) private var root
 
     var body: some View {
+#if os(visionOS)
+        // No pointer reveals a hidden scrubber here (there is no hover): the position slider is
+        // a row of its own under the controls, as in the Music app, so it can always be pinched
+        // and dragged to move forward or backward in the song.
+        VStack(spacing: 4) {
+            controlsRow
+
+            HStack(spacing: 8) {
+                AudioPlayerPersistentScrubberView(audioPlayerModel: root.audioPlayerModel)
+
+                if let onClose {
+                    Button(action: onClose) {
+                        Label {
+                            Text("Close", bundle: .module)
+                        } icon: {
+                            Image(systemName: "xmark")
+                        }
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonBorderShape(.circle)
+                }
+            }
+            .padding(.horizontal, 8)
+        }
+#else
+        controlsRow
+#endif
+    }
+
+    private var controlsRow: some View {
         HStack(alignment: .center, spacing: 8) {
             AudioPlayerPlaybackControls(audioPlayerModel: root.audioPlayerModel)
             .padding(.horizontal, 8)
@@ -62,10 +101,7 @@ private struct AudioPlayerBarContentView: View {
 
             AudioPlayerVolumeControl(
                 audioPlayerModel: root.audioPlayerModel,
-                isSliderVisible: $viewModel.isVolumeSliderVisible,
-                onToggleMute: {
-                    viewModel.toggleMute(audioPlayerModel: root.audioPlayerModel)
-                }
+                isSliderVisible: $viewModel.isVolumeSliderVisible
             )
             .padding(.horizontal, 8)
 #if os(iOS)

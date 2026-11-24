@@ -72,7 +72,12 @@ private struct AudioPlayerTimelineLayersView: View {
     let hideScrubber: () -> Void
 
     var body: some View {
-        AudioPlayerTimelineRevealTrigger(currentItem: currentItem, viewModel: viewModel, showScrubber: showScrubber)
+        AudioPlayerTimelineRevealTrigger(
+            currentItem: currentItem,
+            audioPlayerModel: audioPlayerModel,
+            viewModel: viewModel,
+            showScrubber: showScrubber
+        )
             .overlay(alignment: .bottom) {
                 AudioPlayerTimelineProgressOverlayView(audioPlayerModel: audioPlayerModel, viewModel: viewModel)
             }
@@ -94,22 +99,28 @@ private struct AudioPlayerTimelineLayersView: View {
 /// Elsewhere the content only stops taking hits while the scrubber is shown.
 private struct AudioPlayerTimelineRevealTrigger: View {
     let currentItem: PlaylistItem?
+    let audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
     let showScrubber: () -> Void
 
     var body: some View {
         #if os(iOS)
-        Button {
-            showScrubber()
-        } label: {
-            AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
-                .contentShape(.rect)
+        if viewModel.isVolumeSliderVisible {
+            // The slider takes drags itself: no tap target around it.
+            AudioPlayerTimelineContentLayerView(currentItem: currentItem, audioPlayerModel: audioPlayerModel, viewModel: viewModel)
+        } else {
+            Button {
+                showScrubber()
+            } label: {
+                AudioPlayerTimelineContentLayerView(currentItem: currentItem, audioPlayerModel: audioPlayerModel, viewModel: viewModel)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Show Playback Controls", bundle: .module))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Show Playback Controls", bundle: .module))
         #else
-        AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
-            .allowsHitTesting(!viewModel.isScrubberVisible)
+        AudioPlayerTimelineContentLayerView(currentItem: currentItem, audioPlayerModel: audioPlayerModel, viewModel: viewModel)
+            .allowsHitTesting(!viewModel.isScrubberShown)
         #endif
     }
 }
@@ -122,7 +133,7 @@ private struct AudioPlayerTimelineHoverRevealModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
-        #if os(iOS) || os(tvOS)
+        #if os(iOS) || os(tvOS) || os(visionOS)
         content
         #else
         content
@@ -138,6 +149,7 @@ private struct AudioPlayerTimelineHoverRevealModifier: ViewModifier {
 
 private struct AudioPlayerTimelineContentLayerView: View {
     let currentItem: PlaylistItem?
+    @Bindable var audioPlayerModel: AudioPlayerModel
     let viewModel: AudioPlayerBarViewModel
 
     var body: some View {
@@ -148,17 +160,27 @@ private struct AudioPlayerTimelineContentLayerView: View {
                 size: AudioPlayerTimelineView.Constants.albumArtSize,
                 cornerRadius: AudioPlayerTimelineView.Constants.albumArtCornerRadius
             )
-            .blur(radius: viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
+            .blur(radius: viewModel.isScrubberShown ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
+            .opacity(viewModel.isScrubberShown ? AudioPlayerTimelineView.Constants.hoverOpacity : 1)
 
-            SongInfoView(
-                title: currentItem?.title ?? String(localized: "Not Playing", bundle: .module),
-                artist: currentItem?.subtitle ?? "---"
-            )
-            .blur(radius: viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
+            if viewModel.isVolumeSliderVisible {
+                // The volume button was tapped: the slider takes the place of the title and the
+                // subtitle, next to the artwork.
+                VolumeSlider(volume: $audioPlayerModel.volume)
+                    .tint(.primary)
+                    .padding(.horizontal, 8)
+                    .transition(.opacity)
+            } else {
+                SongInfoView(
+                    title: currentItem?.title ?? String(localized: "Not Playing", bundle: .module),
+                    artist: currentItem?.subtitle ?? "---"
+                )
+                .blur(radius: viewModel.isScrubberShown ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
+                .opacity(viewModel.isScrubberShown ? AudioPlayerTimelineView.Constants.hoverOpacity : 1)
+            }
         }
         .frame(height: AudioPlayerTimelineView.Constants.contentHeight, alignment: .center)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .opacity(viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.hoverOpacity : 1)
     }
 }
 
@@ -168,7 +190,11 @@ private struct AudioPlayerTimelineProgressOverlayView: View {
 
     @ViewBuilder
     var body: some View {
-        if !viewModel.isScrubberVisible {
+#if os(visionOS)
+        // The player's own scrubber row shows the position.
+        EmptyView()
+#else
+        if !viewModel.isScrubberShown && !viewModel.isVolumeSliderVisible {
             ProgressView(
                 value: audioPlayerModel.playerTime.elapsedSeconds.isFinite ? audioPlayerModel.playerTime.elapsedSeconds : 0,
                 total: audioPlayerModel.playerTime.totalDuration.isFinite ? max(audioPlayerModel.playerTime.totalDuration, 1) : 1
@@ -180,6 +206,7 @@ private struct AudioPlayerTimelineProgressOverlayView: View {
             .allowsHitTesting(false)
             .transition(.opacity)
         }
+#endif
     }
 }
 
@@ -194,7 +221,7 @@ private struct AudioPlayerTimelineScrubberOverlayView: View {
 
     @ViewBuilder
     var body: some View {
-        if viewModel.isScrubberVisible {
+        if viewModel.isScrubberShown {
             AudioPlayerScrubberView(
                 currentTime: audioPlayerModel.playerTime.elapsedSeconds,
                 totalDuration: audioPlayerModel.playerTime.totalDuration,
@@ -232,3 +259,26 @@ private struct AudioPlayerTimelineScrubberBackgroundView: View {
 #endif
     }
 }
+
+#if os(visionOS)
+/// The position of the song as a row of its own: elapsed time, a slider to move forward or
+/// backward, and the total time. Sought on release, and shared with the game when one runs.
+struct AudioPlayerPersistentScrubberView: View {
+    let audioPlayerModel: AudioPlayerModel
+
+    @Environment(AudioRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
+
+    var body: some View {
+        AudioPlayerScrubberView(
+            currentTime: audioPlayerModel.playerTime.elapsedSeconds,
+            totalDuration: audioPlayerModel.playerTime.totalDuration,
+            elapsedText: audioPlayerModel.playerTime.elapsedText,
+            onSeek: { position in
+                root.seek(to: position, isGameRunning: appGameStateModel.isGameRunning, networkActions: networkActions)
+            }
+        )
+    }
+}
+#endif

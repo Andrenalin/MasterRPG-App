@@ -6,20 +6,21 @@ import SwiftUI
 #Preview {
     @Previewable @State var sliderVisible = true
     @Previewable @State var playerModel = AudioPlayerModel()
-    AudioPlayerVolumeControl(audioPlayerModel: playerModel, isSliderVisible: $sliderVisible, onToggleMute: {})
+    AudioPlayerVolumeControl(audioPlayerModel: playerModel, isSliderVisible: $sliderVisible)
         .padding()
 }
 
+/// The volume button of the player bar: it only opens and closes the volume slider. The slider
+/// is not drawn here but over the timeline, where it takes the place of the title and subtitle
+/// and leaves the artwork (`AudioPlayerTimelineView`); a mute is a slider dragged to zero.
 struct AudioPlayerVolumeControl: View {
-    @Bindable var audioPlayerModel: AudioPlayerModel
+    let audioPlayerModel: AudioPlayerModel
     @Binding var isSliderVisible: Bool
-    let onToggleMute: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Constants {
         static let buttonSize: CGFloat = 32
-        static let sliderWidth: CGFloat = 100
         static let height: CGFloat = 44
         static let volumeSpring = Animation.spring(response: 0.25, dampingFraction: 0.75)
         /// Volumes below which the speaker shows one and two waves.
@@ -28,53 +29,31 @@ struct AudioPlayerVolumeControl: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Volume slider (visible when expanded); `VolumeSlider` is empty on tvOS.
-            if isSliderVisible {
-                VolumeSlider(volume: $audioPlayerModel.volume)
-                    .frame(width: Constants.sliderWidth)
-                    .tint(.primary)
-                    .padding(.leading, 12)
-                    .padding(.trailing, 4)
-                    .transition(.opacity)
+        Button {
+            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
+                isSliderVisible.toggle()
             }
-
-            // Volume button
-            Button {
-                handleVolumeButtonTap()
-            } label: {
-                Label {
-                    Text(audioPlayerModel.isMuted ? "Unmute" : "Mute", bundle: .module)
-                } icon: {
-                    Image(systemName: volumeIcon)
-                }
-                .labelStyle(.iconOnly)
-                .font(.body)
-                .frame(width: Constants.buttonSize, height: Constants.buttonSize)
-                .contentTransition(.symbolEffect(.replace))
+        } label: {
+            Label {
+                Text("Volume", bundle: .module)
+            } icon: {
+                Image(systemName: volumeIcon)
             }
-            .buttonStyle(.plain)
-            .accessibilityValue(
-                Text("\(Int(audioPlayerModel.volume * 100)) percent", bundle: .module)
-            )
-            .padding(.horizontal, 8)
+            .labelStyle(.iconOnly)
+            .font(.body)
+            .frame(width: Constants.buttonSize, height: Constants.buttonSize)
+            .contentTransition(.symbolEffect(.replace))
         }
+        .buttonStyle(.plain)
+        .accessibilityValue(Text(audioPlayerModel.volume, format: .percent))
+        .accessibilityHint(Text(isSliderVisible ? "Hide Volume Control" : "Show Volume Control", bundle: .module))
+        .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .frame(height: Constants.height)
         .background {
             AudioPlayerVolumeControlBackgroundView()
         }
         .contentShape(.rect)
-        .volumeControlInteraction(
-            isSliderVisible: $isSliderVisible,
-            animation: reduceMotion ? nil : Constants.volumeSpring
-        )
-        .accessibilityAction(named: Text("Hide Volume Control", bundle: .module)) {
-            guard isSliderVisible else { return }
-            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
-                isSliderVisible = false
-            }
-        }
     }
 
     private var volumeIcon: String {
@@ -86,20 +65,6 @@ struct AudioPlayerVolumeControl: View {
             "speaker.wave.2.fill"
         } else {
             "speaker.wave.3.fill"
-        }
-    }
-
-    private func handleVolumeButtonTap() {
-        // Same behavior on every platform: first tap shows the slider, second
-        // tap (while already showing) mutes. See CODE_AUDIT_Audio §9.6.
-        if isSliderVisible {
-            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
-                onToggleMute()
-            }
-        } else {
-            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
-                isSliderVisible = true
-            }
         }
     }
 }
@@ -131,47 +96,5 @@ private struct AudioPlayerVolumeControlBackgroundView: View {
                     .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
             }
             .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
-    }
-}
-
-// MARK: - Platform-specific interaction modifier
-
-private struct VolumeControlInteractionModifier: ViewModifier {
-    @Binding var isSliderVisible: Bool
-    let animation: Animation?
-
-    func body(content: Content) -> some View {
-#if os(macOS)
-        content
-            .onHover { hovering in
-                if !hovering && isSliderVisible {
-                    withAnimation(animation) {
-                        isSliderVisible = false
-                    }
-                }
-            }
-#else
-        content
-            .background {
-                Button {
-                    if isSliderVisible {
-                        withAnimation(animation) {
-                            isSliderVisible = false
-                        }
-                    }
-                } label: {
-                    Color.clear
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityHidden(true)
-            }
-#endif
-    }
-}
-
-private extension View {
-    func volumeControlInteraction(isSliderVisible: Binding<Bool>, animation: Animation?) -> some View {
-        modifier(VolumeControlInteractionModifier(isSliderVisible: isSliderVisible, animation: animation))
     }
 }

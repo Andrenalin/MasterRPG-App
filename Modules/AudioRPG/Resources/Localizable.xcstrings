@@ -92,6 +92,7 @@
       }
     },
     "%lld percent" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "variations" : {
@@ -345,6 +346,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปลี่ยน"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
           }
         }
       }
@@ -684,6 +701,7 @@
       }
     },
     "Mute" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1463,6 +1481,22 @@
         }
       }
     },
+    "Show Volume Control" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lautstärkeregler einblenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงตัวควบคุมระดับเสียง"
+          }
+        }
+      }
+    },
     "Shows the audio items that match a search term in the app." : {
       "localizations" : {
         "de" : {
@@ -1588,6 +1622,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แท็ก"
+          }
+        }
+      }
+    },
+    "The audio could not be played. Its file may not be downloaded yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Audio konnte nicht abgespielt werden. Möglicherweise ist die Datei noch nicht geladen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถเล่นเสียงได้ ไฟล์อาจยังไม่ได้ดาวน์โหลด"
           }
         }
       }
@@ -1723,6 +1773,7 @@
       }
     },
     "Unmute" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1868,22 +1919,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เสียงใด?"
-          }
-        }
-      }
-    },
-    "The audio could not be played. Its file may not be downloaded yet." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Audio konnte nicht abgespielt werden. Möglicherweise ist die Datei noch nicht geladen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถเล่นเสียงได้ ไฟล์อาจยังไม่ได้ดาวน์โหลด"
           }
         }
       }

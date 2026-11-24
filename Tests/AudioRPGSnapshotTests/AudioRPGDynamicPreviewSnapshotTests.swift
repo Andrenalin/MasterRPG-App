@@ -38,8 +38,7 @@ struct AudioRPGDynamicPreviewSnapshotTests {
         try await assertPreviewSnapshot("AudioPlayerVolumeControl") { root in
             AudioPlayerVolumeControl(
                 audioPlayerModel: root.audioPlayerModel,
-                isSliderVisible: .constant(true),
-                onToggleMute: {}
+                isSliderVisible: .constant(true)
             )
             .padding()
         }
