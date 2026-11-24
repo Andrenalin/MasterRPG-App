@@ -2309,6 +2309,22 @@
         }
       }
     },
+    "Start replaces the description and the tags of the selected items with generated ones. A name is only filled in when it is empty." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten Elemente durch generierte. Ein Name wird nur ergänzt, wenn er leer ist."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของรายการที่เลือกด้วยข้อมูลที่สร้างขึ้น ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่"
+          }
+        }
+      }
+    },
     "Start" : {
       "localizations" : {
         "de" : {
@@ -3038,18 +3054,18 @@
         }
       }
     },
-    "Updated %lld items: %lld names filled, %lld tags added." : {
+    "Updated %lld items: %lld names filled, %lld descriptions replaced, %lld tags replaced." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld Elemente aktualisiert: %2$lld Namen ergänzt, %3$lld Tags hinzugefügt."
+            "value" : "%1$lld Elemente aktualisiert: %2$lld Namen ergänzt, %3$lld Beschreibungen ersetzt, %4$lld Tags ersetzt."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "อัปเดต %1$lld รายการ: เติมชื่อ %2$lld รายการ เพิ่มแท็ก %3$lld แท็ก"
+            "value" : "อัปเดต %1$lld รายการ: เติมชื่อ %2$lld รายการ แทนที่คำอธิบาย %3$lld รายการ แทนที่แท็ก %4$lld รายการ"
           }
         }
       }

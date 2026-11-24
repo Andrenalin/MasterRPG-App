@@ -106,7 +106,7 @@ struct PdfSummaryAnalyzer: Sendable {
             return PdfSummaryAnalysis(
                 title: title,
                 summary: summary,
-                tags: tags,
+                tags: GeneratedTagRules.cleaned(tags),
                 sections: sections
             )
         } catch is CancellationError {
@@ -138,7 +138,7 @@ struct PdfSummaryAnalyzer: Sendable {
         Provide in \(outputLanguage) a structured summary analysis including:
         - The document title
         - A clear summary
-        - 3 to 5 specific tags in \(outputLanguage): what kind of document it is, what it is mainly about, and its specific places, peoples, creatures or themes
+        - \(GeneratedTagRules.countText) specific tags in \(outputLanguage): what kind of document it is, what it is mainly about, and its specific places, peoples, creatures or themes
         - Major sections or chapters
         """
     }
@@ -148,12 +148,9 @@ struct PdfSummaryAnalyzer: Sendable {
     private static let defaultInstructions = """
     Analyze and summarize RPG documents (rulebooks, adventures, supplements).
     Provide clear titles, concise summaries, tags, and major sections.
-    Tags are short keywords (1 to 3 words) that tell this document apart from other RPG documents: \
-    what kind of document it is, what it is mainly about, and its named places, peoples, creatures, \
-    factions and central themes. Write every tag in the output language, translate the kind of \
-    document too. Never use generic tags that fit every RPG document, such as "RPG", "Setting", \
-    "System", "Genre" or "Role-playing game", and never write a label before a value \
-    ("Genre: Fantasy"); write only the value ("Fantasy").
+    Tags are \(GeneratedTagRules.countText) short keywords that tell this document apart from other RPG \
+    documents: what kind of document it is, what it is mainly about, and its named places, \
+    peoples, creatures, factions and central themes. \(GeneratedTagRules.rules(extraGenericTags: ["Role-playing game"]))
     Be precise and factual.
     """
 }

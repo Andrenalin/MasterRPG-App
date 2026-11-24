@@ -16,29 +16,34 @@ private enum BatchItemStatus: Sendable {
 
 /// What the batch writes into an item from a generated summary. Pure, so it is tested.
 ///
-/// The batch applies model output to many items with no review, and the text it was generated
-/// from can come from an import or a shared campaign. So it only fills an empty name and adds
-/// tags, a bounded and visible change, and never writes the description; the person sees a
-/// count of what changed afterwards. See CODE_AUDIT_26 §6.9.
+/// The generated description and tags *replace* the existing ones, which is what the person asks
+/// for when starting the batch (the dialog says so). The name is only filled when it is empty,
+/// because a name is what other items and links show. Nothing is ever erased: an empty generated
+/// description or an empty tag list leaves the item as it is. The output is bounded because the
+/// text it was generated from can come from an import or a shared campaign. See CODE_AUDIT_26 §6.9.
 enum BatchSummaryMerge {
     static let maximumTitleLength = 100
-    static let maximumGeneratedTags = 8
+    static let maximumDescriptionLength = 500
+    static let maximumGeneratedTags = GeneratedTagRules.countRange.upperBound
     static let maximumTagLength = 40
 
     struct Change: Equatable {
         /// The name to write, `nil` when the item already has one.
         var name: String?
-        /// The full tag list to write, `nil` when nothing is added.
+        /// The description that replaces the existing one, `nil` when it would not change.
+        var description: String?
+        /// The tag list that replaces the existing one, `nil` when it would not change.
         var tags: [String]?
-        var addedTagCount: Int
 
-        var isEmpty: Bool { name == nil && tags == nil }
+        var isEmpty: Bool { name == nil && description == nil && tags == nil }
     }
 
     static func change(
         existingName: String,
+        existingDescription: String,
         existingTags: [String],
         generatedTitle: String,
+        generatedDescription: String,
         generatedTags: [String]
     ) -> Change {
         var name: String?
@@ -46,33 +51,33 @@ enum BatchSummaryMerge {
             let title = String(generatedTitle.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumTitleLength))
             if !title.isEmpty { name = title }
         }
-        let added = newTags(existing: existingTags, generated: generatedTags)
-        return Change(
-            name: name,
-            tags: added.isEmpty ? nil : existingTags + added,
-            addedTagCount: added.count
-        )
+
+        var description: String?
+        let generated = String(generatedDescription.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumDescriptionLength))
+        if !generated.isEmpty, generated != existingDescription.trimmingCharacters(in: .whitespacesAndNewlines) {
+            description = generated
+        }
+
+        var tags: [String]?
+        let replacement = boundedTags(generatedTags)
+        if !replacement.isEmpty, Set(replacement) != Set(existingTags) {
+            tags = replacement
+        }
+        return Change(name: name, description: description, tags: tags)
     }
 
-    /// The generated tags that are new: trimmed, not empty or oversized, not already there
-    /// (compared ignoring case), at most `maximumGeneratedTags`.
-    static func newTags(existing: [String], generated: [String]) -> [String] {
-        var known = existing
-        var added: [String] = []
-        for raw in generated {
-            guard added.count < maximumGeneratedTags else { break }
-            let tag = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !tag.isEmpty, tag.count <= maximumTagLength,
-                  !known.contains(where: { $0.localizedCaseInsensitiveCompare(tag) == .orderedSame }) else { continue }
-            known.append(tag)
-            added.append(tag)
-        }
-        return added
+    /// The generated tags without labels (`GeneratedTagRules.cleaned`), trimmed, not empty or
+    /// oversized, at most `maximumGeneratedTags`.
+    static func boundedTags(_ generated: [String]) -> [String] {
+        // Oversized tags go first, so one of them does not use up one of the few slots.
+        GeneratedTagRules.cleaned(
+            generated.filter { GeneratedTagRules.withoutLabel($0).count <= maximumTagLength }
+        )
     }
 }
 
 /// Batch AI-extraction view: processes multiple items sequentially using on-device AI.
-/// Apply rules (see `BatchSummaryMerge`): title if the name is empty, new tags added; the description is never written.
+/// Apply rules (see `BatchSummaryMerge`): the name is filled when empty; the description and the tags are replaced.
 public struct BatchTextSummaryExtractionView: View {
 
     let module: NetworkModules
@@ -86,7 +91,8 @@ public struct BatchTextSummaryExtractionView: View {
     /// What the batch changed, shown when it has run.
     @State private var changedItems = 0
     @State private var filledNames = 0
-    @State private var addedTags = 0
+    @State private var replacedDescriptions = 0
+    @State private var replacedTags = 0
     @State private var hasRun = false
     /// Owned so Cancel/dismiss stops the batch instead of it continuing to analyze and
     /// write into items after the sheet is gone. See CODE_AUDIT_18 §3.6.
@@ -114,6 +120,11 @@ public struct BatchTextSummaryExtractionView: View {
                     if !isRunning {
                         Section {
                             OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
+                        } footer: {
+                            Text(
+                                "Start replaces the description and the tags of the selected items with generated ones. A name is only filled in when it is empty.",
+                                bundle: .module
+                            )
                         }
                     }
                     Section {
@@ -129,7 +140,7 @@ public struct BatchTextSummaryExtractionView: View {
                     if hasRun, !isRunning {
                         Section {
                             Text(
-                                "Updated \(changedItems) items: \(filledNames) names filled, \(addedTags) tags added.",
+                                "Updated \(changedItems) items: \(filledNames) names filled, \(replacedDescriptions) descriptions replaced, \(replacedTags) tags replaced.",
                                 bundle: .module
                             )
                         }
@@ -168,6 +179,12 @@ public struct BatchTextSummaryExtractionView: View {
             }
             .moduleTint(module)
         }
+        #if os(macOS)
+        // A macOS sheet is as large as its content, and a `List` has no intrinsic height, so
+        // without a size the sheet collapsed to its title bar and hid the language picker and the
+        // item list, however many items were selected.
+        .frame(minWidth: 480, idealWidth: 520, minHeight: 360, idealHeight: 520)
+        #endif
         .onDisappear { batchTask?.cancel() }
     }
 
@@ -281,7 +298,8 @@ public struct BatchTextSummaryExtractionView: View {
         hasRun = true
         changedItems = 0
         filledNames = 0
-        addedTags = 0
+        replacedDescriptions = 0
+        replacedTags = 0
         batchTask = Task {
             await performBatch()
             isRunning = false
@@ -318,15 +336,18 @@ public struct BatchTextSummaryExtractionView: View {
         guard let item = itemController.itemSync(for: itemId) else { return }
         let change = BatchSummaryMerge.change(
             existingName: item.name,
+            existingDescription: item.description,
             existingTags: item.tags,
             generatedTitle: result.title,
+            generatedDescription: result.description,
             generatedTags: result.tags
         )
         guard !change.isEmpty else { return }
-        editController.reset(name: change.name, description: nil, tags: change.tags, itemId: itemId)
+        editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId)
         changedItems += 1
         if change.name != nil { filledNames += 1 }
-        addedTags += change.addedTagCount
+        if change.description != nil { replacedDescriptions += 1 }
+        if change.tags != nil { replacedTags += 1 }
     }
 }
 

@@ -102,8 +102,9 @@ struct PdfTagEvaluatorTests {
 
     @Test("Specific tags that merely contain a generic word pass")
     func specificTagsPass() {
+        // "Setting" is banned as a word in any tag (GeneratedTagRules), "system" only as a whole tag.
         let result = evaluator.evaluate(
-            tags: ["Percentile system", "Fantasy setting", "Dungeon"],
+            tags: ["Percentile system", "Fantasy world", "Dungeon"],
             title: "T",
             expectation: expectation
         )

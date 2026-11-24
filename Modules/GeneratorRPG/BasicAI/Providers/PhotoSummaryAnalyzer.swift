@@ -158,7 +158,12 @@ public struct PhotoSummaryAnalyzer: Sendable {
             Self.prompt(outputLanguage: outputLanguage)
             Attachment(image)
         }
-        return response.content
+        let analysis = response.content
+        return PhotoSummaryAnalysis(
+            title: analysis.title,
+            summary: analysis.summary,
+            tags: GeneratedTagRules.cleaned(analysis.tags)
+        )
     }
 
     static func prompt(outputLanguage: String) -> String {
@@ -169,7 +174,7 @@ public struct PhotoSummaryAnalyzer: Sendable {
         Provide in \(outputLanguage):
         - A short title for the main subject
         - A description of what is visible, in 2 to 3 sentences
-        - 3 to 5 specific tags in \(outputLanguage): what kind of image it is, what the main subject is, and the specific creatures, places, objects or mood you can see
+        - \(GeneratedTagRules.countText) specific tags in \(outputLanguage): what kind of image it is, what the main subject is, and the specific creatures, places, objects or mood you can see
         """
     }
 
@@ -214,12 +219,9 @@ public struct PhotoSummaryAnalyzer: Sendable {
     handouts and scenes.
     Provide a short title, a concise description and tags. Describe only what is visible and do \
     not invent names.
-    Tags are short keywords (1 to 3 words) that tell this image apart from other RPG images: what \
-    kind of image it is, its main subject, and specific things you can see such as creatures, \
-    places, objects or mood. Write every tag in the output language, translate the kind of image \
-    too. Never use generic tags that fit every RPG image, such as "RPG", "Setting", "System", \
-    "Genre", "Image", "Art", "Artwork" or "Illustration" (or their translations), and never write a label before a value ("Genre: Fantasy"); \
-    write only the value ("Fantasy").
+    Tags are \(GeneratedTagRules.countText) short keywords that tell this image apart from other RPG \
+    images: what kind of image it is, its main subject, and specific things you can see such as \
+    creatures, places, objects or mood. \(GeneratedTagRules.rules(extraGenericTags: PhotoSummaryAnalysis.genericTags))
     """
 }
 

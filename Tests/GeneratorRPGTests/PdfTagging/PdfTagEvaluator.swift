@@ -4,6 +4,8 @@
 
 import Foundation
 
+@testable import GeneratorRPG
+
 /// What a good tag set for one PDF looks like. Content expectations are *concept groups*: a group
 /// is matched when any of its terms appears in any tag, so "dungeon" and "Verlies" can stand for
 /// the same idea and the model is not pinned to one wording.
@@ -46,8 +48,8 @@ struct PdfTagEvaluation: Sendable, Equatable {
 /// Scores the tags of one `PdfSummaryAnalysis`. Pure, so the rules themselves are unit-tested
 /// without Apple Intelligence.
 struct PdfTagEvaluator: Sendable {
-    /// Mirrors `@Guide(.count(3...5))` on `PdfSummaryAnalysis.tags`; the tag UI cannot show more.
-    var allowedCount = 3...5
+    /// The count the prompts ask for (`GeneratedTagRules`); the tag UI cannot show more.
+    var allowedCount = GeneratedTagRules.countRange
     var maximumWordsPerTag = 4
     var maximumCharactersPerTag = 40
     /// Words that describe the file, not the game.
@@ -59,6 +61,13 @@ struct PdfTagEvaluator: Sendable {
         "genre", "setting", "system", "mechanics", "type", "document type", "tags", "tag",
         "sections", "chapters", "rpg", "ttrpg", "role-playing game", "roleplaying game",
         "role-playing", "roleplaying", "tabletop", "tabletop rpg", "rollenspiel", "pen & paper"
+    ]
+
+    /// Words no tag may contain, as whole words. The prompts forbid the words of
+    /// `GeneratedTagRules.bannedWords`; the plural and German forms are added here because the
+    /// model answers in the output language.
+    var bannedWords: [String] = GeneratedTagRules.bannedWords + [
+        "Settings", "Mechanic", "Use Cases", "Mechanik", "Mechaniken", "Anwendungsfall", "Anwendungsfälle"
     ]
 
     func evaluate(tags: [String], title: String, expectation: PdfTagExpectation) -> PdfTagEvaluation {
@@ -101,6 +110,7 @@ struct PdfTagEvaluator: Sendable {
             if genericTags.contains(key) || genericTags.contains(leadingPart) {
                 violations.append("tag '\(trimmed)' is generic or a prompt label")
             }
+            violations.append(contentsOf: bannedWordViolations(in: trimmed))
             if !Self.normalized(title).isEmpty, key == Self.normalized(title) {
                 violations.append("tag '\(trimmed)' repeats the title")
             }
@@ -131,6 +141,21 @@ struct PdfTagEvaluator: Sendable {
             requiredGroupCount: expectation.requiredGroupCount,
             groupCount: expectation.conceptGroups.count
         )
+    }
+
+    /// One violation per banned word that `text` contains as a whole word, so "RPG-Tabelle" and
+    /// "Use Case: loot" hit, "mechanical" and "briefcase" do not.
+    func bannedWordViolations(in text: String) -> [String] {
+        let words = Self.words(in: text)
+        return bannedWords.filter { banned in
+            let bannedParts = Self.words(in: banned)
+            return words.indices.contains { words[$0...].starts(with: bannedParts) }
+        }.map { "'\(text)' contains the banned word '\($0)'" }
+    }
+
+    /// Normalized words without punctuation: "RPG-Tabelle: Use Case" is ["rpg", "tabelle", "use", "case"].
+    private static func words(in text: String) -> [String] {
+        normalized(text).split { !$0.isLetter && !$0.isNumber }.map(String.init)
     }
 
     /// Case- and diacritic-insensitive key, so "Dungeon" and "dungeon " count as the same tag.

@@ -21,13 +21,14 @@ public struct PdfSummaryAnalysis: Equatable, Sendable, Identifiable {
     public var summary: String
 
     @Guide(
-        description: """
-        3 to 5 short tags of 1 to 3 words, written in the output language. One tag says what kind \
-        of document this is. One says what the document is mainly about. The others name specific \
-        places, peoples, creatures, factions or themes of this document. No generic tags such as \
-        RPG, Setting, System or Genre, and no labels or colons.
-        """,
-        .count(3...5)
+        description: GeneratedTagRules.guideDescription(
+            contents: """
+            One tag says what kind of document this is. One says what the document is mainly \
+            about. The others name specific places, peoples, creatures, factions or themes of \
+            this document.
+            """
+        ),
+        .count(GeneratedTagRules.countRange)
     )
     public var tags: [String]
 

@@ -63,7 +63,7 @@ struct TableSummaryAnalyzer {
             )
         }
 
-        return TableSummaryAnalysis(title: title, description: description, tags: tags)
+        return TableSummaryAnalysis(title: title, description: description, tags: GeneratedTagRules.cleaned(tags))
     }
 
     private func buildPrompt(with text: String, outputLanguage: String) -> String {
@@ -75,16 +75,25 @@ struct TableSummaryAnalyzer {
         \(UntrustedPromptText.fenced(text))
 
         Provide in \(outputLanguage):
-        - A clear title for this table
-        - A 1–2 sentence description of its purpose and content
-        - 2–8 relevant RPG tags (genre, setting, mechanics, use case, etc.)
+        - A title of 2 to 6 words that names what the entries are about
+        - A description of one or two sentences: what the entries contain and what the table is used for
+        - \(GeneratedTagRules.countText) specific tags: what kind of table it is, what the entries are about, and their specific places, creatures, items, factions or themes
         """
     }
 
 
     private static let defaultInstructions = """
     Analyze RPG table entries (random tables, encounter tables, loot tables, etc.).
-    Extract a clear title, concise description, and relevant tags.
-    Be precise.
+    Extract a title, a description and tags.
+    The title has 2 to 6 words and names what the entries are about. It is no sentence, has no \
+    final period and no label before it ("Table: Forest Encounters"), and is never just "Table" \
+    or "Random Table".
+    The description has one or two sentences: what the entries contain and what the table is \
+    used for. It does not repeat the title.
+    Tags are \(GeneratedTagRules.countText) short keywords that tell this table apart from other tables: \
+    what kind of table it is (rumors, encounters, loot ...), what the entries are about, and \
+    their specific places, creatures, items, factions and themes. \(GeneratedTagRules.rules(extraGenericTags: TableSummaryAnalysis.genericTags))
+    Never use the words \(GeneratedTagRules.bannedWordsText) in the description either.
+    Be precise and factual.
     """
 }
