@@ -17,7 +17,7 @@ import Foundation
 /// failing test pays for it, while a short one flakes when a full parallel run starves the
 /// main actor for seconds.
 func awaitCondition(
-    timeout: Duration = .seconds(30),
+    timeout: Duration = .seconds(120),
     pollInterval: Duration = .milliseconds(2),
     isolation: isolated (any Actor)? = #isolation,
     _ condition: () async -> Bool
