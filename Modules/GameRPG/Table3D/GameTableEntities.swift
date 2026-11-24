@@ -129,6 +129,15 @@ final class PinPawn {
     private var standeeAspect: Float?
     /// Whether a shown standee lies down because the pin is dead.
     private var isStandeeFallen = false
+    /// Whether the pin's action menu is open. The menu stands over the figure, so the hit-test
+    /// box then covers only the base: a look or pinch at a button must not land on the standee
+    /// behind it. Closing the menu gives the whole figure back.
+    var isMenuOpen = false {
+        didSet {
+            guard isMenuOpen != oldValue else { return }
+            refreshCollision()
+        }
+    }
     var loadedPhotoId: UUID?
     private var currentSize: MapPinModel.MapPinSize
     private var currentPointsToMeters: Float
@@ -452,11 +461,11 @@ final class PinPawn {
     }
 
     /// The hit-test box: covers the upright figure, or the flat token otherwise (also when the
-    /// figure lies down).
+    /// figure lies down or the pin's action menu is open).
     private func refreshCollision() {
         let diameter = diameter
         let shape: ShapeResource
-        if let aspect = standeeAspect, !isStandeeFallen {
+        if let aspect = standeeAspect, !isStandeeFallen, !isMenuOpen {
             let layout = PinStandeeLayout(aspect: aspect, diameter: diameter)
             let size = layout.collisionSize(diameter: diameter)
             shape = .generateBox(size: size).offsetBy(translation: SIMD3(0, layout.collisionCenterY(), 0))

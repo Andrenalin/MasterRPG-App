@@ -22,6 +22,8 @@ struct BattleRoundHeaderActions: View {
             .help(Text("Next Turn", bundle: .module))
             .battleHeaderGlassButton()
 
+            Spacer(minLength: BattleRoundSpacing.tight)
+            
             Button(
                 String(localized: "Next Round", bundle: .module),
                 systemImage: "arrow.uturn.backward"

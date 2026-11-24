@@ -26,12 +26,23 @@ extension GameTableModel {
             return
         }
         selectedPin = pin
+        updatePinMenuCollision()
         updateAttachmentPosition(for: .pinMenu)
+    }
+
+    /// Only the open pin's hit-test box shrinks to its base, so the menu's buttons are not
+    /// behind the figure. Idempotent: pawns skip an unchanged flag.
+    private func updatePinMenuCollision() {
+        let openPinId = selectedPin != nil && isGameMaster ? selectedPinId : nil
+        for pawn in setup.pinPawns {
+            pawn.isMenuOpen = pawn.pinId == openPinId
+        }
     }
 
     func clearPinSelection() {
         selectedPinId = nil
         selectedPin = nil
+        updatePinMenuCollision()
         popoverAnchors[.pinMenu].hide()
     }
 
