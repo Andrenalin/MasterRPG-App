@@ -12,6 +12,8 @@ struct BattleRoundView: View {
     /// content takes its top margin from `gameSidePanelContent`.
     var isSidePanel = false
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var screenModel = screenModel
@@ -29,6 +31,15 @@ struct BattleRoundView: View {
                 .focusSection()
 #endif
 
+                // Pinned under the header: it stays visible while the list scrolls.
+                if screenModel.isConfigurationExpanded {
+                    BattleRoundStickySettings(controller: controller, screenModel: screenModel)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+#if os(tvOS)
+                        .focusSection()
+#endif
+                }
+
                 // The scrolling list owns its scroll position, so a position
                 // update re-evaluates only that view, not this header.
                 BattleRoundScrollContent(
@@ -39,6 +50,7 @@ struct BattleRoundView: View {
                 .focusSection()
 #endif
             }
+            .animation(accessibilityReduceMotion ? nil : .default, value: screenModel.isConfigurationExpanded)
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleHiddenNavigationBar()
             .applyIf(isSidePanel) {

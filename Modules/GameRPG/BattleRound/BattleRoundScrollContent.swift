@@ -4,8 +4,9 @@ import CoreRPG
 import MapRPG
 import SwiftUI
 
-/// The scrolling part of the battle round screen: the settings panel while it
-/// is expanded, then the turn order or the empty state.
+/// The scrolling part of the battle round screen: the turn order or the empty
+/// state. The settings panel is not part of it, it is pinned above
+/// (`BattleRoundStickySettings`).
 ///
 /// A view of its own so the scroll position is this view's state. On the
 /// screen's root view every position update re-ran the whole screen body.
@@ -24,18 +25,6 @@ struct BattleRoundScrollContent: View {
 
         ScrollView {
             LazyVStack {
-                if isConfigurationExpanded {
-                    BattleRoundSettingsView(
-                        settings: controller.root.mapRoot.mapGameControllable.battleRoundSettings,
-                        controller: controller,
-                        screenModel: screenModel
-                    )
-                    .transition(.move(edge: .top).combined(with: .opacity))
-#if os(tvOS)
-                    .focusSection()
-#endif
-                }
-
                 if showsCards {
                     BattleRoundList(
                         cards: cards,
@@ -49,8 +38,8 @@ struct BattleRoundScrollContent: View {
                     )
                     // Centred in the visible area. A lazy stack in a scroll
                     // view gives its rows no height to fill, so the state
-                    // takes the scroll view's own. Below the expanded
-                    // settings it keeps its natural height instead, so
+                    // takes the scroll view's own. With the settings panel
+                    // expanded above it keeps its natural height instead, so
                     // "Start Battle" stays next to the settings.
                     .applyIf(!isConfigurationExpanded) {
                         $0.containerRelativeFrame(.vertical)
@@ -59,7 +48,6 @@ struct BattleRoundScrollContent: View {
             }
             .scrollTargetLayout()
             .animation(accessibilityReduceMotion ? nil : .snappy, value: cards)
-            .animation(accessibilityReduceMotion ? nil : .default, value: isConfigurationExpanded)
         }
         .scrollPosition($scrollPosition)
         // The turn moved on: bring the new attacker's card to the

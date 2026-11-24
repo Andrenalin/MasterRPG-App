@@ -67,6 +67,36 @@ struct BattleRoundSettingsView: View {
     }
 }
 
+/// The settings panel pinned under the header while the configuration is expanded: it is not
+/// part of the scrolling turn list, so it stays visible when the list is scrolled. It hugs its
+/// content up to half of the screen's height and scrolls itself beyond that, so a tall panel
+/// (several patterns, the keyboard) never pushes the list out of view.
+struct BattleRoundStickySettings: View {
+    let controller: BattleRoundController
+    let screenModel: BattleRoundScreenModel
+
+    @State private var contentHeight: CGFloat = 0
+
+    var body: some View {
+        ScrollView {
+            BattleRoundSettingsView(
+                settings: controller.root.mapRoot.mapGameControllable.battleRoundSettings,
+                controller: controller,
+                screenModel: screenModel
+            )
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                contentHeight = height
+            }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .containerRelativeFrame(.vertical, alignment: .top) { length, _ in
+            min(contentHeight, length / 2)
+        }
+    }
+}
+
 private struct BattleRoundPatternSection: View {
     let title: String
     let systemImage: String
