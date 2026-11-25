@@ -54,6 +54,11 @@ public final class FolderListModel {
     public var selection: [UUID]
     public var selected: UUID?
     public var listSelection: Set<UUID>
+    /// The row the keyboard acts on in selection mode: the last row clicked or moved to with the
+    /// arrow keys. `@FocusState` alone lost it, because the focus can sit on the row's checkmark
+    /// button instead of the row button, and then up / down restarted at the first row and Space
+    /// had no row to toggle.
+    @ObservationIgnored public var keyboardRowId: UUID?
 
     // MARK: - Scroll
     
@@ -215,6 +220,26 @@ public extension FolderListModel {
 
     func resetListSelection() {
         listSelection <=> []
+    }
+
+    /// Adds the row to the multi-selection, or removes it when it is already selected.
+    func toggleListSelection(of rowId: UUID) {
+        if listSelection.contains(rowId) {
+            listSelection.remove(rowId)
+        } else {
+            listSelection.insert(rowId)
+        }
+    }
+
+    /// The row `offset` rows after (positive) or before (negative) `currentId`, stopping at the
+    /// first and last row. Without a current row, or when it is not in the list (filtered
+    /// away), the first row for a step down and the last row for a step up.
+    func rowId(offsetBy offset: Int, from currentId: UUID?) -> UUID? {
+        guard !list.isEmpty else { return nil }
+        guard let currentId, let currentIndex = list.firstIndex(where: { $0.id == currentId }) else {
+            return offset > 0 ? list.first?.id : list.last?.id
+        }
+        return list[min(max(currentIndex + offset, 0), list.count - 1)].id
     }
 
     func update(selectionMode: Bool) {

@@ -8,6 +8,12 @@ import AppIntents
 struct ListRowItemView: View, Equatable {
     let root: any ItemRootControllable
     let item: FolderListItemModel
+    /// The folder depth, passed by value: `item` is a class instance, so comparing `item.level`
+    /// in `==` compared the instance with itself and a row kept its old indent until another
+    /// change (the focus) redrew it.
+    let level: Int
+    /// Compared in `==` so toggling selection mode redraws every row with fresh values.
+    let isSelectionMode: Bool
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessible)?
     let listModel: FolderListModel
@@ -32,7 +38,8 @@ struct ListRowItemView: View, Equatable {
     /// live `listModel` on both sides, so it is not compared. See CODE_AUDIT §8.4, CODE_AUDIT_23 §8.7.
     static func == (lhs: ListRowItemView, rhs: ListRowItemView) -> Bool {
         lhs.item.id == rhs.item.id
-            && lhs.item.level == rhs.item.level
+            && lhs.level == rhs.level
+            && lhs.isSelectionMode == rhs.isSelectionMode
             && lhs.leadingPadding == rhs.leadingPadding
             && lhs.model.isEqualErased(to: rhs.model)
     }
@@ -49,17 +56,22 @@ struct ListRowItemView: View, Equatable {
         // because `.buttonStyle(.plain)` lets the innermost tapped control win.
         Button(action: selectRow) {
             RowContentView(root: root, item: item, listController: listController, model: model, isSelected: isSelected)
+                // The indent is inside the button: the focus ring then spans the whole row like
+                // the selection tint, instead of starting at the indented content. In selection
+                // mode it is outside the checkmark instead (below), so the circle sits on the
+                // item and is indented with it.
+                .padding(.leading, listController.listDisplayModel.isSelectionMode ? 0 : CGFloat(level) * indentPerLevel)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .focused(focusedRowId, equals: item.id)
         .padding(.trailing, trailingInset)
-        .padding(.leading, CGFloat(item.level) * indentPerLevel)
         .selectListItem(
             isActive: listController.listDisplayModel.isSelectionMode,
             action: selectRow,
             isSelected: { isSelected }
         )
+        .padding(.leading, listController.listDisplayModel.isSelectionMode ? CGFloat(level) * indentPerLevel : 0)
         .background {
             if isDropTargeted {
                 Color.accentColor.opacity(0.2)
@@ -116,12 +128,9 @@ private extension ListRowItemView {
 
     func selectRow() {
         focusedRowId.wrappedValue = item.id
+        listModel.keyboardRowId = item.id
         if listController.listDisplayModel.isSelectionMode {
-            if listModel.listSelection.contains(item.id) {
-                listModel.listSelection.remove(item.id)
-            } else {
-                listModel.listSelection.insert(item.id)
-            }
+            listModel.toggleListSelection(of: item.id)
         } else {
             listModel.selected = item.id
         }
@@ -220,6 +229,8 @@ private struct RowContentView: View {
     ListRowItemView(
         root: fixture.root,
         item: item,
+        level: item.level,
+        isSelectionMode: false,
         listController: fixture.folderListController,
         parentModel: nil,
         listModel: fixture.folderListController.listModel,

@@ -58,8 +58,12 @@ struct ListRootView: View {
 #if !os(tvOS)
                 .onKeyPress(.upArrow, phases: .down) { _ in moveSelection(by: -1) }
                 .onKeyPress(.downArrow, phases: .down) { _ in moveSelection(by: 1) }
-                .onKeyPress(.space, phases: .down) { keyPress in
-                    guard keyPress.modifiers.isEmpty,
+                .onKeyPress(.space, phases: [.down, .repeat, .up]) { keyPress in
+                    if listController.listDisplayModel.isSelectionMode {
+                        return keyPress.modifiers.isEmpty ? toggleFocusedRowSelection(phase: keyPress.phase) : .ignored
+                    }
+                    guard keyPress.phase == .down,
+                          keyPress.modifiers.isEmpty,
                           listController.canToggleFolder(itemId: listModel.selectedItemId) else {
                         return .ignored
                     }
@@ -182,20 +186,17 @@ private extension ListRootView {
         listController.add(type: .item, url: url, root: root, parentId: parentModel?.id)
     }
 
-    /// Replaces the row-to-row up/down arrow navigation `List` gave for free. Ignored while
-    /// `isSelectionMode` is active so keyboard navigation never collapses a multi-selection.
+    /// Replaces the row-to-row up/down arrow navigation `List` gave for free. In selection mode the
+    /// arrows only move the keyboard focus (the ring) to the previous / next row, so a
+    /// multi-selection is never collapsed; Space then toggles the focused row.
     func moveSelection(by offset: Int) -> KeyPress.Result {
-        guard !listController.listDisplayModel.isSelectionMode else { return .ignored }
-        let ids = listModel.list.map(\.id)
-        guard !ids.isEmpty else { return .ignored }
-        let nextIndex: Int
-        if let selected = listModel.selected, let currentIndex = ids.firstIndex(of: selected) {
-            nextIndex = min(max(currentIndex + offset, 0), ids.count - 1)
-        } else {
-            nextIndex = offset > 0 ? 0 : ids.count - 1
+        let isSelectionMode = listController.listDisplayModel.isSelectionMode
+        let current = isSelectionMode ? keyboardRow : listModel.selected
+        guard let target = listModel.rowId(offsetBy: offset, from: current) else { return .ignored }
+        if !isSelectionMode {
+            listModel.selected = target
         }
-        let target = ids[nextIndex]
-        listModel.selected = target
+        listModel.keyboardRowId = target
         listModel.scrollId = target
         listModel.recordVisibleScrollPosition(target)
         focusedRowId = target
@@ -204,7 +205,26 @@ private extension ListRootView {
         }
         return .handled
     }
-    
+
+    /// The row the keyboard acts on in selection mode: the focused row, else the last row
+    /// clicked or moved to.
+    var keyboardRow: UUID? {
+        focusedRowId ?? listModel.keyboardRowId
+    }
+
+    /// Space in selection mode: selects / deselects the keyboard row. Only the key-down toggles;
+    /// repeats and the key-up are consumed so the focused row button cannot toggle it a second
+    /// time by its own activation.
+    func toggleFocusedRowSelection(phase: KeyPress.Phases) -> KeyPress.Result {
+        guard listController.listDisplayModel.isSelectionMode,
+              let rowId = keyboardRow,
+              listModel.list.contains(where: { $0.id == rowId }) else { return .ignored }
+        if phase == .down {
+            listModel.toggleListSelection(of: rowId)
+        }
+        return .handled
+    }
+
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
     func deleteItems(offsets: IndexSet) {
         if let parentModel {

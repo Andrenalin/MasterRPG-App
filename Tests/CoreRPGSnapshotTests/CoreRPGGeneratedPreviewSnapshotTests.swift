@@ -999,6 +999,8 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 CoreRPG.ListRowItemView(
                     root: fixture.root,
                     item: item,
+                    level: item.level,
+                    isSelectionMode: false,
                     listController: fixture.folderListController,
                     parentModel: nil,
                     listModel: fixture.folderListController.listModel,

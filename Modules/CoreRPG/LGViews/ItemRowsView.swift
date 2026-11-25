@@ -20,6 +20,8 @@ struct ItemRowsView: View {
                 ListRowItemView(
                     root: root,
                     item: item,
+                    level: item.level,
+                    isSelectionMode: listController.listDisplayModel.isSelectionMode,
                     listController: listController,
                     parentModel: parentModel,
                     listModel: listModel,
