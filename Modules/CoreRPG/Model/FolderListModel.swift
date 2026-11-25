@@ -2,6 +2,23 @@
 
 import SwiftUI
 
+enum RangeSelectionMode: Equatable {
+    case select
+    case deselect
+}
+
+struct RangeSelection {
+    let anchorId: UUID
+    let mode: RangeSelectionMode
+    /// The selection from before the range started.
+    let base: Set<UUID>
+}
+
+extension CoordinateSpaceProtocol where Self == NamedCoordinateSpace {
+    /// The content of the list's `LazyVStack`: its rows' frames and a drag's location share it.
+    static var listRows: NamedCoordinateSpace { .named("listRows") }
+}
+
 @MainActor @Observable
 public final class FolderListModel {
     public init(isSelectionMode: Bool = false, selection: [UUID] = [], navigationModel: ModuleNavigationModel) {
@@ -59,6 +76,11 @@ public final class FolderListModel {
     /// button instead of the row button, and then up / down restarted at the first row and Space
     /// had no row to toggle.
     @ObservationIgnored public var keyboardRowId: UUID?
+    /// The range being selected or deselected by a drag over the rows or by Shift + arrow.
+    @ObservationIgnored var rangeSelection: RangeSelection?
+    /// The rows' frames in the `.listRows` coordinate space, reported by the rows in selection
+    /// mode. Maps the pointer position of a drag to a row.
+    @ObservationIgnored var rowFrames: [UUID: CGRect] = [:]
 
     // MARK: - Scroll
     
@@ -242,7 +264,54 @@ public extension FolderListModel {
         return list[min(max(currentIndex + offset, 0), list.count - 1)].id
     }
 
+    var isRangeSelecting: Bool { rangeSelection != nil }
+
+    /// Starts a range at `rowId`. The row's own state decides what the range does: a selected row
+    /// starts a deselecting range, an unselected row a selecting one. The rows the range covers
+    /// follow `extendRangeSelection(to:)`.
+    func beginRangeSelection(at rowId: UUID) {
+        guard list.contains(where: { $0.id == rowId }) else { return }
+        rangeSelection = RangeSelection(
+            anchorId: rowId,
+            mode: listSelection.contains(rowId) ? .deselect : .select,
+            base: listSelection
+        )
+        extendRangeSelection(to: rowId)
+    }
+
+    /// Selects or deselects every row from the range's first row to `rowId`, on top of the
+    /// selection from before the range. Moving back shrinks the range again.
+    func extendRangeSelection(to rowId: UUID) {
+        guard let range = rangeSelection,
+              let anchorIndex = list.firstIndex(where: { $0.id == range.anchorId }),
+              let targetIndex = list.firstIndex(where: { $0.id == rowId }) else { return }
+        let covered = list[min(anchorIndex, targetIndex)...max(anchorIndex, targetIndex)].map(\.id)
+        let updated = range.mode == .select ? range.base.union(covered) : range.base.subtracting(covered)
+        if updated != listSelection {
+            listSelection = updated
+        }
+    }
+
+    func endRangeSelection() {
+        rangeSelection = nil
+    }
+
+    /// The row at `y` in the `.listRows` space, or the nearest one when `y` is in a gap or beyond
+    /// the first or last row reported.
+    func rowId(atY y: CGFloat) -> UUID? {
+        var best: (id: UUID, distance: CGFloat)?
+        for row in list {
+            guard let frame = rowFrames[row.id] else { continue }
+            let distance = y < frame.minY ? frame.minY - y : max(0, y - frame.maxY)
+            if best == nil || distance < best?.distance ?? .infinity {
+                best = (row.id, distance)
+            }
+        }
+        return best?.id
+    }
+
     func update(selectionMode: Bool) {
+        if !selectionMode { rangeSelection = nil }
         isSelectionMode <=> selectionMode
         if isSelectionMode {
             selection <=> []

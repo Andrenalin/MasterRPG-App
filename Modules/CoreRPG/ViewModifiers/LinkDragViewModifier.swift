@@ -5,12 +5,12 @@ import UniformTypeIdentifiers
 
 extension View {
     func draggable<Preview: View>(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String, isMove: Bool = false, @ViewBuilder preview: @escaping () -> Preview) -> some View {
-        modifier(LinkTransferViewModifier(module: module, role: .drag(itemId: itemId, entryId: entryId, name: name, isMove: isMove, preview: preview)))
+        modifier(LinkTransferViewModifier(module: module, role: .drag(itemId: itemId, entryId: entryId, name: name, isMove: isMove, preview: preview, isEnabled: true)))
     }
 
     // Convenience overload for call sites that don't need a custom drag preview
-    public func draggable(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String, isMove: Bool = false) -> some View {
-        modifier(LinkTransferViewModifier<EmptyView>(module: module, role: .drag(itemId: itemId, entryId: entryId, name: name, isMove: isMove, preview: nil)))
+    public func draggable(for module: NetworkModules, itemId: UUID, entryId: UUID?, name: String, isMove: Bool = false, isEnabled: Bool = true) -> some View {
+        modifier(LinkTransferViewModifier<EmptyView>(module: module, role: .drag(itemId: itemId, entryId: entryId, name: name, isMove: isMove, preview: nil, isEnabled: isEnabled)))
     }
 
     public func dropDestination(for module: NetworkModules, isEnabled: Bool = true, handler: @escaping (_ name: String, _ itenId: UUID, _ entryId: UUID?) -> Void) -> some View {
@@ -30,7 +30,7 @@ struct LinkTransferViewModifier<Preview: View>: ViewModifier {
     typealias Handler = (_ name: String, _ itemId: UUID, _ entryId: UUID?) -> Void
 
     enum Role {
-        case drag(itemId: UUID, entryId: UUID?, name: String, isMove: Bool, preview: (() -> Preview)?)
+        case drag(itemId: UUID, entryId: UUID?, name: String, isMove: Bool, preview: (() -> Preview)?, isEnabled: Bool)
         case drop(isEnabled: Bool, handler: Handler)
         case targetedDrop(handler: Handler, isTargeted: (Bool) -> Void)
     }
@@ -77,8 +77,10 @@ struct LinkTransferViewModifier<Preview: View>: ViewModifier {
         make: @escaping (_ itemId: UUID, _ entryId: UUID?, _ name: String, _ isMove: Bool) -> Link
     ) -> some View {
         switch role {
-        case let .drag(itemId, entryId, name, isMove, preview):
-            if let preview {
+        case let .drag(itemId, entryId, name, isMove, preview, isEnabled):
+            if !isEnabled {
+                content
+            } else if let preview {
                 content.draggable(make(itemId, entryId, name, isMove)) { preview() }
             } else {
                 content.draggable(make(itemId, entryId, name, isMove))

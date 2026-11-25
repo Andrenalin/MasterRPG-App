@@ -22,6 +22,7 @@ struct ListRowItemView: View, Equatable {
     var focusedRowId: FocusState<UUID?>.Binding
 
     @State private var isDropTargeted = false
+    @State private var isRangeSelectionStarted = false
 
     /// Indent per folder level and row insets, scaled with Dynamic Type: a fixed 16-point indent
     /// stayed small next to large text. See CODE_AUDIT_Folder §8.4.
@@ -71,6 +72,20 @@ struct ListRowItemView: View, Equatable {
             action: selectRow,
             isSelected: { isSelected }
         )
+#if os(iOS)
+        // iPhone and iPad: a touch that starts in the checkmark column selects or deselects rows
+        // while it moves over them; a touch elsewhere still scrolls the list. It covers the
+        // checkmark button, so a tap on it is the first step of such a gesture.
+        .overlay(alignment: .leading) {
+            if listController.listDisplayModel.isSelectionMode {
+                Color.clear
+                    .frame(width: Self.checkColumnWidth)
+                    .contentShape(.rect)
+                    .gesture(rangeSelectionGesture(minimumDistance: 0))
+                    .accessibilityHidden(true)
+            }
+        }
+#endif
         .padding(.leading, listController.listDisplayModel.isSelectionMode ? CGFloat(level) * indentPerLevel : 0)
         .background {
             if isDropTargeted {
@@ -79,7 +94,8 @@ struct ListRowItemView: View, Equatable {
                 Color.accentColor.opacity(0.12)
             }
         }
-        .draggable(for: root.configurable.module, itemId: item.source.itemId, entryId: nil, name: model.name)
+        // Not in selection mode: dragging over the rows selects them there.
+        .draggable(for: root.configurable.module, itemId: item.source.itemId, entryId: nil, name: model.name, isEnabled: !listController.listDisplayModel.isSelectionMode)
         .contextMenu {
             ListRootContextMenu(
                 root: root,
@@ -98,6 +114,21 @@ struct ListRowItemView: View, Equatable {
             $0.dropDestination(for: root.configurable.module, isEnabled: true, handler: addLink)
         }
         .padding(EdgeInsets(top: verticalInset, leading: leadingPadding, bottom: verticalInset, trailing: 0))
+#if os(macOS) || os(visionOS)
+        // Mouse or pinch dragging from anywhere on the row selects or deselects the rows it
+        // passes over. Simultaneous, so a plain click still reaches the row's button.
+        .simultaneousGesture(
+            rangeSelectionGesture(minimumDistance: 4),
+            isEnabled: listController.listDisplayModel.isSelectionMode
+        )
+#endif
+#if !os(tvOS)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .listRows) } action: { frame in
+            if listController.listDisplayModel.isSelectionMode {
+                listModel.rowFrames[item.id] = frame
+            }
+        }
+#endif
 #if !os(tvOS)
         // Lets "open the third one" or "delete this" on the list resolve to the item. Folders are
         // entities too; only the app's own collections are not. See CODE_AUDIT_AppIntents §4.7.
@@ -129,12 +160,42 @@ private extension ListRowItemView {
     func selectRow() {
         focusedRowId.wrappedValue = item.id
         listModel.keyboardRowId = item.id
+        listModel.endRangeSelection()
         if listController.listDisplayModel.isSelectionMode {
             listModel.toggleListSelection(of: item.id)
         } else {
             listModel.selected = item.id
         }
     }
+
+    /// The checkmark button with its padding.
+    static var checkColumnWidth: CGFloat { 60 }
+
+#if !os(tvOS)
+    /// Selection mode: the row where the gesture starts decides whether it selects or deselects
+    /// (an unselected row selects, a selected one deselects); every row between there and the
+    /// pointer then follows. Moving back shrinks the range again.
+    func rangeSelectionGesture(minimumDistance: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: minimumDistance, coordinateSpace: .listRows)
+            .onChanged { value in
+                if !isRangeSelectionStarted {
+                    isRangeSelectionStarted = true
+                    focusedRowId.wrappedValue = item.id
+                    listModel.keyboardRowId = item.id
+                    listModel.endRangeSelection()
+                    listModel.beginRangeSelection(at: item.id)
+                }
+                if let rowId = listModel.rowId(atY: value.location.y) {
+                    listModel.extendRangeSelection(to: rowId)
+                    listModel.keyboardRowId = rowId
+                }
+            }
+            .onEnded { _ in
+                isRangeSelectionStarted = false
+                listModel.endRangeSelection()
+            }
+    }
+#endif
 
     /// Reordering (via drag) is only meaningful for a collection's own children list —
     /// mirrors the previous `List` `.moveDisabled(parentModel == nil || parentModel?.category == .folder)`.

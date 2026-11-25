@@ -56,8 +56,12 @@ struct ListRootView: View {
                 }
 #endif
 #if !os(tvOS)
-                .onKeyPress(.upArrow, phases: .down) { _ in moveSelection(by: -1) }
-                .onKeyPress(.downArrow, phases: .down) { _ in moveSelection(by: 1) }
+                .onKeyPress(.upArrow, phases: .down) { keyPress in
+                    moveSelection(by: -1, extending: keyPress.modifiers.contains(.shift))
+                }
+                .onKeyPress(.downArrow, phases: .down) { keyPress in
+                    moveSelection(by: 1, extending: keyPress.modifiers.contains(.shift))
+                }
                 .onKeyPress(.space, phases: [.down, .repeat, .up]) { keyPress in
                     guard keyPress.modifiers.isEmpty else { return .ignored }
                     if listController.listDisplayModel.isSelectionMode {
@@ -198,12 +202,21 @@ private extension ListRootView {
     /// Replaces the row-to-row up/down arrow navigation `List` gave for free. In selection mode the
     /// arrows only move the keyboard focus (the ring) to the previous / next row, so a
     /// multi-selection is never collapsed; Space then toggles the focused row.
-    func moveSelection(by offset: Int) -> KeyPress.Result {
+    func moveSelection(by offset: Int, extending: Bool = false) -> KeyPress.Result {
         let isSelectionMode = listController.listDisplayModel.isSelectionMode
         let current = isSelectionMode ? keyboardRow : listModel.selected
         guard let target = listModel.rowId(offsetBy: offset, from: current) else { return .ignored }
         if !isSelectionMode {
             listModel.selected = target
+        } else if extending {
+            // Shift + arrow: the row the cursor leaves decides whether the range selects or
+            // deselects, and every row the cursor passes follows (moving back shrinks it).
+            if !listModel.isRangeSelecting {
+                listModel.beginRangeSelection(at: current.flatMap { id in listModel.list.contains { $0.id == id } ? id : nil } ?? target)
+            }
+            listModel.extendRangeSelection(to: target)
+        } else {
+            listModel.endRangeSelection()
         }
         listModel.keyboardRowId = target
         listModel.scrollId = target
@@ -227,6 +240,7 @@ private extension ListRootView {
               let rowId = keyboardRow,
               listModel.list.contains(where: { $0.id == rowId }) else { return .ignored }
         if phase == .down {
+            listModel.endRangeSelection()
             listModel.toggleListSelection(of: rowId)
         }
         return .handled
@@ -238,6 +252,7 @@ private extension ListRootView {
     func toggleKeyboardRowFolder(phase: KeyPress.Phases) -> KeyPress.Result {
         guard let rowId = keyboardRow,
               listModel.list.contains(where: { $0.id == rowId }) else { return .ignored }
+        if phase == .down { listModel.endRangeSelection() }
         if phase == .down, listController.canToggleFolder(itemId: rowId) {
             withAnimation(accessibilityReduceMotion ? nil : .default) {
                 _ = listController.toggleFolder(itemId: rowId)
@@ -338,6 +353,7 @@ private struct ListView: View {
             }
             .frame(maxWidth: .infinity)
             .scrollTargetLayout()
+            .coordinateSpace(.listRows)
         }
 #if os(macOS)
         .applyIf(parentModel != nil) {
