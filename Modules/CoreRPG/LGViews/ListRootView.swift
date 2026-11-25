@@ -422,12 +422,36 @@ private struct ListView: View {
             }
         }
         .focusedValue(\.moduleListIsFocused, true)
+        .focusedValue(\.listSelectionActions, selectionActions)
         .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
         .themedListSurface()
         .onChange(of: appFocusModel.navigationColumnFocus) {
             guard appFocusModel.navigationColumnFocus == .list else { return }
             focusPreferredListRow()
         }
+    }
+
+    /// Select All / Select None for the menu bar, taken from the list that has the focus. The row
+    /// the keyboard is on decides the scope in folder mode, see `FolderListControllable.selectAll`.
+    private var selectionActions: FocusedListSelectionActions {
+        let listController = listController
+        let listModel = listModel
+        let focusedRowId = focusedRowId
+        let animation: Animation? = accessibilityReduceMotion ? nil : .default
+        return FocusedListSelectionActions(
+            isSelectionMode: listController.listDisplayModel.isSelectionMode,
+            selectAllFolderName: {
+                listController.selectAllFolderName(in: listModel, anchorRowId: focusedRowId.wrappedValue ?? listModel.keyboardRowId)
+            },
+            selectAll: {
+                withAnimation(animation) {
+                    listController.selectAll(in: listModel, anchorRowId: focusedRowId.wrappedValue ?? listModel.keyboardRowId)
+                }
+            },
+            selectNone: {
+                withAnimation(animation) { listController.selectNone(in: listModel) }
+            }
+        )
     }
 
     private func focusPreferredListRow() {

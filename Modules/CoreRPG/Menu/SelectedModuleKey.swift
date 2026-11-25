@@ -38,6 +38,31 @@ public struct FocusedUndoActions {
     public let redo: @MainActor () -> Void
 }
 
+/// Select All / Select None of the focused module list, for the menu bar and the keyboard. Only a
+/// list in selection mode takes them.
+@MainActor
+public struct FocusedListSelectionActions {
+    public init(
+        isSelectionMode: Bool,
+        selectAllFolderName: @escaping @MainActor () -> String? = { nil },
+        selectAll: @escaping @MainActor () -> Void,
+        selectNone: @escaping @MainActor () -> Void
+    ) {
+        self.isSelectionMode = isSelectionMode
+        self.selectAllFolderName = selectAllFolderName
+        self.selectAll = selectAll
+        self.selectNone = selectNone
+    }
+
+    public let isSelectionMode: Bool
+    /// The name of the folder or collection Select All selects the content of; nil when it selects
+    /// every row. A closure, read when the menu is shown: the row the keyboard is on changes
+    /// without the list rebuilding its focused value.
+    public let selectAllFolderName: @MainActor () -> String?
+    public let selectAll: @MainActor () -> Void
+    public let selectNone: @MainActor () -> Void
+}
+
 /// Zoom commands of the focused canvas (the map editor), for the View menu on macOS and the
 /// keyboard. The canvas has no scroll-wheel zoom API in SwiftUI, so the commands are the
 /// pointer-free way to zoom. See CODE_AUDIT_26 §8.22.
@@ -59,5 +84,6 @@ public extension FocusedValues {
     @Entry var moduleListIsFocused: Bool?
     @Entry var selectedSheetEntry: SelectedSheetEntry?
     @Entry var editorUndoActions: FocusedUndoActions?
+    @Entry var listSelectionActions: FocusedListSelectionActions?
     @Entry var viewportZoom: FocusedViewportZoom?
 }

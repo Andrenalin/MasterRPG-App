@@ -244,6 +244,33 @@ public extension FolderListModel {
         listSelection <=> []
     }
 
+    /// Select All: every row of the list. In a folder's or collection's own list that is every
+    /// item in it, in the root list every shown row, expanded children included.
+    func selectAllRows() {
+        endRangeSelection()
+        listSelection <=> Set(list.map(\.id))
+    }
+
+    /// Select None: empties the selection and stays in selection mode.
+    func selectNoRows() {
+        endRangeSelection()
+        resetListSelection()
+    }
+
+    /// The rows directly under the folder or collection row `rowId`: the rows that follow it one
+    /// level deeper, up to the next row that is not deeper than the folder. Rows of nested
+    /// folders are not included. Empty when the row is closed or not in the list.
+    func childRowIds(of rowId: UUID) -> [UUID] {
+        guard let index = list.firstIndex(where: { $0.id == rowId }) else { return [] }
+        let level = list[index].level
+        var ids: [UUID] = []
+        for row in list[list.index(after: index)...] {
+            if row.level <= level { break }
+            if row.level == level + 1 { ids.append(row.id) }
+        }
+        return ids
+    }
+
     /// Adds the row to the multi-selection, or removes it when it is already selected.
     func toggleListSelection(of rowId: UUID) {
         if listSelection.contains(rowId) {

@@ -22,6 +22,7 @@ public struct ModuleCommands: Commands {
     @FocusedValue(\.selectedSheetEntry) private var selectedSheetEntry: SelectedSheetEntry?
     @FocusedValue(\.editorUndoActions) private var editorUndoActions: FocusedUndoActions?
     @FocusedValue(\.viewportZoom) private var viewportZoom: FocusedViewportZoom?
+    @FocusedValue(\.listSelectionActions) private var listSelectionActions: FocusedListSelectionActions?
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
@@ -57,6 +58,13 @@ public struct ModuleCommands: Commands {
                 Divider()
                 DeleteItemButton(root: root, isListFocused: moduleListIsFocused == true)
                 Divider()
+            }
+        }
+        // The Edit menu, next to the system's Select All, which a text field answers.
+        CommandGroup(after: .pasteboard) {
+            if selectedModule == root.configurable.module {
+                ModuleSelectAllButton(root: root, focused: listSelectionActions)
+                ModuleSelectNoneButton(root: root, focused: listSelectionActions)
             }
         }
         CommandGroup(after: .textEditing) {

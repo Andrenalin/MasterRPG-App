@@ -3,17 +3,21 @@
 import SwiftUI
 
 struct ListRootContextMenu: View {
-    init(root: any ItemRootControllable, controller: ContextMenuMultiController, parentItem: (any ItemDataAccessible)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
+    init(root: any ItemRootControllable, controller: ContextMenuMultiController, parentItem: (any ItemDataAccessible)?, currentSelected: UUID? = nil, rowId: UUID? = nil, listController: (any FolderListControllable)? = nil) {
         self.root = root
         self.controller = controller
         self.parentItem = parentItem
         self.currentSelected = currentSelected
+        self.rowId = rowId
         self.listController = listController
     }
 
     let root: any ItemRootControllable
     let controller: ContextMenuMultiController
     let parentItem: (any ItemDataAccessible)?
+    /// The row the menu was opened on. `currentSelected` is nil in selection mode, where the menu
+    /// acts on the selection, but "Select All in <folder>" still needs this row.
+    let rowId: UUID?
     let currentSelected: UUID?
     let listController: (any FolderListControllable)?
 
@@ -45,6 +49,10 @@ struct ListRootContextMenu: View {
         Divider()
         OpenFolderButton(listController: listController, itemId: currentSelected, title: title)
         CloseFolderButton(listController: listController, itemId: currentSelected)
+        #if !os(tvOS)
+        Divider()
+        SelectListItemsView(listController: listController, parentItem: parentItem, anchorId: rowId ?? currentSelected)
+        #endif
         Divider()
         ExportItemView(controller: controller, currentSelected: currentSelected, title: title)
         GroupEditView(controller: controller, currentSelected: currentSelected, title: title)
@@ -427,6 +435,39 @@ private struct MoveIntoGroupMenu: View {
 }
 
 #if !os(tvOS)
+/// "Select All in <folder>" / "Select None". On a folder or collection in folder mode, Select All
+/// selects the items in that folder (see `FolderListControllable.selectAll`); on any other row it
+/// selects every row. Like the menu bar commands, only enabled in selection mode.
+private struct SelectListItemsView: View {
+    let listController: (any FolderListControllable)?
+    let parentItem: (any ItemDataAccessible)?
+    let anchorId: UUID?
+
+    var body: some View {
+        if let listController {
+            let scopedModel = listController.scopedListModel(parentModel: parentItem)
+            let isEnabled = listController.listDisplayModel.isSelectionMode
+            let folderName = listController.selectAllFolderName(in: scopedModel, anchorRowId: anchorId)
+            Button {
+                withAnimation { listController.selectAll(in: scopedModel, anchorRowId: anchorId) }
+            } label: {
+                SelectAllLabel(folderName: folderName)
+            }
+            .disabled(!isEnabled)
+            Button {
+                withAnimation { listController.selectNone(in: scopedModel) }
+            } label: {
+                Label {
+                    Text("Select None", bundle: .module)
+                } icon: {
+                    Image(systemName: "circle")
+                }
+            }
+            .disabled(!isEnabled)
+        }
+    }
+}
+
 private struct BatchExtractionView: View {
     @Environment(\.navigator) private var navigator
 

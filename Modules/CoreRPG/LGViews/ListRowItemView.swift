@@ -102,6 +102,7 @@ struct ListRowItemView: View, Equatable {
                 controller: menuController,
                 parentItem: parentModel,
                 currentSelected: listController.listDisplayModel.isSelectionMode ? nil : item.source.itemId,
+                rowId: item.id,
                 listController: listController
             )
         }

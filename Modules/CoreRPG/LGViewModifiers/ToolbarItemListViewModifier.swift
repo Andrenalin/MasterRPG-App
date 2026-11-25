@@ -135,10 +135,35 @@ private struct ToolbarItemListActionMenuView: View {
         listController.listDisplayModel
     }
 
+    /// The same actions as the menu bar's, for the list this toolbar belongs to.
+    private var selectionActions: FocusedListSelectionActions {
+        let listController = listController
+        let scopedModel = listController.scopedListModel(parentModel: parentModel)
+        return FocusedListSelectionActions(
+            isSelectionMode: listController.listDisplayModel.isSelectionMode,
+            selectAllFolderName: {
+                listController.selectAllFolderName(in: scopedModel, anchorRowId: scopedModel.keyboardRowId)
+            },
+            selectAll: {
+                withAnimation { listController.selectAll(in: scopedModel, anchorRowId: scopedModel.keyboardRowId) }
+            },
+            selectNone: {
+                withAnimation { listController.selectNone(in: scopedModel) }
+            }
+        )
+    }
+
     @ViewBuilder
     var body: some View {
         Menu {
             MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: false, modal: modal) {
+                #if !os(tvOS)
+                if listDisplayModel.isSelectionMode && modal == false {
+                    SelectAllListButton(actions: selectionActions, showsShortcut: false)
+                    SelectNoneListButton(actions: selectionActions, showsShortcut: false)
+                    Divider()
+                }
+                #endif
                 if parentModel == nil && modal == false {
                     addItemButton(for: .folder, root: root, listController: listController, parentModel: parentModel)
                         .disabled(listDisplayModel.isListMode)
