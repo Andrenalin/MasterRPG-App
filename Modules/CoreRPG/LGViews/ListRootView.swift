@@ -59,11 +59,11 @@ struct ListRootView: View {
                 .onKeyPress(.upArrow, phases: .down) { _ in moveSelection(by: -1) }
                 .onKeyPress(.downArrow, phases: .down) { _ in moveSelection(by: 1) }
                 .onKeyPress(.space, phases: [.down, .repeat, .up]) { keyPress in
+                    guard keyPress.modifiers.isEmpty else { return .ignored }
                     if listController.listDisplayModel.isSelectionMode {
-                        return keyPress.modifiers.isEmpty ? toggleFocusedRowSelection(phase: keyPress.phase) : .ignored
+                        return toggleKeyboardRowFolder(phase: keyPress.phase)
                     }
                     guard keyPress.phase == .down,
-                          keyPress.modifiers.isEmpty,
                           listController.canToggleFolder(itemId: listModel.selectedItemId) else {
                         return .ignored
                     }
@@ -73,11 +73,20 @@ struct ListRootView: View {
                     return .handled
                 }
                 .onKeyPress(.return, phases: .down) { keyPress in
-                    guard keyPress.modifiers.isEmpty,
-                          ItemPrimaryAction.canPerform(root: root) else {
-                        return .ignored
+                    guard keyPress.modifiers.isEmpty else { return .ignored }
+                    if listController.listDisplayModel.isSelectionMode {
+                        return toggleFocusedRowSelection(phase: keyPress.phase)
                     }
+                    guard ItemPrimaryAction.canPerform(root: root) else { return .ignored }
                     ItemPrimaryAction.perform(root: root, scenesManager: scenesManager)
+                    return .handled
+                }
+                .onKeyPress(.escape, phases: .down) { keyPress in
+                    guard keyPress.modifiers.isEmpty,
+                          listController.listDisplayModel.isSelectionMode else { return .ignored }
+                    withAnimation(accessibilityReduceMotion ? nil : .default) {
+                        listController.listDisplayModel.isSelectionMode = false
+                    }
                     return .handled
                 }
                 .onKeyPress(.leftArrow, phases: .down) { _ in
@@ -212,15 +221,27 @@ private extension ListRootView {
         focusedRowId ?? listModel.keyboardRowId
     }
 
-    /// Space in selection mode: selects / deselects the keyboard row. Only the key-down toggles;
-    /// repeats and the key-up are consumed so the focused row button cannot toggle it a second
-    /// time by its own activation.
+    /// Return in selection mode: selects / deselects the keyboard row.
     func toggleFocusedRowSelection(phase: KeyPress.Phases) -> KeyPress.Result {
         guard listController.listDisplayModel.isSelectionMode,
               let rowId = keyboardRow,
               listModel.list.contains(where: { $0.id == rowId }) else { return .ignored }
         if phase == .down {
             listModel.toggleListSelection(of: rowId)
+        }
+        return .handled
+    }
+
+    /// Space in selection mode: opens / closes the keyboard row when it is a folder. Only the
+    /// key-down acts; repeats and the key-up are consumed, so the focused row button cannot
+    /// also select the row by its own activation.
+    func toggleKeyboardRowFolder(phase: KeyPress.Phases) -> KeyPress.Result {
+        guard let rowId = keyboardRow,
+              listModel.list.contains(where: { $0.id == rowId }) else { return .ignored }
+        if phase == .down, listController.canToggleFolder(itemId: rowId) {
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
+                _ = listController.toggleFolder(itemId: rowId)
+            }
         }
         return .handled
     }

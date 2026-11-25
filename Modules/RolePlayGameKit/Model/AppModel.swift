@@ -348,6 +348,11 @@ extension AppModel {
     
     public func save() async {
         guard saveIsDeferred == false else { return }
+        // Before `setupRootModels` ran (app sent to the background while the database is still
+        // loading, or the store failed to open) the module roots have no link register or data
+        // controller yet, and there is nothing to save. Reading the link register then trips
+        // the `ItemControllable.linkRegisterController` precondition.
+        guard configuredContext != nil else { return }
         await adventureRoot.save()
     }
     

@@ -128,7 +128,9 @@ struct OpenFolderButton: View {
             }
         }
 #if !os(tvOS)
-        .keyboardShortcut(.space, modifiers: [])
+        // Not in selection mode: the list handles Space itself there, on the keyboard row. The
+        // menu command acts on the single selected row and would take the key first.
+        .keyboardShortcut(listController?.listDisplayModel.isSelectionMode == true ? nil : KeyboardShortcut(.space, modifiers: []))
 #endif
         .disabled(!isEnabled || !(listController?.canToggleFolder(itemId: itemId) ?? false))
     }

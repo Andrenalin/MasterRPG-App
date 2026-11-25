@@ -311,6 +311,41 @@ struct FolderListControllerTests {
                 "Child must appear in flat list after toggleFolder loads children")
     }
 
+    @Test("Selecting an open folder (detail list built) keeps its children in the main list indented")
+    func detailListDoesNotResetMainListChildLevels() async {
+        let root = await makeRoot()
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId  = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Forest Walk", itemId: childId)
+        root.editController.addItem(itemId: childId, parentId: folderId)
+
+        await searchFolder(root)
+        guard let folderItem = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId }) else {
+            #expect(Bool(false))
+            return
+        }
+        root.folderListController.toggleFolder(item: folderItem)
+        func childLevel() -> Int? {
+            root.folderListController.listModel.list.first(where: { $0.source.itemId == childId })?.level
+        }
+        #expect(childLevel() == 1)
+
+        // Selecting the folder builds its detail list, which lists the children at level 0 and
+        // seeds the detail cache with copies of the folder and its children.
+        guard let folderModel = root.itemController.itemSync(for: folderId) else {
+            #expect(Bool(false))
+            return
+        }
+        root.folderListController.resetDetail(model: folderModel)
+        await root.folderListController.performDetailSearch()
+        // ... and the main list is rebuilt afterwards (any data change or search does that).
+        await searchFolder(root)
+        await root.folderListController.performDetailSearch()
+
+        #expect(childLevel() == 1, "The main list's child row must stay one level below its folder")
+    }
+
     @Test("toggleFolder with already-cached children shows them without re-fetching")
     func toggleFolderWithCachedChildrenJustResets() async {
         let root = await makeRoot()

@@ -224,7 +224,12 @@ extension FolderListControllable {
         let results = searchRootControllable.syncExpandResults(focusId: focusId)
         // Route children to the same cache as their parent for detail/common isolation.
         let detail = listModel.detailListModel
-        let resolvedCache: FolderListModel? = cache ?? (detail?.cacheListModels[item.id] != nil ? detail : nil)
+        // The detail cache when `item` is the detail list's own row. By identity, not by id: the
+        // detail cache also holds copies of the main list's folder and its children under the
+        // same row ids (`resetDetailList`), and routing the main list's folder there shared its
+        // child rows with the detail list, which lists them at level 0 — so selecting a folder
+        // took the indent from its children in the main list.
+        let resolvedCache: FolderListModel? = cache ?? (detail?.cacheListModels[item.id] === item ? detail : nil)
         item.children = results.map { result in
             let child = mapResult(result, level: item.level + 1, cache: resolvedCache)
             child.parentId = item.id

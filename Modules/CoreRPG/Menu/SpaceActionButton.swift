@@ -18,7 +18,9 @@ struct SpaceActionButton: View {
                 Image(systemName: root.viewControllable.hasCustomSpaceAction ? "play.fill" : "eye")
             }
         }
-        .keyboardShortcut(.return, modifiers: [])
+        // Not in selection mode: Return toggles the keyboard row's check there (handled by the
+        // list), and this command would take the key first.
+        .keyboardShortcut(root.folderListControllable.listDisplayModel.isSelectionMode ? nil : KeyboardShortcut(.return, modifiers: []))
         .disabled(!isListFocused || !ItemPrimaryAction.canPerform(root: root))
     }
 
