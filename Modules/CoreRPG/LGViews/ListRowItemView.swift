@@ -168,7 +168,7 @@ private struct RowContentView: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(alignment: .bottom) {
+        HStack(alignment: .center) {
             ItemRowView(
                 root: root,
                 model: model,

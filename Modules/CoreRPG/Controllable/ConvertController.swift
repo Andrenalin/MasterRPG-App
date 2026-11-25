@@ -65,6 +65,14 @@ public struct ConvertController: Sendable {
                 editController.reset(tags: ImportItemRepair.normalizedTags(legacyCategory: category, tags: item.tags), itemId: itemId)
             }
 
+            // Earlier Validate runs tagged the legacy `.item` category as "Item" / "Gegenstand".
+            if let current = itemController.itemSync(for: itemId) {
+                let cleanedTags = ImportItemRepair.removingItemCategoryTags(from: current.tags)
+                if cleanedTags != current.tags {
+                    editController.reset(tags: cleanedTags, itemId: itemId)
+                }
+            }
+
             if itemController.config.module == .photo && item.category == .entry {
                 for entry in item.entries {
                     editController.removeGroup(itemId: itemId, childId: entry.childId)

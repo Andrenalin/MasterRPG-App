@@ -379,7 +379,9 @@ public extension EditControllable {
         } else if type == .collection {
             itemCategory = itemControllable.collectionCategory
         } else {
-            itemCategory = .item
+            // `.entry` is the plain item category of the current data model. `.item` is a legacy
+            // category that Validate would convert and tag "Item".
+            itemCategory = .entry
         }
         let itemId = await itemControllable.addNew(type: itemCategory)
         return await itemControllable.item(for: itemId)

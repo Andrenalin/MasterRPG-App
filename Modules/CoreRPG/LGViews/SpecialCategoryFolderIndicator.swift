@@ -15,14 +15,19 @@ struct SpecialCategoryFolderIndicator: View {
             Button {
                 listController.toggleFolder(item: item)
             } label: {
+                // Same look as the inspector row chevron (InspectorRowViewFolderChevronView):
+                // a 44pt glass circle, so the target is easy to hit with a mouse on macOS.
                 Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
                     .imageScale(.small)
-                    .padding(.trailing)
-                    .foregroundStyle(item.isOpen ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(.tint)
+                    .contentShape(.circle)
+                    .frame(minWidth: 44, minHeight: 44)
+#if !os(visionOS)
+                    .glassEffect(.clear.interactive())
+#endif
             }
-            .buttonStyle(.plain)
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(.rect)
+            .borderLessTVButtonStyle()
+            .padding(.trailing, 4)
             .accessibilityLabel(Text("Toggle Folder", bundle: .module))
             // VoiceOver reads whether the folder is open. See CODE_AUDIT_Folder §8.5.
             .accessibilityValue(item.isOpen ? Text("Expanded", bundle: .module) : Text("Collapsed", bundle: .module))

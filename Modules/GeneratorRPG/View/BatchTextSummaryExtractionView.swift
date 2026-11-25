@@ -117,7 +117,7 @@ public struct BatchTextSummaryExtractionView: View {
         NavigationStack {
             FoundationBasicView {
                 List {
-                    if !isRunning {
+                    if !hasRun {
                         Section {
                             OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
                         } footer: {
@@ -150,30 +150,42 @@ public struct BatchTextSummaryExtractionView: View {
             }
             .navigationTitle(Text("Extract Information", bundle: .module))
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        batchTask?.cancel()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("Cancel", bundle: .module))
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isRunning {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    } else {
+                if hasRun, !isRunning {
+                    // Finished: one OK replaces Cancel and Start, so the dialog does not look like
+                    // it is back at the start.
+                    ToolbarItem(placement: .confirmationAction) {
                         Button {
-                            runBatch()
+                            dismiss()
                         } label: {
-                            Label {
-                                Text("Start", bundle: .module)
-                            } icon: {
-                                Image(systemName: "sparkles")
-                            }
+                            Text("OK", bundle: .module)
                         }
-                        .disabled(ids.isEmpty)
+                    }
+                } else {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            batchTask?.cancel()
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .accessibilityLabel(Text("Cancel", bundle: .module))
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        if isRunning {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Button {
+                                runBatch()
+                            } label: {
+                                Label {
+                                    Text("Start", bundle: .module)
+                                } icon: {
+                                    Image(systemName: "sparkles")
+                                }
+                            }
+                            .disabled(ids.isEmpty)
+                        }
                     }
                 }
             }

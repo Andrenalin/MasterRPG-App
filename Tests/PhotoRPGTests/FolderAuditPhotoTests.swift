@@ -159,7 +159,7 @@ struct FolderAuditPhotoTests {
         let one = try #require(library.itemSync(for: oneId, noGame: true))
         #expect(one.name == "One")
         #expect(one.parentId == subId)
-        #expect(one.category == .item)
+        #expect(one.category == .entry)
         let oneFile = try #require(one.fileUrl)
         #expect(oneFile.location == .newCloud)
         let stored = try #require(files.storedLocation(of: oneFile))

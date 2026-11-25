@@ -43,7 +43,7 @@ extension ItemControllable {
         for item in plan.items {
             var model = Model.empty(item.id)
             model.name = item.name
-            model.category = .item
+            model.category = .entry
             model.parentId = item.parentId
             model.fileUrl = FileUrl(fileId: item.id, url: item.file.storedUrl, location: .newCloud, module: config.module.token, relativeUrl: nil, contentHash: hashes[CloudFolderScan.key(item.file.components)])
             replace(model: model, isInsert: true, forceSave: true)

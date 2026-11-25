@@ -32,4 +32,19 @@ struct ImportItemRepairTests {
         #expect(collection.category == .collection)
         #expect(collection.tags == ["C"])
     }
+
+    @Test func legacyItemCategoryBecomesEntryWithoutItemTag() {
+        var item = FakeItemModel(name: "Legacy Item", category: .item, tags: ["Equipment"])
+
+        ImportItemRepair.normalizeLegacyCategory(in: &item)
+
+        #expect(item.category == .entry)
+        #expect(item.tags == ["Equipment"])
+    }
+
+    @Test func itemCategoryTagIsRemovedInEveryLanguage() {
+        let tags = ["Item", "Gegenstand", "item", "Ambient", ItemListCategory.item.title]
+
+        #expect(ImportItemRepair.removingItemCategoryTags(from: tags) == ["Ambient"])
+    }
 }
