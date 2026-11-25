@@ -570,8 +570,9 @@ struct EditControllerTests {
         #expect(newItem != nil)
         #expect(root.itemController.itemDataModel.items.count == initialCount + 1)
 
+        // `.entry` is the plain item category; `.item` is legacy and no longer created.
         let item = newItem as? SpaceModel
-        #expect(item?.category == .item)
+        #expect(item?.category == .entry)
     }
 
     @Test func addNewFolder() async throws {

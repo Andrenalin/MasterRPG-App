@@ -51,6 +51,14 @@ private struct CanonicalValueContent: Codable, Sendable {
         var category = model.category
         var tags = model.tags
 
+        // `.item` is the legacy plain item category. Import migrates it to `.entry` without a
+        // category tag (and earlier Validate runs tagged it "Item"), so both forms fingerprint as
+        // `.entry`.
+        if category == .item || category == .entry {
+            category = .entry
+            tags = ImportItemRepair.removingItemCategoryTags(from: tags)
+        }
+
         if category == .entry {
             for legacyCategory in ItemListCategory.characterPackageCategories {
                 let localizedTags = legacyCategory.allLocalizedTitles
@@ -71,7 +79,6 @@ private extension ItemListCategory {
     static let characterPackageCategories: [ItemListCategory] = [
         .character,
         .gameMaster,
-        .item,
         .monster,
     ]
 
