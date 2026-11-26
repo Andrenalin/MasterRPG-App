@@ -26,6 +26,13 @@ private struct SiriTipModifier<Intent: AppIntent>: ViewModifier {
     func body(content: Content) -> some View {
         content.safeAreaInset(edge: .bottom) {
             SiriTipView(intent: intent, isVisible: $isVisible)
+#if os(visionOS)
+                // The tip has no background of its own on visionOS, so the scrolled content shows
+                // through it: it stands on glass, off the window's bottom edge.
+                .padding()
+                .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
+                .scenePadding(.bottom)
+#endif
                 .scenePadding(.horizontal)
         }
     }

@@ -10,7 +10,11 @@ struct DiceOverlayView: View {
         GlassEffectContainerView {
             DiceViewer(model: model, isEditor: false)
                 .padding()
-#if !os(visionOS)
+#if os(visionOS)
+                // `glassEffect` does not exist on visionOS: the system glass instead, so the
+                // scrolled list does not show through the dice.
+                .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
+#else
                 .glassEffect(.clear)
 #endif
         }

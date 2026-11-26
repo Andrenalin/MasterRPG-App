@@ -27,9 +27,16 @@ struct DetailFolderListView: View {
             configuration: .init(isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self,
             showsBottomOverlayBar: !usesPhoneTabAccessory,
-            bottomOverlayBarHeight: 80
+            bottomOverlayBarHeight: bottomOverlayBarHeight
         ) {
             AudioPlayerBarView()
+#if os(visionOS)
+                // `glassEffect` (the bar's background elsewhere) does not exist on visionOS: the
+                // player gets the system glass here, not inside `AudioPlayerBarView`, because the
+                // game table panel and the toolbar popover already stand on glass of their own.
+                .padding()
+                .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
+#endif
                 .padding()
         } editor: {
             DetailEditorView(root: root, model: model)
@@ -41,6 +48,16 @@ struct DetailFolderListView: View {
                 dismissAction: dismiss
             )
         }
+    }
+
+    /// The fixed 80 pt fits the one-row bar. The visionOS bar has a second row (the position
+    /// slider) and now covers the rows under it with glass, so the inset measures the bar itself.
+    private var bottomOverlayBarHeight: CGFloat? {
+#if os(visionOS)
+        nil
+#else
+        80
+#endif
     }
 
     private var usesPhoneTabAccessory: Bool {
