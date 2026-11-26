@@ -256,7 +256,8 @@ public struct BatchTextSummaryExtractionView: View {
             Text(verbatim: error)
                 .font(.caption)
                 .foregroundStyle(.red)
-                .lineLimit(1)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
         }
     }
 
