@@ -23,6 +23,10 @@ import SwiftUI
     /// suspension. Called from the app's aggregate `scenePhase == .background`:
     /// UIKit never calls `applicationDidEnterBackground` in a scene-based app.
     /// See CODE_AUDIT_17 §5.2 and CODE_AUDIT_18 §3.1.
+    ///
+    /// The assertion is held past the save as well, while Core Data checkpoints the WAL,
+    /// updates the Spotlight index and exports to CloudKit: suspended while one of them holds
+    /// the store's lock in the App Group container, the app is killed (`0xdead10cc`).
     func beginBackgroundFlush() {
         let token = UUID()
         let taskId = UIApplication.shared.beginBackgroundTask(withName: "FlushPendingSaves") { [weak self] in
@@ -32,6 +36,7 @@ import SwiftUI
         backgroundFlushTasks[token] = taskId
         Task { @MainActor [weak self] in
             await AppModel.shared.save()
+            await AppModel.shared.waitForPersistenceToSettle()
             self?.endBackgroundFlush(token)
         }
     }

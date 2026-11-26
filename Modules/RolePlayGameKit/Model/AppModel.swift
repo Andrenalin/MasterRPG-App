@@ -355,7 +355,24 @@ extension AppModel {
         guard configuredContext != nil else { return }
         await adventureRoot.save()
     }
-    
+
+    /// How long the store is given, after the last save, for the work Core Data starts behind it.
+    static let persistenceSettleDelay: Duration = .seconds(10)
+
+    /// Returns once the work Core Data does behind a save has had time to finish: the WAL
+    /// checkpoint it schedules, the Spotlight index update and the CloudKit export. All of them
+    /// take the SQLite lock of the store, which lies in the App Group container, and RunningBoard
+    /// kills an app that is suspended while it holds a lock there (`0xdead10cc`, seen on Vision
+    /// Pro mid-game). Meant to run inside a background task after `save()`.
+    ///
+    /// None of that work reports when it is done, so this drains the coordinator's queue and then
+    /// waits `persistenceSettleDelay`. It narrows the window; it does not close it.
+    public func waitForPersistenceToSettle() async {
+        guard let coordinator = coreDataInitModel?.container?.persistentStoreCoordinator else { return }
+        await coordinator.perform {}
+        try? await Task.sleep(for: Self.persistenceSettleDelay)
+    }
+
     /// Removes hidden items and leftovers once per launch. Holds the data-mutation token, and is
     /// skipped (to be retried by the next appearance) while an import, repair or reset is
     /// running. See CODE_AUDIT_26 §5.123.
