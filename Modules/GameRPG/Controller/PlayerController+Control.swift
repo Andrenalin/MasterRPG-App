@@ -57,6 +57,9 @@ extension PlayerController {
         supporterTier: SupporterTier,
         state: GameMasterStateModel
     ) {
+        #if os(visionOS)
+        let previousMasterName = root.gameModel.gameConfig.master.name
+        #endif
         root.gameModel.applyMasterBroadcast(
             masterId: masterId,
             masterName: masterName,
@@ -64,6 +67,16 @@ extension PlayerController {
             state: state
         )
         resetPlayers()
+        #if os(visionOS)
+        // The 3D table names the master's seat after the master, and finds the master's dice
+        // colors and result by that name. The seat names are worked out when the master's
+        // participant is learned, which happens while this first broadcast is still being
+        // accepted, so before the master's name is known: without this the master's seat stayed
+        // nameless on a player's table (green dice, no result) until someone else joined.
+        if previousMasterName != masterName {
+            root.networkStore.sharePlayStore.refreshSeatPlayerNames()
+        }
+        #endif
     }
 
     /// Spans two separate @MainActor models (`gameModel` and `root.gameModel`), so
