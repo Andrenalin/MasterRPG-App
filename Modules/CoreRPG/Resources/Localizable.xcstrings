@@ -1,193 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Character Cloned" : {
-      "comment" : "Title of the alert after a Character was cloned with a photo in the editor.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Charakter geklont"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โคลนตัวละครแล้ว"
-          }
-        }
-      }
-    },
-    "Character Created" : {
-      "comment" : "Title of the alert after a Character was created from a photo in the editor.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Charakter erstellt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวละครแล้ว"
-          }
-        }
-      }
-    },
-    "Clone Character" : {
-      "comment" : "Title of the sheet where the Character to clone is chosen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Charakter klonen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โคลนตัวละคร"
-          }
-        }
-      }
-    },
-    "Generate Clone Character…" : {
-      "comment" : "Photo context menu entry that asks for a Character, copies it and gives the copy the photo as its portrait.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Charakter-Klon erzeugen …"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวละครโคลน…"
-          }
-        }
-      }
-    },
-    "Generate New Character" : {
-      "comment" : "Photo context menu entry that creates a new Character with the photo as its portrait.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neuen Charakter erzeugen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวละครใหม่"
-          }
-        }
-      }
-    },
-    "Go to Character" : {
-      "comment" : "Alert button that opens the Character module with the Character that was just generated from a photo.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zum Charakter"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไปที่ตัวละคร"
-          }
-        }
-      }
-    },
-    "Go to Map" : {
-      "comment" : "Alert button that opens the Map module with the map that was just created from a photo.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zur Karte"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไปที่แผนที่"
-          }
-        }
-      }
-    },
-    "Map Created" : {
-      "comment" : "Title of the alert after a map was created from a photo in the editor.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karte erstellt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างแผนที่แล้ว"
-          }
-        }
-      }
-    },
-    "The character %@ was cloned and now uses the photo. Go to the character?" : {
-      "comment" : "Message of the alert after a Character was cloned with a photo; the argument is the copy's name.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Charakter %@ wurde geklont und verwendet jetzt das Foto. Zum Charakter wechseln?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โคลนตัวละคร %@ และใช้รูปภาพนี้แล้ว ไปที่ตัวละครหรือไม่?"
-          }
-        }
-      }
-    },
-    "The character %@ was created from the photo. Go to the character?" : {
-      "comment" : "Message of the alert after a Character was created from a photo; the argument is the Character's name.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Charakter %@ wurde aus dem Foto erstellt. Zum Charakter wechseln?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างตัวละคร %@ จากรูปภาพแล้ว ไปที่ตัวละครหรือไม่?"
-          }
-        }
-      }
-    },
-    "The map %@ was created from the photo. Go to the map?" : {
-      "comment" : "Message of the alert after a map was created from a photo; the argument is the map's name.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Karte %@ wurde aus dem Foto erstellt. Zur Karte wechseln?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างแผนที่ %@ จากรูปภาพแล้ว ไปที่แผนที่หรือไม่?"
-          }
-        }
-      }
-    },
     "—" : {
       "comment" : "A placeholder text that is displayed when there are no tags.",
       "isCommentAutoGenerated" : true,
@@ -266,6 +79,22 @@
         }
       }
     },
+    "%@ and %lld more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ und %lld weitere"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ และอีก %lld รายการ"
+          }
+        }
+      }
+    },
     "%@ entry version" : {
       "localizations" : {
         "de" : {
@@ -311,6 +140,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รายการ %2$@ ของ %1$@ ถูกเปลี่ยนบนอุปกรณ์นี้ขณะติดตั้งไฟล์แนบ ไม่มีการนำเข้าใด ๆ โปรดเริ่มการนำเข้าใหม่"
+          }
+        }
+      }
+    },
+    "%@ Link" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลิงก์%@"
           }
         }
       }
@@ -1595,6 +1440,40 @@
         }
       }
     },
+    "Character Cloned" : {
+      "comment" : "Title of the alert after a Character was cloned with a photo in the editor.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter geklont"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โคลนตัวละครแล้ว"
+          }
+        }
+      }
+    },
+    "Character Created" : {
+      "comment" : "Title of the alert after a Character was created from a photo in the editor.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter erstellt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครแล้ว"
+          }
+        }
+      }
+    },
     "Choices" : {
       "comment" : "A label for a section of a review detail view that shows the user's choices.",
       "isCommentAutoGenerated" : true,
@@ -1773,6 +1652,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ล้างชื่อ"
+          }
+        }
+      }
+    },
+    "Clone Character" : {
+      "comment" : "Title of the sheet where the Character to clone is chosen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter klonen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โคลนตัวละคร"
           }
         }
       }
@@ -2263,6 +2159,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สร้างรายการแรกของคุณ"
+          }
+        }
+      }
+    },
+    "Cut" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausschneiden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัด"
           }
         }
       }
@@ -2974,6 +2886,30 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แก้ไขรายละเอียดรายการ"
+          }
+        }
+      }
+    },
+    "Edit Menu Copy" : {
+      "comment" : "Edit menu: copy the selection to the clipboard.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Copy"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คัดลอก"
           }
         }
       }
@@ -3727,6 +3663,22 @@
         }
       }
     },
+    "Fit to Window" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An Fenster anpassen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พอดีกับหน้าต่าง"
+          }
+        }
+      }
+    },
     "Folder" : {
       "localizations" : {
         "de" : {
@@ -3817,6 +3769,23 @@
         }
       }
     },
+    "Generate Clone Character…" : {
+      "comment" : "Photo context menu entry that asks for a Character, copies it and gives the copy the photo as its portrait.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charakter-Klon erzeugen …"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครโคลน…"
+          }
+        }
+      }
+    },
     "Generate from %@" : {
       "localizations" : {
         "de" : {
@@ -3840,6 +3809,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Karte erzeugen"
+          }
+        }
+      }
+    },
+    "Generate New Character" : {
+      "comment" : "Photo context menu entry that creates a new Character with the photo as its portrait.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuen Charakter erzeugen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละครใหม่"
           }
         }
       }
@@ -3872,6 +3858,40 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ข้อมูลภาษาเยอรมัน"
+          }
+        }
+      }
+    },
+    "Go to Character" : {
+      "comment" : "Alert button that opens the Character module with the Character that was just generated from a photo.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Charakter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไปที่ตัวละคร"
+          }
+        }
+      }
+    },
+    "Go to Map" : {
+      "comment" : "Alert button that opens the Map module with the map that was just created from a photo.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Karte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไปที่แผนที่"
           }
         }
       }
@@ -4689,6 +4709,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แผนที่"
+          }
+        }
+      }
+    },
+    "Map Created" : {
+      "comment" : "Title of the alert after a map was created from a photo in the editor.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte erstellt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างแผนที่แล้ว"
           }
         }
       }
@@ -5874,6 +5911,38 @@
         }
       }
     },
+    "Paste" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einsetzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วาง"
+          }
+        }
+      }
+    },
+    "Paste and Match Style" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einsetzen und Stil anpassen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วางและจับคู่ลักษณะ"
+          }
+        }
+      }
+    },
     "Path: %@" : {
       "comment" : "A suffix appended to a medication name when it's part of a larger list, indicating which entry it is. Also includes the file path of the medication, if available.",
       "isCommentAutoGenerated" : true,
@@ -6190,6 +6259,22 @@
         }
       }
     },
+    "Remove %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบ %@"
+          }
+        }
+      }
+    },
     "Remove %@ from %@" : {
       "localizations" : {
         "de" : {
@@ -6322,6 +6407,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "นำรายการแม่ออกแล้ว"
+          }
+        }
+      }
+    },
+    "Removes it from the list" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entfernt es aus der Liste"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบออกจากรายการ"
           }
         }
       }
@@ -6747,22 +6848,6 @@
         }
       }
     },
-    "Select None" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keine auswählen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่เลือกเลย"
-          }
-        }
-      }
-    },
     "Select All in %@" : {
       "localizations" : {
         "de" : {
@@ -6827,6 +6912,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เลือกรายการ"
+          }
+        }
+      }
+    },
+    "Select None" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine auswählen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่เลือกเลย"
           }
         }
       }
@@ -7661,6 +7762,40 @@
         }
       }
     },
+    "The character %@ was cloned and now uses the photo. Go to the character?" : {
+      "comment" : "Message of the alert after a Character was cloned with a photo; the argument is the copy's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Charakter %@ wurde geklont und verwendet jetzt das Foto. Zum Charakter wechseln?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โคลนตัวละคร %@ และใช้รูปภาพนี้แล้ว ไปที่ตัวละครหรือไม่?"
+          }
+        }
+      }
+    },
+    "The character %@ was created from the photo. Go to the character?" : {
+      "comment" : "Message of the alert after a Character was created from a photo; the argument is the Character's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Charakter %@ wurde aus dem Foto erstellt. Zum Charakter wechseln?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างตัวละคร %@ จากรูปภาพแล้ว ไปที่ตัวละครหรือไม่?"
+          }
+        }
+      }
+    },
     "The file could not be added." : {
       "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent could not be stored.",
       "localizations" : {
@@ -7691,6 +7826,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ไฟล์นี้เป็นประเภทที่รายการนี้ไม่รองรับ"
+          }
+        }
+      }
+    },
+    "The file is too large." : {
+      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent is larger than the size limit.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Datei ist zu groß."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ใหญ่เกินไป"
           }
         }
       }
@@ -7910,6 +8062,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รายการและไฟล์ในโฟลเดอร์ iCloud ตรงกัน"
+          }
+        }
+      }
+    },
+    "The map %@ was created from the photo. Go to the map?" : {
+      "comment" : "Message of the alert after a map was created from a photo; the argument is the map's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Karte %@ wurde aus dem Foto erstellt. Zur Karte wechseln?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างแผนที่ %@ จากรูปภาพแล้ว ไปที่แผนที่หรือไม่?"
           }
         }
       }
@@ -8663,87 +8832,6 @@
         }
       }
     },
-    "%@ and %lld more" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ und %lld weitere"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ และอีก %lld รายการ"
-          }
-        }
-      }
-    },
-    "%@ Link" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@-Link"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลิงก์%@"
-          }
-        }
-      }
-    },
-    "The file is too large." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Datei ist zu groß."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไฟล์ใหญ่เกินไป"
-          }
-        }
-      },
-      "comment" : "Error shown by Siri or Shortcuts when the file passed to a Create intent is larger than the size limit."
-    },
-    "Remove %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ entfernen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลบ %@"
-          }
-        }
-      }
-    },
-    "Removes it from the list" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entfernt es aus der Liste"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลบออกจากรายการ"
-          }
-        }
-      }
-    },
     "Zoom In" : {
       "localizations" : {
         "de" : {
@@ -8772,22 +8860,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ซูมออก"
-          }
-        }
-      }
-    },
-    "Fit to Window" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "An Fenster anpassen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "พอดีกับหน้าต่าง"
           }
         }
       }

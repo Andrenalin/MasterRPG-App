@@ -200,6 +200,19 @@ struct FolderListSelectAllTests {
         #expect(!ListSelectionMenuPolicy.isEnabled(nil))
     }
 
+    @Test("The menu bar's Select All selects the rows in selection mode and the text otherwise")
+    func menuBarSelectAllFallsBackToText() {
+        var calls: [String] = []
+        let inSelection = FocusedListSelectionActions(isSelectionMode: true, selectAll: { calls.append("rows") }, selectNone: {})
+        let outside = FocusedListSelectionActions(isSelectionMode: false, selectAll: { calls.append("rows") }, selectNone: {})
+
+        ListSelectionMenuPolicy.performSelectAll(inSelection) { calls.append("text") }
+        ListSelectionMenuPolicy.performSelectAll(outside) { calls.append("text") }
+        ListSelectionMenuPolicy.performSelectAll(nil) { calls.append("text") }
+
+        #expect(calls == ["rows", "text", "text"])
+    }
+
     @Test("Select All is Command-A, Select None does not take Command-Shift-A (Add into folder)")
     func shortcuts() {
         #expect(ListSelectionMenuPolicy.selectAllKey == "a")

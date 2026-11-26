@@ -43,6 +43,11 @@ struct MenuCommandList: Commands {
                     // No GeneratorCommands on purpose: the generator has no list of its own.
                     // See CODE_AUDIT_Since_3.0.1 §5.3.
                 }
+                PasteboardCommands(roots: [
+                    appModel.adventureRoot, appModel.characterRoot, appModel.pdfRoot, appModel.ruleRoot,
+                    appModel.tableRoot, appModel.mapRoot, appModel.audioRoot, appModel.diceRoot,
+                    appModel.photoRoot, appModel.spaceRoot, appModel.weatherRoot
+                ])
             }
         }
     }

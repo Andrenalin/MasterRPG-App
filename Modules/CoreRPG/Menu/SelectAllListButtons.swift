@@ -6,9 +6,9 @@ import SwiftUI
 /// Which list the Select All / Select None commands act on and whether they are enabled: only a
 /// focused list in selection mode takes them.
 enum ListSelectionMenuPolicy {
-    /// Command-A is also "select all text" in a text field, so the command is only enabled while
-    /// a module list in selection mode has the focus (`listSelectionActions` is published by the
-    /// list), like Space and Return.
+    /// Whether Select All / Select None act on a list: only a module list in selection mode
+    /// (`listSelectionActions` is published by the list). Outside it the menu bar's Select All
+    /// selects the text of a focused field, see `MenuBarSelectAllButton`.
     static func isEnabled(_ actions: FocusedListSelectionActions?) -> Bool {
         actions?.isSelectionMode == true
     }
@@ -49,6 +49,17 @@ enum ListSelectionMenuPolicy {
         )
     }
 
+    /// The menu bar's Select All: the list's rows in selection mode, the system's Select All
+    /// (`fallback`, the text of a focused field) otherwise.
+    @MainActor
+    static func performSelectAll(_ actions: FocusedListSelectionActions?, fallback: () -> Void) {
+        if let actions, isEnabled(actions) {
+            actions.selectAll()
+        } else {
+            fallback()
+        }
+    }
+
     static let selectAllKey: KeyEquivalent = "a"
     static let selectAllModifiers: EventModifiers = [.command]
     /// Command-Shift-A is "Add into folder" in the list's context menu.
@@ -84,7 +95,7 @@ struct SelectAllListButton: View {
         } label: {
             SelectAllLabel(folderName: actions?.selectAllFolderName())
         }
-        .applyIf(showsShortcut) {
+        .applyIf(valueFor(iOS: false, macOS: showsShortcut, tvOS: false, visionOS: false)) {
             $0.keyboardShortcut(ListSelectionMenuPolicy.selectAllKey, modifiers: ListSelectionMenuPolicy.selectAllModifiers)
         }
         .disabled(!ListSelectionMenuPolicy.isEnabled(actions))
@@ -112,23 +123,22 @@ struct SelectNoneListButton: View {
     }
 }
 
-/// The menu bar entries: they read the root list's selection mode in their own body, so they
-/// enable and disable with it.
-struct ModuleSelectAllButton: View {
-    let root: any ItemRootControllable
-    let focused: FocusedListSelectionActions?
+/// The menu bar's Select All, which replaces the system one: it selects the rows while a module
+/// list is in selection mode and otherwise sends Select All to the first responder (the text of a
+/// focused field), so it stays enabled and keeps Command-A on every platform.
+struct MenuBarSelectAllButton: View {
+    let actions: FocusedListSelectionActions?
 
     var body: some View {
-        SelectAllListButton(actions: ListSelectionMenuPolicy.resolved(focused: focused, root: root))
-    }
-}
-
-struct ModuleSelectNoneButton: View {
-    let root: any ItemRootControllable
-    let focused: FocusedListSelectionActions?
-
-    var body: some View {
-        SelectNoneListButton(actions: ListSelectionMenuPolicy.resolved(focused: focused, root: root))
+        let selectsRows = ListSelectionMenuPolicy.isEnabled(actions)
+        Button {
+            ListSelectionMenuPolicy.performSelectAll(actions) {
+                StandardEditAction.selectAll.send()
+            }
+        } label: {
+            SelectAllLabel(folderName: selectsRows ? actions?.selectAllFolderName() : nil)
+        }
+        .keyboardShortcut(ListSelectionMenuPolicy.selectAllKey, modifiers: ListSelectionMenuPolicy.selectAllModifiers)
     }
 }
 #endif
