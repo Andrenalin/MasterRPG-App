@@ -54,8 +54,7 @@ public struct ModuleCommands: Commands {
                 Divider()
                 AddItemIntoButton(root: root)
                 MoveItemIntoButton(root: root)
-                Divider()
-                DeleteItemButton(root: root, isListFocused: moduleListIsFocused == true)
+                // Delete is in `PasteboardCommands`, in place of the system's.
                 Divider()
             }
         }

@@ -9,8 +9,9 @@ import UIKit
 
 #if !os(tvOS)
 /// The Edit menu's pasteboard group (Cut, Copy, Paste, Delete, Select All), replaced so that
-/// "Select All" is one entry: it selects the rows of a module list in selection mode and the text
-/// of the focused field otherwise. "Select None" sits below it.
+/// "Delete" deletes the selected item of the module and "Select All" is one entry: it selects the
+/// rows of a module list in selection mode and the text of the focused field otherwise.
+/// "Select None" sits below it.
 ///
 /// SwiftUI has no placement for Select All alone, so the whole group is replaced and the other
 /// entries send the standard edit actions down the responder chain, as the system items do.
@@ -25,6 +26,10 @@ public struct PasteboardCommands: Commands {
 
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
     @FocusedValue(\.listSelectionActions) private var listSelectionActions: FocusedListSelectionActions?
+
+    private var selectedRoot: (any ItemRootControllable)? {
+        roots.first { $0.configurable.module == selectedModule }
+    }
 
     public var body: some Commands {
         CommandGroup(replacing: .pasteboard) {
@@ -41,11 +46,11 @@ public struct PasteboardCommands: Commands {
                 title: LocalizedStringResource("Paste and Match Style", bundle: .module),
                 shortcut: KeyboardShortcut("v", modifiers: [.command, .option, .shift])
             )
-            StandardEditActionButton(action: .delete, title: LocalizedStringResource("Delete", bundle: .module))
-            ListSelectionMenuButtons(
-                root: roots.first { $0.configurable.module == selectedModule },
-                focused: listSelectionActions
-            )
+            // The module's Delete (the selected or checked items) in place of the system's.
+            if let selectedRoot {
+                DeleteItemButton(root: selectedRoot)
+            }
+            ListSelectionMenuButtons(root: selectedRoot, focused: listSelectionActions)
         }
     }
 }
@@ -56,7 +61,6 @@ enum StandardEditAction {
     case copy
     case paste
     case pasteAndMatchStyle
-    case delete
     case selectAll
 
     @MainActor
@@ -75,7 +79,6 @@ enum StandardEditAction {
         case .copy: #selector(NSText.copy(_:))
         case .paste: #selector(NSText.paste(_:))
         case .pasteAndMatchStyle: #selector(NSTextView.pasteAsPlainText(_:))
-        case .delete: #selector(NSText.delete(_:))
         case .selectAll: #selector(NSResponder.selectAll(_:))
         }
         #else
@@ -84,7 +87,6 @@ enum StandardEditAction {
         case .copy: #selector(UIResponderStandardEditActions.copy(_:))
         case .paste: #selector(UIResponderStandardEditActions.paste(_:))
         case .pasteAndMatchStyle: #selector(UIResponderStandardEditActions.pasteAndMatchStyle(_:))
-        case .delete: #selector(UIResponderStandardEditActions.delete(_:))
         case .selectAll: #selector(UIResponderStandardEditActions.selectAll(_:))
         }
         #endif

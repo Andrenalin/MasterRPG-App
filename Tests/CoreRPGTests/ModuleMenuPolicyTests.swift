@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing) && !os(tvOS)
+import Foundation
 import Testing
 
 @testable import CoreRPG
@@ -13,12 +14,21 @@ struct ModuleMenuPolicyTests {
         #expect(!ModuleMenuPolicy.fitToWindowCollidesWithShowModule)
     }
 
-    // CODE_AUDIT_28 §5.13
-    @Test("Delete is only enabled with a selection and the list focused")
-    func deleteNeedsListFocus() {
-        #expect(ModuleMenuPolicy.isDeleteEnabled(hasSelection: true, isListFocused: true))
-        #expect(!ModuleMenuPolicy.isDeleteEnabled(hasSelection: true, isListFocused: false))
-        #expect(!ModuleMenuPolicy.isDeleteEnabled(hasSelection: false, isListFocused: true))
+    @Test("Delete takes the selected row, or the checked rows in selection mode")
+    func deleteRows() {
+        let selected = UUID()
+        let checked = [UUID(), UUID()]
+
+        let single = ModuleMenuPolicy.deleteRowIds(isSelectionMode: false, selection: checked, selected: selected)
+        #expect(single == [selected])
+        #expect(ModuleMenuPolicy.isDeleteEnabled(rowIds: single))
+
+        let many = ModuleMenuPolicy.deleteRowIds(isSelectionMode: true, selection: checked, selected: selected)
+        #expect(many == checked)
+        #expect(ModuleMenuPolicy.isDeleteEnabled(rowIds: many))
+
+        #expect(!ModuleMenuPolicy.isDeleteEnabled(rowIds: ModuleMenuPolicy.deleteRowIds(isSelectionMode: false, selection: [], selected: nil)))
+        #expect(!ModuleMenuPolicy.isDeleteEnabled(rowIds: ModuleMenuPolicy.deleteRowIds(isSelectionMode: true, selection: [], selected: selected)))
     }
 }
 #endif

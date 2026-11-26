@@ -151,9 +151,15 @@ struct ListRootView: View {
                 .onChange(of: root.navigationModel.triggerDelete) {
                     guard root.navigationModel.triggerDelete else { return }
                     root.navigationModel.triggerDelete = false
-                    guard let sel = listModel.selected,
-                          let index = listModel.list.firstIndex(where: { $0.id == sel }) else { return }
-                    deleteItems(offsets: IndexSet(integer: index))
+                    // The checked rows in selection mode, the selected row otherwise.
+                    let rowIds = ModuleMenuPolicy.deleteRowIds(
+                        isSelectionMode: listController.listDisplayModel.isSelectionMode,
+                        selection: listModel.selection,
+                        selected: listModel.selected
+                    )
+                    let offsets = IndexSet(rowIds.compactMap { rowId in listModel.list.firstIndex { $0.id == rowId } })
+                    guard !offsets.isEmpty else { return }
+                    deleteItems(offsets: offsets)
                 }
                 .onChange(of: root.navigationModel.triggerSpaceAction) {
                     guard root.navigationModel.triggerSpaceAction else { return }
