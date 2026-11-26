@@ -72,11 +72,14 @@ struct DetailListToolbarContent: ToolbarContent {
             }
         }
 #if os(iOS)
+        // Disabled, not removed, while the AI composer is open: an emptied keyboard toolbar makes
+        // UIKit swap the input accessory view during the focus-change keyboard animation, which
+        // crashes on iPad (NSLayoutConstraint in -[UIInputWindowControllerHostingItem
+        // inputAssistantHostView]).
         ToolbarItemGroup(placement: .keyboard) {
-            if root.editController.editorModel.sheetRootModel?.isAIModeActive != true {
-                ForEach(root.editorLinkModel.firstRow, id: \.self) { module in
-                    AdventureAddLinkButton(root: root, model: model, module: module)
-                }
+            ForEach(root.editorLinkModel.firstRow, id: \.self) { module in
+                AdventureAddLinkButton(root: root, model: model, module: module)
+                    .disabled(root.editController.editorModel.sheetRootModel?.isAIModeActive == true)
             }
         }
 #endif
