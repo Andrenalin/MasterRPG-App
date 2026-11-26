@@ -11,28 +11,41 @@ public extension View {
         rootModel: SheetRootModel?,
         module: NetworkModules
     ) -> some View {
-        safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-            Color.clear
-                .frame(height: 80)
-                .allowsHitTesting(false)
-        }
-        .overlayPreferenceValue(
-            ItemHeaderEditorPresentedPreferenceKey.self,
-            alignment: .bottomTrailing
-        ) { isHeaderEditorPresented in
-            SheetAIAssistantPlacement(
-                generatorRoot: generatorRoot,
-                rootModel: rootModel,
-                isHidden: isHeaderEditorPresented
-            )
-        }
+        modifier(SheetAIAssistantModifier(generatorRoot: generatorRoot, rootModel: rootModel))
+    }
+}
+
+/// Places the Ask AI control and keeps room for it at the bottom. While an item or entry editor
+/// covers the screen, the control is hidden and the room goes back to the editor.
+private struct SheetAIAssistantModifier: ViewModifier {
+    let generatorRoot: GeneratorRootModel?
+    let rootModel: SheetRootModel?
+
+    @State private var isEditorPresented = false
+
+    func body(content: Content) -> some View {
+        content
+            .safeAreaInset(edge: .bottom, alignment: .center, spacing: isEditorPresented ? 0 : 12) {
+                Color.clear
+                    .frame(height: isEditorPresented ? 0 : 80)
+                    .allowsHitTesting(false)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                SheetAIAssistantPlacement(
+                    generatorRoot: generatorRoot,
+                    rootModel: rootModel,
+                    isHidden: isEditorPresented
+                )
+            }
+            .onPreferenceChange(EditorOverlayPresentedPreferenceKey.self) { isPresented in
+                isEditorPresented = isPresented
+            }
     }
 }
 
 /// The Ask AI control of a screen, if the screen's item can use it.
 ///
-/// A view of its own, so the observable reads are tracked by a `body`: the preference closure
-/// that builds it is not one.
+/// A view of its own, so the observable reads are tracked by its own `body`.
 private struct SheetAIAssistantPlacement: View {
     let generatorRoot: GeneratorRootModel?
     let rootModel: SheetRootModel?
@@ -46,7 +59,7 @@ private struct SheetAIAssistantPlacement: View {
             SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
                 .padding(.horizontal)
                 .padding(.bottom)
-                // Hidden rather than removed while the header editor covers the screen:
+                // Hidden rather than removed while an item or entry editor covers the screen:
                 // removing it would end the AI session and recreate the glass node.
                 .opacity(isHidden ? 0 : 1)
                 .allowsHitTesting(!isHidden)

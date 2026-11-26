@@ -34,6 +34,9 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                 linkTypes: linkTypes
             )
             .id(itemId)
+            // The Ask AI button steps aside: it takes room from the editor and invites a tap
+            // in the middle of an edit.
+            .preference(key: EditorOverlayPresentedPreferenceKey.self, value: true)
             .transition(editorTransition)
             .animation(accessibilityReduceMotion ? nil : .bouncy, value: editorModel.entryId)
         }

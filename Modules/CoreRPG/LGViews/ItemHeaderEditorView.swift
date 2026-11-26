@@ -63,7 +63,7 @@ public struct ItemHeaderEditorView: View {
         .frame(maxWidth: 800)
         .padding()
         .modifier(ItemHeaderEditorPlacement(dismissAction: dismissAction))
-        .preference(key: ItemHeaderEditorPresentedPreferenceKey.self, value: true)
+        .preference(key: EditorOverlayPresentedPreferenceKey.self, value: true)
         .sensoryFeedback(.success, trigger: saveCount)
         .task {
 #if !os(tvOS)
@@ -106,9 +106,9 @@ public struct ItemHeaderEditorView: View {
     }
 }
 
-/// Tells the screen behind an `ItemHeaderEditorView` that the editor covers it, so floating
-/// controls such as the Ask AI button can step aside.
-public struct ItemHeaderEditorPresentedPreferenceKey: PreferenceKey {
+/// Tells the screen behind an editor overlay (`ItemHeaderEditorView`, `EntryEditorView`) that the
+/// editor covers it, so floating controls such as the Ask AI button can step aside.
+public struct EditorOverlayPresentedPreferenceKey: PreferenceKey {
     public static let defaultValue = false
 
     public static func reduce(value: inout Bool, nextValue: () -> Bool) {
