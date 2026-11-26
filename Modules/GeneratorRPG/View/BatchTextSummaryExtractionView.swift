@@ -5,15 +5,6 @@
 import CoreRPG
 import SwiftUI
 
-private enum BatchItemStatus: Sendable {
-    case pending
-    case analyzing
-    case completed
-    /// The item has no text to analyze; nothing was changed.
-    case skipped
-    case failed(String)
-}
-
 /// What the batch writes into an item from a generated summary. Pure, so it is tested.
 ///
 /// The generated description and tags *replace* the existing ones, which is what the person asks
@@ -204,84 +195,34 @@ public struct BatchTextSummaryExtractionView: View {
 
     private func itemRow(for id: UUID) -> some View {
         let name = itemController.itemSync(for: id)?.name ?? ""
-        let status = statuses[id] ?? .pending
-        return HStack(spacing: 12) {
-            statusIcon(for: status)
-            Text(verbatim: name.isEmpty ? id.uuidString : name)
-            Spacer()
-            statusLabel(for: status)
-        }
-    }
-
-    @ViewBuilder
-    private func statusIcon(for status: BatchItemStatus) -> some View {
-        switch status {
-        case .pending:
-            Image(systemName: "circle")
-                .foregroundStyle(.secondary)
-                .contentTransition(.symbolEffect(.automatic))
-        case .analyzing:
-            ProgressView()
-                .scaleEffect(0.8) 
-        case .completed:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .contentTransition(.symbolEffect(.automatic))
-        case .skipped:
-            Image(systemName: "minus.circle")
-                .foregroundStyle(.secondary)
-        case .failed:
-            Image(systemName: "xmark.circle.fill")
-                .foregroundStyle(.red)
-                .contentTransition(.symbolEffect(.automatic))
-        }
-    }
-
-    @ViewBuilder
-    private func statusLabel(for status: BatchItemStatus) -> some View {
-        switch status {
-        case .pending:
-            EmptyView()
-        case .analyzing:
-            EmptyView()
-        case .completed:
-            Text("Done", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        case .skipped:
-            Text("Skipped: no text to analyze", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        case .failed(let error):
-            Text(verbatim: error)
-                .font(.caption)
-                .foregroundStyle(.red)
-                .lineLimit(2)
-                .multilineTextAlignment(.trailing)
-        }
+        return BatchItemStatusRow(
+            name: name.isEmpty ? id.uuidString : name,
+            status: statuses[id] ?? .pending,
+            skippedText: LocalizedStringResource("Skipped: no text to analyze", bundle: .module)
+        )
     }
 
     @ViewBuilder
     private func analysisProgressSection(_ progress: TableSummaryAnalysisProgress) -> some View {
         Section {
             if let title = progress.title {
-                progressRow(
+                BatchProgressRow(
                     ready: true,
                     label: LocalizedStringResource("Title: \(title)", bundle: .module)
                 )
             } else {
-                progressRow(
+                BatchProgressRow(
                     ready: false,
                     label: LocalizedStringResource("Title pending", bundle: .module)
                 )
             }
-            progressRow(
+            BatchProgressRow(
                 ready: progress.description != nil,
                 label: progress.description == nil
                     ? LocalizedStringResource("Description pending", bundle: .module)
                     : LocalizedStringResource("Description extracted", bundle: .module)
             )
-            progressRow(
+            BatchProgressRow(
                 ready: !(progress.tags?.isEmpty ?? true),
                 label: LocalizedStringResource(
                     "Found \(progress.tags?.count ?? 0) tags",
@@ -290,16 +231,6 @@ public struct BatchTextSummaryExtractionView: View {
             )
         } header: {
             Text("Analyzing...", bundle: .module)
-        }
-    }
-
-    private func progressRow(ready: Bool, label: LocalizedStringResource) -> some View {
-        HStack {
-            Image(systemName: ready ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(ready ? .green : .secondary)
-                .contentTransition(.symbolEffect(.automatic))
-            Text(label)
-                .font(.subheadline)
         }
     }
 

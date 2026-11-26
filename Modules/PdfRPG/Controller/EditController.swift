@@ -107,25 +107,80 @@ extension EditController {
     @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID, pageLabel: (Int) -> String?) {
         guard let item = editModel(for: itemId) else { return }
 
-        var newEntries: [PdfEntryModel] = []
-        for section in sections {
-            let pageNumberString = section.pageNumber.map { pageLabel($0) ?? String($0) } ?? ""
-            let entry = PdfEntryModel(
-                id: UUID(),
-                name: section.heading,
-                content: section.summary,
-                pageNumber: pageNumberString,
-                bounds: .zero,
-                displayState: DisplayStateMask.fullVisible.rawValue
-            )
-            newEntries.append(entry)
-        }
-
+        let newEntries = sections.map { PdfBookmarkMerge.entry(for: $0, pageLabel: pageLabel) }
         item.entries.append(contentsOf: newEntries)
         
         save(
             updated: item,
             message: String(localized: "Applied PDF sections as bookmarks", bundle: .module)
+        )
+    }
+
+    /// Adds the generated sections as bookmarks for the batch "Extract Information", skipping
+    /// sections that already have a bookmark with the same name and page (`PdfBookmarkMerge`).
+    /// - Returns: the number of bookmarks added.
+    @MainActor func addExtractedBookmarks(_ sections: [PdfSection], to itemId: UUID, pageLabel: (Int) -> String?) -> Int {
+        guard let item = editModel(for: itemId) else { return 0 }
+        let newEntries = PdfBookmarkMerge.newEntries(for: sections, existing: item.entries, pageLabel: pageLabel)
+        guard !newEntries.isEmpty else { return 0 }
+        item.entries.append(contentsOf: newEntries)
+        save(
+            updated: item,
+            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module)
+        )
+        return newEntries.count
+    }
+}
+
+/// Turns generated PDF sections into bookmarks. Pure, so it is tested.
+enum PdfBookmarkMerge {
+    /// Bounds, because the sections are generated from the PDF's text, which can come from an
+    /// import or a shared campaign (same limits as `BatchSummaryMerge`).
+    static let maximumNameLength = 100
+    static let maximumContentLength = 500
+
+    /// The bookmark for one section. The summary names pages by 1-based position, the bookmark
+    /// stores the page label (see CODE_AUDIT_22 §5.8).
+    static func entry(for section: PdfSection, pageLabel: (Int) -> String?) -> PdfEntryModel {
+        PdfEntryModel(
+            id: UUID(),
+            name: section.heading,
+            content: section.summary,
+            pageNumber: section.pageNumber.map { pageLabel($0) ?? String($0) } ?? "",
+            bounds: .zero,
+            displayState: DisplayStateMask.fullVisible.rawValue
+        )
+    }
+
+    /// The bookmarks to add for the batch: bounded, without an empty name, and without a section
+    /// whose name and page match an existing bookmark or an earlier section, so running the
+    /// batch again adds nothing twice. Existing bookmarks are never changed.
+    static func newEntries(for sections: [PdfSection], existing: [PdfEntryModel], pageLabel: (Int) -> String?) -> [PdfEntryModel] {
+        var seen = Set(existing.map { key(name: $0.name, page: $0.pageLabel) })
+        var result: [PdfEntryModel] = []
+        for section in sections {
+            let heading = String(section.heading.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumNameLength))
+            guard !heading.isEmpty else { continue }
+            let summary = String(section.summary.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumContentLength))
+            let entry = entry(
+                for: PdfSection(heading: heading, summary: summary, pageNumber: section.pageNumber),
+                pageLabel: pageLabel
+            )
+            guard seen.insert(key(name: entry.name, page: entry.pageLabel)).inserted else { continue }
+            result.append(entry)
+        }
+        return result
+    }
+
+    private struct Key: Hashable {
+        let name: String
+        let page: String
+    }
+
+    private static func key(name: String, page: String) -> Key {
+        Key(
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            page: page.trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }
 }

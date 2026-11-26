@@ -1,6 +1,10 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+import PDFKit
+#endif
 import SwiftUI
 
 public struct ViewController {
@@ -19,6 +23,35 @@ extension ViewController: ViewControllable {
         AnyView(InlineRowViewer(source: source, destination: destination, sourceModel: sourceModel).equatable())
     }
 }
+
+// MARK: - Batch Extraction
+
+#if !os(tvOS)
+extension ViewController {
+    public var supportsBatchExtraction: Bool { true }
+
+    @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
+        guard let itemController = itemController as? ItemController,
+              let editController = editController as? EditController else { return nil }
+        return AnyView(
+            BatchPdfSummaryExtractionView(
+                module: .pdf,
+                ids: ids,
+                itemController: itemController,
+                editController: editController,
+                loadDocument: { itemId in
+                    await itemController.pdfDocument(for: itemId)
+                },
+                addBookmarks: { sections, itemId, document in
+                    editController.addExtractedBookmarks(sections, to: itemId) { position in
+                        position > 0 ? document.page(at: position - 1)?.label : nil
+                    }
+                }
+            )
+        )
+    }
+}
+#endif
 
 // MARK: Viewer
 

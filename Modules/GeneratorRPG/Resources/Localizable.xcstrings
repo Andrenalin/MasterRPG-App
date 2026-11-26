@@ -189,6 +189,76 @@
         }
       }
     },
+    "Found %lld sections" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitt gefunden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitte gefunden"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitte gefunden"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld section"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld sections"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld sections"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบ %lld ส่วน"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบ %lld ส่วน"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
@@ -2293,6 +2363,22 @@
         }
       }
     },
+    "Skipped: PDF not available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersprungen: PDF nicht verfügbar"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้าม: ไม่มีไฟล์ PDF"
+          }
+        }
+      }
+    },
     "Skipped: no text to analyze" : {
       "localizations" : {
         "de" : {
@@ -2305,6 +2391,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ข้าม: ไม่มีข้อความให้วิเคราะห์"
+          }
+        }
+      }
+    },
+    "Start replaces the description and the tags of the selected PDFs with generated ones and adds the sections as bookmarks. A name is only filled in when it is empty; existing bookmarks are kept." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten PDFs durch generierte und fügt die Abschnitte als Lesezeichen hinzu. Ein Name wird nur ergänzt, wenn er leer ist; vorhandene Lesezeichen bleiben erhalten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของ PDF ที่เลือกด้วยข้อมูลที่สร้างขึ้น และเพิ่มส่วนต่างๆ เป็นบุ๊กมาร์ก ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่ บุ๊กมาร์กที่มีอยู่จะยังคงอยู่"
           }
         }
       }
@@ -3050,6 +3152,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "อัปเดต \"%@\" แล้ว"
+          }
+        }
+      }
+    },
+    "Updated %lld items: %lld names filled, %lld descriptions replaced, %lld tags replaced, %lld bookmarks added." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld Elemente aktualisiert: %2$lld Namen ergänzt, %3$lld Beschreibungen ersetzt, %4$lld Tags ersetzt, %5$lld Lesezeichen hinzugefügt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดต %1$lld รายการ: เติมชื่อ %2$lld รายการ แทนที่คำอธิบาย %3$lld รายการ แทนที่แท็ก %4$lld รายการ เพิ่มบุ๊กมาร์ก %5$lld รายการ"
           }
         }
       }
