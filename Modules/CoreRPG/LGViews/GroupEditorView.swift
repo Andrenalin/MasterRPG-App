@@ -49,7 +49,11 @@ struct GroupEditorView: View {
                 DescriptionSectionView(groupEditorController: groupEditorController, currentFocus: $currentFocus)
                 CategoryTagsSectionView(groupEditorController: groupEditorController)
 
-                AddTagsEditor(tags: $model.tags)
+                AddTagsEditor(
+                    tags: $model.tags,
+                    tagController: groupEditorController.editController.tagController,
+                    module: groupEditorController.editController.itemControllable.config.module
+                )
             }
             .padding()
             .padding(.bottom, 32)

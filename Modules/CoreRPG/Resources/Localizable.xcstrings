@@ -817,6 +817,22 @@
         }
       }
     },
+    "Add tag %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag %@ hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มแท็ก %@"
+          }
+        }
+      }
+    },
     "Add your first entry" : {
       "localizations" : {
         "de" : {
@@ -8659,6 +8675,52 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ใช้[หน้าสนับสนุนฟรี](https://github.com/Andrenalin/MasterRPG)"
+          }
+        }
+      }
+    },
+    "Used %lld times" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld-mal verwendet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld-mal verwendet"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Used %lld time"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Used %lld times"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ใช้ %lld ครั้ง"
           }
         }
       }

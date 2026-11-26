@@ -55,6 +55,8 @@ public struct ItemHeaderEditorView: View {
                 attributedName: $attributedName,
                 attributedInformation: $attributedInformation,
                 tags: $tags,
+                tagController: editControllable.tagController,
+                tagModule: editControllable.itemControllable.config.module,
                 currentFocus: $currentFocus
             )
         }
@@ -251,6 +253,9 @@ private struct ItemHeaderEditorCard: View {
     @Binding var attributedName: AttributedString
     @Binding var attributedInformation: AttributedString
     @Binding var tags: [String]
+    let tagController: TagController
+    /// The module the tag counts are kept under (`TagController` keys by the item controller's module).
+    let tagModule: NetworkModules
     var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
 
     var body: some View {
@@ -258,7 +263,7 @@ private struct ItemHeaderEditorCard: View {
             ItemHeaderEditorHeaderRow(dismissAction: dismissAction, saveAction: saveAction, isSaveEnabled: isSaveEnabled)
             ItemHeaderEditorNameSection(attributedName: $attributedName, currentFocus: currentFocus)
             ItemHeaderEditorDescriptionSection(attributedInformation: $attributedInformation, currentFocus: currentFocus)
-            ItemHeaderEditorTagsSection(tags: $tags)
+            ItemHeaderEditorTagsSection(tags: $tags, tagController: tagController, module: tagModule)
         }
         .padding(20)
         .background {
@@ -418,6 +423,8 @@ private struct ItemHeaderEditorDescriptionSection: View {
 
 private struct ItemHeaderEditorTagsSection: View {
     @Binding var tags: [String]
+    let tagController: TagController
+    let module: NetworkModules
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -427,7 +434,7 @@ private struct ItemHeaderEditorTagsSection: View {
 
             RemoveTagsEditor(tags: $tags)
 
-            AddTagsEditor(tags: $tags)
+            AddTagsEditor(tags: $tags, tagController: tagController, module: module)
         }
     }
 }
