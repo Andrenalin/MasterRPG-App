@@ -24,9 +24,9 @@ struct DetailListView: View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
-#if os(iOS)
+#if !os(tvOS)
             .toolbar {
-                toolbarContent
+                DetailListToolbarContent(root: root, model: model)
             }
 #endif
             .themedSurface()
@@ -51,9 +51,21 @@ struct DetailListView: View {
             )
 #endif
     }
+}
 
+#if !os(tvOS)
+/// The detail toolbar: "Extract Information" and, on iOS, the keyboard's link buttons.
+struct DetailListToolbarContent: ToolbarContent {
+    let root: CharacterRootModel
+    let model: ValueModel
+
+    @ToolbarContentBuilder var body: some ToolbarContent {
+        ToolbarItemGroup(placement: .secondaryActionAll) {
+            if !model.specialCategory && !root.openFileWindowModel.showItem {
+                CharacterExtractToolBarButton(model: model)
+            }
+        }
 #if os(iOS)
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .keyboard) {
             if root.editController.editorModel.sheetRootModel?.isAIModeActive != true {
                 ForEach(root.editorLinkModel.modulesRow, id: \.self) { module in
@@ -61,6 +73,18 @@ struct DetailListView: View {
                 }
             }
         }
-    }
 #endif
+    }
 }
+
+struct CharacterExtractToolBarButton: View {
+    let model: ValueModel
+
+    var body: some View {
+        ExtractInformationToolBarButton(
+            route: CharacterDetailRoute.characterExtraction(model.id),
+            isDisabled: model.entries.allSatisfy(\.isGroupHidden)
+        )
+    }
+}
+#endif

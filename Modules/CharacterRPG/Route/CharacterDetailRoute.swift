@@ -1,11 +1,17 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import SwiftUI
 
 public enum CharacterDetailRoute: Equatable, Hashable, Codable {
     case folder(UUID)
     case folderInline(UUID)
+#if !os(tvOS)
+    case characterExtraction(UUID)
+#endif
 }
 
 extension CharacterDetailRoute: RawRepresentable {
@@ -13,6 +19,9 @@ extension CharacterDetailRoute: RawRepresentable {
         switch self {
         case .folder(let id): "folder/\(id.uuidString)"
         case .folderInline(let id): "folderInline/\(id.uuidString)"
+#if !os(tvOS)
+        case .characterExtraction(let id): "characterExtraction/\(id.uuidString)"
+#endif
         }
     }
 
@@ -22,6 +31,9 @@ extension CharacterDetailRoute: RawRepresentable {
         switch token {
         case "folder": self = .folder(uuid)
         case "folderInline": self = .folderInline(uuid)
+#if !os(tvOS)
+        case "characterExtraction": self = .characterExtraction(uuid)
+#endif
         default: return nil
         }
     }
@@ -46,6 +58,9 @@ extension CharacterDetailRoute: ItemDetailRoute {
         switch self {
             case .folder(let id): return id
             case .folderInline(let id): return id
+#if !os(tvOS)
+            case .characterExtraction(let id): return id
+#endif
         }
     }
 }
@@ -69,6 +84,10 @@ struct CharacterDetailRouteDestinationView: View {
                     DetailFolderListView(root: root, model: model, folderListController: folderListController, isSubFolder: true)
                 }
             }
+#if !os(tvOS)
+        case .characterExtraction(let itemId):
+            CharacterExtractionDestination(itemId: itemId)
+#endif
         }
     }
 }

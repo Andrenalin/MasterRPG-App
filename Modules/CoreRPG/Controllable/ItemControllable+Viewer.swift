@@ -74,7 +74,8 @@ public extension ItemControllable {
     /// Default behaviour:
     /// - **Folder / collection** (`specialCategory`): lists visible child names prefixed with "- ".
     /// - **Regular item**: formats as `"<ModuleTitle>: <name>\n\n- entry1\n- entry2…"`.
-    ///   Entries with `isGroupHidden` (e.g. MapRPG hex-grid entries) are excluded.
+    ///   Entries with `isGroupHidden` (e.g. MapRPG hex-grid entries) are excluded, and markdown
+    ///   links are reduced to their labels.
     ///   Returns `""` when the item has no entries.
     /// - Returns `""` when the item is not found.
     ///
@@ -95,8 +96,12 @@ public extension ItemControllable {
                 lines.append("\(config.module.title): \(item.name)")
                 lines.append("")
             }
+            // Markdown links are reduced to their labels: the URLs carry nothing the model can use
+            // and only eat into its input budget (Character values are mostly links).
             for entry in visibleEntries {
-                lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
+                let name = entry.name.withoutLink()
+                let content = entry.content.withoutLink()
+                lines.append(content.isEmpty ? "- \(name)" : "- \(name): \(content)")
             }
         }
         return lines.joined(separator: "\n")

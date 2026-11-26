@@ -741,6 +741,22 @@
         }
       }
     },
+    "No Entries" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Einträge"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีรายการ"
+          }
+        }
+      }
+    },
     "Number" : {
       "localizations" : {
         "de" : {
@@ -1065,6 +1081,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ข้อความ"
+          }
+        }
+      }
+    },
+    "This character has no entries to analyze." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Charakter hat keine Einträge zum Analysieren."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวละครนี้ไม่มีรายการให้วิเคราะห์"
           }
         }
       }

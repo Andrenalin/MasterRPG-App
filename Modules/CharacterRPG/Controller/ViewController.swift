@@ -1,6 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PhotoRPG
 import TableRPG
 import SwiftUI
@@ -26,6 +29,26 @@ extension ViewController: ViewControllable {
         AnyView(ThumbnailPhotoRow(itemId: model.id, item: model as? ValueModel).equatable())
     }
 }
+
+// MARK: - Batch Extraction
+
+#if !os(tvOS)
+extension ViewController {
+    public var supportsBatchExtraction: Bool { true }
+
+    @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
+        guard itemController is ItemController else { return nil }
+        return AnyView(
+            BatchTextSummaryExtractionView(
+                module: .value,
+                ids: ids,
+                itemController: itemController,
+                editController: editController
+            )
+        )
+    }
+}
+#endif
 
 // MARK: - Viewer
 

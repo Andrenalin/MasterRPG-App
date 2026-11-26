@@ -148,6 +148,8 @@ struct ListRootView: View {
                     guard !root.itemControllable.itemDataModel.isGameMode else { return }
                     navigator.navigate(to: InternalRoute.cloudFolderScan, method: .sheet)
                 }
+#if !os(tvOS)
+                // Set only by the Edit menu's Delete (`DeleteItemButton`), which doesn't exist on tvOS.
                 .onChange(of: root.navigationModel.triggerDelete) {
                     guard root.navigationModel.triggerDelete else { return }
                     root.navigationModel.triggerDelete = false
@@ -161,6 +163,7 @@ struct ListRootView: View {
                     guard !offsets.isEmpty else { return }
                     deleteItems(offsets: offsets)
                 }
+#endif
                 .onChange(of: root.navigationModel.triggerSpaceAction) {
                     guard root.navigationModel.triggerSpaceAction else { return }
                     root.navigationModel.triggerSpaceAction = false
