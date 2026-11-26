@@ -11,7 +11,7 @@ struct BatchExtractionButton: View {
             root.navigationModel.triggerBatchExtraction = true
         } label: {
             Label {
-                Text("Extract Information for \(item?.name ?? "")", bundle: .module)
+                Text.itemMenuTitle(name: item?.name, plain: "Extract", named: "Extract Information for \(item?.name ?? "")")
             } icon: {
                 Image(systemName: "sparkles")
             }

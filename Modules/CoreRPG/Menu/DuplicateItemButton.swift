@@ -13,7 +13,7 @@ struct DuplicateItemButton: View {
             }
         } label: {
             Label {
-                Text("Duplicate \(item?.name ?? "")", bundle: .module)
+                Text.itemMenuTitle(name: item?.name, plain: "Duplicate", named: "Duplicate \(item?.name ?? "")")
             } icon: {
                 Image(systemName: "doc.on.doc")
             }

@@ -27,9 +27,15 @@ struct SpaceActionButton: View {
     private var labelText: Text {
         let name = item?.name ?? ""
         if root.viewControllable.hasCustomSpaceAction {
-            return Text("\(root.configurable.module == .audio ? "Play" : "Roll") \(name)", bundle: .module)
+            let isAudio = root.configurable.module == .audio
+            return .itemMenuTitle(
+                name: name,
+                plain: isAudio ? "Play" : "Roll",
+                named: "\(isAudio ? "Play" : "Roll") \(name)"
+            )
         }
-        return Text("View \(name)", bundle: .module)
+        // "Show", not "View": "View" is the noun ("Ansicht") without a name.
+        return .itemMenuTitle(name: name, plain: "Show", named: "View \(name)")
     }
 
     private var item: (any ItemDataAccessible)? {

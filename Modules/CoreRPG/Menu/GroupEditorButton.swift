@@ -11,7 +11,7 @@ struct GroupEditorButton: View {
             root.navigationModel.triggerGroupEditor = true
         } label: {
             Label {
-                Text("Group Editor for \(item?.name ?? "")", bundle: .module)
+                Text.itemMenuTitle(name: item?.name, plain: "Group Editor", named: "Group Editor for \(item?.name ?? "")")
             } icon: {
                 Image(systemName: "long.text.page.and.pencil")
             }

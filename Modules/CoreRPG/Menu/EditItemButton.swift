@@ -11,7 +11,7 @@ struct EditItemButton: View {
             root.navigationModel.openHeaderEditor = true
         } label: {
             Label {
-                Text("Edit \(item?.name ?? "")", bundle: .module)
+                Text.itemMenuTitle(name: item?.name, plain: "Edit", named: "Edit \(item?.name ?? "")")
             } icon: {
                 Image(systemName: "pencil")
             }

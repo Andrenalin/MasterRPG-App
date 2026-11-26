@@ -24,7 +24,8 @@ struct DeleteItemButton: View {
             root.navigationModel.triggerDelete = true
         } label: {
             Label {
-                Text("Delete \(itemName(isSelectionMode: isSelectionMode))", bundle: .module)
+                let name = itemName(isSelectionMode: isSelectionMode)
+                Text.itemMenuTitle(name: name, plain: "Delete", named: "Delete \(name)")
             } icon: {
                 Image(systemName: "trash")
             }

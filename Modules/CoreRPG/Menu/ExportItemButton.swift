@@ -11,7 +11,7 @@ struct ExportItemButton: View {
             root.navigationModel.triggerExport = true
         } label: {
             Label {
-                Text("Export \(item?.name ?? "")", bundle: .module)
+                Text.itemMenuTitle(name: item?.name, plain: "Export", named: "Export \(item?.name ?? "")")
             } icon: {
                 Image(systemName: "square.and.arrow.up")
             }
