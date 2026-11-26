@@ -6,8 +6,8 @@ import CoreRPG
 import GeneratorRPG
 import SwiftUI
 
-/// The single-character "Extract Information" sheet: title, description and tags generated from
-/// the character's values, the same on-device extraction as Table, Map and Adventure.
+/// The single-character "Extract Information" sheet: name, description and tags generated from
+/// the character's values and portrait by `CharacterSummaryAnalyzer`.
 struct CharacterExtractionDestination: View {
     let itemId: UUID
 
@@ -29,13 +29,8 @@ struct CharacterExtractionDestination: View {
         } else {
             TextSummaryExtractionView(
                 module: .value,
-                entriesText: TextSummaryExtractionFormatter.formatEntries(
-                    title: String(localized: "Character", bundle: .module),
-                    name: model.name,
-                    // Values are formulas and links to other values; the model needs the labels,
-                    // not the link URLs, which would only use up its input budget.
-                    entries: visibleEntries.map { ($0.name.withoutLink(), $0.content.withoutLink()) }
-                )
+                entriesText: CharacterSheetText.text(for: model, photoRoot: root.photoRoot),
+                itemName: model.name
             ) { content, selection in
                 root.editController.applyExtractedContent(content, to: itemId, selection: selection)
             }

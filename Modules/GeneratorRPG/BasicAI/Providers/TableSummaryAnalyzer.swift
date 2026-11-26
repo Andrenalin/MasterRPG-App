@@ -4,7 +4,7 @@ import Foundation
 import FoundationModels
 
 /// Analyzes table entry text and extracts structured metadata using on-device AI.
-struct TableSummaryAnalyzer {
+struct TableSummaryAnalyzer: Sendable {
 
     private let maxCharacters: Int
     private let instructions: String

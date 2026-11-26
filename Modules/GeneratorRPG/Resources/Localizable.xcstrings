@@ -2507,6 +2507,38 @@
         }
       }
     },
+    "The character sheet is too large. Try a character with fewer values." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Charakterbogen ist zu groß. Versuche es mit einem Charakter mit weniger Werten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผ่นข้อมูลตัวละครมีขนาดใหญ่เกินไป ลองใช้ตัวละครที่มีค่าน้อยลง"
+          }
+        }
+      }
+    },
+    "The character's language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache des Charakters wird von Apple Intelligence nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence ไม่รองรับภาษาของตัวละคร"
+          }
+        }
+      }
+    },
     "Table content is too large. Try a table with fewer entries." : {
       "localizations" : {
         "de" : {

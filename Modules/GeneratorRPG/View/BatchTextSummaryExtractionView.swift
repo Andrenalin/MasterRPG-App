@@ -75,6 +75,9 @@ public struct BatchTextSummaryExtractionView: View {
     let ids: [UUID]
     let itemController: any ItemControllable
     let editController: any EditControllable
+    /// The text an item is analyzed from; `compactText(for:)` when `nil`. Character adds its
+    /// portrait's description and tags this way.
+    let entriesText: (@MainActor (UUID) async -> String)?
 
     @State private var selectedLanguage: OutputLanguage = .forCurrentLocale()
     @State private var statuses: [UUID: BatchItemStatus] = [:]
@@ -96,12 +99,14 @@ public struct BatchTextSummaryExtractionView: View {
         module: NetworkModules,
         ids: [UUID],
         itemController: any ItemControllable,
-        editController: any EditControllable
+        editController: any EditControllable,
+        entriesText: (@MainActor (UUID) async -> String)? = nil
     ) {
         self.module = module
         self.ids = ids
         self.itemController = itemController
         self.editController = editController
+        self.entriesText = entriesText
     }
 
     public var body: some View {
@@ -251,10 +256,14 @@ public struct BatchTextSummaryExtractionView: View {
     }
 
     private func performBatch() async {
-        let analyzer = TableSummaryAnalyzer()
+        let analyzer = TextSummaryAnalyzers.analyzer(for: module)
         for id in ids {
             guard !Task.isCancelled else { return }
-            let entriesText = await itemController.compactText(for: id)
+            let entriesText = if let entriesText = self.entriesText {
+                await entriesText(id)
+            } else {
+                await itemController.compactText(for: id)
+            }
             guard !entriesText.isEmpty else {
                 statuses[id] = .skipped
                 continue
@@ -264,6 +273,7 @@ public struct BatchTextSummaryExtractionView: View {
             do {
                 let result = try await analyzer.analyze(
                     entriesText: entriesText,
+                    itemName: itemController.itemSync(for: id)?.name ?? "",
                     resultModel: resultModel,
                     outputLanguage: selectedLanguage.englishName
                 )

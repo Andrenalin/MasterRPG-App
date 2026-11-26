@@ -10,6 +10,12 @@ import SwiftUI
 
 public struct ViewController {
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
+    /// Reads the portrait photo's description and tags for the AI extraction.
+    let photoRoot: PhotoRootModel?
+
+    init(photoRoot: PhotoRootModel? = nil) {
+        self.photoRoot = photoRoot
+    }
 }
 
 extension ViewController: ViewControllable {
@@ -37,13 +43,18 @@ extension ViewController {
     public var supportsBatchExtraction: Bool { true }
 
     @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
-        guard itemController is ItemController else { return nil }
+        guard let characterController = itemController as? ItemController else { return nil }
+        let photoRoot = photoRoot
         return AnyView(
             BatchTextSummaryExtractionView(
                 module: .value,
                 ids: ids,
                 itemController: itemController,
-                editController: editController
+                editController: editController,
+                entriesText: { itemId in
+                    guard let model = characterController.itemSync(for: itemId) else { return "" }
+                    return CharacterSheetText.text(for: model, photoRoot: photoRoot)
+                }
             )
         )
     }

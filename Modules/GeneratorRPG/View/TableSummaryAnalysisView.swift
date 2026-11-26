@@ -7,17 +7,28 @@ import SwiftUI
 /// Wraps `FoundationBasicView` so it handles model availability automatically.
 public struct TableSummaryAnalysisView: View {
 
-    @State private var model = TableSummaryAnalysisModel()
+    @State private var model: TableSummaryAnalysisModel
     @State private var selectedLanguage: OutputLanguage = OutputLanguage.forCurrentLocale()
     /// Owned so dismissing the sheet cancels the on-device model work instead of leaving it
     /// running (and writing results) in the background. See CODE_AUDIT_18 §3.6.
     @State private var analysisTask: Task<Void, Never>?
     let entriesText: String
+    let itemName: String
     let onAnalysisCompleted: (TableSummaryAnalysis) -> Void
 
-    public init(entriesText: String, onAnalysisCompleted: @escaping (TableSummaryAnalysis) -> Void) {
+    /// - Parameters:
+    ///   - module: picks the analysis; Character has its own rules for name and tags.
+    ///   - itemName: the item's current name, empty when it has none. A character keeps it.
+    public init(
+        entriesText: String,
+        module: NetworkModules = .table,
+        itemName: String = "",
+        onAnalysisCompleted: @escaping (TableSummaryAnalysis) -> Void
+    ) {
         self.entriesText = entriesText
+        self.itemName = itemName
         self.onAnalysisCompleted = onAnalysisCompleted
+        _model = State(initialValue: TableSummaryAnalysisModel(module: module))
     }
 
     public var body: some View {
@@ -50,7 +61,7 @@ public struct TableSummaryAnalysisView: View {
         guard !model.isAnalyzing, analysisTask == nil else { return }
         analysisTask = Task {
             defer { analysisTask = nil }
-            let content = await model.analyze(entriesText: entriesText, outputLanguage: selectedLanguage.englishName)
+            let content = await model.analyze(entriesText: entriesText, itemName: itemName, outputLanguage: selectedLanguage.englishName)
             guard !Task.isCancelled, let content else { return }
             onAnalysisCompleted(content)
         }

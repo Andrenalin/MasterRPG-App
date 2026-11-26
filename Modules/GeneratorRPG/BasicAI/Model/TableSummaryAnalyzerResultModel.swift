@@ -13,6 +13,15 @@ struct TableSummaryAnalysisProgress: Equatable, Sendable {
         self.description = partial.description
         self.tags = partial.tags
     }
+
+    /// A character's progress: an existing name is shown instead of the generated one, and the
+    /// tags are the parts generated so far.
+    init(_ partial: CharacterSummaryAnalysis.PartiallyGenerated, existingName: String) {
+        self.title = existingName.isEmpty ? partial.name : existingName
+        self.description = partial.description
+        let tags = CharacterSummaryAnalysis.tags(race: partial.race, occupation: partial.occupation, sex: partial.sex, traits: partial.traits)
+        self.tags = tags.isEmpty ? nil : tags
+    }
 }
 
 @MainActor @Observable

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Observation
 
@@ -10,14 +11,16 @@ final class TableSummaryAnalysisModel {
     let resultModel: TableSummaryAnalyzerResultModel
     var lastError: String?
 
-    private let analyzer: TableSummaryAnalyzer
+    private let analyzer: any TextSummaryAnalyzing
 
-    init() {
-        analyzer = TableSummaryAnalyzer()
+    /// - Parameter module: picks the analysis; Character has its own (`CharacterSummaryAnalyzer`).
+    init(module: NetworkModules = .table) {
+        analyzer = TextSummaryAnalyzers.analyzer(for: module)
         resultModel = TableSummaryAnalyzerResultModel()
     }
 
-    func analyze(entriesText: String, outputLanguage: String = "English") async -> TableSummaryAnalysis? {
+    /// - Parameter itemName: the item's current name, empty when it has none.
+    func analyze(entriesText: String, itemName: String = "", outputLanguage: String = "English") async -> TableSummaryAnalysis? {
         isAnalyzing = true
         resultModel.analysisProgress = nil
         lastError = nil
@@ -25,7 +28,7 @@ final class TableSummaryAnalysisModel {
         defer { isAnalyzing = false }
 
         do {
-            return try await analyzer.analyze(entriesText: entriesText, resultModel: resultModel, outputLanguage: outputLanguage)
+            return try await analyzer.analyze(entriesText: entriesText, itemName: itemName, resultModel: resultModel, outputLanguage: outputLanguage)
         } catch {
             lastError = error.localizedDescription
             return nil

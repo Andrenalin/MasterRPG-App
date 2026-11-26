@@ -37,6 +37,7 @@ struct FoundationModelsErrorHandler: Sendable {
         case pdfAnalysis
         case pdfExtraction
         case table
+        case character
     }
 
     /// The message for a `GenerationError` of a PDF or table analysis/extraction.
@@ -48,6 +49,8 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "PDF content is too large for processing. Try a smaller document or fewer pages.", bundle: .module)
             case .table:
                 return String(localized: "Table content is too large. Try a table with fewer entries.", bundle: .module)
+            case .character:
+                return String(localized: "The character sheet is too large. Try a character with fewer values.", bundle: .module)
             }
         case .guardrailViolation:
             switch subject {
@@ -55,7 +58,7 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "Content policy prevented analysis. The PDF may contain inappropriate content.", bundle: .module)
             case .pdfExtraction:
                 return String(localized: "Content policy prevented extraction. The PDF may contain inappropriate content.", bundle: .module)
-            case .table:
+            case .table, .character:
                 return String(localized: "Content policy prevented analysis.", bundle: .module)
             }
         case .unsupportedLanguageOrLocale:
@@ -64,6 +67,8 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "The PDF language is not supported by Apple Intelligence.", bundle: .module)
             case .table:
                 return String(localized: "The table language is not supported by Apple Intelligence.", bundle: .module)
+            case .character:
+                return String(localized: "The character's language is not supported by Apple Intelligence.", bundle: .module)
             }
         case .assetsUnavailable(let reason):
             return String(localized: "Model assets unavailable: \(String(describing: reason)). Ensure Apple Intelligence is downloaded.", bundle: .module)
