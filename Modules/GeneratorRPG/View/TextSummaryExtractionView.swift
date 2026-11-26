@@ -34,6 +34,8 @@ public struct TextSummaryExtractionView: View {
     public let entriesText: String
     /// The item's current name, empty when it has none. A character keeps it.
     public let itemName: String
+    /// A hint shown above the analysis, `nil` for none.
+    public let notice: LocalizedStringResource?
     public let onApply: (TableSummaryAnalysis, TextSummaryPropertySelection) -> Void
 
     @Environment(\.navigator) private var navigator
@@ -44,16 +46,18 @@ public struct TextSummaryExtractionView: View {
         module: NetworkModules,
         entriesText: String,
         itemName: String = "",
+        notice: LocalizedStringResource? = nil,
         onApply: @escaping (TableSummaryAnalysis, TextSummaryPropertySelection) -> Void
     ) {
         self.module = module
         self.entriesText = entriesText
         self.itemName = itemName
+        self.notice = notice
         self.onApply = onApply
     }
 
     public var body: some View {
-        ContentView(module: module, entriesText: entriesText, itemName: itemName, viewState: $viewState, propertySelection: $propertySelection)
+        ContentView(module: module, entriesText: entriesText, itemName: itemName, notice: notice, viewState: $viewState, propertySelection: $propertySelection)
             .navigationTitle(navigationTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -118,13 +122,14 @@ private struct ContentView: View {
     let module: NetworkModules
     let entriesText: String
     let itemName: String
+    let notice: LocalizedStringResource?
     @Binding var viewState: TextSummaryExtractionView.ViewState
     @Binding var propertySelection: TextSummaryPropertySelection
 
     var body: some View {
         switch viewState {
         case .extracting:
-            TableSummaryAnalysisView(entriesText: entriesText, module: module, itemName: itemName) { content in
+            TableSummaryAnalysisView(entriesText: entriesText, module: module, itemName: itemName, notice: notice) { content in
                 viewState = .extracted(content)
             }
         case .extracted(let content):

@@ -14,19 +14,24 @@ public struct TableSummaryAnalysisView: View {
     @State private var analysisTask: Task<Void, Never>?
     let entriesText: String
     let itemName: String
+    /// A hint above the analysis, e.g. that the character's portrait has no description.
+    let notice: LocalizedStringResource?
     let onAnalysisCompleted: (TableSummaryAnalysis) -> Void
 
     /// - Parameters:
     ///   - module: picks the analysis; Character has its own rules for name and tags.
     ///   - itemName: the item's current name, empty when it has none. A character keeps it.
+    ///   - notice: a hint shown above the analysis, `nil` for none.
     public init(
         entriesText: String,
         module: NetworkModules = .table,
         itemName: String = "",
+        notice: LocalizedStringResource? = nil,
         onAnalysisCompleted: @escaping (TableSummaryAnalysis) -> Void
     ) {
         self.entriesText = entriesText
         self.itemName = itemName
+        self.notice = notice
         self.onAnalysisCompleted = onAnalysisCompleted
         _model = State(initialValue: TableSummaryAnalysisModel(module: module))
     }
@@ -37,6 +42,9 @@ public struct TableSummaryAnalysisView: View {
                 if model.isAnalyzing {
                     AnalyzingView(model: model)
                 } else {
+                    if let notice {
+                        AnalysisNoticeBanner(message: notice)
+                    }
                     OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
                         .padding(.horizontal, 4)
                     AnalyzeButtonView(action: analyze)

@@ -741,6 +741,23 @@
         }
       }
     },
+    "Add a photo description and tags to improve the character information" : {
+      "comment" : "Shown in the character analysis when the portrait photo has no description and no tags.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge dem Foto eine Beschreibung und Tags hinzu, um die Charakterinformationen zu verbessern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มคำอธิบายและแท็กให้รูปภาพเพื่อปรับปรุงข้อมูลตัวละคร"
+          }
+        }
+      }
+    },
     "No Entries" : {
       "localizations" : {
         "de" : {

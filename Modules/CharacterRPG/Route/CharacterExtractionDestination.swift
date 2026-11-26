@@ -30,7 +30,10 @@ struct CharacterExtractionDestination: View {
             TextSummaryExtractionView(
                 module: .value,
                 entriesText: CharacterSheetText.text(for: model, photoRoot: root.photoRoot),
-                itemName: model.name
+                itemName: model.name,
+                notice: CharacterSheetText.hasPortraitText(for: model, photoRoot: root.photoRoot)
+                    ? nil
+                    : LocalizedStringResource("Add a photo description and tags to improve the character information", bundle: .module)
             ) { content, selection in
                 root.editController.applyExtractedContent(content, to: itemId, selection: selection)
             }
