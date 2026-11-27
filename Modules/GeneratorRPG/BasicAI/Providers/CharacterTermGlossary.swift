@@ -16,15 +16,13 @@ enum CharacterTermGlossary {
         /// The English game term; the model writes it in the output language.
         let english: String
         let kind: Kind
-        /// A female form ("Waldläuferin"): a gendered word for a person, so it also shows the sex.
-        let isFemaleForm: Bool
     }
 
-    /// Male and female form per class; the female form is left out when it is the same word.
+    /// Male and female form per class, then the races.
     static let terms: [Term] = classes.flatMap { german, female, english in
-        [Term(german: german, english: english, kind: .characterClass, isFemaleForm: false)]
-            + (female.map { [Term(german: $0, english: english, kind: .characterClass, isFemaleForm: true)] } ?? [])
-    } + races.map { Term(german: $0.german, english: $0.english, kind: .race, isFemaleForm: false) }
+        [Term(german: german, english: english, kind: .characterClass)]
+            + (female.map { [Term(german: $0, english: english, kind: .characterClass)] } ?? [])
+    } + races.map { Term(german: $0.german, english: $0.english, kind: .race) }
 
     /// German D&D-style class and common occupation names: (male form, female form, English).
     private static let classes: [(String, String?, String)] = [
@@ -84,8 +82,6 @@ enum CharacterTermGlossary {
         guard outputLanguage != "German" else { return [] }
         return matches(in: text).map { term in
             switch term.kind {
-            case .characterClass where term.isFemaleForm:
-                "\"\(term.german)\" is the female form of the class \(term.english)."
             case .characterClass:
                 "\"\(term.german)\" is the class \(term.english)."
             case .race:

@@ -40,8 +40,8 @@ enum CharacterSummaryEvaluationConfiguration {
 }
 
 /// Runs `CharacterSummaryAnalyzer`, the Character "Extract Information" analysis, on characters
-/// with known content and judges the name, description and tag parts (race, occupation, sex,
-/// two traits) it produces. The results appear in Xcode's report navigator
+/// with known content and judges the name, description and tag parts (race, occupation, player,
+/// up to two traits) it produces. The results appear in Xcode's report navigator
 /// under Evaluations:
 ///
 ///     TEST_RUNNER_CHARACTER_SUMMARY_EVAL=1 xcodebuild test -scheme MasterRPG \
@@ -69,7 +69,7 @@ struct CharacterSummaryEvaluationTests {
         let sampleCount = Double(CharacterSummarySample.dataset(runs: Self.evaluation.runs).count)
         let passRate = result.aggregateValue(.mean(of: Self.evaluation.passed))
         let nameRate = result.aggregateValue(.mean(of: Self.evaluation.nameRules))
-        let sexRate = result.aggregateValue(.mean(of: Self.evaluation.sexRules))
+        let playerRate = result.aggregateValue(.mean(of: Self.evaluation.playerRules))
         let descriptionRate = result.aggregateValue(.mean(of: Self.evaluation.descriptionRules))
         let tagRate = result.aggregateValue(.mean(of: Self.evaluation.tagRules))
         let recall = result.aggregateValue(.mean(of: Self.evaluation.concepts))
@@ -89,7 +89,7 @@ struct CharacterSummaryEvaluationTests {
         )
         #expect(
             passRate >= CharacterSummaryEvaluationConfiguration.passRateThreshold,
-            "\(passRate.formatted(.percent)) of runs passed (name rules \(nameRate.formatted(.percent)), description rules \(descriptionRate.formatted(.percent)), tag rules \(tagRate.formatted(.percent)), sex \(sexRate.formatted(.percent)), concept recall \(recall.formatted(.percent))), needs \(CharacterSummaryEvaluationConfiguration.passRateThreshold.formatted(.percent))"
+            "\(passRate.formatted(.percent)) of runs passed (name rules \(nameRate.formatted(.percent)), description rules \(descriptionRate.formatted(.percent)), tag rules \(tagRate.formatted(.percent)), player \(playerRate.formatted(.percent)), concept recall \(recall.formatted(.percent))), needs \(CharacterSummaryEvaluationConfiguration.passRateThreshold.formatted(.percent))"
         )
     }
 }

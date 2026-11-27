@@ -9,25 +9,16 @@ import Foundation
 /// What a good result for one character looks like. Terms are matched case and diacritic
 /// insensitive as substrings, so "dwarf" matches "Dwarven" and "fjordzwerg" matches "Fjordzwerg".
 struct CharacterSummaryExpectation: Codable, Sendable, Equatable {
-    enum Sex: String, Codable, Sendable {
-        case male, female
-
-        /// The words that count as this sex, in the output languages of the fixtures.
-        var words: Set<String> {
-            switch self {
-            case .male: ["male", "man", "mannlich", "mann"]
-            case .female: ["female", "woman", "weiblich", "frau"]
-            }
-        }
-    }
-
-    /// One of these must appear in the race, e.g. ["dwarf"] or ["fjordzwerg"].
+    /// One of these must appear in the race, e.g. ["dwarf"], ["fjordzwerg"], or the animal's or
+    /// monster's name (["bear"], ["dragon"]).
     var race: [String]
-    /// One of these must appear in the occupation. Empty: any occupation (monsters).
+    /// One of these must appear in the occupation. Empty: the sheet names no class, occupation or
+    /// role, so the occupation must stay empty (never guessed).
     var occupation: [String]
-    /// `nil`: nothing in the sheet or portrait shows it, so the sex must stay empty.
-    var sex: Sex?
-    /// At least one trait must contain one of these: what the values and background really show.
+    /// The player's name the sheet names; `nil`: it names none, so there is no player tag.
+    var playerName: String? = nil
+    /// When there are traits, at least one must contain one of these: what the values and
+    /// background really show. No traits is allowed.
     var traitConcepts: [String]
     /// The description must contain one of these.
     var descriptionConcepts: [String]
@@ -44,10 +35,11 @@ struct CharacterSummaryVerdict: Sendable, Equatable {
     let tags: [String]
     let nameRuleViolations: [String]
     let descriptionRuleViolations: [String]
-    /// Format rules of race, occupation, sex and traits, and the stored tag count.
+    /// Format rules of race, occupation, traits and player's name, and the stored tag count.
     let tagRuleViolations: [String]
-    /// Sex present when shown, absent when not shown, and the right one. Also in `tagRuleViolations`.
-    let sexViolations: [String]
+    /// Player's name present and right when the sheet names one, absent when not. Also in
+    /// `tagRuleViolations`.
+    let playerViolations: [String]
     let conceptViolations: [String]
     /// Share of the expected concepts found in race, occupation, traits and description, 0...1.
     let conceptScore: Double
@@ -62,8 +54,10 @@ struct CharacterSummaryVerdict: Sendable, Equatable {
     var passed: Bool { violations.isEmpty }
 }
 
-/// Scores one `CharacterSummaryAnalysis` against the character tag rules: race, class or
-/// occupation, sex only when shown, and exactly two traits that are special about the character.
+/// Scores one `CharacterSummaryAnalysis` against the character tag rules: 2 to 5 tags of the race
+/// (always), the class or occupation (only when the sheet names one, never guessed), up to two
+/// traits that are special about the character and do not repeat the race or occupation, and the
+/// player's name (only when the sheet names one).
 /// Pure, so the rules themselves are unit-tested without Apple Intelligence.
 struct CharacterSummaryEvaluator: Sendable {
     var maximumWordsPerPart = GeneratedTagRules.maximumWordsPerTag
@@ -73,8 +67,9 @@ struct CharacterSummaryEvaluator: Sendable {
     var minimumDescriptionCharacters = 20
     var maximumDescriptionCharacters = 320
     var maximumDescriptionSentences = 2
-    /// Race, occupation, sex and two traits; four when the sex is not shown.
-    var allowedTagCount = 4...5
+    /// Race, occupation, up to two traits and the player's name.
+    var allowedTagCount = 2...5
+    var allowedTraitCount = 0...2
     /// Names that are no name.
     var genericNames: Set<String> = [
         "character", "unnamed", "unnamed character", "npc", "unknown", "monster", "name",
@@ -105,9 +100,9 @@ struct CharacterSummaryEvaluator: Sendable {
     ) -> CharacterSummaryVerdict {
         let nameViolations = nameRuleViolations(analysis.name, existingName: existingName, expectation: expectation)
         let descriptionViolations = descriptionRuleViolations(analysis, expectation: expectation)
-        let sexViolations = sexViolations(analysis.sex, expected: expectation.sex)
+        let playerViolations = playerViolations(analysis.playerName, expected: expectation.playerName)
         let tags = analysis.summary.tags
-        var tagViolations = partRuleViolations(analysis, expectation: expectation) + sexViolations
+        var tagViolations = partRuleViolations(analysis, expectation: expectation) + playerViolations
         if !allowedTagCount.contains(tags.count) {
             tagViolations.append("\(tags.count) stored tags (\(tags.joined(separator: ", "))), allowed are \(allowedTagCount)")
         }
@@ -118,7 +113,9 @@ struct CharacterSummaryEvaluator: Sendable {
         if !expectation.occupation.isEmpty {
             scores.append(match(analysis.occupation, expectation.occupation, label: "occupation", into: &conceptViolations))
         }
-        scores.append(match(analysis.traits.joined(separator: " | "), expectation.traitConcepts, label: "traits", into: &conceptViolations))
+        if !analysis.traits.isEmpty {
+            scores.append(match(analysis.traits.joined(separator: " | "), expectation.traitConcepts, label: "traits", into: &conceptViolations))
+        }
         scores.append(match(analysis.description, expectation.descriptionConcepts, label: "description", into: &conceptViolations))
 
         return CharacterSummaryVerdict(
@@ -127,7 +124,7 @@ struct CharacterSummaryEvaluator: Sendable {
             nameRuleViolations: nameViolations,
             descriptionRuleViolations: descriptionViolations,
             tagRuleViolations: tagViolations,
-            sexViolations: sexViolations,
+            playerViolations: playerViolations,
             conceptViolations: conceptViolations,
             conceptScore: scores.reduce(0, +) / Double(scores.count)
         )
@@ -190,15 +187,20 @@ struct CharacterSummaryEvaluator: Sendable {
     // MARK: - Tag parts
 
     private func partRuleViolations(_ analysis: CharacterSummaryAnalysis, expectation: CharacterSummaryExpectation) -> [String] {
-        var violations: [String] = []
-        for (label, value) in [("race", analysis.race), ("occupation", analysis.occupation)] {
-            violations.append(contentsOf: formatViolations(of: value, label: label, expectation: expectation))
+        var violations = formatViolations(of: analysis.race, label: "race", expectation: expectation)
+        let occupation = analysis.occupation.trimmingCharacters(in: .whitespacesAndNewlines)
+        if expectation.occupation.isEmpty {
+            if !occupation.isEmpty {
+                violations.append("occupation '\(occupation)' is guessed, the sheet names none")
+            }
+        } else {
+            violations.append(contentsOf: formatViolations(of: occupation, label: "occupation", expectation: expectation))
         }
 
-        if analysis.traits.count != 2 {
-            violations.append("\(analysis.traits.count) traits, expected 2")
+        if !allowedTraitCount.contains(analysis.traits.count) {
+            violations.append("\(analysis.traits.count) traits, allowed are \(allowedTraitCount)")
         }
-        let others = [analysis.race, analysis.occupation, analysis.sex]
+        let others = [analysis.race, analysis.occupation]
             .map(PdfTagEvaluator.normalized)
             .filter { !$0.isEmpty }
         var seen = Set<String>()
@@ -214,7 +216,7 @@ struct CharacterSummaryEvaluator: Sendable {
                 violations.append("trait '\(trimmed)' is generic")
             }
             if others.contains(key) {
-                violations.append("trait '\(trimmed)' repeats the race, occupation or sex")
+                violations.append("trait '\(trimmed)' repeats the race or occupation")
             }
             if !seen.insert(key).inserted {
                 violations.append("trait '\(trimmed)' is repeated")
@@ -240,19 +242,19 @@ struct CharacterSummaryEvaluator: Sendable {
         return violations
     }
 
-    // MARK: - Sex
+    // MARK: - Player
 
-    private func sexViolations(_ sex: String, expected: CharacterSummaryExpectation.Sex?) -> [String] {
-        let key = PdfTagEvaluator.normalized(sex)
+    private func playerViolations(_ playerName: String, expected: String?) -> [String] {
+        let key = PdfTagEvaluator.normalized(playerName)
         switch (expected, key.isEmpty) {
         case (nil, true):
             return []
         case (nil, false):
-            return ["sex '\(sex)' is guessed, nothing shows it"]
+            return ["player '\(playerName)' is invented, the sheet names none"]
         case (.some, true):
-            return ["sex is missing although the sheet or portrait shows it"]
+            return ["player's name is missing although the sheet names it"]
         case (.some(let expected), false):
-            return expected.words.contains(key) ? [] : ["sex '\(sex)' is wrong, expected \(expected.rawValue)"]
+            return key == PdfTagEvaluator.normalized(expected) ? [] : ["player '\(playerName)' is wrong, expected '\(expected)'"]
         }
     }
 

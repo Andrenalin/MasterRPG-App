@@ -20,8 +20,8 @@ struct CharacterSummaryEvaluatorTests {
         description: "A dwarf fighter and former mine guard who searches for the lost forge of her clan.",
         race: "Dwarf",
         occupation: "Fighter",
-        sex: "Female",
-        traits: ["Strong", "Hammer Expert"]
+        traits: ["Strong", "Hammer Expert"],
+        playerName: "Mara Lindqvist"
     )
 
     private func evaluate(
@@ -44,28 +44,50 @@ struct CharacterSummaryEvaluatorTests {
 
         #expect(result.passed, "\(result.violations)")
         #expect(result.conceptScore == 1)
-        #expect(result.tags == ["Dwarf", "Fighter", "Female", "Strong", "Hammer Expert"])
+        #expect(result.tags == ["Dwarf", "Fighter", "Strong", "Hammer Expert", "Mara Lindqvist"])
     }
 
     // MARK: - Stored tags
 
-    @Test("The stored tags are race, occupation, sex and the traits; no sex leaves four")
+    @Test("The stored tags are race, occupation, traits and player; empty parts are left out")
     func summaryTags() {
-        var analysis = good
-        analysis.sex = "  "
+        var animal = good
+        animal.race = "Brown bear"
+        animal.occupation = " "
+        animal.traits = []
+        animal.playerName = ""
 
-        #expect(good.summary.tags == ["Dwarf", "Fighter", "Female", "Strong", "Hammer Expert"])
-        #expect(analysis.summary.tags == ["Dwarf", "Fighter", "Strong", "Hammer Expert"])
+        #expect(good.summary.tags == ["Dwarf", "Fighter", "Strong", "Hammer Expert", "Mara Lindqvist"])
+        #expect(animal.summary.tags == ["Brown bear"])
         #expect(good.summary.title == "Brakka Ironvein")
         #expect(good.summary.description == good.description)
+    }
+
+    @Test("No more than two traits are stored")
+    func storedTraitLimit() {
+        var analysis = good
+        analysis.traits = ["Strong", "Loyal", "Stubborn"]
+
+        #expect(analysis.summary.tags == ["Dwarf", "Fighter", "Strong", "Loyal", "Mara Lindqvist"])
     }
 
     @Test("A trait that repeats the race is dropped from the stored tags and fails")
     func repeatedTrait() {
         let result = evaluate { $0.traits = ["Dwarf", "Strong"] }
 
-        #expect(result.tags == ["Dwarf", "Fighter", "Female", "Strong"])
+        #expect(result.tags == ["Dwarf", "Fighter", "Strong", "Mara Lindqvist"])
         #expect(result.tagRuleViolations.contains { $0.contains("repeats the race") })
+    }
+
+    @Test("Two to five tags: the race alone is too few")
+    func tagCount() {
+        let result = evaluate {
+            $0.occupation = ""
+            $0.traits = []
+            $0.playerName = ""
+        }
+
+        #expect(result.tagRuleViolations.contains { $0.contains("1 stored tags") })
     }
 
     // MARK: - Name
@@ -138,45 +160,67 @@ struct CharacterSummaryEvaluatorTests {
         #expect(result.tagRuleViolations.contains { $0.contains("occupation 'Former mine guard of the clan' has more than 3 words") })
     }
 
-    @Test("A monster passes with any occupation")
+    @Test("A monster without a class keeps the occupation empty; a guessed one fails")
     func monsterOccupation() {
         let wyrm = CharacterSummaryFixture.ashWyrm.expectation
-        let result = evaluate({
+        let dragon: (inout CharacterSummaryAnalysis) -> Void = {
             $0.race = "Dragon"
-            $0.occupation = "Lair Tyrant"
+            $0.occupation = ""
             $0.traits = ["Fire Breath", "Armored"]
+            $0.playerName = ""
             $0.description = "An ancient dragon that breathes burning ash from its volcano lair."
-        }, name: "Brakka Ironvein", expectation: wyrm)
+        }
+        let empty = evaluate(dragon, expectation: wyrm)
+        let guessed = evaluate({ dragon(&$0); $0.occupation = "Lair Tyrant" }, expectation: wyrm)
 
-        #expect(!result.conceptViolations.contains { $0.hasPrefix("occupation") })
+        #expect(empty.tagRuleViolations.isEmpty, "\(empty.tagRuleViolations)")
+        #expect(guessed.tagRuleViolations.contains("occupation 'Lair Tyrant' is guessed, the sheet names none"))
     }
 
-    // MARK: - Sex
+    @Test("A character with a class must name it")
+    func missingOccupation() {
+        #expect(evaluate { $0.occupation = "" }.tagRuleViolations.contains("occupation is empty"))
+    }
 
-    @Test("Sex: shown and right passes, missing, wrong or guessed fails")
-    func sex() {
+    // MARK: - Player
+
+    @Test("Player: named and right passes, missing, wrong or invented fails")
+    func player() {
         let goblin = CharacterSummaryFixture.goblinSkirmisher.expectation
-        let german = CharacterSummaryFixture.aerztinBerlin.expectation
 
-        #expect(evaluate().sexViolations.isEmpty)
-        #expect(evaluate({ $0.sex = "Weiblich" }, expectation: german).sexViolations.isEmpty)
-        #expect(evaluate { $0.sex = "" }.sexViolations == ["sex is missing although the sheet or portrait shows it"])
-        #expect(evaluate { $0.sex = "Male" }.sexViolations == ["sex 'Male' is wrong, expected female"])
-        #expect(evaluate({ $0.sex = "Male" }, expectation: goblin).sexViolations == ["sex 'Male' is guessed, nothing shows it"])
-        #expect(evaluate({ $0.sex = "" }, expectation: goblin).sexViolations.isEmpty)
+        #expect(evaluate().playerViolations.isEmpty)
+        #expect(evaluate { $0.playerName = "mara lindqvist" }.playerViolations.isEmpty)
+        #expect(evaluate { $0.playerName = "" }.playerViolations == ["player's name is missing although the sheet names it"])
+        #expect(evaluate { $0.playerName = "Jonas" }.playerViolations == ["player 'Jonas' is wrong, expected 'Mara Lindqvist'"])
+        #expect(evaluate({ $0.playerName = "Sam" }, expectation: goblin).playerViolations == ["player 'Sam' is invented, the sheet names none"])
+        #expect(evaluate({ $0.playerName = "" }, expectation: goblin).playerViolations.isEmpty)
     }
 
-    @Test("A wrong sex is a tag rule violation too")
-    func sexIsTagRule() {
-        #expect(evaluate { $0.sex = "Male" }.tagRuleViolations.contains("sex 'Male' is wrong, expected female"))
+    @Test("A wrong player is a tag rule violation too")
+    func playerIsTagRule() {
+        #expect(evaluate { $0.playerName = "Jonas" }.tagRuleViolations.contains("player 'Jonas' is wrong, expected 'Mara Lindqvist'"))
     }
 
     // MARK: - Traits
 
-    @Test("Exactly two traits")
+    @Test("Zero to two traits")
     func traitCount() {
-        #expect(evaluate { $0.traits = ["Strong"] }.tagRuleViolations.contains("1 traits, expected 2"))
-        #expect(evaluate { $0.traits = ["Strong", "Loyal", "Stubborn"] }.tagRuleViolations.contains("3 traits, expected 2"))
+        #expect(!evaluate { $0.traits = [] }.tagRuleViolations.contains { $0.contains("traits, allowed") })
+        #expect(!evaluate { $0.traits = ["Strong"] }.tagRuleViolations.contains { $0.contains("traits, allowed") })
+        #expect(evaluate { $0.traits = ["Strong", "Loyal", "Stubborn"] }.tagRuleViolations.contains("3 traits, allowed are 0...2"))
+    }
+
+    @Test("No traits is no concept miss")
+    func noTraitsNoConceptMiss() {
+        let result = evaluate { $0.traits = [] }
+
+        #expect(!result.conceptViolations.contains { $0.hasPrefix("traits") })
+        #expect(result.conceptScore == 1)
+    }
+
+    @Test("A trait that repeats the occupation fails")
+    func traitRepeatsOccupation() {
+        #expect(evaluate { $0.traits = ["Fighter", "Strong"] }.tagRuleViolations.contains("trait 'Fighter' repeats the race or occupation"))
     }
 
     @Test("Generic traits fail", arguments: ["Character", "Stats", "Attributes", "Background", "NPC", "Werte"])
@@ -241,6 +285,11 @@ struct CharacterSummaryEvaluatorTests {
         #expect(fixture.entriesText.count < 7000)
     }
 
+    @Test("An expected player's name is a value of the sheet", arguments: CharacterSummaryFixture.all.filter { $0.expectation.playerName != nil })
+    func playerOnSheet(fixture: CharacterSummaryFixture) {
+        #expect(fixture.entriesText.contains(fixture.expectation.playerName ?? "-"))
+    }
+
     @Test("Fixture names are unique")
     func uniqueNames() {
         let names = CharacterSummaryFixture.all.map(\.name)
@@ -248,14 +297,16 @@ struct CharacterSummaryEvaluatorTests {
         #expect(Set(names).count == names.count)
     }
 
-    @Test("Fixtures cover named, unnamed, no sex, portrait-only sex and a race of the game's world")
+    @Test("Fixtures cover named, unnamed, players, no occupation, an animal, portraits and a race of the game's world")
     func coverage() {
         let all = CharacterSummaryFixture.all
 
         #expect(all.contains { $0.characterName.isEmpty })
         #expect(all.contains { !$0.characterName.isEmpty })
-        #expect(all.contains { $0.expectation.sex == nil })
-        #expect(all.contains { $0.expectation.sex == .male })
+        #expect(all.contains { $0.expectation.playerName != nil })
+        #expect(all.contains { $0.expectation.playerName == nil })
+        #expect(all.contains { $0.expectation.occupation.isEmpty })
+        #expect(CharacterSummaryFixture.caveBear.expectation.race == ["bear"])
         #expect(all.contains { !$0.portraitDescription.isEmpty })
         #expect(CharacterSummaryFixture.fjordzwergWalfaenger.expectation.race == ["fjordzwerg"])
     }

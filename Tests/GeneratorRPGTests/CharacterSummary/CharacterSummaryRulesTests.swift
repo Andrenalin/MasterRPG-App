@@ -7,8 +7,8 @@ import Testing
 
 @testable import GeneratorRPG
 
-/// The parts of the Character analysis that are code, not prompt: the sex evidence check, the
-/// fixed sex words and the German class and race glossary. No Apple Intelligence needed.
+/// The parts of the Character analysis that are code, not prompt: the player's name check, the
+/// trait cleanup and the German class and race glossary. No Apple Intelligence needed.
 @Suite("Character summary rules")
 struct CharacterSummaryRulesTests {
     private let sheet = """
@@ -19,31 +19,23 @@ struct CharacterSummaryRulesTests {
     - Hintergrund: Sie bewacht die Grenze.
     """
 
-    // MARK: - Sex evidence
+    // MARK: - Player name
 
-    @Test("A sex is kept when its evidence is a word of the sheet", arguments: ["Sie", "Waldläuferin", "Helene", "\"sie\"", " waldlauferin "])
-    func evidenceOnSheet(evidence: String) {
-        #expect(CharacterGender.verified(.female, evidence: evidence, in: sheet) == .female)
+    @Test("A player's name is kept when it is on the sheet and not the character's name", arguments: ["Jonas Reuter", "\"Jonas Reuter\"", " jonas reuter "])
+    func playerOnSheet(player: String) {
+        let sheet = sheet + "\n- Spieler: Jonas Reuter"
+
+        #expect(CharacterSummaryGeneration.verifiedPlayerName(player, in: sheet, characterName: "Helene Barth").localizedStandardContains("Jonas Reuter"))
     }
 
-    @Test("A sex without evidence from the sheet is dropped", arguments: ["", " ", "she", "Tink", "x", String(repeating: "a", count: 61)])
-    func evidenceMissing(evidence: String) {
-        #expect(CharacterGender.verified(.female, evidence: evidence, in: sheet) == .unknown)
+    @Test("An invented player or the character's own name is dropped", arguments: ["", " ", "x", "Sam Miller", "Helene Barth", "Helene", String(repeating: "a", count: 61)])
+    func playerDropped(player: String) {
+        #expect(CharacterSummaryGeneration.verifiedPlayerName(player, in: sheet, characterName: "Helene Barth").isEmpty)
     }
 
-    @Test("Unknown and a missing sex stay unknown")
-    func unknownStaysUnknown() {
-        #expect(CharacterGender.verified(.unknown, evidence: "Sie", in: sheet) == .unknown)
-        #expect(CharacterGender.verified(nil, evidence: "Sie", in: sheet) == .unknown)
-        #expect(CharacterGender.verified(.male, evidence: nil, in: sheet) == .unknown)
-    }
-
-    @Test("The sex word follows the output language, English for others", arguments: [
-        ("English", CharacterGender.female, "Female"), ("German", .male, "Männlich"), ("German", .female, "Weiblich"),
-        ("Japanese", .female, "女性"), ("Klingon", .male, "Male"), ("German", .unknown, "")
-    ])
-    func sexWord(language: String, sex: CharacterGender, word: String) {
-        #expect(sex.word(in: language) == word)
+    @Test("A missing player stays empty")
+    func playerMissing() {
+        #expect(CharacterSummaryGeneration.verifiedPlayerName(nil, in: sheet, characterName: "").isEmpty)
     }
 
     // MARK: - Traits
@@ -71,7 +63,7 @@ struct CharacterSummaryRulesTests {
         let hints = CharacterTermGlossary.hints(in: sheet, outputLanguage: "English")
 
         #expect(hints == [
-            "\"Waldläuferin\" is the female form of the class Ranger.",
+            "\"Waldläuferin\" is the class Ranger.",
             "\"Elfe\" is the race Elf."
         ])
     }
@@ -93,7 +85,6 @@ struct CharacterSummaryRulesTests {
         let matches = CharacterTermGlossary.matches(in: "- Klasse: krieger\n- Volk: ZWERG")
 
         #expect(matches.map(\.english) == ["Fighter", "Dwarf"])
-        #expect(matches.allSatisfy { !$0.isFemaleForm })
     }
 
     @Test("The prompt block lists the hints only when there are some")

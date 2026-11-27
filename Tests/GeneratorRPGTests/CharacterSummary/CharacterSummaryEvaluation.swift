@@ -52,10 +52,10 @@ struct CharacterSummaryEvaluation: Evaluation {
     let nameRules = Metric("CharacterNameRules")
     /// Share of runs whose description breaks no rule.
     let descriptionRules = Metric("CharacterDescriptionRules")
-    /// Share of runs whose race, occupation, sex and traits break no rule.
+    /// Share of runs whose race, occupation, traits, player's name and tag count break no rule.
     let tagRules = Metric("CharacterTagRules")
-    /// Share of runs with the sex right: present and correct when shown, absent when not.
-    let sexRules = Metric("CharacterSexRules")
+    /// Share of runs with the player's name right: present when the sheet names one, absent when not.
+    let playerRules = Metric("CharacterPlayerRules")
     /// How much of the expected race, occupation, trait and description concepts were found, 0...1.
     let concepts = Metric("CharacterConceptRecall")
 
@@ -100,11 +100,11 @@ struct CharacterSummaryEvaluation: Evaluation {
                 ? tagRules.passing()
                 : tagRules.failing(rationale: "tags: \(result.tags.joined(separator: ", ")); " + result.tagRuleViolations.joined(separator: "; "))
         }
-        Evaluator<CharacterSummarySample> { [sexRules] sample, subject in
+        Evaluator<CharacterSummarySample> { [playerRules] sample, subject in
             let result = Self.evaluate(subject.value, for: sample)
-            return result.sexViolations.isEmpty
-                ? sexRules.passing()
-                : sexRules.failing(rationale: result.sexViolations.joined(separator: "; "))
+            return result.playerViolations.isEmpty
+                ? playerRules.passing()
+                : playerRules.failing(rationale: result.playerViolations.joined(separator: "; "))
         }
         Evaluator<CharacterSummarySample> { [concepts] sample, subject in
             let result = Self.evaluate(subject.value, for: sample)
@@ -117,7 +117,7 @@ struct CharacterSummaryEvaluation: Evaluation {
         aggregator.computeMean(of: nameRules)
         aggregator.computeMean(of: descriptionRules)
         aggregator.computeMean(of: tagRules)
-        aggregator.computeMean(of: sexRules)
+        aggregator.computeMean(of: playerRules)
         aggregator.computeMean(of: concepts)
     }
 
@@ -133,7 +133,7 @@ struct CharacterSummaryEvaluation: Evaluation {
 
     static func rationale(_ result: CharacterSummaryVerdict) -> String {
         let analysis = result.analysis
-        return "name: \(analysis.name); race: \(analysis.race); occupation: \(analysis.occupation); sex: \(analysis.sex); "
+        return "name: \(analysis.name); race: \(analysis.race); occupation: \(analysis.occupation); player: \(analysis.playerName); "
             + "traits: \(analysis.traits.joined(separator: ", ")); description: \(analysis.description); "
             + result.violations.joined(separator: "; ")
     }

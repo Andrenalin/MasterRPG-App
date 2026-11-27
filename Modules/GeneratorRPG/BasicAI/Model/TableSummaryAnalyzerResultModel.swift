@@ -15,12 +15,17 @@ struct TableSummaryAnalysisProgress: Equatable, Sendable {
     }
 
     /// A character's progress: an existing name is shown instead of the generated one, and the
-    /// tags are the parts generated so far. The sex is left out until the result: it is kept only
-    /// after its evidence is checked against the sheet.
+    /// tags are the parts generated so far. The player's name is left out until the result: it is
+    /// kept only after it is checked against the sheet.
     init(_ partial: CharacterSummaryGeneration.PartiallyGenerated, existingName: String) {
         self.title = existingName.isEmpty ? partial.name : existingName
         self.description = partial.description
-        let tags = CharacterSummaryAnalysis.tags(race: partial.race, occupation: partial.occupation, sex: nil, traits: partial.traits?.map(CharacterSummaryGeneration.cleanedTrait))
+        let tags = CharacterSummaryAnalysis.tags(
+            race: partial.race,
+            occupation: partial.occupation,
+            traits: partial.traits?.map(CharacterSummaryGeneration.cleanedTrait),
+            playerName: nil
+        )
         self.tags = tags.isEmpty ? nil : tags
     }
 }

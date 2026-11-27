@@ -8,8 +8,8 @@ import FoundationModels
 ///
 /// A character that already has a name keeps it: the name is passed to the model so the
 /// description can use it, and it replaces whatever name the model writes. The model generates
-/// `CharacterSummaryGeneration`; the sex is kept only when its evidence is a word of the sheet
-/// (`CharacterGender.verified`) and is written with fixed words per output language.
+/// `CharacterSummaryGeneration`; the player's name is kept only when it is a name of the sheet
+/// (`verifiedPlayerName`).
 struct CharacterSummaryAnalyzer: Sendable {
 
     private let maxCharacters: Int
@@ -54,9 +54,7 @@ struct CharacterSummaryAnalyzer: Sendable {
         guard let partial = latestContent,
               let name = partial.name,
               let description = partial.description,
-              let race = partial.race,
-              let occupation = partial.occupation,
-              let traits = partial.traits else {
+              let race = partial.race else {
             throw PdfSummaryAnalysisError.generationFailed(
                 String(
                     localized: "Streaming completed but no content was received.",
@@ -65,15 +63,16 @@ struct CharacterSummaryAnalyzer: Sendable {
             )
         }
 
-        // The existing name counts as evidence too ("Helene"), also when the sheet text was cut.
-        let sex = CharacterGender.verified(partial.gender, evidence: partial.genderWord, in: truncated + "\n" + existingName)
+        let finalName = existingName.isEmpty ? name : existingName
+        // The existing name is part of the sheet text too; a player's name must be another name.
+        let playerName = CharacterSummaryGeneration.verifiedPlayerName(partial.playerName, in: truncated, characterName: finalName)
         return CharacterSummaryAnalysis(
-            name: existingName.isEmpty ? name : existingName,
+            name: finalName,
             description: description,
             race: race,
-            occupation: occupation,
-            sex: sex.word(in: outputLanguage),
-            traits: traits.map(CharacterSummaryGeneration.cleanedTrait)
+            occupation: partial.occupation ?? "",
+            traits: (partial.traits ?? []).prefix(2).map(CharacterSummaryGeneration.cleanedTrait),
+            playerName: playerName
         )
     }
 
@@ -103,11 +102,10 @@ struct CharacterSummaryAnalyzer: Sendable {
         Provide in \(outputLanguage), in this order:
         - The name
         - A description of one or two sentences about who the character is, naming the race and the class or occupation
-        - The race
-        - The class or occupation
-        - The word from the sheet or portrait that shows the gender, or nothing
-        - The gender: male or female only when that word shows it, otherwise unknown
-        - Two traits of 1 to 3 words that are special about this character, based on the highest values and the background
+        - The race: a people, the animal's name for an animal, or the monster's own name
+        - The class, occupation or role, only when the sheet names one, otherwise nothing
+        - The player's name, only when the sheet names the player, otherwise nothing
+        - Up to two traits of 1 to 3 words that are special about this character, based on the highest values and the background
         """
     }
 
@@ -122,27 +120,27 @@ struct CharacterSummaryAnalyzer: Sendable {
 
     private static let defaultInstructions = """
     Analyze the character sheet of a tabletop role-playing game: a player character, a \
-    non-player character or a monster. The sheet lists the character's values (attributes, \
-    skills, equipment, background) and can end with the description and tags of the \
-    character's portrait.
+    non-player character, an animal or a monster. The sheet lists the character's values \
+    (attributes, skills, equipment, background) and can end with the description and tags of \
+    the character's portrait.
     Extract, in this order, the name, a description, the race, the class or occupation, the \
-    word that shows the gender, the gender and two traits.
-    The race keeps a name that only exists in the game's own world unchanged (Fjordzwerg, \
-    Kaiter). A common race is always written in the output language, also when the sheet is in \
-    another language. When the sheet names no race, use Human.
-    The occupation is the class or occupation the sheet names, written in the output language \
-    with its closest meaning; a game class is written as the game term. Only a monster without \
-    one gets its role in a fight.
-    The gender is decided only from a word you copy exactly from the sheet or the portrait: a \
-    pronoun, a gendered word for a person, or a clearly male or female first name. Without \
-    such a word the gender is unknown. A monster, creature or stat block usually has no such \
-    word: its gender is unknown. Never guess.
-    The two traits say what is special about this character and are read from the sheet, not \
+    player's name and up to two traits.
+    The race is always given: the character's people, the animal's name for an animal, or the \
+    monster's own name for a monster. The race keeps a name that only exists in the game's own world unchanged \
+    (Fjordzwerg, Kaiter). A common race is always written in the output language, also when the \
+    sheet is in another language. When the sheet names no race for a person, use Human.
+    The class or occupation is only given when the sheet or the portrait names a class, an \
+    occupation or a role, written in the output language with its closest meaning; a game class \
+    is written as the game term. When nothing names one, leave it empty. Never guess.
+    The player's name is the real person who plays the character, only when a value of the sheet \
+    names the player. Copy it exactly. Never use the character's own name for it.
+    The traits say what is special about this character and are read from the sheet, not \
     imagined: the values that are clearly higher than the others, the background, the weapon or \
-    the special abilities. Name what they show in your own words, in the output language. A low \
-    or average value is no trait. A trait has 1 to 3 words and is no sentence, does not repeat \
-    the race, occupation or gender, has no label and is never a generic word such as "Character", \
-    "Stats" or "Attributes".
+    the special abilities. Give two, one or none: none is better than a weak trait. Name what \
+    they show in your own words, in the output language. A low or average value is no trait. A \
+    trait has 1 to 3 words and is no sentence, does not repeat the race or the class or \
+    occupation, has no label and is never a generic word such as "Character", "Stats" or \
+    "Attributes".
     The description has one or two sentences about the character: it names the race and the \
     class or occupation and says what makes them special. It is about the character, never \
     about "entries", "values", "a sheet" or "a table".

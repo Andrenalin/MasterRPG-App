@@ -56,12 +56,13 @@ struct CharacterSummaryFixture: Codable, Sendable, CustomTestStringConvertible {
 // MARK: - Fixtures
 
 extension CharacterSummaryFixture {
-    /// Original characters written for this evaluation: player characters, NPCs and monsters,
-    /// fantasy, science fiction and 1920s horror, named and unnamed, with and without a portrait,
-    /// a race of the game's own world, German with German output and German with English output.
+    /// Original characters written for this evaluation: player characters, NPCs, an animal and
+    /// monsters, fantasy, science fiction and 1920s horror, named and unnamed, with and without a
+    /// portrait, with and without a player, a race of the game's own world, German with German
+    /// output and German with English output.
     static let all: [CharacterSummaryFixture] = [
         dwarfFighter, innkeeper, ashWyrm, goblinSkirmisher, freighterPilot,
-        aerztinBerlin, fjordzwergWalfaenger, elvenRangerFromGerman
+        aerztinBerlin, fjordzwergWalfaenger, elvenRangerFromGerman, caveBear
     ]
 
     static let dwarfFighter = CharacterSummaryFixture(
@@ -79,12 +80,13 @@ extension CharacterSummaryFixture {
             Entry(name: "Hit Points", value: "\(link("Constitution"))+\(link("Level"))*10"),
             Entry(name: "Armor Class", value: "18"),
             Entry(name: "Weapon", value: "Warhammer of the Deep Halls, 1d8+3"),
-            Entry(name: "Background", value: "A former mine guard who searches for the lost forge of her clan.")
+            Entry(name: "Background", value: "A former mine guard who searches for the lost forge of her clan."),
+            Entry(name: "Player", value: "Mara Lindqvist")
         ],
         expectation: CharacterSummaryExpectation(
             race: ["dwarf"],
             occupation: ["fighter", "warrior"],
-            sex: .female,
+            playerName: "Mara Lindqvist",
             traitConcepts: ["strong", "strength", "tough", "sturdy", "resilient", "endur", "armor", "hammer", "weapon", "forge", "clan", "loyal", "determined", "guard"],
             descriptionConcepts: ["dwarf", "fighter", "warrior", "forge", "clan", "mine"]
         )
@@ -107,7 +109,6 @@ extension CharacterSummaryFixture {
         expectation: CharacterSummaryExpectation(
             race: ["human"],
             occupation: ["innkeeper", "tavern", "host", "barkeep", "landlady"],
-            sex: .female,
             traitConcepts: ["generous", "loud", "secret", "smuggl", "fence", "thie", "gossip", "rumor", "informed", "ambitious", "debt", "relic", "brew", "jovial", "cheerful"],
             descriptionConcepts: ["innkeeper", "inn", "tavern", "lantern", "secret", "relic", "thie"],
             descriptiveNameTerms: ["innkeeper", "tavern", "lantern", "keeper", "host"]
@@ -132,13 +133,12 @@ extension CharacterSummaryFixture {
         expectation: CharacterSummaryExpectation(
             race: ["dragon", "wyrm"],
             occupation: [],
-            sex: nil,
             traitConcepts: ["fire", "ash", "breath", "volcan", "armor", "tough", "powerful", "durable", "cold", "bite"],
             descriptionConcepts: ["dragon", "wyrm", "volcan", "ash", "fire", "breath"]
         )
     )
 
-    /// Almost only numbers: the analyzer has little prose to go on, and nothing shows a sex.
+    /// Almost only numbers: the analyzer has little prose to go on; the role is its occupation.
     static let goblinSkirmisher = CharacterSummaryFixture(
         name: "Goblin skirmisher (unnamed stat block)",
         outputLanguage: "English",
@@ -158,16 +158,15 @@ extension CharacterSummaryFixture {
         expectation: CharacterSummaryExpectation(
             race: ["goblin"],
             occupation: ["skirmisher", "scout", "archer", "raider", "ambusher", "warrior"],
-            sex: nil,
             traitConcepts: ["nimble", "agil", "stealth", "sneak", "escape", "hide", "evasive", "quick", "dexter", "bow", "archer", "ranged"],
             descriptionConcepts: ["goblin"],
             descriptiveNameTerms: ["goblin", "skirmisher", "goblinoid"]
         )
     )
 
-    /// The sheet says nothing about her sex; only the portrait does.
+    /// A portrait with a description and tags after the values.
     static let freighterPilot = CharacterSummaryFixture(
-        name: "Freighter pilot (named, sex only in the portrait)",
+        name: "Freighter pilot (named, with portrait)",
         outputLanguage: "English",
         label: "Character",
         characterName: "Rook Vashti",
@@ -185,7 +184,6 @@ extension CharacterSummaryFixture {
         expectation: CharacterSummaryExpectation(
             race: ["human"],
             occupation: ["pilot", "smuggler"],
-            sex: .female,
             traitConcepts: ["ace", "pilot", "reflex", "cybernetic", "neural", "debt", "indebted", "daring", "smuggl", "hidden", "quick"],
             descriptionConcepts: ["pilot", "smuggl", "freighter", "ship", "debt", "syndicate"]
         )
@@ -209,7 +207,6 @@ extension CharacterSummaryFixture {
         expectation: CharacterSummaryExpectation(
             race: ["mensch"],
             occupation: ["ärztin", "arzt", "medizin"],
-            sex: .female,
             traitConcepts: ["medizin", "heil", "erste hilfe", "okkult", "neugier", "entschlossen", "mutig", "wissbegierig", "kult", "ermittl", "hartnäckig"],
             descriptionConcepts: ["ärztin", "arzt", "kult", "berlin", "charité", "patient"],
             forbiddenTerms: ["doctor", "physician", "investigator", "cult", "female", "human"]
@@ -236,7 +233,6 @@ extension CharacterSummaryFixture {
         expectation: CharacterSummaryExpectation(
             race: ["fjordzwerg"],
             occupation: ["walfänger", "walfang", "harpunier", "seefahrer", "seemann"],
-            sex: .male,
             traitConcepts: ["stark", "kräftig", "rache", "rachsüchtig", "harpune", "see", "sturm", "entschlossen", "unerbittlich", "zäh"],
             descriptionConcepts: ["fjordzwerg", "zwerg", "walfänger", "walfang", "seeschlange", "rache", "harpune"],
             forbiddenTerms: ["dwarf", "whaler", "sailor", "revenge", "strong"]
@@ -257,17 +253,47 @@ extension CharacterSummaryFixture {
             Entry(name: "Initiative", value: "\(link("Geschicklichkeit"))+2"),
             Entry(name: "Waffe", value: "Langbogen, 1W8 Stichschaden"),
             Entry(name: "Begleiter", value: "Ein grauer Wolf namens Asche"),
-            Entry(name: "Auftrag", value: "Bewacht die Grenze des Nebelwaldes gegen Orks aus dem Norden.")
+            Entry(name: "Auftrag", value: "Bewacht die Grenze des Nebelwaldes gegen Orks aus dem Norden."),
+            Entry(name: "Spieler", value: "Jonas Reuter")
         ],
         expectation: CharacterSummaryExpectation(
             race: ["elf", "elven"],
             occupation: ["ranger"],
-            sex: .female,
+            playerName: "Jonas Reuter",
             traitConcepts: ["archer", "archery", "bow", "marksman", "dexter", "agil", "nimble", "wolf", "companion", "beast", "guard", "watchful", "vigilant", "quick"],
             descriptionConcepts: ["ranger", "elf", "elven", "forest", "wolf", "border", "orc"],
             descriptiveNameTerms: ["ranger", "elf", "elven", "forest", "warden", "guardian"],
             // "Nebelwald" is the forest's name, which may stay as it is, like "Fjordzwerg".
             forbiddenTerms: ["Waldläufer", "Elfe", "Bogen", "Grenze", "weiblich"]
+        )
+    )
+
+    /// An animal: the race is the animal's name ("Brown bear", "Cave bear"), and with no class,
+    /// occupation or role on the sheet the occupation stays empty.
+    static let caveBear = CharacterSummaryFixture(
+        name: "Cave bear (animal, unnamed)",
+        outputLanguage: "English",
+        label: "Character",
+        characterName: "",
+        entries: [
+            Entry(name: "Size", value: "Large"),
+            Entry(name: "Strength", value: "19"),
+            Entry(name: "Dexterity", value: "10"),
+            Entry(name: "Hit Points", value: "42"),
+            Entry(name: "Bite", value: "+6 to hit, 1d8+4 piercing"),
+            Entry(name: "Claws", value: "+6 to hit, 2d6+4 slashing"),
+            Entry(name: "Keen Smell", value: "Advantage on Perception checks that rely on smell."),
+            Entry(name: "Habitat", value: "Caves high in the mountains."),
+            Entry(name: "Behavior", value: "Defends its cubs fiercely and attacks anyone who comes too close to the den.")
+        ],
+        portraitDescription: "A huge brown bear rearing up at the mouth of a dark cave, snow on its fur.",
+        portraitTags: ["Bear", "Cave", "Mountains"],
+        expectation: CharacterSummaryExpectation(
+            race: ["bear"],
+            occupation: [],
+            traitConcepts: ["strong", "strength", "powerful", "smell", "scent", "keen", "protective", "fierce", "claw", "bite", "territorial", "mountain", "cave"],
+            descriptionConcepts: ["bear"],
+            descriptiveNameTerms: ["bear", "cave", "grizzly"]
         )
     )
 }
