@@ -115,15 +115,16 @@ struct ModuleSummaryEvaluatorTests {
         #expect(ModuleSummaryFixture.blackwaterKeep.entriesText.hasPrefix("Map: Blackwater Keep\n\n- Gatehouse: "))
         #expect(ModuleSummaryFixture.glassOrchidHeist.entriesText.hasPrefix("Adventure: Operation Glass Orchid\n\n- Briefing: Fixer Ines Varga offers"))
         #expect(ModuleSummaryFixture.chapelCrypt.entriesText.hasPrefix("- 1 Entrance stairs: "))
-        #expect(ModuleSummaryFixture.sewerNamesOnly.entriesText.hasPrefix("- 1 Storm drain outlet\n- 2 Overflow cistern"))
+        #expect(ModuleSummaryFixture.sewerNamesOnly.entriesText.contains("\n\n- 1 Storm drain outlet\n- 2 Overflow cistern"))
     }
 
-    @Test("A map's photo description and tags follow the rooms")
+    @Test("A map's photo description and tags come before the rooms")
     func mapPhotoText() {
         let text = ModuleSummaryFixture.sewerNamesOnly.entriesText
 
-        #expect(text.contains("- 6 Thieves' guild door\n\nMap photo: Hand-drawn map of brick sewer tunnels"))
-        #expect(text.hasSuffix("\nMap photo tags: Sewer, Tunnels, Underground, City"))
+        #expect(text.hasPrefix("Map photo: Hand-drawn map of brick sewer tunnels"))
+        #expect(text.contains("\nMap photo tags: Sewer, Tunnels, Underground, City\n\n- 1 Storm drain outlet\n"))
+        #expect(text.hasSuffix("- 6 Thieves' guild door"))
         #expect(!ModuleSummaryFixture.chapelCrypt.entriesText.contains("Map photo"))
         #expect(ModuleSummaryFixture.adventures.allSatisfy { $0.photoDescription.isEmpty && $0.photoTags.isEmpty })
     }
@@ -138,7 +139,7 @@ struct ModuleSummaryEvaluatorTests {
             photoTags: [" ", ""]
         )
 
-        #expect(text == "- Hall: A statue stands here.\n\nMap photo: " + String(repeating: "a", count: TextSummaryExtractionFormatter.maximumPhotoDescriptionLength))
+        #expect(text == "Map photo: " + String(repeating: "a", count: TextSummaryExtractionFormatter.maximumPhotoDescriptionLength) + "\n\n- Hall: A statue stands here.")
     }
 
     @Test("Fixtures belong to their module and names are unique", arguments: ModuleSummaryKind.allCases)

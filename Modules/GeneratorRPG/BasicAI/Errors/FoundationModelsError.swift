@@ -19,6 +19,7 @@ struct FoundationModelsErrorHandler: Sendable {
         case pdfExtraction
         case table
         case character
+        case map
         /// A generator chat, block generation or the Run Generator intent.
         case generation
     }
@@ -103,6 +104,8 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "Table content is too large. Try a table with fewer entries.", bundle: .module)
             case .character:
                 return String(localized: "The character sheet is too large. Try a character with fewer values.", bundle: .module)
+            case .map:
+                return String(localized: "The map has too much text. Try a map with fewer rooms.", bundle: .module)
             case .generation:
                 return String(localized: "The request is too long for Apple Intelligence. Try a shorter one.", bundle: .module)
             }
@@ -112,7 +115,7 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "Content policy prevented analysis. The PDF may contain inappropriate content.", bundle: .module)
             case .pdfExtraction:
                 return String(localized: "Content policy prevented extraction. The PDF may contain inappropriate content.", bundle: .module)
-            case .table, .character:
+            case .table, .character, .map:
                 return String(localized: "Content policy prevented analysis.", bundle: .module)
             case .generation:
                 return String(localized: "Content policy prevented a response.", bundle: .module)
@@ -125,6 +128,8 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "The table language is not supported by Apple Intelligence.", bundle: .module)
             case .character:
                 return String(localized: "The character's language is not supported by Apple Intelligence.", bundle: .module)
+            case .map:
+                return String(localized: "The map's language is not supported by Apple Intelligence.", bundle: .module)
             case .generation:
                 return String(localized: "The language is not supported by Apple Intelligence.", bundle: .module)
             }

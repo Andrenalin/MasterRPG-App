@@ -79,12 +79,7 @@ struct CharacterSummaryEvaluator: Sendable {
         "charakter", "unbenannt", "unbenannter charakter", "nsc", "unbekannt"
     ]
     /// Traits that are true of every character, so they say nothing special.
-    var genericTraits: Set<String> = [
-        "character", "characters", "stats", "statistics", "attributes", "values", "profile",
-        "background", "personal", "individual", "npc", "player character", "monster", "creature",
-        "charakter", "werte", "attribute", "profil", "hintergrund", "person", "figur", "nsc",
-        "spielercharakter", "kreatur"
-    ]
+    var genericTraits: Set<String> = CharacterSummaryGeneration.genericTraitWords
     /// The description is about the character, not about the sheet the model read.
     static let formWords = ["table", "tables", "entries", "sheet", "Tabelle", "Tabellen", "Einträge", "Charakterbogen"]
 

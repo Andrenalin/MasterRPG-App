@@ -62,6 +62,9 @@ struct ModuleSummaryFixture: Codable, Sendable, CustomTestStringConvertible {
     var photoDescription = ""
     /// The map photo's tags. Empty for adventures and for maps whose photo has none.
     var photoTags: [String] = []
+    /// The kinds of place a map's first tag may name (`MapPlaceKind`), written in `outputLanguage`.
+    /// Empty for adventures.
+    var mapKinds: [MapPlaceKind] = []
     let expectation: TableSummaryExpectation
 
     var testDescription: String { "\(kind.textTitle) \(name) (\(outputLanguage))" }
@@ -240,7 +243,8 @@ extension ModuleSummaryFixture {
     /// no photo text (the extraction screen then shows its notice); the others carry the photo's
     /// description and tags like a photo the photo analysis has described.
     static let maps: [ModuleSummaryFixture] = [
-        chapelCrypt, blackwaterKeep, freighterDeck, sewerNamesOnly, gasthausZumEber, elfenhainFromGerman
+        chapelCrypt, blackwaterKeep, freighterDeck, sewerNamesOnly, gasthausZumEber, elfenhainFromGerman,
+        fenmoorSwamp, saltreachCity, koenigreichVarn
     ]
 
     static let chapelCrypt = ModuleSummaryFixture(
@@ -256,6 +260,7 @@ extension ModuleSummaryFixture {
             Entry(name: "5 Priest's tomb", content: "The resting place of \(FixtureLink.character("Father Mordren", 41)); his restless spirit guards a silver amulet."),
             Entry(name: "6 Secret shrine", content: "Behind a false wall an old altar holds 200 gold pieces and a cursed chalice.")
         ],
+        mapKinds: [.crypt, .dungeon],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -284,6 +289,7 @@ extension ModuleSummaryFixture {
             Entry(name: "Dungeon cells", content: "Damp cells below the keep; one prisoner claims to be the rightful heir."),
             Entry(name: "North tower", content: "The wizard's study with a telescope and a view over the lake. \(FixtureLink.photo("Tower view", 52))")
         ],
+        mapKinds: [.fortress],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -313,6 +319,7 @@ extension ModuleSummaryFixture {
         ],
         photoDescription: "Top-down deck plan of a small cargo spaceship with a cockpit at the bow, a reactor at the stern and a large cargo bay in the middle.",
         photoTags: ["Spaceship", "Deck Plan", "Sci-Fi", "Cargo Bay"],
+        mapKinds: [.spaceship],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -343,6 +350,7 @@ extension ModuleSummaryFixture {
         ],
         photoDescription: "Hand-drawn map of brick sewer tunnels below a city, with water channels, a round cistern and narrow walkways.",
         photoTags: ["Sewer", "Tunnels", "Underground", "City"],
+        mapKinds: [.sewer],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -372,6 +380,7 @@ extension ModuleSummaryFixture {
         ],
         photoDescription: "Grundriss eines zweistöckigen Fachwerk-Gasthauses mit Schankraum, Küche, Stall und Gästezimmern.",
         photoTags: ["Gasthaus", "Grundriss", "Fachwerk", "Dorf"],
+        mapKinds: [.building],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -403,6 +412,7 @@ extension ModuleSummaryFixture {
         ],
         photoDescription: "Farbige Karte eines Elfenhains im Wald mit einer riesigen Eiche in der Mitte, einem Bach und einer Brücke.",
         photoTags: ["Elfen", "Wald", "Hain", "Fantasy"],
+        mapKinds: [.forest],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -417,6 +427,96 @@ extension ModuleSummaryFixture {
             forbiddenTerms: ["Elfen", "Wald", "Brücke", "Quelle", "Ratsbaum"]
         )
     )
+    /// Wilderness: the photo names the swamp, the locations only hint at it.
+    static let fenmoorSwamp = ModuleSummaryFixture(
+        kind: .map,
+        name: "Swamp region",
+        outputLanguage: "English",
+        itemName: "Fenmoor",
+        entries: [
+            Entry(name: "Drowned village", content: "Rooftops rise from the black water; the lizardfolk use them as lookouts."),
+            Entry(name: "Witch's hut", content: "A hut on stilts where \(FixtureLink.character("Old Mother Gloam", 81)) brews potions for a price."),
+            Entry(name: "Will-o'-wisp trail", content: "Floating lights lead travelers away from the safe path."),
+            Entry(name: "Lizardfolk camp", content: "Reed huts around a totem of a giant crocodile."),
+            Entry(name: "Sunken shrine", content: "Half under water, an old shrine of a forgotten frog god."),
+            Entry(name: "Ferry landing", content: "The only dry road out of the fen, guarded by a toll keeper.")
+        ],
+        photoDescription: "Painted overland map of a misty swamp with reed beds, winding channels, a drowned village and a ferry.",
+        photoTags: ["Swamp", "Marsh", "Wilderness", "Fantasy"],
+        mapKinds: [.swamp],
+        expectation: TableSummaryExpectation(
+            tags: PdfTagExpectation(
+                conceptGroups: [
+                    ["swamp", "marsh", "fen", "bog", "wetland"],
+                    ["lizardfolk", "witch", "wisp", "frog", "crocodile", "drowned"],
+                    ["fantasy", "wilderness", "mist", "danger"]
+                ],
+                minimumMatchedGroups: 2
+            ),
+            titleConcepts: [["fenmoor", "swamp", "marsh", "fen", "bog"]],
+            descriptionConcepts: [["swamp", "marsh", "fen", "bog", "wetland", "fenmoor"]]
+        )
+    )
+    /// A city map without a name; the districts must make it a city, not a building.
+    static let saltreachCity = ModuleSummaryFixture(
+        kind: .map,
+        name: "Port city",
+        outputLanguage: "English",
+        itemName: "",
+        entries: [
+            Entry(name: "Harbor district", content: "Docks, warehouses and the fish market of Saltreach."),
+            Entry(name: "Temple hill", content: "The great temple of the sea goddess looks over the bay."),
+            Entry(name: "Old town", content: "Narrow alleys, taverns and the hidden hall of the thieves' guild."),
+            Entry(name: "Merchant quarter", content: "Guild houses and the counting house of the Salt Company."),
+            Entry(name: "City walls", content: "Three gates; the north gate is closed since the plague."),
+            Entry(name: "Lighthouse", content: "A tall tower on the cliffs whose fire has gone out.")
+        ],
+        photoDescription: "Detailed city map of a walled port town on a bay with docks, a temple on a hill and a lighthouse.",
+        photoTags: ["City", "Port", "Coast", "Medieval"],
+        mapKinds: [.city],
+        expectation: TableSummaryExpectation(
+            tags: PdfTagExpectation(
+                conceptGroups: [
+                    ["city", "town", "port", "harbor", "harbour"],
+                    ["saltreach", "thieves", "guild", "merchant", "temple", "lighthouse", "plague", "docks"],
+                    ["medieval", "fantasy", "coast", "bay", "trade", "sea"]
+                ],
+                minimumMatchedGroups: 2
+            ),
+            titleConcepts: [["saltreach", "city", "town", "port", "harbor", "harbour"]],
+            descriptionConcepts: [["saltreach", "city", "town", "port", "harbor", "harbour"]]
+        )
+    )
+    /// A whole country, German output: the kind tag must be German ("Land").
+    static let koenigreichVarn = ModuleSummaryFixture(
+        kind: .map,
+        name: "Königreich (German)",
+        outputLanguage: "German",
+        itemName: "Königreich Varn",
+        entries: [
+            Entry(name: "Hauptstadt Varnholm", content: "Sitz von \(FixtureLink.character("König Aldric", 91)) am großen Fluss."),
+            Entry(name: "Eisenberge", content: "Die Zwergenminen im Norden liefern Eisen und Silber."),
+            Entry(name: "Grauwald", content: "Ein dunkler Wald an der Ostgrenze, in dem Räuber hausen."),
+            Entry(name: "Südmark", content: "Fruchtbare Felder und Dörfer, die dem König Getreide liefern."),
+            Entry(name: "Grenzfeste Wolfstein", content: "Eine Burg, die den Pass gegen die Orks im Westen hält."),
+            Entry(name: "Hafenstadt Möwenbucht", content: "Der einzige Seehafen des Reiches.")
+        ],
+        photoDescription: "Farbige Landkarte eines Königreichs mit Bergen im Norden, einem Fluss, Wäldern, Städten und einer Küste im Süden.",
+        photoTags: ["Königreich", "Landkarte", "Fantasy", "Mittelalter"],
+        mapKinds: [.country],
+        expectation: TableSummaryExpectation(
+            tags: PdfTagExpectation(
+                conceptGroups: [
+                    ["königreich", "reich", "land", "varn"],
+                    ["zwerg", "ork", "räuber", "könig", "aldric", "varnholm", "grenze"],
+                    ["fantasy", "mittelalter", "berg", "fluss", "wald", "küste"]
+                ],
+                minimumMatchedGroups: 2
+            ),
+            titleConcepts: [["varn", "königreich", "reich"]],
+            descriptionConcepts: [["varn", "königreich", "reich", "land"]],
+            forbiddenTerms: ["kingdom", "mountains", "forest", "country"]
+        )
+    )
 }
-
 #endif

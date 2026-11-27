@@ -69,11 +69,23 @@ struct CharacterSummaryAnalyzer: Sendable {
         return CharacterSummaryAnalysis(
             name: finalName,
             description: description,
-            race: race,
-            occupation: CharacterSummaryGeneration.occupation(partial.occupation, characterName: existingName, outputLanguage: outputLanguage),
-            traits: (partial.traits ?? []).prefix(2).map(CharacterSummaryGeneration.cleanedTrait),
+            race: CharacterSummaryGeneration.verifiedRace(race, in: truncated, outputLanguage: outputLanguage),
+            occupation: CharacterSummaryGeneration.occupation(
+                partial.occupation,
+                characterName: existingName,
+                portraitTags: Self.portraitTagsLine(in: truncated),
+                race: race,
+                outputLanguage: outputLanguage
+            ),
+            traits: Array((partial.traits ?? []).map(CharacterSummaryGeneration.cleanedTrait).filter(CharacterSummaryGeneration.isUsefulTrait).prefix(2)),
             playerName: playerName
         )
+    }
+
+    /// The "Portrait tags: …" line `TextSummaryExtractionFormatter.formatCharacter` writes, empty
+    /// when there is none.
+    static func portraitTagsLine(in text: String) -> String {
+        text.split(separator: "\n").last { $0.hasPrefix("Portrait tags: ") }.map(String.init) ?? ""
     }
 
     /// `name` as one line of at most 80 characters, without quotes.

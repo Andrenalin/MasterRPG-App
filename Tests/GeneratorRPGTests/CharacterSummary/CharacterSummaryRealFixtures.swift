@@ -12,7 +12,7 @@ import Foundation
 /// Information screen: the exact text the analysis reads, groups expanded. Real players' names are
 /// replaced with invented ones; everything else stays as copied. The expected tags are the user's.
 extension CharacterSummaryFixture {
-    static let real: [CharacterSummaryFixture] = [adalbertUnheil, aquaterKaempfer]
+    static let real: [CharacterSummaryFixture] = [adalbertUnheil, aquaterKaempfer, anaja]
 
     /// A long German sheet in groups (Basiswerte, Kampfwerte, Talente, Zauber …) with formulas,
     /// a culture next to the race ("Volk (Narrländer): Gnom") and an empty portrait description.
@@ -151,6 +151,98 @@ extension CharacterSummaryFixture {
             descriptionConcepts: ["aquater", "kämpfer", "speer", "schuppen", "schiess", "schieß", "dolch"],
             forbiddenTerms: ["fighter", "warrior", "spear", "scale", "player"],
             forbiddenTraitTerms: ["meer", "ozean", "wasser", "schuppenhaut", "speer", "dolch"]
+        )
+    )
+
+    /// A mage whose sheet and portrait name no race; the class is only in the portrait tag
+    /// "MAGIERIN". The model sometimes made her an Elf, so a common race the text never names is
+    /// replaced with Human in code (`verifiedRace`).
+    /// User's tags: Mensch, Magierin, Magieresistent, Kettenblitz.
+    static let anaja = CharacterSummaryFixture(
+        name: "Anaja (real, mage without a race)",
+        outputLanguage: "German",
+        label: "Charakter",
+        characterName: "Anaja",
+        entries: [
+            Entry(name: "Attribute", value: ""),
+            Entry(name: "KÖR", value: "8"),
+            Entry(name: "AGI", value: "5"),
+            Entry(name: "GEI", value: "7"),
+            Entry(name: "ST", value: "0"),
+            Entry(name: "HÄ", value: "2"),
+            Entry(name: "BE", value: "0"),
+            Entry(name: "GE", value: "4"),
+            Entry(name: "VE", value: "5"),
+            Entry(name: "AU", value: "6"),
+            Entry(name: "Kampfwerte", value: ""),
+            Entry(name: "Lebenskraft", value: "KÖR+HÄ+10+80"),
+            Entry(name: "Abwehr", value: "KÖR+HÄ+Gesamt PA+2"),
+            Entry(name: "Ini", value: "AGI+BE"),
+            Entry(name: "Laufen", value: "AGI/2+1-0.5"),
+            Entry(name: "Schlagen", value: "KÖR+ST+Kämpfer"),
+            Entry(name: "Schiessen", value: "AGI+GE+Schütze"),
+            Entry(name: "Zauber", value: "GEI+VE+1"),
+            Entry(name: "Zielzauber", value: "GEI+GE+Schütze-Gesamt nicht mag. PA+Zielzauber+Vertrauter+2"),
+            Entry(name: "Rüstung", value: ""),
+            Entry(name: "Gesamt PA", value: "Gesamt nicht mag. PA+Gesamt mag. PA"),
+            Entry(name: "Gesamt nicht mag. PA", value: "Robe, runenbestickt"),
+            Entry(name: "Gesamt mag. PA", value: "R Mag. PA+Schutzring"),
+            Entry(name: "Magische Rüstung", value: ""),
+            Entry(name: "Robe, runenbestickt", value: "0"),
+            Entry(name: "R Mag. PA", value: "1"),
+            Entry(name: "R Ini Malus", value: "0+R Mag. PA"),
+            Entry(name: "R Laufen Malus", value: "0+R Mag. PA/2"),
+            Entry(name: "Schutzring", value: "2"),
+            Entry(name: "Waffen", value: ""),
+            Entry(name: "Waffenlos", value: "Schlagen"),
+            Entry(name: "Kampfstab", value: ""),
+            Entry(name: "Kampfstab", value: "Schlagen+N WB+N mag WB"),
+            Entry(name: "N WB", value: "1"),
+            Entry(name: "N mag WB", value: "3"),
+            Entry(name: "W Ini Bonus", value: "0+N mag WB"),
+            Entry(name: "W GA Bonus", value: "0-N mag WB"),
+            Entry(name: "Zielzauber", value: "4"),
+            Entry(name: "Talente", value: ""),
+            Entry(name: "Alchemie", value: "1"),
+            Entry(name: "Bildung", value: "2"),
+            Entry(name: "Heldenglück", value: "1"),
+            Entry(name: "Instrument", value: "2"),
+            Entry(name: "Kämpfer", value: "0"),
+            Entry(name: "Magieresistent", value: "3"),
+            Entry(name: "Schütze", value: "3"),
+            Entry(name: "Verheerer", value: "2"),
+            Entry(name: "Vertrauter", value: "1"),
+            Entry(name: "Wechsler", value: "2"),
+            Entry(name: "Zaubermacht", value: "2"),
+            Entry(name: "Zauber", value: ""),
+            Entry(name: "Duftnote", value: "Zauber"),
+            Entry(name: "Frostwaffe", value: "Zielzauber"),
+            Entry(name: "Giftschutz", value: "Zauber"),
+            Entry(name: "Kettenblitz", value: "Zielzauber+3"),
+            Entry(name: "Lichtpfeil", value: "Zielzauber+2"),
+            Entry(name: "Netz", value: "Zielzauber"),
+            Entry(name: "Rost", value: "Zielzauber"),
+            Entry(name: "Schattenpfeil", value: "Zielzauber+2"),
+            Entry(name: "Verborgenes sehen", value: "Zauber"),
+            Entry(name: "Kampf", value: ""),
+            Entry(name: "Allgemeiner Bonus", value: "0"),
+            Entry(name: "Aktuelle LK", value: "Lebenskraft"),
+            Entry(name: "Aktuelle Abwehr", value: "Abwehr+Allgemeiner Bonus"),
+            Entry(name: "Anzahl Brutaler Hieb", value: "0"),
+            Entry(name: "Kampfstab", value: "KÖR*Anzahl Brutaler Hieb+Allgemeiner BonusKampfstab"),
+            Entry(name: "Anzahl Zaubermacht", value: "0"),
+            Entry(name: "Giftschutz", value: "Giftschutz+GEI*Anzahl Zaubermacht+Allgemeiner Bonus"),
+            Entry(name: "Kettenblitz", value: "GEI*Anzahl Zaubermacht+Allgemeiner BonusKettenblitz"),
+            Entry(name: "Standard Abwehr", value: "Aktuelle Abwehr")
+        ],
+        portraitDescription: "Kampagne Die Hallen von Barcamar",
+        portraitTags: ["BARCAMAR", "Character", "MAGIERIN"],
+        expectation: CharacterSummaryExpectation(
+            race: ["mensch"],
+            occupation: ["magier"],
+            traitConcepts: ["magieresist", "kettenblitz"],
+            descriptionConcepts: ["magier", "zauber", "barcamar"],
+            forbiddenTerms: ["wizard", "mage", "player"]
         )
     )
 }

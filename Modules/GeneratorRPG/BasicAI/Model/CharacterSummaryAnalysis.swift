@@ -89,6 +89,10 @@ extension CharacterSummaryGeneration {
     /// a label in front of a longer text stays, because the text after it is then a sentence.
     static func cleanedTrait(_ trait: String) -> String {
         var text = trait.trimmingCharacters(in: .whitespacesAndNewlines)
+        // A formula copied from a value: "Schlag+WB+mag" → "Schlag", "Geschicklichkeit+2" → "Geschicklichkeit".
+        if let plus = text.firstIndex(of: "+"), plus != text.startIndex {
+            text = text[..<plus].trimmingCharacters(in: .whitespaces)
+        }
         if let colon = text.firstIndex(of: ":") {
             let value = text[text.index(after: colon)...].trimmingCharacters(in: .whitespaces)
             let words = value.split(whereSeparator: \.isWhitespace)
@@ -102,6 +106,21 @@ extension CharacterSummaryGeneration {
         }
         return words.joined(separator: " ")
     }
+
+    /// Whether a cleaned trait is worth a tag: not empty, not only a value ("3") and not a label or
+    /// generic word ("Background", "Hintergrund"), which the model copies from the sheet.
+    static func isUsefulTrait(_ trait: String) -> Bool {
+        let key = trait.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return key.contains(where: \.isLetter) && !isNumber(key) && !genericTraitWords.contains(key)
+    }
+
+    /// Words that say nothing about a character, English and German.
+    static let genericTraitWords: Set<String> = [
+        "character", "characters", "stats", "statistics", "attributes", "values", "profile",
+        "background", "personal", "individual", "npc", "player character", "monster", "creature",
+        "charakter", "werte", "attribute", "profil", "hintergrund", "person", "figur", "nsc",
+        "spielercharakter", "kreatur"
+    ]
 
     /// "17", "+2", "70%", "3d10", "1W8": a value, not a word.
     private static func isNumber(_ word: String) -> Bool {
@@ -147,20 +166,41 @@ public struct CharacterSummaryAnalysis: Equatable, Sendable, Codable {
     }
 }
 
+// MARK: - Race
+
+extension CharacterSummaryGeneration {
+    /// The model's race, or Human when it wrote a common people race the sheet and portrait never
+    /// name, or a class: the model sometimes makes a mage an Elf (or "Elfen") although nothing says
+    /// so, or writes "Magierin" as her race, against the prompt's "Human for a person when the
+    /// sheet names no race" (real example 2026-11-27).
+    static func verifiedRace(_ race: String, in sheetText: String, outputLanguage: String) -> String {
+        guard CharacterTermGlossary.isUnnamedCommonRace(race, in: sheetText) || CharacterTermGlossary.isClass(race) else {
+            return race
+        }
+        return outputLanguage == "German" ? "Mensch" : "Human"
+    }
+}
+
 // MARK: - Occupation
 
 extension CharacterSummaryGeneration {
     /// The model's occupation, or, when it gave none, a class word of the name the user typed
-    /// ("Aquater Kämpfer" → Kämpfer). A class in the name counts as named (user decision
+    /// ("Aquater Kämpfer" → Kämpfer) or of the portrait tags. A class in the name counts as named (user decision
     /// 2026-11-27), but the model left it empty in every run even when told so. Only glossary
     /// class words are taken, so a name such as "Brakka Ironvein" never becomes an occupation.
-    static func occupation(_ occupation: String?, characterName: String, outputLanguage: String) -> String {
+    /// The portrait tags the user chose count the same way ("MAGIERIN").
+    /// - Parameter race: the model's race; a class written there ("Magierin") is the occupation
+    ///   when the model left that empty.
+    static func occupation(_ occupation: String?, characterName: String, portraitTags: String = "", race: String = "", outputLanguage: String) -> String {
         let given = (occupation ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard given.isEmpty else { return given }
-        guard let term = CharacterTermGlossary.matches(in: characterName).first(where: { $0.kind == .characterClass }) else {
-            return ""
+        for source in [characterName, portraitTags] {
+            if let term = CharacterTermGlossary.matches(in: source).first(where: { $0.kind == .characterClass }) {
+                return outputLanguage == "German" ? term.german : term.english
+            }
         }
-        return outputLanguage == "German" ? term.german : term.english
+        let raceWord = race.trimmingCharacters(in: .whitespacesAndNewlines)
+        return CharacterTermGlossary.isClass(raceWord) ? raceWord : ""
     }
 }
 

@@ -38,6 +38,35 @@ struct CharacterSummaryRulesTests {
         #expect(CharacterSummaryGeneration.verifiedPlayerName(nil, in: sheet, characterName: "").isEmpty)
     }
 
+    // MARK: - Race
+
+    @Test("A common race the sheet never names becomes Human", arguments: [
+        ("Elf", "German", "Mensch"), ("Elfe", "German", "Mensch"), ("Elfen", "German", "Mensch"), ("Elf", "English", "Human"),
+        ("Zwerge", "German", "Mensch"), ("Orks", "German", "Mensch"), ("Magierin", "German", "Mensch"), ("Wizard", "English", "Human")
+    ])
+    func unnamedRace(race: String, language: String, expected: String) {
+        let sheet = "Charakter: Anaja\n\n- Klasse: Magierin\n- Schütze: 3"
+
+        #expect(CharacterSummaryGeneration.verifiedRace(race, in: sheet, outputLanguage: language) == expected)
+    }
+
+    @Test("A race on the sheet, in either language, a world race, an animal or Human stays", arguments: [
+        ("Elf", "- Volk: Elfe"), ("Elfe", "- Species: Elf"), ("Dwarf", "- Volk: Zwerg"), ("Half-Orc", "- Species: Half-Orc"),
+        ("Gnom", "- Volk (Narrländer): Gnom"), ("Aquater", "- Ini: 12"), ("Fjordzwerg", "- Ini: 12"),
+        ("Brown bear", "- Bite: 2d6"), ("Mensch", "- Ini: 12"), ("Human", "- Ini: 12"), ("Gnoll", "- Ini: 12"),
+        ("Elfenbeinwächter", "- Ini: 12")
+    ])
+    func namedRace(race: String, sheet: String) {
+        #expect(CharacterSummaryGeneration.verifiedRace(race, in: sheet, outputLanguage: "German") == race)
+    }
+
+    @Test("The race may also come from the portrait")
+    func raceFromPortrait() {
+        let sheet = "- Ini: 12\n\nPortrait: Eine Elfe mit Bogen."
+
+        #expect(CharacterSummaryGeneration.verifiedRace("Elf", in: sheet, outputLanguage: "German") == "Elf")
+    }
+
     // MARK: - Occupation
 
     @Test("An empty occupation is taken from a class word in the character's name", arguments: [
@@ -47,6 +76,13 @@ struct CharacterSummaryRulesTests {
     func occupationFromName(name: String, language: String, occupation: String) {
         #expect(CharacterSummaryGeneration.occupation(nil, characterName: name, outputLanguage: language) == occupation)
         #expect(CharacterSummaryGeneration.occupation("  ", characterName: name, outputLanguage: language) == occupation)
+    }
+
+    @Test("A class the model wrote as the race becomes the occupation when that is empty")
+    func occupationFromRace() {
+        #expect(CharacterSummaryGeneration.occupation("", characterName: "Anaja", race: "Magierin", outputLanguage: "German") == "Magierin")
+        #expect(CharacterSummaryGeneration.occupation("", characterName: "Anaja", race: "Elf", outputLanguage: "German").isEmpty)
+        #expect(CharacterSummaryGeneration.occupation("Heilerin", characterName: "Anaja", race: "Magierin", outputLanguage: "German") == "Heilerin")
     }
 
     @Test("The model's occupation wins over the name")
@@ -59,10 +95,31 @@ struct CharacterSummaryRulesTests {
     @Test("Trailing values and short labels leave a trait", arguments: [
         ("Strength 17", "Strength"), ("Medizin 70", "Medizin"), ("Weapon: Harpoon", "Harpoon"),
         ("60 ft cone", "60 ft cone"), ("Initiative +2", "Initiative"), ("Bite 2d10", "Bite"), ("Nimble Escape", "Nimble Escape"),
-        ("Hochseefahrt", "Hochseefahrt"), ("17", "17")
+        ("Hochseefahrt", "Hochseefahrt"), ("17", "17"), ("Schlag+WB+mag", "Schlag"), ("Geschicklichkeit+2", "Geschicklichkeit"),
+        ("+2 Initiative", "+2 Initiative")
     ])
     func cleanedTrait(trait: String, cleaned: String) {
         #expect(CharacterSummaryGeneration.cleanedTrait(trait) == cleaned)
+    }
+
+    @Test("Values, labels and generic words are no trait", arguments: ["", " ", "3", "+2", "1W8", "Background", "Hintergrund", "WERTE"])
+    func uselessTrait(trait: String) {
+        #expect(!CharacterSummaryGeneration.isUsefulTrait(trait))
+    }
+
+    @Test("Real traits are kept", arguments: ["Schiessen", "Magieresistent", "Strength", "60 ft cone", "Keen Smell"])
+    func usefulTrait(trait: String) {
+        #expect(CharacterSummaryGeneration.isUsefulTrait(trait))
+    }
+
+    @Test("A class in the portrait tags is the occupation when the model gives none")
+    func occupationFromPortraitTags() {
+        let text = "Charakter: Anaja\n\n- Talente\n- Kämpfer: 0\n\nPortrait: Kampagne\nPortrait tags: BARCAMAR, Character, MAGIERIN"
+        let tags = CharacterSummaryAnalyzer.portraitTagsLine(in: text)
+
+        #expect(tags == "Portrait tags: BARCAMAR, Character, MAGIERIN")
+        #expect(CharacterSummaryGeneration.occupation(nil, characterName: "Anaja", portraitTags: tags, outputLanguage: "German") == "Magierin")
+        #expect(CharacterSummaryAnalyzer.portraitTagsLine(in: "- Kämpfer: 0").isEmpty)
     }
 
     @Test("A label in front of a sentence stays, so the sentence is not passed off as a trait")

@@ -76,6 +76,44 @@ enum CharacterTermGlossary {
         return terms.filter { words.contains($0.german.lowercased()) }
     }
 
+    /// Whether `race` is a common people race (Elf, Zwerg, Gnome …) that `text` never names, in
+    /// German or English. Human is the default and never counts; a race of the game's own world,
+    /// an animal or a monster is not in the list and never counts either.
+    static func isUnnamedCommonRace(_ race: String, in text: String) -> Bool {
+        guard let english = term(for: race, in: raceTerms)?.english, english != "Human" else {
+            return false
+        }
+        let lowered = text.lowercased()
+        let words = Set(lowered.split { !$0.isLetter }.map(String.init))
+        let names = raceTerms.filter { $0.english == english }.flatMap { [$0.german, $0.english] }.map { $0.lowercased() }
+        return !names.contains { $0.contains("-") ? lowered.contains($0) : words.contains($0) }
+    }
+
+    /// Whether `word` is a class or occupation of the list ("Magierin", "Fighter"), as the model
+    /// sometimes writes into the race.
+    static func isClass(_ word: String) -> Bool {
+        term(for: word, in: terms.filter { $0.kind == .characterClass }) != nil
+    }
+
+    /// The term `word` is, in German or English, also with a German or plural ending ("Elfen",
+    /// "Zwerge", "Orks"). A longer word of its own ("Elfenbein", "Gnoll") is no match.
+    private static func term(for word: String, in list: [Term]) -> Term? {
+        let key = word.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !key.isEmpty else { return nil }
+        return list.first { term in
+            [term.german, term.english].map { $0.lowercased() }.contains { name in
+                key.hasPrefix(name) && inflectionEndings.contains(String(key.dropFirst(name.count)))
+            }
+        }
+    }
+
+    private static let inflectionEndings: Set<String> = ["", "e", "n", "en", "in", "innen", "s", "es"]
+
+    /// The races plus "Elf", which the matching leaves out (the German number eleven) but a race
+    /// written by the model can be.
+    private static let raceTerms: [Term] = terms.filter { $0.kind == .race }
+        + [Term(german: "Elf", english: "Elf", kind: .race)]
+
     /// The prompt lines for the matched words, empty when the output is German (the words are
     /// already right) or nothing matches.
     static func hints(in text: String, outputLanguage: String) -> [String] {

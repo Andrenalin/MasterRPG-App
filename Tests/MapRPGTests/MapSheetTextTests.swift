@@ -64,7 +64,22 @@ struct MapSheetTextTests {
 
         setPhoto(photoId, description: "", tags: ["Mill", "River"], in: root)
         #expect(MapSheetText.hasPhotoText(for: model, photoRoot: root.photoRoot))
-        #expect(MapSheetText.text(for: model, photoRoot: root.photoRoot).hasSuffix("\nMap photo tags: Mill, River"))
+        #expect(MapSheetText.text(for: model, photoRoot: root.photoRoot).contains("\nMap photo tags: Mill, River\n"))
+    }
+
+    @Test("The photo comes before the rooms, so a long room list cannot cut it off")
+    func photoBeforeRooms() async throws {
+        let root = try await MockRoot.importTestData()
+        let photoId = try photoId(in: root)
+        setPhoto(photoId, description: "A watermill beside a river.", tags: ["Mill", "River"], in: root)
+
+        #expect(MapSheetText.text(for: map(photoId: photoId), photoRoot: root.photoRoot) == """
+        Map: Old Mill
+        Map photo: A watermill beside a river.
+        Map photo tags: Mill, River
+
+        - Grinding room: A broken millstone.
+        """)
     }
 
     @Test("The hex grid is no room: a map with only a hex grid has no text, so the batch skips it")

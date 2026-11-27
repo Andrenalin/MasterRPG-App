@@ -62,6 +62,47 @@ extension TableSummaryEvaluator {
     }
 }
 
+extension MapPlaceKind: @retroactive Codable {}
+
+extension TableSummaryEvaluator {
+    /// Whole words that call a map a map. Deliberately not `MapSummaryGeneration.formWords`, so the
+    /// evaluation judges the analyzer's cleanup instead of repeating it.
+    static let mapFormWords: Set<String> = ["map", "maps", "karte", "karten", "landkarte", "layout", "grundriss"]
+
+    /// The map rules on top of `forModule(.map)`: the first tag is the kind of place, written in
+    /// the output language, and neither the title nor a tag uses a word for "map".
+    static func mapViolations(
+        title: String,
+        tags: [String],
+        acceptedKinds: [MapPlaceKind],
+        outputLanguage: String
+    ) -> (title: [String], tags: [String]) {
+        var titleViolations: [String] = []
+        var tagViolations: [String] = []
+        if let word = mapFormWord(in: title) {
+            titleViolations.append("uses the word '\(word)'")
+        }
+        for tag in tags {
+            if let word = mapFormWord(in: tag) {
+                tagViolations.append("'\(tag)' uses the word '\(word)'")
+            }
+        }
+        if !acceptedKinds.isEmpty {
+            let names = acceptedKinds.map { $0.name(in: outputLanguage) }
+            if !names.contains(where: { tags.first == $0 }) {
+                tagViolations.append("first tag '\(tags.first ?? "")' is not the kind of place (\(names.joined(separator: " or ")))")
+            }
+        }
+        return (titleViolations, tagViolations)
+    }
+
+    private static func mapFormWord(in text: String) -> String? {
+        text.split { !$0.isLetter }
+            .map { PdfTagEvaluator.normalized(String($0)) }
+            .first { mapFormWords.contains($0) }
+    }
+}
+
 /// Scores the title, description and tags the generic text analysis produces for the sample
 /// adventures or maps: the analysis behind their "Extract Information" (single item and batch).
 /// The analyzer comes from `TextSummaryAnalyzers.analyzer(for:)`, so a module that gets its own
@@ -156,11 +197,33 @@ struct ModuleSummaryEvaluation: Evaluation {
     // MARK: - Helpers
 
     static func evaluate(_ analysis: TableSummaryAnalysis, for sample: ModuleSummarySample) -> TableSummaryVerdict {
-        TableSummaryEvaluator.forModule(sample.fixture.kind).evaluate(
-            title: analysis.title,
-            description: analysis.description,
-            tags: analysis.tags,
-            expectation: sample.fixture.expectation
+        evaluate(title: analysis.title, description: analysis.description, tags: analysis.tags, fixture: sample.fixture)
+    }
+
+    /// The module's rules, and for a map also `TableSummaryEvaluator.mapViolations`.
+    static func evaluate(title: String, description: String, tags: [String], fixture: ModuleSummaryFixture) -> TableSummaryVerdict {
+        let verdict = TableSummaryEvaluator.forModule(fixture.kind).evaluate(
+            title: title,
+            description: description,
+            tags: tags,
+            expectation: fixture.expectation
+        )
+        guard fixture.kind == .map else { return verdict }
+        let map = TableSummaryEvaluator.mapViolations(
+            title: title,
+            tags: tags,
+            acceptedKinds: fixture.mapKinds,
+            outputLanguage: fixture.outputLanguage
+        )
+        return TableSummaryVerdict(
+            title: verdict.title,
+            description: verdict.description,
+            tags: verdict.tags,
+            titleRuleViolations: verdict.titleRuleViolations + map.title,
+            descriptionRuleViolations: verdict.descriptionRuleViolations,
+            tagRuleViolations: verdict.tagRuleViolations + map.tags,
+            conceptViolations: verdict.conceptViolations,
+            conceptScore: verdict.conceptScore
         )
     }
 

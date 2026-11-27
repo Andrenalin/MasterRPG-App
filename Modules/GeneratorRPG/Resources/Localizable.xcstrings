@@ -2698,6 +2698,38 @@
         }
       }
     },
+    "The map has too much text. Try a map with fewer rooms." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Karte hat zu viel Text. Versuche es mit einer Karte mit weniger Räumen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่มีข้อความมากเกินไป ลองใช้แผนที่ที่มีห้องน้อยลง"
+          }
+        }
+      }
+    },
+    "The map's language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache der Karte wird von Apple Intelligence nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence ไม่รองรับภาษาของแผนที่"
+          }
+        }
+      }
+    },
     "The model on this device does not support this request." : {
       "localizations" : {
         "de" : {

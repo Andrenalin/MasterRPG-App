@@ -4,7 +4,8 @@ import CoreRPG
 import Foundation
 
 /// An on-device analysis that turns an item's text into a title, a description and tags. Most
-/// modules use `TableSummaryAnalyzer`; Character has its own rules (`CharacterSummaryAnalyzer`).
+/// modules use `TableSummaryAnalyzer`; Character (`CharacterSummaryAnalyzer`) and Map
+/// (`MapSummaryAnalyzer`) have their own rules.
 protocol TextSummaryAnalyzing: Sendable {
     /// - Parameter itemName: the item's current name, empty when it has none.
     func analyze(
@@ -19,6 +20,7 @@ enum TextSummaryAnalyzers {
     static func analyzer(for module: NetworkModules) -> any TextSummaryAnalyzing {
         switch module {
         case .value: CharacterSummaryAnalyzer()
+        case .map: MapSummaryAnalyzer()
         default: TableSummaryAnalyzer()
         }
     }
