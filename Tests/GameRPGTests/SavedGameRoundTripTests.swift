@@ -39,12 +39,12 @@ struct SavedGameRoundTripTests {
         // When: the game is saved to a file, exactly as MasterGameScreen's "Save and Quit" does.
         let itemIds = root.saveGame()
         let exportModel = ItemDataExportModel()
-        let fileURL = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).gms")
-        defer { try? FileManager.default.removeItem(at: fileURL) }
+        let fileUrl = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).gms")
+        defer { try? FileManager.default.removeItem(at: fileUrl) }
 
         let exportTask = root.adventureRoot.exportControllable.createExport(
             itemIds: itemIds,
-            into: fileURL,
+            into: fileUrl,
             exportModel: exportModel
         )
         _ = try await exportTask.value
@@ -62,7 +62,7 @@ struct SavedGameRoundTripTests {
         // and importing must not start one (gameMemoryOnly writes bypass isGameMode entirely).
         let importModel = ItemDataImportModel()
         let importTask = root.adventureRoot.importControllable.importUrl(
-            from: fileURL,
+            from: fileUrl,
             importModel: importModel,
             gameMemoryOnly: true
         )

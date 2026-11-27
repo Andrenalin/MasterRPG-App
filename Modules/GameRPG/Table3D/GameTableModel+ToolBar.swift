@@ -110,6 +110,9 @@ extension GameTableModel {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoom(itemId: mapId, roomId: roomId) else { return }
         await replaceFogOfWarTask().value
+        // Not skipped when cancelled: the view cancels a pending request when it disappears,
+        // and the edit is already made. A superseded request broadcasts the current state
+        // too, which is harmless. See CODE_AUDIT_29 §3.8.
         syncPawnsWithMapPins()
         broadcastMapEdit(for: mapId)
     }
@@ -124,6 +127,9 @@ extension GameTableModel {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
         await replaceFogOfWarTask().value
+        // Not skipped when cancelled: the view cancels a pending request when it disappears,
+        // and the edit is already made. A superseded request broadcasts the current state
+        // too, which is harmless. See CODE_AUDIT_29 §3.8.
         syncPawnsWithMapPins()
         broadcastMapEdit(for: mapId)
     }

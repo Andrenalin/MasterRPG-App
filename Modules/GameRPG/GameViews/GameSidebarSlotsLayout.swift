@@ -98,7 +98,7 @@ private struct GameSidebarSlotsLayoutPreview: View {
 
     var body: some View {
         GameSidebarSlotsLayout(layout: layout, placement: placement) {
-            TabGameView(root: root, adventureId: GamePreviewData.adventureID)
+            TabGameView(root: root, adventureId: GamePreviewData.adventureId)
         } secondary: {
             TabSecondGameView(root: root)
             BattleRoundSideOverlay(root: root)

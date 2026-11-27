@@ -34,7 +34,13 @@ public struct StartAdventureGameIntent: AppIntent {
         // Only chooses the adventure and opens the Game tab: the game master starts the game
         // there. Putting the modules into game mode here, without a started game, sent every
         // later edit to game memory only, and the chosen target was ignored. See CODE_AUDIT §5.1.
-        let isChosen = root.selectAdventureForGame?(target.id) ?? false
+        // A missing hook (a cold launch before the game module registered it) is not a running
+        // game: the Game tab opens and the user picks the adventure there. See CODE_AUDIT_29 §5.20.
+        guard let selectAdventureForGame = root.selectAdventureForGame else {
+            navigator.perform(route: KnownRoutes.game)
+            return .result(dialog: .localized("The Game tab is open. Choose \"\(target.name)\" there to start.", bundle: .module))
+        }
+        let isChosen = selectAdventureForGame(target.id)
         navigator.perform(route: KnownRoutes.game)
         guard isChosen else {
             return .result(dialog: .localized("A game is already running.", bundle: .module))

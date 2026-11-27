@@ -29,6 +29,6 @@ struct MasterModuleWindowMenu: View {
 }
 
 #Preview(traits: .mockData) {
-    MasterModuleWindowMenu(adventureId: GamePreviewData.adventureID)
+    MasterModuleWindowMenu(adventureId: GamePreviewData.adventureId)
         .environment(GameScreenModel())
 }

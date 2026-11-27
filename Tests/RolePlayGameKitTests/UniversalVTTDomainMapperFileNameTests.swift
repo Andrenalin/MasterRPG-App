@@ -15,8 +15,8 @@ struct UniversalVTTDomainMapperFileNameTests {
     func fileNameWithSpecialCharacters(fileName: String) async throws {
         let mapped = try await UniversalVTTDomainMapper().map(
             document: document(),
-            sourceURL: URL(filePath: "/tmp/\(fileName)"),
-            sourceScopeID: try #require(UUID(uuidString: "5C0B1A57-3F3E-4D0B-9B52-0E3B8F6F2A13")),
+            sourceUrl: URL(filePath: "/tmp/\(fileName)"),
+            sourceScopeId: try #require(UUID(uuidString: "5C0B1A57-3F3E-4D0B-9B52-0E3B8F6F2A13")),
             resourceLoader: { _ in Data() }
         )
 

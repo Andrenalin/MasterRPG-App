@@ -86,18 +86,21 @@ public extension EditControllable {
 // MARK: - Editor Basic Properties
 
 public extension EditControllable {
-    @MainActor func update(id: UUID, name: String, description: String, category: ItemListCategory, tags: [String], forceSave: Bool = false) {
-        reset(name: name, itemId: id, forceSave: forceSave)
-        reset(description: description, itemId: id, forceSave: forceSave)
-        reset(category: category, itemId: id, forceSave: forceSave)
-        reset(tags: tags, itemId: id, forceSave: forceSave)
+    /// The header editor's save: one edit, one save and one undo step. `nil` leaves that field
+    /// unchanged. See CODE_AUDIT_29 §5.5, §9.4.
+    @MainActor func update(id: UUID, name: String?, description: String?, category: ItemListCategory?, tags: [String]?, forceSave: Bool = false) {
+        reset(name: name, description: description, category: category, tags: tags, itemId: id, forceSave: forceSave)
     }
 
-    /// Changes name, description and tags as one edit: one save and one undo step, so no sync can
-    /// pick up a half-applied item. `nil` leaves that property unchanged.
-    @MainActor func reset(name: String?, description: String?, tags: [String]?, itemId: UUID, forceSave: Bool = false) {
+    /// Changes name, description, category and tags as one edit: one save and one undo step, so
+    /// no sync can pick up a half-applied item. `nil` leaves that property unchanged.
+    @MainActor func reset(name: String?, description: String?, category: ItemListCategory? = nil, tags: [String]?, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         var changed = false
+        if let category, item.category != category {
+            item.category = category
+            changed = true
+        }
         if let name, item.name != name {
             item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
             editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
@@ -113,18 +116,27 @@ public extension EditControllable {
             if item.tags != sortedTags {
                 let addedTags = Array(Set(sortedTags).subtracting(item.tags))
                 let removedTags = Array(Set(item.tags).subtracting(sortedTags))
-                updateTags(addedTags: addedTags, removedTags: removedTags)
+                // Memory-only game edits leave the persisted tag counts alone. See CODE_AUDIT_29 §5.3.
+                if persistsEdit(forceSave: forceSave) {
+                    updateTags(addedTags: addedTags, removedTags: removedTags)
+                }
                 item.tags = sortedTags
                 changed = true
             }
         }
         guard changed else { return }
         save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
-        // A folder's name is part of its descendants' file paths (see `reset(name:itemId:)`).
-        if name != nil, item.isFolder, forceSave || !itemControllable.itemDataModel.isGameMode {
-            for childId in item.entries.map(\.childId) where itemControllable.itemSync(for: childId, noGame: true)?.parentId == item.id {
-                movedFileTree(itemId: childId)
-            }
+        if name != nil {
+            movedFolderChildren(of: item, forceSave: forceSave)
+        }
+    }
+
+    /// A folder's name is part of its descendants' file paths. Renaming it left their files under
+    /// the old name. Only when the rename is persisted. See CODE_AUDIT_Folder §5.30.
+    @MainActor private func movedFolderChildren(of item: Model, forceSave: Bool) {
+        guard item.isFolder, persistsEdit(forceSave: forceSave) else { return }
+        for childId in item.entries.map(\.childId) where itemControllable.itemSync(for: childId, noGame: true)?.parentId == item.id {
+            movedFileTree(itemId: childId)
         }
     }
 
@@ -156,13 +168,7 @@ public extension EditControllable {
         item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
         save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
-        // A folder's name is part of its descendants' file paths. Renaming it left their files
-        // under the old name. Only when the rename is persisted. See CODE_AUDIT_Folder §5.30.
-        if item.isFolder, forceSave || !itemControllable.itemDataModel.isGameMode {
-            for childId in item.entries.map(\.childId) where itemControllable.itemSync(for: childId, noGame: true)?.parentId == item.id {
-                movedFileTree(itemId: childId)
-            }
-        }
+        movedFolderChildren(of: item, forceSave: forceSave)
     }
 
     @MainActor func reset(tags: [String], itemId: UUID, forceSave: Bool = false) {
@@ -171,7 +177,10 @@ public extension EditControllable {
         guard item.tags != sortedTags else { return }
         let addedTags = Array(Set(sortedTags).subtracting(item.tags))
         let removedTags = Array(Set(item.tags).subtracting(sortedTags))
-        updateTags(addedTags: addedTags, removedTags: removedTags)
+        // Memory-only game edits leave the persisted tag counts alone. See CODE_AUDIT_29 §5.3.
+        if persistsEdit(forceSave: forceSave) {
+            updateTags(addedTags: addedTags, removedTags: removedTags)
+        }
         item.tags = sortedTags
         save(updated: item, message: String(localized: "Changed tags", bundle: .module), forceSave: forceSave)
     }
@@ -451,10 +460,47 @@ public extension EditControllable {
         // ("Add <tag>"). See CODE_AUDIT_Folder §6.5.
         trackOperation("EditControllable.saveChanges(to:name:)")
 
-        updateLinkRegister(to: newValue)
-
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
+
+        // A forced save of an item that has a game copy: `newValue` was built on that copy, so
+        // writing it whole put the game's session state (hit points, revealed values) into the
+        // library, and the library state then overwrote the game copy. Only what this edit
+        // changed goes to the library; the game copy takes the edited value.
+        // See CODE_AUDIT_29 §5.2.
+        if forceSave,
+           let gameCopy = gameCopy(of: newValue.id),
+           let library = itemControllable.itemSync(for: newValue.id, noGame: true)?.copy() as? Model {
+            var libraryValue = library
+            libraryValue.applyEdit(from: gameCopy, to: newValue)
+            if let stored = itemControllable.itemSync(for: newValue.id, noGame: true) as? Model {
+                updateLinkRegister(to: libraryValue, from: stored)
+            }
+            itemControllable.replace(model: libraryValue, isInsert: false, forceSave: true, syncGameMemory: false)
+            itemControllable.replaceInGameMemory(model: newValue)
+            return
+        }
+
+        // A memory-only game edit leaves the persisted link register alone: it describes the
+        // library, and nothing reverted it at game end. See CODE_AUDIT_29 §5.3.
+        if persistsEdit(forceSave: forceSave) {
+            updateLinkRegister(to: newValue)
+        }
         itemControllable.replace(model: newValue, isInsert: false, forceSave: forceSave)
+    }
+
+    /// Whether an edit with `forceSave` reaches the library (and so the shared link register and
+    /// tag counts): always outside a game, only when forced during one.
+    @MainActor func persistsEdit(forceSave: Bool) -> Bool {
+        forceSave || !itemControllable.itemDataModel.isGameMode
+    }
+
+    /// The game-memory copy readers see for `itemId`, when it is not the library instance itself.
+    @MainActor func gameCopy(of itemId: UUID) -> Model? {
+        guard let current = itemControllable.itemSync(for: itemId) as? Model,
+              let library = itemControllable.itemSync(for: itemId, noGame: true) as? Model,
+              (current as AnyObject) !== (library as AnyObject)
+        else { return nil }
+        return current
     }
 
     /// Brings the link register in line with `newValue`: the links the item's stored value had and
@@ -462,7 +508,13 @@ public extension EditControllable {
     /// which restore a stored value and must leave the register as a save would.
     /// See CODE_AUDIT_28 §5.3.
     @MainActor func updateLinkRegister(to newValue: Model) {
-        if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
+        updateLinkRegister(to: newValue, from: itemControllable.itemSync(for: newValue.id) as? Model)
+    }
+
+    /// `updateLinkRegister(to:)` against an explicit previous value (the library copy for a
+    /// forced write during a game).
+    @MainActor func updateLinkRegister(to newValue: Model, from previous: Model?) {
+        if let previous {
             let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
 
             linkRegisterController.deregister(links: removed)

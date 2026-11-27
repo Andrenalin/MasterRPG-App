@@ -1,49 +1,101 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import FoundationModels
+import os.log
 
-/// Helper for handling LanguageModelSession errors
+/// Turns the errors a `LanguageModelSession` throws into one localized sentence for the user.
+///
+/// iOS 27 throws `LanguageModelError`; the deprecated `LanguageModelSession.GenerationError` is
+/// still recognised. Both map to one `Kind`, so every catch site shows the same messages. The
+/// framework's `debugDescription` is logged, never shown: it is internal and not localized.
+/// See CODE_AUDIT_29 §4.1, §6.5.
 struct FoundationModelsErrorHandler: Sendable {
-    static func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
-        switch error {
-        case .exceededContextWindowSize(let context):
-            return String(localized: "Context window exceeded: \(context.debugDescription)", bundle: .module)
-        case .assetsUnavailable(let context):
-            return String(localized: "Model assets unavailable: \(context.debugDescription)", bundle: .module)
-        case .guardrailViolation(let context):
-            return String(localized: "Content policy violation: \(context.debugDescription)", bundle: .module)
-        case .decodingFailure(let context):
-            return String(localized: "Failed to decode response: \(context.debugDescription)", bundle: .module)
-        case .unsupportedGuide(let context):
-            return String(localized: "Unsupported generation guide: \(context.debugDescription)", bundle: .module)
-        case .unsupportedLanguageOrLocale(let context):
-            return String(localized: "Unsupported language/locale: \(context.debugDescription)", bundle: .module)
-        case .rateLimited(let context):
-            return String(localized: "Rate limited: \(context.debugDescription)", bundle: .module)
-        case .concurrentRequests(let context):
-            return String(localized: "Too many concurrent requests: \(context.debugDescription)", bundle: .module)
-            // Refusal is async throws
-        case .refusal(_, let context):
-            return String(localized: "Model refused to respond: \(context.debugDescription)", bundle: .module)
-        @unknown default:
-            return String(localized: "Unknown generation error", bundle: .module)
-        }
-    }
-
-    /// What an analysis or extraction ran on. Only the three messages that name the subject differ;
-    /// every other case shares one wording. See CODE_AUDIT_26 §9.4.
+    /// What an analysis, extraction or generation ran on. Only the messages that name the subject
+    /// differ; every other case shares one wording. See CODE_AUDIT_26 §9.4.
     enum Subject: Sendable {
         case pdfAnalysis
         case pdfExtraction
         case table
         case character
+        /// A generator chat, block generation or the Run Generator intent.
+        case generation
     }
 
-    /// The message for a `GenerationError` of a PDF or table analysis/extraction.
-    static func message(for error: LanguageModelSession.GenerationError, subject: Subject) -> String {
-        switch error {
-        case .exceededContextWindowSize:
+    /// The model failures both error types describe.
+    enum Kind: Sendable, Equatable {
+        case contextSizeExceeded
+        case assetsUnavailable
+        case guardrailViolation
+        case decodingFailure
+        case unsupportedGuide
+        case unsupportedLanguageOrLocale
+        case unsupportedCapability
+        case rateLimited
+        case concurrentRequests
+        case refusal
+        case timeout
+        case unknown
+
+        /// `nil` for an error that is not a model error.
+        init?(_ error: any Error) {
+            #if !os(tvOS)
+            if #available(iOS 27, macOS 27, visionOS 27, *), let error = error as? LanguageModelError {
+                switch error {
+                case .contextSizeExceeded: self = .contextSizeExceeded
+                case .rateLimited: self = .rateLimited
+                case .guardrailViolation: self = .guardrailViolation
+                case .refusal: self = .refusal
+                case .unsupportedCapability, .unsupportedTranscriptContent: self = .unsupportedCapability
+                case .unsupportedGenerationGuide: self = .unsupportedGuide
+                case .unsupportedLanguageOrLocale: self = .unsupportedLanguageOrLocale
+                case .timeout: self = .timeout
+                @unknown default: self = .unknown
+                }
+                return
+            }
+            #endif
+            guard let error = error as? LanguageModelSession.GenerationError else { return nil }
+            switch error {
+            case .exceededContextWindowSize: self = .contextSizeExceeded
+            case .assetsUnavailable: self = .assetsUnavailable
+            case .guardrailViolation: self = .guardrailViolation
+            case .decodingFailure: self = .decodingFailure
+            case .unsupportedGuide: self = .unsupportedGuide
+            case .unsupportedLanguageOrLocale: self = .unsupportedLanguageOrLocale
+            case .rateLimited: self = .rateLimited
+            case .concurrentRequests: self = .concurrentRequests
+            case .refusal: self = .refusal
+            @unknown default: self = .unknown
+            }
+        }
+    }
+
+    /// The message for any error a model session threw while working on `subject`.
+    static func message(for error: any Error, subject: Subject) -> String {
+        if let kind = Kind(error) {
+            Logger.generatorRPG.error("Foundation Models error: \(String(describing: error), privacy: .private)")
+            return message(for: kind, subject: subject) ?? String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
+        }
+        if let toolCallError = error as? LanguageModelSession.ToolCallError {
+            return handleToolCallError(toolCallError)
+        }
+        if let coreError = error as? FoundationModelCoreError {
+            return coreError.localizedDescription
+        }
+        return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
+    }
+
+    /// The message for a generator request (chat, blocks, intent).
+    static func handleError(_ error: any Error) -> String {
+        message(for: error, subject: .generation)
+    }
+
+    /// `nil` for `.unknown`, which shows the error's own description.
+    static func message(for kind: Kind, subject: Subject) -> String? {
+        switch kind {
+        case .contextSizeExceeded:
             switch subject {
             case .pdfAnalysis, .pdfExtraction:
                 return String(localized: "PDF content is too large for processing. Try a smaller document or fewer pages.", bundle: .module)
@@ -51,6 +103,8 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "Table content is too large. Try a table with fewer entries.", bundle: .module)
             case .character:
                 return String(localized: "The character sheet is too large. Try a character with fewer values.", bundle: .module)
+            case .generation:
+                return String(localized: "The request is too long for Apple Intelligence. Try a shorter one.", bundle: .module)
             }
         case .guardrailViolation:
             switch subject {
@@ -60,6 +114,8 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "Content policy prevented extraction. The PDF may contain inappropriate content.", bundle: .module)
             case .table, .character:
                 return String(localized: "Content policy prevented analysis.", bundle: .module)
+            case .generation:
+                return String(localized: "Content policy prevented a response.", bundle: .module)
             }
         case .unsupportedLanguageOrLocale:
             switch subject {
@@ -69,41 +125,35 @@ struct FoundationModelsErrorHandler: Sendable {
                 return String(localized: "The table language is not supported by Apple Intelligence.", bundle: .module)
             case .character:
                 return String(localized: "The character's language is not supported by Apple Intelligence.", bundle: .module)
+            case .generation:
+                return String(localized: "The language is not supported by Apple Intelligence.", bundle: .module)
             }
-        case .assetsUnavailable(let reason):
-            return String(localized: "Model assets unavailable: \(String(describing: reason)). Ensure Apple Intelligence is downloaded.", bundle: .module)
-        case .unsupportedGuide(let guide):
-            return String(localized: "Schema contains unsupported constraint: \(String(describing: guide)).", bundle: .module)
-        case .decodingFailure(let reason):
-            return String(localized: "Failed to decode result: \(String(describing: reason)).", bundle: .module)
-        case .rateLimited(let retryAfter):
-            return String(localized: "Rate limit exceeded. Try again in \(String(describing: retryAfter)) seconds.", bundle: .module)
-        case .concurrentRequests(let maxCount):
-            return String(localized: "Too many concurrent requests (max \(String(describing: maxCount))). Please wait.", bundle: .module)
-        case .refusal(let reason, let category):
-            return String(localized: "Analysis refused: \(String(describing: reason)) (category: \(String(describing: category))).", bundle: .module)
-        @unknown default:
-            return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
+        case .assetsUnavailable:
+            return String(localized: "The Apple Intelligence model is not downloaded yet. Try again later.", bundle: .module)
+        case .decodingFailure:
+            return String(localized: "The response could not be read. Try again.", bundle: .module)
+        case .unsupportedGuide:
+            return String(localized: "The request uses a format Apple Intelligence does not support.", bundle: .module)
+        case .unsupportedCapability:
+            return String(localized: "The model on this device does not support this request.", bundle: .module)
+        case .rateLimited:
+            return String(localized: "Apple Intelligence is busy. Try again in a moment.", bundle: .module)
+        case .concurrentRequests:
+            return String(localized: "Too many requests at once. Please wait.", bundle: .module)
+        case .refusal:
+            return String(localized: "Apple Intelligence declined to respond.", bundle: .module)
+        case .timeout:
+            return String(localized: "Apple Intelligence took too long. Try again.", bundle: .module)
+        case .unknown:
+            return nil
         }
     }
 
     static func handleToolCallError(_ error: LanguageModelSession.ToolCallError) -> String {
+        Logger.generatorRPG.error("Foundation Models tool call error: \(String(describing: error.underlyingError), privacy: .private)")
         return String(
             localized: "Tool '\(error.tool.name)' failed: \(error.underlyingError.localizedDescription)",
             bundle: .module
         )
-    }
-
-    /// Consolidates error handling for LanguageModelSession operations
-    static func handleError(_ error: Error) -> String {
-        if let generationError = error as? LanguageModelSession.GenerationError {
-            return handleGenerationError(generationError)
-        } else if let toolCallError = error as? LanguageModelSession.ToolCallError {
-            return handleToolCallError(toolCallError)
-        } else if let coreError = error as? FoundationModelCoreError {
-            return coreError.localizedDescription
-        } else {
-            return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
-        }
     }
 }

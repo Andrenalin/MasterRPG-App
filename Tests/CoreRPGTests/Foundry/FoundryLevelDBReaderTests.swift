@@ -275,7 +275,7 @@ struct FoundrySystemPackageReaderTests {
         #expect(reference.kind == .compendium)
         #expect(reference.sourcePath == "system.description")
         #expect(reference.packName == "spells")
-        #expect(reference.documentID == "spell002")
+        #expect(reference.documentId == "spell002")
         #expect(reference.label == "Fireball")
 
         let effect = try #require(rule.effects.first)

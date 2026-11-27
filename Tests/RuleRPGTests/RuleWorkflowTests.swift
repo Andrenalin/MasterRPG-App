@@ -16,7 +16,7 @@ struct RuleWorkflowTests {
         // Given
         let source = RuleRootModel.testRoot()
         let linkedID = try #require(UUID(uuidString: "D7EF4617-9B67-481D-9714-E5DFEBC3074D"))
-        let sourceID = try #require(UUID(uuidString: "1E6B2309-4CF4-4BB8-B791-F1EE6AAC89ED"))
+        let sourceId = try #require(UUID(uuidString: "1E6B2309-4CF4-4BB8-B791-F1EE6AAC89ED"))
         let linked = RuleModel.fixture(
             id: linkedID,
             name: "Linked Rule",
@@ -29,23 +29,23 @@ struct RuleWorkflowTests {
             "system": .object(["link": .string(link)])
         ])
         let rule = RuleModel.fixture(
-            id: sourceID,
+            id: sourceId,
             name: "Source Rule",
             entries: [.fixture(name: "Related", content: link, kind: .reference)],
             sourceMetadata: RuleSourceMetadata(
                 sourceIdentifier: "source-rule",
-                systemID: "ds4",
+                systemId: "ds4",
                 packageIdentifier: "ds4.rules"
             ),
             sourcePayload: .foundryDocument(rawData)
         )
         source.itemController.replace(model: rule, isInsert: true)
         let exportIDs = source.exportController.exporting(
-            itemIds: ItemModuleIds(ids: [sourceID], module: .rule)
+            itemIds: ItemModuleIds(ids: [sourceId], module: .rule)
         )
 
         // When
-        #expect(Set(exportIDs.ids[.rule, default: []]) == Set([sourceID, linkedID]))
+        #expect(Set(exportIDs.ids[.rule, default: []]) == Set([sourceId, linkedID]))
         let output = OutputStream.toMemory()
         output.open()
         defer { output.close() }
@@ -67,29 +67,29 @@ struct RuleWorkflowTests {
         try await destination.importController.importStream(from: input, forceSave: false)
 
         // Then
-        #expect(Set(destination.itemController.itemDataModel.items) == [sourceID, linkedID])
-        let imported = try #require(destination.itemController.itemSync(for: sourceID))
+        #expect(Set(destination.itemController.itemDataModel.items) == [sourceId, linkedID])
+        let imported = try #require(destination.itemController.itemSync(for: sourceId))
         #expect(imported.name == rule.name)
         #expect(imported.entries == rule.entries)
         #expect(imported.sourceMetadata == rule.sourceMetadata)
         #expect(imported.sourcePayload == rule.sourcePayload)
-        #expect(destination.linkController.collectLinks(of: .rule, from: sourceID) == [linkedID])
+        #expect(destination.linkController.collectLinks(of: .rule, from: sourceId) == [linkedID])
     }
 
     @Test("A package for players leaves out the raw Foundry payload but keeps the version")
     func playerPackageDropsSourcePayload() async throws {
         // Given
         let source = RuleRootModel.testRoot()
-        let sourceID = try #require(UUID(uuidString: "5B0C2F7A-1D34-4E0B-9E6F-3B1A7C2D9E41"))
+        let sourceId = try #require(UUID(uuidString: "5B0C2F7A-1D34-4E0B-9E6F-3B1A7C2D9E41"))
         let rule = RuleModel.fixture(
-            id: sourceID,
+            id: sourceId,
             name: "Payload Rule",
             entries: [.fixture(name: "Result", content: "Content")],
             sourcePayload: .foundryDocument(.object(["_id": .string("payload-rule")]))
         )
         source.itemController.replace(model: rule, isInsert: true)
         let exportIDs = source.exportController.exporting(
-            itemIds: ItemModuleIds(ids: [sourceID], module: .rule)
+            itemIds: ItemModuleIds(ids: [sourceId], module: .rule)
         )
         let output = OutputStream.toMemory()
         output.open()
@@ -105,7 +105,7 @@ struct RuleWorkflowTests {
         try await destination.importController.importStream(from: input, forceSave: false)
 
         // Then
-        let imported = try #require(destination.itemController.itemSync(for: sourceID))
+        let imported = try #require(destination.itemController.itemSync(for: sourceId))
         #expect(imported.sourcePayload == nil)
         #expect(imported.name == rule.name)
         // The version does not depend on the payload, so a copy without it agrees with the master.
@@ -118,14 +118,14 @@ struct RuleWorkflowTests {
     func searchAndFolderBehavior() async throws {
         // Given
         let root = RuleRootModel.testRoot()
-        let childID = try #require(UUID(uuidString: "5272B5B6-702F-4827-84DA-124994B31C01"))
+        let childId = try #require(UUID(uuidString: "5272B5B6-702F-4827-84DA-124994B31C01"))
         let hiddenID = try #require(UUID(uuidString: "4AACB4CC-7BC5-4D25-9F29-1E609AB8F629"))
-        let folderID = try #require(UUID(uuidString: "62DE2EAE-306D-436D-B10F-E006618CAFE2"))
+        let folderId = try #require(UUID(uuidString: "62DE2EAE-306D-436D-B10F-E006618CAFE2"))
         let child = RuleModel.fixture(
-            id: childID,
+            id: childId,
             name: "Arcane Shield",
             description: "Visible defensive rule",
-            parentId: folderID
+            parentId: folderId
         )
         let hidden = RuleModel.fixture(
             id: hiddenID,
@@ -133,10 +133,10 @@ struct RuleWorkflowTests {
             displayState: DisplayStateMask.groupHidden.rawValue
         )
         let folder = RuleModel.fixture(
-            id: folderID,
+            id: folderId,
             name: "Defensive Rules",
             category: .folder,
-            entries: [RuleEntryModel(id: childID, name: child.name, content: "")]
+            entries: [RuleEntryModel(id: childId, name: child.name, content: "")]
         )
         root.itemController.replace(model: child, isInsert: true)
         root.itemController.replace(model: hidden, isInsert: true)
@@ -146,17 +146,17 @@ struct RuleWorkflowTests {
         let globalResults = await root.searchController.globalSearchResults(searchText: "Arcane")
         let folderResults = await root.folderListController.searchRootControllable.scopedResults(
             text: "",
-            focusId: folderID
+            focusId: folderId
         )
         let expanded = root.folderListController.searchRootControllable.syncExpandResults(
-            focusId: folderID
+            focusId: folderId
         )
         let expandedChild = try #require(expanded.first)
 
         // Then
-        #expect(globalResults.map(\.itemId) == [childID])
-        #expect(folderResults.map(\.itemId) == [childID])
-        #expect(expanded.map(\.itemId) == [childID])
+        #expect(globalResults.map(\.itemId) == [childId])
+        #expect(folderResults.map(\.itemId) == [childId])
+        #expect(expanded.map(\.itemId) == [childId])
         #expect(expandedChild.module == .rule)
         #expect(!expandedChild.canOpen)
     }
@@ -165,7 +165,7 @@ struct RuleWorkflowTests {
     func descriptionLinkCollectionAndRepair() throws {
         // Given
         let root = RuleRootModel.testRoot()
-        let sourceID = try #require(UUID(uuidString: "2E8E7A38-27AB-4858-8D01-0F550A2E84EB"))
+        let sourceId = try #require(UUID(uuidString: "2E8E7A38-27AB-4858-8D01-0F550A2E84EB"))
         let descriptionTargetID = try #require(UUID(uuidString: "ECBFBEBA-9731-4B35-B757-913B58FF2CA1"))
         let entryTargetID = try #require(UUID(uuidString: "A1D235D0-D457-4FB8-A518-49803F4B1FF8"))
         let missingTargetID = try #require(UUID(uuidString: "78FC0296-47DD-4D0B-89D5-E84614861820"))
@@ -191,7 +191,7 @@ struct RuleWorkflowTests {
         ).linkRepresentation
         root.itemController.replace(
             model: RuleModel.fixture(
-                id: sourceID,
+                id: sourceId,
                 name: "Source",
                 description: "\(descriptionLink) \(missingLink)",
                 entries: [.fixture(name: "Related", content: entryLink)]
@@ -200,10 +200,10 @@ struct RuleWorkflowTests {
         )
 
         // When
-        let linksBeforeRepair = Set(root.linkController.collectLinks(of: .rule, from: sourceID))
-        root.linkController.validateLinks(on: sourceID)
-        let repaired = try #require(root.itemController.itemSync(for: sourceID))
-        let linksAfterRepair = Set(root.linkController.collectLinks(of: .rule, from: sourceID))
+        let linksBeforeRepair = Set(root.linkController.collectLinks(of: .rule, from: sourceId))
+        root.linkController.validateLinks(on: sourceId)
+        let repaired = try #require(root.itemController.itemSync(for: sourceId))
+        let linksAfterRepair = Set(root.linkController.collectLinks(of: .rule, from: sourceId))
 
         // Then
         #expect(linksBeforeRepair == [descriptionTargetID, entryTargetID, missingTargetID])
@@ -217,13 +217,13 @@ struct RuleWorkflowTests {
     func folderExportBehavior() throws {
         // Given
         let root = RuleRootModel.testRoot()
-        let folderID = try #require(UUID(uuidString: "0489EEBB-5907-4399-9147-A0A6D82C1689"))
+        let folderId = try #require(UUID(uuidString: "0489EEBB-5907-4399-9147-A0A6D82C1689"))
         let firstID = try #require(UUID(uuidString: "8D576342-F17E-4A88-90B7-950747C93AC2"))
         let secondID = try #require(UUID(uuidString: "EA75EA9B-F201-460E-9CDD-D2EB930181A1"))
-        let first = RuleModel.fixture(id: firstID, name: "First", parentId: folderID)
-        let second = RuleModel.fixture(id: secondID, name: "Second", parentId: folderID)
+        let first = RuleModel.fixture(id: firstID, name: "First", parentId: folderId)
+        let second = RuleModel.fixture(id: secondID, name: "Second", parentId: folderId)
         let folder = RuleModel.fixture(
-            id: folderID,
+            id: folderId,
             name: "Folder",
             category: .folder,
             entries: [
@@ -237,16 +237,16 @@ struct RuleWorkflowTests {
 
         // When
         let fullFolder = root.exportController.exporting(
-            itemIds: ItemModuleIds(ids: [folderID], module: .rule)
+            itemIds: ItemModuleIds(ids: [folderId], module: .rule)
         )
         let partialFolder = root.exportController.exporting(
             itemIds: ItemModuleIds(ids: [firstID], module: .rule)
         )
 
         // Then
-        #expect(Set(fullFolder.ids[.rule, default: []]) == Set([folderID, firstID, secondID]))
+        #expect(Set(fullFolder.ids[.rule, default: []]) == Set([folderId, firstID, secondID]))
         #expect(Set(partialFolder.ids[.rule, default: []]) == Set([firstID]))
-        #expect(Set(partialFolder.partialIds[.rule, default: []]) == Set([folderID]))
+        #expect(Set(partialFolder.partialIds[.rule, default: []]) == Set([folderId]))
     }
 
     @Test("Rule export follows description links, expands leaf modules, and bounds Rule cycles")
@@ -277,26 +277,26 @@ struct RuleWorkflowTests {
 
         let firstRuleID = try #require(UUID(uuidString: "337B5E64-0706-455F-9ED9-66F63C13A174"))
         let secondRuleID = try #require(UUID(uuidString: "96F52020-18A7-49EF-99DF-945469228CC5"))
-        let adventureID = try #require(UUID(uuidString: "FA4AA29B-DB79-461D-99F8-48EAC035F711"))
+        let adventureId = try #require(UUID(uuidString: "FA4AA29B-DB79-461D-99F8-48EAC035F711"))
         let missingPhotoID = try #require(UUID(uuidString: "84944898-FC86-43F2-866B-A2BF260A68A1"))
-        let photoID = await photoRoot.itemController.addNew(type: .item)
+        let photoId = await photoRoot.itemController.addNew(type: .item)
         let referencedPhotoID = await photoRoot.itemController.addNew(type: .item)
-        let photo = photoRoot.itemController.itemOrEmpty(for: photoID)
+        let photo = photoRoot.itemController.itemOrEmpty(for: photoId)
         photo.entries.append(PhotoEntryModel(id: UUID(), photoId: referencedPhotoID))
         photoRoot.itemController.replace(model: photo, isInsert: false)
 
         // The test RootManager uses the Rule root as its lightweight Adventure validator.
         root.itemController.replace(
-            model: RuleModel.fixture(id: adventureID, name: "Adventure destination"),
+            model: RuleModel.fixture(id: adventureId, name: "Adventure destination"),
             isInsert: true
         )
-        let photoLink = LinkPhotoData(itemId: photoID, name: "Portrait").linkRepresentation
+        let photoLink = LinkPhotoData(itemId: photoId, name: "Portrait").linkRepresentation
         let missingPhotoLink = LinkPhotoData(
             itemId: missingPhotoID,
             name: "Missing portrait"
         ).linkRepresentation
         let adventureLink = LinkAdventureData(
-            itemId: adventureID,
+            itemId: adventureId,
             name: "Encounter"
         ).linkRepresentation
         let firstRuleLink = LinkRuleData(itemId: firstRuleID, name: "First Rule").linkRepresentation
@@ -322,8 +322,8 @@ struct RuleWorkflowTests {
 
         // Then
         #expect(Set(exported.ids[.rule, default: []]) == Set([firstRuleID, secondRuleID]))
-        #expect(Set(exported.ids[.photo, default: []]) == Set([photoID, referencedPhotoID]))
-        #expect(Set(exported.ids[.adventure, default: []]) == [adventureID])
+        #expect(Set(exported.ids[.photo, default: []]) == Set([photoId, referencedPhotoID]))
+        #expect(Set(exported.ids[.adventure, default: []]) == [adventureId])
     }
 }
 #endif

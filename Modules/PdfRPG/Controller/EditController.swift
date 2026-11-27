@@ -61,7 +61,8 @@ extension EditController {
     
     func createBookmark(content: String, page: String, bounds: CGRect) -> PdfEntryModel {
         let name: String
-        if let nameWord = content.split(separator: " ").first {
+        // Split on any whitespace: a newline or tab stayed in the name. See CODE_AUDIT_29 §5.24.
+        if let nameWord = content.split(whereSeparator: \.isWhitespace).first {
             name = String(nameWord)
         } else {
             name = String(localized: "Unnamed", bundle: .module)

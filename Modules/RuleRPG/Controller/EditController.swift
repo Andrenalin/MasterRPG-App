@@ -183,8 +183,8 @@ extension EditController: EntryDataEditable {
     ) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var merged = merge(itemId: itemId, entries: entries)
-        let removedIDs = Set(item.entries.map(\.id)).subtracting(merged.map(\.id))
-        let removedRows = removedIDs.map {
+        let removedIds = Set(item.entries.map(\.id)).subtracting(merged.map(\.id))
+        let removedRows = removedIds.map {
             ItemRowModel(itemId: item.id, entryId: $0, typeId: .rule)
         }
         let hasAffectedLinks = removedRows.contains { row in

@@ -24,7 +24,7 @@ extension DataController: CoreDataSnapshotPersistable {
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
-            category: CRDT(string: model.valueCategory ?? "", defaultValue: ItemListCategory.game),
+            category: CRDT(string: model.valueCategory ?? "", defaultValue: ValueModel.defaultCategory),
             displayState: Int(model.displayState),
             photoId: CRDT(string: model.photoUUID ?? "", defaultValue: nil),
             photos: CRDTDataUpdate(wrappedValue: model.photoIds.compactMap { $0.uuid }, update: CRDT(string: model.photosUpdate ?? "", defaultValue: UUID())),

@@ -322,10 +322,10 @@ struct ExternalImportTests {
 
     @Test func failedSaveRestoresUnselectedPhotoChangedByRepair() async {
         let photoRoot = PhotoRootModel.testRoot()
-        let childID = UUID()
+        let childId = UUID()
         let importedID = UUID()
         let child = PhotoModel(
-            id: childID,
+            id: childId,
             name: "Unselected child",
             category: .entry,
             displayState: 1
@@ -336,7 +336,7 @@ struct ExternalImportTests {
             id: importedID,
             name: "Imported group",
             category: .entry,
-            entries: [.newChild(id: childID)]
+            entries: [.newChild(id: childId)]
         )
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
@@ -359,7 +359,7 @@ struct ExternalImportTests {
                     await saveCount.increase()
                     if await saveCount.value == 1 {
                         let repairedDisplayState = await MainActor.run {
-                            photoRoot.itemController.itemSync(for: childID)?.displayState
+                            photoRoot.itemController.itemSync(for: childId)?.displayState
                         }
                         await sawRepairMutation.record(repairedDisplayState == 0)
                         throw SaveFailure()
@@ -372,22 +372,22 @@ struct ExternalImportTests {
         }
 
         #expect(await sawRepairMutation.value)
-        #expect(photoRoot.itemController.itemSync(for: childID)?.displayState == 1)
+        #expect(photoRoot.itemController.itemSync(for: childId)?.displayState == 1)
         #expect(photoRoot.itemController.itemSync(for: importedID) == nil)
     }
 
     @Test func importedFileFactoryKeepsBytesTransientAndHashesThem() {
         let data = Data([4, 5, 6])
-        let fileID = UUID()
+        let fileId = UUID()
 
         let file = FileUrl(
             importedData: data,
-            fileId: fileID,
+            fileId: fileId,
             filename: "image.webp",
             module: NetworkModules.photo.token
         )
 
-        #expect(file.fileId == fileID)
+        #expect(file.fileId == fileId)
         #expect(file.location == .newCloud)
         #expect(file.data == data)
         #expect(file.contentHash == FileUrl.contentHash(of: data))

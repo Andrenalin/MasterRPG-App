@@ -73,6 +73,60 @@ public extension MapEntryModel {
         path.closeSubpath()
         return path.contains(point)
     }
+
+    /// Whether the two room polygons share an area: an edge of one crosses an edge of the other,
+    /// or one lies inside the other. Polygons that only touch along a border do not overlap.
+    /// See CODE_AUDIT_29 §6.2.
+    func overlaps(_ other: MapEntryModel) -> Bool {
+        let own = coordinates
+        let others = other.coordinates
+        guard own.count >= 3, others.count >= 3,
+              let ownBounds = own.bounds, let otherBounds = others.bounds,
+              ownBounds.intersects(otherBounds) else { return false }
+        for index in own.indices {
+            let a = own[index], b = own[(index + 1) % own.count]
+            for otherIndex in others.indices {
+                let c = others[otherIndex], d = others[(otherIndex + 1) % others.count]
+                if Self.segmentsCross(a, b, c, d) { return true }
+            }
+        }
+        // No crossing edges: either disjoint or one inside the other. A vertex on the other's
+        // border is not inside, so test the centroids too (a cell that exactly fills a room).
+        return own.contains(where: { other.containsStrictly($0) })
+            || others.contains(where: { containsStrictly($0) })
+            || other.containsStrictly(Self.centroid(of: own))
+            || containsStrictly(Self.centroid(of: others))
+    }
+
+    /// Inside and not on the border.
+    private func containsStrictly(_ point: CGPoint) -> Bool {
+        guard contains(point) else { return false }
+        for index in coordinates.indices {
+            let a = coordinates[index], b = coordinates[(index + 1) % coordinates.count]
+            if Self.cross(a, b, point) == 0,
+               point.x >= min(a.x, b.x), point.x <= max(a.x, b.x),
+               point.y >= min(a.y, b.y), point.y <= max(a.y, b.y) {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// A proper crossing: each segment's ends lie strictly on both sides of the other.
+    private static func segmentsCross(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint, _ d: CGPoint) -> Bool {
+        let d1 = cross(c, d, a), d2 = cross(c, d, b)
+        let d3 = cross(a, b, c), d4 = cross(a, b, d)
+        return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))
+    }
+
+    private static func cross(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint) -> CGFloat {
+        (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+    }
+
+    private static func centroid(of points: [CGPoint]) -> CGPoint {
+        let sum = points.reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.x, y: $0.y + $1.y) }
+        return CGPoint(x: sum.x / CGFloat(points.count), y: sum.y / CGFloat(points.count))
+    }
 }
 
 extension MapEntryModel {

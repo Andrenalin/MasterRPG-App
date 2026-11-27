@@ -24,7 +24,7 @@ extension DataController: CoreDataSnapshotPersistable {
             name: CRDT(wrappedValue: model.name ?? ""),
             description: CRDT(wrappedValue: model.information ?? ""),
             tags: CRDT(string: model.tags ?? "", defaultValue: tags(from: model.tags)),
-            category: CRDT(string: model.weatherCategory ?? "", defaultValue: ItemListCategory.adventure),
+            category: CRDT(string: model.weatherCategory ?? "", defaultValue: WeatherModel.defaultCategory),
             displayState: Int(model.displayState),
             weatherUpdate: CRDT(string: model.weatherUpdate ?? "", defaultValue: UUID()),
             time: WeatherLimits.clamped(Double(model.time), to: WeatherLimits.time),

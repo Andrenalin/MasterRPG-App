@@ -54,22 +54,22 @@ extension FoundryMappingState {
         indexedDocuments = try await collectDocumentsForIndexing()
         for document in privacyFilteredPackage.allDocuments {
             try await cooperativeCheckpoint()
-            privacyFilteredDocumentsByID[document.id] = document
+            privacyFilteredDocumentsById[document.id] = document
         }
         for document in indexedDocuments {
             try await cooperativeCheckpoint()
-            documentTypesByID[document.id] = document.documentType
+            documentTypesById[document.id] = document.documentType
         }
         for scene in indexedDocuments where scene.documentType == .scene {
             try await cooperativeCheckpoint()
             let levels = scene.embeddedDocuments.filter { $0.documentType == .level }
             guard !levels.isEmpty else { continue }
-            let initialDocumentID = initialLevel(in: scene, levels: levels).documentID
+            let initialDocumentId = initialLevel(in: scene, levels: levels).documentId
             for level in levels {
                 try await cooperativeCheckpoint()
-                levelMapIDs[level.id] = level.documentID == initialDocumentID
-                    ? stableID("\(scene.id)#map")
-                    : stableID("\(level.id)#level-map")
+                levelMapIds[level.id] = level.documentId == initialDocumentId
+                    ? stableId("\(scene.id)#map")
+                    : stableId("\(level.id)#level-map")
             }
         }
         var actorCandidates: [String: Set<UUID>] = [:]
@@ -77,14 +77,14 @@ extension FoundryMappingState {
         for document in indexedDocuments {
             try await cooperativeCheckpoint()
             if document.documentType == .actor, selectedCategories.contains(.actors) {
-                actorCandidates[document.documentID, default: []].insert(
-                    stableID("\(document.id)#character")
+                actorCandidates[document.documentId, default: []].insert(
+                    stableId("\(document.id)#character")
                 )
             }
             guard let destination = predictedDestination(for: document) else { continue }
             destinationCandidates[document.id, default: []].insert(destination)
-            destinationCandidates[document.documentID, default: []].insert(destination)
-            destinationCandidates["\(document.documentType.rawValue).\(document.documentID)", default: []]
+            destinationCandidates[document.documentId, default: []].insert(destination)
+            destinationCandidates["\(document.documentType.rawValue).\(document.documentId)", default: []]
                 .insert(destination)
             if let sourceUUID = document.sourceUUID {
                 for alias in foundryReferenceAliases(for: sourceUUID) {
@@ -109,23 +109,23 @@ extension FoundryMappingState {
                     try await cooperativeCheckpoint()
                     let destination = Destination(
                         module: .rule,
-                        itemId: stableID("rule#\(rule.id)")
+                        itemId: stableId("rule#\(rule.id)")
                     )
                     for alias in foundryRuleAliases(
                         rule,
-                        systemID: rulePackage.manifest.id
+                        systemId: rulePackage.manifest.id
                     ) {
                         destinationCandidates[alias, default: []].insert(destination)
                     }
                 }
             }
         }
-        for (documentID, candidates) in actorCandidates {
+        for (documentId, candidates) in actorCandidates {
             try await cooperativeCheckpoint()
             if candidates.count == 1, let destination = candidates.first {
-                actorsByDocumentID[documentID] = destination
+                actorsByDocumentId[documentId] = destination
             } else {
-                warnings.append(String(localized: "Actor id \(documentID) is ambiguous across Foundry collections; bare token links to it remain unresolved.", bundle: .module))
+                warnings.append(String(localized: "Actor id \(documentId) is ambiguous across Foundry collections; bare token links to it remain unresolved.", bundle: .module))
             }
         }
         for (alias, candidates) in destinationCandidates {
@@ -163,15 +163,15 @@ extension FoundryMappingState {
         for folder in declarations {
             try await cooperativeCheckpoint()
             for module in modules(for: folder.documentType) {
-                let id = stableID(
+                let id = stableId(
                     "\(folder.id)#folder#\(module.token)"
                 )
-                folderIDs[
+                folderIds[
                     FolderKey(
                         module: module,
                         documentType: folder.documentType,
                         scope: folder.scope,
-                        foundryID: folder.documentID
+                        foundryId: folder.documentId
                     ),
                     default: []
                 ].insert(id)
@@ -179,14 +179,14 @@ extension FoundryMappingState {
                     FolderAliasKey(
                         module: module,
                         documentType: folder.documentType,
-                        foundryID: folder.documentID
+                        foundryId: folder.documentId
                     ),
                     default: []
                 ].insert(id)
             }
         }
-        let declarationsByID = Dictionary(
-            declarations.map { (folderCycleKey(documentType: $0.documentType, scope: $0.scope, foundryID: $0.documentID), $0) },
+        let declarationsById = Dictionary(
+            declarations.map { (folderCycleKey(documentType: $0.documentType, scope: $0.scope, foundryId: $0.documentId), $0) },
             uniquingKeysWith: { first, _ in first }
         )
         for folder in declarations {
@@ -196,22 +196,22 @@ extension FoundryMappingState {
                     module: module,
                     documentType: folder.documentType,
                     scope: folder.scope,
-                    foundryID: folder.documentID
+                    foundryId: folder.documentId
                 ) else { continue }
-                let parentID = cycleSafeParentID(for: folder, declarationsByID: declarationsByID).flatMap {
+                let parentId = cycleSafeParentId(for: folder, declarationsById: declarationsById).flatMap {
                     resolveFolder(
                         module: module,
                         documentType: folder.documentType,
                         scope: folder.scope,
-                        foundryID: $0
+                        foundryId: $0
                     )
                 }
-                addFolder(id: id, module: module, name: folder.name, parentID: parentID, sourceID: folder.id)
+                addFolder(id: id, module: module, name: folder.name, parentId: parentId, sourceId: folder.id)
             }
         }
 
         for (key, candidates) in folderAliases where candidates.count > 1 {
-            warnings.append(String(localized: "Foundry folder id \(key.foundryID) is ambiguous across collections for \(key.module.token); only canonical in-collection links were resolved.", bundle: .module))
+            warnings.append(String(localized: "Foundry folder id \(key.foundryId) is ambiguous across collections for \(key.module.token); only canonical in-collection links were resolved.", bundle: .module))
         }
     }
 
@@ -222,9 +222,9 @@ extension FoundryMappingState {
             declarations.append(contentsOf: collection.folders.map { folder in
                 FolderDeclaration(
                     id: folder.id,
-                    documentID: folder.documentID,
+                    documentId: folder.documentId,
                     name: folder.name,
-                    parentID: folder.parentID,
+                    parentId: folder.parentId,
                     documentType: folder.documentType,
                     scope: canonicalScope(of: folder.id, fallback: collection.id)
                 )
@@ -236,9 +236,9 @@ extension FoundryMappingState {
                 guard document.documentType == .folder else { continue }
                 declarations.append(FolderDeclaration(
                     id: document.id,
-                    documentID: document.documentID,
+                    documentId: document.documentId,
                     name: document.name,
-                    parentID: rawIdentifier(document.rawData["folder"])
+                    parentId: rawIdentifier(document.rawData["folder"])
                         ?? rawIdentifier(document.rawData["parent"]),
                     documentType: folderContainedDocumentType(document.rawData),
                     scope: canonicalScope(of: document.id, fallback: collection.id)
@@ -252,60 +252,60 @@ extension FoundryMappingState {
         module: NetworkModules,
         documentType: FoundryDocumentType,
         scope: String,
-        foundryID: String
+        foundryId: String
     ) -> UUID? {
-        let scoped = folderIDs[
+        let scoped = folderIds[
             FolderKey(
                 module: module,
                 documentType: documentType,
                 scope: scope,
-                foundryID: foundryID
+                foundryId: foundryId
             )
         ] ?? []
         if scoped.count == 1 { return scoped.first }
         guard scoped.isEmpty else { return nil }
         let aliases = folderAliases[
-            FolderAliasKey(module: module, documentType: documentType, foundryID: foundryID)
+            FolderAliasKey(module: module, documentType: documentType, foundryId: foundryId)
         ] ?? []
         return aliases.count == 1 ? aliases.first : nil
     }
 
-    /// Returns `folder.parentID` unless assigning it would create (or continue) a cycle in the
+    /// Returns `folder.parentId` unless assigning it would create (or continue) a cycle in the
     /// projected `parentId` chain — mirroring `safeRuleFolderParent`'s cycle guard for the
     /// RuleRPG folder path, which this general module folder projection previously lacked.
     /// Without it, a Foundry folder cycle in the source data was silently projected as a
     /// genuine circular `parentId` chain, which any downstream code walking that chain upward
     /// (breadcrumbs, move/drag validation, folder deletion cascades) isn't guaranteed to be
     /// safe against. See CODE_AUDIT §5.13.
-    func cycleSafeParentID(
+    func cycleSafeParentId(
         for folder: FolderDeclaration,
-        declarationsByID: [String: FolderDeclaration]
+        declarationsById: [String: FolderDeclaration]
     ) -> String? {
-        guard let parentFoundryID = folder.parentID, !parentFoundryID.isEmpty else { return nil }
-        // `parentID` is the raw Foundry id while `FolderDeclaration.id` is canonical, so the walk is
+        guard let parentFoundryId = folder.parentId, !parentFoundryId.isEmpty else { return nil }
+        // `parentId` is the raw Foundry id while `FolderDeclaration.id` is canonical, so the walk is
         // keyed by (type, scope, raw document id) — the same identity `resolveFolder` uses.
-        func key(_ foundryID: String) -> String {
-            folderCycleKey(documentType: folder.documentType, scope: folder.scope, foundryID: foundryID)
+        func key(_ foundryId: String) -> String {
+            folderCycleKey(documentType: folder.documentType, scope: folder.scope, foundryId: foundryId)
         }
-        var visited = Set([key(folder.documentID)])
-        var candidate: String? = parentFoundryID
+        var visited = Set([key(folder.documentId)])
+        var candidate: String? = parentFoundryId
         while let current = candidate {
             guard visited.insert(key(current)).inserted else {
                 warnings.append(String(localized: "Foundry folder hierarchy contains a cycle at \(folder.name); it was placed at the root.", bundle: .module))
                 return nil
             }
-            candidate = declarationsByID[key(current)]?.parentID
+            candidate = declarationsById[key(current)]?.parentId
         }
-        return parentFoundryID
+        return parentFoundryId
     }
 
-    func folderCycleKey(documentType: FoundryDocumentType, scope: String, foundryID: String) -> String {
-        "\(documentType.rawValue)\u{0}\(scope)\u{0}\(foundryID)"
+    func folderCycleKey(documentType: FoundryDocumentType, scope: String, foundryId: String) -> String {
+        "\(documentType.rawValue)\u{0}\(scope)\u{0}\(foundryId)"
     }
 
-    func canonicalScope(of canonicalID: String, fallback: String) -> String {
-        guard let documentSeparator = canonicalID.lastIndex(of: "/") else { return fallback }
-        let withoutDocument = canonicalID[..<documentSeparator]
+    func canonicalScope(of canonicalId: String, fallback: String) -> String {
+        guard let documentSeparator = canonicalId.lastIndex(of: "/") else { return fallback }
+        let withoutDocument = canonicalId[..<documentSeparator]
         guard let typeSeparator = withoutDocument.lastIndex(of: "/") else { return fallback }
         return String(withoutDocument[..<typeSeparator])
     }
@@ -334,54 +334,54 @@ extension FoundryMappingState {
         }
     }
 
-    func addFolder(id: UUID, module: NetworkModules, name: String, parentID: UUID?, sourceID: String) {
+    func addFolder(id: UUID, module: NetworkModules, name: String, parentId: UUID?, sourceId: String) {
         switch module {
         case .adventure:
             let model = AdventureModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .audio:
             let model = AudioModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .dice:
-            let model = DiceModel(id: id, name: name, category: .folder, dice: [], parentId: parentID)
-            add(model, module: module, sourceID: sourceID)
+            let model = DiceModel(id: id, name: name, category: .folder, dice: [], parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .map:
-            let model = MapModel(id: id, name: name, category: .folder, parentId: parentID)
-            add(model, module: module, sourceID: sourceID)
+            let model = MapModel(id: id, name: name, category: .folder, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .pdf:
             let model = PdfModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .photo:
             let model = PhotoModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .rule:
             let model = RuleModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .space:
             let model = SpaceModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .table:
             let model = TableModel.empty(id)
-            configureFolder(model, name: name, parentID: parentID)
-            add(model, module: module, sourceID: sourceID)
+            configureFolder(model, name: name, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         case .value:
-            let model = ValueModel(id: id, name: name, category: .folder, parentId: parentID)
-            add(model, module: module, sourceID: sourceID)
+            let model = ValueModel(id: id, name: name, category: .folder, parentId: parentId)
+            add(model, module: module, sourceId: sourceId)
         default:
             break
         }
     }
 
-    func configureFolder<Model: AnyObject & ItemDataAccessible>(_ model: Model, name: String, parentID: UUID?) {
+    func configureFolder<Model: AnyObject & ItemDataAccessible>(_ model: Model, name: String, parentId: UUID?) {
         var model = model
         model.name = name
         model.category = .folder
-        model.parentId = parentID
+        model.parentId = parentId
     }
 }

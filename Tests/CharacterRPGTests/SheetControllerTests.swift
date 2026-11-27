@@ -17,15 +17,15 @@ struct SheetControllerTests {
     @Test func characterSheetEditTypeControllerPersistsSelectedType() async throws {
         let root = try await MockRoot.importTestData()
         let itemId = try #require(root.itemController.itemDataModel.items.first)
-        let entryID = try #require(root.itemController.itemOrEmpty(for: itemId).entries.first?.id)
+        let entryId = try #require(root.itemController.itemOrEmpty(for: itemId).entries.first?.id)
 
         root.editController.updateSheetEditType(
             itemId: itemId,
-            entryId: entryID,
+            entryId: entryId,
             editType: .selection
         )
 
-        #expect(root.itemController.itemOrEmpty(for: itemId)[entryID].type == .selection)
+        #expect(root.itemController.itemOrEmpty(for: itemId)[entryId].type == .selection)
     }
     
     @Test func characterSheetBasic() async throws {

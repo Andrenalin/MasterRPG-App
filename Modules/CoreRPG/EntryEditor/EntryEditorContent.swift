@@ -109,6 +109,9 @@ enum EntryEditorFocusField {
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
 private struct EntryEditorContentEditorCardView<LinkType: LinkDataTransferable>: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding20: CGFloat = 20
+    @ScaledMetric private var spacing16: CGFloat = 16
     let editController: any EntryDataEditable
     let editorModel: SheetEditorModel
     let itemId: UUID
@@ -121,7 +124,7 @@ private struct EntryEditorContentEditorCardView<LinkType: LinkDataTransferable>:
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: spacing16) {
             EntryEditorHeaderView(
                 editController: editController,
                 editorModel: editorModel,
@@ -135,7 +138,7 @@ private struct EntryEditorContentEditorCardView<LinkType: LinkDataTransferable>:
 
             EntryContentEditor(editModel: editModel, currentFocus: currentFocus)
         }
-        .padding(20)
+        .padding(padding20)
         .background {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(theme.panelColor.opacity(reduceTransparency ? 1 : 0.58))

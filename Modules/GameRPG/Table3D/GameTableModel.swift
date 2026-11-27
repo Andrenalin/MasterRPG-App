@@ -73,15 +73,27 @@ final class GameTableModel: Sendable {
     var shownDiceGroups: Set<TableDiceGroup> = []
     /// The dice of the players without a table, at the guest seat: who has which dice of that
     /// seat's pool. Every device derives it from the rolls it knows (`applyGuestRolls(_:)`).
-    var guestGroups: [TableGuestDice.Group] = []
+    var guestGroups: [TableGuestDice.Group] = [] {
+        didSet { diceMayBeMoving = true }
+    }
     /// The game master's last dice while the master rolls from a device without the 3D table:
     /// they lie at the master's own seat (south), from that seat's pool, and stay there until
     /// the master rolls again. Not part of `guestGroups`, so no guest can take their slots.
-    var masterGuestGroup: TableGuestDice.Group?
-    /// The players sitting at each seat, by the name their game messages carry; the dice
-    /// overlay lists a player's shared dice under the same name. Learned from SharePlay (see
+    var masterGuestGroup: TableGuestDice.Group? {
+        didSet { diceMayBeMoving = true }
+    }
+    /// Whether a die may have moved or changed since every dice group last settled: set by every
+    /// table action and interaction and by new guest rolls, cleared by the frame callback once
+    /// every group is settled. While it is `false` the per-frame scan runs only every
+    /// `TableDiceRest.idleScanInterval`. See CODE_AUDIT_29 §7.4.
+    @ObservationIgnored var diceMayBeMoving = true
+    /// When the frame callback last scanned the dice groups.
+    @ObservationIgnored var lastDiceResultScan: ContinuousClock.Instant?
+    /// The players sitting at each seat, with the player id their game messages carry (the dice
+    /// are looked up by it) and the name for display. Learned from SharePlay (see
     /// `RPGSharePlayController.refreshSeatPlayerNames()`); several players can share a seat.
-    var seatPlayerNames: [TableSeatIdentifier: [String]] = [:]
+    /// See CODE_AUDIT_29 §5.7.
+    var seatPlayers: [TableSeatIdentifier: [TableSeatPlayer]] = [:]
     /// Where each dice group's result popover stands.
     @ObservationIgnored
     var diceResultPopovers: [TableDiceGroup: TablePopoverAnchor] = [:]

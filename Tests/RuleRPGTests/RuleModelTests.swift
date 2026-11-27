@@ -13,9 +13,9 @@ struct RuleModelTests {
     @Test("Codable round trips CRDT content and Foundry source data")
     func codableRoundTrip() throws {
         // Given
-        let entryID = try #require(UUID(uuidString: "97668F6B-439D-4AE6-8864-C24C2652DE7B"))
+        let entryId = try #require(UUID(uuidString: "97668F6B-439D-4AE6-8864-C24C2652DE7B"))
         let entryParentID = try #require(UUID(uuidString: "6CBFB184-B779-4B77-A4FB-D64BBEBA5E77"))
-        let parentID = try #require(UUID(uuidString: "F78AE915-1CE4-46E9-A89C-B4A18D6F0519"))
+        let parentId = try #require(UUID(uuidString: "F78AE915-1CE4-46E9-A89C-B4A18D6F0519"))
         let rawData: FoundryJSONValue = .object([
             "integer": .integer(-4),
             "unsigned": .unsignedInteger(9),
@@ -23,12 +23,12 @@ struct RuleModelTests {
         ])
         let metadata = RuleSourceMetadata(
             sourceIdentifier: "source-id",
-            systemID: "ds4",
+            systemId: "ds4",
             systemTitle: "Dungeon Slayers 4",
             systemVersion: "4.2",
             packageIdentifier: "ds4.talents",
             packageName: "Talents",
-            documentID: "talent-id",
+            documentId: "talent-id",
             documentType: "Item",
             subtype: "talent",
             ruleCategory: "talent",
@@ -41,7 +41,7 @@ struct RuleModelTests {
             displayState: 4,
             entries: [
                 RuleEntryModel(
-                    id: entryID,
+                    id: entryId,
                     name: "Effect",
                     content: "Gain +1 attack.",
                     kind: .effect,
@@ -51,7 +51,7 @@ struct RuleModelTests {
             ],
             sourceMetadata: metadata,
             sourcePayload: .foundryDocument(rawData),
-            parentId: parentID
+            parentId: parentId
         )
 
         // When
@@ -65,7 +65,7 @@ struct RuleModelTests {
         #expect(decoded.entries.first?.kind == .effect)
         #expect(decoded.entries.first?.displayState == 1)
         #expect(decoded.entries.first?.parentId == entryParentID)
-        #expect(decoded.parentId == parentID)
+        #expect(decoded.parentId == parentId)
     }
 
     @Test("Rule entries decode legacy payloads without a parent identifier")

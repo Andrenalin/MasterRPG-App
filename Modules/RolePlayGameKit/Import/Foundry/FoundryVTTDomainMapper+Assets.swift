@@ -30,15 +30,15 @@ extension FoundryMappingState {
     @discardableResult
     func createAsset(_ resource: FoundryPackageResource, module: NetworkModules) -> UUID {
         let key = ResourceKey(module: module, path: canonicalResourcePath(resource.logicalPath))
-        if let existing = resourceIDs[key] {
+        if let existing = resourceIds[key] {
             if let first = resourceSources[key], first != resource {
                 warnings.append(String(localized: "Packaged resources \(first.logicalPath) and \(resource.logicalPath) have the same path and only the first was imported.", bundle: .module))
             }
             return existing
         }
         resourceSources[key] = resource
-        let id = stableID("asset#\(module.token)#\(key.path)")
-        resourceIDs[key] = id
+        let id = stableId("asset#\(module.token)#\(key.path)")
+        resourceIds[key] = id
         let sourceFilename = resource.logicalPath.split(separator: "/").last.map(String.init)
             ?? resource.logicalPath
         let expectedMediaKind: FoundryMediaNormalizationPlan.Kind? = switch module {
@@ -60,7 +60,7 @@ extension FoundryMappingState {
             }
             attachment = ExternalImportAttachment(
                 id: id,
-                fileID: id,
+                fileId: id,
                 suggestedFilename: filename,
                 contentTypeIdentifier: normalizationPlan.contentTypeIdentifier,
                 expectedByteCount: nil,
@@ -73,7 +73,7 @@ extension FoundryMappingState {
         } else {
             attachment = ExternalImportAttachment(
                 id: id,
-                fileID: id,
+                fileId: id,
                 suggestedFilename: filename,
                 contentTypeIdentifier: UTType(
                     filenameExtension: URL(filePath: filename).pathExtension
@@ -87,19 +87,19 @@ extension FoundryMappingState {
         case .photo:
             let model = PhotoModel.empty(id)
             configureAsset(model, name: filename, category: .photo)
-            add(model, module: module, sourceID: "asset:\(resource.logicalPath)", attachment: attachment)
+            add(model, module: module, sourceId: "asset:\(resource.logicalPath)", attachment: attachment)
         case .audio:
             let model = AudioModel.empty(id)
             configureAsset(model, name: filename, category: .music)
-            add(model, module: module, sourceID: "asset:\(resource.logicalPath)", attachment: attachment)
+            add(model, module: module, sourceId: "asset:\(resource.logicalPath)", attachment: attachment)
         case .pdf:
             let model = PdfModel.empty(id)
             configureAsset(model, name: filename, category: .pdf)
-            add(model, module: module, sourceID: "asset:\(resource.logicalPath)", attachment: attachment)
+            add(model, module: module, sourceId: "asset:\(resource.logicalPath)", attachment: attachment)
         case .space:
             let model = SpaceModel.empty(id)
             configureAsset(model, name: filename, category: .models)
-            add(model, module: module, sourceID: "asset:\(resource.logicalPath)", attachment: attachment)
+            add(model, module: module, sourceId: "asset:\(resource.logicalPath)", attachment: attachment)
         default:
             break
         }
@@ -114,7 +114,7 @@ extension FoundryMappingState {
         model.tags = ["Foundry VTT"]
     }
 
-    func mediaID(path: String?, module: NetworkModules) -> UUID? {
+    func mediaId(path: String?, module: NetworkModules) -> UUID? {
         guard selectedCategories.contains(.assets),
               let path,
               let resource = resource(matching: path),

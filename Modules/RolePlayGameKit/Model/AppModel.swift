@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-
 import CoreRPG
 import CoreData
 import Observation
@@ -42,19 +41,15 @@ public final class AppModel: Sendable {
     // Database
     public var coreDataInitModel: CoreDataInitModel?
     /// File handed to the app through Open In; consumed by the Foundry import screen.
-    public var pendingVTTImportURL: URL?
+    public var pendingVTTImportUrl: URL?
     public var generatedValueEntry: ValueEntryModel?
-#if os(tvOS)
     public let databaseModel: DataBaseModel
-#else
-    public let databaseModel: DataBaseModel
-#endif
     /// A document URL handed to the app by the system. The import screen owns
     /// the explicit user confirmation before any bytes are read or applied.
-    public var pendingImportURL: URL?
+    public var pendingImportUrl: URL?
     @ObservationIgnored var pendingImportNavigator: Navigator?
     @ObservationIgnored var pendingVTTImportNavigator: Navigator?
-    @ObservationIgnored var securityScopedImportURL: URL?
+    @ObservationIgnored var securityScopedImportUrl: URL?
     @ObservationIgnored var pendingExternalRoute: PendingExternalRoute?
     @ObservationIgnored var lastExternalRoute: PendingExternalRoute?
     @ObservationIgnored var lastExternalRouteDate = Date.distantPast
@@ -142,38 +137,10 @@ public final class AppModel: Sendable {
         
         self.inAppController = InAppController(model: inAppModel)
         
-        self.gameNavigator = Navigator(
-            configuration: NavigationConfiguration(
-                logger: AppModel.navigatorLogger(event:),
-                executionDelay: 0.4,
-                verbosity: AppModel.navigatorVerbosity,
-                autoDestinationMode: true
-            )
-        )
-        self.editorNavigator = Navigator(
-            configuration: NavigationConfiguration(
-                logger: AppModel.navigatorLogger(event:),
-                executionDelay: 0.4,
-                verbosity: AppModel.navigatorVerbosity,
-                autoDestinationMode: true
-            )
-        )
-        self.searchNavigator = Navigator(
-            configuration: NavigationConfiguration(
-                logger: AppModel.navigatorLogger(event:),
-                executionDelay: 0.4,
-                verbosity: AppModel.navigatorVerbosity,
-                autoDestinationMode: true
-            )
-        )
-        self.settingsNavigator = Navigator(
-            configuration: NavigationConfiguration(
-                logger: AppModel.navigatorLogger(event:),
-                executionDelay: 0.4,
-                verbosity: AppModel.navigatorVerbosity,
-                autoDestinationMode: true
-            )
-        )
+        self.gameNavigator = Self.makeNavigator()
+        self.editorNavigator = Self.makeNavigator()
+        self.searchNavigator = Self.makeNavigator()
+        self.settingsNavigator = Self.makeNavigator()
         
         self.appNavigationModel = AppNavigationModel(appGameStateModel: gameStateModel)
         
@@ -271,6 +238,22 @@ public final class AppModel: Sendable {
 #endif
     }
     
+    /// How long a navigator waits between the steps of a multi-step route.
+    static let navigatorExecutionDelay: TimeInterval = 0.4
+
+    /// The one configuration of the game, editor, search and settings navigators.
+    /// See CODE_AUDIT_29 §9.5.
+    static func makeNavigator() -> Navigator {
+        Navigator(
+            configuration: NavigationConfiguration(
+                logger: AppModel.navigatorLogger(event:),
+                executionDelay: navigatorExecutionDelay,
+                verbosity: AppModel.navigatorVerbosity,
+                autoDestinationMode: true
+            )
+        )
+    }
+
     /// Navigation events describe destinations and routes, which can carry the names of items.
     /// They are logged in debug builds only, and never as public text, so a release build writes
     /// none of it to the unified log. See CODE_AUDIT_26 §6.11.
@@ -411,50 +394,6 @@ extension AppModel {
         refreshTipEligibility()
     }
 
-    /// The window the game shows its content in: the adventure viewer for the master, the
-    /// character viewer for the player. The table, audio and photo windows are placed around it.
-    private var gameViewWindowId: String {
-        appGameStateModel.gameModus == .player
-            ? NetworkModules.value.viewerWindowId
-            : NetworkModules.adventure.viewerWindowId
-    }
-
-    public func windowPlacement(for module: NetworkModules, isViewer: Bool = false) -> WindowPlacementPosition {
-        switch module {
-        case .none, .setting, .editor, .game, .generator, .search:
-                return .leading(SceneId.game.rawValue)
-            case .photo:
-                return .below(gameViewWindowId, fallback: SceneId.game.rawValue)
-            case .map:
-                return .trailing(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
-            case .table:
-                return .leading(gameViewWindowId, fallback: SceneId.game.rawValue)
-            case .adventure:
-                return .leading(SceneId.game.rawValue)
-            case .dice:
-                return .above(SceneId.game.rawValue)
-            case .weather:
-                return .above(NetworkModules.map.linkWindowId, fallback: SceneId.game.rawValue)
-            case .value:
-                // The player's character viewer is the game view itself; only the link window
-                // goes above the Game window.
-                if isViewer, appGameStateModel.gameModus == .player {
-                    return .leading(SceneId.game.rawValue, fallback: nil)
-                }
-                return .above(SceneId.game.rawValue)
-
-            case .audio:
-                return .above(gameViewWindowId, fallback: SceneId.game.rawValue)
-            case .pdf:
-                return .below(SceneId.game.rawValue)
-            case .rule:
-                return .trailing(NetworkModules.pdf.linkWindowId, fallback: SceneId.game.rawValue)
-            case .space:
-                return .below(SceneId.game.rawValue)
-        @unknown default:
-            return .leading(SceneId.game.rawValue)
-        }
-    }
 }
 
 // MARK: ExampleUrlProvider

@@ -228,7 +228,8 @@ extension CharacterRootModel {
 
 extension CharacterRootModel {
     public func checkFolders(reportModel: ValidateRepairModel) async {
-        reportModel.update(section: "Validating Character Data")
+        // Localized: the report showed this title in English in every language. See CODE_AUDIT_29 §8.3.
+        reportModel.update(section: String(localized: "Validating Character Data", bundle: .module))
         editController.repairCharacterConstraints()
 
         let groupItemIds = await groupItemIds()

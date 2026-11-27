@@ -70,7 +70,8 @@ public struct CloudKitCoreDataPersistenceController {
         model.container = container
         DuplicateRowOrder.register(container)
         if model.inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(filePath: "/dev/null")
+            // The bound description, not a second force-unwrapped lookup. See CODE_AUDIT_29 §5.28.
+            privateDescription.url = URL(filePath: "/dev/null")
         }
         
 #if !os(tvOS)

@@ -10,18 +10,40 @@ import UIKit
 
 
 public actor ObjectCache<Object: AnyObject & Sendable> {
-    public init(countLimit: Int = 2500) {
+    /// `costLimit` bounds the decoded bytes, `diskDirectoryName` is the folder in Caches the
+    /// disk copies go to: full images and thumbnails used to share one file per item id, so
+    /// removing a full image deleted its thumbnail. See CODE_AUDIT_29 §7.3.
+    public init(countLimit: Int = 2500, costLimit: Int = 128 * ByteUnit.mebibyte, diskDirectoryName: String = "ImageCache") {
         self.countLimit = countLimit
+        self.costLimit = costLimit
+        self.diskDirectoryName = diskDirectoryName
+#if !os(macOS)
+        // NSCache does not reliably empty itself on a memory warning; the observable caches
+        // were the only ones trimmed. See CODE_AUDIT_29 §7.3.
+        Task { @MainActor [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: UIApplication.didReceiveMemoryWarningNotification) {
+                guard let self else { return }
+                await self.removeAllObjects()
+            }
+        }
+#endif
     }
 
     private lazy var objectCache: NSCache<AnyObject, AnyObject> = {
         let cache = NSCache<AnyObject, AnyObject>()
         cache.countLimit = countLimit
-        cache.totalCostLimit = 256 * ByteUnit.mebibyte
+        cache.totalCostLimit = costLimit
         return cache
     }()
 
     private let countLimit: Int
+    private let costLimit: Int
+    private let diskDirectoryName: String
+
+    /// Empties the memory cache; the disk copies stay.
+    public func removeAllObjects() {
+        objectCache.removeAllObjects()
+    }
 
     // MARK: - Memory Cache
 
@@ -75,7 +97,7 @@ public actor ObjectCache<Object: AnyObject & Sendable> {
     // MARK: - Disk cache helpers
     
     private nonisolated var cacheDirectoryURL: URL {
-        URL.cachesDirectory.appending(path: "ImageCache", directoryHint: .isDirectory)
+        URL.cachesDirectory.appending(path: diskDirectoryName, directoryHint: .isDirectory)
     }
 
     private nonisolated func subDirURL(for itemId: UUID) -> URL {

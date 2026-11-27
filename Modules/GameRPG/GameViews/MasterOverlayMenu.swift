@@ -50,7 +50,7 @@ struct MasterOverlayMenu: View {
     let root = GameRoot.previewFixture()
     MasterOverlayMenu(
         root: root,
-        adventureId: GamePreviewData.adventureID,
+        adventureId: GamePreviewData.adventureId,
         playerController: PlayerController(root: root, asGameMaster: true)
     )
     .environment(GameScreenModel())

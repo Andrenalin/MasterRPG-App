@@ -38,17 +38,25 @@ struct PdfWrapperView: CustomViewRepresentable {
     }
     
 #if os(macOS)
-    func makeNSView(context _: Context) -> PDFView {
-        makeView()
+    func makeNSView(context: Context) -> PDFView {
+        makeView(coordinator: context.coordinator)
+    }
+
+    static func dismantleNSView(_ pdfView: PDFView, coordinator: Coordinator) {
+        coordinator.navigationTask?.cancel()
     }
 #else
-    func makeUIView(context _: Context) -> PDFView {
-        makeView()
+    func makeUIView(context: Context) -> PDFView {
+        makeView(coordinator: context.coordinator)
+    }
+
+    static func dismantleUIView(_ pdfView: PDFView, coordinator: Coordinator) {
+        coordinator.navigationTask?.cancel()
     }
 #endif
 
     @MainActor
-    func makeView() -> PDFView {
+    func makeView(coordinator: Coordinator) -> PDFView {
         let pdfView = PDFView()
         
         pdfView.document = pdfDocument
@@ -65,8 +73,11 @@ struct PdfWrapperView: CustomViewRepresentable {
         if let entry, let pdfDocument, let page = PdfBookmarkPage.page(for: entry, in: pdfDocument) {
             // Also when the selection cannot be rebuilt from the stored bounds: the bookmark
             // then still opens its page. See CODE_AUDIT_21 §5.17.
-            Task { @MainActor in
+            // Owned by the coordinator and cancelled when the viewer closes; the view is held
+            // weakly. See CODE_AUDIT_29 §3.7.
+            coordinator.navigationTask = Task { @MainActor [weak pdfView] in
                 try? await Task.sleep(for: Self.pdfViewNavigationDelay)
+                guard !Task.isCancelled, let pdfView else { return }
                 pdfView.go(to: page)
             }
             if let selection = page.selection(for: entry.bounds) {
@@ -102,6 +113,8 @@ struct PdfWrapperView: CustomViewRepresentable {
     final class Coordinator: NSObject, PDFViewDelegate, PDFDocumentDelegate {
         let parent: PdfWrapperView
         weak var pdfView: PDFView?
+        /// The delayed jump to the bookmark's page. See CODE_AUDIT_29 §3.7.
+        @MainActor var navigationTask: Task<Void, Never>?
         /// Accumulated across `didMatchString(_:)` calls for the search currently in flight.
         /// PDFKit appends from its search thread while `beginSearch` resets it on the main
         /// thread, so it is lock-protected; `beginSearch` also cancels the previous scan so
@@ -169,7 +182,7 @@ struct PdfWrapperView: CustomViewRepresentable {
             }
             let pdfView = pdfView
             let searchModel = parent.searchModel
-            Task { @MainActor in
+            Task { @MainActor [searchModel] in
                 guard let pdfView else { return }
                 let matches = handoff.selections
                 for match in matches {
@@ -184,7 +197,7 @@ struct PdfWrapperView: CustomViewRepresentable {
                 // Weak: the closure is stored on `searchModel`, which can outlive the viewer;
                 // a strong capture kept the `PDFView` and its whole document alive.
                 // See CODE_AUDIT_18 §3.9.
-                searchModel.setSearchMatch = { [weak pdfView] matches, index in
+                searchModel.setSearchMatch = { [weak pdfView, weak searchModel] matches, index in
                     guard let pdfView, matches.indices.contains(index) else { return }
                     let selection = matches[index]
                     pdfView.go(to: selection)
@@ -192,8 +205,9 @@ struct PdfWrapperView: CustomViewRepresentable {
                     var updatedMatches = matches
                     updatedMatches[index] = selection
                     pdfView.highlightedSelections = updatedMatches
-                    Task { @MainActor in
+                    searchModel?.highlightTask = Task { @MainActor [weak pdfView] in
                         try? await Task.sleep(for: PdfWrapperView.pdfViewNavigationDelay)
+                        guard !Task.isCancelled, let pdfView else { return }
                         selection.color = AKColor.yellow
                         updatedMatches[index] = selection
                         pdfView.highlightedSelections = updatedMatches

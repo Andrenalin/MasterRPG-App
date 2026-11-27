@@ -7,7 +7,7 @@ import SwiftUI
 import Synchronization
 import UniformTypeIdentifiers
 
-struct ImageItem: Identifiable, Hashable {
+struct ImageItem: Identifiable, Hashable, Sendable {
     let id = UUID()
     var imageData: Data
     /// A preview at about the size the share sheet shows it, made once here. The sheet used to
@@ -125,7 +125,8 @@ private extension ItemProviderImporter {
             defer { try? FileManager.default.removeItem(at: fileUrl) }
             let data = try await imageData(fromFile: fileUrl)
             try Task.checkCancellation()
-            return ImageItem(imageData: data)
+            // The preview is decoded off the main actor. See CODE_AUDIT_29 §7.9.
+            return try await runOffCallerExecutor { ImageItem(imageData: data) }
         }
         let item = try await loadItem(provider: provider, type: type)
         try Task.checkCancellation()
@@ -136,8 +137,7 @@ private extension ItemProviderImporter {
             // Off the caller's executor: under approachable concurrency this nonisolated
             // function runs on the caller's actor (the main actor here), and decoding an image
             // above the raw-size cap would hitch the extension's UI. See CODE_AUDIT_Folder §3.12.
-            let imageData = try await runOffCallerExecutor { try downsampledIfNeeded(data) }
-            return ImageItem(imageData: imageData)
+            return try await runOffCallerExecutor { ImageItem(imageData: try downsampledIfNeeded(data)) }
         }
 
         guard case .url(let url) = item else {
@@ -149,7 +149,7 @@ private extension ItemProviderImporter {
         // killed at ~120 MB). See CODE_AUDIT_15 §7.1.
         let data = try await imageData(from: url)
         try Task.checkCancellation()
-        return ImageItem(imageData: data)
+        return try await runOffCallerExecutor { ImageItem(imageData: data) }
     }
 
     /// See `SharedImageDownsampling.downsampledIfNeeded`, where the rules live and are tested.

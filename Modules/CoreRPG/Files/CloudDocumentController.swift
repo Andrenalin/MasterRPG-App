@@ -206,6 +206,10 @@ struct CloudDocumentController: Sendable {
 }
 
 extension CloudDocumentController {
+    /// `@concurrent`: it lists the folder synchronously, which on iCloud Drive can wait for the
+    /// file provider; with approachable concurrency it ran on the main-actor caller.
+    /// See CODE_AUDIT_29 §3.3.
+    @concurrent
     func suggestedFileName(for path: String, filename: String) async throws -> String {
         // The folder is listed once and the first free `name-N` is picked in memory; the
         // coordinated check of the chosen name stays as the guard against a name taken since

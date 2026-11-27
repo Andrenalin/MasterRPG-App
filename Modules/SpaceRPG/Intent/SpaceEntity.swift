@@ -97,10 +97,7 @@ extension SpaceEntity: Transferable {
         // Description placeholder mislabeled as a PDF — so Shortcuts/Share
         // Sheet/drag-out hand the real 3D model to whatever consumes it.
         FileRepresentation(exportedContentType: .usdz) { @MainActor item in
-            guard let url = await item.root.itemController.downloadedLoadableUrl(itemId: item.id) else {
-                throw SpaceEntityAssetUnavailableError()
-            }
-            return .init(url)
+            .init(try await item.root.itemController.exportedFileUrl(itemId: item.id, unavailable: SpaceEntityAssetUnavailableError()))
         }
 
         DataRepresentation(exportedContentType: .image) {

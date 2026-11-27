@@ -40,7 +40,7 @@ struct OverlayMasterTabBar: View {
 }
 
 #Preview {
-    OverlayMasterTabBar(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+    OverlayMasterTabBar(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
         .environment(GameScreenModel())
         .environment(AppSettingsModel())
         .environment(AppWindowSizeModel())

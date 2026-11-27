@@ -31,6 +31,6 @@ struct TabGameView: View {
 }
 
 #Preview {
-    TabGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+    TabGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
         .environment(GameScreenModel())
 }

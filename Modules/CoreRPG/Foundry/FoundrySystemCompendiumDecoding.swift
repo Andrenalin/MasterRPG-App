@@ -15,7 +15,7 @@ struct FoundryCompendiumDecoder {
         let diagnostics: [FoundryImportDiagnostic]
     }
 
-    let systemID: String
+    let systemId: String
     let pack: FoundryPackManifest
     let maximumDocumentCount: Int
 
@@ -78,32 +78,32 @@ struct FoundryCompendiumDecoder {
             }
         }
 
-        let rules = topDocuments.map { documentID, document in
-            let canonicalID = FoundryCanonicalKey.topLevel(
-                systemID: systemID,
+        let rules = topDocuments.map { documentId, document in
+            let canonicalId = FoundryCanonicalKey.topLevel(
+                systemId: systemId,
                 packName: pack.name,
                 documentType: document.type,
-                documentID: documentID
+                documentId: documentId
             )
-            let actorEmbeddedEffects: [String: [String: FoundryJSONValue]] = embeddedItemEffects[documentID] ?? [:]
+            let actorEmbeddedEffects: [String: [String: FoundryJSONValue]] = embeddedItemEffects[documentId] ?? [:]
             var embedded: [FoundryEmbeddedRule] = []
-            for (itemId, raw) in embeddedItems[documentID, default: [:]] {
-                let embeddedID = FoundryCanonicalKey.embedded(parent: canonicalID, documentType: "Item", documentID: itemId)
+            for (itemId, raw) in embeddedItems[documentId, default: [:]] {
+                let embeddedId = FoundryCanonicalKey.embedded(parent: canonicalId, documentType: "Item", documentId: itemId)
                 let rawItemEffects: [String: FoundryJSONValue] = actorEmbeddedEffects[itemId] ?? [:]
                 let effects = decodeEffects(
                     rawItemEffects,
-                    ownerCanonicalID: embeddedID
+                    ownerCanonicalId: embeddedId
                 )
-                embedded.append(decodeEmbeddedRule(id: embeddedID, fallbackID: itemId, raw: raw, effects: effects))
+                embedded.append(decodeEmbeddedRule(id: embeddedId, fallbackId: itemId, raw: raw, effects: effects))
             }
             embedded.sort { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
             let rawEffects = document.type == "Actor"
-                ? actorEffects[documentID, default: [:]]
-                : itemEffects[documentID, default: [:]]
-            let effects = decodeEffects(rawEffects, ownerCanonicalID: canonicalID)
+                ? actorEffects[documentId, default: [:]]
+                : itemEffects[documentId, default: [:]]
+            let effects = decodeEffects(rawEffects, ownerCanonicalId: canonicalId)
             return decodeRule(
-                canonicalID: canonicalID,
-                fallbackID: documentID,
+                canonicalId: canonicalId,
+                fallbackId: documentId,
                 documentType: document.type,
                 raw: document.raw,
                 embeddedRules: embedded,
@@ -139,28 +139,28 @@ struct FoundryCompendiumDecoder {
 
 private extension FoundryCompendiumDecoder {
     func decodeRule(
-        canonicalID: String,
-        fallbackID: String,
+        canonicalId: String,
+        fallbackId: String,
         documentType: String,
         raw: FoundryJSONValue,
         embeddedRules: [FoundryEmbeddedRule],
         effects: [FoundryRuleEffect]
     ) -> FoundryRuleDefinition {
-        let documentID = raw["_id"]?.stringValue ?? fallbackID
+        let documentId = raw["_id"]?.stringValue ?? fallbackId
         let subtype = raw["type"]?.stringValue ?? documentType.lowercased()
         let system = raw["system"] ?? .object([:])
         let description = system["description"]?.stringValue
         return FoundryRuleDefinition(
-            id: canonicalID,
-            documentID: documentID,
+            id: canonicalId,
+            documentId: documentId,
             packName: pack.name,
             documentType: documentType,
             subtype: subtype,
-            category: FoundryRuleCategory.category(systemID: systemID, documentType: documentType, subtype: subtype),
-            name: raw["name"]?.stringValue ?? documentID,
+            category: FoundryRuleCategory.category(systemId: systemId, documentType: documentType, subtype: subtype),
+            name: raw["name"]?.stringValue ?? documentId,
             descriptionHTML: description,
             imagePath: raw["img"]?.stringValue,
-            folderID: raw["folder"]?.stringValue,
+            folderId: raw["folder"]?.stringValue,
             values: flatten(system, path: ["system"]),
             tags: tags(documentType: documentType, subtype: subtype, system: system),
             references: FoundryReferenceDecoder.decode(in: raw),
@@ -172,17 +172,17 @@ private extension FoundryCompendiumDecoder {
 
     func decodeEmbeddedRule(
         id: String,
-        fallbackID: String,
+        fallbackId: String,
         raw: FoundryJSONValue,
         effects: [FoundryRuleEffect]
     ) -> FoundryEmbeddedRule {
-        let documentID = raw["_id"]?.stringValue ?? fallbackID
+        let documentId = raw["_id"]?.stringValue ?? fallbackId
         let subtype = raw["type"]?.stringValue ?? "item"
         return FoundryEmbeddedRule(
             id: id,
-            name: raw["name"]?.stringValue ?? documentID,
+            name: raw["name"]?.stringValue ?? documentId,
             subtype: subtype,
-            category: FoundryRuleCategory.category(systemID: systemID, documentType: "Item", subtype: subtype),
+            category: FoundryRuleCategory.category(systemId: systemId, documentType: "Item", subtype: subtype),
             descriptionHTML: raw.value(at: "system.description")?.stringValue,
             imagePath: raw["img"]?.stringValue,
             values: flatten(raw["system"] ?? .object([:]), path: ["system"]),
@@ -194,14 +194,14 @@ private extension FoundryCompendiumDecoder {
 
     func decodeEffects(
         _ rawEffects: [String: FoundryJSONValue],
-        ownerCanonicalID: String
+        ownerCanonicalId: String
     ) -> [FoundryRuleEffect] {
-        rawEffects.map { fallbackID, raw in
-            let effectID = raw["_id"]?.stringValue ?? fallbackID
-            let canonicalID = FoundryCanonicalKey.embedded(
-                parent: ownerCanonicalID,
+        rawEffects.map { fallbackId, raw in
+            let effectId = raw["_id"]?.stringValue ?? fallbackId
+            let canonicalId = FoundryCanonicalKey.embedded(
+                parent: ownerCanonicalId,
                 documentType: "ActiveEffect",
-                documentID: effectID
+                documentId: effectId
             )
             let statuses = raw["statuses"]?.arrayValue?.compactMap(\.stringValue) ?? []
             let changes = raw["changes"]?.arrayValue?.compactMap { change -> FoundryRuleEffectChange? in
@@ -214,8 +214,8 @@ private extension FoundryCompendiumDecoder {
                 )
             } ?? []
             return FoundryRuleEffect(
-                id: canonicalID,
-                name: raw["name"]?.stringValue ?? effectID,
+                id: canonicalId,
+                name: raw["name"]?.stringValue ?? effectId,
                 isDisabled: raw["disabled"]?.boolValue ?? false,
                 transfersToActor: raw["transfer"]?.boolValue ?? false,
                 statuses: statuses,
@@ -230,13 +230,13 @@ private extension FoundryCompendiumDecoder {
         FoundryFolder(
             id: raw["_id"]?.stringValue ?? id,
             name: raw["name"]?.stringValue ?? id,
-            parentID: raw["folder"]?.stringValue,
+            parentId: raw["folder"]?.stringValue,
             sort: raw["sort"]?.integerValue
         )
     }
 
     func tags(documentType: String, subtype: String, system: FoundryJSONValue) -> [String] {
-        guard systemID == "ds4" else { return [] }
+        guard systemId == "ds4" else { return [] }
         var tags: [String] = []
         if subtype == "spell", let groups = system["spellGroups"]?.objectValue {
             tags.append(contentsOf: groups.compactMap { $0.value.boolValue == true ? $0.key : nil })
@@ -256,12 +256,12 @@ private extension FoundryCompendiumDecoder {
 // MARK: - Canonical Identifiers
 
 private enum FoundryCanonicalKey {
-    static func topLevel(systemID: String, packName: String, documentType: String, documentID: String) -> String {
-        "foundry://system/\(component(systemID))/pack/\(component(packName))/\(component(documentType))/\(component(documentID))"
+    static func topLevel(systemId: String, packName: String, documentType: String, documentId: String) -> String {
+        "foundry://system/\(component(systemId))/pack/\(component(packName))/\(component(documentType))/\(component(documentId))"
     }
 
-    static func embedded(parent: String, documentType: String, documentID: String) -> String {
-        "\(parent)/\(component(documentType))/\(component(documentID))"
+    static func embedded(parent: String, documentType: String, documentId: String) -> String {
+        "\(parent)/\(component(documentType))/\(component(documentId))"
     }
 
     private static func component(_ value: String) -> String {

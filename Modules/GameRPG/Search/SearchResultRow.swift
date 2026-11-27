@@ -74,7 +74,7 @@ struct SearchResultRow: View, Equatable {
     List {
         SearchResultRow(
             result: SearchResult(
-                itemId: GamePreviewData.searchItemID,
+                itemId: GamePreviewData.searchItemId,
                 itemName: "Dragon's Lair",
                 module: .adventure,
                 category: .entry,
@@ -92,11 +92,11 @@ struct SearchResultRow: View, Equatable {
     List {
         SearchResultRow(
             result: SearchResult(
-                itemId: GamePreviewData.searchItemID,
+                itemId: GamePreviewData.searchItemId,
                 itemName: "Spellbook of Mysteries",
                 module: .pdf,
                 category: .collection,
-                entryId: GamePreviewData.searchEntryID,
+                entryId: GamePreviewData.searchEntryId,
                 entryName: "Fireball Spell",
                 matchedContent: "A devastating fire spell that creates an explosion dealing massive damage to all creatures in the area.",
                 relevanceScore: 92
@@ -111,7 +111,7 @@ struct SearchResultRow: View, Equatable {
     List {
         SearchResultRow(
             result: SearchResult(
-                itemId: GamePreviewData.searchItemID,
+                itemId: GamePreviewData.searchItemId,
                 itemName: "Ancient Map",
                 module: .map,
                 category: .entry,
@@ -125,11 +125,11 @@ struct SearchResultRow: View, Equatable {
 
         SearchResultRow(
             result: SearchResult(
-                itemId: GamePreviewData.secondSearchItemID,
+                itemId: GamePreviewData.secondSearchItemId,
                 itemName: "Character Sheet",
                 module: .value,
                 category: .folder,
-                entryId: GamePreviewData.secondSearchEntryID,
+                entryId: GamePreviewData.secondSearchEntryId,
                 entryName: "Strength Score",
                 matchedContent: "Base strength value: 16",
                 relevanceScore: 78
@@ -139,7 +139,7 @@ struct SearchResultRow: View, Equatable {
 
         SearchResultRow(
             result: SearchResult(
-                itemId: GamePreviewData.photoID,
+                itemId: GamePreviewData.photoId,
                 itemName: "Battle Music",
                 module: .audio,
                 category: .collection,

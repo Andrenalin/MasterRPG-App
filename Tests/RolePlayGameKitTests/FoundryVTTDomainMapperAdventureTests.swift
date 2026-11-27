@@ -64,8 +64,8 @@ private extension FoundryVTTDomainMapperAdventureTests {
     func map(_ package: FoundryVTTImportPackage) async throws -> FoundryMappedImport {
         try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-adventure-test.json"),
-            sourceScopeID: try #require(UUID(uuidString: "5C0B1A57-3F3E-4D0B-9B52-0E3B8F6F2A11")),
+            sourceUrl: URL(filePath: "/tmp/foundry-adventure-test.json"),
+            sourceScopeId: try #require(UUID(uuidString: "5C0B1A57-3F3E-4D0B-9B52-0E3B8F6F2A11")),
             selectedCategories: [.adventures, .actors, .items, .rules],
             resourceLoader: { _ in Data() }
         )
@@ -76,7 +76,7 @@ private extension FoundryVTTDomainMapperAdventureTests {
         type: FoundryDocumentType,
         subtype: String? = nil,
         name: String,
-        parentID: String?,
+        parentId: String?,
         embedded: [FoundryDocument] = [],
         system: FoundryJSONValue? = nil
     ) -> FoundryDocument {
@@ -88,15 +88,15 @@ private extension FoundryVTTDomainMapperAdventureTests {
         if let system { raw["system"] = system }
         return FoundryDocument(
             id: "adventures/\(type.rawValue)/\(id)",
-            documentID: id,
+            documentId: id,
             documentType: type,
             subtype: subtype,
             name: name,
-            folderID: nil,
+            folderId: nil,
             sort: 0,
             imagePath: nil,
             descriptionHTML: nil,
-            parentID: parentID,
+            parentId: parentId,
             embeddedDocuments: embedded,
             references: [],
             unknownFieldNames: [],
@@ -112,24 +112,24 @@ private extension FoundryVTTDomainMapperAdventureTests {
             type: .actor,
             subtype: "character",
             name: "Sentinel",
-            parentID: adventureId,
+            parentId: adventureId,
             system: .object([
                 "attributes": .object(["body": .object(["base": .integer(5)])]),
                 "skills": .object(["stealth": .object(["rank": .integer(2)])])
             ])
         )
-        let item = document(id: "sword", type: .item, subtype: "weapon", name: "Sword", parentID: adventureId)
+        let item = document(id: "sword", type: .item, subtype: "weapon", name: "Sword", parentId: adventureId)
         let adventure = FoundryDocument(
             id: adventureId,
-            documentID: "crypt",
+            documentId: "crypt",
             documentType: .adventure,
             subtype: nil,
             name: "The Crypt",
-            folderID: nil,
+            folderId: nil,
             sort: 0,
             imagePath: nil,
             descriptionHTML: nil,
-            parentID: nil,
+            parentId: nil,
             embeddedDocuments: [actor, item],
             references: [],
             unknownFieldNames: [],

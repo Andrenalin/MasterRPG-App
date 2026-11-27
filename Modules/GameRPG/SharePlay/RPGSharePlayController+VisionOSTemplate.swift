@@ -95,7 +95,7 @@ extension RPGSharePlayController {
 
     /// Whether a participant in the same room plays on Vision Pro, so that the table is a shared
     /// object. A participant whose messages have not said yet what device they play on counts as
-    /// a Vision Pro (`bindPlayer(named:hasTable:participantId:)` re-checks the table then).
+    /// a Vision Pro (`bindPlayer(named:playerId:hasTable:participantId:)` re-checks the table then).
     private var hasNearbyTableParticipant: Bool {
         guard let groupSession else { return false }
         return groupSession.activeParticipants.contains {

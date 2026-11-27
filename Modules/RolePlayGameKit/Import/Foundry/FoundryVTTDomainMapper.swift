@@ -59,7 +59,7 @@ enum FoundryImportCategory: String, CaseIterable, Identifiable, Sendable {
 struct FoundryMappedImport: Sendable {
     let batch: ExternalImportBatch
     let mappings: [FoundryImportMapping]
-    let archiveID: UUID
+    let archiveId: UUID
     let rawOnlyDocumentCount: Int
     let missingResources: [FoundryPackageResource]
     let unsupportedResources: [FoundryPackageResource]
@@ -180,15 +180,15 @@ enum FoundryGeometryWarning: Hashable {
 struct FoundryVTTDomainMapper {
     func map(
         package: FoundryVTTImportPackage,
-        sourceURL: URL,
-        sourceScopeID: UUID,
+        sourceUrl: URL,
+        sourceScopeId: UUID,
         selectedCategories: Set<FoundryImportCategory> = FoundryImportCategory.privacySafeDefaults,
         resourceLoader: @escaping FoundryResourceLoader
     ) async throws -> FoundryMappedImport {
         let state = FoundryMappingState(
             package: package,
-            sourceURL: sourceURL,
-            sourceScopeID: sourceScopeID,
+            sourceUrl: sourceUrl,
+            sourceScopeId: sourceScopeId,
             selectedCategories: selectedCategories,
             resourceLoader: resourceLoader
         )
@@ -200,14 +200,14 @@ struct FoundryVTTDomainMapper {
 final class FoundryMappingState {
     init(
         package: FoundryVTTImportPackage,
-        sourceURL: URL,
-        sourceScopeID: UUID,
+        sourceUrl: URL,
+        sourceScopeId: UUID,
         selectedCategories: Set<FoundryImportCategory>,
         resourceLoader: @escaping FoundryResourceLoader
     ) {
         self.package = package
-        self.sourceURL = sourceURL
-        self.sourceScopeID = sourceScopeID
+        self.sourceUrl = sourceUrl
+        self.sourceScopeId = sourceScopeId
         self.selectedCategories = selectedCategories
         self.resourceLoader = resourceLoader
         privacyFilteredPackage = FoundryVTTArchiveSanitizer.sanitize(
@@ -215,7 +215,7 @@ final class FoundryMappingState {
             includingChat: selectedCategories.contains(.chat),
             includingUsers: selectedCategories.contains(.users)
         )
-        let fallback = sourceURL.deletingPathExtension().lastPathComponent
+        let fallback = sourceUrl.deletingPathExtension().lastPathComponent
         packageName = FoundryTextDecoder.plainText(fromHTML: package.manifest?.title ?? fallback)
         // Scope identity must survive content edits so repeated imports update the same records.
         // The content hash is integrity metadata, not identity. Including the package kind avoids
@@ -223,17 +223,17 @@ final class FoundryMappingState {
         packageIdentifier = "\(package.kind.rawValue):\(package.manifest?.id ?? fallback)"
         provenance = ExternalImportProvenance(
             source: "Foundry VTT",
-            sourceScopeID: sourceScopeID,
+            sourceScopeId: sourceScopeId,
             packageIdentifier: packageIdentifier,
-            sourcePath: sourceURL.lastPathComponent,
+            sourcePath: sourceUrl.lastPathComponent,
             sourceVersion: package.manifest?.version
         )
     }
 
     let package: FoundryVTTImportPackage
     let privacyFilteredPackage: FoundryVTTImportPackage
-    let sourceURL: URL
-    let sourceScopeID: UUID
+    let sourceUrl: URL
+    let sourceScopeId: UUID
     let selectedCategories: Set<FoundryImportCategory>
     let resourceLoader: FoundryResourceLoader
     let packageName: String
@@ -244,28 +244,31 @@ final class FoundryMappingState {
     var emittedItems: Set<DestinationKey> = []
     var mappingReferences: [String: Set<FoundryImportMappingReference>] = [:]
     var warnings: [String] = []
-    var rawOnlyDocumentIDs: Set<String> = []
-    var folderIDs: [FolderKey: Set<UUID>] = [:]
+    var rawOnlyDocumentIds: Set<String> = []
+    var folderIds: [FolderKey: Set<UUID>] = [:]
     var folderAliases: [FolderAliasKey: Set<UUID>] = [:]
-    var resourceIDs: [ResourceKey: UUID] = [:]
+    var resourceIds: [ResourceKey: UUID] = [:]
     /// The first resource projected for a key, to tell a repeated call from a path collision.
     var resourceSources: [ResourceKey: FoundryPackageResource] = [:]
     var resourcesByCanonicalPath: [String: FoundryPackageResource] = [:]
     var resourcesByAlias: [String: FoundryPackageResource] = [:]
     var ambiguousResourceCanonicalPaths: Set<String> = []
     var ambiguousResourceAliases: Set<String> = []
-    var actorsByDocumentID: [String: UUID] = [:]
-    var levelMapIDs: [String: UUID] = [:]
+    var actorsByDocumentId: [String: UUID] = [:]
+    var levelMapIds: [String: UUID] = [:]
     var targetsByFoundryUUID: [String: Destination] = [:]
-    var documentTypesByID: [String: FoundryDocumentType] = [:]
+    var documentTypesById: [String: FoundryDocumentType] = [:]
     var indexedDocuments: [FoundryDocument] = []
-    var privacyFilteredDocumentsByID: [String: FoundryDocument] = [:]
+    var privacyFilteredDocumentsById: [String: FoundryDocument] = [:]
     var emittedGeometryWarnings = Set<FoundryGeometryWarning>()
     var cooperativeWorkCount = 0
     /// Plain text of the document and rule descriptions, computed off the main actor by
     /// `FoundryTextPrepass` before the models are built. A string that is not in it is converted
     /// on demand.
     var plainTextCache: [String: String] = [:]
+    /// The flattened `system` values of the actors and items with their ids, computed off the
+    /// main actor by `FoundryValuePrepass`. A value that is not in it is planned on demand.
+    var valuePlans: [String: FoundryValuePlan] = [:]
     /// How many units of mapping work run between `Task.yield()` calls in
     /// `cooperativeCheckpoint()`. The model construction runs on the Main Actor (the models are
     /// @MainActor @Observable classes, so it can't move to a background actor without a much
@@ -286,6 +289,13 @@ final class FoundryMappingState {
             rulePackage: selectedCategories.contains(.rules) ? privacyFilteredPackage.rulePackage : nil
         ))
         try Task.checkCancellation()
+        if selectedCategories.contains(.actors) || selectedCategories.contains(.items) {
+            valuePlans = await FoundryValuePrepass.plans(
+                of: FoundryValuePrepass.sources(documents: allDocuments),
+                scope: sourceScopeId
+            )
+            try Task.checkCancellation()
+        }
         try await createFolders()
         try await cooperativeCheckpoint()
         if selectedCategories.contains(.rules) {
@@ -311,7 +321,7 @@ final class FoundryMappingState {
             && document.documentType != .folder
             && retainsRawDocument(document) {
             try await cooperativeCheckpoint()
-            rawOnlyDocumentIDs.insert(document.id)
+            rawOnlyDocumentIds.insert(document.id)
         }
 
         if !selectedCategories.contains(.chat) {
@@ -322,7 +332,7 @@ final class FoundryMappingState {
         }
         warnings.append(contentsOf: package.diagnostics.map(\.message))
         let batch = ExternalImportBatch(
-            id: stableID("batch"),
+            id: stableId("batch"),
             title: packageName,
             provenance: provenance,
             items: items,
@@ -331,12 +341,12 @@ final class FoundryMappingState {
         let mappings = mappingReferences
             .map { FoundryImportMapping(foundryIdentifier: $0.key, references: Array($0.value).sorted(by: mappingOrder)) }
             .sorted { $0.foundryIdentifier < $1.foundryIdentifier }
-        let projectedResourcePaths = Set(resourceIDs.keys.map(\.path))
+        let projectedResourcePaths = Set(resourceIds.keys.map(\.path))
         return FoundryMappedImport(
             batch: batch,
             mappings: mappings,
-            archiveID: sourceScopeID,
-            rawOnlyDocumentCount: rawOnlyDocumentIDs.count,
+            archiveId: sourceScopeId,
+            rawOnlyDocumentCount: rawOnlyDocumentIds.count,
             missingResources: package.resources.filter { $0.location == .unresolved },
             unsupportedResources: package.resources.filter {
                 module(for: $0.logicalPath) == nil

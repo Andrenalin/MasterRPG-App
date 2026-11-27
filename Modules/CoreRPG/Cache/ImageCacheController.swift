@@ -10,9 +10,16 @@ import UIKit
 import Foundation
 
 public struct ImageCacheController: Sendable {
-    public init() {}
-    
-    private let cache = ObjectCache<AKImage>()
+    public init() {
+        cache = ObjectCache<AKImage>()
+    }
+
+    /// See `ObjectCache.init(countLimit:costLimit:diskDirectoryName:)`.
+    public init(costLimit: Int, diskDirectoryName: String) {
+        cache = ObjectCache<AKImage>(costLimit: costLimit, diskDirectoryName: diskDirectoryName)
+    }
+
+    private let cache: ObjectCache<AKImage>
     
     public func hasObject(for itemId: UUID) async -> Bool {
         await cache.hasObject(for: itemId)

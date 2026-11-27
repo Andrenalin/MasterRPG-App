@@ -23,14 +23,17 @@ extension GameController {
         }
 
         let playerPins = map.mapPins.filter { $0.isPlayer && $0.characterId != nil }
-        // Opponents come from the last opened room, else the focused room, else the
-        // first room of the map. A map without any room uses every non-player pin.
-        let lastRoom = mapGameModel.lastActivatedRoomId(for: itemId).flatMap { selectedId in
-            map.entries.first { $0.id == selectedId }
+        // Opponents come from the last opened room (a room closed since does not count), else
+        // the focused room, else the room unplaced pins go to. A map without such a room, or
+        // whose default room is a single hex cell, uses every non-player pin.
+        // See CODE_AUDIT_29 §5.15, §5.16.
+        let lastRoom = mapGameModel.lastOpenedRoomId(for: itemId).flatMap { selectedId in
+            map.entries.first { $0.id == selectedId && $0.isShown }
         }
+        let defaultRoom = MapPinPlacement.defaultRoom(in: map).flatMap { $0.isHexGrid ? nil : $0 }
         let room = lastRoom
             ?? map.entries.first(where: \.focused)
-            ?? map.entries.first
+            ?? defaultRoom
         let roomPins = room.map { selectedRoom in
             map.mapPins.filter { !$0.isPlayer && map.isPin($0, in: selectedRoom) }
         } ?? map.mapPins.filter { !$0.isPlayer }

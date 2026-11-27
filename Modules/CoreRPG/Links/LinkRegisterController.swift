@@ -32,7 +32,7 @@ import os.log
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                     // Grows with every cross-item link reference in every module; batch the
                     // fetch instead of materializing the whole table at once.
-                    request.fetchBatchSize = 500
+                    request.fetchBatchSize = CoreDataFetchLimits.batchSize
                     guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return nil }
                     var nextLegacyOccurrence: [LegacyLinkKey: Int] = [:]
                     var results: [LinkRegisterModel] = []

@@ -163,7 +163,7 @@ struct FoundryZIPArchive: Sendable {
                 throw FoundryImportError.invalidArchive("A central directory entry exceeds the directory bounds.")
             }
 
-            let nameData = data.subdata(in: (cursor + Layout.centralDirectoryHeaderSize)..<(cursor + Layout.centralDirectoryHeaderSize + nameLength))
+            let nameData = data.relativeSubdata(offset: cursor + Layout.centralDirectoryHeaderSize, count: nameLength)
             let path = try Self.decodeAndValidatePath(nameData, flags: flags)
             guard knownPaths.insert(path.precomposedStringWithCanonicalMapping).inserted else {
                 throw FoundryImportError.invalidArchive("The archive contains a duplicate path: \(path)")
@@ -235,7 +235,7 @@ struct FoundryZIPArchive: Sendable {
         }
 
         let payloadOffset = try Self.payloadOffset(for: entry, in: archiveData)
-        let compressedData = archiveData.subdata(in: payloadOffset..<(payloadOffset + entry.compressedSize))
+        let compressedData = archiveData.relativeSubdata(offset: payloadOffset, count: entry.compressedSize)
         let result: Data
 
         switch entry.compressionMethod {
@@ -368,7 +368,7 @@ private extension FoundryZIPArchive {
 
         let headerLength = try checkedSum(Layout.localFileHeaderSize, nameLength, extraLength)
         try data.requireRange(offset: offset, count: headerLength)
-        let pathData = data.subdata(in: (offset + Layout.localFileHeaderSize)..<(offset + Layout.localFileHeaderSize + nameLength))
+        let pathData = data.relativeSubdata(offset: offset + Layout.localFileHeaderSize, count: nameLength)
         let localPath = try decodeAndValidatePath(pathData, flags: localFlags)
         guard localPath == entry.path else {
             throw FoundryImportError.invalidArchive("Entry \(entry.path) has mismatched local and central paths.")
@@ -454,6 +454,14 @@ private extension FoundryZIPArchive {
 }
 
 private extension Data {
+    /// The bytes at `offset` counted from `startIndex`, like the readers below: `subdata(in:)`
+    /// takes absolute indices and read the wrong bytes from a slice. Call after
+    /// `requireRange`. See CODE_AUDIT_29 §5.27.
+    func relativeSubdata(offset: Int, count: Int) -> Data {
+        let start = index(startIndex, offsetBy: offset)
+        return subdata(in: start..<index(start, offsetBy: count))
+    }
+
     func requireRange(offset: Int, count: Int) throws {
         let (end, overflow) = offset.addingReportingOverflow(count)
         guard offset >= 0,

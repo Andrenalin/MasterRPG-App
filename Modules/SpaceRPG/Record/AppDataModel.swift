@@ -13,11 +13,10 @@ import SwiftUI
 import os
 
 enum ConfigCaptureObject {
-    static func isSupported() async -> Bool {
-        let supTask = Task { @MainActor in
-            ObjectCaptureSession.isSupported
-        }
-        return await supTask.value
+    /// Read on the main actor directly instead of through an unowned task. See CODE_AUDIT_29 §3.7.
+    @MainActor
+    static func isSupported() -> Bool {
+        ObjectCaptureSession.isSupported
     }
 }
 

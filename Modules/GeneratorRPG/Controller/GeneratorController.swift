@@ -241,15 +241,11 @@ struct GeneratorController: Sendable {
                 guard model.currentGeneration == generation else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 return
-            } catch let error as LanguageModelSession.GenerationError {
-                guard reportsFailure(of: generation) else { return }
-                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
-                model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
-                model.showError = true
             } catch {
                 guard reportsFailure(of: generation) else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
-                model.responseErrorContent = error.localizedDescription
+                // Both model error types (`LanguageModelError` on iOS 27). See CODE_AUDIT_29 §4.1.
+                model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
                 model.showError = true
             }
         }
@@ -364,24 +360,12 @@ struct GeneratorController: Sendable {
                 // clear while no newer request owns it. See CODE_AUDIT_21 §3.10.
                 guard model.currentGeneration == generation else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
-            } catch let error as LanguageModelSession.GenerationError {
-                guard reportsFailure(of: generation) else { return }
-                // Reuse the shared handler `request()`'s catch block already uses, rather
-                // than a second, narrower, drifting vocabulary for the same error type. See
-                // CODE_AUDIT §5.15.
-                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
-                model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
-                if let failureReason = error.failureReason {
-                    model.responseErrorContent += "\n\(failureReason)"
-                }
-                if let recoverySuggestion = error.recoverySuggestion {
-                    model.responseErrorContent += "\n\(recoverySuggestion)"
-                }
-                model.showError = true
             } catch {
                 guard reportsFailure(of: generation) else { return }
+                // The shared handler `request()`'s catch block uses, for both model error types
+                // (`LanguageModelError` on iOS 27). See CODE_AUDIT §5.15, CODE_AUDIT_29 §4.1.
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
-                model.responseErrorContent = error.localizedDescription
+                model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
                 model.showError = true
             }
         }
@@ -461,68 +445,3 @@ private extension GeneratorController {
 
 #endif
 
-/// Waits for a task to end, but no longer than a timeout. `task.value` alone does not stop waiting
-/// when the waiter is cancelled and never returns for a task that ignores its cancellation.
-/// Internal so it can be tested. See CODE_AUDIT_26 §10.18.
-enum GeneratorTaskWait {
-    static let predecessorTimeout: Duration = .seconds(5)
-
-    static func end(of task: Task<Void, Never>, timeout: Duration) async {
-        let gate = OneShotGate()
-        let timer = Task {
-            try? await Task.sleep(for: timeout)
-            gate.open()
-        }
-        Task {
-            await task.value
-            gate.open()
-        }
-        // A cancelled waiter stops waiting at once instead of after the task or the timeout.
-        // See CODE_AUDIT_26 §3.14.
-        await withTaskCancellationHandler {
-            await gate.wait()
-        } onCancel: {
-            gate.open()
-        }
-        timer.cancel()
-    }
-}
-
-/// Resumes its one waiter the first time it is opened, also when that is before `wait`.
-final class OneShotGate: Sendable {
-    private enum State {
-        case idle
-        case waiting(CheckedContinuation<Void, Never>)
-        case open
-    }
-
-    private let state = Mutex<State>(.idle)
-
-    /// Whether a task is suspended in `wait()`. Lets a test open the gate only once its waiter is parked.
-    var hasWaiter: Bool {
-        state.withLock { state in
-            if case .waiting = state { return true }
-            return false
-        }
-    }
-
-    func wait() async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            let isOpen = state.withLock { state -> Bool in
-                if case .open = state { return true }
-                state = .waiting(continuation)
-                return false
-            }
-            if isOpen { continuation.resume() }
-        }
-    }
-
-    func open() {
-        let continuation = state.withLock { state -> CheckedContinuation<Void, Never>? in
-            defer { state = .open }
-            if case let .waiting(continuation) = state { return continuation }
-            return nil
-        }
-        continuation?.resume()
-    }
-}

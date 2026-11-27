@@ -43,8 +43,10 @@ import OSLog
 /// ```
 @MainActor @Observable public final class ScenesManager {
 #if !os(tvOS)
-    private var openWindow: OpenWindowAction?
-    private var dismissWindow: DismissWindowAction?
+    // The environment actions are not state a view reads: tracking them invalidated every view
+    // that reads the manager each time they were set. See CODE_AUDIT_29 §8.5.
+    @ObservationIgnored private var openWindow: OpenWindowAction?
+    @ObservationIgnored private var dismissWindow: DismissWindowAction?
 
     /// Asks SwiftUI to open or raise the window with this id. Set with the actions; tests set it
     /// directly.
@@ -60,12 +62,12 @@ import OSLog
 #endif
 
 #if os(macOS)
-    private var openSettings: OpenSettingsAction?
+    @ObservationIgnored private var openSettings: OpenSettingsAction?
 #endif
     
 #if os(visionOS)
-    private var openImmersiveSpace: OpenImmersiveSpaceAction?
-    private var dismissImmersiveSpace: DismissImmersiveSpaceAction?
+    @ObservationIgnored private var openImmersiveSpace: OpenImmersiveSpaceAction?
+    @ObservationIgnored private var dismissImmersiveSpace: DismissImmersiveSpaceAction?
     private var pendingSpaceViewerSelection: ItemSelection?
 
     /// Represents the current state of the immersive space.
@@ -104,6 +106,9 @@ import OSLog
         openImmersiveSpace: OpenImmersiveSpaceAction,
         dismissImmersiveSpace: DismissImmersiveSpaceAction
     ) {
+        // Not set once like the other platforms: the launch window closes itself after opening
+        // the table, and the table window (`GameTableGameHost`) sets the actions of a live scene
+        // again. Re-setting is cheap since the actions are not observed. See CODE_AUDIT_29 §8.5.
         self.openWindow = openWindow
         self.dismissWindow = dismissWindow
         windowOpener = { openWindow(id: $0) }

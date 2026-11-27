@@ -22,6 +22,8 @@ private struct ContentWidgetEntry: TimelineEntry {
     }
 }
 
+/// Closure-based on purpose: WidgetKit has no async `TimelineProvider` for a static widget (only
+/// `AppIntentTimelineProvider` is async). See CODE_AUDIT_29 §4.2.
 private struct ContentWidgetProvider: TimelineProvider {
     let module: NetworkModules
 

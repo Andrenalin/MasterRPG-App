@@ -54,31 +54,31 @@ struct RuleFoundryFactoryTests {
         // Given
         let manifest = foundryManifest()
         let rule = foundryRule()
-        let modelID = try #require(UUID(uuidString: "01877D15-01FC-4ED0-9E63-2D319BF0D842"))
-        let parentID = try #require(UUID(uuidString: "668D0D89-AAB9-49F9-A3B4-B8BA8FF29D9B"))
+        let modelId = try #require(UUID(uuidString: "01877D15-01FC-4ED0-9E63-2D319BF0D842"))
+        let parentId = try #require(UUID(uuidString: "668D0D89-AAB9-49F9-A3B4-B8BA8FF29D9B"))
 
         // When
         let model = RuleModel.foundry(
             rule,
             manifest: manifest,
-            id: modelID,
+            id: modelId,
             identityNamespace: "world.ds4.spells",
-            parentId: parentID
+            parentId: parentId
         )
 
         // Then
-        #expect(model.id == modelID)
-        #expect(model.parentId == parentID)
+        #expect(model.id == modelId)
+        #expect(model.parentId == parentId)
         #expect(model.name == "Arcane Shield")
         #expect(model.description.contains("Shield & ward"))
         #expect(!model.description.contains("<p>"))
         #expect(model.tags == ["Magic", "spell", "Dungeon Slayers 4", "Foundry VTT"])
         #expect(model.sourceMetadata.sourceIdentifier == rule.id)
-        #expect(model.sourceMetadata.systemID == "ds4")
+        #expect(model.sourceMetadata.systemId == "ds4")
         #expect(model.sourceMetadata.systemTitle == "Dungeon Slayers 4")
         #expect(model.sourceMetadata.systemVersion == "4.2")
         #expect(model.sourceMetadata.packageIdentifier == "ds4.spells")
-        #expect(model.sourceMetadata.documentID == "arcane-shield")
+        #expect(model.sourceMetadata.documentId == "arcane-shield")
         #expect(model.sourceMetadata.subtype == "spell")
         #expect(model.sourceMetadata.imagePath == "icons/arcane-shield.webp")
         #expect(model.sourcePayload == .foundryRule(rule))
@@ -115,8 +115,8 @@ struct RuleFoundryFactoryTests {
         let otherPackage = RuleModel.foundry(rule, manifest: manifest, identityNamespace: "package-b")
 
         // Then
-        #expect(first.id == rule.masterRPGID)
-        #expect(repeated.id == rule.masterRPGID)
+        #expect(first.id == rule.masterRPGId)
+        #expect(repeated.id == rule.masterRPGId)
         #expect(first.entries.map(\.id) == repeated.entries.map(\.id))
         #expect(zip(first.entries, otherPackage.entries).allSatisfy { pair in
             pair.0.id != pair.1.id
@@ -128,7 +128,7 @@ struct RuleFoundryFactoryTests {
     @Test("Generic Foundry documents create ordered editable groups and retain raw JSON")
     func genericDocumentMapping() throws {
         // Given
-        let modelID = try #require(UUID(uuidString: "7EC9760C-8395-4F9B-A32E-36585FA5363F"))
+        let modelId = try #require(UUID(uuidString: "7EC9760C-8395-4F9B-A32E-36585FA5363F"))
         let rawData: FoundryJSONValue = .object([
             "_id": .string("talent-1"),
             "type": .string("talent"),
@@ -146,7 +146,7 @@ struct RuleFoundryFactoryTests {
 
         // When
         let model = RuleModel.foundryDocument(
-            id: modelID,
+            id: modelId,
             name: "Battle Focus",
             descriptionHTML: "<p>Gain &lt;focus&gt;.</p>",
             tags: ["talent", "martial"],
@@ -161,7 +161,7 @@ struct RuleFoundryFactoryTests {
         // Then
         #expect(model.description == "Gain <focus>.")
         #expect(model.sourceMetadata.sourceIdentifier == "talent-1")
-        #expect(model.sourceMetadata.systemID == "ds4")
+        #expect(model.sourceMetadata.systemId == "ds4")
         #expect(model.sourceMetadata.systemVersion == "4.2")
         #expect(model.sourceMetadata.packageIdentifier == "world.ds4")
         #expect(model.sourceMetadata.ruleCategory == "talent")
@@ -179,7 +179,7 @@ struct RuleFoundryFactoryTests {
     @Test("Foundry factories decode HTML entities and controls in visible text")
     func visibleTextDecoding() throws {
         // Given
-        let modelID = try #require(UUID(uuidString: "1768FE78-F99D-4A10-8938-0425D9D5A3F7"))
+        let modelId = try #require(UUID(uuidString: "1768FE78-F99D-4A10-8938-0425D9D5A3F7"))
         let rawData: FoundryJSONValue = .object([
             "_id": .string("encoded-rule"),
             "system": .object([
@@ -189,7 +189,7 @@ struct RuleFoundryFactoryTests {
 
         // When
         let model = RuleModel.foundryDocument(
-            id: modelID,
+            id: modelId,
             name: "Schild &amp; Schutz\u{0007}",
             descriptionHTML: "<p>H&auml;lt &#128; Schaden.</p><script>leak()</script>",
             tags: ["R&uuml;stung"],
@@ -214,7 +214,7 @@ struct RuleFoundryFactoryTests {
     @Test("Foundry value projection caps leaves while keeping the complete source payload")
     func valueProjectionCap() throws {
         // Given
-        let modelID = try #require(UUID(uuidString: "81B02E29-C87D-4BB0-96A0-764CA1FFB9B3"))
+        let modelId = try #require(UUID(uuidString: "81B02E29-C87D-4BB0-96A0-764CA1FFB9B3"))
         let system = Dictionary(uniqueKeysWithValues: (0...500).map { index in
             ("field\(index)", FoundryJSONValue.integer(Int64(index)))
         })
@@ -225,7 +225,7 @@ struct RuleFoundryFactoryTests {
 
         // When
         let model = RuleModel.foundryDocument(
-            id: modelID,
+            id: modelId,
             name: "Large Rule",
             descriptionHTML: nil,
             tags: [],
@@ -259,7 +259,7 @@ private func foundryManifest() -> FoundrySystemManifest {
 private func foundryRule() -> FoundryRuleDefinition {
     FoundryRuleDefinition(
         id: "Compendium.ds4.spells.Item.arcane-shield",
-        documentID: "arcane-shield",
+        documentId: "arcane-shield",
         packName: "spells",
         documentType: "Item",
         subtype: "spell",
@@ -267,7 +267,7 @@ private func foundryRule() -> FoundryRuleDefinition {
         name: "Arcane Shield",
         descriptionHTML: "<p>Shield &amp; ward</p>",
         imagePath: "icons/arcane-shield.webp",
-        folderID: "defense",
+        folderId: "defense",
         values: [
             FoundryRuleValue(path: "system.attributes.body.base", value: .integer(5))
         ],
@@ -280,7 +280,7 @@ private func foundryRule() -> FoundryRuleDefinition {
                 target: "Compendium.ds4.spells.Item.fireball",
                 label: "Fireball",
                 packName: "spells",
-                documentID: "fireball"
+                documentId: "fireball"
             )
         ],
         embeddedRules: [
@@ -299,7 +299,7 @@ private func foundryRule() -> FoundryRuleDefinition {
                     target: "Compendium.ds4.spells.Item.fireball",
                     label: "Embedded Reference",
                     packName: "spells",
-                    documentID: "fireball"
+                    documentId: "fireball"
                 )],
                 effects: [FoundryRuleEffect(
                     id: "embedded-effect",

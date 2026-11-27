@@ -311,18 +311,18 @@ extension MasterController {
         // See CODE_AUDIT_Game_Shareplay §5.8.
         if let sent = gameModel.sentDelivery(counter: model.counter) {
             guard sent.module == model.data.type, sent.itemId == model.data.id else { return false }
-            if let log = root.gameModel.logData[model.counter], log.messageID.sessionID == gameModel.deliverySessionId {
-                root.logGameController.updateMessage(messageID: log.messageID, player: model.sender.id)
+            if let log = root.gameModel.logData[model.counter], log.messageId.sessionId == gameModel.deliverySessionId {
+                root.logGameController.updateMessage(messageId: log.messageId, player: model.sender.id)
             }
             return sent.type == .reveal || sent.type == .store
         }
         guard let log = root.gameModel.logData[model.counter],
-              log.messageID.sessionID == gameModel.deliverySessionId,
+              log.messageId.sessionId == gameModel.deliverySessionId,
               log.module == model.data.type,
               log.itemId == model.data.id
         else { return false }
 
-        root.logGameController.updateMessage(messageID: log.messageID, player: model.sender.id)
+        root.logGameController.updateMessage(messageId: log.messageId, player: model.sender.id)
         return log.type == .reveal || log.type == .store
     }
 

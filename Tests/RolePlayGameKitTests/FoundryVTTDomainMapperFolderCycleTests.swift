@@ -73,9 +73,9 @@ private extension FoundryVTTDomainMapperFolderCycleTests {
     func folder(documentId: String, name: String, parentRawId: String?) -> FoundryDocumentFolder {
         FoundryDocumentFolder(
             id: "actors/Folder/\(documentId)",
-            documentID: documentId,
+            documentId: documentId,
             name: name,
-            parentID: parentRawId,
+            parentId: parentRawId,
             documentType: .actor,
             sort: 0,
             rawData: .object(["_id": .string(documentId), "name": .string(name)])
@@ -109,8 +109,8 @@ private extension FoundryVTTDomainMapperFolderCycleTests {
         )
         return try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-folder-cycle-test.json"),
-            sourceScopeID: try #require(UUID(uuidString: "5C0B1A57-3F3E-4D0B-9B52-0E3B8F6F2A12")),
+            sourceUrl: URL(filePath: "/tmp/foundry-folder-cycle-test.json"),
+            sourceScopeId: try #require(UUID(uuidString: "5C0B1A57-3F3E-4D0B-9B52-0E3B8F6F2A12")),
             selectedCategories: [.actors],
             resourceLoader: { _ in Data() }
         )

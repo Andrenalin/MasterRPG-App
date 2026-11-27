@@ -18,21 +18,8 @@ public extension NSManagedObject {
         return (items as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? T }
     }
 
-    /// Finds `existing`'s member matching `uuid`, or creates a fresh `Child`
-    /// in `self`'s own managed object context. `syncEntries` below maps every
-    /// entry of a to-many relationship through it.
-    func childOrNew<Child: NSManagedObject & CoreDataId>(_ uuid: UUID, in existing: [Child]) -> Child {
-        if let found = existing.first(where: { $0.uuid == uuid }) {
-            return found
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("\(Self.self) must belong to a managed object context before adding \(Child.self).")
-        }
-        return Child(context: managedObjectContext)
-    }
-
     /// Syncs a to-many Core Data relationship from an incoming list of snapshot entries: maps
-    /// each entry onto a found-or-new managed `Child` (via `childOrNew`, keyed by `childId`),
+    /// each entry onto a found-or-new managed `Child` (keyed by `childId`),
     /// then deletes any previously-held `current` children that didn't survive the sync.
     ///
     /// The relationship's inverse rule is `Nullify` in every conforming model, so entries
@@ -47,8 +34,24 @@ public extension NSManagedObject {
         childId: (Entry) -> UUID,
         map: (Entry, Child, Int) -> Void
     ) -> [Child] {
+        // One dictionary per call instead of a linear search per entry: O(n) rather than O(n²)
+        // for items with thousands of entries. First wins for a repeated uuid, as the search did.
+        // See CODE_AUDIT_29 §7.2.
+        var currentByUUID: [UUID: Child] = [:]
+        for child in current {
+            guard let uuid = child.uuid, currentByUUID[uuid] == nil else { continue }
+            currentByUUID[uuid] = child
+        }
         let newChildren = incoming.enumerated().map { index, entry -> Child in
-            let child = childOrNew(childId(entry), in: current)
+            let uuid = childId(entry)
+            let child: Child
+            if let found = currentByUUID[uuid] {
+                child = found
+            } else if let managedObjectContext {
+                child = Child(context: managedObjectContext)
+            } else {
+                preconditionFailure("\(Self.self) must belong to a managed object context before adding \(Child.self).")
+            }
             map(entry, child, index)
             return child
         }

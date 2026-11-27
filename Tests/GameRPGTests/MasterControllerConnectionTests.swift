@@ -329,14 +329,14 @@ struct MasterControllerDirectProxyTests {
     private static func transportMessage(
         role: GameType,
         senderID: UUID,
-        masterID: UUID
+        masterId: UUID
     ) -> GameNetworkModel {
         GameNetworkModel(
             counter: 1,
             proxyCounter: 0,
             type: .store,
             subType: .store,
-            masterId: masterID,
+            masterId: masterId,
             sender: GameSenderModel(
                 id: senderID,
                 role: role,
@@ -533,13 +533,13 @@ struct MasterControllerDirectProxyTests {
         let env = try await MasterControllerHarness.make(asProxy: false)
         let connectionID = UUID()
         let observerID = UUID()
-        let masterID = env.root.gameModel.gameConfig.master.id
+        let masterId = env.root.gameModel.gameConfig.master.id
         let bootstrap = GameNetworkModel(
             counter: 1,
             proxyCounter: 0,
             type: .store,
             subType: .store,
-            masterId: masterID,
+            masterId: masterId,
             sender: GameSenderModel(
                 id: observerID,
                 role: .observer,
@@ -565,7 +565,7 @@ struct MasterControllerDirectProxyTests {
     func mainMasterEnforcesTransportRoleMatrix() async throws {
         // Given
         let env = try await MasterControllerHarness.make(asProxy: false)
-        let masterID = env.root.gameModel.gameConfig.master.id
+        let masterId = env.root.gameModel.gameConfig.master.id
         let fileObserverID = UUID()
         let fileProxyID = UUID()
         env.root.gameModel.gameRoster = GameRosterModel(players: [
@@ -575,29 +575,29 @@ struct MasterControllerDirectProxyTests {
 
         // When / Then: Bonjour supports game players and observers.
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .player, senderID: UUID(), masterId: masterId),
             origin: .direct(UUID())
         ))
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .observer, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .observer, senderID: UUID(), masterId: masterId),
             origin: .direct(UUID())
         ))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .direct(UUID())
         )))
 
         // When / Then: SharePlay Messenger and Journal are player-only.
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .player, senderID: UUID(), masterId: masterId),
             origin: .sharePlay(UUID())
         ))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .observer, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .observer, senderID: UUID(), masterId: masterId),
             origin: .sharePlay(UUID())
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .sharePlay(UUID())
         )))
         // The Journal carries the file a player contributes, from a player that already speaks
@@ -605,29 +605,29 @@ struct MasterControllerDirectProxyTests {
         // §5.6). One this device never heard from is refused.
         let contributorID = UUID()
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: contributorID, masterID: masterID),
+            Self.transportMessage(role: .player, senderID: contributorID, masterId: masterId),
             origin: .sharePlay(UUID())
         ))
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: contributorID, masterID: masterID),
+            Self.transportMessage(role: .player, senderID: contributorID, masterId: masterId),
             origin: .file
         ))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .player, senderID: UUID(), masterId: masterId),
             origin: .file
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .observer, senderID: fileObserverID, masterID: masterID),
+            Self.transportMessage(role: .observer, senderID: fileObserverID, masterId: masterId),
             origin: .file
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: fileProxyID, masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: fileProxyID, masterId: masterId),
             origin: .file
         )))
 
         // A private proxy connection never enters the main master's ingress.
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .proxy(UUID())
         )))
     }
@@ -636,31 +636,31 @@ struct MasterControllerDirectProxyTests {
     func proxyMasterEnforcesTransportRoleMatrix() async throws {
         // Given
         let env = try await MasterControllerHarness.make(asProxy: true)
-        let masterID = env.root.gameModel.gameConfig.master.id
+        let masterId = env.root.gameModel.gameConfig.master.id
 
         // When / Then
         #expect(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .proxy(UUID())
         ))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .player, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .player, senderID: UUID(), masterId: masterId),
             origin: .proxy(UUID())
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .observer, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .observer, senderID: UUID(), masterId: masterId),
             origin: .proxy(UUID())
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .direct(UUID())
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .sharePlay(UUID())
         )))
         #expect(!(await env.master.accepts(
-            Self.transportMessage(role: .proxy, senderID: UUID(), masterID: masterID),
+            Self.transportMessage(role: .proxy, senderID: UUID(), masterId: masterId),
             origin: .file
         )))
     }
@@ -672,7 +672,7 @@ struct MasterControllerDirectProxyTests {
         let proxyID = UUID()
         let oldConnectionID = UUID()
         let newConnectionID = UUID()
-        let audioID = UUID()
+        let audioId = UUID()
         let publicPlayer = PlayerGameModel(
             id: proxyID,
             type: .player,
@@ -680,13 +680,13 @@ struct MasterControllerDirectProxyTests {
         )
         env.root.gameModel.gameRoster = GameRosterModel(players: [publicPlayer])
         env.root.audioRoot.audioGameControllable.applyAudio(
-            id: audioID,
+            id: audioId,
             for: [proxyID]
         )
         var firstMessage = Self.transportMessage(
             role: .proxy,
             senderID: proxyID,
-            masterID: env.root.gameModel.gameConfig.master.id
+            masterId: env.root.gameModel.gameConfig.master.id
         )
 
         // When: the first physical mirror connects, then disappears.
@@ -704,7 +704,7 @@ struct MasterControllerDirectProxyTests {
         #expect(env.root.gameModel.gameRoster.players.map(\.id) == [proxyID])
         #expect(
             env.root.audioRoot.gameControllable.gameModel
-                .playerReport(for: audioID) == [proxyID]
+                .playerReport(for: audioId) == [proxyID]
         )
 
         firstMessage.counter += 1

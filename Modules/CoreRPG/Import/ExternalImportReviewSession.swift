@@ -229,7 +229,7 @@ public final class ExternalImportReviewSession {
                 } else {
                     accumulator.mergedItemCount += 1
                 }
-                accumulator.importedItemIDs[item.module, default: []].insert(item.id)
+                accumulator.importedItemIds[item.module, default: []].insert(item.id)
                 completedItemCount += 1
             }
 
@@ -237,7 +237,7 @@ public final class ExternalImportReviewSession {
             phase = .repairing
             for module in Self.supportedModuleOrder {
                 try Task.checkCancellation()
-                guard let importedIDs = accumulator.importedItemIDs[module], !importedIDs.isEmpty,
+                guard let importedIds = accumulator.importedItemIds[module], !importedIds.isEmpty,
                       let root = rootManager.rootModel(for: module) else { continue }
 
                 // Folder and orphan repair can update parents/children which were not
@@ -245,7 +245,7 @@ public final class ExternalImportReviewSession {
                 // auxiliary indexes, before allowing those legacy editor operations to run;
                 // a snapshot of the whole module made rollback revert unrelated items that
                 // changed during the commit. See CODE_AUDIT_Folder §3.6.
-                let repairScope = root.itemControllable.externalImportRepairScope(importedIds: importedIDs)
+                let repairScope = root.itemControllable.externalImportRepairScope(importedIds: importedIds)
                 repairSnapshots.append(
                     RepairSnapshot(
                         module: module,
@@ -261,8 +261,8 @@ public final class ExternalImportReviewSession {
                 let failureReporter = ItemPersistenceFailureReporter()
                 await ItemPersistenceFailureScope.$reporter.withValue(failureReporter) {
                     await repair.repairImportedItems(
-                        reportModel: ValidateRepairModel(total: importedIDs.count, currentModule: module),
-                        importedIds: importedIDs
+                        reportModel: ValidateRepairModel(total: importedIds.count, currentModule: module),
+                        importedIds: importedIds
                     )
                 }
                 repairSnapshots[repairSnapshots.count - 1].afterRepair =

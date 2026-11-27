@@ -10,24 +10,24 @@ import Foundation
 public struct RuleSourceMetadata: Codable, Equatable, Hashable, Sendable {
     public init(
         sourceIdentifier: String = "",
-        systemID: String = "",
+        systemId: String = "",
         systemTitle: String = "",
         systemVersion: String = "",
         packageIdentifier: String = "",
         packageName: String = "",
-        documentID: String = "",
+        documentId: String = "",
         documentType: String = "",
         subtype: String = "",
         ruleCategory: String = "",
         imagePath: String = ""
     ) {
         self.sourceIdentifier = sourceIdentifier
-        self.systemID = systemID
+        self.systemId = systemId
         self.systemTitle = systemTitle
         self.systemVersion = systemVersion
         self.packageIdentifier = packageIdentifier
         self.packageName = packageName
-        self.documentID = documentID
+        self.documentId = documentId
         self.documentType = documentType
         self.subtype = subtype
         self.ruleCategory = ruleCategory
@@ -37,12 +37,12 @@ public struct RuleSourceMetadata: Codable, Equatable, Hashable, Sendable {
     public static let empty = RuleSourceMetadata()
 
     public var sourceIdentifier: String
-    public var systemID: String
+    public var systemId: String
     public var systemTitle: String
     public var systemVersion: String
     public var packageIdentifier: String
     public var packageName: String
-    public var documentID: String
+    public var documentId: String
     public var documentType: String
     public var subtype: String
     public var ruleCategory: String
@@ -50,6 +50,22 @@ public struct RuleSourceMetadata: Codable, Equatable, Hashable, Sendable {
 
     public var isEmpty: Bool {
         self == .empty
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case sourceIdentifier
+        case systemId = "systemID"
+        case systemTitle
+        case systemVersion
+        case packageIdentifier
+        case packageName
+        case documentId = "documentID"
+        case documentType
+        case subtype
+        case ruleCategory
+        case imagePath
     }
 }
 

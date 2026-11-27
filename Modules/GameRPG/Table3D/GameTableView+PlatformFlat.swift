@@ -127,8 +127,10 @@ private struct GameTableRealityContent: View {
     @State private var tableRotateLastAngle: Angle = .zero
     /// Same role as `tableMoveTracker`, for a rotate whose `.onEnded` never arrives.
     @State private var tableRotateTracker = StaleGestureTracker()
-    /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
-    /// first instead of both racing `GameTableModel`'s fog recomposite.
+    /// Tracks the in-flight room toggle/focus request so a rapid second tap supersedes the
+    /// first one's fog render (`replaceFogOfWarTask`). The first request still syncs the pawns
+    /// and broadcasts; that is harmless because both broadcasts carry the current state.
+    /// See CODE_AUDIT_29 §3.8.
     @State private var roomActionCoordinator = RoomActionCoordinator()
     /// The table view's geometry, which the pin action popover is placed in.
     @State private var viewport = GameTableViewport()

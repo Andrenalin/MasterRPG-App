@@ -23,7 +23,7 @@ struct RuleEntryTree: Sendable {
             indexedEntries[entry.id] = entry
         }
 
-        let cyclicEntryIds = Self.cyclicEntryIDs(in: indexedEntries)
+        let cyclicEntryIds = Self.cyclicEntryIds(in: indexedEntries)
         var resolvedParents: [UUID: UUID] = [:]
         for entry in entries {
             guard
@@ -58,7 +58,7 @@ struct RuleEntryTree: Sendable {
         nodes(parentId: nil, visited: [])
     }
 
-    func parentID(for entryId: UUID) -> UUID? {
+    func parentId(for entryId: UUID) -> UUID? {
         parentByEntryId[entryId]
     }
 
@@ -66,7 +66,7 @@ struct RuleEntryTree: Sendable {
         let hierarchy = RuleEntryTree(entries: entries)
         return entries.map { entry in
             var normalizedEntry = entry
-            normalizedEntry.parentId = hierarchy.parentID(for: entry.id)
+            normalizedEntry.parentId = hierarchy.parentId(for: entry.id)
             return normalizedEntry
         }
     }
@@ -177,7 +177,7 @@ struct RuleEntryTree: Sendable {
         }
         var removedIds = Set(requestedEntries.map(\.id))
         for entry in requestedEntries where entry.kind == .group {
-            removedIds.formUnion(descendantIDs(of: entry.id, in: entries))
+            removedIds.formUnion(descendantIds(of: entry.id, in: entries))
         }
 
         var remaining = entries.filter { !removedIds.contains($0.id) }
@@ -203,7 +203,7 @@ struct RuleEntryTree: Sendable {
         }
     }
 
-    private static func descendantIDs(
+    private static func descendantIds(
         of entryId: UUID,
         in entries: [RuleEntryModel]
     ) -> Set<UUID> {
@@ -224,7 +224,7 @@ struct RuleEntryTree: Sendable {
         return descendants
     }
 
-    private static func cyclicEntryIDs(
+    private static func cyclicEntryIds(
         in entriesById: [UUID: RuleEntryModel]
     ) -> Set<UUID> {
         var processed: Set<UUID> = []

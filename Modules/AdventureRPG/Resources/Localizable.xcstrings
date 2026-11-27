@@ -1283,6 +1283,23 @@
         }
       }
     },
+    "The Game tab is open. Choose \"%@\" there to start." : {
+      "comment" : "Shown by the Start Adventure Game intent when the Game tab is open but cannot start the game itself. The argument is the adventure name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Spiel-Tab ist geöffnet. Wähle dort „%@“, um zu starten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แท็บเกมเปิดอยู่ เลือก \"%@\" ที่นั่นเพื่อเริ่ม"
+          }
+        }
+      }
+    },
     "The summary of the story. Formatting is kept." : {
       "localizations" : {
         "de" : {

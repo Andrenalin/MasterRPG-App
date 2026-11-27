@@ -60,6 +60,23 @@ public extension ItemControllable {
         return await loadableUrl(itemId: itemId)
     }
 
+    /// The downloaded file of an entity's `FileRepresentation`, or `unavailable` thrown. Shared by
+    /// the Photo, Pdf and Space entities. See CODE_AUDIT_29 §9.3.
+    @MainActor func exportedFileUrl(itemId: UUID, unavailable: @autoclosure () -> any Error) async throws -> URL {
+        guard let url = await downloadedLoadableUrl(itemId: itemId) else { throw unavailable() }
+        return url
+    }
+
+    /// The PNG thumbnail of an entity's image representation for a module that renders QuickLook
+    /// thumbnails only (Pdf, Space), so the full-image cache is always empty. See CODE_AUDIT §5.9,
+    /// CODE_AUDIT_29 §9.3.
+    @MainActor func exportedThumbnailPngData(itemId: UUID, cacheController: (any ImageCacheControllable)?) async throws -> Data {
+        guard let cacheController, let model = itemSync(for: itemId) else {
+            throw AKImageEncodingError()
+        }
+        return try await cacheController.thumbnailPngData(for: itemId, item: model)
+    }
+
     @MainActor func loadableUrl(itemId: UUID) async -> URL? {
         guard let fileUrl = await self.item(for: itemId)?.fileUrl else { return nil }
         return await fileUrlDataController?.url(for: fileUrl, action: { $0 })

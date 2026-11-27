@@ -38,11 +38,11 @@ private struct RuleSourceMetadataGrid: View {
         Grid(alignment: .leading) {
             RuleSourceMetadataRow(title: "Source Identifier", value: metadata.sourceIdentifier)
             RuleSourceMetadataRow(title: "System", value: metadata.systemTitle)
-            RuleSourceMetadataRow(title: "System ID", value: metadata.systemID)
+            RuleSourceMetadataRow(title: "System ID", value: metadata.systemId)
             RuleSourceMetadataRow(title: "Version", value: metadata.systemVersion)
             RuleSourceMetadataRow(title: "Package", value: metadata.packageName)
             RuleSourceMetadataRow(title: "Package Identifier", value: metadata.packageIdentifier)
-            RuleSourceMetadataRow(title: "Document ID", value: metadata.documentID)
+            RuleSourceMetadataRow(title: "Document ID", value: metadata.documentId)
             RuleSourceMetadataRow(title: "Document Type", value: metadata.documentType)
             RuleSourceMetadataRow(title: "Subtype", value: metadata.subtype)
             RuleSourceMetadataRow(title: "Category", value: metadata.ruleCategory)

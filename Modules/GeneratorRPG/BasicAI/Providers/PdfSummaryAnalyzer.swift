@@ -27,10 +27,7 @@ struct PdfSummaryAnalyzer: Sendable {
     }
 
     func analyzeWithProgress(from pdfDocument: PDFDocument, resultModel: PdfSummaryAnalyzerResultModel, outputLanguage: String = "English") async throws -> PdfSummaryAnalysis {
-        // Check model availability
-        guard SystemLanguageModel.default.availability == .available else {
-            throw PdfSummaryAnalysisError.modelUnavailable
-        }
+        try AnalyzerRunner.requireModel()
 
         // Validate document
         guard pdfDocument.pageCount > 0 else {
@@ -59,7 +56,7 @@ struct PdfSummaryAnalyzer: Sendable {
 
         await resultModel.setPageProgress(PdfAnalysisProgress(currentPage: pageLimit, totalPages: pageLimit))
 
-        do {
+        return try await AnalyzerRunner.run(subject: .pdfAnalysis) {
             let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language.\n" + UntrustedPromptText.instruction
             let session = LanguageModelSession(instructions: activeInstructions)
             session.prewarm()
@@ -109,16 +106,6 @@ struct PdfSummaryAnalyzer: Sendable {
                 tags: GeneratedTagRules.cleaned(tags),
                 sections: sections
             )
-        } catch is CancellationError {
-            // A cancelled analysis stays a cancellation; it is not a "generation failed" message.
-            // See CODE_AUDIT_26 §5.114.
-            throw CancellationError()
-        } catch let error as PdfSummaryAnalysisError {
-            throw error
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(FoundationModelsErrorHandler.message(for: error, subject: .pdfAnalysis))
-        } catch {
-            throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
 
     }

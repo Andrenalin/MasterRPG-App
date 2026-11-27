@@ -81,24 +81,6 @@ extension EditController {
     }
 }
 
-// MARK: - AI Extraction
-
-#if !os(tvOS)
-extension EditController {
-    @MainActor func applyExtractedContent(_ content: TableSummaryAnalysis, to itemId: UUID, selection: TextSummaryPropertySelection) {
-        if selection.applyTitle {
-            reset(name: content.title, itemId: itemId)
-        }
-        if selection.applyDescription {
-            reset(description: content.description, itemId: itemId)
-        }
-        if selection.applyTags {
-            reset(tags: content.tags, itemId: itemId)
-        }
-    }
-}
-#endif
-
 // MARK: - QuickEntryEditor
 
 extension EditController {

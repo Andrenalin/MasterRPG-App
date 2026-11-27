@@ -16,8 +16,11 @@ import UIKit
 public struct ImageCacheControllableStorage: Sendable {
     @MainActor
     public init(fileUrlDataController: FileUrlDataController? = nil) {
-        imageCacheController = ImageCacheController()
-        thumbnailCacheController = ImageCacheController()
+        // Thumbnails keep the folder both used to share, so their disk cache stays valid; full
+        // images are never written to disk but get their own folder so a removal cannot delete a
+        // thumbnail. See CODE_AUDIT_29 §7.3.
+        imageCacheController = ImageCacheController(costLimit: 128 * ByteUnit.mebibyte, diskDirectoryName: "FullImageCache")
+        thumbnailCacheController = ImageCacheController(costLimit: 32 * ByteUnit.mebibyte, diskDirectoryName: "ImageCache")
         self.fileUrlDataController = fileUrlDataController
         observableImageCache = ObservableImageCache()
     }
@@ -260,8 +263,12 @@ public final class ObservableImageCache: Sendable {
     /// `imageByteLimit` bounds the decoded bitmaps of the full images next to the count: a 12 MP
     /// photo is about 48 MB and a decode can reach 200 MB, so 120 of them would be gigabytes.
     /// See CODE_AUDIT_28 §7.1.
-    public init(imageByteLimit: Int = 384 * ByteUnit.mebibyte) {
-        self.imageByteLimit = imageByteLimit
+    ///
+    /// The byte budget is the app's, shared by every module's cache (`ImageMemoryBudget.shared`):
+    /// four modules with a budget each held up to four times as much. See CODE_AUDIT_29 §7.3.
+    public init(budget: ImageMemoryBudget = .shared) {
+        self.budget = budget
+        budget.register(self)
 #if !os(macOS)
         memoryWarningTask = Task { @MainActor [weak self] in
             for await _ in NotificationCenter.default.notifications(named: UIApplication.didReceiveMemoryWarningNotification) {
@@ -279,9 +286,22 @@ public final class ObservableImageCache: Sendable {
     }
 #endif
 
-    private let imageByteLimit: Int
+    /// A cache with a budget of its own of `imageByteLimit` bytes (tests).
+    public convenience init(imageByteLimit: Int) {
+        self.init(budget: ImageMemoryBudget(byteLimit: imageByteLimit))
+    }
+
+    private let budget: ImageMemoryBudget
     private var imageCosts: [UUID: Int] = [:]
     private var imageBytes = 0
+    /// When each full image was last set, in the budget's sequence across all caches.
+    private var imageUses: [UUID: UInt64] = [:]
+
+    /// The least recently used full image of this cache and when it was used.
+    var oldestImageUse: (itemId: UUID, use: UInt64)? {
+        guard let itemId = imageOrder.first, let use = imageUses[itemId] else { return nil }
+        return (itemId, use)
+    }
 
     /// Drops every full image (thumbnails stay): what a memory warning does. The views load the
     /// ones still on screen again.
@@ -289,6 +309,7 @@ public final class ObservableImageCache: Sendable {
         imageCache.removeAll()
         imageOrder.removeAll()
         imageCosts.removeAll()
+        imageUses.removeAll()
         imageBytes = 0
     }
 
@@ -320,13 +341,15 @@ public final class ObservableImageCache: Sendable {
         }
         touch(itemId, in: &imageOrder, isNew: imageCache[itemId] == nil)
         imageCache[itemId] = image
+        imageUses[itemId] = budget.nextUse()
         let cost = ImageCacheController.bitmapCost(of: image)
         imageBytes += cost - (imageCosts.updateValue(cost, forKey: itemId) ?? 0)
-        // Over the count or the byte budget the least recently used images leave, but never the
-        // one just set.
-        while imageOrder.count > 1, imageOrder.count > Self.imageCountLimit || imageBytes > imageByteLimit {
+        // Over the count the least recently used images of this cache leave, over the app's byte
+        // budget those of any cache, but never the one just set.
+        while imageOrder.count > 1, imageOrder.count > Self.imageCountLimit {
             removeImage(for: imageOrder[0])
         }
+        budget.enforce(sparing: itemId, in: self)
     }
 
     public func setThumbnail(_ image: AKImage?, for itemId: UUID) {
@@ -342,6 +365,7 @@ public final class ObservableImageCache: Sendable {
     public func removeImage(for itemId: UUID) {
         imageCache.removeValue(forKey: itemId)
         imageOrder.removeAll { $0 == itemId }
+        imageUses.removeValue(forKey: itemId)
         imageBytes -= imageCosts.removeValue(forKey: itemId) ?? 0
     }
 
@@ -370,6 +394,61 @@ public final class ObservableImageCache: Sendable {
         while order.count > limit {
             let oldest = order.removeFirst()
             cache.removeValue(forKey: oldest)
+        }
+    }
+}
+
+// MARK: - Image Memory Budget
+
+/// The byte budget the full images of all `ObservableImageCache`s share. Over it the least
+/// recently used image of any cache leaves first. See CODE_AUDIT_29 §7.3.
+@MainActor
+public final class ImageMemoryBudget {
+    /// A 12 MP photo decodes to about 48 MB, so this holds a handful of full images in all.
+    public static let shared = ImageMemoryBudget(byteLimit: 384 * ByteUnit.mebibyte)
+
+    public init(byteLimit: Int) {
+        self.byteLimit = byteLimit
+    }
+
+    let byteLimit: Int
+    private var caches: [WeakCache] = []
+    private var lastUse: UInt64 = 0
+
+    private struct WeakCache {
+        weak var cache: ObservableImageCache?
+    }
+
+    /// The decoded bytes of the full images of every cache on this budget.
+    var cachedBytes: Int {
+        caches.reduce(0) { $0 + ($1.cache?.cachedImageBytes ?? 0) }
+    }
+
+    func register(_ cache: ObservableImageCache) {
+        caches.removeAll { $0.cache == nil }
+        caches.append(WeakCache(cache: cache))
+    }
+
+    func nextUse() -> UInt64 {
+        lastUse &+= 1
+        return lastUse
+    }
+
+    /// Evicts least recently used images across the caches until the budget holds, never
+    /// `itemId` of `cache` (just set; a single image over the budget is kept).
+    func enforce(sparing itemId: UUID, in cache: ObservableImageCache) {
+        var total = cachedBytes
+        while total > byteLimit {
+            let oldest = caches
+                .compactMap { entry -> (cache: ObservableImageCache, itemId: UUID, use: UInt64)? in
+                    guard let candidate = entry.cache, let oldest = candidate.oldestImageUse else { return nil }
+                    guard candidate !== cache || oldest.itemId != itemId else { return nil }
+                    return (candidate, oldest.itemId, oldest.use)
+                }
+                .min { $0.use < $1.use }
+            guard let oldest else { return }
+            oldest.cache.removeImage(for: oldest.itemId)
+            total = cachedBytes
         }
     }
 }

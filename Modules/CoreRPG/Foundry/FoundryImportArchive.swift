@@ -4,15 +4,23 @@ import Foundation
 
 /// One stable MasterRPG destination for a Foundry document or embedded element.
 public struct FoundryImportMappingReference: Codable, Equatable, Hashable, Sendable {
-    public init(module: NetworkModules, itemId: UUID, entryID: UUID? = nil) {
+    public init(module: NetworkModules, itemId: UUID, entryId: UUID? = nil) {
         self.module = module
         self.itemId = itemId
-        self.entryID = entryID
+        self.entryId = entryId
     }
 
     public let module: NetworkModules
     public let itemId: UUID
-    public let entryID: UUID?
+    public let entryId: UUID?
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case module
+        case itemId
+        case entryId = "entryID"
+    }
 }
 
 /// The import ledger keeps Foundry UUID links resolvable after projection into module models.
@@ -39,7 +47,7 @@ public struct FoundryImportArchive: Codable, Equatable, Identifiable, Sendable {
 
     public init(
         id: UUID,
-        sourceScopeID: UUID? = nil,
+        sourceScopeId: UUID? = nil,
         sourceFormat: String? = nil,
         sourceSemanticKey: String? = nil,
         importedAt: Date = .now,
@@ -49,7 +57,7 @@ public struct FoundryImportArchive: Codable, Equatable, Identifiable, Sendable {
         warnings: [String] = []
     ) {
         self.id = id
-        self.sourceScopeID = sourceScopeID ?? id
+        self.sourceScopeId = sourceScopeId ?? id
         self.sourceFormat = sourceFormat
         self.sourceSemanticKey = sourceSemanticKey
         self.formatVersion = Self.currentFormatVersion
@@ -62,7 +70,7 @@ public struct FoundryImportArchive: Codable, Equatable, Identifiable, Sendable {
 
     public let id: UUID
     /// Stable external-source identity used to derive every projected item UUID.
-    public let sourceScopeID: UUID?
+    public let sourceScopeId: UUID?
     /// Registry matching metadata. Optional so v1/v2 archives remain readable.
     public let sourceFormat: String?
     public let sourceSemanticKey: String?
@@ -72,6 +80,21 @@ public struct FoundryImportArchive: Codable, Equatable, Identifiable, Sendable {
     public let package: FoundryVTTImportPackage
     public let mappings: [FoundryImportMapping]
     public let warnings: [String]
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case sourceScopeId = "sourceScopeID"
+        case sourceFormat
+        case sourceSemanticKey
+        case formatVersion
+        case importedAt
+        case sourceFileName
+        case package
+        case mappings
+        case warnings
+    }
 }
 
 public struct FoundryImportArchiveSummary: Codable, Equatable, Identifiable, Sendable {
@@ -114,11 +137,11 @@ public enum FoundryImportArchiveStoreError: LocalizedError, Equatable, Sendable 
 /// The default location follows the app's existing iCloud-document fallback policy. A caller can
 /// inject a temporary directory for tests. Saving is atomic and only happens after an import commit.
 public actor FoundryImportArchiveStore {
-    private let directoryURL: URL
+    private let directoryUrl: URL
     private let maximumEncodedByteCount: Int
 
-    public init(directoryURL: URL? = nil, maximumEncodedByteCount: Int = 512 * ByteUnit.mebibyte) {
-        self.directoryURL = directoryURL ?? Self.defaultDirectoryURL
+    public init(directoryUrl: URL? = nil, maximumEncodedByteCount: Int = 512 * ByteUnit.mebibyte) {
+        self.directoryUrl = directoryUrl ?? Self.defaultDirectoryUrl
         self.maximumEncodedByteCount = maximumEncodedByteCount
     }
 
@@ -128,26 +151,26 @@ public actor FoundryImportArchiveStore {
             throw FoundryImportArchiveStoreError.archiveTooLarge(data.count)
         }
         let destination = url(for: archive.id)
-        try await FileManager.default.updateFile(coordinatingAccessTo: destination) { coordinatedURL in
+        try await FileManager.default.updateFile(coordinatingAccessTo: destination) { coordinatedUrl in
             try FileManager.default.createDirectory(
-                at: coordinatedURL.deletingLastPathComponent(),
+                at: coordinatedUrl.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            try data.write(to: coordinatedURL, options: .atomic)
+            try data.write(to: coordinatedUrl, options: .atomic)
         }
     }
 
     public func archive(id: UUID) async throws -> FoundryImportArchive? {
-        let archiveURL = url(for: id)
-        let status = try await FileManager.default.fileExists(coordinatingAccessAt: archiveURL)
+        let archiveUrl = url(for: id)
+        let status = try await FileManager.default.fileExists(coordinatingAccessAt: archiveUrl)
         guard status.exists, !status.isDirectory else { return nil }
         // The size is checked before the file is read, as `mapArchives` does, so a file synced
         // from elsewhere that exceeds the cap is not loaded whole. See CODE_AUDIT_26 §7.40.
-        if let fileSize = try? archiveURL.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+        if let fileSize = try? archiveUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize,
            fileSize > maximumEncodedByteCount {
             throw FoundryImportArchiveStoreError.archiveTooLarge(fileSize)
         }
-        let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: archiveURL)
+        let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: archiveUrl)
         guard data.count <= maximumEncodedByteCount else {
             throw FoundryImportArchiveStoreError.archiveTooLarge(data.count)
         }
@@ -163,8 +186,8 @@ public actor FoundryImportArchiveStore {
     /// for example after reinstalling the app or importing on another device.
     public func sourceRegistryEntries() async throws -> [ExternalImportSourceEntry] {
         let entries = try await mapArchives { archive in
-            let scopeID = archive.sourceScopeID ?? archive.id
-            let intrinsicScopeID = archive.package.manifest?.rawData
+            let scopeId = archive.sourceScopeId ?? archive.id
+            let intrinsicScopeId = archive.package.manifest?.rawData
                 .value(at: "source.instanceID")?.stringValue
                 .flatMap(UUID.init(uuidString:))
             let inferredFormat: String
@@ -177,7 +200,7 @@ public actor FoundryImportArchiveStore {
                 "\(archive.package.kind.rawValue):\($0.id)"
             }
             return ExternalImportSourceEntry(
-                scopeID: scopeID,
+                scopeId: scopeId,
                 format: archive.sourceFormat ?? inferredFormat,
                 semanticKey: semanticKey,
                 fileResourceAlias: nil,
@@ -186,30 +209,30 @@ public actor FoundryImportArchiveStore {
                 lastContentHash: archive.package.sourceSHA256,
                 createdAt: archive.importedAt,
                 lastImportedAt: archive.importedAt,
-                intrinsicScopeAlias: intrinsicScopeID == scopeID ? nil : intrinsicScopeID
+                intrinsicScopeAlias: intrinsicScopeId == scopeId ? nil : intrinsicScopeId
             )
         }
         var newestByScope: [UUID: ExternalImportSourceEntry] = [:]
         for entry in entries {
-            guard let existing = newestByScope[entry.scopeID] else {
-                newestByScope[entry.scopeID] = entry
+            guard let existing = newestByScope[entry.scopeId] else {
+                newestByScope[entry.scopeId] = entry
                 continue
             }
             if entry.lastImportedAt > existing.lastImportedAt {
-                newestByScope[entry.scopeID] = entry
+                newestByScope[entry.scopeId] = entry
             }
         }
         return newestByScope.values.sorted { lhs, rhs in
             if lhs.lastImportedAt != rhs.lastImportedAt {
                 return lhs.lastImportedAt > rhs.lastImportedAt
             }
-            return lhs.scopeID.uuidString < rhs.scopeID.uuidString
+            return lhs.scopeId.uuidString < rhs.scopeId.uuidString
         }
     }
 }
 
 private extension FoundryImportArchiveStore {
-    static var defaultDirectoryURL: URL {
+    static var defaultDirectoryUrl: URL {
         return FileManager.preferredRootUrl
             .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")
@@ -217,7 +240,7 @@ private extension FoundryImportArchiveStore {
     }
 
     func url(for id: UUID) -> URL {
-        directoryURL.appending(path: id.uuidString.lowercased()).appendingPathExtension("json")
+        directoryUrl.appending(path: id.uuidString.lowercased()).appendingPathExtension("json")
     }
 
     func decode(_ data: Data) throws -> FoundryImportArchive {
@@ -243,7 +266,7 @@ private extension FoundryImportArchiveStore {
         let urls: [URL]
         do {
             urls = try FileManager.default.contentsOfDirectory(
-                at: directoryURL,
+                at: directoryUrl,
                 includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
                 options: [.skipsHiddenFiles]
             )

@@ -36,11 +36,11 @@ extension FoundryMappingState {
             )
             guard let path,
                   let resource = resource(matching: path),
-                  let audioID = mediaID(path: path, module: .audio) else {
-                rawOnlyDocumentIDs.insert(sound.id)
+                  let audioId = mediaId(path: path, module: .audio) else {
+                rawOnlyDocumentIds.insert(sound.id)
                 return nil
             }
-            recordMapping(sourceID: sound.id, module: .audio, itemId: audioID)
+            recordMapping(sourceId: sound.id, module: .audio, itemId: audioId)
             let importedFilename = FoundryMediaNormalizer.plan(
                 for: resource.logicalPath,
                 expectedKind: .audio
@@ -49,7 +49,7 @@ extension FoundryMappingState {
             let fallbackName = importedFilename
                 ?? URL(filePath: resource.logicalPath).lastPathComponent
             let name = documentName.isEmpty ? fallbackName : documentName
-            return markdownLink(name: name, module: .audio, itemId: audioID)
+            return markdownLink(name: name, module: .audio, itemId: audioId)
         }
     }
 
@@ -95,7 +95,7 @@ extension FoundryMappingState {
                 target = matchingLevel(explicitIdentifier, in: levels)
                 if target == nil {
                     warnings.append(String(localized: "\(kind) \(child.document.name) names unknown level \(explicitIdentifier); it remains only in the raw archive.", bundle: .module))
-                    rawOnlyDocumentIDs.insert(child.document.id)
+                    rawOnlyDocumentIds.insert(child.document.id)
                 }
             } else {
                 target = child.containingLevel ?? initialLevel
@@ -118,7 +118,7 @@ extension FoundryMappingState {
 
     func matchingLevel(_ identifier: String, in levels: [FoundryDocument]) -> FoundryDocument? {
         levels.first { level in
-            level.documentID == identifier
+            level.documentId == identifier
                 || level.id == identifier
                 || level.sourceUUID == identifier
                 || level.rawData["uuid"]?.stringValue == identifier
@@ -174,7 +174,7 @@ extension FoundryMappingState {
                   gridUnits: height,
                   gridSize: gridSize
               ) else { return nil }
-        let actorID = token.rawData["actorId"]?.stringValue.flatMap { actorsByDocumentID[$0] }
+        let actorId = token.rawData["actorId"]?.stringValue.flatMap { actorsByDocumentId[$0] }
         let texture = token.rawData.value(at: "texture.src")?.stringValue ?? token.imagePath
         let units = max(width, height)
         let size: MapPinModel.MapPinSize = switch units {
@@ -186,10 +186,10 @@ extension FoundryMappingState {
         default: .colossal
         }
         return MapPinModel(
-            id: stableID("\(token.id)#map-pin"),
+            id: stableId("\(token.id)#map-pin"),
             name: token.name,
-            photoId: mediaID(path: texture, module: .photo),
-            characterId: actorID,
+            photoId: mediaId(path: texture, module: .photo),
+            characterId: actorId,
             location: CGPoint(x: centerX, y: centerY),
             size: size,
             isShown: !(token.rawData["hidden"]?.boolValue ?? false),
@@ -206,7 +206,7 @@ extension FoundryMappingState {
     ) -> MapWallModel? {
         guard let rawCoordinates = wall.rawData["c"]?.arrayValue, rawCoordinates.count >= 4 else {
             emitGeometryWarning(.wall)
-            rawOnlyDocumentIDs.insert(wall.id)
+            rawOnlyDocumentIds.insert(wall.id)
             return nil
         }
         let coordinates = rawCoordinates.prefix(4).compactMap {
@@ -230,7 +230,7 @@ extension FoundryMappingState {
                   defaultValue: 0
               ) else {
             emitGeometryWarning(.wall)
-            rawOnlyDocumentIDs.insert(wall.id)
+            rawOnlyDocumentIds.insert(wall.id)
             return nil
         }
         let rawMinimumElevation = firstValue(
@@ -245,7 +245,7 @@ extension FoundryMappingState {
         if let rawMinimumElevation {
             guard let value = FoundryProjectionGeometry.coordinate(rawMinimumElevation) else {
                 emitGeometryWarning(.wall)
-                rawOnlyDocumentIDs.insert(wall.id)
+                rawOnlyDocumentIds.insert(wall.id)
                 return nil
             }
             resolvedMinimumElevation = value
@@ -256,7 +256,7 @@ extension FoundryMappingState {
         if let rawMaximumElevation {
             guard let value = FoundryProjectionGeometry.coordinate(rawMaximumElevation) else {
                 emitGeometryWarning(.wall)
-                rawOnlyDocumentIDs.insert(wall.id)
+                rawOnlyDocumentIds.insert(wall.id)
                 return nil
             }
             resolvedMaximumElevation = value
@@ -266,7 +266,7 @@ extension FoundryMappingState {
         let identity = identitySuffix.map { "\(wall.id)#wall#\($0)" } ?? "\(wall.id)#wall"
         let sourceIdentifier = identitySuffix.map { "\(wall.id)#level#\($0)" } ?? wall.id
         return MapWallModel(
-            id: stableID(identity),
+            id: stableId(identity),
             sourceIdentifier: sourceIdentifier,
             start: CGPoint(x: coordinates[0], y: coordinates[1]),
             end: CGPoint(x: coordinates[2], y: coordinates[3]),

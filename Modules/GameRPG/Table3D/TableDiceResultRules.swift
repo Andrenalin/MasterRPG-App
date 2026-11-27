@@ -62,6 +62,9 @@ enum TableDiceRest {
     /// How long a seat's dice must lie still before their result appears, so a die passing
     /// through its goal for a frame does not flash the popover.
     static let settleDuration: Duration = .milliseconds(250)
+    /// How often the dice groups are scanned while nothing on the table moved (a remote pick-up
+    /// that is not an action still shows within this time). See CODE_AUDIT_29 §7.4.
+    static let idleScanInterval: Duration = .milliseconds(250)
 
     static func isAtRest(pose: Pose3D, goal: Pose3D) -> Bool {
         let offset = pose.position - goal.position

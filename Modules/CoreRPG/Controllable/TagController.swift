@@ -84,7 +84,7 @@ public struct TagController: Sendable {
                 let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
                 // Grows with every tagged item/entry in every module; batch the fetch
                 // instead of materializing the whole table at once.
-                request.fetchBatchSize = 500
+                request.fetchBatchSize = CoreDataFetchLimits.batchSize
                 guard let tagModels = try context.fetch(request) as? [TagDataModel] else {
                     Logger.coreDataController.error("tagdata error: unexpected fetch result type")
                     return nil

@@ -32,10 +32,9 @@ final class MapGameModel {
     /// session-only: the clone is gone when the game ends.
     private(set) var battleCopySources: [UUID: UUID] = [:]
     private var authoritativeGenerations: [UUID: AuthoritativeGeneration] = [:]
-    private var lastActivatedRoomIds: [UUID: UUID] = [:]
     /// The room the game master last revealed or focused, per map. A photo shown while the map
-    /// is on screen opens next to it. Unlike `lastActivatedRoomIds`, closing a room does not
-    /// record it.
+    /// is on screen opens next to it, and a battle takes its opponents from it. Closing a room
+    /// does not record it. See CODE_AUDIT_29 §5.16.
     private var lastOpenedRoomIds: [UUID: UUID] = [:]
 
     func recordAuthoritativeGeneration(_ data: NetworkCodableDataType) {
@@ -54,14 +53,6 @@ final class MapGameModel {
 
     func authoritativeGeneration(for itemId: UUID) -> AuthoritativeGeneration? {
         authoritativeGenerations[itemId]
-    }
-
-    func recordActivatedRoom(_ roomId: UUID, for mapId: UUID) {
-        lastActivatedRoomIds[mapId] = roomId
-    }
-
-    func lastActivatedRoomId(for mapId: UUID) -> UUID? {
-        lastActivatedRoomIds[mapId]
     }
 
     func recordOpenedRoom(_ roomId: UUID, for mapId: UUID) {
@@ -85,7 +76,6 @@ final class MapGameModel {
     func reset() {
         playerPins = []
         authoritativeGenerations = [:]
-        lastActivatedRoomIds = [:]
         lastOpenedRoomIds = [:]
         battleCharacterCopyIds = []
         battleCopySources = [:]

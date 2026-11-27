@@ -16,6 +16,10 @@ import SwiftUI
 /// once, when the popover/sheet closes, and only if the draft is a valid
 /// 4-digit code; closing with an incomplete draft leaves `code` untouched.
 struct GameJoinCodeSetupButton: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding14: CGFloat = 14
+    @ScaledMetric private var padding8: CGFloat = 8
+    @ScaledMetric private var spacing6: CGFloat = 6
     let title: LocalizedStringKey
     @Binding var code: String
 
@@ -27,15 +31,15 @@ struct GameJoinCodeSetupButton: View {
             draftCode = code
             isPresented = true
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: spacing6) {
                 Image(systemName: "wifi")
                 Text(code)
                     .fontDesign(.monospaced)
                     .speechSpellsOutCharacters()
             }
 #if !os(visionOS)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, padding14)
+            .padding(.vertical, padding8)
 #endif
         }
 #if os(visionOS)
@@ -82,13 +86,15 @@ struct GameJoinCodeSetupButton: View {
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
 private struct GameJoinCodeSetupButtonPresentedContentView: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var spacing16: CGFloat = 16
     let title: LocalizedStringKey
     @Binding var draftCode: String
     @Binding var isPresented: Bool
     let onRandomize: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: spacing16) {
             Text(title, bundle: .module)
                 .font(.headline)
             GameJoinCodeField(title: title, code: $draftCode, onRandomize: onRandomize) {

@@ -15,6 +15,6 @@ struct MasterSideMenu: View {
 }
 
 #Preview(traits: .mockData) {
-    MasterSideMenu(root: GameRoot.previewFixture(), adventureId: GamePreviewData.adventureID)
+    MasterSideMenu(root: GameRoot.previewFixture(), adventureId: GamePreviewData.adventureId)
         .environment(GameScreenModel())
 }

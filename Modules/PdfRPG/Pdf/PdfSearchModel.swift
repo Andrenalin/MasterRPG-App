@@ -18,6 +18,11 @@ final class PdfSearchModel: Sendable {
 #endif
     
     private(set) var searchText: String = ""
+    /// The pending re-highlight of the current match: a fast next/previous replaces it, so an
+    /// old match is not highlighted again after the user moved on. See CODE_AUDIT_29 §3.7.
+    @ObservationIgnored var highlightTask: Task<Void, Never>? {
+        didSet { oldValue?.cancel() }
+    }
     var isSearching: Bool = false
 #if os(tvOS)
     var matches: [String] = []

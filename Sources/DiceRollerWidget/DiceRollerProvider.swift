@@ -19,10 +19,12 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
         )
     }
 
+    /// The gallery gets the sample roll; a transient display such as the Smart Stack gets the
+    /// last real one. See CODE_AUDIT_29 §4.2.
     func snapshot(for configuration: ConfigureDiceWidgetIntent, in context: Context) async -> DiceRollerEntry {
         DiceRollerEntry(
             date: Date(),
-            snapshot: .preview,
+            snapshot: context.isPreview ? .preview : DiceWidgetSnapshot.loadFromUserDefaults(),
             intent: configuration
         )
     }
@@ -58,6 +60,14 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
 
     /// How long a roll counts as recent for the Smart Stack.
     private static let recentRollInterval: TimeInterval = 300
+
+    /// Smart Stack relevance after a roll. See CODE_AUDIT_29 §9.10.
+    private enum Relevance {
+        static let recentRollScore: Float = 75
+        static let earlierRollScore: Float = 50
+        static let earlierRollDuration: TimeInterval = 1_800
+        static let noRollScore: Float = 10
+    }
     
     // iOS 18+: Provide recommended configurations
     func recommendations() -> [AppIntentRecommendation<ConfigureDiceWidgetIntent>] {
@@ -68,12 +78,12 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
         if let timestamp = snapshot.lastRoll?.timestamp {
             let timeSinceRoll = date.timeIntervalSince(timestamp)
             if timeSinceRoll < Self.recentRollInterval {
-                return TimelineEntryRelevance(score: 75, duration: 300)
+                return TimelineEntryRelevance(score: Relevance.recentRollScore, duration: Self.recentRollInterval)
             }
-            return TimelineEntryRelevance(score: 50, duration: 1800)
+            return TimelineEntryRelevance(score: Relevance.earlierRollScore, duration: Relevance.earlierRollDuration)
         }
 
-        return TimelineEntryRelevance(score: 10)
+        return TimelineEntryRelevance(score: Relevance.noRollScore)
     }
 }
 

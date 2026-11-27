@@ -22,7 +22,9 @@ public enum PdfSummaryAnalysisError: LocalizedError {
             return String(localized: "Failed to extract text from the PDF document.", bundle: .module)
         case .modelUnavailable:
             return String(
-                localized: "Apple Intelligence is not available. PDF summary analysis requires it.",
+                // Subject-neutral: the table, character and extraction runs throw it too.
+                // See CODE_AUDIT_29 §5.18.
+                localized: "Apple Intelligence is not available. Turn it on in Settings to use this feature.",
                 bundle: .module
             )
         case .generationFailed(let details):

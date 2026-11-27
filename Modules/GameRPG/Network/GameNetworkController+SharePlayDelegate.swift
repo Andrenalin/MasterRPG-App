@@ -111,6 +111,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
             }
             sharePlayStore.bindPlayer(
                 named: message.senderName,
+                playerId: message.sender.id,
                 hasTable: message.senderPlatform == .visionOS,
                 participantId: id
             )
@@ -129,6 +130,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
         if await !playerDelegate.isSharePlayMasterParticipant(id: id) {
             sharePlayStore.bindPlayer(
                 named: message.senderName,
+                playerId: message.sender.id,
                 hasTable: message.senderPlatform == .visionOS,
                 participantId: id
             )

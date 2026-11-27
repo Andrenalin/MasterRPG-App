@@ -132,22 +132,22 @@ extension RPGSharePlayController {
             masterParticipantId: masterParticipantId,
             playerSeatCount: PlayerSeat.playerSeatCount
         )
-        var names: [TableSeatIdentifier: [String]] = [:]
+        var players: [TableSeatIdentifier: [TableSeatPlayer]] = [:]
         for (participantId, seatIndex) in seats {
-            let name: String?
-            if participantId == masterParticipantId {
-                name = gameModel?.gameConfig.master.name
-            } else if let player = participantPlayers[participantId], player.hasTable {
-                name = player.name
+            let player: TableSeatPlayer?
+            if participantId == masterParticipantId, let master = gameModel?.gameConfig.master {
+                player = TableSeatPlayer(id: master.id, name: master.name)
+            } else if let participant = participantPlayers[participantId], participant.hasTable {
+                player = TableSeatPlayer(id: participant.id, name: participant.name)
             } else {
-                name = nil
+                player = nil
             }
-            guard let name, !name.isEmpty else { continue }
-            names[TableSeatIdentifier(seatIndex), default: []].append(name)
+            guard let player, !player.name.isEmpty else { continue }
+            players[TableSeatIdentifier(seatIndex), default: []].append(player)
         }
-        names = names.mapValues { $0.sorted() }
-        if gameTableModel.seatPlayerNames != names {
-            gameTableModel.seatPlayerNames = names
+        players = players.mapValues(TableSeatPlayer.displayOrder)
+        if gameTableModel.seatPlayers != players {
+            gameTableModel.seatPlayers = players
         }
     }
 

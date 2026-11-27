@@ -61,7 +61,9 @@ struct RunGeneratorIntent: AppIntent, ProgressReportingIntent {
             } else {
                 text = try await GeneratorIntentPrompt.generate(instructions: instructions, prompt: prompt, progress: progress)
             }
-        } catch let error as LanguageModelSession.GenerationError {
+        } catch where FoundationModelsErrorHandler.Kind(error) != nil {
+            // Spoken, not an intent failure, for both model error types (`LanguageModelError` on
+            // iOS 27). See CODE_AUDIT_29 §4.1.
             return .result(value: "", dialog: .verbatim(FoundationModelsErrorHandler.handleError(error)))
         }
         self.progress.completedUnitCount = self.progress.totalUnitCount
@@ -142,8 +144,9 @@ enum GeneratorIntentPrompt {
         }
 
         func report(characters: Int) {
-            // About four characters per token; never reports done before the stream ends.
-            progress.completedUnitCount = min(Int64(characters / 4), progress.totalUnitCount - 1)
+            // The limiter's characters-per-token estimate; never reports done before the stream
+            // ends. See CODE_AUDIT_29 §9.8.
+            progress.completedUnitCount = min(Int64(characters / FoundationModelInputLimiter.charactersPerToken), progress.totalUnitCount - 1)
         }
     }
 

@@ -15,6 +15,46 @@ enum BatchItemStatus: Sendable {
     case failed(String)
 }
 
+/// The run loop both batch views share: one item after the other, each with its status, a
+/// cancellation ending the run (never shown as "failed"). See CODE_AUDIT_29 §9.1, §5.18.
+@MainActor
+enum BatchItemRunner {
+    enum Outcome {
+        case completed
+        /// The item has nothing to analyze.
+        case skipped
+    }
+
+    static func run(
+        ids: [UUID],
+        setStatus: (UUID, BatchItemStatus) -> Void,
+        step: (UUID) async throws -> Outcome
+    ) async {
+        for id in ids {
+            guard !Task.isCancelled else { return }
+            setStatus(id, .analyzing)
+            do {
+                let outcome = try await step(id)
+                guard !Task.isCancelled else { return setStatus(id, .pending) }
+                setStatus(id, outcome == .completed ? .completed : .skipped)
+            } catch is CancellationError {
+                // The item was not analyzed: it is pending again, not "failed" or still spinning.
+                return setStatus(id, .pending)
+            } catch {
+                guard !Task.isCancelled else { return setStatus(id, .pending) }
+                setStatus(id, .failed(error.localizedDescription))
+            }
+        }
+    }
+
+    /// The name a row shows: an item without a name is "Untitled", never its id.
+    /// See CODE_AUDIT_29 §8.4.
+    static func displayName(_ name: String?) -> String {
+        guard let name, !name.isEmpty else { return String(localized: "Untitled", bundle: .module) }
+        return name
+    }
+}
+
 /// One item row of a batch extraction: status icon, name and status text.
 struct BatchItemStatusRow: View {
     let name: String

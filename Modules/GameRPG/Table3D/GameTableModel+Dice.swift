@@ -133,7 +133,7 @@ extension GameTableModel {
     /// The d6 color of every pool slot this device can tell, from the dice sets it knows: the
     /// local seat's own focused set, the shared set of the player at any other seat, and the
     /// rolls of the guests. A die's color is the one its set has, so nothing is synced for it.
-    func dieColors(focused: DiceModel?, shared: [DiceModel]) -> TableDieColors {
+    func dieColors(focused: DiceModel?, shared: (TableSeatPlayer) -> DiceModel?) -> TableDieColors {
         func slots(of dice: DiceModel) -> [TableDieKind: [Int: String]] {
             TableDieColors.slots(
                 dice: dice.dice.map { (sides: $0.die.max, colorCode: $0.colorCode) },
@@ -145,8 +145,7 @@ extension GameTableModel {
         for seat in setup.seats where seat.id != PlayerSeat.guestSeat {
             if seat.id == localSeat {
                 if let focused { colors.set(slots(of: focused), seat: seat.id.rawValue) }
-            } else if let dice = (seatPlayerNames[seat.id] ?? []).lazy
-                .compactMap({ name in shared.first { $0.name == name } }).first {
+            } else if let dice = (seatPlayers[seat.id] ?? []).lazy.compactMap(shared).first {
                 colors.set(slots(of: dice), seat: seat.id.rawValue)
             }
         }

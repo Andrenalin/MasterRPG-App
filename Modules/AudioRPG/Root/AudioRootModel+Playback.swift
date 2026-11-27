@@ -173,8 +173,13 @@ extension AudioRootModel {
     /// game to pause it, so the other devices stop with this one.
     func remove(id: UUID, isGameRunning: Bool, networkActions: NetworkActions?) {
         let isGameRunning = isGameRunning && IntentGameContext.canControlGameAudio()
-        if isGameRunning, audioController.model.isPlaying, audioController.model.currentId == id {
-            networkActions?.game(gameController.requestPlay(id: id), .playAudio, nil)
+        // A pause, not `requestPlay(id:)`: that request toggles on the playing *root*, so for the
+        // current track it told the players to play, and for a playlist root it sent nothing.
+        // See CODE_AUDIT_29 §5.9.
+        if isGameRunning, audioController.model.isPlaying,
+           audioController.model.currentId == id || gameController.playingRootId == id,
+           let pause = gameController.requestPause() {
+            networkActions?.game(pause, .playAudio, nil)
         }
         audioController.removeAudio(id: id)
     }

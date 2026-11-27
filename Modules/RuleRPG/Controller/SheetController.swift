@@ -132,7 +132,7 @@ extension SheetController: SheetControllable {
         }
         guard !sheetModel.isFolded else { return }
 
-        let existingEntries = entrySheetsByID(
+        let existingEntries = entrySheetsById(
             in: sheetModel.entries,
             ownerId: model.id
         )
@@ -236,7 +236,7 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor
-    private func entrySheetsByID(
+    private func entrySheetsById(
         in sheets: [SheetModel],
         ownerId: UUID
     ) -> [UUID: SheetModel] {

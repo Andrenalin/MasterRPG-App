@@ -98,7 +98,7 @@ public extension FileUrl {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var hasher = SHA256()
-        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+        while let chunk = try handle.read(upToCount: ByteUnit.mebibyte), !chunk.isEmpty {
             hasher.update(data: chunk)
         }
         return Data(hasher.finalize()).base64EncodedString()

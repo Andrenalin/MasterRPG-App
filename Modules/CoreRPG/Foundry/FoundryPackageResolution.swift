@@ -256,7 +256,7 @@ enum FoundryPackageResourceResolver {
     static func resolve(
         assetPaths: [String],
         packageDirectory: String?,
-        packageID: String,
+        packageId: String,
         basePath: String,
         contains: (String) -> Bool,
         data: (String) throws -> Data?,
@@ -280,7 +280,7 @@ enum FoundryPackageResourceResolver {
             for candidate in candidates(
                 for: logicalPath,
                 packageDirectory: packageDirectory,
-                packageID: packageID,
+                packageId: packageId,
                 basePath: basePath
             ) where contains(candidate) {
                 if let known = resolvedByPackagePath[candidate] {
@@ -321,7 +321,7 @@ enum FoundryPackageResourceResolver {
     static func candidates(
         for logicalPath: String,
         packageDirectory: String?,
-        packageID: String,
+        packageId: String,
         basePath: String
     ) -> [String] {
         let encodedPath = String(logicalPath
@@ -332,7 +332,7 @@ enum FoundryPackageResourceResolver {
         guard let clean = encodedPath.removingPercentEncoding else { return [] }
         var result: [String] = []
         if let packageDirectory {
-            let prefix = "\(packageDirectory)/\(packageID)/"
+            let prefix = "\(packageDirectory)/\(packageId)/"
             if clean.hasPrefix(prefix),
                let mapped = try? FoundryPackagePath.join(basePath, String(clean.dropFirst(prefix.count))) {
                 result.append(mapped)

@@ -15,9 +15,7 @@ struct TableSummaryAnalyzer: Sendable {
     }
 
     func analyze(entriesText: String, resultModel: TableSummaryAnalyzerResultModel, outputLanguage: String = "English") async throws -> TableSummaryAnalysis {
-        guard SystemLanguageModel.default.availability == .available else {
-            throw PdfSummaryAnalysisError.modelUnavailable
-        }
+        try AnalyzerRunner.requireModel()
 
         let truncated = FoundationModelInputLimiter.limitedText(entriesText, maxCharacters: maxCharacters)
 
@@ -32,23 +30,13 @@ struct TableSummaryAnalyzer: Sendable {
 
         var latestContent: TableSummaryAnalysis.PartiallyGenerated?
 
-        do {
+        try await AnalyzerRunner.run(subject: .table) {
             for try await snapshot in stream {
                 let content = snapshot.content
                 latestContent = content
                 let progress = TableSummaryAnalysisProgress(content)
                 await resultModel.setAnalysisProgress(progress)
             }
-        } catch is CancellationError {
-            // A cancelled analysis stays a cancellation; it is not a "generation failed" message.
-            // See CODE_AUDIT_26 §5.114.
-            throw CancellationError()
-        } catch let error as PdfSummaryAnalysisError {
-            throw error
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(FoundationModelsErrorHandler.message(for: error, subject: .table))
-        } catch {
-            throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
 
         guard let partial = latestContent,

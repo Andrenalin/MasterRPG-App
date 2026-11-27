@@ -11,8 +11,8 @@ import Foundation
 public actor ExternalImportSourceRegistry {
     public static let shared = ExternalImportSourceRegistry()
 
-    public init(directoryURL: URL? = nil) {
-        self.explicitDirectoryUrl = directoryURL
+    public init(directoryUrl: URL? = nil) {
+        self.explicitDirectoryUrl = directoryUrl
     }
 
     public func resolve(
@@ -21,7 +21,7 @@ public actor ExternalImportSourceRegistry {
     ) async throws -> ExternalImportSourceResolution {
         let storedEntries = try await load()
         let entries = Self.merging(storedEntries, with: fallbackEntries)
-        let aliases = Self.aliases(for: descriptor.sourceURL)
+        let aliases = Self.aliases(for: descriptor.sourceUrl)
         return Self.resolve(descriptor, among: entries, aliases: aliases)
     }
 
@@ -36,20 +36,20 @@ public actor ExternalImportSourceRegistry {
         fallbackEntries: [ExternalImportSourceEntry] = [],
         claimedAt: Date = .now
     ) async throws -> ExternalImportSourceClaimResult {
-        let aliases = Self.aliases(for: descriptor.sourceURL)
-        let newCopyScopeID: UUID = switch intent {
-        case .selectedNew(let scopeID): scopeID
+        let aliases = Self.aliases(for: descriptor.sourceUrl)
+        let newCopyScopeId: UUID = switch intent {
+        case .selectedNew(let scopeId): scopeId
         case .resolved, .selectedExisting: UUID()
         }
-        let destination = indexURL
-        return try await FileManager.default.updateFile(coordinatingAccessTo: destination) { coordinatedURL in
-            let storedEntries = try Self.decodeEntriesIfPresent(at: coordinatedURL)
+        let destination = indexUrl
+        return try await FileManager.default.updateFile(coordinatingAccessTo: destination) { coordinatedUrl in
+            let storedEntries = try Self.decodeEntriesIfPresent(at: coordinatedUrl)
             let resolutionEntries = Self.merging(storedEntries, with: fallbackEntries)
             let latestResolution = Self.resolve(
                 descriptor,
                 among: resolutionEntries,
                 aliases: aliases,
-                newCopyScopeID: newCopyScopeID
+                newCopyScopeId: newCopyScopeId
             )
 
             let result = Self.revalidate(
@@ -59,38 +59,38 @@ public actor ExternalImportSourceRegistry {
                 entries: resolutionEntries,
                 aliases: aliases
             )
-            guard case .claimed(let scopeID) = result else { return result }
+            guard case .claimed(let scopeId) = result else { return result }
 
             let updatedEntries = Self.registering(
-                scopeID: scopeID,
+                scopeId: scopeId,
                 descriptor: descriptor,
                 aliases: aliases,
                 importedAt: claimedAt,
                 in: storedEntries
             )
-            try Self.write(updatedEntries, to: coordinatedURL)
+            try Self.write(updatedEntries, to: coordinatedUrl)
             return result
         }
     }
 
     /// Registers a newly chosen scope or refreshes the aliases of an existing one.
     public func register(
-        scopeID: UUID,
+        scopeId: UUID,
         descriptor: ExternalImportSourceDescriptor,
         importedAt: Date = .now
     ) async throws {
-        let aliases = Self.aliases(for: descriptor.sourceURL)
-        let destination = indexURL
-        try await FileManager.default.updateFile(coordinatingAccessTo: destination) { coordinatedURL in
-            let entries = try Self.decodeEntriesIfPresent(at: coordinatedURL)
+        let aliases = Self.aliases(for: descriptor.sourceUrl)
+        let destination = indexUrl
+        try await FileManager.default.updateFile(coordinatingAccessTo: destination) { coordinatedUrl in
+            let entries = try Self.decodeEntriesIfPresent(at: coordinatedUrl)
             let updatedEntries = Self.registering(
-                scopeID: scopeID,
+                scopeId: scopeId,
                 descriptor: descriptor,
                 aliases: aliases,
                 importedAt: importedAt,
                 in: entries
             )
-            try Self.write(updatedEntries, to: coordinatedURL)
+            try Self.write(updatedEntries, to: coordinatedUrl)
         }
     }
 
@@ -103,7 +103,7 @@ public actor ExternalImportSourceRegistry {
 
     /// Resolved on every use (not captured at init), so the shared registry follows the iCloud
     /// root after an identity change. See CODE_AUDIT_19 §3.8.
-    private var directoryURL: URL {
+    private var directoryUrl: URL {
         explicitDirectoryUrl ?? FileManager.preferredRootUrl
             .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")
@@ -124,14 +124,14 @@ extension ExternalImportSourceRegistry {
         let path: String
     }
 
-    var indexURL: URL {
-        directoryURL.appending(path: "sources.json")
+    var indexUrl: URL {
+        directoryUrl.appending(path: "sources.json")
     }
 
     func load() async throws -> [ExternalImportSourceEntry] {
-        let status = try await FileManager.default.fileExists(coordinatingAccessAt: indexURL)
+        let status = try await FileManager.default.fileExists(coordinatingAccessAt: indexUrl)
         guard status.exists, !status.isDirectory else { return [] }
-        let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: indexURL)
+        let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: indexUrl)
         return try Self.decodeEntries(from: data)
     }
 
@@ -158,12 +158,12 @@ extension ExternalImportSourceRegistry {
     ) -> [ExternalImportSourceEntry] {
         var byScope: [UUID: ExternalImportSourceEntry] = [:]
         for entry in fallbackEntries {
-            guard let existing = byScope[entry.scopeID] else {
-                byScope[entry.scopeID] = entry
+            guard let existing = byScope[entry.scopeId] else {
+                byScope[entry.scopeId] = entry
                 continue
             }
             if entry.lastImportedAt > existing.lastImportedAt {
-                byScope[entry.scopeID] = entry
+                byScope[entry.scopeId] = entry
             }
         }
 
@@ -171,16 +171,16 @@ extension ExternalImportSourceRegistry {
         // its newest entry for a scope even when a synced archive has a later import timestamp.
         var storedByScope: [UUID: ExternalImportSourceEntry] = [:]
         for entry in storedEntries {
-            guard let existing = storedByScope[entry.scopeID] else {
-                storedByScope[entry.scopeID] = entry
+            guard let existing = storedByScope[entry.scopeId] else {
+                storedByScope[entry.scopeId] = entry
                 continue
             }
             if entry.lastImportedAt > existing.lastImportedAt {
-                storedByScope[entry.scopeID] = entry
+                storedByScope[entry.scopeId] = entry
             }
         }
-        for (scopeID, entry) in storedByScope {
-            byScope[scopeID] = entry
+        for (scopeId, entry) in storedByScope {
+            byScope[scopeId] = entry
         }
         return Array(byScope.values)
     }

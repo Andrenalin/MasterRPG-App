@@ -21,7 +21,7 @@ struct FoundryVTTArchiveSanitizerTests {
         ])
         let item = document(
             id: "foundry://world/test/collection/adventure/Adventure/adventure-1/Item/item-1",
-            documentID: "item-1",
+            documentId: "item-1",
             type: .item,
             rawData: itemRaw
         )
@@ -42,16 +42,16 @@ struct FoundryVTTArchiveSanitizerTests {
         ])
         let actor = document(
             id: "foundry://world/test/collection/adventure/Adventure/adventure-1/Actor/actor-1",
-            documentID: "actor-1",
+            documentId: "actor-1",
             type: .actor,
             rawData: actorRaw,
             embeddedDocuments: [item]
         )
         let folder = FoundryDocumentFolder(
             id: "foundry://world/test/collection/adventure/Folder/folder-1",
-            documentID: "folder-1",
+            documentId: "folder-1",
             name: "People",
-            parentID: nil,
+            parentId: nil,
             documentType: .actor,
             sort: nil,
             rawData: .object([
@@ -73,13 +73,13 @@ struct FoundryVTTArchiveSanitizerTests {
         )
         let userDocument = document(
             id: "foundry://world/test/collection/users/User/user-1",
-            documentID: "user-1",
+            documentId: "user-1",
             type: .user,
             rawData: .object(["_id": .string("user-1"), "name": .string(privateUserValue)])
         )
         let chatDocument = document(
             id: "foundry://world/test/collection/messages/ChatMessage/chat-1",
-            documentID: "chat-1",
+            documentId: "chat-1",
             type: .chatMessage,
             rawData: .object(["_id": .string("chat-1"), "content": .string(privateChatValue)])
         )
@@ -92,7 +92,7 @@ struct FoundryVTTArchiveSanitizerTests {
                 title: "Test",
                 descriptionHTML: nil,
                 version: "1",
-                systemID: "test",
+                systemId: "test",
                 compatibility: compatibility,
                 rawData: .object([
                     "author": .string("Package Author Must Remain"),
@@ -135,9 +135,9 @@ struct FoundryVTTArchiveSanitizerTests {
             includingChat: false,
             includingUsers: false
         )
-        let archiveID = try #require(UUID(uuidString: "8C8BF1A3-D724-4122-B8D6-BEDFEAD3C398"))
+        let archiveId = try #require(UUID(uuidString: "8C8BF1A3-D724-4122-B8D6-BEDFEAD3C398"))
         let archive = FoundryImportArchive(
-            id: archiveID,
+            id: archiveId,
             importedAt: Date(timeIntervalSince1970: 0),
             sourceFileName: "test-world.zip",
             package: sanitized,
@@ -183,7 +183,7 @@ struct FoundryVTTArchiveSanitizerTests {
         let semanticMessages = "SYSTEM-MESSAGES-RULE-MUST-REMAIN"
         let actor = document(
             id: "foundry://world/test/collection/actors/Actor/actor-1",
-            documentID: "actor-1",
+            documentId: "actor-1",
             type: .actor,
             rawData: .object([
                 "_id": .string("actor-1"),
@@ -260,7 +260,7 @@ struct FoundryVTTArchiveSanitizerTests {
         let userId = "USER-ID-MUST-BE-SCRUBBED"
         let actor = document(
             id: "foundry://world/test/collection/actors/Actor/actor-1",
-            documentID: "actor-1",
+            documentId: "actor-1",
             type: .actor,
             rawData: .object([
                 "_id": .string("actor-1"),
@@ -313,7 +313,7 @@ struct FoundryVTTArchiveSanitizerTests {
         ])
         let parent = document(
             id: "foundry://world/test/collection/actors/Actor/actor-1",
-            documentID: "actor-1",
+            documentId: "actor-1",
             type: .actor,
             rawData: .object([
                 "_id": .string("actor-1"),
@@ -322,7 +322,7 @@ struct FoundryVTTArchiveSanitizerTests {
             embeddedDocuments: [
                 document(
                     id: "foundry://world/test/collection/actors/Actor/actor-1/Item/item-1",
-                    documentID: "item-1",
+                    documentId: "item-1",
                     type: .item,
                     rawData: representedRaw
                 ),
@@ -365,22 +365,22 @@ private extension FoundryVTTArchiveSanitizerTests {
 
     func document(
         id: String,
-        documentID: String,
+        documentId: String,
         type: FoundryDocumentType,
         rawData: FoundryJSONValue,
         embeddedDocuments: [FoundryDocument] = []
     ) -> FoundryDocument {
         FoundryDocument(
             id: id,
-            documentID: documentID,
+            documentId: documentId,
             documentType: type,
             subtype: nil,
-            name: rawData["name"]?.stringValue ?? documentID,
-            folderID: nil,
+            name: rawData["name"]?.stringValue ?? documentId,
+            folderId: nil,
             sort: nil,
             imagePath: nil,
             descriptionHTML: nil,
-            parentID: nil,
+            parentId: nil,
             embeddedDocuments: embeddedDocuments,
             references: [],
             unknownFieldNames: [],
@@ -441,7 +441,7 @@ private extension FoundryVTTArchiveSanitizerTests {
         )
         let retainedRule = FoundryRuleDefinition(
             id: "pack.Item.item-1",
-            documentID: "item-1",
+            documentId: "item-1",
             packName: "pack",
             documentType: "Item",
             subtype: "equipment",
@@ -449,7 +449,7 @@ private extension FoundryVTTArchiveSanitizerTests {
             name: "Item",
             descriptionHTML: nil,
             imagePath: nil,
-            folderID: nil,
+            folderId: nil,
             values: [
                 FoundryRuleValue(path: "system.user", value: .string(semanticUserValue)),
                 FoundryRuleValue(
@@ -466,7 +466,7 @@ private extension FoundryVTTArchiveSanitizerTests {
                     target: "User.user-1",
                     label: nil,
                     packName: nil,
-                    documentID: "user-1"
+                    documentId: "user-1"
                 ),
             ],
             embeddedRules: [],
@@ -486,7 +486,7 @@ private extension FoundryVTTArchiveSanitizerTests {
         )
         let chatRule = FoundryRuleDefinition(
             id: "pack.ChatMessage.chat-1",
-            documentID: "chat-1",
+            documentId: "chat-1",
             packName: "pack",
             documentType: "ChatMessage",
             subtype: "message",
@@ -494,7 +494,7 @@ private extension FoundryVTTArchiveSanitizerTests {
             name: "Private chat",
             descriptionHTML: privateChatValue,
             imagePath: nil,
-            folderID: nil,
+            folderId: nil,
             values: [],
             tags: [],
             references: [],
@@ -565,7 +565,7 @@ private extension FoundryVTTArchiveSanitizerTests {
                         label: "Pack",
                         path: "packs/pack",
                         documentType: "Item",
-                        systemID: "test"
+                        systemId: "test"
                     ),
                     rules: [retainedRule, chatRule],
                     folders: []

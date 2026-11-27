@@ -150,8 +150,8 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("LogMessagePlayersView") {
             GameRPG.LogMessagePlayersView(
                 statuses: [
-                    .init(id: GamePreviewData.playerID, name: "Aria", received: true),
-                    .init(id: GamePreviewData.secondPlayerID, name: "Borin", received: false)
+                    .init(id: GamePreviewData.playerId, name: "Aria", received: true),
+                    .init(id: GamePreviewData.secondPlayerId, name: "Borin", received: false)
                 ],
                 fallback: "No players"
             )
@@ -169,8 +169,8 @@ struct GameRPGGeneratedPreviewSnapshotTests {
                     playerNames: "Aria, Borin",
                     deliveryState: .allPlayers,
                     playerStatuses: [
-                        .init(id: GamePreviewData.playerID, name: "Aria", received: true),
-                        .init(id: GamePreviewData.secondPlayerID, name: "Borin", received: false)
+                        .init(id: GamePreviewData.playerId, name: "Aria", received: true),
+                        .init(id: GamePreviewData.secondPlayerId, name: "Borin", received: false)
                     ],
                     sharePlayTransport: SharePlayTransportLog(
                         journal: .init(byteCount: 4_096, state: .succeeded),
@@ -212,7 +212,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
             GameRPG.MasterGameScreen(
                 root: root,
                 playerController: PlayerController(root: root, asGameMaster: true),
-                adventureId: GamePreviewData.adventureID
+                adventureId: GamePreviewData.adventureId
             )
         }
     }
@@ -223,7 +223,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("GameWindowMenuButtonView")
     func snapshotGameWindowMenuButtonView() async throws {
         try await assertPreviewSnapshot("GameWindowMenuButtonView") {
-            GameRPG.GameWindowMenuButtonView(isMaster: true, itemId: GamePreviewData.adventureID)
+            GameRPG.GameWindowMenuButtonView(isMaster: true, itemId: GamePreviewData.adventureId)
                 .environment(GameScreenModel())
         }
     }
@@ -240,7 +240,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("MasterModuleWindowMenu")
     func snapshotMasterModuleWindowMenu() async throws {
         try await assertPreviewSnapshot("MasterModuleWindowMenu") {
-            GameRPG.MasterModuleWindowMenu(adventureId: GamePreviewData.adventureID)
+            GameRPG.MasterModuleWindowMenu(adventureId: GamePreviewData.adventureId)
                 .environment(GameScreenModel())
         }
     }
@@ -252,7 +252,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
             let root = GameRoot.previewFixture()
             GameRPG.MasterOverlayMenu(
                 root: root,
-                adventureId: GamePreviewData.adventureID,
+                adventureId: GamePreviewData.adventureId,
                 playerController: PlayerController(root: root, asGameMaster: true)
             )
             .environment(GameScreenModel())
@@ -263,7 +263,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("MasterSideMenu")
     func snapshotMasterSideMenu() async throws {
         try await assertPreviewSnapshot("MasterSideMenu") {
-            GameRPG.MasterSideMenu(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+            GameRPG.MasterSideMenu(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
                 .environment(GameScreenModel())
         }
     }
@@ -272,7 +272,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("OnlyGameView")
     func snapshotOnlyGameView() async throws {
         try await assertPreviewSnapshot("OnlyGameView") {
-            GameRPG.OnlyGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+            GameRPG.OnlyGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
                 .environment(GameScreenModel())
         }
     }
@@ -347,7 +347,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("OverlayMasterTabBar")
     func snapshotOverlayMasterTabBar() async throws {
         try await assertPreviewSnapshot("OverlayMasterTabBar") {
-            GameRPG.OverlayMasterTabBar(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+            GameRPG.OverlayMasterTabBar(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
                 .environment(GameScreenModel())
         }
     }
@@ -398,7 +398,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("TabGameView")
     func snapshotTabGameView() async throws {
         try await assertPreviewSnapshot("TabGameView") {
-            GameRPG.TabGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+            GameRPG.TabGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
                 .environment(GameScreenModel())
         }
     }
@@ -478,7 +478,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
             List {
                 GameRPG.SearchResultRow(
                     result: SearchResult(
-                        itemId: GamePreviewData.searchItemID,
+                        itemId: GamePreviewData.searchItemId,
                         itemName: "Dragon's Lair",
                         module: .adventure,
                         category: .entry,
@@ -509,7 +509,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
                 root: .previewFixture(game: .player),
                 playerNetworkControllable: PlayerNetworkController(name: "Aria"),
                 model: BrowserGameModel(
-                    id: GamePreviewData.masterID,
+                    id: GamePreviewData.masterId,
                     endpointName: "Morgan.MasterRPG",
                     connectionMode: .observer
                 )

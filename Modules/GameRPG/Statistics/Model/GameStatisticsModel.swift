@@ -28,11 +28,11 @@ final class GameStatisticsModel: Sendable {
 
     @ObservationIgnored private var context: NSManagedObjectContext?
     @ObservationIgnored private var setupTask: Task<Void, Never>?
-    @ObservationIgnored private var activeSessionID: UUID?
+    @ObservationIgnored private var activeSessionId: UUID?
     /// Set once the final flush is done and the session is being completed: an event recorded
     /// now would be queued for a session `recordEvents` already skips. See CODE_AUDIT_20 §3.4.
     @ObservationIgnored private var isClosingSession = false
-    @ObservationIgnored private var activeLocalParticipantID: UUID?
+    @ObservationIgnored private var activeLocalParticipantId: UUID?
     @ObservationIgnored private let dataController = GameStatisticsDataController()
     @ObservationIgnored private let statisticsController = GameStatisticsController()
     /// Events waiting for the next batched write, and the roster last written to the store.
@@ -70,7 +70,8 @@ final class GameStatisticsModel: Sendable {
         }
     }
 
-    func setUp(context: NSManagedObjectContext) {
+    func setUp(context shared: NSManagedObjectContext) {
+        let context = Self.statisticsContext(sharing: shared)
         self.context = context
         setupTask?.cancel()
         setupTask = Task { @MainActor [weak self] in
@@ -87,6 +88,22 @@ final class GameStatisticsModel: Sendable {
         }
     }
 
+    /// A context of its own on the store of `shared`: saving the shared context committed the
+    /// other modules' pending edits along with the statistics, and one failing foreign object
+    /// failed the statistics save. See CODE_AUDIT_29 §7.1.
+    static func statisticsContext(sharing shared: NSManagedObjectContext) -> NSManagedObjectContext {
+        guard let coordinator = shared.persistentStoreCoordinator else { return shared }
+        let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+        context.persistentStoreCoordinator = coordinator
+        context.name = "statistics_context"
+        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        // The same author as the shared context, so persistent-history processing treats the
+        // statistics saves as this app's own, as before.
+        context.transactionAuthor = shared.transactionAuthor
+        context.automaticallyMergesChangesFromParent = true
+        return context
+    }
+
     func beginSession(_ draft: GameStatisticSessionDraft) async {
         guard isCollectionEnabled,
               !draft.isDemo,
@@ -96,12 +113,12 @@ final class GameStatisticsModel: Sendable {
         await flushPendingEvents()
         lastCheckpointedRosterIds = []
         do {
-            if let activeSessionID {
-                try await dataController.finishLeftoverSession(id: activeSessionID, reason: .interrupted, notAfter: draft.startedAt, in: context)
+            if let activeSessionId {
+                try await dataController.finishLeftoverSession(id: activeSessionId, reason: .interrupted, notAfter: draft.startedAt, in: context)
             }
             try await dataController.beginSession(draft, in: context)
-            activeSessionID = draft.id
-            activeLocalParticipantID = draft.localParticipantId
+            activeSessionId = draft.id
+            activeLocalParticipantId = draft.localParticipantId
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -114,11 +131,11 @@ final class GameStatisticsModel: Sendable {
         details: GameStatisticSessionDetails? = nil,
         advancesActivity: Bool = true
     ) async {
-        guard let context, let activeSessionID else { return }
+        guard let context, let activeSessionId else { return }
         await flushPendingEvents()
         lastCheckpointedRosterIds = Set(participants.map(\.participantId))
         do {
-            try await dataController.checkpointSession(id: activeSessionID, participants: participants, at: date, details: details, advancesActivity: advancesActivity, in: context)
+            try await dataController.checkpointSession(id: activeSessionId, participants: participants, at: date, details: details, advancesActivity: advancesActivity, in: context)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -138,8 +155,8 @@ final class GameStatisticsModel: Sendable {
     ) {
         guard isCollectionEnabled,
               context != nil,
-              let activeSessionID,
-              let activeLocalParticipantID
+              let activeSessionId,
+              let activeLocalParticipantId
         else { return }
         guard !isClosingSession else {
             Logger.statistics.debug("Dropped a statistics event recorded while the session is closing")
@@ -148,13 +165,13 @@ final class GameStatisticsModel: Sendable {
 
         let draft = statisticsController.eventDraft(
             for: model,
-            sessionId: activeSessionID,
-            localParticipantId: activeLocalParticipantID,
+            sessionId: activeSessionId,
+            localParticipantId: activeLocalParticipantId,
             direction: direction,
             origin: origin,
             occurredAt: date
         )
-        let participants = statisticsController.participants(from: model, localParticipantId: activeLocalParticipantID)
+        let participants = statisticsController.participants(from: model, localParticipantId: activeLocalParticipantId)
         pendingEvents.append((draft, participants.first(where: { $0.participantId == model.sender.id })))
         // Only a changed roster needs a checkpoint; the per-event participant sync already
         // keeps the sender's row current.
@@ -201,7 +218,7 @@ final class GameStatisticsModel: Sendable {
         do {
             try await dataController.recordEvents(batch, in: context)
             unsavedBatch = []
-            if let roster, let sessionId = batch.last?.draft.sessionId ?? activeSessionID {
+            if let roster, let sessionId = batch.last?.draft.sessionId ?? activeSessionId {
                 try await dataController.checkpointSession(
                     id: sessionId,
                     participants: roster,
@@ -263,11 +280,11 @@ final class GameStatisticsModel: Sendable {
     }
 
     func participantLeft(id: UUID, at date: Date = .now) async {
-        guard let context, let activeSessionID else { return }
+        guard let context, let activeSessionId else { return }
         await flushPendingEvents()
         do {
             try await dataController.participantLeft(
-                sessionID: activeSessionID,
+                sessionId: activeSessionId,
                 participantId: id,
                 at: date,
                 in: context
@@ -281,14 +298,14 @@ final class GameStatisticsModel: Sendable {
         reason: GameStatisticSessionEndReason = .stopped,
         at date: Date = .now
     ) async {
-        guard let context, let activeSessionID else { return }
+        guard let context, let activeSessionId else { return }
         await flushBeforeCompletingSession()
         isClosingSession = true
         defer { isClosingSession = false }
         do {
-            try await dataController.finishSession(id: activeSessionID, at: date, reason: reason, in: context)
-            self.activeSessionID = nil
-            activeLocalParticipantID = nil
+            try await dataController.finishSession(id: activeSessionId, at: date, reason: reason, in: context)
+            self.activeSessionId = nil
+            activeLocalParticipantId = nil
             await pruneShortSessions()
             await reloadAndReportAchievements()
         } catch {
@@ -385,11 +402,11 @@ final class GameStatisticsModel: Sendable {
         do {
             // Events still queued belong to the running game and must not be flushed into nothing.
             await flushPendingEvents()
-            try await dataController.deleteAll(keeping: activeSessionID, in: context)
+            try await dataController.deleteAll(keeping: activeSessionId, in: context)
             summary = .empty
             allSessions = []
             errorMessage = nil
-            if activeSessionID != nil {
+            if activeSessionId != nil {
                 await reload()
             }
         } catch {

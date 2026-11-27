@@ -137,7 +137,7 @@ struct FoundryVTTDomainMapperGeometryTests {
 
 private extension FoundryVTTDomainMapperGeometryTests {
     func map(_ scene: FoundryDocument) async throws -> FoundryMappedImport {
-        let sourceScopeID = try #require(
+        let sourceScopeId = try #require(
             UUID(uuidString: "D19ACEDC-1D50-4E9B-8982-48D79DE52430")
         )
         let package = FoundryVTTImportPackage(
@@ -166,8 +166,8 @@ private extension FoundryVTTDomainMapperGeometryTests {
         )
         return try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-geometry-test.json"),
-            sourceScopeID: sourceScopeID,
+            sourceUrl: URL(filePath: "/tmp/foundry-geometry-test.json"),
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.scenes],
             resourceLoader: { _ in Data() }
         )
@@ -181,15 +181,15 @@ private extension FoundryVTTDomainMapperGeometryTests {
     ) -> FoundryDocument {
         FoundryDocument(
             id: id,
-            documentID: id,
+            documentId: id,
             documentType: type,
             subtype: nil,
             name: rawData["name"]?.stringValue ?? id,
-            folderID: nil,
+            folderId: nil,
             sort: nil,
             imagePath: nil,
             descriptionHTML: nil,
-            parentID: nil,
+            parentId: nil,
             embeddedDocuments: embeddedDocuments,
             references: [],
             unknownFieldNames: [],

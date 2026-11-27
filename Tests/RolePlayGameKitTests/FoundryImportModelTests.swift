@@ -34,8 +34,8 @@ struct FoundryImportModelTests {
 
     private func makeModel(in folder: Folder) -> FoundryImportModel {
         FoundryImportModel(
-            archiveStore: FoundryImportArchiveStore(directoryURL: folder.url.appending(path: "Archives", directoryHint: .isDirectory)),
-            sourceRegistry: ExternalImportSourceRegistry(directoryURL: folder.url.appending(path: "Registry", directoryHint: .isDirectory))
+            archiveStore: FoundryImportArchiveStore(directoryUrl: folder.url.appending(path: "Archives", directoryHint: .isDirectory)),
+            sourceRegistry: ExternalImportSourceRegistry(directoryUrl: folder.url.appending(path: "Registry", directoryHint: .isDirectory))
         )
     }
 
@@ -271,7 +271,7 @@ struct FoundryImportModelTests {
         let resolved = model.selectedSourceScopeId
 
         model.chooseNewSource()
-        model.chooseExistingSource(scopeID: UUID())
+        model.chooseExistingSource(scopeId: UUID())
 
         #expect(model.selectedSourceScopeId == resolved)
     }

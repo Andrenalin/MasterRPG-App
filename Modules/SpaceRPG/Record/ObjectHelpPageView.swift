@@ -6,22 +6,23 @@ See the LICENSE.txt file for this sample’s licensing information.
 
 import SwiftUI
 
+/// The texts are localized from the module catalog. See CODE_AUDIT_29 §8.1.
 struct ObjectHelpPageView: View {
     var body: some View {
         TutorialPageView(
-            pageName: "Capturing Objects",
+            pageName: String(localized: "Capturing Objects", bundle: .module),
             imageName: "ObjectCharacteristicsTips",
-            imageCaption: "Opaque, matte objects with varied surface textures scan best. Capture all sides of your object in a series of orbits.\n",
-            prosTitle: "Ideal Object Characteristics",
+            imageCaption: String(localized: "Opaque, matte objects with varied surface textures scan best. Capture all sides of your object in a series of orbits.", bundle: .module),
+            prosTitle: String(localized: "Ideal Object Characteristics", bundle: .module),
             pros: [
-                "Varied Surface Texture",
-                "Non-reflective, matte surface",
-                "Solid, opaque"
+                String(localized: "Varied Surface Texture", bundle: .module),
+                String(localized: "Non-reflective, matte surface", bundle: .module),
+                String(localized: "Solid, opaque", bundle: .module)
             ],
-            consTitle: "May Reduce Quality",
+            consTitle: String(localized: "May Reduce Quality", bundle: .module),
             cons: [
-                "Shiny materials",
-                "Transparent, transluscent objects"
+                String(localized: "Shiny materials", bundle: .module),
+                String(localized: "Transparent, translucent objects", bundle: .module)
             ]
         )
     }

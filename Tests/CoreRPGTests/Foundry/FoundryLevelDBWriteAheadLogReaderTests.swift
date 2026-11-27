@@ -176,9 +176,9 @@ struct FoundryLevelDBWriteAheadLogReaderTests {
         let package = try await FoundryVTTImportReader().read(from: root)
 
         // Then
-        #expect(package.documents.map(\.documentID) == ["beta"])
+        #expect(package.documents.map(\.documentId) == ["beta"])
         #expect(package.documents.first?.name == "Live Beta")
-        #expect(!package.documents.contains { $0.documentID == "stale" })
+        #expect(!package.documents.contains { $0.documentId == "stale" })
     }
 }
 

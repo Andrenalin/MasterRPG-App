@@ -28,20 +28,20 @@ extension FoundryMappingState {
         let module: NetworkModules
         let documentType: FoundryDocumentType
         let scope: String
-        let foundryID: String
+        let foundryId: String
     }
 
     struct FolderAliasKey: Hashable {
         let module: NetworkModules
         let documentType: FoundryDocumentType
-        let foundryID: String
+        let foundryId: String
     }
 
     struct FolderDeclaration {
         let id: String
-        let documentID: String
+        let documentId: String
         let name: String
-        let parentID: String?
+        let parentId: String?
         let documentType: FoundryDocumentType
         let scope: String
     }
@@ -59,15 +59,15 @@ extension FoundryMappingState {
     func add<Model>(
         _ model: Model,
         module: NetworkModules,
-        sourceID: String,
+        sourceId: String,
         attachment: ExternalImportAttachment? = nil,
-        decisionOwnerID: UUID? = nil,
+        decisionOwnerId: UUID? = nil,
         warnings: [String] = []
     ) where Model: ItemDataAccessible & Observable {
         var model = model
         model.name = sanitizedFoundryText(model.name)
         let key = DestinationKey(module: module, id: model.id)
-        recordMapping(sourceID: sourceID, module: module, itemId: model.id)
+        recordMapping(sourceId: sourceId, module: module, itemId: model.id)
         guard emittedItems.insert(key).inserted else { return }
         items.append(ExternalImportBatchItem(
             id: model.id,
@@ -76,41 +76,41 @@ extension FoundryMappingState {
             model: model,
             provenance: ExternalImportProvenance(
                 source: provenance.source,
-                sourceScopeID: provenance.sourceScopeID,
+                sourceScopeId: provenance.sourceScopeId,
                 packageIdentifier: packageIdentifier,
-                documentIdentifier: sourceID,
-                sourcePath: sourceURL.lastPathComponent,
+                documentIdentifier: sourceId,
+                sourcePath: sourceUrl.lastPathComponent,
                 sourceVersion: provenance.sourceVersion
             ),
             attachment: attachment,
-            decisionOwnerID: decisionOwnerID,
+            decisionOwnerId: decisionOwnerId,
             warnings: warnings
         ))
     }
 
-    func recordMapping(sourceID: String, module: NetworkModules, itemId: UUID, entryID: UUID? = nil) {
-        mappingReferences[sourceID, default: []].insert(
-            FoundryImportMappingReference(module: module, itemId: itemId, entryID: entryID)
+    func recordMapping(sourceId: String, module: NetworkModules, itemId: UUID, entryId: UUID? = nil) {
+        mappingReferences[sourceId, default: []].insert(
+            FoundryImportMappingReference(module: module, itemId: itemId, entryId: entryId)
         )
     }
 
-    func stableID(_ component: String) -> UUID {
-        FoundryRuleIdentity.uuid(for: "external-source:\(sourceScopeID.uuidString.lowercased())#\(component)")
+    func stableId(_ component: String) -> UUID {
+        FoundryRuleIdentity.uuid(for: "external-source:\(sourceScopeId.uuidString.lowercased())#\(component)")
     }
 
     func mappingOrder(_ lhs: FoundryImportMappingReference, _ rhs: FoundryImportMappingReference) -> Bool {
         if lhs.module.rawValue != rhs.module.rawValue { return lhs.module.rawValue < rhs.module.rawValue }
         if lhs.itemId != rhs.itemId { return lhs.itemId.uuidString < rhs.itemId.uuidString }
-        return (lhs.entryID?.uuidString ?? "") < (rhs.entryID?.uuidString ?? "")
+        return (lhs.entryId?.uuidString ?? "") < (rhs.entryId?.uuidString ?? "")
     }
 
-    func folderID(for document: FoundryDocument, module: NetworkModules) -> UUID? {
-        document.folderID.flatMap {
+    func folderId(for document: FoundryDocument, module: NetworkModules) -> UUID? {
+        document.folderId.flatMap {
             resolveFolder(
                 module: module,
                 documentType: document.documentType,
-                scope: canonicalScope(of: document.id, fallback: document.parentID ?? packageIdentifier),
-                foundryID: $0
+                scope: canonicalScope(of: document.id, fallback: document.parentId ?? packageIdentifier),
+                foundryId: $0
             )
         }
     }
@@ -146,49 +146,49 @@ extension FoundryMappingState {
     func predictedDestination(for document: FoundryDocument) -> Destination? {
         switch document.documentType {
         case .actor where selectedCategories.contains(.actors):
-            Destination(module: .value, itemId: stableID("\(document.id)#character"))
+            Destination(module: .value, itemId: stableId("\(document.id)#character"))
         case .item:
-            if let parentID = document.parentID, documentTypesByID[parentID] == .actor {
+            if let parentId = document.parentId, documentTypesById[parentId] == .actor {
                 selectedCategories.contains(.actors)
-                    ? Destination(module: .value, itemId: stableID("\(document.id)#character-item"))
+                    ? Destination(module: .value, itemId: stableId("\(document.id)#character-item"))
                     : nil
             } else if selectedCategories.contains(.rules), package.rulePackage == nil {
-                Destination(module: .rule, itemId: stableID("\(document.id)#rule"))
+                Destination(module: .rule, itemId: stableId("\(document.id)#rule"))
             } else {
                 selectedCategories.contains(.items)
-                    ? Destination(module: .value, itemId: stableID("\(document.id)#item"))
+                    ? Destination(module: .value, itemId: stableId("\(document.id)#item"))
                     : nil
             }
         case .scene where selectedCategories.contains(.scenes):
-            Destination(module: .map, itemId: stableID("\(document.id)#map"))
+            Destination(module: .map, itemId: stableId("\(document.id)#map"))
         case .level where selectedCategories.contains(.scenes): Destination(
             module: .map,
-            itemId: levelMapIDs[document.id] ?? stableID("\(document.id)#level-map")
+            itemId: levelMapIds[document.id] ?? stableId("\(document.id)#level-map")
         )
         case .journalEntry where selectedCategories.contains(.journals):
-            Destination(module: .adventure, itemId: stableID("\(document.id)#journal"))
+            Destination(module: .adventure, itemId: stableId("\(document.id)#journal"))
         case .journalEntryPage where selectedCategories.contains(.journals):
-            document.parentID.map { Destination(module: .adventure, itemId: stableID("\($0)#journal")) }
+            document.parentId.map { Destination(module: .adventure, itemId: stableId("\($0)#journal")) }
         case .rollTable where selectedCategories.contains(.tables):
-            Destination(module: .table, itemId: stableID("\(document.id)#table"))
+            Destination(module: .table, itemId: stableId("\(document.id)#table"))
         case .tableResult where selectedCategories.contains(.tables):
-            document.parentID.map { Destination(module: .table, itemId: stableID("\($0)#table")) }
+            document.parentId.map { Destination(module: .table, itemId: stableId("\($0)#table")) }
         case .playlist where selectedCategories.contains(.playlists):
-            Destination(module: .audio, itemId: stableID("\(document.id)#playlist"))
+            Destination(module: .audio, itemId: stableId("\(document.id)#playlist"))
         case .playlistSound where selectedCategories.contains(.playlists):
-            document.parentID.map { Destination(module: .audio, itemId: stableID("\($0)#playlist")) }
+            document.parentId.map { Destination(module: .audio, itemId: stableId("\($0)#playlist")) }
         case .cards where selectedCategories.contains(.cards):
-            Destination(module: .table, itemId: stableID("\(document.id)#cards"))
+            Destination(module: .table, itemId: stableId("\(document.id)#cards"))
         case .card where selectedCategories.contains(.cards):
-            document.parentID.map { Destination(module: .table, itemId: stableID("\($0)#cards")) }
+            document.parentId.map { Destination(module: .table, itemId: stableId("\($0)#cards")) }
         case .adventure where selectedCategories.contains(.adventures):
-            Destination(module: .adventure, itemId: stableID("\(document.id)#adventure"))
+            Destination(module: .adventure, itemId: stableId("\(document.id)#adventure"))
         case .combat where selectedCategories.contains(.combats):
-            Destination(module: .adventure, itemId: stableID("\(document.id)#combat"))
+            Destination(module: .adventure, itemId: stableId("\(document.id)#combat"))
         case .combatant where selectedCategories.contains(.combats):
-            document.parentID.map { Destination(module: .adventure, itemId: stableID("\($0)#combat")) }
+            document.parentId.map { Destination(module: .adventure, itemId: stableId("\($0)#combat")) }
         case .macro where selectedCategories.contains(.macros):
-            Destination(module: .adventure, itemId: stableID("\(document.id)#macro"))
+            Destination(module: .adventure, itemId: stableId("\(document.id)#macro"))
         default: nil
         }
     }
@@ -288,6 +288,13 @@ extension FoundryMappingState {
         return text
             .replacing("](", with: "]\u{200B}(")
             .replacing("://", with: ":\u{200B}//")
+    }
+
+    /// Decoded package text that may not form a link and is not searched for Foundry links: names,
+    /// reference targets, pack and document ids, effect statuses and change paths. Only the links
+    /// the mapper writes itself (`markdownLink`) stay live. See CODE_AUDIT_29 §6.1.
+    func inertText(_ optionalHTML: String?) -> String {
+        Self.neutralizingLinks(sanitizedFoundryText(optionalHTML))
     }
 
     func safeText(_ optionalHTML: String?) -> String {
@@ -396,7 +403,7 @@ extension FoundryMappingState {
         case .object(let values):
             values.keys.sorted().compactMap { key in
                 values[key].map {
-                    "\(sanitizedFoundryText(key)): \(presentedFoundryValue($0))"
+                    "\(inertText(key)): \(presentedFoundryValue($0))"
                 }
             }.joined(separator: ", ")
         case .array(let values):

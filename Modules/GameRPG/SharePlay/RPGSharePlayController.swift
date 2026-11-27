@@ -215,7 +215,7 @@ final class RPGSharePlayController {
     /// The player behind each session participant: the name their game messages carry, and
     /// whether they play on Vision Pro and so sit at the 3D table. Learned from the
     /// authenticated player messages a participant sends itself; the table uses it to tell which
-    /// player sits at which seat. See `bindPlayer(named:hasTable:participantId:)`.
+    /// player sits at which seat. See `bindPlayer(named:playerId:hasTable:participantId:)`.
     @ObservationIgnored
     var participantPlayers: [UUID: ParticipantPlayer] = [:]
 
@@ -224,6 +224,8 @@ final class RPGSharePlayController {
     var participantsWithTable: Set<UUID> = []
 
     struct ParticipantPlayer: Equatable {
+        /// The player id the participant's game messages carry. See CODE_AUDIT_29 §5.7.
+        let id: UUID
         let name: String
         let hasTable: Bool
     }

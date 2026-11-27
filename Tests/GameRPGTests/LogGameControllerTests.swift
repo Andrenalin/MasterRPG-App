@@ -113,13 +113,13 @@ struct LogGameControllerTests {
         let sut = LogGameController(root: root, gameModel: root.gameModel)
         let playerA = UUID()
         let playerB = UUID()
-        let messageID = GameDeliveryMessageID(sessionID: UUID(), counter: 1)
+        let messageId = GameDeliveryMessageId(sessionId: UUID(), counter: 1)
         root.gameModel.gameRoster.players = [
             PlayerGameModel(id: playerA, type: .player, name: "Arin"),
             PlayerGameModel(id: playerB, type: .player, name: "Borin")
         ]
         sut.addMessage(
-            messageID: messageID,
+            messageId: messageId,
             type: .reveal,
             subType: .show,
             module: .photo,
@@ -127,8 +127,8 @@ struct LogGameControllerTests {
         )
 
         // When
-        let firstAcknowledgement = sut.updateMessage(messageID: messageID, player: playerA)
-        let duplicateAcknowledgement = sut.updateMessage(messageID: messageID, player: playerA)
+        let firstAcknowledgement = sut.updateMessage(messageId: messageId, player: playerA)
+        let duplicateAcknowledgement = sut.updateMessage(messageId: messageId, player: playerA)
 
         // Then
         let row = try #require(sut.logRows.first)
@@ -151,7 +151,7 @@ struct LogGameControllerTests {
         let visiblePlayer = UUID()
         let hiddenPlayer = UUID()
         let laterPlayer = UUID()
-        let messageID = GameDeliveryMessageID(sessionID: UUID(), counter: 4)
+        let messageId = GameDeliveryMessageId(sessionId: UUID(), counter: 4)
         root.gameModel.gameRoster.players = [
             PlayerGameModel(id: visiblePlayer, type: .player, name: "Visible at send"),
             PlayerGameModel(id: hiddenPlayer, type: .player, name: "Hidden at send")
@@ -161,7 +161,7 @@ struct LogGameControllerTests {
             SharingControlModel(id: hiddenPlayer, name: "Hidden at send", show: false)
         ]
         sut.addMessage(
-            messageID: messageID,
+            messageId: messageId,
             type: .reveal,
             subType: .show,
             module: .pdf,
@@ -177,9 +177,9 @@ struct LogGameControllerTests {
             SharingControlModel(id: hiddenPlayer, name: "Now visible", show: true),
             SharingControlModel(id: laterPlayer, name: "Joined later", show: true)
         ]
-        let laterPlayerAcknowledgement = sut.updateMessage(messageID: messageID, player: laterPlayer)
-        let hiddenPlayerAcknowledgement = sut.updateMessage(messageID: messageID, player: hiddenPlayer)
-        let originalPlayerAcknowledgement = sut.updateMessage(messageID: messageID, player: visiblePlayer)
+        let laterPlayerAcknowledgement = sut.updateMessage(messageId: messageId, player: laterPlayer)
+        let hiddenPlayerAcknowledgement = sut.updateMessage(messageId: messageId, player: hiddenPlayer)
+        let originalPlayerAcknowledgement = sut.updateMessage(messageId: messageId, player: visiblePlayer)
 
         // Then
         let row = try #require(sut.logRows.first)
@@ -204,7 +204,7 @@ struct LogGameControllerTests {
         let sut = LogGameController(root: root, gameModel: root.gameModel)
         let playerA = UUID()
         let playerB = UUID()
-        let messageID = GameDeliveryMessageID(sessionID: UUID(), counter: 9)
+        let messageId = GameDeliveryMessageId(sessionId: UUID(), counter: 9)
         root.gameModel.gameRoster.players = [
             PlayerGameModel(id: playerA, type: .player, name: "Arin"),
             PlayerGameModel(id: playerB, type: .player, name: "Borin")
@@ -214,18 +214,18 @@ struct LogGameControllerTests {
             SharingControlModel(id: playerB, name: "Borin", show: true)
         ]
         sut.addMessage(
-            messageID: messageID,
+            messageId: messageId,
             type: .reveal,
             subType: .show,
             module: .space,
             itemId: UUID(),
-            targetID: playerB
+            targetId: playerB
         )
 
         // When
-        let unrelatedAcknowledgement = sut.updateMessage(messageID: messageID, player: playerA)
+        let unrelatedAcknowledgement = sut.updateMessage(messageId: messageId, player: playerA)
         let pendingRow = try #require(sut.logRows.first)
-        let targetAcknowledgement = sut.updateMessage(messageID: messageID, player: playerB)
+        let targetAcknowledgement = sut.updateMessage(messageId: messageId, player: playerB)
 
         // Then
         let completeRow = try #require(sut.logRows.first)
@@ -244,36 +244,36 @@ struct LogGameControllerTests {
         let root = try await MockRoot.createGameRoot()
         let sut = LogGameController(root: root, gameModel: root.gameModel)
         let player = UUID()
-        let firstMessageID = GameDeliveryMessageID(sessionID: UUID(), counter: 1)
-        let secondMessageID = GameDeliveryMessageID(sessionID: UUID(), counter: 1)
+        let firstMessageID = GameDeliveryMessageId(sessionId: UUID(), counter: 1)
+        let secondMessageID = GameDeliveryMessageId(sessionId: UUID(), counter: 1)
         root.gameModel.gameRoster.players = [
             PlayerGameModel(id: player, type: .player, name: "Arin")
         ]
         sut.addMessage(
-            messageID: firstMessageID,
+            messageId: firstMessageID,
             type: .reveal,
             subType: .show,
             module: .photo,
             itemId: UUID()
         )
-        #expect(sut.updateMessage(messageID: firstMessageID, player: player))
+        #expect(sut.updateMessage(messageId: firstMessageID, player: player))
 
         // When
         sut.addMessage(
-            messageID: secondMessageID,
+            messageId: secondMessageID,
             type: .reveal,
             subType: .show,
             module: .photo,
             itemId: UUID()
         )
-        let staleAcknowledgement = sut.updateMessage(messageID: firstMessageID, player: player)
+        let staleAcknowledgement = sut.updateMessage(messageId: firstMessageID, player: player)
 
         // Then
         let row = try #require(sut.logRows.first)
         let log = try #require(sut.logModels.first)
         #expect(!staleAcknowledgement)
         #expect(sut.logModels.count == 1)
-        #expect(log.messageID == secondMessageID)
+        #expect(log.messageId == secondMessageID)
         #expect(log.players.isEmpty)
         #expect(row.deliveryState == .missingPlayers)
     }

@@ -146,9 +146,27 @@ extension GameController {
 
     @MainActor
     func playerDiceId(named playerName: String) -> UUID? {
-        guard let dice = diceGameModel.playerDice.first(where: { $0.name == playerName }),
+        playerDiceId(senderId: nil, named: playerName)
+    }
+
+    /// The visible dice the player last shared: found by the sending device when it is known, and
+    /// by the name only among dice whose sender is not known, so two players with the same name
+    /// never get each other's dice. See CODE_AUDIT_29 §5.7.
+    @MainActor
+    func playerDiceId(senderId: UUID?, named playerName: String) -> UUID? {
+        guard let dice = playerDice(senderId: senderId, named: playerName),
               !isPlayerHidden(playerId: dice.id) else { return nil }
         return dice.id
+    }
+
+    /// `playerDiceId(senderId:named:)` without the hidden-player filter.
+    @MainActor
+    func playerDice(senderId: UUID?, named playerName: String) -> DiceModel? {
+        let senders = diceGameModel.playerDiceSenders
+        if let senderId, let dice = diceGameModel.playerDice.first(where: { senders[$0.id] == senderId }) {
+            return dice
+        }
+        return diceGameModel.playerDice.first { $0.name == playerName && senders[$0.id] == nil }
     }
 
     @MainActor

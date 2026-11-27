@@ -173,13 +173,13 @@ struct ReviewSheetMemoryTests {
     @Test func versionIdentitiesAreUniqueAndStable() throws {
         // Given
         let itemId = UUID.fixture1
-        let entryID = UUID.fixture2
+        let entryId = UUID.fixture2
 
         // When
         let identities = SingleReviewDecision.allCases.map {
-            SheetReviewVersionID(itemId: itemId, entryID: entryID, decision: $0)
+            SheetReviewVersionID(itemId: itemId, entryID: entryId, decision: $0)
         }
-        let repeated = SheetReviewVersionID(itemId: itemId, entryID: entryID, decision: .merge)
+        let repeated = SheetReviewVersionID(itemId: itemId, entryID: entryId, decision: .merge)
 
         // Then
         #expect(Set(identities).count == SingleReviewDecision.allCases.count)
@@ -284,10 +284,10 @@ struct ReviewSheetMemoryTests {
             kind: .different,
             itemModel: itemModel
         )
-        let foreignA = sheetRow(itemId: foreignItemID, entryID: entryA, name: "Foreign A")
-        let currentA = sheetRow(itemId: itemId, entryID: entryA, name: "Current A")
-        let foreignRemoved = sheetRow(itemId: foreignItemID, entryID: existingOnly, name: "Foreign Removed")
-        let currentB = sheetRow(itemId: itemId, entryID: entryB, name: "Current B")
+        let foreignA = sheetRow(itemId: foreignItemID, entryId: entryA, name: "Foreign A")
+        let currentA = sheetRow(itemId: itemId, entryId: entryA, name: "Current A")
+        let foreignRemoved = sheetRow(itemId: foreignItemID, entryId: existingOnly, name: "Foreign Removed")
+        let currentB = sheetRow(itemId: itemId, entryId: entryB, name: "Current B")
         let currentSheet = SheetModel(
             source: ItemRowModel(itemId: itemId, typeId: .adventure),
             name: "Review Sheet",
@@ -444,24 +444,24 @@ struct ReviewSheetMemoryTests {
         isDeletion: Bool = false
     ) -> ImportReviewItemModel {
         let itemId = kind == .added ? UUID.fixture5 : UUID.fixture1
-        let entryID = UUID.fixture2
+        let entryId = UUID.fixture2
         let existing = FakeItemModel(
             id: itemId,
             name: "Existing Item",
             description: "Existing Description",
-            entries: [FakeEntryModel(id: entryID, name: "Existing Entry", content: "Existing Content")]
+            entries: [FakeEntryModel(id: entryId, name: "Existing Entry", content: "Existing Content")]
         )
         let imported = FakeItemModel(
             id: itemId,
             name: "Imported Item",
             description: "Imported Description",
-            entries: [FakeEntryModel(id: entryID, name: "Imported Entry", content: "Imported Content")]
+            entries: [FakeEntryModel(id: entryId, name: "Imported Entry", content: "Imported Content")]
         )
         let merged = FakeItemModel(
             id: itemId,
             name: "Merged Item",
             description: "Merged Description",
-            entries: [FakeEntryModel(id: entryID, name: "Merged Entry", content: "Merged Content")]
+            entries: [FakeEntryModel(id: entryId, name: "Merged Entry", content: "Merged Content")]
         )
         let itemModel = SingleItemImportModel.from(
             item: SingleReviewItem(
@@ -498,20 +498,20 @@ struct ReviewSheetMemoryTests {
             source: ItemRowModel(itemId: itemId, typeId: .adventure),
             name: "Review Sheet",
             description: "",
-            entries: entryIDs.map { entryID in
+            entries: entryIDs.map { entryId in
                 SheetModel(
-                    source: ItemRowModel(itemId: itemId, entryId: entryID, typeId: .adventure),
-                    name: "Entry \(entryID.uuidString)",
-                    description: "Content \(entryID.uuidString)",
+                    source: ItemRowModel(itemId: itemId, entryId: entryId, typeId: .adventure),
+                    name: "Entry \(entryId.uuidString)",
+                    description: "Content \(entryId.uuidString)",
                     entries: []
                 )
             }
         )
     }
 
-    private func sheetRow(itemId: UUID, entryID: UUID, name: String) -> SheetModel {
+    private func sheetRow(itemId: UUID, entryId: UUID, name: String) -> SheetModel {
         SheetModel(
-            source: ItemRowModel(itemId: itemId, entryId: entryID, typeId: .adventure),
+            source: ItemRowModel(itemId: itemId, entryId: entryId, typeId: .adventure),
             name: name,
             description: "Content",
             entries: []

@@ -90,7 +90,7 @@ private struct InlineImporterContentView: View {
         )
         .task {
 #if os(iOS) && !targetEnvironment(simulator)
-            canScan = await ConfigCaptureObject.isSupported()
+            canScan = ConfigCaptureObject.isSupported()
 #endif
         }
 #if !os(tvOS)

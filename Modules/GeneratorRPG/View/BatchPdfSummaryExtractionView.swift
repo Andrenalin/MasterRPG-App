@@ -81,7 +81,7 @@ public struct BatchPdfSummaryExtractionView: View {
                     if hasRun, !isRunning {
                         Section {
                             Text(
-                                "Updated \(summary.changedItems) items: \(summary.filledNames) names filled, \(summary.replacedDescriptions) descriptions replaced, \(summary.replacedTags) tags replaced, \(summary.addedBookmarks) bookmarks added.",
+                                "Updated ^[\(summary.changedItems) item](inflect: true): \(summary.filledNames) names filled, \(summary.replacedDescriptions) descriptions replaced, \(summary.replacedTags) tags replaced, \(summary.addedBookmarks) bookmarks added.",
                                 bundle: .module
                             )
                         }
@@ -138,9 +138,8 @@ public struct BatchPdfSummaryExtractionView: View {
     }
 
     private func itemRow(for id: UUID) -> some View {
-        let name = itemController.itemSync(for: id)?.name ?? ""
-        return BatchItemStatusRow(
-            name: name.isEmpty ? id.uuidString : name,
+        BatchItemStatusRow(
+            name: BatchItemRunner.displayName(itemController.itemSync(for: id)?.name),
             status: statuses[id] ?? .pending,
             skippedText: LocalizedStringResource("Skipped: PDF not available", bundle: .module)
         )
@@ -161,30 +160,18 @@ public struct BatchPdfSummaryExtractionView: View {
 
     private func performBatch() async {
         let analyzer = PdfSummaryAnalyzer()
-        for id in ids {
-            guard !Task.isCancelled else { return }
-            statuses[id] = .analyzing
+        await BatchItemRunner.run(ids: ids, setStatus: { statuses[$0] = $1 }) { id in
             resultModel.analysisProgress = nil
             resultModel.pageProgress = nil
-            guard let document = await loadDocument(id) else {
-                guard !Task.isCancelled else { return }
-                statuses[id] = .skipped
-                continue
-            }
-            do {
-                let result = try await analyzer.analyzeWithProgress(
-                    from: document,
-                    resultModel: resultModel,
-                    outputLanguage: selectedLanguage.englishName
-                )
-                guard !Task.isCancelled else { return }
-                applyResult(result, to: id, document: document)
-                statuses[id] = .completed
-            } catch is CancellationError {
-                return
-            } catch {
-                statuses[id] = .failed(error.localizedDescription)
-            }
+            guard let document = await loadDocument(id) else { return .skipped }
+            let result = try await analyzer.analyzeWithProgress(
+                from: document,
+                resultModel: resultModel,
+                outputLanguage: selectedLanguage.englishName
+            )
+            try Task.checkCancellation()
+            applyResult(result, to: id, document: document)
+            return .completed
         }
     }
 

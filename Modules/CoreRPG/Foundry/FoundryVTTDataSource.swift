@@ -6,7 +6,9 @@ import Foundation
 
 enum FoundryVTTDataSource: Sendable {
     case archive(FoundryZIPArchive, sourceSHA256: String)
-    case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits, selectedPath: String?)
+    /// `selectedSHA256` is the hash of the selected file, computed once: it was re-read and
+    /// re-hashed on every `sourceSHA256` access. See CODE_AUDIT_29 §7.6.
+    case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits, selectedPath: String?, selectedSHA256: String?)
 
     init(url: URL, limits: FoundryImportLimits) throws {
         let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
@@ -18,7 +20,8 @@ enum FoundryVTTDataSource: Sendable {
                 paths: paths,
                 pathSet: Set(paths),
                 limits: limits,
-                selectedPath: nil
+                selectedPath: nil,
+                selectedSHA256: nil
             )
             return
         }
@@ -37,12 +40,21 @@ enum FoundryVTTDataSource: Sendable {
         if isPlainFile {
             let root = url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
             let selected = try FoundryPackagePath.normalized(url.lastPathComponent)
+            let unhashed = Self.directory(
+                root: root,
+                paths: [selected],
+                pathSet: [selected],
+                limits: limits,
+                selectedPath: selected,
+                selectedSHA256: nil
+            )
             self = .directory(
                 root: root,
                 paths: [selected],
                 pathSet: [selected],
                 limits: limits,
-                selectedPath: selected
+                selectedPath: selected,
+                selectedSHA256: (try? unhashed.data(forPath: selected)).map(foundrySHA256)
             )
             return
         } else {
@@ -60,7 +72,7 @@ enum FoundryVTTDataSource: Sendable {
     var paths: [String] {
         switch self {
         case .archive(let archive, _): archive.entryPaths
-        case .directory(_, let paths, _, _, _): paths
+        case .directory(_, let paths, _, _, _, _): paths
         }
     }
 
@@ -72,30 +84,29 @@ enum FoundryVTTDataSource: Sendable {
     func paths(withPrefix prefix: String) -> [String] {
         switch self {
         case .archive(let archive, _): archive.paths(withPrefix: prefix)
-        case .directory(_, let paths, _, _, _): FoundryPathSearch.paths(withPrefix: prefix, inSorted: paths)
+        case .directory(_, let paths, _, _, _, _): FoundryPathSearch.paths(withPrefix: prefix, inSorted: paths)
         }
     }
 
     var selectedPath: String? {
         switch self {
         case .archive: nil
-        case .directory(_, _, _, _, let path): path
+        case .directory(_, _, _, _, let path, _): path
         }
     }
 
     var sourceSHA256: String? {
         switch self {
         case .archive(_, let hash): return hash
-        case .directory(_, _, _, _, let selectedPath):
-            guard let selectedPath, let data = try? data(forPath: selectedPath) else { return nil }
-            return foundrySHA256(data)
+        case .directory(_, _, _, _, _, let selectedSHA256):
+            return selectedSHA256
         }
     }
 
     func contains(path: String) -> Bool {
         switch self {
         case .archive(let archive, _): archive.contains(path: path)
-        case .directory(_, _, let pathSet, _, _): pathSet.contains(path)
+        case .directory(_, _, let pathSet, _, _, _): pathSet.contains(path)
         }
     }
 
@@ -103,7 +114,7 @@ enum FoundryVTTDataSource: Sendable {
         switch self {
         case .archive(let archive, _):
             return try archive.data(forPath: path)
-        case .directory(let root, _, let pathSet, let limits, let selectedPath):
+        case .directory(let root, _, let pathSet, let limits, let selectedPath, _):
             guard pathSet.contains(path) else { return nil }
             let candidate = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
             let rootPath = root.path(percentEncoded: false)
@@ -136,11 +147,11 @@ private extension FoundryVTTDataSource {
             options: [.skipsHiddenFiles, .skipsPackageDescendants]
         ) else { throw FoundryImportError.unsupportedSource }
         var result: [String] = []
-        for case let fileURL as URL in enumerator {
+        for case let fileUrl as URL in enumerator {
             try Task.checkCancellation()
-            let values = try fileURL.resourceValues(forKeys: keys)
+            let values = try fileUrl.resourceValues(forKeys: keys)
             guard values.isSymbolicLink != true, values.isRegularFile == true else { continue }
-            let canonical = fileURL.standardizedFileURL.resolvingSymlinksInPath()
+            let canonical = fileUrl.standardizedFileURL.resolvingSymlinksInPath()
             let canonicalPath = canonical.path(percentEncoded: false)
             guard canonicalPath.hasPrefix(rootPrefix) else {
                 throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")

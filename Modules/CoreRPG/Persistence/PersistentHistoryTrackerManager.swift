@@ -123,6 +123,8 @@ private actor PersistentHistoryTimestampUpdater {
             let current = userDefault.lastHistoryTransactionTimestamp(for: actor)
             guard let advanced = PersistentHistoryTimestamps.advanced(current: current, to: timestamp) else { continue }
             userDefault.updateLastHistoryTransactionTimestamp(for: actor, to: advanced)
+            // Its token points into the history just deleted. See CODE_AUDIT_29 §5.14.
+            userDefault.updateLastHistoryToken(for: actor, to: nil)
         }
     }
 }
@@ -231,6 +233,11 @@ private actor PersistentHistoryProcessor {
 
     private func processPass() async {
         let fromDate = loadDate()
+        // The token of the last merged transaction: transactions with the same timestamp as it
+        // were skipped or merged twice by the date cursor. The date stays the fallback (first
+        // run, a token from a swapped store) and drives the history cleanup.
+        // See CODE_AUDIT_29 §5.14.
+        let fromToken = userDefaults.lastHistoryToken(for: currentActor)
         let currentActor = currentActor
         let userDefaults = userDefaults
         let viewContext = viewBackupContext
@@ -240,9 +247,17 @@ private actor PersistentHistoryProcessor {
             // Converted to Sendable object-ID snapshots on the background queue: the
             // `NSPersistentHistoryTransaction` objects themselves must not cross into the view
             // context's queue. See CODE_AUDIT_18 §3.18.
-            let transactions = try await backgroundContext.perform {
-                try Self.fetcher(date: fromDate, currentActor: currentActor, backgroundContext: backgroundContext)
-                    .map(HistoryChanges.init)
+            let transactions: [HistoryChanges]
+            do {
+                transactions = try await backgroundContext.perform {
+                    try Self.fetcher(date: fromDate, token: fromToken, currentActor: currentActor, backgroundContext: backgroundContext)
+                        .map(HistoryChanges.init)
+                }
+            } catch where fromToken != nil {
+                // A token of another store (local and iCloud swap) is not valid here: the
+                // next pass starts from the date again.
+                userDefaults.updateLastHistoryToken(for: currentActor, to: nil)
+                throw error
             }
             if transactions.isEmpty {
                 // Update timestamp to now even when empty, so we don't keep checking from distantPast
@@ -266,10 +281,17 @@ private actor PersistentHistoryProcessor {
 
     private static func fetcher(
         date fromDate: Date,
+        token tokenData: Data?,
         currentActor: AppPersistentActor,
         backgroundContext: NSManagedObjectContext
     ) throws -> [NSPersistentHistoryTransaction] {
-        let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: fromDate)
+        let historyFetchRequest: NSPersistentHistoryChangeRequest
+        if let tokenData,
+           let token = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSPersistentHistoryToken.self, from: tokenData) {
+            historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: token)
+        } else {
+            historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: fromDate)
+        }
         if let fetchRequest = NSPersistentHistoryTransaction.fetchRequest {
             // Only OTHER actors' transactions ever need to be merged back into this actor's
             // contexts — this actor's own regular-context changes are already reflected in
@@ -303,6 +325,8 @@ private actor PersistentHistoryProcessor {
         let updated: Set<NSManagedObjectID>
         let deleted: Set<NSManagedObjectID>
         let timestamp: Date
+        /// The archived `NSPersistentHistoryToken` of the transaction.
+        let tokenData: Data?
 
         init(_ transaction: NSPersistentHistoryTransaction) {
             let userInfo = transaction.objectIDNotification().userInfo ?? [:]
@@ -310,6 +334,7 @@ private actor PersistentHistoryProcessor {
             updated = userInfo[NSUpdatedObjectIDsKey] as? Set<NSManagedObjectID> ?? []
             deleted = userInfo[NSDeletedObjectIDsKey] as? Set<NSManagedObjectID> ?? []
             timestamp = transaction.timestamp
+            tokenData = try? NSKeyedArchiver.archivedData(withRootObject: transaction.token, requiringSecureCoding: true)
         }
 
         var remoteSaveUserInfo: [AnyHashable: Any] {
@@ -330,8 +355,9 @@ private actor PersistentHistoryProcessor {
             }
         }
 
-        guard let lastTimestamp = transactions.last?.timestamp else { return }
-        userDefaults.updateLastHistoryTransactionTimestamp(for: currentActor, to: lastTimestamp)
+        guard let last = transactions.last else { return }
+        userDefaults.updateLastHistoryTransactionTimestamp(for: currentActor, to: last.timestamp)
+        userDefaults.updateLastHistoryToken(for: currentActor, to: last.tokenData)
     }
 }
 
@@ -351,5 +377,15 @@ fileprivate extension UserDefaults {
     func updateLastHistoryTransactionTimestamp(for appActor: AppPersistentActor, to newDate: Date?) {
         let key = "PersistentHistoryTracker.lastToken.\(appActor.rawValue)"
         set(newDate, forKey: key)
+    }
+
+    /// The archived history token of the last merged transaction. The `lastToken` key above
+    /// holds a date for historical reasons. See CODE_AUDIT_29 §5.14.
+    func lastHistoryToken(for appActor: AppPersistentActor) -> Data? {
+        data(forKey: "PersistentHistoryTracker.lastHistoryToken.\(appActor.rawValue)")
+    }
+
+    func updateLastHistoryToken(for appActor: AppPersistentActor, to tokenData: Data?) {
+        set(tokenData, forKey: "PersistentHistoryTracker.lastHistoryToken.\(appActor.rawValue)")
     }
 }

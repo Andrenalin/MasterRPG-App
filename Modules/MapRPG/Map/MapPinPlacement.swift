@@ -23,8 +23,23 @@ public enum MapPinPlacement {
     /// location appears in the same place in both.
     @MainActor
     public static func displayPins(_ pins: [MapPinModel], in map: MapModel, pinScale: CGFloat) -> [MapPinModel] {
-        guard let entry = map.entries.first else { return pins }
+        // The same room the player pins are stored in, the image center without one.
+        // See CODE_AUDIT_29 §5.15.
+        guard let entry = defaultRoom(in: map) else {
+            return centered(pins: pins, in: CGSize(width: map.width, height: map.height), pinScale: pinScale)
+        }
         return cascade(pins: pins, in: entry, pinScale: pinScale)
+    }
+
+    /// The room an unplaced pin belongs to: a room the players can see wins, then a room with an
+    /// area over a hex cell, then any room with an area. `nil` when no room has an area. The
+    /// display, the player placement and the battle start all use it. See CODE_AUDIT_29 §5.15.
+    @MainActor
+    public static func defaultRoom(in map: MapModel) -> MapEntryModel? {
+        map.entries.first { $0.isShown && !$0.isHexGrid && !$0.coordinates.isEmpty }
+            ?? map.entries.first { $0.isShown && !$0.coordinates.isEmpty }
+            ?? map.entries.first { !$0.isHexGrid && !$0.coordinates.isEmpty }
+            ?? map.entries.first { !$0.coordinates.isEmpty }
     }
 
     @MainActor

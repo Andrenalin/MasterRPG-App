@@ -79,6 +79,9 @@ public extension PhotoRootModel {
     func fetchPhotoAnalysisImage(for id: UUID) async -> CGImage? {
         guard let item = await itemController.item(for: id), let fileUrl = item.fileUrl,
               let fileUrlDataController else { return nil }
+        // A dataless iCloud placeholder is skipped, not downloaded: a batch extraction over many
+        // photos must not fetch the whole selection. See CODE_AUDIT_29 §5.23.
+        guard await fileUrlDataController.isAvailableWithoutDownloading(fileUrl) else { return nil }
         return await fileUrlDataController.resolvedImage(
             for: fileUrl,
             decodeData: { PhotoAnalysisImage.decode(data: $0) },

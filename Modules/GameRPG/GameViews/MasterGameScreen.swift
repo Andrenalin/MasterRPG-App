@@ -152,7 +152,7 @@ private extension MasterGameScreen {
     MasterGameScreen(
         root: root,
         playerController: PlayerController(root: root, asGameMaster: true),
-        adventureId: GamePreviewData.adventureID
+        adventureId: GamePreviewData.adventureId
     )
     .setAppSizeMode()
     .environment(AppFocusModel())

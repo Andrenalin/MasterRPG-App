@@ -50,20 +50,37 @@ private struct SheetAIAssistantPlacement: View {
     let generatorRoot: GeneratorRootModel?
     let rootModel: SheetRootModel?
     let isHidden: Bool
+    /// The item's controller, asked for once per item when the view appears instead of in every
+    /// pass of `body` (which created, reordered and evicted controllers while rendering).
+    /// See CODE_AUDIT_29 §8.6.
+    @State private var generatorController: GeneratorController?
+
+    private struct ControllerKey: Hashable {
+        let itemId: UUID?
+        let hasRoot: Bool
+    }
 
     var body: some View {
-        if let rootModel,
-           GeneratorRootModel.isAssistantModelAvailable,
-           let generatorController = generatorRoot?.generatorController(forItem: rootModel.sheetModel.source.itemId),
-           generatorController.availability {
-            SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
-                .padding(.horizontal)
-                .padding(.bottom)
-                // Hidden rather than removed while an item or entry editor covers the screen:
-                // removing it would end the AI session and recreate the glass node.
-                .opacity(isHidden ? 0 : 1)
-                .allowsHitTesting(!isHidden)
-                .accessibilityHidden(isHidden)
+        Group {
+            if let rootModel, let generatorController, generatorController.availability {
+                SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                    // Hidden rather than removed while an item or entry editor covers the screen:
+                    // removing it would end the AI session and recreate the glass node.
+                    .opacity(isHidden ? 0 : 1)
+                    .allowsHitTesting(!isHidden)
+                    .accessibilityHidden(isHidden)
+            }
+        }
+        // Also re-asked when the generator root arrives after the view appeared.
+        .task(id: ControllerKey(itemId: rootModel?.sheetModel.source.itemId, hasRoot: generatorRoot != nil)) {
+            guard let itemId = rootModel?.sheetModel.source.itemId,
+                  GeneratorRootModel.isAssistantModelAvailable else {
+                generatorController = nil
+                return
+            }
+            generatorController = generatorRoot?.generatorController(forItem: itemId)
         }
     }
 }

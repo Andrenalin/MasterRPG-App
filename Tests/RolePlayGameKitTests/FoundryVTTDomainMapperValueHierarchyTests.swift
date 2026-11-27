@@ -13,32 +13,32 @@ struct FoundryVTTDomainMapperValueHierarchyTests {
     @Test("Nested actor values become deterministic atomic auxiliary groups")
     func mapsNestedActorValuesIntoGroups() async throws {
         // Given
-        let sourceScopeID = try #require(
+        let sourceScopeId = try #require(
             UUID(uuidString: "AF71F6B2-B421-4126-BD7E-1350322BCBBD")
         )
         let package = makePackage()
 
         // When
-        let first = try await map(package, sourceScopeID: sourceScopeID)
-        let repeated = try await map(package, sourceScopeID: sourceScopeID)
+        let first = try await map(package, sourceScopeId: sourceScopeId)
+        let repeated = try await map(package, sourceScopeId: sourceScopeId)
         let hierarchy = try projectedHierarchy(in: first)
         let repeatedHierarchy = try projectedHierarchy(in: repeated)
 
         // Then
-        #expect(hierarchy.rootItem.decisionOwnerID == nil)
+        #expect(hierarchy.rootItem.decisionOwnerId == nil)
         #expect(hierarchy.root.entries.map(\.name) == ["attributes", "literal.key"])
         #expect(hierarchy.attributesEntry.valueId == hierarchy.attributes.id)
         #expect(hierarchy.attributes.displayState == DisplayStateMask.groupHidden.rawValue)
         #expect(hierarchy.attributes.groupId == hierarchy.root.id)
         #expect(hierarchy.attributesItem.isAuxiliary)
-        #expect(hierarchy.attributesItem.decisionOwnerID == hierarchy.root.id)
+        #expect(hierarchy.attributesItem.decisionOwnerId == hierarchy.root.id)
 
         #expect(hierarchy.attributes.entries.map(\.name) == ["body"])
         #expect(hierarchy.bodyEntry.valueId == hierarchy.body.id)
         #expect(hierarchy.body.displayState == DisplayStateMask.groupHidden.rawValue)
         #expect(hierarchy.body.groupId == hierarchy.attributes.id)
         #expect(hierarchy.bodyItem.isAuxiliary)
-        #expect(hierarchy.bodyItem.decisionOwnerID == hierarchy.root.id)
+        #expect(hierarchy.bodyItem.decisionOwnerId == hierarchy.root.id)
 
         #expect(hierarchy.body.entries.count == 1)
         #expect(hierarchy.base.name == "base")
@@ -90,12 +90,12 @@ private extension FoundryVTTDomainMapperValueHierarchyTests {
 
     func map(
         _ package: FoundryVTTImportPackage,
-        sourceScopeID: UUID
+        sourceScopeId: UUID
     ) async throws -> FoundryMappedImport {
         try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-value-hierarchy-test.json"),
-            sourceScopeID: sourceScopeID,
+            sourceUrl: URL(filePath: "/tmp/foundry-value-hierarchy-test.json"),
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.actors],
             resourceLoader: { _ in Data() }
         )
@@ -136,15 +136,15 @@ private extension FoundryVTTDomainMapperValueHierarchyTests {
     func makePackage() -> FoundryVTTImportPackage {
         let actor = FoundryDocument(
             id: "actors/Actor/sentinel",
-            documentID: "sentinel",
+            documentId: "sentinel",
             documentType: .actor,
             subtype: "character",
             name: "Sentinel",
-            folderID: nil,
+            folderId: nil,
             sort: 0,
             imagePath: nil,
             descriptionHTML: nil,
-            parentID: nil,
+            parentId: nil,
             embeddedDocuments: [],
             references: [],
             unknownFieldNames: [],

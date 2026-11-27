@@ -59,7 +59,7 @@ struct GameStatisticsDataController: Sendable {
             session.maxParticipantCount = Int16(clamping: draft.participants.count)
 
             for participantDraft in draft.participants {
-                self.insertParticipant(participantDraft, sessionID: draft.id, session: session, at: draft.startedAt, in: context)
+                self.insertParticipant(participantDraft, sessionId: draft.id, session: session, at: draft.startedAt, in: context)
             }
             try self.saveIfNeeded(context)
         }
@@ -96,7 +96,7 @@ struct GameStatisticsDataController: Sendable {
                 max(0, lastActivityAt.timeIntervalSince(session.startedAt ?? lastActivityAt))
             )
             session.maxParticipantCount = max(session.maxParticipantCount, Int16(clamping: participants.count))
-            try self.synchronizeParticipants(participants, sessionID: id, session: session, at: effectiveDate, in: context)
+            try self.synchronizeParticipants(participants, sessionId: id, session: session, at: effectiveDate, in: context)
             try self.saveIfNeeded(context)
         }
     }
@@ -151,7 +151,7 @@ struct GameStatisticsDataController: Sendable {
     }
 
     func participantLeft(
-        sessionID: UUID,
+        sessionId: UUID,
         participantId: UUID,
         at date: Date,
         in context: NSManagedObjectContext
@@ -160,7 +160,7 @@ struct GameStatisticsDataController: Sendable {
             let request = NSFetchRequest<RPGGameStatisticParticipant>(entityName: "RPGGameStatisticParticipant")
             request.predicate = NSPredicate(
                 format: "sessionID == %@ AND participantID == %@",
-                sessionID as NSUUID,
+                sessionId as NSUUID,
                 participantId as NSUUID
             )
             request.fetchLimit = 1
@@ -248,14 +248,14 @@ struct GameStatisticsDataController: Sendable {
                 session.transportMask |= Int32(1 << Int(draft.origin.rawValue))
 
                 if let participant {
-                    try self.synchronizeParticipants([participant], sessionID: draft.sessionId, session: session, at: draft.occurredAt, in: context)
+                    try self.synchronizeParticipants([participant], sessionId: draft.sessionId, session: session, at: draft.occurredAt, in: context)
                 }
             }
             try self.saveIfNeeded(context)
         }
     }
 
-    /// The `sessionID|deduplicationKey` pairs of the drafts that are already stored.
+    /// The `sessionId|deduplicationKey` pairs of the drafts that are already stored.
     private func storedDeduplicationKeys(
         for drafts: [GameStatisticEventDraft],
         in context: NSManagedObjectContext
@@ -283,117 +283,7 @@ struct GameStatisticsDataController: Sendable {
         return stored
     }
 
-    func fetchDataSet(
-        interval: DateInterval?,
-        direction: GameStatisticDirection?,
-        in context: NSManagedObjectContext
-    ) async throws -> GameStatisticsDataSet {
-        try await context.perform {
-            let sessionRequest = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
-            var sessionPredicates = [
-                NSPredicate(format: "isComplete == YES"),
-                NSPredicate(format: "isDemo == NO")
-            ]
-            if let interval {
-                sessionPredicates.append(NSPredicate(format: "startedAt >= %@ AND startedAt <= %@", interval.start as NSDate, interval.end as NSDate))
-            }
-            sessionRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: sessionPredicates)
-            sessionRequest.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: false)]
-            sessionRequest.fetchBatchSize = 100
-
-            let managedSessions = try context.fetch(sessionRequest)
-            let sessionIDs = managedSessions.compactMap(\.uuid)
-            guard !sessionIDs.isEmpty else { return .empty }
-            let predicateSessionIDs = sessionIDs.map { $0 as NSUUID }
-
-            let participantRequest = NSFetchRequest<RPGGameStatisticParticipant>(entityName: "RPGGameStatisticParticipant")
-            participantRequest.predicate = NSPredicate(format: "sessionID IN %@", predicateSessionIDs)
-            participantRequest.sortDescriptors = [NSSortDescriptor(key: "connectedDurationSeconds", ascending: false)]
-            participantRequest.fetchBatchSize = 200
-
-            let eventRequest = NSFetchRequest<RPGGameStatisticEvent>(entityName: "RPGGameStatisticEvent")
-            var eventPredicates = [NSPredicate(format: "sessionID IN %@", predicateSessionIDs)]
-            if let direction {
-                eventPredicates.append(NSPredicate(format: "directionRaw == %d", direction.rawValue))
-            }
-            eventRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: eventPredicates)
-            eventRequest.sortDescriptors = [NSSortDescriptor(key: "occurredAt", ascending: true)]
-            eventRequest.fetchBatchSize = 500
-
-            return GameStatisticsDataSet(
-                sessions: managedSessions.compactMap(Self.sessionSnapshot),
-                participants: try context.fetch(participantRequest).compactMap(Self.participantSnapshot),
-                events: try context.fetch(eventRequest).compactMap(Self.eventSnapshot)
-            )
-        }
-    }
-
-    /// Every completed, non-demo game, newest first, without the events and participants
-    /// `fetchDataSet` loads for the charts.
-    func fetchSessions(in context: NSManagedObjectContext) async throws -> [GameStatisticSessionSnapshot] {
-        try await context.perform {
-            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "isComplete == YES"),
-                NSPredicate(format: "isDemo == NO")
-            ])
-            request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: false)]
-            request.fetchBatchSize = 100
-            return try context.fetch(request).compactMap(Self.sessionSnapshot)
-        }
-    }
-
-    /// Deletes all statistics. The game that is running now (`activeSessionId`) is kept, so its
-    /// later events still land in a session.
-    func deleteAll(keeping activeSessionId: UUID? = nil, in context: NSManagedObjectContext) async throws {
-        try await context.perform {
-            for (entityName, idKey) in [
-                ("RPGGameStatisticEvent", "sessionID"),
-                ("RPGGameStatisticParticipant", "sessionID"),
-                ("RPGGameStatisticSession", "uuid")
-            ] {
-                let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
-                request.fetchBatchSize = 500
-                if let activeSessionId {
-                    request.predicate = NSPredicate(format: "\(idKey) == nil OR \(idKey) != %@", activeSessionId as NSUUID)
-                }
-                try context.fetch(request).forEach(context.delete)
-            }
-            try self.saveIfNeeded(context)
-        }
-    }
-
-    /// Removes completed games that ran for less than `duration` seconds or were played in one of
-    /// `roles`; events and participants go with them through the cascade rules.
-    func deleteSessions(
-        shorterThan duration: TimeInterval,
-        orRoles roles: Set<GameStatisticRole>,
-        in context: NSManagedObjectContext
-    ) async throws {
-        try await context.perform {
-            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
-            request.predicate = NSPredicate(
-                format: "isComplete == YES AND (durationSeconds < %f OR roleRaw IN %@)",
-                duration,
-                roles.map(\.rawValue)
-            )
-            request.fetchBatchSize = 100
-            try context.fetch(request).forEach(context.delete)
-            try self.saveIfNeeded(context)
-        }
-    }
-
-    func deleteSessions(ids: Set<UUID>, in context: NSManagedObjectContext) async throws {
-        guard !ids.isEmpty else { return }
-        try await context.perform {
-            let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
-            request.predicate = NSPredicate(format: "uuid IN %@", ids.map { $0 as NSUUID })
-            try context.fetch(request).forEach(context.delete)
-            try self.saveIfNeeded(context)
-        }
-    }
-
-    private func fetchSession(id: UUID, in context: NSManagedObjectContext) throws -> RPGGameStatisticSession? {
+    func fetchSession(id: UUID, in context: NSManagedObjectContext) throws -> RPGGameStatisticSession? {
         let request = NSFetchRequest<RPGGameStatisticSession>(entityName: "RPGGameStatisticSession")
         request.predicate = NSPredicate(format: "uuid == %@", id as NSUUID)
         request.fetchLimit = 1
@@ -402,18 +292,18 @@ struct GameStatisticsDataController: Sendable {
 
     private func synchronizeParticipants(
         _ drafts: [GameStatisticParticipantDraft],
-        sessionID: UUID,
+        sessionId: UUID,
         session: RPGGameStatisticSession,
         at date: Date,
         in context: NSManagedObjectContext
     ) throws {
         guard !drafts.isEmpty else { return }
-        let participantIDs = drafts.map { $0.participantId as NSUUID }
+        let participantIds = drafts.map { $0.participantId as NSUUID }
         let request = NSFetchRequest<RPGGameStatisticParticipant>(entityName: "RPGGameStatisticParticipant")
         request.predicate = NSPredicate(
             format: "sessionID == %@ AND participantID IN %@",
-            sessionID as NSUUID,
-            participantIDs
+            sessionId as NSUUID,
+            participantIds
         )
         var existing: [UUID: RPGGameStatisticParticipant] = [:]
         for participant in try context.fetch(request) {
@@ -447,7 +337,7 @@ struct GameStatisticsDataController: Sendable {
                 participant.isLocal = draft.isLocal
                 participant.isGameMaster = draft.isGameMaster
             } else {
-                insertParticipant(draft, sessionID: sessionID, session: session, at: date, in: context)
+                insertParticipant(draft, sessionId: sessionId, session: session, at: date, in: context)
             }
         }
         session.maxParticipantCount = max(session.maxParticipantCount, Int16(clamping: drafts.count))
@@ -455,14 +345,14 @@ struct GameStatisticsDataController: Sendable {
 
     private func insertParticipant(
         _ draft: GameStatisticParticipantDraft,
-        sessionID: UUID,
+        sessionId: UUID,
         session: RPGGameStatisticSession,
         at date: Date,
         in context: NSManagedObjectContext
     ) {
         let participant = RPGGameStatisticParticipant(context: context)
         participant.uuid = UUID()
-        participant.sessionID = sessionID
+        participant.sessionID = sessionId
         participant.participantID = draft.participantId
         participant.characterID = draft.characterId
         participant.name = draft.name
@@ -479,10 +369,10 @@ struct GameStatisticsDataController: Sendable {
         participant.session = session
     }
 
-    private func closeParticipants(for sessionID: UUID?, in context: NSManagedObjectContext, at date: Date) {
-        guard let sessionID else { return }
+    private func closeParticipants(for sessionId: UUID?, in context: NSManagedObjectContext, at date: Date) {
+        guard let sessionId else { return }
         let request = NSFetchRequest<RPGGameStatisticParticipant>(entityName: "RPGGameStatisticParticipant")
-        request.predicate = NSPredicate(format: "sessionID == %@", sessionID as NSUUID)
+        request.predicate = NSPredicate(format: "sessionID == %@", sessionId as NSUUID)
         guard let participants = try? context.fetch(request) else { return }
         for participant in participants {
             accrueConnectedDuration(for: participant, at: date)
@@ -499,7 +389,7 @@ struct GameStatisticsDataController: Sendable {
         participant.lastSeenAt = date
     }
 
-    private func saveIfNeeded(_ context: NSManagedObjectContext) throws {
+    func saveIfNeeded(_ context: NSManagedObjectContext) throws {
         guard context.hasChanges else { return }
         do {
             try context.save()
@@ -510,8 +400,9 @@ struct GameStatisticsDataController: Sendable {
     }
 
     /// After a failed save the inserted rows stay pending in the context, and the caller's retry
-    /// inserts them a second time. Only the statistics objects are dropped: the context is shared
-    /// with other modules, so `rollback()` would discard their changes too.
+    /// inserts them a second time. Only the statistics objects are dropped, in case a caller hands
+    /// in a context it shares with other modules (the model has its own, see
+    /// `GameStatisticsModel.statisticsContext(sharing:)`).
     func discardUnsavedStatistics(in context: NSManagedObjectContext) {
         func isStatistics(_ object: NSManagedObject) -> Bool {
             object.entity.name?.hasPrefix("RPGGameStatistic") == true
@@ -526,63 +417,4 @@ struct GameStatisticsDataController: Sendable {
         context.processPendingChanges()
     }
 
-    private static func sessionSnapshot(_ session: RPGGameStatisticSession) -> GameStatisticSessionSnapshot? {
-        guard let id = session.uuid, let startedAt = session.startedAt else { return nil }
-        return GameStatisticSessionSnapshot(
-            id: id,
-            startedAt: startedAt,
-            endedAt: session.endedAt ?? session.lastActivityAt ?? startedAt,
-            duration: session.durationSeconds,
-            role: GameStatisticRole(rawValue: session.roleRaw) ?? .unknown,
-            localName: session.localName ?? "",
-            characterId: session.characterID,
-            characterName: session.characterName ?? "",
-            adventureId: session.adventureID,
-            adventureTitle: session.adventureTitle ?? "",
-            masterName: session.masterName ?? "",
-            maxParticipantCount: Int(session.maxParticipantCount)
-        )
-    }
-
-    private static func participantSnapshot(_ participant: RPGGameStatisticParticipant) -> GameStatisticParticipantSnapshot? {
-        guard let id = participant.uuid,
-              let sessionId = participant.sessionID,
-              let participantId = participant.participantID
-        else { return nil }
-        return GameStatisticParticipantSnapshot(
-            id: id,
-            sessionId: sessionId,
-            participantId: participantId,
-            characterId: participant.characterID,
-            name: participant.name ?? "",
-            characterName: participant.characterName ?? "",
-            role: GameStatisticRole(rawValue: participant.roleRaw) ?? .unknown,
-            connectedDuration: participant.connectedDurationSeconds,
-            joinCount: Int(participant.joinCount),
-            isLocal: participant.isLocal
-        )
-    }
-
-    private static func eventSnapshot(_ event: RPGGameStatisticEvent) -> GameStatisticEventSnapshot? {
-        guard let id = event.uuid,
-              let sessionId = event.sessionID,
-              let occurredAt = event.occurredAt
-        else { return nil }
-        return GameStatisticEventSnapshot(
-            id: id,
-            sessionId: sessionId,
-            occurredAt: occurredAt,
-            kind: GameStatisticEventKind(rawValue: event.kindRaw) ?? .message,
-            direction: GameStatisticDirection(rawValue: event.directionRaw) ?? .local,
-            origin: GameStatisticOrigin(rawValue: event.originRaw) ?? .local,
-            actorName: event.actorName ?? "",
-            actorId: event.actorID,
-            module: NetworkModules(rawValue: Int(event.moduleRaw)) ?? .none,
-            outcome: GameStatisticDiceOutcome(rawValue: event.outcomeRaw) ?? .none,
-            quantity: Int(event.quantity),
-            numericValue: event.numericValue,
-            payloadByteCount: event.payloadByteCount,
-            success: event.success
-        )
-    }
 }

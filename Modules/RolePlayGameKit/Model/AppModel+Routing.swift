@@ -9,10 +9,10 @@ import os.log
 
 extension AppModel {
     @MainActor public func presentImport(_ url: URL, with navigator: Navigator) {
-        guard pendingImportURL != url else { return }
-        securityScopedImportURL?.stopAccessingSecurityScopedResource()
-        securityScopedImportURL = url.startAccessingSecurityScopedResource() ? url : nil
-        pendingImportURL = url
+        guard pendingImportUrl != url else { return }
+        securityScopedImportUrl?.stopAccessingSecurityScopedResource()
+        securityScopedImportUrl = url.startAccessingSecurityScopedResource() ? url : nil
+        pendingImportUrl = url
         guard appNavigationModel.initialRouteType == .ready else {
             pendingImportNavigator = navigator
             return
@@ -21,8 +21,8 @@ extension AppModel {
     }
 
     @MainActor public func presentVTTImport(_ url: URL, with navigator: Navigator) {
-        guard pendingVTTImportURL != url else { return }
-        pendingVTTImportURL = url
+        guard pendingVTTImportUrl != url else { return }
+        pendingVTTImportUrl = url
         guard appNavigationModel.initialRouteType == .ready else {
             pendingVTTImportNavigator = navigator
             return
@@ -31,10 +31,10 @@ extension AppModel {
     }
 
     @MainActor public func finishImportPresentation() {
-        securityScopedImportURL?.stopAccessingSecurityScopedResource()
-        securityScopedImportURL = nil
+        securityScopedImportUrl?.stopAccessingSecurityScopedResource()
+        securityScopedImportUrl = nil
         pendingImportNavigator = nil
-        pendingImportURL = nil
+        pendingImportUrl = nil
     }
 
     /// Opens what a continued activity names: the app's own Handoff activity, or (not on tvOS) a tap
@@ -99,11 +99,11 @@ extension AppModel {
     }
 
     func presentPendingExternalNavigationIfNeeded() {
-        if let navigator = pendingImportNavigator, pendingImportURL != nil {
+        if let navigator = pendingImportNavigator, pendingImportUrl != nil {
             pendingImportNavigator = nil
             navigator.navigate(to: SettingsRoute.importData, method: .managedCover)
         }
-        if let navigator = pendingVTTImportNavigator, pendingVTTImportURL != nil {
+        if let navigator = pendingVTTImportNavigator, pendingVTTImportUrl != nil {
             pendingVTTImportNavigator = nil
             presentVTTImport(with: navigator)
         }

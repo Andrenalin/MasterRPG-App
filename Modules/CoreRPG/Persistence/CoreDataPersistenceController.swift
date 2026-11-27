@@ -177,7 +177,8 @@ public struct CoreDataPersistenceController {
         
         model.container = container
         if model.inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(filePath: "/dev/null")
+            // The bound description, not a second force-unwrapped lookup. See CODE_AUDIT_29 §5.28.
+            localDescription.url = URL(filePath: "/dev/null")
         }
 
 #if !os(tvOS)

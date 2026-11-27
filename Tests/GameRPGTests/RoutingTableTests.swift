@@ -289,8 +289,8 @@ struct RoutingTableTests {
             #expect(!url.handles(link, with: appModel.gameNavigator), "\(text)")
         }
         #expect(appModel.pendingExternalRoute == nil)
-        #expect(appModel.pendingImportURL == nil)
-        #expect(appModel.pendingVTTImportURL == nil)
+        #expect(appModel.pendingImportUrl == nil)
+        #expect(appModel.pendingVTTImportUrl == nil)
     }
 
     @Test("A document file opens the import, case-insensitively, and waits for the database")
@@ -301,12 +301,12 @@ struct RoutingTableTests {
 
         #expect(url.handles(gmz, with: appModel.gameNavigator))
 
-        #expect(appModel.pendingImportURL == gmz)
+        #expect(appModel.pendingImportUrl == gmz)
         #expect(appModel.pendingImportNavigator === appModel.gameNavigator)
-        #expect(appModel.pendingVTTImportURL == nil)
+        #expect(appModel.pendingVTTImportUrl == nil)
         #expect(appModel.pendingExternalRoute == nil)
         appModel.finishImportPresentation()
-        #expect(appModel.pendingImportURL == nil)
+        #expect(appModel.pendingImportUrl == nil)
         #expect(appModel.pendingImportNavigator == nil)
     }
 
@@ -317,9 +317,9 @@ struct RoutingTableTests {
 
         #expect(handler(appModel).handles(file, with: appModel.gameNavigator))
 
-        #expect(appModel.pendingVTTImportURL == file)
+        #expect(appModel.pendingVTTImportUrl == file)
         #expect(appModel.pendingVTTImportNavigator === appModel.gameNavigator)
-        #expect(appModel.pendingImportURL == nil)
+        #expect(appModel.pendingImportUrl == nil)
     }
 
     @Test("A file of another kind is no import")
@@ -327,8 +327,8 @@ struct RoutingTableTests {
         let appModel = AppModel.previewWithoutDatabase
 
         #expect(!handler(appModel).handles(URL.temporaryDirectory.appending(path: "notes.txt"), with: appModel.gameNavigator))
-        #expect(appModel.pendingImportURL == nil)
-        #expect(appModel.pendingVTTImportURL == nil)
+        #expect(appModel.pendingImportUrl == nil)
+        #expect(appModel.pendingVTTImportUrl == nil)
     }
 
     @Test("The same document delivered twice keeps the first import request")
@@ -385,7 +385,7 @@ struct RoutingTableTests {
         appModel.presentPendingExternalNavigationIfNeeded()
 
         #expect(appModel.pendingImportNavigator == nil)
-        #expect(appModel.pendingImportURL == gmz, "the URL stays until the import screen is finished")
+        #expect(appModel.pendingImportUrl == gmz, "the URL stays until the import screen is finished")
     }
 
     @Test("The same pending route replaced by a newer one keeps only the newer")

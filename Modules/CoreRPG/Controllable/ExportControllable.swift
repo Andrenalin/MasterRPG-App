@@ -463,7 +463,7 @@ public extension ExportControllable {
               let byteCount = Int(exactly: size), Self.fitsImportBlock(byteCount) else { return false }
 
         try outputStream.append(counter: byteCount, token: ExportDataToken.file.rawValue)
-        let blockSize = 1 << 20
+        let blockSize = ByteUnit.mebibyte  // See CODE_AUDIT_29 §9.10.
         var remaining = byteCount
         while remaining > 0 {
             try Task.checkCancellation()

@@ -27,6 +27,8 @@ final class GameObserver: TabletopGame.Observer {
     }
 
     func actionIsPending(_ action: some TabletopAction, oldSnapshot: TableSnapshot, newSnapshot: TableSnapshot) {
+        // Any table action may move a die: the frame callback scans the dice again.
+        renderer.game?.diceMayBeMoving = true
         guard let action = action as? UpdateEquipmentAction<DieState> else { return }
 
         // A value of 0 is the table's "parked, unused slot" sentinel (see `Die20.init`), not a roll.
@@ -35,9 +37,24 @@ final class GameObserver: TabletopGame.Observer {
         }
     }
 
+    func actionWasConfirmed(_ action: some TabletopAction, oldSnapshot: TableSnapshot, newSnapshot: TableSnapshot) {
+        renderer.game?.diceMayBeMoving = true
+    }
+
+    func actionWasRolledBack(_ action: some TabletopAction, snapshot: TableSnapshot) {
+        renderer.game?.diceMayBeMoving = true
+    }
+
     func playerChangedSeats(_ player: Player, oldSeat: (any TableSeat)?, newSeat: (any TableSeat)?, snapshot: TableSnapshot) {
+        // Deferred like the follow-ups below: claiming a seat mutates the session, and doing that
+        // inline from this callback is the reentrant mutation that corrupted it. The task checks
+        // again that the re-claim is still allowed and the player is still without a seat.
+        // See CODE_AUDIT_29 §3.1.
         if player.id == tabletop.localPlayer.id, newSeat == nil, canAutoClaimSeat {
-            reclaimLocalSeat()
+            Task { @MainActor [weak self] in
+                guard let self, canAutoClaimSeat, !hasLocalSeat else { return }
+                reclaimLocalSeat()
+            }
         }
 
         // The local player's own seat claim just landed. It can arrive after `GameTableView`
@@ -65,6 +82,15 @@ final class GameObserver: TabletopGame.Observer {
     /// Re-claims the seat the local player lost. A player goes back to the seat the deterministic
     /// assignment gave them (without one, the first player seat); `claimAnySeat()` is no option, because it can hand out
     /// seat 0, which belongs to the master.
+    /// Whether TabletopKit's current snapshot gives the local player a seat.
+    private var hasLocalSeat: Bool {
+        var seated = false
+        tabletop.withCurrentSnapshot { snapshot in
+            seated = snapshot.seat(of: PlayerSeat.self, for: tabletop.localPlayer) != nil
+        }
+        return seated
+    }
+
     private func reclaimLocalSeat() {
         if isMaster {
             tabletop.claimSeat(matching: TableSeatIdentifier(0))

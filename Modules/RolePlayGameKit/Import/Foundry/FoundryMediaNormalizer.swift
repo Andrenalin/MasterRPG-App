@@ -97,9 +97,9 @@ enum FoundryMediaNormalizer {
         fileName canonicalPath: String,
         expectedKind: FoundryMediaNormalizationPlan.Kind?
     ) -> FoundryMediaNormalizationPlan? {
-        let sourceURL = URL(filePath: canonicalPath)
-        let filenameExtension = sourceURL.pathExtension.lowercased()
-        let stem = sourceURL.deletingPathExtension().lastPathComponent
+        let sourceUrl = URL(filePath: canonicalPath)
+        let filenameExtension = sourceUrl.pathExtension.lowercased()
+        let stem = sourceUrl.deletingPathExtension().lastPathComponent
 
         if rasterImageFilenameExtensions.contains(filenameExtension) {
             return FoundryMediaNormalizationPlan(
@@ -265,16 +265,16 @@ private extension FoundryMediaNormalizer {
         )
         defer { try? FileManager.default.removeItem(at: workspace) }
 
-        let sourceURL = workspace
+        let sourceUrl = workspace
             .appending(path: "source")
             .appendingPathExtension(sourceFilenameExtension)
-        let outputURL = workspace
+        let outputUrl = workspace
             .appending(path: "normalized")
             .appendingPathExtension("m4a")
-        try data.write(to: sourceURL, options: .atomic)
+        try data.write(to: sourceUrl, options: .atomic)
         try Task.checkCancellation()
 
-        let asset = AVURLAsset(url: sourceURL)
+        let asset = AVURLAsset(url: sourceUrl)
         guard let exporter = AVAssetExportSession(
             asset: asset,
             presetName: AVAssetExportPresetAppleM4A
@@ -282,14 +282,14 @@ private extension FoundryMediaNormalizer {
             throw FoundryMediaNormalizationError.audioExportUnavailable
         }
         do {
-            try await exporter.export(to: outputURL, as: .m4a)
+            try await exporter.export(to: outputUrl, as: .m4a)
         } catch is CancellationError {
             throw CancellationError()
         } catch {
             throw FoundryMediaNormalizationError.invalidAudio
         }
         try Task.checkCancellation()
-        let output = try Data(contentsOf: outputURL)
+        let output = try Data(contentsOf: outputUrl)
         guard !output.isEmpty else {
             throw FoundryMediaNormalizationError.emptyAudioOutput
         }

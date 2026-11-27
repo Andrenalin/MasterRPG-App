@@ -15,7 +15,7 @@ extension ExternalImportReviewSession {
     }
 
     static func decisionKey(for item: ExternalImportBatchItem) -> DecisionKey {
-        DecisionKey(module: item.module, itemId: item.decisionOwnerID ?? item.id)
+        DecisionKey(module: item.module, itemId: item.decisionOwnerId ?? item.id)
     }
 
     static let supportedModuleOrder: [NetworkModules] = [
@@ -50,21 +50,21 @@ extension ExternalImportReviewSession {
             model = controller.model
             items = controller.model.items
             sourceItems = controller.model.sourceItems
-            pendingAffectedSourceIDs = controller.model.pendingAffectedSourceIds
+            pendingAffectedSourceIds = controller.model.pendingAffectedSourceIds
         }
 
         let model: LinkRegisterListModel
         let items: [UUID: [LinkRegisterModel]]
         let sourceItems: [UUID: [LinkRegisterModel]]
-        let pendingAffectedSourceIDs: Set<UUID>
+        let pendingAffectedSourceIds: Set<UUID>
 
         @MainActor
         func restore() {
-            let repairAffectedIDs = model.pendingAffectedSourceIds
+            let repairAffectedIds = model.pendingAffectedSourceIds
             model.restoreSnapshot(
                 items: items,
                 sourceItems: sourceItems,
-                pendingAffectedSourceIds: pendingAffectedSourceIDs.union(repairAffectedIDs)
+                pendingAffectedSourceIds: pendingAffectedSourceIds.union(repairAffectedIds)
             )
         }
     }
@@ -121,7 +121,7 @@ extension ExternalImportReviewSession {
         var skippedItemCount: Int
         var installedAttachmentCount = 0
         var reusedAttachmentCount = 0
-        var importedItemIDs: [NetworkModules: Set<UUID>] = [:]
+        var importedItemIds: [NetworkModules: Set<UUID>] = [:]
 
         var result: ExternalImportResult {
             ExternalImportResult(
@@ -132,7 +132,7 @@ extension ExternalImportReviewSession {
                 skippedItemCount: skippedItemCount,
                 installedAttachmentCount: installedAttachmentCount,
                 reusedAttachmentCount: reusedAttachmentCount,
-                importedItemIDs: importedItemIDs
+                importedItemIds: importedItemIds
             )
         }
     }
@@ -141,7 +141,7 @@ extension ExternalImportReviewSession {
 
     func validatedSelectedItems(rootManager: RootManager) throws -> [ExternalImportBatchItem] {
         var seen: Set<DecisionKey> = []
-        var attachmentFileIDs: Set<UUID> = []
+        var attachmentFileIds: Set<UUID> = []
         let selectedItems = batch.items.filter { decision(for: $0) != .skip }
         for item in selectedItems {
             let key = Self.key(for: item)
@@ -152,12 +152,12 @@ extension ExternalImportReviewSession {
                   rootManager.rootModel(for: item.module) != nil else {
                 throw ExternalImportError.unsupportedModule(item.module)
             }
-            guard item.modelID == item.id, item.modelModule == item.module else {
+            guard item.modelId == item.id, item.modelModule == item.module else {
                 throw ExternalImportError.incompatibleModel(itemId: item.id, module: item.module)
             }
-            if let fileID = item.attachment?.fileID,
-               !attachmentFileIDs.insert(fileID).inserted {
-                throw ExternalImportError.duplicateAttachmentFileID(fileID)
+            if let fileId = item.attachment?.fileId,
+               !attachmentFileIds.insert(fileId).inserted {
+                throw ExternalImportError.duplicateAttachmentFileId(fileId)
             }
         }
 
@@ -227,28 +227,28 @@ extension ExternalImportReviewSession {
             )
         }
 
-        var storageID = attachment.fileID
-        if existingFileUrl?.fileId == storageID {
+        var storageId = attachment.fileId
+        if existingFileUrl?.fileId == storageId {
             // Never overwrite the prior binary: keeping a distinct file makes
             // rollback of a replaced model recoverable.
-            storageID = UUID()
+            storageId = UUID()
         }
         let baseName = URL(filePath: attachment.suggestedFilename).lastPathComponent
-        let safeName = "\(storageID.uuidString)-\(baseName.isEmpty ? "attachment" : baseName)"
+        let safeName = "\(storageId.uuidString)-\(baseName.isEmpty ? "attachment" : baseName)"
         let transient = FileUrl(
             importedData: loaded.data,
-            fileId: storageID,
+            fileId: storageId,
             filename: safeName,
             module: item.module.token,
             contentHash: loaded.contentHash
         )
         guard let stored = try await fileController.createNewFileUrl(
-            fileId: storageID,
+            fileId: storageId,
             unconvertedFileUrl: transient,
             pathExtension: URL(filePath: safeName).pathExtension,
             requireDurableStorage: true
         ) else {
-            throw ExternalImportError.attachmentInstallFailed(attachmentID: attachment.id)
+            throw ExternalImportError.attachmentInstallFailed(attachmentId: attachment.id)
         }
 
         // Record ownership immediately after installation. Any later verification,
@@ -258,7 +258,7 @@ extension ExternalImportReviewSession {
         // Verified with the hash streamed from disk, not by reading the installed file back
         // into memory. See CODE_AUDIT_Folder §7.2.
         guard try await fileController.contentHash(for: stored) == loaded.contentHash else {
-            throw ExternalImportError.attachmentInstallFailed(attachmentID: attachment.id)
+            throw ExternalImportError.attachmentInstallFailed(attachmentId: attachment.id)
         }
         let updatedModel = try modelByAttaching(stored, to: model, item: item)
         return AttachmentResult(
@@ -277,7 +277,7 @@ extension ExternalImportReviewSession {
         if let expectedByteCount = attachment.expectedByteCount,
            data.count != expectedByteCount {
             throw ExternalImportError.attachmentSizeMismatch(
-                attachmentID: attachment.id,
+                attachmentId: attachment.id,
                 expected: expectedByteCount,
                 actual: data.count
             )
@@ -285,7 +285,7 @@ extension ExternalImportReviewSession {
         // Off the main actor; the transient file below reuses it. See CODE_AUDIT_Folder §7.1.
         let hash = await FileUrl.computeContentHash(of: data)
         if let expectedHash = attachment.contentHash, hash != expectedHash {
-            throw ExternalImportError.attachmentHashMismatch(attachmentID: attachment.id)
+            throw ExternalImportError.attachmentHashMismatch(attachmentId: attachment.id)
         }
         return LoadedAttachment(data: data, contentHash: hash)
     }

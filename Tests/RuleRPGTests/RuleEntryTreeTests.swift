@@ -13,12 +13,12 @@ struct RuleEntryTreeTests {
     @Test("Tree nests group children and safely promotes malformed parents")
     func hierarchyProjection() {
         let group = entry(name: "Attributes", kind: .group)
-        let childGroup = entry(name: "Body", kind: .group, parentID: group.id)
-        let leaf = entry(name: "Base", content: "5", parentID: childGroup.id)
-        let orphan = entry(name: "Orphan", parentID: UUID())
+        let childGroup = entry(name: "Body", kind: .group, parentId: group.id)
+        let leaf = entry(name: "Base", content: "5", parentId: childGroup.id)
+        let orphan = entry(name: "Orphan", parentId: UUID())
         let cycleA = entry(name: "Cycle A", kind: .group)
-        let cycleB = entry(name: "Cycle B", kind: .group, parentID: cycleA.id)
-        let cycleChild = entry(name: "Cycle Child", parentID: cycleA.id)
+        let cycleB = entry(name: "Cycle B", kind: .group, parentId: cycleA.id)
+        let cycleChild = entry(name: "Cycle Child", parentId: cycleA.id)
         var cyclicA = cycleA
         cyclicA.parentId = cycleB.id
 
@@ -41,8 +41,8 @@ struct RuleEntryTreeTests {
     @Test("Parent choices exclude the entry and every descendant")
     func validParentChoices() {
         let root = entry(name: "Root", kind: .group)
-        let child = entry(name: "Child", kind: .group, parentID: root.id)
-        let grandchild = entry(name: "Grandchild", parentID: child.id)
+        let child = entry(name: "Child", kind: .group, parentId: root.id)
+        let grandchild = entry(name: "Grandchild", parentId: child.id)
         let unrelated = entry(name: "Unrelated", kind: .group)
         let entries = [root, child, grandchild, unrelated]
 
@@ -63,10 +63,10 @@ struct RuleEntryTreeTests {
     @Test("Changing a group to a leaf reparents direct children to its parent")
     func groupToLeafIntegrity() {
         let root = entry(name: "Root", kind: .group)
-        let group = entry(name: "Body", kind: .group, parentID: root.id)
-        let firstChild = entry(name: "Base", content: "5", parentID: group.id)
-        let nestedGroup = entry(name: "Derived", kind: .group, parentID: group.id)
-        let nestedLeaf = entry(name: "Defense", content: "8", parentID: nestedGroup.id)
+        let group = entry(name: "Body", kind: .group, parentId: root.id)
+        let firstChild = entry(name: "Base", content: "5", parentId: group.id)
+        let nestedGroup = entry(name: "Derived", kind: .group, parentId: group.id)
+        let nestedLeaf = entry(name: "Defense", content: "8", parentId: nestedGroup.id)
 
         let updated = RuleEntryTree.settingKind(
             .text,
@@ -84,8 +84,8 @@ struct RuleEntryTreeTests {
     func groupDeletionIntegrity() {
         let rootLeaf = entry(name: "Introduction")
         let group = entry(name: "Attributes", kind: .group)
-        let childGroup = entry(name: "Body", kind: .group, parentID: group.id)
-        let leaf = entry(name: "Base", content: "5", parentID: childGroup.id)
+        let childGroup = entry(name: "Body", kind: .group, parentId: group.id)
+        let leaf = entry(name: "Base", content: "5", parentId: childGroup.id)
 
         let remaining = RuleEntryTree.removingEntries(
             at: IndexSet(integer: 1),
@@ -102,7 +102,7 @@ struct RuleEntryTreeTests {
         let itemId = UUID()
         let linkedRuleID = UUID()
         let group = entry(name: "Attributes", kind: .group)
-        let leaf = entry(name: "Base", content: "5", parentID: group.id)
+        let leaf = entry(name: "Base", content: "5", parentId: group.id)
         let link = root.linkController.generateLink(
             linkNumber: 0,
             itemId: linkedRuleID,
@@ -173,7 +173,7 @@ struct RuleEntryTreeTests {
         name: String,
         content: String = "",
         kind: RuleEntryKind = .text,
-        parentID: UUID? = nil
+        parentId: UUID? = nil
     ) -> RuleEntryModel {
         var entry = RuleEntryModel(
             id: UUID(),
@@ -181,7 +181,7 @@ struct RuleEntryTreeTests {
             content: content,
             kind: kind
         )
-        entry.parentId = parentID
+        entry.parentId = parentId
         return entry
     }
 }

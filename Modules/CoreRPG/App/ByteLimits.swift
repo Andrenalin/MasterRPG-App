@@ -20,3 +20,10 @@ public enum ByteLimits {
     /// of an item (256 MiB).
     public static let maximumSourceFileBytes = 256 * ByteUnit.mebibyte
 }
+
+/// Core Data fetch tuning shared by the large-table fetches (tags, link register, statistics).
+/// See CODE_AUDIT_29 §9.10.
+public enum CoreDataFetchLimits {
+    /// Rows faulted in per batch when a whole table is read.
+    public static let batchSize = 500
+}

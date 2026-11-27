@@ -484,7 +484,9 @@ public struct GameTableView: View {
         let diceRoot = diceRoot.diceGameControllable
         let focused = diceRoot.gameModel.focusItemIds.first
             .flatMap { diceRoot.gameModel.itemData[$0] as? DiceModel }
-        return game.dieColors(focused: focused, shared: diceRoot.sharedPlayerDice)
+        return game.dieColors(focused: focused) { player in
+            diceRoot.playerDice(senderId: player.id, named: player.name)
+        }
     }
 
     /// Everything about the currently-focused character-sheet dice set that

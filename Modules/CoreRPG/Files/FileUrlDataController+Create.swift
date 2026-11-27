@@ -154,6 +154,7 @@ public extension FileUrlDataController {
 
     /// `requestedUrl` (a path below the module folder), renamed with a numbered suffix when a
     /// file of that name already exists.
+    @concurrent
     private func uniqueDestination(for requestedUrl: URL) async throws -> URL {
         let folder = requestedUrl.deletingLastPathComponent().path(percentEncoded: false)
         let name = try await cloudDocumentController.suggestedFileName(for: folder, filename: requestedUrl.lastPathComponent)
@@ -166,6 +167,7 @@ public extension FileUrlDataController {
     /// `referencedFileUrls` shares it: it is then replaced in place. Any other taken name gets a
     /// numbered suffix. Item names are not unique, and a second photo named like the first used
     /// to overwrite, or silently share, the first one's file. See CODE_AUDIT_21 §5.2.
+    @concurrent
     func writeDestination(for requestedUrl: URL, replacing current: FileUrl?, referencedFileUrls: [FileUrl]) async throws -> URL {
         if let current, current.location == .newCloud,
            let currentLocation = storedLocation(of: current),
@@ -364,6 +366,9 @@ public extension FileUrlDataController {
     /// free name in the same folder is taken: imported bytes used to overwrite whatever file
     /// had that name, including another item's file or a newer local version.
     /// See CODE_AUDIT_Folder §5.2.
+    /// `@concurrent`: path resolution, existence and hash checks and the folder listing run off
+    /// the main-actor caller (`ImportControllable.addFile`). See CODE_AUDIT_29 §3.3.
+    @concurrent
     func importDestination(for fileUrl: FileUrl, contentHash: String, referencedFileUrls: [FileUrl]) async throws -> FileUrl {
         // A url that names no file is given its own name by `createNewFileUrl`.
         guard fileUrl.location != .url,

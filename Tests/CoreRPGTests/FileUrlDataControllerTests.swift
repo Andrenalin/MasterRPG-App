@@ -395,28 +395,28 @@ struct FileAccessTests {
             URL(string: "https://example.com/content/remote-file.test")
         )
 
-        let fileURL = try await sut.createFileUrl(
+        let fileUrl = try await sut.createFileUrl(
             fileId: UUID(),
             url: remoteURL,
             module: module,
             category: nil
         )
 
-        #expect(fileURL.location == .url)
-        #expect(fileURL.rawUrl == remoteURL)
-        #expect(await sut.hasLocalData(for: fileURL) == false)
+        #expect(fileUrl.location == .url)
+        #expect(fileUrl.rawUrl == remoteURL)
+        #expect(await sut.hasLocalData(for: fileUrl) == false)
 
         let replacementURL = try #require(
             URL(string: "https://example.com/content/replacement.test")
         )
         let replacement = FileUrl(
-            fileId: fileURL.fileId,
+            fileId: fileUrl.fileId,
             url: replacementURL,
             location: .url,
             module: module,
             relativeUrl: nil
         )
-        #expect(sut.remoteCacheURL(for: replacement) != sut.remoteCacheURL(for: fileURL))
+        #expect(sut.remoteCacheURL(for: replacement) != sut.remoteCacheURL(for: fileUrl))
     }
 
     @Test("First use downloads a remote URL once and later reads use its cache")
@@ -439,7 +439,7 @@ struct FileAccessTests {
         let remoteURL = try #require(
             URL(string: "https://example.com/content/download.test")
         )
-        let fileURL = FileUrl(
+        let fileUrl = FileUrl(
             fileId: UUID(),
             url: remoteURL,
             location: .url,
@@ -447,18 +447,18 @@ struct FileAccessTests {
             relativeUrl: nil
         )
 
-        let firstRead = try await sut.loadData(for: fileURL)
+        let firstRead = try await sut.loadData(for: fileUrl)
         // The download is moved into the cache, not copied: nothing of it stays in `tmp`.
         // See CODE_AUDIT_21 §7.5.
         #expect(!FileManager.default.fileExists(atPath: sourceURL.path(percentEncoded: false)))
-        let secondRead = try await sut.loadData(for: fileURL)
+        let secondRead = try await sut.loadData(for: fileUrl)
 
         #expect(firstRead == expectedData)
         #expect(secondRead == expectedData)
         #expect(await probe.requestCount == 1)
-        #expect(await sut.hasLocalData(for: fileURL))
+        #expect(await sut.hasLocalData(for: fileUrl))
 
-        try? FileManager.default.removeItem(at: sut.remoteCacheURL(for: fileURL))
+        try? FileManager.default.removeItem(at: sut.remoteCacheURL(for: fileUrl))
     }
 }
 

@@ -3,7 +3,7 @@
 import Foundation
 
 // Extracted from FoundryVTTImportReader.swift per CODE_AUDIT §9.8 — the per-collection decode
-// strategies `FoundryVTTDecoder` dispatches to from `decodeCollection(_:packageKind:packageID:
+// strategies `FoundryVTTDecoder` dispatches to from `decodeCollection(_:packageKind:packageId:
 // source:diagnostics:)` (still in the main file's "Collection Discovery" section). Despite the
 // historical "LevelDB Collection Decoding" name, this also covers the Legacy NeDB and plain-JSON
 // collection formats — all three ultimately hand their raw (id, JSON) pairs to the shared
@@ -21,7 +21,7 @@ extension FoundryVTTDecoder {
     func decodeLevelDBCollection(
         _ spec: FoundryVTTCollectionSpec,
         packageKind: FoundryVTTPackageKind,
-        packageID: String,
+        packageId: String,
         source: FoundryVTTDataSource,
         budget: inout FoundryVTTReadBudget
     ) throws -> (collection: FoundryDocumentCollection, diagnostics: [FoundryImportDiagnostic]) {
@@ -80,7 +80,7 @@ extension FoundryVTTDecoder {
         let current = try FoundryLevelDBRecordMerger.currentRecords(records)
         return try FoundryVTTDocumentDecoder(
             packageKind: packageKind,
-            packageID: packageID,
+            packageId: packageId,
             spec: spec,
             limits: limits
         ).decodeLevelDB(current, budget: &budget)
@@ -175,7 +175,7 @@ extension FoundryVTTDecoder {
     func decodeLegacyDatabase(
         _ spec: FoundryVTTCollectionSpec,
         packageKind: FoundryVTTPackageKind,
-        packageID: String,
+        packageId: String,
         source: FoundryVTTDataSource,
         budget: inout FoundryVTTReadBudget
     ) throws -> (collection: FoundryDocumentCollection, diagnostics: [FoundryImportDiagnostic]) {
@@ -233,7 +233,7 @@ extension FoundryVTTDecoder {
         }
         let decoded = try FoundryVTTDocumentDecoder(
             packageKind: packageKind,
-            packageID: packageID,
+            packageId: packageId,
             spec: spec,
             limits: limits
         ).decodeRawDocuments(current.map { ($0.key, $0.value) }, budget: &budget)
@@ -245,7 +245,7 @@ extension FoundryVTTDecoder {
     func decodeJSONCollection(
         _ spec: FoundryVTTCollectionSpec,
         packageKind: FoundryVTTPackageKind,
-        packageID: String,
+        packageId: String,
         source: FoundryVTTDataSource,
         budget: inout FoundryVTTReadBudget
     ) throws -> (collection: FoundryDocumentCollection, diagnostics: [FoundryImportDiagnostic]) {
@@ -280,7 +280,7 @@ extension FoundryVTTDecoder {
         )
         return try FoundryVTTDocumentDecoder(
             packageKind: packageKind,
-            packageID: packageID,
+            packageId: packageId,
             spec: decodedSpec,
             limits: limits
         ).decodeRawDocuments(documents, budget: &budget)

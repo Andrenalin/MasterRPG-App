@@ -48,10 +48,10 @@ struct SupporterNetworkIdentityTests {
 
     @Test @MainActor
     func activePlayerTierUpdatesImmediately() {
-        let playerID = UUID()
+        let playerId = UUID()
         let model = GameRootModel()
         model.gameConfig = GameConfigModel(
-            id: playerID,
+            id: playerId,
             state: .started,
             master: MasterGameModel(
                 id: UUID(),
@@ -62,7 +62,7 @@ struct SupporterNetworkIdentityTests {
         model.gameRoster = GameRosterModel(
             players: [
                 PlayerGameModel(
-                    id: playerID,
+                    id: playerId,
                     type: .player,
                     name: "Ari",
                     supporterTier: .none
@@ -77,13 +77,13 @@ struct SupporterNetworkIdentityTests {
 
     @Test @MainActor
     func activeMasterTierUpdatesImmediately() {
-        let masterID = UUID()
+        let masterId = UUID()
         let model = GameRootModel()
         model.gameConfig = GameConfigModel(
-            id: masterID,
+            id: masterId,
             state: .started,
             master: MasterGameModel(
-                id: masterID,
+                id: masterId,
                 type: .master,
                 name: "Game Master",
                 supporterTier: .none
@@ -97,14 +97,14 @@ struct SupporterNetworkIdentityTests {
 
     @Test @MainActor
     func masterBroadcastDoesNotOverwriteLocalEntitlement() {
-        let playerID = UUID()
-        let masterID = UUID()
+        let playerId = UUID()
+        let masterId = UUID()
         let model = GameRootModel()
         model.gameConfig = GameConfigModel(
-            id: playerID,
+            id: playerId,
             state: .started,
             master: MasterGameModel(
-                id: masterID,
+                id: masterId,
                 type: .master,
                 name: "Game Master"
             )
@@ -112,7 +112,7 @@ struct SupporterNetworkIdentityTests {
         model.gameRoster = GameRosterModel(
             players: [
                 PlayerGameModel(
-                    id: playerID,
+                    id: playerId,
                     type: .player,
                     name: "Ari",
                     supporterTier: .gold
@@ -121,13 +121,13 @@ struct SupporterNetworkIdentityTests {
         )
 
         model.applyMasterBroadcast(
-            masterId: masterID,
+            masterId: masterId,
             masterName: "Game Master",
             state: GameMasterStateModel(
                 state: .started,
                 players: [
                     PlayerGameModel(
-                        id: playerID,
+                        id: playerId,
                         type: .player,
                         name: "Ari",
                         supporterTier: .none

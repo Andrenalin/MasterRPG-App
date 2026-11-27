@@ -131,12 +131,8 @@ struct PdfContentExtractor: Sendable {
                 // Cancellation ends the whole extraction; only real per-page failures
                 // are skipped (CODE_AUDIT_17 §5.20). See CODE_AUDIT_18 §3.4.
                 throw CancellationError()
-            } catch let error as LanguageModelSession.GenerationError {
-                lastFailure = FoundationModelsErrorHandler.message(for: error, subject: .pdfExtraction)
-                failedPages.append(page.pageNumber)
-                Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(lastFailure, privacy: .public)")
             } catch {
-                lastFailure = error.localizedDescription
+                lastFailure = FoundationModelsErrorHandler.message(for: error, subject: .pdfExtraction)
                 failedPages.append(page.pageNumber)
                 Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(lastFailure, privacy: .public)")
             }

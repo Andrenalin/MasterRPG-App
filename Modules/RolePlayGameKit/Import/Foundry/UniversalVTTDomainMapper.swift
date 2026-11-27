@@ -11,24 +11,24 @@ import UniformTypeIdentifiers
 struct UniversalVTTDomainMapper {
     func map(
         document: UniversalVTTDocument,
-        sourceURL: URL,
-        sourceScopeID: UUID,
+        sourceUrl: URL,
+        sourceScopeId: UUID,
         resourceLoader: @escaping FoundryResourceLoader
     ) async throws -> FoundryMappedImport {
         try Task.checkCancellation()
         await Task.yield()
         try Task.checkCancellation()
         let sourceName = FoundryTextDecoder.plainText(
-            fromHTML: sourceURL.deletingPathExtension().lastPathComponent
+            fromHTML: sourceUrl.deletingPathExtension().lastPathComponent
         )
-        let sourceIdentifier = "universal-vtt#\(sourceScopeID.uuidString.lowercased())"
-        let photoID = FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#photo")
-        let mapID = FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#map")
+        let sourceIdentifier = "universal-vtt#\(sourceScopeId.uuidString.lowercased())"
+        let photoId = FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#photo")
+        let mapId = FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#map")
         let provenance = ExternalImportProvenance(
             source: "Universal VTT",
-            sourceScopeID: sourceScopeID,
+            sourceScopeId: sourceScopeId,
             packageIdentifier: sourceIdentifier,
-            sourcePath: sourceURL.lastPathComponent,
+            sourcePath: sourceUrl.lastPathComponent,
             sourceVersion: document.formatVersion.map { String($0) }
         )
         let imageExtension = URL(filePath: document.imageResource.logicalPath).pathExtension
@@ -41,8 +41,8 @@ struct UniversalVTTDomainMapper {
         }
 
         let attachment = ExternalImportAttachment(
-            id: photoID,
-            fileID: photoID,
+            id: photoId,
+            fileId: photoId,
             suggestedFilename: normalizationPlan.suggestedFilename,
             contentTypeIdentifier: normalizationPlan.contentTypeIdentifier,
             expectedByteCount: nil,
@@ -52,9 +52,9 @@ struct UniversalVTTDomainMapper {
                 return try await normalizationPlan.normalize(sourceData)
             }
         )
-        let photo = PhotoModel.empty(photoID)
+        let photo = PhotoModel.empty(photoId)
         photo.name = sourceName
-        photo.description = "Map image embedded in \(sourceURL.lastPathComponent)."
+        photo.description = "Map image embedded in \(sourceUrl.lastPathComponent)."
         photo.category = .photo
         photo.tags = ["Universal VTT"]
 
@@ -67,12 +67,12 @@ struct UniversalVTTDomainMapper {
             ? ""
             : "\n\n\(document.lights.count) light definitions are retained in the normalized source archive."
         let map = MapModel(
-            id: mapID,
+            id: mapId,
             name: sourceName,
             description: "Imported Universal VTT map.\(lightDescription)",
             tags: [String(localized: "Universal VTT", bundle: .module)],
             category: .dungeon,
-            photoId: photoID,
+            photoId: photoId,
             width: width,
             height: height,
             walls: walls,
@@ -80,7 +80,7 @@ struct UniversalVTTDomainMapper {
         )
 
         let photoItem = ExternalImportBatchItem(
-            id: photoID,
+            id: photoId,
             module: .photo,
             name: photo.name,
             model: photo,
@@ -88,7 +88,7 @@ struct UniversalVTTDomainMapper {
             attachment: attachment
         )
         let mapItem = ExternalImportBatchItem(
-            id: mapID,
+            id: mapId,
             module: .map,
             name: map.name,
             model: map,
@@ -115,17 +115,17 @@ struct UniversalVTTDomainMapper {
         let mappings = [
             FoundryImportMapping(
                 foundryIdentifier: "\(sourceIdentifier)#image",
-                references: [FoundryImportMappingReference(module: .photo, itemId: photoID)]
+                references: [FoundryImportMappingReference(module: .photo, itemId: photoId)]
             ),
             FoundryImportMapping(
                 foundryIdentifier: "\(sourceIdentifier)#scene",
-                references: [FoundryImportMappingReference(module: .map, itemId: mapID)]
+                references: [FoundryImportMappingReference(module: .map, itemId: mapId)]
             )
         ]
         return FoundryMappedImport(
             batch: batch,
             mappings: mappings,
-            archiveID: sourceScopeID,
+            archiveId: sourceScopeId,
             rawOnlyDocumentCount: document.lights.count,
             missingResources: [],
             unsupportedResources: [],
@@ -221,15 +221,15 @@ private extension UniversalVTTDomainMapper {
     ) -> FoundryVTTImportPackage {
         let scene = FoundryDocument(
             id: "\(sourceIdentifier)#scene",
-            documentID: sourceIdentifier,
+            documentId: sourceIdentifier,
             documentType: .scene,
             subtype: "UniversalVTT",
             name: sourceName,
-            folderID: nil,
+            folderId: nil,
             sort: nil,
             imagePath: document.imageResource.logicalPath,
             descriptionHTML: nil,
-            parentID: nil,
+            parentId: nil,
             embeddedDocuments: [],
             references: [],
             unknownFieldNames: document.rawData.objectValue?.keys.sorted() ?? [],

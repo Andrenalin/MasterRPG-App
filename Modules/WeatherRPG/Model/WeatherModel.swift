@@ -9,7 +9,11 @@ import Observation
 // the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
 @MainActor @Observable
 public final class WeatherModel: nonisolated Identifiable {
-    nonisolated public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = .scenario, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
+    /// The category of a new Weather and of a stored one without a known category. See
+    /// CODE_AUDIT_29 §5.21.
+    nonisolated public static let defaultCategory = ItemListCategory.scenario
+
+    nonisolated public init(id: UUID, name: String, description: String, tags: [String], category: ItemListCategory = WeatherModel.defaultCategory, displayState: Int = 0, weatherUpdate: UUID = UUID(), time: Double, cloudThickness: Cloud.Thickness, stormType: Storm.Contents, rainAngle: Double, rainIntensity: Double, lightningFrequency: Double, lightningMaxBolts: Double, lightningForkProbability: Double, photoId: UUID?, entries: [ChildEntryModel] = [], parentId: UUID? = nil) {
         self.id = id
         _name_ = CRDT(wrappedValue: name)
         _description_ = CRDT(wrappedValue: description)

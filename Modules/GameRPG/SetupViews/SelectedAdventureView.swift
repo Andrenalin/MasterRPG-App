@@ -7,6 +7,8 @@ import SwiftUI
 import TipKit
 
 struct SelectedAdventureView: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var spacing12: CGFloat = 12
     let root: GameRoot
 
     @AppStorage(GameStorageKeys.lastAdventureUUID, store: .standard)
@@ -30,7 +32,7 @@ struct SelectedAdventureView: View {
 #else
             Group {
                 if isCompactLayout {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: spacing12) {
                         SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
                         SelectedAdventureViewOptionView(root: root, isCompactLayout: isCompactLayout)
                     }
@@ -38,7 +40,7 @@ struct SelectedAdventureView: View {
                     // A ZStack (not an overlay) so the card grows to the
                     // options' height and their bottom padding is kept.
                     ZStack(alignment: .trailing) {
-                        HStack(alignment: .top, spacing: 12) {
+                        HStack(alignment: .top, spacing: spacing12) {
                             SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
                         }
                         SelectedAdventureViewOptionView(root: root, isCompactLayout: isCompactLayout)
@@ -83,9 +85,9 @@ struct SelectedAdventureView: View {
         }
     }
     
-    private func updateTipSelection(_ adventureID: UUID?) {
-        MasterRPGTips.setSelectedAdventure(adventureID != nil)
-        guard adventureID != nil else { return }
+    private func updateTipSelection(_ adventureId: UUID?) {
+        MasterRPGTips.setSelectedAdventure(adventureId != nil)
+        guard adventureId != nil else { return }
         Task {
             await MasterRPGTips.donateAdventureSelected()
         }
@@ -108,6 +110,9 @@ private struct SelectedAdventureViewAdventureSelectionView: View {
 }
 
 private struct SelectedAdventureViewOptionView: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding12: CGFloat = 12
+    @ScaledMetric private var spacing12: CGFloat = 12
     let root: GameRoot
     let isCompactLayout: Bool
 
@@ -117,8 +122,8 @@ private struct SelectedAdventureViewOptionView: View {
             // Phone width: Import/Play stack together as one leading
             // column, a spacer opens up the row, and the code button forms
             // its own trailing column, bottom-aligned against the column.
-            HStack(alignment: .bottom, spacing: 12) {
-                VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .bottom, spacing: spacing12) {
+                VStack(alignment: .leading, spacing: spacing12) {
                     SelectedAdventureViewImportOrClearButtonView(root: root)
 #if !os(tvOS)
                     if root.gameModel.selectedAdventure != nil {
@@ -133,13 +138,13 @@ private struct SelectedAdventureViewOptionView: View {
                 }
 #endif
             }
-            .padding(12)
+            .padding(padding12)
         } else {
             // iPad/Mac/visionOS width: this block is itself pinned to the
             // card's trailing edge (see the `.overlay(alignment: .trailing)`
             // above), so its own options align trailing too instead of
             // hugging the block's leading edge.
-            VStack(alignment: .trailing, spacing: 12) {
+            VStack(alignment: .trailing, spacing: spacing12) {
                 SelectedAdventureViewImportOrClearButtonView(root: root)
 #if !os(tvOS)
                 if root.gameModel.selectedAdventure != nil {
@@ -148,7 +153,7 @@ private struct SelectedAdventureViewOptionView: View {
                 }
 #endif
             }
-            .padding(12)
+            .padding(padding12)
         }
     }
 }

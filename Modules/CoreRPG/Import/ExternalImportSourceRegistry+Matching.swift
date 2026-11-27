@@ -9,22 +9,22 @@ extension ExternalImportSourceRegistry {
         _ descriptor: ExternalImportSourceDescriptor,
         among entries: [ExternalImportSourceEntry],
         aliases: SourceAliases,
-        newCopyScopeID: UUID = UUID()
+        newCopyScopeId: UUID = UUID()
     ) -> ExternalImportSourceResolution {
         let compatible = entries.filter { isCompatible($0, with: descriptor) }
 
-        if let intrinsicScopeID = descriptor.intrinsicScopeID {
+        if let intrinsicScopeId = descriptor.intrinsicScopeId {
             // A copied Foundry world can retain the bridge instance ID. Explicit aliases make each
             // user-created scope a durable candidate; physical aliases decide between candidates.
-            let reassignedMatches = compatible.filter { $0.intrinsicScopeAlias == intrinsicScopeID }
-            let implicitMatches = compatible.filter { $0.scopeID == intrinsicScopeID }
+            let reassignedMatches = compatible.filter { $0.intrinsicScopeAlias == intrinsicScopeId }
+            let implicitMatches = compatible.filter { $0.scopeId == intrinsicScopeId }
             let intrinsicMatches = mergingByScope(implicitMatches, reassignedMatches)
-            guard !intrinsicMatches.isEmpty else { return .resolved(scopeID: intrinsicScopeID) }
+            guard !intrinsicMatches.isEmpty else { return .resolved(scopeId: intrinsicScopeId) }
 
             let exactFiles = exactFileMatches(in: intrinsicMatches, aliases: aliases)
             if let resolution = resolution(
                 forExactMatches: exactFiles,
-                proposedScopeID: newCopyScopeID
+                proposedScopeId: newCopyScopeId
             ) {
                 return resolution
             }
@@ -32,7 +32,7 @@ extension ExternalImportSourceRegistry {
             let pathMatches = intrinsicMatches.filter { $0.lastKnownPathAlias == aliases.path }
             if let resolution = resolution(
                 forExactMatches: pathMatches,
-                proposedScopeID: newCopyScopeID
+                proposedScopeId: newCopyScopeId
             ) {
                 return resolution
             }
@@ -40,26 +40,26 @@ extension ExternalImportSourceRegistry {
             if intrinsicMatches.count == 1,
                descriptor.semanticMatchPolicy == .automatic,
                let match = intrinsicMatches.first {
-                return .resolved(scopeID: match.scopeID)
+                return .resolved(scopeId: match.scopeId)
             }
             return .requiresSelection(
                 existing: sorted(intrinsicMatches),
-                proposedScopeID: newCopyScopeID
+                proposedScopeId: newCopyScopeId
             )
         }
 
         let fileMatches = exactFileMatches(in: compatible, aliases: aliases)
-        if let resolution = resolution(forExactMatches: fileMatches, proposedScopeID: newCopyScopeID) {
+        if let resolution = resolution(forExactMatches: fileMatches, proposedScopeId: newCopyScopeId) {
             return resolution
         }
 
         let pathMatches = compatible.filter { $0.lastKnownPathAlias == aliases.path }
         if !pathMatches.isEmpty {
             if descriptor.semanticMatchPolicy == .automatic,
-               let resolution = resolution(forExactMatches: pathMatches, proposedScopeID: newCopyScopeID) {
+               let resolution = resolution(forExactMatches: pathMatches, proposedScopeId: newCopyScopeId) {
                 return resolution
             }
-            return .requiresSelection(existing: sorted(pathMatches), proposedScopeID: newCopyScopeID)
+            return .requiresSelection(existing: sorted(pathMatches), proposedScopeId: newCopyScopeId)
         }
 
         let semanticMatches: [ExternalImportSourceEntry]
@@ -70,22 +70,22 @@ extension ExternalImportSourceRegistry {
         }
         if descriptor.semanticMatchPolicy == .automatic, semanticMatches.count == 1,
            let match = semanticMatches.first {
-            return .resolved(scopeID: match.scopeID)
+            return .resolved(scopeId: match.scopeId)
         }
         if !semanticMatches.isEmpty {
-            return .requiresSelection(existing: sorted(semanticMatches), proposedScopeID: newCopyScopeID)
+            return .requiresSelection(existing: sorted(semanticMatches), proposedScopeId: newCopyScopeId)
         }
         if let contentHash = descriptor.contentHash {
             let contentMatches = compatible.filter { $0.lastContentHash == contentHash }
             if !contentMatches.isEmpty {
                 if descriptor.semanticMatchPolicy == .automatic,
-                   let resolution = resolution(forExactMatches: contentMatches, proposedScopeID: newCopyScopeID) {
+                   let resolution = resolution(forExactMatches: contentMatches, proposedScopeId: newCopyScopeId) {
                     return resolution
                 }
-                return .requiresSelection(existing: sorted(contentMatches), proposedScopeID: newCopyScopeID)
+                return .requiresSelection(existing: sorted(contentMatches), proposedScopeId: newCopyScopeId)
             }
         }
-        return .resolved(scopeID: deterministicScopeID(for: descriptor, aliases: aliases))
+        return .resolved(scopeId: deterministicScopeId(for: descriptor, aliases: aliases))
     }
 
     static func revalidate(
@@ -95,35 +95,35 @@ extension ExternalImportSourceRegistry {
         entries: [ExternalImportSourceEntry],
         aliases: SourceAliases
     ) -> ExternalImportSourceClaimResult {
-        let requestedScopeID = intent.scopeID
+        let requestedScopeId = intent.scopeId
         switch intent {
         case .selectedNew:
             // This is the one intent which deliberately creates a separate identity for a copied
             // source. For bridge exports, registration retains the intrinsic ID as a candidate.
-            return .claimed(scopeID: requestedScopeID)
+            return .claimed(scopeId: requestedScopeId)
 
         case .selectedExisting:
             switch latestResolution {
-            case .resolved(let canonicalScopeID):
-                guard canonicalScopeID != requestedScopeID else {
-                    return .claimed(scopeID: requestedScopeID)
+            case .resolved(let canonicalScopeId):
+                guard canonicalScopeId != requestedScopeId else {
+                    return .claimed(scopeId: requestedScopeId)
                 }
-                return .requiresRemapping(canonicalScopeID: canonicalScopeID)
-            case .requiresSelection(let existing, let proposedScopeID):
-                guard existing.contains(where: { $0.scopeID == requestedScopeID }) else {
-                    return .requiresSelection(existing: existing, proposedScopeID: proposedScopeID)
+                return .requiresRemapping(canonicalScopeId: canonicalScopeId)
+            case .requiresSelection(let existing, let proposedScopeId):
+                guard existing.contains(where: { $0.scopeId == requestedScopeId }) else {
+                    return .requiresSelection(existing: existing, proposedScopeId: proposedScopeId)
                 }
-                return .claimed(scopeID: requestedScopeID)
+                return .claimed(scopeId: requestedScopeId)
             }
 
         case .resolved:
             switch latestResolution {
-            case .resolved(let canonicalScopeID):
-                guard canonicalScopeID != requestedScopeID else {
-                    return .claimed(scopeID: requestedScopeID)
+            case .resolved(let canonicalScopeId):
+                guard canonicalScopeId != requestedScopeId else {
+                    return .claimed(scopeId: requestedScopeId)
                 }
-                return .requiresRemapping(canonicalScopeID: canonicalScopeID)
-            case .requiresSelection(let existing, let proposedScopeID):
+                return .requiresRemapping(canonicalScopeId: canonicalScopeId)
+            case .requiresSelection(let existing, let proposedScopeId):
                 // A second review of the exact same bytes can arrive after the first review's
                 // claim. Canonicalize it without asking; genuine path replacement stays ambiguous.
                 let physicalMatches = matchingPhysicalSource(
@@ -132,35 +132,35 @@ extension ExternalImportSourceRegistry {
                     aliases: aliases
                 )
                 if physicalMatches.count == 1, let canonical = physicalMatches.first {
-                    guard canonical.scopeID != requestedScopeID else {
-                        return .claimed(scopeID: requestedScopeID)
+                    guard canonical.scopeId != requestedScopeId else {
+                        return .claimed(scopeId: requestedScopeId)
                     }
-                    return .requiresRemapping(canonicalScopeID: canonical.scopeID)
+                    return .requiresRemapping(canonicalScopeId: canonical.scopeId)
                 }
-                return .requiresSelection(existing: existing, proposedScopeID: proposedScopeID)
+                return .requiresSelection(existing: existing, proposedScopeId: proposedScopeId)
             }
         }
     }
 
     static func registering(
-        scopeID: UUID,
+        scopeId: UUID,
         descriptor: ExternalImportSourceDescriptor,
         aliases: SourceAliases,
         importedAt: Date,
         in entries: [ExternalImportSourceEntry]
     ) -> [ExternalImportSourceEntry] {
-        let existing = entries.first { $0.scopeID == scopeID }
+        let existing = entries.first { $0.scopeId == scopeId }
         let reassignedIntrinsicAlias: UUID?
-        if let intrinsicScopeID = descriptor.intrinsicScopeID, intrinsicScopeID != scopeID {
-            reassignedIntrinsicAlias = intrinsicScopeID
+        if let intrinsicScopeId = descriptor.intrinsicScopeId, intrinsicScopeId != scopeId {
+            reassignedIntrinsicAlias = intrinsicScopeId
         } else {
             reassignedIntrinsicAlias = existing?.intrinsicScopeAlias
         }
 
         var result = entries
-        result.removeAll { $0.scopeID == scopeID }
+        result.removeAll { $0.scopeId == scopeId }
         result.append(ExternalImportSourceEntry(
-            scopeID: scopeID,
+            scopeId: scopeId,
             format: descriptor.format,
             semanticKey: descriptor.semanticKey,
             fileResourceAlias: aliases.file,
@@ -171,7 +171,7 @@ extension ExternalImportSourceRegistry {
             lastImportedAt: importedAt,
             intrinsicScopeAlias: reassignedIntrinsicAlias
         ))
-        result.sort { $0.scopeID.uuidString < $1.scopeID.uuidString }
+        result.sort { $0.scopeId.uuidString < $1.scopeId.uuidString }
         return result
     }
 
@@ -215,7 +215,7 @@ extension ExternalImportSourceRegistry {
             if lhs.lastImportedAt != rhs.lastImportedAt {
                 return lhs.lastImportedAt > rhs.lastImportedAt
             }
-            return lhs.scopeID.uuidString < rhs.scopeID.uuidString
+            return lhs.scopeId.uuidString < rhs.scopeId.uuidString
         }
     }
 
@@ -225,12 +225,12 @@ extension ExternalImportSourceRegistry {
     ) -> [ExternalImportSourceEntry] {
         var entries: [UUID: ExternalImportSourceEntry] = [:]
         for entry in first + second {
-            guard let existing = entries[entry.scopeID] else {
-                entries[entry.scopeID] = entry
+            guard let existing = entries[entry.scopeId] else {
+                entries[entry.scopeId] = entry
                 continue
             }
             if entry.lastImportedAt > existing.lastImportedAt {
-                entries[entry.scopeID] = entry
+                entries[entry.scopeId] = entry
             }
         }
         return Array(entries.values)
@@ -238,12 +238,12 @@ extension ExternalImportSourceRegistry {
 
     /// First allocation must converge even when two devices have not yet synchronized their source
     /// indexes. A deliberate "new copy" choice still receives the random proposal supplied above.
-    static func deterministicScopeID(
+    static func deterministicScopeId(
         for descriptor: ExternalImportSourceDescriptor,
         aliases: SourceAliases
     ) -> UUID {
-        if let intrinsicScopeID = descriptor.intrinsicScopeID {
-            return intrinsicScopeID
+        if let intrinsicScopeId = descriptor.intrinsicScopeId {
+            return intrinsicScopeId
         }
 
         let format = boundedIdentityComponent(descriptor.format)
@@ -274,15 +274,15 @@ extension ExternalImportSourceRegistry {
 
     static func resolution(
         forExactMatches matches: [ExternalImportSourceEntry],
-        proposedScopeID: UUID
+        proposedScopeId: UUID
     ) -> ExternalImportSourceResolution? {
         if matches.count == 1, let match = matches.first {
-            return .resolved(scopeID: match.scopeID)
+            return .resolved(scopeId: match.scopeId)
         }
         guard !matches.isEmpty else { return nil }
         return .requiresSelection(
             existing: sorted(matches),
-            proposedScopeID: proposedScopeID
+            proposedScopeId: proposedScopeId
         )
     }
 
@@ -304,8 +304,8 @@ extension ExternalImportSourceRegistry {
         // file at that path has been removed and replaced. Resolve metadata through a fresh file
         // URL so a replacement cannot inherit the previous file's physical identity and silently
         // update an unrelated arbitrary import.
-        let metadataURL = URL(filePath: url.path(percentEncoded: false))
-        let values = try? metadataURL.resourceValues(forKeys: [
+        let metadataUrl = URL(filePath: url.path(percentEncoded: false))
+        let values = try? metadataUrl.resourceValues(forKeys: [
             .fileResourceIdentifierKey,
             .volumeIdentifierKey,
         ])

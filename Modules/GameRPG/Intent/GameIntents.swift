@@ -36,7 +36,7 @@ public struct NextTurnIntent: AppIntent {
         // See CODE_AUDIT_Since_3.0.1 §5.19.
         guard root.gameModel.gameConfig.isMaster else { return .result(dialog: GameIntentDialog.masterOnly) }
         guard root.battleRoundController.nextAttacker() else { return .result(dialog: GameIntentDialog.nobodyCanAct) }
-        return .result(dialog: GameIntentDialog.turn(of: model))
+        return .result(dialog: GameIntentDialog.turn(of: model, hidingPins: root.battleRoundController.hiddenPinIds))
     }
 }
 
@@ -61,7 +61,7 @@ public struct NextRoundIntent: AppIntent {
         guard root.gameModel.gameConfig.isMaster else { return .result(dialog: GameIntentDialog.masterOnly) }
         guard root.battleRoundController.nextRound() else { return .result(dialog: GameIntentDialog.nobodyCanAct) }
         let round = model.roundCounter
-        if let name = GameIntentDialog.activeName(in: model) {
+        if let name = GameIntentDialog.activeName(in: model, hidingPins: root.battleRoundController.hiddenPinIds) {
             return .result(dialog: .localized(full: "Round \(round). \(name) has the turn.", supporting: "Round \(round)", bundle: .module))
         }
         return .result(dialog: .localized("Round \(round).", bundle: .module))
@@ -256,17 +256,19 @@ enum GameIntentDialog {
     }
 
     @MainActor
-    static func turn(of model: BattleRoundModel) -> IntentDialog {
-        guard let name = activeName(in: model) else {
+    static func turn(of model: BattleRoundModel, hidingPins hiddenPinIds: Set<UUID>) -> IntentDialog {
+        guard let name = activeName(in: model, hidingPins: hiddenPinIds) else {
             return .localized("Next turn.", bundle: .module)
         }
         return .localized(full: "\(name) has the turn.", supporting: "\(name)", bundle: .module)
     }
 
-    /// The name of the combatant whose turn it is, or `nil` when there is none or it has no name.
+    /// The name of the combatant whose turn it is, or `nil` when there is none, it has no name, or
+    /// "Hide Hidden Attackers" hides it (`hiddenPinIds`): Siri speaks aloud at the table, so it
+    /// honours the same rule as the on-screen header. See CODE_AUDIT_29 §6.3.
     @MainActor
-    static func activeName(in model: BattleRoundModel) -> String? {
-        guard let name = model.activeEntry.flatMap({ model.attacker(for: $0) })?.name, !name.isEmpty else { return nil }
+    static func activeName(in model: BattleRoundModel, hidingPins hiddenPinIds: Set<UUID>) -> String? {
+        guard let name = model.activeAttackerName(hidingPins: hiddenPinIds), !name.isEmpty else { return nil }
         return name
     }
 }

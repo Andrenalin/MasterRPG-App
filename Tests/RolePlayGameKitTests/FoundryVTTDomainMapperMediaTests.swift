@@ -27,15 +27,15 @@ struct FoundryVTTDomainMapperMediaTests {
             audioResource.logicalPath: makeSilentPCMWave(),
         ]
         let package = makePackage(resources: [imageResource, vectorResource, audioResource])
-        let sourceScopeID = try #require(
+        let sourceScopeId = try #require(
             UUID(uuidString: "02AB1D8D-4DAB-4A9D-8DD2-A52633255AB4")
         )
 
         // When
         let mapped = try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-media-test.zip"),
-            sourceScopeID: sourceScopeID,
+            sourceUrl: URL(filePath: "/tmp/foundry-media-test.zip"),
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.assets],
             resourceLoader: { resource in
                 guard let data = sourceData[resource.logicalPath] else {
@@ -90,8 +90,8 @@ struct FoundryVTTDomainMapperMediaTests {
         // When
         let mapped = try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-token-names-test.zip"),
-            sourceScopeID: UUID(),
+            sourceUrl: URL(filePath: "/tmp/foundry-token-names-test.zip"),
+            sourceScopeId: UUID(),
             selectedCategories: [.assets],
             resourceLoader: { _ in sourceData }
         )
@@ -111,7 +111,7 @@ struct FoundryVTTDomainMapperMediaTests {
             id: "Playlist.playlist.Sound.theme",
             type: .playlistSound,
             name: "Theme",
-            parentID: "Playlist.playlist",
+            parentId: "Playlist.playlist",
             rawData: .object(["path": .string(playlistResource.logicalPath)])
         )
         let playlist = document(
@@ -124,7 +124,7 @@ struct FoundryVTTDomainMapperMediaTests {
             id: "Scene.scene.AmbientSound.room",
             type: .ambientSound,
             name: "Room ambience",
-            parentID: "Scene.scene",
+            parentId: "Scene.scene",
             rawData: .object(["path": .string(ambientResource.logicalPath)])
         )
         let scene = document(
@@ -161,15 +161,15 @@ struct FoundryVTTDomainMapperMediaTests {
                 ),
             ]
         )
-        let sourceScopeID = try #require(
+        let sourceScopeId = try #require(
             UUID(uuidString: "1713B637-1702-4B95-AB71-6FA8BF55458D")
         )
 
         // When
         let mapped = try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-contextual-audio-test.zip"),
-            sourceScopeID: sourceScopeID,
+            sourceUrl: URL(filePath: "/tmp/foundry-contextual-audio-test.zip"),
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.assets, .playlists, .scenes],
             resourceLoader: { _ in Data() }
         )
@@ -241,21 +241,21 @@ private extension FoundryVTTDomainMapperMediaTests {
         id: String,
         type: FoundryDocumentType,
         name: String,
-        parentID: String? = nil,
+        parentId: String? = nil,
         embeddedDocuments: [FoundryDocument] = [],
         rawData: FoundryJSONValue = .object([:])
     ) -> FoundryDocument {
         FoundryDocument(
             id: id,
-            documentID: id,
+            documentId: id,
             documentType: type,
             subtype: nil,
             name: name,
-            folderID: nil,
+            folderId: nil,
             sort: nil,
             imagePath: nil,
             descriptionHTML: nil,
-            parentID: parentID,
+            parentId: parentId,
             embeddedDocuments: embeddedDocuments,
             references: [],
             unknownFieldNames: [],

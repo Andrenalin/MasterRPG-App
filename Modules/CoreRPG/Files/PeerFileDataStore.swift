@@ -71,8 +71,19 @@ final class PeerFileDataStore: Sendable {
             state.totalBytes += data.count
             return (evicted, previousData)
         }
-        if let previousData, previousData != data { Self.removeTemporaryCopy(of: fileId) }
-        for id in evicted { Self.removeTemporaryCopy(of: id) }
+        // The compare (up to `maximumSourceFileBytes`) and the directory listing run off the
+        // caller, which is the main-actor `addFile` of a game delivery. See CODE_AUDIT_29 §3.6.
+        guard previousData != nil || !evicted.isEmpty else { return }
+        // A copy of the generation that is held when the task runs is kept: a reader may have
+        // written it for the new bytes in the meantime.
+        Task.detached(priority: .utility) { [self] in
+            var stale = evicted
+            if let previousData, previousData != data { stale.append(fileId) }
+            let current = state.withLock { state in
+                stale.compactMap { id in state.entries[id].map { (id, $0.generation) } }
+            }
+            Self.removeTemporaryCopies(of: stale, keeping: Dictionary(current, uniquingKeysWith: { first, _ in first }))
+        }
     }
 
     func remove(_ fileId: UUID) {
@@ -82,7 +93,7 @@ final class PeerFileDataStore: Sendable {
             state.order.removeAll { $0 == fileId }
             return true
         }
-        if removed { Self.removeTemporaryCopy(of: fileId) }
+        if removed { Self.removeTemporaryCopies(of: [fileId]) }
     }
 
     func removeAll() {
@@ -91,7 +102,7 @@ final class PeerFileDataStore: Sendable {
             state = State(nextGeneration: state.nextGeneration)
             return ids
         }
-        for id in ids { Self.removeTemporaryCopy(of: id) }
+        Self.removeTemporaryCopies(of: ids)
     }
 
     /// The name every temporary copy of a peer's file starts with, so `removeTemporaryCopy` finds
@@ -102,11 +113,19 @@ final class PeerFileDataStore: Sendable {
         "\(temporaryCopyPrefix)\(fileId.uuidString)"
     }
 
-    private static func removeTemporaryCopy(of fileId: UUID) {
-        let prefix = temporaryCopyName(of: fileId)
+    /// Removes the temporary copies of `fileIds`, listing the directory once for all of them. The
+    /// copy of a generation in `keeping` stays.
+    private static func removeTemporaryCopies(of fileIds: [UUID], keeping: [UUID: Int] = [:]) {
+        guard !fileIds.isEmpty else { return }
+        let prefixes = fileIds.map { fileId in
+            let prefix = temporaryCopyName(of: fileId)
+            return (prefix: prefix, kept: keeping[fileId].map { generation in "\(prefix)-\(generation)" })
+        }
         let directory = URL.temporaryDirectory
         guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path(percentEncoded: false)) else { return }
-        for name in names where name.hasPrefix(prefix) {
+        for name in names {
+            guard let match = prefixes.first(where: { name.hasPrefix($0.prefix) }) else { continue }
+            if let kept = match.kept, name == kept || name.hasPrefix(kept + ".") { continue }
             try? FileManager.default.removeItem(at: directory.appending(path: name))
         }
     }

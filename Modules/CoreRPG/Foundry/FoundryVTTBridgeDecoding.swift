@@ -34,15 +34,15 @@ struct FoundryBridgeDecoder {
         case "adventure": .documentCollection
         default: .exportedDocument
         }
-        let packageID = sourceObject["id"]?.stringValue ?? "foundry-export"
-        let title = sourceObject["title"]?.stringValue ?? packageID
+        let packageId = sourceObject["id"]?.stringValue ?? "foundry-export"
+        let title = sourceObject["title"]?.stringValue ?? packageId
         let manifest = FoundryVTTPackageManifest(
             kind: kind,
-            id: packageID,
+            id: packageId,
             title: title,
             descriptionHTML: nil,
             version: sourceObject["systemVersion"]?.foundryScalarString,
-            systemID: sourceObject["systemID"]?.stringValue,
+            systemId: sourceObject["systemID"]?.stringValue,
             compatibility: FoundryCompatibility(
                 minimum: nil,
                 verified: header["foundryVersion"]?.foundryScalarString,
@@ -84,18 +84,18 @@ struct FoundryBridgeDecoder {
             }
             let result = try FoundryVTTDocumentDecoder(
                 packageKind: kind,
-                packageID: packageID,
+                packageId: packageId,
                 spec: spec,
                 limits: limits
             ).decodeRawDocuments(rawDocuments, budget: &budget)
-            let recordsByID = Dictionary(records.map { record in
+            let recordsById = Dictionary(records.map { record in
                 let id = record.data["_id"]?.stringValue
                     ?? record.uuid.split(separator: ".").last.map(String.init)
                     ?? record.uuid
                 return (id, record)
             }, uniquingKeysWith: { first, _ in first })
             let documents = result.collection.documents.map { document in
-                guard let record = recordsByID[document.documentID] else { return document }
+                guard let record = recordsById[document.documentId] else { return document }
                 return document.withBridgeSource(uuid: record.uuid, parentUUID: record.parentUUID)
             }
             collections.append(FoundryDocumentCollection(
@@ -166,13 +166,13 @@ struct FoundryBridgeDecoder {
         )
     }
 
-    func resourceData(logicalPaths: Set<String>, sourceURL: URL) throws -> [String: Data] {
-        let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
+    func resourceData(logicalPaths: Set<String>, sourceUrl: URL) throws -> [String: Data] {
+        let values = try sourceUrl.resourceValues(forKeys: [.fileSizeKey])
         guard let size = values.fileSize, size <= limits.maximumArchiveSize else {
             throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
         }
         try Task.checkCancellation()
-        let data = try Data(contentsOf: sourceURL, options: .mappedIfSafe)
+        let data = try Data(contentsOf: sourceUrl, options: .mappedIfSafe)
         try Task.checkCancellation()
         let contents = try decodeContents(data, retainingAssetPaths: logicalPaths)
         guard Set(contents.assets.keys) == logicalPaths else {
@@ -182,13 +182,13 @@ struct FoundryBridgeDecoder {
         return contents.assets
     }
 
-    func allResourceData(sourceURL: URL) throws -> [String: Data] {
-        let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
+    func allResourceData(sourceUrl: URL) throws -> [String: Data] {
+        let values = try sourceUrl.resourceValues(forKeys: [.fileSizeKey])
         guard let size = values.fileSize, size <= limits.maximumArchiveSize else {
             throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
         }
         try Task.checkCancellation()
-        let data = try Data(contentsOf: sourceURL, options: .mappedIfSafe)
+        let data = try Data(contentsOf: sourceUrl, options: .mappedIfSafe)
         try Task.checkCancellation()
         return try decodeContents(data, retainingAssetPaths: nil).assets
     }
@@ -487,15 +487,15 @@ private extension FoundryDocument {
     func withBridgeSource(uuid: String, parentUUID: String?) -> Self {
         Self(
             id: id,
-            documentID: documentID,
+            documentId: documentId,
             documentType: documentType,
             subtype: subtype,
             name: name,
-            folderID: folderID,
+            folderId: folderId,
             sort: sort,
             imagePath: imagePath,
             descriptionHTML: descriptionHTML,
-            parentID: parentID,
+            parentId: parentId,
             sourceUUID: uuid,
             sourceParentUUID: parentUUID,
             embeddedDocuments: embeddedDocuments,

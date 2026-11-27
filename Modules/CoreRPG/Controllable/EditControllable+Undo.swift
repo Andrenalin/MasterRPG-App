@@ -59,8 +59,11 @@ public extension EditControllable {
             itemControllable.persistMembershipChange(model: model)
         } else {
             // The same register and tag count steps as a save, before the stored value is replaced.
-            updateLinkRegister(to: model)
-            updateTagCounts(to: model)
+            // Not for a memory-only game write. See CODE_AUDIT_29 §5.3.
+            if persistsEdit(forceSave: false) {
+                updateLinkRegister(to: model)
+                updateTagCounts(to: model)
+            }
             itemControllable.replace(model: model, isInsert: false)
         }
         editorModel.cacheItemListModel.reset(itemId: model.id)

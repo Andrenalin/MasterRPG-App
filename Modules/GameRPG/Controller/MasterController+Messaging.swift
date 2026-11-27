@@ -57,12 +57,12 @@ extension MasterController {
         if existingCounter == nil {
             gameModel.recordSentDelivery(counter: counter, type: type, module: updated.type, itemId: updated.id)
             root.logGameController.addMessage(
-                messageID: GameDeliveryMessageID(sessionID: gameModel.deliverySessionId, counter: counter),
+                messageId: GameDeliveryMessageId(sessionId: gameModel.deliverySessionId, counter: counter),
                 type: type,
                 subType: subtype,
                 module: updated.type,
                 itemId: updated.id,
-                targetID: playerId
+                targetId: playerId
             )
         }
         return message

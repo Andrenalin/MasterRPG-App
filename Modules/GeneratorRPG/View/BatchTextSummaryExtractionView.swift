@@ -136,7 +136,7 @@ public struct BatchTextSummaryExtractionView: View {
                     if hasRun, !isRunning {
                         Section {
                             Text(
-                                "Updated \(changedItems) items: \(filledNames) names filled, \(replacedDescriptions) descriptions replaced, \(replacedTags) tags replaced.",
+                                "Updated ^[\(changedItems) item](inflect: true): \(filledNames) names filled, \(replacedDescriptions) descriptions replaced, \(replacedTags) tags replaced.",
                                 bundle: .module
                             )
                         }
@@ -199,9 +199,8 @@ public struct BatchTextSummaryExtractionView: View {
     // MARK: - Subviews
 
     private func itemRow(for id: UUID) -> some View {
-        let name = itemController.itemSync(for: id)?.name ?? ""
-        return BatchItemStatusRow(
-            name: name.isEmpty ? id.uuidString : name,
+        BatchItemStatusRow(
+            name: BatchItemRunner.displayName(itemController.itemSync(for: id)?.name),
             status: statuses[id] ?? .pending,
             skippedText: LocalizedStringResource("Skipped: no text to analyze", bundle: .module)
         )
@@ -257,32 +256,23 @@ public struct BatchTextSummaryExtractionView: View {
 
     private func performBatch() async {
         let analyzer = TextSummaryAnalyzers.analyzer(for: module)
-        for id in ids {
-            guard !Task.isCancelled else { return }
+        await BatchItemRunner.run(ids: ids, setStatus: { statuses[$0] = $1 }) { id in
+            resultModel.analysisProgress = nil
             let entriesText = if let entriesText = self.entriesText {
                 await entriesText(id)
             } else {
                 await itemController.compactText(for: id)
             }
-            guard !entriesText.isEmpty else {
-                statuses[id] = .skipped
-                continue
-            }
-            statuses[id] = .analyzing
-            resultModel.analysisProgress = nil
-            do {
-                let result = try await analyzer.analyze(
-                    entriesText: entriesText,
-                    itemName: itemController.itemSync(for: id)?.name ?? "",
-                    resultModel: resultModel,
-                    outputLanguage: selectedLanguage.englishName
-                )
-                guard !Task.isCancelled else { return }
-                applyResult(result, to: id)
-                statuses[id] = .completed
-            } catch {
-                statuses[id] = .failed(error.localizedDescription)
-            }
+            guard !entriesText.isEmpty else { return .skipped }
+            let result = try await analyzer.analyze(
+                entriesText: entriesText,
+                itemName: itemController.itemSync(for: id)?.name ?? "",
+                resultModel: resultModel,
+                outputLanguage: selectedLanguage.englishName
+            )
+            try Task.checkCancellation()
+            applyResult(result, to: id)
+            return .completed
         }
     }
 

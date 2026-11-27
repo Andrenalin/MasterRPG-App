@@ -61,7 +61,7 @@ public struct FoundryVTTPackageManifest: Codable, Equatable, Sendable {
     public let title: String
     public let descriptionHTML: String?
     public let version: String?
-    public let systemID: String?
+    public let systemId: String?
     public let compatibility: FoundryCompatibility
     public let rawData: FoundryJSONValue
 
@@ -71,7 +71,7 @@ public struct FoundryVTTPackageManifest: Codable, Equatable, Sendable {
         title: String,
         descriptionHTML: String?,
         version: String?,
-        systemID: String?,
+        systemId: String?,
         compatibility: FoundryCompatibility,
         rawData: FoundryJSONValue
     ) {
@@ -80,38 +80,63 @@ public struct FoundryVTTPackageManifest: Codable, Equatable, Sendable {
         self.title = title
         self.descriptionHTML = descriptionHTML
         self.version = version
-        self.systemID = systemID
+        self.systemId = systemId
         self.compatibility = compatibility
         self.rawData = rawData
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case id
+        case title
+        case descriptionHTML
+        case version
+        case systemId = "systemID"
+        case compatibility
+        case rawData
     }
 }
 
 /// A folder declaration retained separately from documents so clients can reconstruct hierarchy.
 public struct FoundryDocumentFolder: Codable, Equatable, Identifiable, Sendable {
     public let id: String
-    public let documentID: String
+    public let documentId: String
     public let name: String
-    public let parentID: String?
+    public let parentId: String?
     public let documentType: FoundryDocumentType
     public let sort: Int64?
     public let rawData: FoundryJSONValue
 
     public init(
         id: String,
-        documentID: String,
+        documentId: String,
         name: String,
-        parentID: String?,
+        parentId: String?,
         documentType: FoundryDocumentType,
         sort: Int64?,
         rawData: FoundryJSONValue
     ) {
         self.id = id
-        self.documentID = documentID
+        self.documentId = documentId
         self.name = name
-        self.parentID = parentID
+        self.parentId = parentId
         self.documentType = documentType
         self.sort = sort
         self.rawData = rawData
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case documentId = "documentID"
+        case name
+        case parentId = "parentID"
+        case documentType
+        case sort
+        case rawData
     }
 }
 
@@ -119,15 +144,15 @@ public struct FoundryDocumentFolder: Codable, Equatable, Identifiable, Sendable 
 public struct FoundryDocument: Codable, Equatable, Identifiable, Sendable {
     /// Stable for repeated imports from the same package/collection/document hierarchy.
     public let id: String
-    public let documentID: String
+    public let documentId: String
     public let documentType: FoundryDocumentType
     public let subtype: String?
     public let name: String
-    public let folderID: String?
+    public let folderId: String?
     public let sort: Int64?
     public let imagePath: String?
     public let descriptionHTML: String?
-    public let parentID: String?
+    public let parentId: String?
     /// Original Foundry UUID when the source format provides one explicitly.
     public let sourceUUID: String?
     /// Original Foundry parent UUID for bridge records that are exported separately.
@@ -138,19 +163,19 @@ public struct FoundryDocument: Codable, Equatable, Identifiable, Sendable {
     public let unknownFieldNames: [String]
     public let rawData: FoundryJSONValue
 
-    public var masterRPGID: UUID { FoundryRuleIdentity.uuid(for: id) }
+    public var masterRPGId: UUID { FoundryRuleIdentity.uuid(for: id) }
 
     public init(
         id: String,
-        documentID: String,
+        documentId: String,
         documentType: FoundryDocumentType,
         subtype: String?,
         name: String,
-        folderID: String?,
+        folderId: String?,
         sort: Int64?,
         imagePath: String?,
         descriptionHTML: String?,
-        parentID: String?,
+        parentId: String?,
         sourceUUID: String? = nil,
         sourceParentUUID: String? = nil,
         embeddedDocuments: [FoundryDocument],
@@ -159,21 +184,42 @@ public struct FoundryDocument: Codable, Equatable, Identifiable, Sendable {
         rawData: FoundryJSONValue
     ) {
         self.id = id
-        self.documentID = documentID
+        self.documentId = documentId
         self.documentType = documentType
         self.subtype = subtype
         self.name = name
-        self.folderID = folderID
+        self.folderId = folderId
         self.sort = sort
         self.imagePath = imagePath
         self.descriptionHTML = descriptionHTML
-        self.parentID = parentID
+        self.parentId = parentId
         self.sourceUUID = sourceUUID
         self.sourceParentUUID = sourceParentUUID
         self.embeddedDocuments = embeddedDocuments
         self.references = references
         self.unknownFieldNames = unknownFieldNames
         self.rawData = rawData
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case documentId = "documentID"
+        case documentType
+        case subtype
+        case name
+        case folderId = "folderID"
+        case sort
+        case imagePath
+        case descriptionHTML
+        case parentId = "parentID"
+        case sourceUUID
+        case sourceParentUUID
+        case embeddedDocuments
+        case references
+        case unknownFieldNames
+        case rawData
     }
 }
 

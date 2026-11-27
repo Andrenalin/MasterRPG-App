@@ -36,7 +36,7 @@ struct GameDiceResultPopover: View {
     private var content: GameDiceResultContent.Kind? {
         guard game.shownDiceGroups.contains(group) else { return nil }
         let dice = root.diceRoot.diceGameControllable
-        let playerNames: [String]
+        let players: [TableSeatPlayer]
         switch group {
         case .seat(let seat) where seat == game.localSeat:
             // The edit mode has the dice bag and the dice's remove popovers instead.
@@ -46,20 +46,20 @@ struct GameDiceResultPopover: View {
         case .seat(let seat):
             guard isVisible(isMasterSeat: seat == Self.masterSeat) else { return nil }
             // Several players can share a seat; the overlay lists one result per player.
-            var names = game.seatPlayerNames[seat] ?? []
+            var seated = game.seatPlayers[seat] ?? []
             // A master without a table has its dice at its own seat, named by its roll: the seat's
-            // names only know it once this device has learned which participant is the master.
-            if seat == Self.masterSeat, let name = game.masterGuestGroup?.name, !names.contains(name) {
-                names.insert(name, at: 0)
+            // players only know it once this device has learned which participant is the master.
+            if seat == Self.masterSeat, let name = game.masterGuestGroup?.name, !seated.contains(where: { $0.name == name }) {
+                seated.insert(TableSeatPlayer(id: nil, name: name), at: 0)
             }
-            playerNames = names
+            players = seated
         case .guest(let index):
             guard game.guestGroups.indices.contains(index),
                   isVisible(isMasterSeat: game.guestGroups[index].isGameMaster) else { return nil }
-            playerNames = [game.guestGroups[index].name]
+            players = [TableSeatPlayer(id: nil, name: game.guestGroups[index].name)]
         }
-        return playerNames.lazy
-            .compactMap { dice.playerDiceId(named: $0) }
+        return players.lazy
+            .compactMap { dice.playerDiceId(senderId: $0.id, named: $0.name) }
             .first
             .map { .player(diceId: $0) }
     }

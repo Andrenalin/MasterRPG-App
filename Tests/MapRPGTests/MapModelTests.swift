@@ -301,6 +301,7 @@ struct MapModelTests {
     }
 
     @Test func showingAHexCellRevealsAnIntersectingHiddenRoomBeneathIt() throws {
+        // Real polygons: the reveal tests polygon overlap, not bounding rects. See CODE_AUDIT_29 §6.2.
         let roomId = UUID()
         let otherRoomId = UUID()
         let hexId = UUID()
@@ -312,21 +313,21 @@ struct MapModelTests {
                     id: roomId,
                     name: "Room under the hex",
                     content: "",
-                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 40)],
+                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 0), CGPoint(x: 40, y: 40), CGPoint(x: 0, y: 40)],
                     isShown: false
                 ),
                 MapEntryModel(
                     id: otherRoomId,
                     name: "Unrelated hidden room",
                     content: "",
-                    coordinates: [CGPoint(x: 500, y: 500), CGPoint(x: 540, y: 540)],
+                    coordinates: [CGPoint(x: 500, y: 500), CGPoint(x: 540, y: 500), CGPoint(x: 540, y: 540), CGPoint(x: 500, y: 540)],
                     isShown: false
                 ),
                 MapEntryModel(
                     id: hexId,
                     name: "Hex cell",
                     content: "",
-                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 30, y: 30)],
+                    coordinates: [CGPoint(x: 20, y: 20), CGPoint(x: 60, y: 20), CGPoint(x: 60, y: 60), CGPoint(x: 20, y: 60)],
                     isHexGrid: true,
                     isShown: false
                 )
@@ -353,14 +354,14 @@ struct MapModelTests {
                     id: roomId,
                     name: "Room under the hex",
                     content: "",
-                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 40)],
+                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 0), CGPoint(x: 40, y: 40), CGPoint(x: 0, y: 40)],
                     isShown: true
                 ),
                 MapEntryModel(
                     id: hexId,
                     name: "Hex cell",
                     content: "",
-                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 30, y: 30)],
+                    coordinates: [CGPoint(x: 20, y: 20), CGPoint(x: 60, y: 20), CGPoint(x: 60, y: 60), CGPoint(x: 20, y: 60)],
                     isHexGrid: true,
                     isShown: true
                 )

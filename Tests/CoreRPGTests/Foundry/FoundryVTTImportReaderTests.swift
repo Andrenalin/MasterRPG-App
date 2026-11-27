@@ -201,9 +201,9 @@ struct FoundryVTTImportReaderTests {
         let scene = try #require(package.documents.first)
         let levels = scene.embeddedDocuments.filter { $0.documentType == .level }
 
-        #expect(levels.map(\.documentID).sorted() == ["basement", "ground"])
-        #expect(levels.first { $0.documentID == "basement" }?.rawData.value(at: "elevation.bottom")?.integerValue == -10)
-        #expect(levels.first { $0.documentID == "basement" }?.embeddedDocuments.first?.documentType == .wall)
+        #expect(levels.map(\.documentId).sorted() == ["basement", "ground"])
+        #expect(levels.first { $0.documentId == "basement" }?.rawData.value(at: "elevation.bottom")?.integerValue == -10)
+        #expect(levels.first { $0.documentId == "basement" }?.embeddedDocuments.first?.documentType == .wall)
         #expect(scene.embeddedDocuments.contains { $0.documentType == .token })
         #expect(package.resources.contains { $0.logicalPath == "maps/basement.webp" })
     }

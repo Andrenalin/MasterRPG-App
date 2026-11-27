@@ -6,6 +6,8 @@ import SwiftUI
 import TipKit
 
 struct SelectedPlayerView: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var spacing12: CGFloat = 12
     let root: GameRoot
 
     @AppStorage(GameStorageKeys.lastPlayerUUID, store: .standard)
@@ -31,7 +33,7 @@ struct SelectedPlayerView: View {
 #else
             Group {
                 if isCompactLayout {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: spacing12) {
                         SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
                         
                         if root.gameModel.selectedCharacter != nil {
@@ -42,7 +44,7 @@ struct SelectedPlayerView: View {
                     // A ZStack (not an overlay) so the card grows to the
                     // options' height and their bottom padding is kept.
                     ZStack(alignment: .trailing) {
-                        HStack(alignment: .top, spacing: 12) {
+                        HStack(alignment: .top, spacing: spacing12) {
                             SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
                         }
                         if root.gameModel.selectedCharacter != nil {
@@ -86,9 +88,9 @@ struct SelectedPlayerView: View {
         }
     }
 
-    private func updateTipSelection(_ characterID: UUID?) {
-        MasterRPGTips.setSelectedCharacter(characterID != nil)
-        guard characterID != nil else { return }
+    private func updateTipSelection(_ characterId: UUID?) {
+        MasterRPGTips.setSelectedCharacter(characterId != nil)
+        guard characterId != nil else { return }
         Task {
             await MasterRPGTips.donateCharacterSelected()
         }
@@ -112,6 +114,9 @@ private struct SelectedPlayerViewCharacterSelectionView: View {
 }
 
 private struct SelectedPlayerViewSharePlayStartView: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding12: CGFloat = 12
+    @ScaledMetric private var spacing12: CGFloat = 12
     let root: GameRoot
     let isCompactLayout: Bool
 
@@ -120,8 +125,8 @@ private struct SelectedPlayerViewSharePlayStartView: View {
         // one row, with a spacer opening up the space between them, instead
         // of stacking them so the card stays compact.
         let layout: AnyLayout = isCompactLayout
-            ? AnyLayout(HStackLayout(spacing: 12))
-            : AnyLayout(VStackLayout(alignment: .trailing, spacing: 12))
+            ? AnyLayout(HStackLayout(spacing: spacing12))
+            : AnyLayout(VStackLayout(alignment: .trailing, spacing: spacing12))
 
         return layout {
 #if !os(tvOS)
@@ -132,7 +137,7 @@ private struct SelectedPlayerViewSharePlayStartView: View {
             SelectedPlayerViewPlayerJoinCodeButtonView(root: root)
 #endif
         }
-        .padding(12)
+        .padding(padding12)
     }
 }
 

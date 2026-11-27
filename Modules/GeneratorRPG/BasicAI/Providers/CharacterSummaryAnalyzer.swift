@@ -25,9 +25,7 @@ struct CharacterSummaryAnalyzer: Sendable {
         resultModel: TableSummaryAnalyzerResultModel,
         outputLanguage: String = "English"
     ) async throws -> CharacterSummaryAnalysis {
-        guard SystemLanguageModel.default.availability == .available else {
-            throw PdfSummaryAnalysisError.modelUnavailable
-        }
+        try AnalyzerRunner.requireModel()
 
         let existingName = characterName.trimmingCharacters(in: .whitespacesAndNewlines)
         let truncated = FoundationModelInputLimiter.limitedText(sheetText, maxCharacters: maxCharacters)
@@ -43,20 +41,12 @@ struct CharacterSummaryAnalyzer: Sendable {
 
         var latestContent: CharacterSummaryAnalysis.PartiallyGenerated?
 
-        do {
+        try await AnalyzerRunner.run(subject: .character) {
             for try await snapshot in stream {
                 let content = snapshot.content
                 latestContent = content
                 await resultModel.setAnalysisProgress(TableSummaryAnalysisProgress(content, existingName: existingName))
             }
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch let error as PdfSummaryAnalysisError {
-            throw error
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(FoundationModelsErrorHandler.message(for: error, subject: .character))
-        } catch {
-            throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }
 
         guard let partial = latestContent,
@@ -83,10 +73,21 @@ struct CharacterSummaryAnalyzer: Sendable {
         )
     }
 
+    /// `name` as one line of at most 80 characters, without quotes.
+    static func promptSafeName(_ name: String) -> String {
+        let line = name
+            .split(whereSeparator: \.isNewline)
+            .joined(separator: " ")
+            .filter { !"\"“”„«»".contains($0) }
+        return String(line.prefix(80))
+    }
+
     private func buildPrompt(with text: String, existingName: String, outputLanguage: String) -> String {
         let nameRule = existingName.isEmpty
             ? "The character has no name yet: invent a personal name that fits the race, sex and world, never a description of race or occupation."
-            : "The character is named \"\(existingName)\". Use exactly this name."
+            // The name can come from an import or a peer: it goes into the fence, never into the
+            // instructions, and it is one short line. See CODE_AUDIT_29 §6.4.
+            : "The character already has the name given in this block; use exactly this name:\n\(UntrustedPromptText.fenced(Self.promptSafeName(existingName)))"
         return """
         Analyze this role-playing game character sheet and extract the name, a description and the tag parts.
         Output language: \(outputLanguage)

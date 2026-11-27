@@ -35,6 +35,23 @@ enum GameMetrics {
     /// clearly below `pinHeight - roomHitHalfThickness`, so a touch over a room's fog always hits the
     /// room volume first.
     static let boardHitTestYOffset: Float = -0.006
+
+    /// The map pin pawn's geometry (`PinPawn`), local to the pin entity. See CODE_AUDIT_29 §9.10.
+    enum Pin {
+        /// The pawn's diameter relative to the radius derived from the pin size.
+        static let diameterPerRadius: Float = 1.8
+        static let baseHeight: Float = 0.005
+        /// The photo disk's height above the pin origin, above the base and the highlight ring.
+        static let photoPlaneY: Float = 0.004
+        /// The death-mark cross: its bars lie just above the photo disk.
+        static let deathBarY: Float = 0.006
+        static let deathBarHeight: Float = 0.001
+        static let deathBarLengthRatio: Float = 0.72
+        static let deathBarThicknessRatio: Float = 0.10
+        static let deathBarMinimumThickness: Float = 0.0015
+        /// The height of the pin's hit-test box.
+        static let collisionHeight: Float = 0.02
+    }
 }
 
 /// Marks the map surface's hit-test volume, so the board-drag gesture can target it separately from

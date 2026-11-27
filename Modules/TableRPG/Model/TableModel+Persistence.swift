@@ -33,7 +33,12 @@ extension TableModel: nonisolated ItemDiffComparable {
 
     nonisolated public func isSame(_ other: TableModel) -> Bool {
         return assumeMainActorIsolated {
-            name == other.name &&
+            guard entries.count == other.entries.count else { return false }
+            // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
+            // that every load regenerates, and a position compare failed for a reordered list.
+            // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
+            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            return name == other.name &&
             description == other.description &&
             tags == other.tags &&
             category == other.category &&
@@ -41,12 +46,7 @@ extension TableModel: nonisolated ItemDiffComparable {
             diceId == other.diceId &&
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
-            // sanity checks
-            entries.count == other.entries.count &&
-            entries.enumerated().allSatisfy { index, entry in
-                entry == other.entries[index]
-            }
-
+            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
         }
     }
 

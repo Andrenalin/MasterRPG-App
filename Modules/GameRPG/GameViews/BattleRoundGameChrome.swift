@@ -42,7 +42,7 @@ struct BattleRoundGameChrome: View {
             accessibilityReduceMotion ? nil : .spring(duration: 0.4, bounce: 0.18),
             value: gameScreenModel.showsBattleRoundAnnouncement
         )
-        .task(id: BattleRoundAnnouncementID(isRunning: model.isRunning, round: round)) {
+        .task(id: BattleRoundAnnouncementId(isRunning: model.isRunning, round: round)) {
             guard model.isRunning else {
                 gameScreenModel.showsBattleRoundAnnouncement = false
                 return
@@ -72,7 +72,7 @@ struct BattleRoundGameChrome: View {
     }
 }
 
-private struct BattleRoundAnnouncementID: Equatable {
+private struct BattleRoundAnnouncementId: Equatable {
     let isRunning: Bool
     let round: Int
 }

@@ -40,8 +40,8 @@ struct LogMessagePlayersView: View {
 #Preview {
     LogMessagePlayersView(
         statuses: [
-            .init(id: GamePreviewData.playerID, name: "Aria", received: true),
-            .init(id: GamePreviewData.secondPlayerID, name: "Borin", received: false)
+            .init(id: GamePreviewData.playerId, name: "Aria", received: true),
+            .init(id: GamePreviewData.secondPlayerId, name: "Borin", received: false)
         ],
         fallback: "No players"
     )

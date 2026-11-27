@@ -145,11 +145,11 @@ private extension FoundryArtifactDetector {
         ) else { throw FoundryImportError.unsupportedSource }
         var names = Set<String>()
         var count = 0
-        for case let fileURL as URL in enumerator {
+        for case let fileUrl as URL in enumerator {
             try Task.checkCancellation()
-            let values = try fileURL.resourceValues(forKeys: keys)
+            let values = try fileUrl.resourceValues(forKeys: keys)
             guard values.isSymbolicLink != true, values.isRegularFile == true else { continue }
-            names.insert(fileURL.lastPathComponent.lowercased())
+            names.insert(fileUrl.lastPathComponent.lowercased())
             count += 1
             guard count <= limit else { throw FoundryImportError.tooManyDocuments(count) }
         }

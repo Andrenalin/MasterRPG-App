@@ -23,7 +23,7 @@ struct RuleDataControllerTests {
             token: NetworkModules.rule.token
         )
         let itemId = try #require(UUID(uuidString: "730A837D-BB12-4200-B65D-AF0C34F1E0DF"))
-        let parentID = try #require(UUID(uuidString: "A2E6EA55-F3D2-4731-BA3A-A3C6D5278183"))
+        let parentId = try #require(UUID(uuidString: "A2E6EA55-F3D2-4731-BA3A-A3C6D5278183"))
         let firstID = try #require(UUID(uuidString: "287051B2-6EC2-4C43-A0D4-A94512B51D76"))
         let secondID = try #require(UUID(uuidString: "9FCBBD66-61F2-47AB-B734-059A8D4D1EC6"))
         let payload: FoundryJSONValue = .object([
@@ -32,12 +32,12 @@ struct RuleDataControllerTests {
         ])
         let metadata = RuleSourceMetadata(
             sourceIdentifier: "source-rule",
-            systemID: "ds4",
+            systemId: "ds4",
             systemTitle: "Dungeon Slayers 4",
             systemVersion: "4.2",
             packageIdentifier: "ds4.rules",
             packageName: "Rules",
-            documentID: "source-rule",
+            documentId: "source-rule",
             documentType: "Item",
             subtype: "talent",
             ruleCategory: "talent",
@@ -68,7 +68,7 @@ struct RuleDataControllerTests {
             ],
             sourceMetadata: metadata,
             sourcePayload: .foundryDocument(payload),
-            parentId: parentID
+            parentId: parentId
         )
 
         // When
@@ -91,7 +91,7 @@ struct RuleDataControllerTests {
         #expect(fetched.entries.map(\.parentId) == [nil, firstID])
         #expect(fetched.sourceMetadata == metadata)
         #expect(fetched.sourcePayload == .foundryDocument(payload))
-        #expect(fetched.parentId == parentID)
+        #expect(fetched.parentId == parentId)
         #expect(try await controller.fetchIds() == [itemId])
 
         // When updating, the removed entry must not remain as a Core Data orphan.

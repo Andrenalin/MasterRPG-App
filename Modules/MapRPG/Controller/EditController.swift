@@ -98,10 +98,12 @@ extension EditController: EntryDataEditable {
         case .audio, .dice, .map, .pdf, .photo, .table:
             addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         case .value:
-            guard let editModel = editModel(for: destinationItemId) else { return }
-            addMonsters(to: editModel, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
-            save(updated: editModel, message: "Added Monster".localizedString)
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
+            // The monster pin and the link are one edit: one save, one undo step, one
+            // broadcast (it used to save three times). See CODE_AUDIT_29 §5.17.
+            guard var editModel = editModel(for: destinationItemId) else { return }
+            appendMonsters(to: editModel, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
+            appendLink(link: link, module: module, itemId: itemId, entryId: entryId, to: &editModel, destinationEntryId: destinationEntryId)
+            save(updated: editModel, message: String(localized: "Added Monster", bundle: .module))
         default:
             return
         }
@@ -134,24 +136,6 @@ extension EditController: EntryDataEditable {
         MapEditorRoute.quickEditor(itemRowModel.itemId)
     }
 }
-
-// MARK: - AI Extraction
-
-#if !os(tvOS)
-extension EditController {
-    @MainActor func applyExtractedContent(_ content: TableSummaryAnalysis, to itemId: UUID, selection: TextSummaryPropertySelection) {
-        if selection.applyTitle {
-            reset(name: content.title, itemId: itemId)
-        }
-        if selection.applyDescription {
-            reset(description: content.description, itemId: itemId)
-        }
-        if selection.applyTags {
-            reset(tags: content.tags, itemId: itemId)
-        }
-    }
-}
-#endif
 
 // MARK: - New Editor Functions
 
@@ -414,57 +398,9 @@ extension EditController {
 
 // MARK: - Edit Pins
 
-extension EditController {
-    @MainActor func add(pin: MapPinModel, at index: Int? = nil, to model: MapModel) {
-        let validatedIndex: Int
-        if let index {
-            validatedIndex = min(max(0, index), model.mapPins.count)
-        } else {
-            validatedIndex = model.mapPins.count
-        }
-        model.mapPins.insert(pin, at: validatedIndex)
-        save(updated: model, message: String(localized: "Added pin", bundle: .module))
-    }
-
-}
-
 // MARK: - Monster
 
-extension EditController {
-    @MainActor func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        addMonsters(to: map, entryId: entryId, location: location, monsters: monsters, number: number)
-    }
-
-    @MainActor private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        var pins = MapPinPlacement.spawnPins(monsters: monsters, count: number, location: location, characterRoot: root.characterRoot)
-
-        if let entryId, location == nil {
-            pins = MapPinPlacement.cascade(pins: pins, in: model[entryId], pinScale: model.pinScale)
-        }
-        // All pins are appended first and saved once: one save (and one broadcast) per pin
-        // made adding a group of monsters N saves. See CODE_AUDIT_26 §7.56.
-        guard !pins.isEmpty else { return }
-        model.mapPins.append(contentsOf: pins)
-        save(updated: model, message: String(localized: "Added pin", bundle: .module))
-    }
-}
-
 // MARK: - Photo Pins
-
-extension EditController {
-    /// Adds one pin per photo to a game map, named after the photo and linked to no character.
-    /// At `location` when given, otherwise cascaded in `entryId`'s room.
-    @MainActor func addPhotoPins(map: MapModel, entryId: UUID?, location: CGPoint?, photoIds: [UUID]) {
-        guard !photoIds.isEmpty else { return }
-        let photos = photoIds.map { (photoId: $0, name: root.photoRoot.itemControllable.nameSync(itemId: $0)) }
-        var pins = MapPinPlacement.spawnPhotoPins(photos: photos, location: location)
-        if let entryId, location == nil {
-            pins = MapPinPlacement.cascade(pins: pins, in: map[entryId], pinScale: map.pinScale)
-        }
-        map.mapPins.append(contentsOf: pins)
-        save(updated: map, message: String(localized: "Added pin", bundle: .module))
-    }
-}
 
 // MARK: - HexGrid
 
@@ -519,14 +455,9 @@ extension EditController {
         let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
-        var affectedLinks = true
-        for itemRowModel in itemRowModels {
-            if !linkRegisterController.used(for: itemRowModel).isEmpty {
-                affectedLinks = false
-                break;
-            }
-        }
-        if recoverEntries != nil || affectedLinks {
+        // Named for what it means: no removed entry is linked from elsewhere. See CODE_AUDIT_29 §9.8.
+        let hasNoLinkedEntries = itemRowModels.allSatisfy { linkRegisterController.used(for: $0).isEmpty }
+        if recoverEntries != nil || hasNoLinkedEntries {
             if let recoverEntries {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }

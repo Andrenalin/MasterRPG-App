@@ -287,6 +287,11 @@ extension AdventureRootModel {
         for root in siblingModuleRoots {
             await root.itemControllable.resetData()
         }
+        // The generator has its own store and is not a sibling root; "Reset Data" left its items
+        // behind while every other module was empty. See CODE_AUDIT_29 §5.12.
+        #if !os(tvOS)
+        await generatorRoot?.itemControllable.resetData()
+        #endif
         await linkRegisterController.resetData()
         await searchModel.tagController.resetData()
     }

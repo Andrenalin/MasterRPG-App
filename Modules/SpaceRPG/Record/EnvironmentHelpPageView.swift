@@ -6,22 +6,22 @@ See the LICENSE.txt file for this sample’s licensing information.
 
 import SwiftUI
 
+/// The texts are localized from the module catalog. See CODE_AUDIT_29 §8.1.
 struct EnvironmentHelpPageView: View {
     var body: some View {
         TutorialPageView(
-            pageName: "Environment",
+            pageName: String(localized: "Environment", bundle: .module),
             imageName: "EnvironmentTips",
-            imageCaption: "Make sure you have even, good lighting and a stable environment for scanning. If scanning outdoors, cloudy days work best.\n",
-            prosTitle: "Ideal Environment Characteristics",
+            imageCaption: String(localized: "Make sure you have even, good lighting and a stable environment for scanning. If scanning outdoors, cloudy days work best.", bundle: .module),
+            prosTitle: String(localized: "Ideal Environment Characteristics", bundle: .module),
             pros: [
-                "Diffuse, consistent lighting",
-                "Space around intended object",
-                " "
+                String(localized: "Diffuse, consistent lighting", bundle: .module),
+                String(localized: "Space around intended object", bundle: .module)
             ],
-            consTitle: "May Reduce Quality",
+            consTitle: String(localized: "May Reduce Quality", bundle: .module),
             cons: [
-                "Sunny, directional lighting",
-                "Inconsistent shadows"
+                String(localized: "Sunny, directional lighting", bundle: .module),
+                String(localized: "Inconsistent shadows", bundle: .module)
             ]
         )
     }

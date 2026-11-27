@@ -14,6 +14,9 @@ extension FileUrlDataController {
     /// Moves a `.newCloud` file to `destination`. Returns `nil` when the file is not one this
     /// controller moves; throws when the move fails, so the caller can surface it.
     /// See CODE_AUDIT_Folder §3.8.
+    /// `@concurrent`: every file a folder rename moves resolved its path and listed folders on the
+    /// main actor. See CODE_AUDIT_29 §3.3.
+    @concurrent
     public func move(fileUrl: FileUrl?, to destination: String) async throws -> FileUrl? {
         CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:to:)")
 

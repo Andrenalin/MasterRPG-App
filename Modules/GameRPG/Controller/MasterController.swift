@@ -47,6 +47,11 @@ final class MasterController {
     /// this declaration — same rationale as `resetPlayersTask`. See
     /// CODE_AUDIT_Network §5.13.
     var audioPlayRetryTasks: [UUID: Task<Void, Never>] = [:]
+    /// Identifies the retry task registered per item, so a finished retry forgets only itself.
+    var audioPlayRetryTokens: [UUID: UUID] = [:]
+    /// Incremented by every new play, pause and game end (`clearPendingAudioPlays`). A play that
+    /// suspended compares it before storing itself as pending. See CODE_AUDIT_29 §3.2.
+    var audioPlayGeneration = 0
 
     /// The audio exports that run, per item, so a second delivery of the same file waits for
     /// the first. Declared here for the same reason as `audioPlayRetryTasks`.

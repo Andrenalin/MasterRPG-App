@@ -91,6 +91,10 @@ public protocol DiceGameStorable: Sendable {
     /// The dice a player last shared, as the dice overlay lists them; `nil` if there are none
     /// or this device has hidden that player's dice.
     @MainActor func playerDiceId(named playerName: String) -> UUID?
+    /// The visible dice of the player with `senderId` (by name only among dice of no known sender).
+    @MainActor func playerDiceId(senderId: UUID?, named playerName: String) -> UUID?
+    /// The dice of the player with `senderId`, hidden or not.
+    @MainActor func playerDice(senderId: UUID?, named playerName: String) -> DiceModel?
     /// The dice every other player last shared, as the dice overlay lists them, hidden or not.
     @MainActor var sharedPlayerDice: [DiceModel] { get }
     @MainActor func validateForValue(diceId: UUID, compareValue: Int?)
@@ -153,13 +157,21 @@ extension GameController: DiceGameStorable {
             }
             return other.name == name
         }
+        var replacedId: UUID?
         if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || isSamePlayer($0) }) {
-            let replacedId = diceGameModel.playerDice[index].id
-            diceGameModel.playerSupporterTiers[replacedId] = nil
-            diceGameModel.playerDiceSenders[replacedId] = nil
+            replacedId = diceGameModel.playerDice[index].id
             diceGameModel.playerDice[index] = dice
         } else {
             diceGameModel.playerDice.insert(dice, at: 0)
+        }
+        // The replaced dice leave the game list by id: matching them by sender after clearing the
+        // sender found nothing, so every roll added an item and never removed the old one.
+        // See CODE_AUDIT_29 §5.11.
+        if let replacedId {
+            diceGameModel.playerSupporterTiers[replacedId] = nil
+            diceGameModel.playerDiceSenders[replacedId] = nil
+            gameModel.items.removeAll { $0 == replacedId }
+            gameModel.itemData[replacedId] = nil
         }
         diceGameModel.playerSupporterTiers[dice.id] = supporterTier
         diceGameModel.playerDiceSenders[dice.id] = senderId
@@ -299,12 +311,12 @@ extension GameController: DiceGameStorable {
             }
             return knownNames.contains(dice.name)
         }
-        let activeDiceIDs = Set(diceGameModel.playerDice.map(\.id))
+        let activeDiceIds = Set(diceGameModel.playerDice.map(\.id))
         diceGameModel.playerSupporterTiers = diceGameModel.playerSupporterTiers.filter {
-            activeDiceIDs.contains($0.key)
+            activeDiceIds.contains($0.key)
         }
         diceGameModel.playerDiceSenders = diceGameModel.playerDiceSenders.filter {
-            activeDiceIDs.contains($0.key)
+            activeDiceIds.contains($0.key)
         }
     }
 }

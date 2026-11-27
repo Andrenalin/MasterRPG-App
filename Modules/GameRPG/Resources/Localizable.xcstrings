@@ -3141,6 +3141,23 @@
         }
       }
     },
+    "Hex cell" : {
+      "comment" : "VoiceOver label of an unnamed hex cell on the 3D table.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hexfeld"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ช่องหกเหลี่ยม"
+          }
+        }
+      }
+    },
     "Hidden, Alive, Highlighted" : {
       "localizations" : {
         "de" : {
@@ -6990,6 +7007,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ผู้เล่นที่ไม่รู้จัก"
+          }
+        }
+      }
+    },
+    "Unnamed room" : {
+      "comment" : "VoiceOver label of a room without a name on the 3D table.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbenannter Raum"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ห้องที่ไม่มีชื่อ"
           }
         }
       }

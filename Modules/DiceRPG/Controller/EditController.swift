@@ -101,7 +101,8 @@ extension EditController {
 extension EditController {
     @MainActor func reset(addValue: Double, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
-        item.addDiceEvery <=> Int(addValue)
+        // `Int(_:)` traps on NaN, infinity and out-of-range values. See CODE_AUDIT_29 §5.22.
+        item.addDiceEvery <=> addValue.saturatingInt
         save(updated: item, message: String(localized: "Changed add dice value", bundle: .module))
     }
     

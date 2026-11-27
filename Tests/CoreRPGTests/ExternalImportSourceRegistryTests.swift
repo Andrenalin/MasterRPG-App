@@ -32,26 +32,26 @@ struct ExternalImportSourceRegistryTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appending(path: "world.json")
         try Data("one".utf8).write(to: source)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
         let descriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            sourceURL: source,
+            sourceUrl: source,
             contentHash: "one"
         )
-        let firstScope = try #require(try await registry.resolve(descriptor).scopeID)
-        try await registry.register(scopeID: firstScope, descriptor: descriptor)
+        let firstScope = try #require(try await registry.resolve(descriptor).scopeId)
+        try await registry.register(scopeId: firstScope, descriptor: descriptor)
 
         let renamed = directory.appending(path: "renamed.json")
         try FileManager.default.moveItem(at: source, to: renamed)
         let renamedDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            sourceURL: renamed,
+            sourceUrl: renamed,
             contentHash: "one"
         )
 
-        #expect(try await registry.resolve(renamedDescriptor).scopeID == firstScope)
+        #expect(try await registry.resolve(renamedDescriptor).scopeId == firstScope)
     }
 
     @Test("Copied worlds require an explicit identity choice")
@@ -62,26 +62,26 @@ struct ExternalImportSourceRegistryTests {
         let copy = directory.appending(path: "copy.json")
         try Data("same".utf8).write(to: first)
         try FileManager.default.copyItem(at: first, to: copy)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
         let firstDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            sourceURL: first
+            sourceUrl: first
         )
-        let firstScope = try #require(try await registry.resolve(firstDescriptor).scopeID)
-        try await registry.register(scopeID: firstScope, descriptor: firstDescriptor)
+        let firstScope = try #require(try await registry.resolve(firstDescriptor).scopeId)
+        try await registry.register(scopeId: firstScope, descriptor: firstDescriptor)
 
         let resolution = try await registry.resolve(ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            sourceURL: copy
+            sourceUrl: copy
         ))
-        guard case .requiresSelection(let existing, let proposedScopeID) = resolution else {
+        guard case .requiresSelection(let existing, let proposedScopeId) = resolution else {
             Issue.record("Expected copied world identity choice")
             return
         }
-        #expect(existing.map(\.scopeID) == [firstScope])
-        #expect(proposedScopeID != firstScope)
+        #expect(existing.map(\.scopeId) == [firstScope])
+        #expect(proposedScopeId != firstScope)
     }
 
     @Test("System semantic identity can update across package locations")
@@ -92,23 +92,23 @@ struct ExternalImportSourceRegistryTests {
         let second = directory.appending(path: "ds4-v2.zip")
         try Data("one".utf8).write(to: first)
         try Data("two".utf8).write(to: second)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
         let firstDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-system",
             semanticKey: "system:ds4",
-            sourceURL: first,
+            sourceUrl: first,
             semanticMatchPolicy: .automatic
         )
-        let firstScope = try #require(try await registry.resolve(firstDescriptor).scopeID)
-        try await registry.register(scopeID: firstScope, descriptor: firstDescriptor)
+        let firstScope = try #require(try await registry.resolve(firstDescriptor).scopeId)
+        try await registry.register(scopeId: firstScope, descriptor: firstDescriptor)
         let secondDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-system",
             semanticKey: "system:ds4",
-            sourceURL: second,
+            sourceUrl: second,
             semanticMatchPolicy: .automatic
         )
 
-        #expect(try await registry.resolve(secondDescriptor).scopeID == firstScope)
+        #expect(try await registry.resolve(secondDescriptor).scopeId == firstScope)
     }
 
     @Test("An intrinsic bridge scope wins over aliases")
@@ -117,14 +117,14 @@ struct ExternalImportSourceRegistryTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appending(path: "bridge.mrpgfoundry")
         try Data().write(to: source)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
         let intrinsic = UUID()
 
         #expect(try await registry.resolve(ExternalImportSourceDescriptor(
             format: "foundry-bridge",
-            intrinsicScopeID: intrinsic,
-            sourceURL: source
-        )).scopeID == intrinsic)
+            intrinsicScopeId: intrinsic,
+            sourceUrl: source
+        )).scopeId == intrinsic)
     }
 
     @Test("Replacing an arbitrary source at the same path requires confirmation")
@@ -133,20 +133,20 @@ struct ExternalImportSourceRegistryTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appending(path: "map.uvtt")
         try Data("first".utf8).write(to: source)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
         let first = ExternalImportSourceDescriptor(
             format: "universal-vtt",
-            sourceURL: source,
+            sourceUrl: source,
             contentHash: "first"
         )
-        let firstScope = try #require(try await registry.resolve(first).scopeID)
-        try await registry.register(scopeID: firstScope, descriptor: first)
+        let firstScope = try #require(try await registry.resolve(first).scopeId)
+        try await registry.register(scopeId: firstScope, descriptor: first)
 
         try FileManager.default.removeItem(at: source)
         try Data("unrelated".utf8).write(to: source)
         let resolution = try await registry.resolve(ExternalImportSourceDescriptor(
             format: "universal-vtt",
-            sourceURL: source,
+            sourceUrl: source,
             contentHash: "unrelated"
         ))
 
@@ -154,7 +154,7 @@ struct ExternalImportSourceRegistryTests {
             Issue.record("Expected an explicit source identity choice")
             return
         }
-        #expect(existing.map(\.scopeID) == [firstScope])
+        #expect(existing.map(\.scopeId) == [firstScope])
         #expect(proposed != firstScope)
     }
 
@@ -167,19 +167,19 @@ struct ExternalImportSourceRegistryTests {
         let secondURL = directory.appending(path: "second.uvtt")
         try Data("first".utf8).write(to: firstURL)
         try Data("second".utf8).write(to: secondURL)
-        let firstRegistry = ExternalImportSourceRegistry(directoryURL: indexDirectory)
-        let secondRegistry = ExternalImportSourceRegistry(directoryURL: indexDirectory)
+        let firstRegistry = ExternalImportSourceRegistry(directoryUrl: indexDirectory)
+        let secondRegistry = ExternalImportSourceRegistry(directoryUrl: indexDirectory)
         let firstScope = UUID()
         let secondScope = UUID()
-        let first = ExternalImportSourceDescriptor(format: "universal-vtt", sourceURL: firstURL)
-        let second = ExternalImportSourceDescriptor(format: "universal-vtt", sourceURL: secondURL)
+        let first = ExternalImportSourceDescriptor(format: "universal-vtt", sourceUrl: firstURL)
+        let second = ExternalImportSourceDescriptor(format: "universal-vtt", sourceUrl: secondURL)
 
-        async let firstRegistration: Void = firstRegistry.register(scopeID: firstScope, descriptor: first)
-        async let secondRegistration: Void = secondRegistry.register(scopeID: secondScope, descriptor: second)
+        async let firstRegistration: Void = firstRegistry.register(scopeId: firstScope, descriptor: first)
+        async let secondRegistration: Void = secondRegistry.register(scopeId: secondScope, descriptor: second)
         _ = try await (firstRegistration, secondRegistration)
 
         let entries = try await firstRegistry.allEntries()
-        #expect(Set(entries.map(\.scopeID)) == Set([firstScope, secondScope]))
+        #expect(Set(entries.map(\.scopeId)) == Set([firstScope, secondScope]))
     }
 
     @Test("First allocation converges before separate registries synchronize")
@@ -190,32 +190,32 @@ struct ExternalImportSourceRegistryTests {
         let source = directory.appending(path: "shared.uvtt")
         try Data("same source".utf8).write(to: source)
         let indexDirectory = directory.appending(path: "registry")
-        let firstRegistry = ExternalImportSourceRegistry(directoryURL: indexDirectory)
-        let secondRegistry = ExternalImportSourceRegistry(directoryURL: indexDirectory)
+        let firstRegistry = ExternalImportSourceRegistry(directoryUrl: indexDirectory)
+        let secondRegistry = ExternalImportSourceRegistry(directoryUrl: indexDirectory)
         let descriptor = ExternalImportSourceDescriptor(
             format: "universal-vtt",
-            sourceURL: source,
+            sourceUrl: source,
             contentHash: "same-hash"
         )
-        let firstReviewScope = try #require(try await firstRegistry.resolve(descriptor).scopeID)
-        let secondReviewScope = try #require(try await secondRegistry.resolve(descriptor).scopeID)
+        let firstReviewScope = try #require(try await firstRegistry.resolve(descriptor).scopeId)
+        let secondReviewScope = try #require(try await secondRegistry.resolve(descriptor).scopeId)
         #expect(firstReviewScope == secondReviewScope)
 
         // When
         let firstClaim = try await firstRegistry.claim(
-            .resolved(scopeID: firstReviewScope),
+            .resolved(scopeId: firstReviewScope),
             descriptor: descriptor
         )
         let secondClaim = try await secondRegistry.claim(
-            .resolved(scopeID: secondReviewScope),
+            .resolved(scopeId: secondReviewScope),
             descriptor: descriptor
         )
 
         // Then
-        #expect(firstClaim == .claimed(scopeID: firstReviewScope))
-        #expect(secondClaim == .claimed(scopeID: firstReviewScope))
+        #expect(firstClaim == .claimed(scopeId: firstReviewScope))
+        #expect(secondClaim == .claimed(scopeId: firstReviewScope))
         let entries = try await firstRegistry.allEntries()
-        #expect(entries.map(\.scopeID) == [firstReviewScope])
+        #expect(entries.map(\.scopeId) == [firstReviewScope])
     }
 
     @Test("Content fingerprints converge across different device paths")
@@ -235,22 +235,22 @@ struct ExternalImportSourceRegistryTests {
         try Data("map".utf8).write(to: firstURL)
         try Data("map".utf8).write(to: secondURL)
         let firstRegistry = ExternalImportSourceRegistry(
-            directoryURL: directory.appending(path: "device-a-registry")
+            directoryUrl: directory.appending(path: "device-a-registry")
         )
         let secondRegistry = ExternalImportSourceRegistry(
-            directoryURL: directory.appending(path: "device-b-registry")
+            directoryUrl: directory.appending(path: "device-b-registry")
         )
 
         let first = try #require(try await firstRegistry.resolve(ExternalImportSourceDescriptor(
             format: "universal-vtt",
-            sourceURL: firstURL,
+            sourceUrl: firstURL,
             contentHash: "shared-fingerprint"
-        )).scopeID)
+        )).scopeId)
         let second = try #require(try await secondRegistry.resolve(ExternalImportSourceDescriptor(
             format: "universal-vtt",
-            sourceURL: secondURL,
+            sourceUrl: secondURL,
             contentHash: "shared-fingerprint"
-        )).scopeID)
+        )).scopeId)
 
         #expect(first == second)
     }
@@ -264,26 +264,26 @@ struct ExternalImportSourceRegistryTests {
         try Data("v1".utf8).write(to: firstURL)
         try Data("v2".utf8).write(to: secondURL)
         let firstRegistry = ExternalImportSourceRegistry(
-            directoryURL: directory.appending(path: "device-a-registry")
+            directoryUrl: directory.appending(path: "device-a-registry")
         )
         let secondRegistry = ExternalImportSourceRegistry(
-            directoryURL: directory.appending(path: "device-b-registry")
+            directoryUrl: directory.appending(path: "device-b-registry")
         )
 
         let first = try #require(try await firstRegistry.resolve(ExternalImportSourceDescriptor(
             format: "foundry-system",
             semanticKey: "system:ds4",
-            sourceURL: firstURL,
+            sourceUrl: firstURL,
             contentHash: "v1-hash",
             semanticMatchPolicy: .automatic
-        )).scopeID)
+        )).scopeId)
         let second = try #require(try await secondRegistry.resolve(ExternalImportSourceDescriptor(
             format: "foundry-system",
             semanticKey: "system:ds4",
-            sourceURL: secondURL,
+            sourceUrl: secondURL,
             contentHash: "v2-hash",
             semanticMatchPolicy: .automatic
-        )).scopeID)
+        )).scopeId)
 
         #expect(first == second)
     }
@@ -304,35 +304,35 @@ struct ExternalImportSourceRegistryTests {
         )
         try Data("first".utf8).write(to: firstURL)
         try Data("second".utf8).write(to: secondURL)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
         let firstDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            sourceURL: firstURL,
+            sourceUrl: firstURL,
             contentHash: "first"
         )
         let secondDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            sourceURL: secondURL,
+            sourceUrl: secondURL,
             contentHash: "second"
         )
-        let firstScope = try #require(try await registry.resolve(firstDescriptor).scopeID)
-        let secondStaleScope = try #require(try await registry.resolve(secondDescriptor).scopeID)
+        let firstScope = try #require(try await registry.resolve(firstDescriptor).scopeId)
+        let secondStaleScope = try #require(try await registry.resolve(secondDescriptor).scopeId)
         #expect(firstScope == secondStaleScope)
-        _ = try await registry.claim(.resolved(scopeID: firstScope), descriptor: firstDescriptor)
+        _ = try await registry.claim(.resolved(scopeId: firstScope), descriptor: firstDescriptor)
 
         let secondClaim = try await registry.claim(
-            .resolved(scopeID: secondStaleScope),
+            .resolved(scopeId: secondStaleScope),
             descriptor: secondDescriptor
         )
 
-        guard case .requiresSelection(let existing, let proposedScopeID) = secondClaim else {
+        guard case .requiresSelection(let existing, let proposedScopeId) = secondClaim else {
             Issue.record("Expected a copied-source identity choice")
             return
         }
-        #expect(existing.map(\.scopeID) == [firstScope])
-        #expect(proposedScopeID != firstScope)
+        #expect(existing.map(\.scopeId) == [firstScope])
+        #expect(proposedScopeId != firstScope)
     }
 
     @Test("Duplicate fallback scopes retain the newest identity hint")
@@ -341,9 +341,9 @@ struct ExternalImportSourceRegistryTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appending(path: "copy.json")
         try Data().write(to: source)
-        let scopeID = UUID()
+        let scopeId = UUID()
         let old = ExternalImportSourceEntry(
-            scopeID: scopeID,
+            scopeId: scopeId,
             format: "foundry-world",
             semanticKey: "world:demo",
             fileResourceAlias: nil,
@@ -354,7 +354,7 @@ struct ExternalImportSourceRegistryTests {
             lastImportedAt: Date(timeIntervalSince1970: 1)
         )
         let newest = ExternalImportSourceEntry(
-            scopeID: scopeID,
+            scopeId: scopeId,
             format: "foundry-world",
             semanticKey: "world:demo",
             fileResourceAlias: nil,
@@ -364,13 +364,13 @@ struct ExternalImportSourceRegistryTests {
             createdAt: Date(timeIntervalSince1970: 1),
             lastImportedAt: Date(timeIntervalSince1970: 2)
         )
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
 
         let resolution = try await registry.resolve(
             ExternalImportSourceDescriptor(
                 format: "foundry-world",
                 semanticKey: "world:demo",
-                sourceURL: source
+                sourceUrl: source
             ),
             fallbackEntries: [old, newest]
         )
@@ -380,7 +380,7 @@ struct ExternalImportSourceRegistryTests {
             return
         }
         #expect(existing.count == 1)
-        #expect(existing.first?.scopeID == scopeID)
+        #expect(existing.first?.scopeId == scopeId)
         #expect(existing.first?.lastKnownPathAlias == "newest.json")
     }
 
@@ -395,52 +395,52 @@ struct ExternalImportSourceRegistryTests {
         try Data("original".utf8).write(to: original)
         try Data("duplicate".utf8).write(to: duplicate)
         try Data("unknown".utf8).write(to: unknownExport)
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "registry"))
-        let intrinsicScopeID = UUID()
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "registry"))
+        let intrinsicScopeId = UUID()
         let originalDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            intrinsicScopeID: intrinsicScopeID,
-            sourceURL: original
+            intrinsicScopeId: intrinsicScopeId,
+            sourceUrl: original
         )
-        try await registry.register(scopeID: intrinsicScopeID, descriptor: originalDescriptor)
+        try await registry.register(scopeId: intrinsicScopeId, descriptor: originalDescriptor)
         let duplicateDescriptor = ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            intrinsicScopeID: intrinsicScopeID,
-            sourceURL: duplicate
+            intrinsicScopeId: intrinsicScopeId,
+            sourceUrl: duplicate
         )
         let duplicateResolution = try await registry.resolve(duplicateDescriptor)
-        guard case .requiresSelection(_, let proposedScopeID) = duplicateResolution else {
+        guard case .requiresSelection(_, let proposedScopeId) = duplicateResolution else {
             Issue.record("Expected the duplicated bridge identity to require a choice")
             return
         }
 
         // When
         let claim = try await registry.claim(
-            .selectedNew(scopeID: proposedScopeID),
+            .selectedNew(scopeId: proposedScopeId),
             descriptor: duplicateDescriptor
         )
 
         // Then
-        #expect(claim == .claimed(scopeID: proposedScopeID))
+        #expect(claim == .claimed(scopeId: proposedScopeId))
         let entries = try await registry.allEntries()
-        #expect(entries.first { $0.scopeID == intrinsicScopeID }?.intrinsicScopeAlias == nil)
-        #expect(entries.first { $0.scopeID == proposedScopeID }?.intrinsicScopeAlias == intrinsicScopeID)
-        #expect(try await registry.resolve(originalDescriptor).scopeID == intrinsicScopeID)
-        #expect(try await registry.resolve(duplicateDescriptor).scopeID == proposedScopeID)
+        #expect(entries.first { $0.scopeId == intrinsicScopeId }?.intrinsicScopeAlias == nil)
+        #expect(entries.first { $0.scopeId == proposedScopeId }?.intrinsicScopeAlias == intrinsicScopeId)
+        #expect(try await registry.resolve(originalDescriptor).scopeId == intrinsicScopeId)
+        #expect(try await registry.resolve(duplicateDescriptor).scopeId == proposedScopeId)
 
         let unknownResolution = try await registry.resolve(ExternalImportSourceDescriptor(
             format: "foundry-world",
             semanticKey: "world:demo",
-            intrinsicScopeID: intrinsicScopeID,
-            sourceURL: unknownExport
+            intrinsicScopeId: intrinsicScopeId,
+            sourceUrl: unknownExport
         ))
         guard case .requiresSelection(let candidates, _) = unknownResolution else {
             Issue.record("Expected an unknown path with a duplicated intrinsic ID to require a choice")
             return
         }
-        #expect(Set(candidates.map(\.scopeID)) == Set([intrinsicScopeID, proposedScopeID]))
+        #expect(Set(candidates.map(\.scopeId)) == Set([intrinsicScopeId, proposedScopeId]))
     }
 
     @Test("Version one source indexes decode without the optional intrinsic alias")
@@ -450,10 +450,10 @@ struct ExternalImportSourceRegistryTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let indexDirectory = directory.appending(path: "registry", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: indexDirectory, withIntermediateDirectories: true)
-        let scopeID = UUID()
+        let scopeId = UUID()
         let timestamp = Date(timeIntervalSince1970: 123)
         let legacyEntry = LegacySourceEntry(
-            scopeID: scopeID,
+            scopeId: scopeId,
             format: "foundry-world",
             semanticKey: "world:legacy",
             fileResourceAlias: nil,
@@ -467,14 +467,14 @@ struct ExternalImportSourceRegistryTests {
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(LegacySourceIndex(formatVersion: 1, entries: [legacyEntry]))
             .write(to: indexDirectory.appending(path: "sources.json"), options: .atomic)
-        let registry = ExternalImportSourceRegistry(directoryURL: indexDirectory)
+        let registry = ExternalImportSourceRegistry(directoryUrl: indexDirectory)
 
         // When
         let entries = try await registry.allEntries()
 
         // Then
         #expect(entries.count == 1)
-        #expect(entries.first?.scopeID == scopeID)
+        #expect(entries.first?.scopeId == scopeId)
         #expect(entries.first?.intrinsicScopeAlias == nil)
     }
 
@@ -487,7 +487,7 @@ struct ExternalImportSourceRegistryTests {
         let expectedScope = UUID()
         let importedAt = Date(timeIntervalSince1970: 10)
         let fallback = ExternalImportSourceEntry(
-            scopeID: expectedScope,
+            scopeId: expectedScope,
             format: "foundry-system",
             semanticKey: "system:ds4",
             fileResourceAlias: nil,
@@ -497,19 +497,19 @@ struct ExternalImportSourceRegistryTests {
             createdAt: importedAt,
             lastImportedAt: importedAt
         )
-        let registry = ExternalImportSourceRegistry(directoryURL: directory.appending(path: "empty-registry"))
+        let registry = ExternalImportSourceRegistry(directoryUrl: directory.appending(path: "empty-registry"))
 
         let resolution = try await registry.resolve(
             ExternalImportSourceDescriptor(
                 format: "foundry-system",
                 semanticKey: "system:ds4",
-                sourceURL: source,
+                sourceUrl: source,
                 semanticMatchPolicy: .automatic
             ),
             fallbackEntries: [fallback]
         )
 
-        #expect(resolution.scopeID == expectedScope)
+        #expect(resolution.scopeId == expectedScope)
     }
 }
 
@@ -519,7 +519,7 @@ private struct LegacySourceIndex: Encodable {
 }
 
 private struct LegacySourceEntry: Encodable {
-    let scopeID: UUID
+    let scopeId: UUID
     let format: String
     let semanticKey: String?
     let fileResourceAlias: String?
@@ -528,12 +528,19 @@ private struct LegacySourceEntry: Encodable {
     let lastContentHash: String?
     let createdAt: Date
     let lastImportedAt: Date
+
+    /// A real version-one index stores `scopeID`; the property follows the `Id` casing.
+    /// See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case scopeId = "scopeID"
+        case format, semanticKey, fileResourceAlias, volumeResourceAlias, lastKnownPathAlias, lastContentHash, createdAt, lastImportedAt
+    }
 }
 
 private extension ExternalImportSourceResolution {
-    var scopeID: UUID? {
-        guard case .resolved(let scopeID) = self else { return nil }
-        return scopeID
+    var scopeId: UUID? {
+        guard case .resolved(let scopeId) = self else { return nil }
+        return scopeId
     }
 }
 

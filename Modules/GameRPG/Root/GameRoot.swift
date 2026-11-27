@@ -44,7 +44,7 @@ public final class GameRoot {
     let gameCenterController: GameCenterController
     var networkActionTasks: [UUID: Task<Void, Never>] = [:]
     var networkActionTail: Task<Void, Never>?
-    var networkActionTailID: UUID?
+    var networkActionTailId: UUID?
     var demoTask: Task<Void, Never>?
 
     /// Tracks an in-flight `stopGame()` so a `startGame`/`startMaster` call racing an
@@ -98,8 +98,6 @@ public final class GameRoot {
         self.gameCenterModel = gameCenterModel
         self.gameCenterController = gameCenterController
         
-        _logGameController = LogGameController(root: self, gameModel: gameModel)
-
         statisticsModel.setAchievementReporter { [weak gameCenterController] summary in
             await gameCenterController?.reportAchievements(from: summary)
         }
@@ -109,16 +107,9 @@ public final class GameRoot {
         }
     }
 
-    // Force-unwrapped with `!` rather than `.unsafelyUnwrapped`: both backing
-    // properties are unconditionally assigned at the end of `init`, so this
-    // should never trap in practice, but `!` still traps with a diagnosable
-    // crash log if a future refactor (deferred/lazy construction, a new
-    // failable init path) ever leaves one `nil` — `.unsafelyUnwrapped` would
-    // instead be undefined behavior in a Release build. See CODE_AUDIT §5.2.
-    private(set) var _logGameController: LogGameController?
-    var logGameController: LogGameController {
-        _logGameController!
-    }
+    /// Created on first use: it needs `self`, which the force-unwrapped optional set at the end
+    /// of `init` used to work around. See CODE_AUDIT_29 §9.8.
+    @ObservationIgnored private(set) lazy var logGameController = LogGameController(root: self, gameModel: gameModel)
 
     public func updateSupporterTier(_ supporterTier: SupporterTier) {
         gameModel.updateLocalSupporterTier(supporterTier)
@@ -243,6 +234,9 @@ public final class GameRoot {
             await store.show(for: idType)
         }
     } send: { @MainActor [weak self] update in
+        // A full update carries the map's pins: the battle round's dedupe must not skip a
+        // revert after it. See CODE_AUDIT_29 §5.6.
+        self?.battleRoundBroadcastLog.noteSend(actionType: .generic, type: update.type)
         let masterStore = self?.gameModel.masterController
         let playerStore = self?.gameModel.playerController
         self?.scheduleNetworkAction {
@@ -253,6 +247,7 @@ public final class GameRoot {
             }
         }
     } game: { @MainActor [weak self] message, actionType, playerId in
+        self?.battleRoundBroadcastLog.noteSend(actionType: actionType, type: message.type)
         let masterStore = self?.gameModel.masterController
         let playerStore = self?.gameModel.playerController
         self?.scheduleNetworkAction {
@@ -366,14 +361,14 @@ public final class GameRoot {
         }
         networkActionTasks[id] = task
         networkActionTail = task
-        networkActionTailID = id
+        networkActionTailId = id
     }
 
     private func completeNetworkAction(id: UUID) {
         networkActionTasks.removeValue(forKey: id)
-        if networkActionTailID == id {
+        if networkActionTailId == id {
             networkActionTail = nil
-            networkActionTailID = nil
+            networkActionTailId = nil
         }
     }
 
@@ -381,7 +376,7 @@ public final class GameRoot {
         networkActionTasks.values.forEach { $0.cancel() }
         networkActionTasks.removeAll()
         networkActionTail = nil
-        networkActionTailID = nil
+        networkActionTailId = nil
         demoTask?.cancel()
         demoTask = nil
         mapRoot.rootModel.cancelMapContentSends()

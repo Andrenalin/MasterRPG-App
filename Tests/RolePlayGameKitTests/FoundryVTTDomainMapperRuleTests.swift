@@ -14,19 +14,19 @@ struct FoundryVTTDomainMapperRuleTests {
     @Test("A normalized system package becomes a scoped editable rule hierarchy")
     func mapsNormalizedRules() async throws {
         // Given
-        let sourceScopeID = try #require(
+        let sourceScopeId = try #require(
             UUID(uuidString: "6F31C08D-C408-4631-B1C0-A3E31962C646")
         )
         let fixture = makePackage()
 
         // When
-        let first = try await map(fixture.package, sourceScopeID: sourceScopeID)
-        let repeated = try await map(fixture.package, sourceScopeID: sourceScopeID)
+        let first = try await map(fixture.package, sourceScopeId: sourceScopeId)
+        let repeated = try await map(fixture.package, sourceScopeId: sourceScopeId)
         let rule = try #require(first.batch.items.compactMap { $0.model as? RuleModel }
             .first { $0.category != .folder })
 
         // Then
-        let sourceNamespace = "external-source:\(sourceScopeID.uuidString.lowercased())"
+        let sourceNamespace = "external-source:\(sourceScopeId.uuidString.lowercased())"
         let expectedRuleID = FoundryRuleIdentity.uuid(
             for: "\(sourceNamespace)#rule#\(fixture.rule.id)"
         )
@@ -35,7 +35,7 @@ struct FoundryVTTDomainMapperRuleTests {
         )
         #expect(rule.id == expectedRuleID)
         #expect(rule.parentId == expectedFolderID)
-        #expect(rule.sourceMetadata.systemID == "test-system")
+        #expect(rule.sourceMetadata.systemId == "test-system")
         #expect(rule.sourceMetadata.packageName == "core-rules")
         let retainedPayload: FoundryRuleDefinition? = if case .foundryRule(let value)? = rule.sourcePayload {
             value
@@ -72,7 +72,7 @@ struct FoundryVTTDomainMapperRuleTests {
         let html = "<p>[Click](https://evil.example/x) and [Item](masterrpg://item/1/\(UUID().uuidString)) and https://plain.example</p>"
         let fixture = makePackage(descriptionHTML: html)
 
-        let mapped = try await map(fixture.package, sourceScopeID: UUID())
+        let mapped = try await map(fixture.package, sourceScopeId: UUID())
 
         let rule = try #require(mapped.batch.items.compactMap { $0.model as? RuleModel }.first { $0.category != .folder })
         #expect(!rule.description.contains("](" ))
@@ -89,8 +89,8 @@ struct FoundryVTTDomainMapperRuleTests {
         let secondScope = try #require(UUID(uuidString: "322826A5-753C-46B9-8320-E7059E2168A9"))
 
         // When
-        let first = try await map(fixture.package, sourceScopeID: firstScope)
-        let second = try await map(fixture.package, sourceScopeID: secondScope)
+        let first = try await map(fixture.package, sourceScopeId: firstScope)
+        let second = try await map(fixture.package, sourceScopeId: secondScope)
         let firstRule = try #require(first.batch.items.compactMap { $0.model as? RuleModel }
             .first { $0.category != .folder })
         let secondRule = try #require(second.batch.items.compactMap { $0.model as? RuleModel }
@@ -105,7 +105,7 @@ struct FoundryVTTDomainMapperRuleTests {
     @Test("Legacy and modern Foundry rule references become sanitized app links")
     func rewritesNormalizedRuleReferences() async throws {
         // Given
-        let sourceScopeID = try #require(UUID(uuidString: "BE3D709E-BB7D-4D03-A6A9-292DC719ACF7"))
+        let sourceScopeId = try #require(UUID(uuidString: "BE3D709E-BB7D-4D03-A6A9-292DC719ACF7"))
         let legacyTarget = "test-system.core-rules.rule-1"
         let modernTarget = "Compendium.test-system.core-rules.Item.rule-1"
         let legacyReference = FoundryRuleReference(
@@ -115,7 +115,7 @@ struct FoundryVTTDomainMapperRuleTests {
             target: legacyTarget,
             label: "Legacy Target",
             packName: "core-rules",
-            documentID: "rule-1"
+            documentId: "rule-1"
         )
         let modernReference = FoundryRuleReference(
             kind: .uuid,
@@ -124,7 +124,7 @@ struct FoundryVTTDomainMapperRuleTests {
             target: modernTarget,
             label: "Modern Target",
             packName: "core-rules",
-            documentID: "rule-1"
+            documentId: "rule-1"
         )
         let embeddedEffect = FoundryRuleEffect(
             id: "embedded-effect",
@@ -160,7 +160,7 @@ struct FoundryVTTDomainMapperRuleTests {
         )
 
         // When
-        let mapped = try await map(fixture.package, sourceScopeID: sourceScopeID)
+        let mapped = try await map(fixture.package, sourceScopeId: sourceScopeId)
         let rule = try #require(mapped.batch.items.compactMap { $0.model as? RuleModel }
             .first { $0.category != .folder })
         let referenceEntries = rule.entries.filter { $0.kind == .reference }
@@ -203,18 +203,18 @@ struct FoundryVTTDomainMapperRuleTests {
     @Test("A world Item remains a value and also becomes an editable generic rule")
     func mapsGenericWorldItemWithoutDuplicatingNormalizedRules() async throws {
         // Given
-        let sourceScopeID = try #require(UUID(uuidString: "D8938963-8D42-4A93-BA2E-B2C4CDF2B1E0"))
+        let sourceScopeId = try #require(UUID(uuidString: "D8938963-8D42-4A93-BA2E-B2C4CDF2B1E0"))
         let item = FoundryDocument(
             id: "items/Item/item-1",
-            documentID: "item-1",
+            documentId: "item-1",
             documentType: .item,
             subtype: "weapon",
             name: "Iron Sword",
-            folderID: "equipment",
+            folderId: "equipment",
             sort: 0,
             imagePath: nil,
             descriptionHTML: "<p>A dependable blade. @UUID[Item.item-1]{Read rule}.</p><script>descriptionLeak()</script>",
-            parentID: nil,
+            parentId: nil,
             embeddedDocuments: [],
             references: [],
             unknownFieldNames: [],
@@ -240,9 +240,9 @@ struct FoundryVTTDomainMapperRuleTests {
                 documents: [item],
                 folders: [FoundryDocumentFolder(
                     id: "items/Folder/equipment",
-                    documentID: "equipment",
+                    documentId: "equipment",
                     name: "Equipment",
-                    parentID: nil,
+                    parentId: nil,
                     documentType: .item,
                     sort: 0,
                     rawData: .object(["_id": .string("equipment")])
@@ -263,8 +263,8 @@ struct FoundryVTTDomainMapperRuleTests {
         // When
         let mapped = try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-world-test.json"),
-            sourceScopeID: sourceScopeID,
+            sourceUrl: URL(filePath: "/tmp/foundry-world-test.json"),
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.items, .rules],
             resourceLoader: { _ in Data() }
         )
@@ -299,15 +299,15 @@ struct FoundryVTTDomainMapperRuleTests {
 
         let reader = FoundryVTTImportReader()
         let package = try await reader.read(from: packageURL!)
-        let sourceScopeID = try #require(
+        let sourceScopeId = try #require(
             UUID(uuidString: "9773E23D-BB3E-463D-9CC0-15726C2D5D24")
         )
 
         // When
         let mapped = try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: packageURL!,
-            sourceScopeID: sourceScopeID,
+            sourceUrl: packageURL!,
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.rules],
             resourceLoader: { resource in
                 try await reader.resourceData(for: resource, from: packageURL!).data
@@ -325,7 +325,7 @@ struct FoundryVTTDomainMapperRuleTests {
         #expect(!projectedRules.isEmpty)
         #expect(projectedRules.count == rulePackage.ruleCount)
         #expect(Set(projectedRules.map(\.id)).count == projectedRules.count)
-        #expect(projectedRules.allSatisfy { $0.sourceMetadata.systemID == "ds4" })
+        #expect(projectedRules.allSatisfy { $0.sourceMetadata.systemId == "ds4" })
         #expect(projectedRules.contains { !$0.entries.isEmpty })
         #expect(projectedRules.allSatisfy { $0.sourcePayload != nil })
     }
@@ -339,12 +339,12 @@ private extension FoundryVTTDomainMapperRuleTests {
 
     func map(
         _ package: FoundryVTTImportPackage,
-        sourceScopeID: UUID
+        sourceScopeId: UUID
     ) async throws -> FoundryMappedImport {
         try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: URL(filePath: "/tmp/foundry-rule-test.zip"),
-            sourceScopeID: sourceScopeID,
+            sourceUrl: URL(filePath: "/tmp/foundry-rule-test.zip"),
+            sourceScopeId: sourceScopeId,
             selectedCategories: [.rules],
             resourceLoader: { _ in Data() }
         )
@@ -361,7 +361,7 @@ private extension FoundryVTTDomainMapperRuleTests {
             label: "Core Rules",
             path: "packs/core-rules",
             documentType: "Item",
-            systemID: "test-system"
+            systemId: "test-system"
         )
         let manifest = FoundrySystemManifest(
             id: "test-system",
@@ -374,7 +374,7 @@ private extension FoundryVTTDomainMapperRuleTests {
         )
         let rule = FoundryRuleDefinition(
             id: "core-rules.Item.rule-1",
-            documentID: "rule-1",
+            documentId: "rule-1",
             packName: "core-rules",
             documentType: "Item",
             subtype: "talent",
@@ -382,7 +382,7 @@ private extension FoundryVTTDomainMapperRuleTests {
             name: "Power Strike",
             descriptionHTML: descriptionHTML,
             imagePath: "icons/power-strike.webp",
-            folderID: "combat",
+            folderId: "combat",
             values: [FoundryRuleValue(path: "system.damage", value: .integer(4))],
             tags: ["combat"],
             references: references,
@@ -403,7 +403,7 @@ private extension FoundryVTTDomainMapperRuleTests {
             compendiums: [FoundryCompendium(
                 manifest: pack,
                 rules: [rule],
-                folders: [FoundryFolder(id: "combat", name: "Combat", parentID: nil, sort: 0)]
+                folders: [FoundryFolder(id: "combat", name: "Combat", parentId: nil, sort: 0)]
             )],
             assetPaths: [],
             licensePaths: [],
@@ -418,7 +418,7 @@ private extension FoundryVTTDomainMapperRuleTests {
                 title: "Test System",
                 descriptionHTML: nil,
                 version: "1.0.0",
-                systemID: "test-system",
+                systemId: "test-system",
                 compatibility: compatibility,
                 rawData: .object(["id": .string("test-system")])
             ),

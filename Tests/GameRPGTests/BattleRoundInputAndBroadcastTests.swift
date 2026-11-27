@@ -187,6 +187,38 @@ struct BattleRoundBroadcastTests {
         #expect(log.shouldSend(mapState: changedMapState))
     }
 
+    @Test("A map state another path sent makes the log send the controller's revert")
+    func revertAfterForeignSendIsSent() {
+        // Given: the controller sent M1, then the 3D pin menu sent M2 outside the log.
+        let log = BattleRoundBroadcastLog()
+        let mapId = UUID()
+        let generation = MapGameModel.AuthoritativeGeneration(version: 1, assetVersion: 1, contentVersion: 1)
+        let pin = MapPinModel(id: UUID(), name: "Goblin")
+        let first = MapLiveState(mapId: mapId, generation: generation, rooms: [], pointer: pin, pins: [pin])
+        var sent = 0
+        log.send(mapState: first) { sent += 1 }
+        log.noteSend(actionType: .mapState, type: .map)
+
+        // When: the controller brings the state back to M1.
+        log.send(mapState: first) { sent += 1 }
+
+        // Then: the revert goes out.
+        #expect(sent == 2)
+    }
+
+    @Test("The controller's own send does not make the log forget it")
+    func ownSendIsRecorded() {
+        let log = BattleRoundBroadcastLog()
+        let state = BattleRoundNetworkState(mapId: UUID(), isRunning: true, roundCounter: 1, activePinId: nil, sequence: 1)
+        var sent = 0
+        log.send(battleRound: state) {
+            sent += 1
+            log.noteSend(actionType: .battleRound, type: .map)
+        }
+        log.send(battleRound: state) { sent += 1 }
+        #expect(sent == 1)
+    }
+
     @Test("An action that changes nothing a participant sees sends nothing")
     func unchangedStateIsNotResent() async throws {
         // Given: a running battle whose state has gone out once.

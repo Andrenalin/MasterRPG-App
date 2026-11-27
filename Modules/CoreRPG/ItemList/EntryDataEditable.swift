@@ -148,7 +148,13 @@ public extension EntryDataEditable {
 
     @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ") {
         guard canAddLink(module: module, entryId: entryId), var item = editModel(for: destinationItemId) else { return }
-        
+        appendLink(link: link, module: module, itemId: itemId, entryId: entryId, to: &item, destinationEntryId: destinationEntryId, separator: separator)
+        save(updated: item, message: String(localized: "Add Link", bundle: .module))
+    }
+
+    /// Appends the link to the entry's content without saving, for a caller that saves it with
+    /// other changes as one edit. See CODE_AUDIT_29 §5.17.
+    @MainActor func appendLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to item: inout Model, destinationEntryId: UUID, separator: String = " ") {
         var entry = item[destinationEntryId]
         var content = entry.content.trimmingCharacters(in: .whitespaces)
         
@@ -158,7 +164,6 @@ public extension EntryDataEditable {
         content.append(linkText)
         entry.content = content
         item[destinationEntryId] = entry
-        save(updated: item, message: String(localized: "Add Link", bundle: .module))
     }
     
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }

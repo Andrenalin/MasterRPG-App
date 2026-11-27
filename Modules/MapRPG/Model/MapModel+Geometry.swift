@@ -289,9 +289,10 @@ extension MapModel {
         }
         let entry = entries[index]
         if entry.isHexGrid && !entry.isShown {
-            let source = entry.rect
+            // The room polygon must share an area with the cell, not only its bounding box: a hex
+            // next to an L-shaped room revealed its name, text and pins. See CODE_AUDIT_29 §6.2.
             let others = entries.filter { !$0.isHexGrid && !$0.isShown }
-            let stories = others.filter { $0.rect.intersects(source) }
+            let stories = others.filter { $0.overlaps(entry) }
             stories.forEach { story in
                 guard let storyIndex = entries.firstIndex(where: { $0.id == story.id }) else { return }
                 entries[storyIndex].isShown = true

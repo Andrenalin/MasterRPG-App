@@ -52,7 +52,7 @@ struct AppImportView: View {
                     rootManager: appModel.root,
                     urlProvider: appModel,
                     importController: importController,
-                    initialURL: appModel.pendingImportURL,
+                    initialURL: appModel.pendingImportUrl,
                     endDataMutationHandler: { [appModel] in
                         await appModel.save()
                     },
@@ -76,11 +76,11 @@ struct AppImportView: View {
         .onAppear {
             selectPendingImportWhenAvailable()
         }
-        .onChange(of: appModel.pendingImportURL) { _, newValue in
+        .onChange(of: appModel.pendingImportUrl) { _, newValue in
             guard newValue != nil else { return }
             selectPendingImportWhenAvailable()
         }
-        .onChange(of: appModel.pendingVTTImportURL) { _, newValue in
+        .onChange(of: appModel.pendingVTTImportUrl) { _, newValue in
             guard newValue != nil else { return }
             selectPendingImportWhenAvailable()
         }
@@ -104,9 +104,9 @@ struct AppImportView: View {
     private func selectPendingImportWhenAvailable() {
         guard !appModel.isExclusiveDataMutationActive else { return }
 
-        if appModel.pendingVTTImportURL != nil {
+        if appModel.pendingVTTImportUrl != nil {
             selectedSection = .foundry
-        } else if appModel.pendingImportURL != nil {
+        } else if appModel.pendingImportUrl != nil {
             selectedSection = .masterRPG
         }
     }

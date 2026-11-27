@@ -189,76 +189,6 @@
         }
       }
     },
-    "Found %lld sections" : {
-      "localizations" : {
-        "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Abschnitt gefunden"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Abschnitte gefunden"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Abschnitte gefunden"
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Found %lld section"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Found %lld sections"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Found %lld sections"
-                }
-              }
-            }
-          }
-        },
-        "th" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "พบ %lld ส่วน"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "พบ %lld ส่วน"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
@@ -523,6 +453,7 @@
       }
     },
     "Analysis refused: %@ (category: %@)." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -683,7 +614,40 @@
         }
       }
     },
+    "Apple Intelligence declined to respond." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence hat die Antwort abgelehnt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ปฏิเสธที่จะตอบ"
+          }
+        }
+      }
+    },
+    "Apple Intelligence is busy. Try again in a moment." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ist ausgelastet. Versuche es gleich noch einmal."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ไม่ว่าง ลองอีกครั้งในอีกสักครู่"
+          }
+        }
+      }
+    },
     "Apple Intelligence is not available. PDF summary analysis requires it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -715,6 +679,9 @@
         }
       }
     },
+    "Apple Intelligence is not available. Turn it on in Settings to use this feature." : {
+
+    },
     "Apple Intelligence Not available" : {
       "localizations" : {
         "de" : {
@@ -743,6 +710,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Intelligence on this device is not ready."
+          }
+        }
+      }
+    },
+    "Apple Intelligence took too long. Try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence hat zu lange gebraucht. Versuche es noch einmal."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ใช้เวลานานเกินไป ลองอีกครั้ง"
           }
         }
       }
@@ -875,6 +858,22 @@
         }
       }
     },
+    "Content policy prevented a response." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Inhaltsrichtlinie hat eine Antwort verhindert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "นโยบายเนื้อหาทำให้ไม่สามารถตอบได้"
+          }
+        }
+      }
+    },
     "Content policy prevented analysis." : {
       "localizations" : {
         "de" : {
@@ -924,6 +923,7 @@
       }
     },
     "Content policy violation: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -940,6 +940,7 @@
       }
     },
     "Context window exceeded: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1317,6 +1318,7 @@
       }
     },
     "Failed to decode response: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1333,6 +1335,7 @@
       }
     },
     "Failed to decode result: %@." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1376,6 +1379,76 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "สร้างการวิเคราะห์สรุปไม่สำเร็จ: %@"
+          }
+        }
+      }
+    },
+    "Found %lld sections" : {
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitt gefunden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitte gefunden"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Abschnitte gefunden"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld section"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld sections"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Found %lld sections"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบ %lld ส่วน"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "พบ %lld ส่วน"
+                }
+              }
+            }
           }
         }
       }
@@ -1714,6 +1787,7 @@
       }
     },
     "Model assets unavailable: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1730,6 +1804,7 @@
       }
     },
     "Model assets unavailable: %@. Ensure Apple Intelligence is downloaded." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1762,6 +1837,7 @@
       }
     },
     "Model refused to respond: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2134,6 +2210,7 @@
       }
     },
     "Rate limit exceeded. Try again in %@ seconds." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2150,6 +2227,7 @@
       }
     },
     "Rate limited: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2332,6 +2410,7 @@
       }
     },
     "Schema contains unsupported constraint: %@." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2363,22 +2442,6 @@
         }
       }
     },
-    "Skipped: PDF not available" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übersprungen: PDF nicht verfügbar"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้าม: ไม่มีไฟล์ PDF"
-          }
-        }
-      }
-    },
     "Skipped: no text to analyze" : {
       "localizations" : {
         "de" : {
@@ -2395,18 +2458,34 @@
         }
       }
     },
-    "Start replaces the description and the tags of the selected PDFs with generated ones and adds the sections as bookmarks. A name is only filled in when it is empty; existing bookmarks are kept." : {
+    "Skipped: PDF not available" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten PDFs durch generierte und fügt die Abschnitte als Lesezeichen hinzu. Ein Name wird nur ergänzt, wenn er leer ist; vorhandene Lesezeichen bleiben erhalten."
+            "value" : "Übersprungen: PDF nicht verfügbar"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของ PDF ที่เลือกด้วยข้อมูลที่สร้างขึ้น และเพิ่มส่วนต่างๆ เป็นบุ๊กมาร์ก ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่ บุ๊กมาร์กที่มีอยู่จะยังคงอยู่"
+            "value" : "ข้าม: ไม่มีไฟล์ PDF"
+          }
+        }
+      }
+    },
+    "Start" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่ม"
           }
         }
       }
@@ -2427,18 +2506,18 @@
         }
       }
     },
-    "Start" : {
+    "Start replaces the description and the tags of the selected PDFs with generated ones and adds the sections as bookmarks. A name is only filled in when it is empty; existing bookmarks are kept." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start"
+            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten PDFs durch generierte und fügt die Abschnitte als Lesezeichen hinzu. Ein Name wird nur ergänzt, wenn er leer ist; vorhandene Lesezeichen bleiben erhalten."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เริ่ม"
+            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของ PDF ที่เลือกด้วยข้อมูลที่สร้างขึ้น และเพิ่มส่วนต่างๆ เป็นบุ๊กมาร์ก ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่ บุ๊กมาร์กที่มีอยู่จะยังคงอยู่"
           }
         }
       }
@@ -2507,38 +2586,6 @@
         }
       }
     },
-    "The character sheet is too large. Try a character with fewer values." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Charakterbogen ist zu groß. Versuche es mit einem Charakter mit weniger Werten."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แผ่นข้อมูลตัวละครมีขนาดใหญ่เกินไป ลองใช้ตัวละครที่มีค่าน้อยลง"
-          }
-        }
-      }
-    },
-    "The character's language is not supported by Apple Intelligence." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Sprache des Charakters wird von Apple Intelligence nicht unterstützt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Apple Intelligence ไม่รองรับภาษาของตัวละคร"
-          }
-        }
-      }
-    },
     "Table content is too large. Try a table with fewer entries." : {
       "localizations" : {
         "de" : {
@@ -2583,6 +2630,86 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แท็ก"
+          }
+        }
+      }
+    },
+    "The Apple Intelligence model is not downloaded yet. Try again later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Apple Intelligence-Modell ist noch nicht geladen. Versuche es später noch einmal."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ยังไม่ได้ดาวน์โหลดโมเดล Apple Intelligence ลองอีกครั้งภายหลัง"
+          }
+        }
+      }
+    },
+    "The character sheet is too large. Try a character with fewer values." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Charakterbogen ist zu groß. Versuche es mit einem Charakter mit weniger Werten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผ่นข้อมูลตัวละครมีขนาดใหญ่เกินไป ลองใช้ตัวละครที่มีค่าน้อยลง"
+          }
+        }
+      }
+    },
+    "The character's language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache des Charakters wird von Apple Intelligence nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence ไม่รองรับภาษาของตัวละคร"
+          }
+        }
+      }
+    },
+    "The language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache wird von Apple Intelligence nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Intelligence ไม่รองรับภาษานี้"
+          }
+        }
+      }
+    },
+    "The model on this device does not support this request." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf diesem Gerät unterstützt diese Anfrage nicht."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "โมเดลบนอุปกรณ์นี้ไม่รองรับคำขอนี้"
           }
         }
       }
@@ -2764,6 +2891,54 @@
         }
       }
     },
+    "The request is too long for Apple Intelligence. Try a shorter one." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anfrage ist zu lang für Apple Intelligence. Versuche eine kürzere."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คำขอยาวเกินไปสำหรับ Apple Intelligence ลองใช้คำขอที่สั้นลง"
+          }
+        }
+      }
+    },
+    "The request uses a format Apple Intelligence does not support." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anfrage verwendet ein Format, das Apple Intelligence nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คำขอใช้รูปแบบที่ Apple Intelligence ไม่รองรับ"
+          }
+        }
+      }
+    },
+    "The response could not be read. Try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Antwort konnte nicht gelesen werden. Versuche es noch einmal."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถอ่านคำตอบได้ ลองอีกครั้ง"
+          }
+        }
+      }
+    },
     "The table language is not supported by Apple Intelligence." : {
       "localizations" : {
         "de" : {
@@ -2879,6 +3054,7 @@
       }
     },
     "Too many concurrent requests (max %@). Please wait." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2895,6 +3071,7 @@
       }
     },
     "Too many concurrent requests: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2906,6 +3083,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "คำขอพร้อมกันมากเกินไป: %@"
+          }
+        }
+      }
+    },
+    "Too many requests at once. Please wait." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele Anfragen gleichzeitig. Bitte warte kurz."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "มีคำขอมากเกินไปในเวลาเดียวกัน โปรดรอสักครู่"
           }
         }
       }
@@ -3077,6 +3270,7 @@
       }
     },
     "Unknown generation error" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3109,6 +3303,7 @@
       }
     },
     "Unsupported generation guide: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3125,6 +3320,7 @@
       }
     },
     "Unsupported language/locale: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3136,6 +3332,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ภาษา/ภูมิภาคที่ไม่รองรับ: %@"
+          }
+        }
+      }
+    },
+    "Untitled" : {
+      "comment" : "Name of a generated item that has no title.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohne Titel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่มีชื่อ"
           }
         }
       }
@@ -3188,12 +3401,12 @@
         }
       }
     },
-    "Updated %lld items: %lld names filled, %lld descriptions replaced, %lld tags replaced, %lld bookmarks added." : {
+    "Updated ^[%lld item](inflect: true): %lld names filled, %lld descriptions replaced, %lld tags replaced, %lld bookmarks added." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld Elemente aktualisiert: %2$lld Namen ergänzt, %3$lld Beschreibungen ersetzt, %4$lld Tags ersetzt, %5$lld Lesezeichen hinzugefügt."
+            "value" : "^[%1$lld Element](inflect: true) aktualisiert: %2$lld Namen ergänzt, %3$lld Beschreibungen ersetzt, %4$lld Tags ersetzt, %5$lld Lesezeichen hinzugefügt."
           }
         },
         "th" : {
@@ -3204,12 +3417,12 @@
         }
       }
     },
-    "Updated %lld items: %lld names filled, %lld descriptions replaced, %lld tags replaced." : {
+    "Updated ^[%lld item](inflect: true): %lld names filled, %lld descriptions replaced, %lld tags replaced." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld Elemente aktualisiert: %2$lld Namen ergänzt, %3$lld Beschreibungen ersetzt, %4$lld Tags ersetzt."
+            "value" : "^[%1$lld Element](inflect: true) aktualisiert: %2$lld Namen ergänzt, %3$lld Beschreibungen ersetzt, %4$lld Tags ersetzt."
           }
         },
         "th" : {

@@ -58,7 +58,7 @@ private struct State {
             title: manifest.title,
             descriptionHTML: manifest.descriptionHTML,
             version: manifest.version,
-            systemID: manifest.systemID,
+            systemId: manifest.systemId,
             compatibility: manifest.compatibility,
             // A package author is licensing metadata rather than a Foundry User. Explicit nested
             // User or ChatMessage objects and private collection envelopes are still removed.
@@ -87,15 +87,15 @@ private struct State {
         let sanitizedRaw = sanitizeRaw(document.rawData, context: .documentEnvelope) ?? .object([:])
         return FoundryDocument(
             id: document.id,
-            documentID: document.documentID,
+            documentId: document.documentId,
             documentType: document.documentType,
             subtype: document.subtype,
             name: document.name,
-            folderID: document.folderID,
+            folderId: document.folderId,
             sort: document.sort,
             imagePath: document.imagePath,
             descriptionHTML: document.descriptionHTML,
-            parentID: document.parentID,
+            parentId: document.parentId,
             sourceUUID: permittedReference(document.sourceUUID),
             sourceParentUUID: permittedReference(document.sourceParentUUID),
             embeddedDocuments: embeddedDocuments,
@@ -112,9 +112,9 @@ private struct State {
     func folder(_ folder: FoundryDocumentFolder) -> FoundryDocumentFolder {
         FoundryDocumentFolder(
             id: folder.id,
-            documentID: folder.documentID,
+            documentId: folder.documentId,
             name: folder.name,
-            parentID: folder.parentID,
+            parentId: folder.parentId,
             documentType: folder.documentType,
             sort: folder.sort,
             rawData: sanitizeRaw(folder.rawData, context: .documentEnvelope) ?? .object([:])
@@ -261,14 +261,14 @@ private extension State {
         let mappings = FoundryEmbeddedMappings.mappings(for: parentType)
         guard case .object(var object) = rawData, !mappings.isEmpty else { return rawData }
         for (key, type) in mappings {
-            let representedIDs = Set(
+            let representedIds = Set(
                 representedDocuments.lazy
                     .filter { $0.documentType == type }
-                    .map(\.documentID)
+                    .map(\.documentId)
             )
-            guard !representedIDs.isEmpty,
+            guard !representedIds.isEmpty,
                   case .array(let values) = object[key] else { continue }
-            let remainder = values.filter { !representsDocument($0, ids: representedIDs) }
+            let remainder = values.filter { !representsDocument($0, ids: representedIds) }
             if remainder.isEmpty {
                 object.removeValue(forKey: key)
             } else {
@@ -359,7 +359,7 @@ private extension State {
         guard !isDeniedDocumentTypeName(rule.documentType) else { return nil }
         return FoundryRuleDefinition(
             id: rule.id,
-            documentID: rule.documentID,
+            documentId: rule.documentId,
             packName: rule.packName,
             documentType: rule.documentType,
             subtype: rule.subtype,
@@ -367,7 +367,7 @@ private extension State {
             name: rule.name,
             descriptionHTML: rule.descriptionHTML,
             imagePath: rule.imagePath,
-            folderID: rule.folderID,
+            folderId: rule.folderId,
             values: rule.values.compactMap(ruleValue),
             tags: rule.tags,
             references: rule.references.filter(permittedReference),
@@ -477,6 +477,6 @@ private extension State {
     func permittedReference(_ reference: FoundryRuleReference) -> Bool {
         !isDeniedReference(reference.target)
             && !isDeniedReference(reference.rawToken)
-            && !isDeniedReference(reference.documentID ?? "")
+            && !isDeniedReference(reference.documentId ?? "")
     }
 }

@@ -19,7 +19,18 @@ public struct ItemHeaderEditorView: View {
         self._attributedInformation = State(initialValue: AttributedString(model.description))
         self._category = State(initialValue: model.category)
         self._tags = State(initialValue: model.tags)
+        self.initialValues = .init(name: model.name, description: model.description, category: model.category, tags: model.tags)
     }
+
+    /// The fields as the editor opened them. Only the ones the user changed are saved, so a sync
+    /// that changed another field meanwhile is not reverted. See CODE_AUDIT_29 §5.5.
+    private struct InitialValues {
+        let name: String
+        let description: String
+        let category: ItemListCategory
+        let tags: [String]
+    }
+    private let initialValues: InitialValues
 
     let editControllable: any EditControllable
     let model: any ItemDataAccessible
@@ -85,12 +96,13 @@ public struct ItemHeaderEditorView: View {
         guard !hasSaved else { return }
         hasSaved = true
         let trimmedName = String(attributedName.characters).trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = String(attributedInformation.characters)
         editControllable.update(
             id: model.id,
-            name: trimmedName,
-            description: String(attributedInformation.characters),
-            category: category,
-            tags: tags,
+            name: trimmedName != initialValues.name ? trimmedName : nil,
+            description: description != initialValues.description ? description : nil,
+            category: category != initialValues.category ? category : nil,
+            tags: tags != initialValues.tags ? tags : nil,
             // The standalone item editor always persists, even while a game is
             // running — unlike in-game quick-edit surfaces, which stay memory-only.
             forceSave: true
@@ -242,6 +254,9 @@ private struct ItemHeaderEditorDismissButton<Backdrop: View>: View {
 // properties on `ItemHeaderEditorView` itself.
 
 private struct ItemHeaderEditorCard: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding20: CGFloat = 20
+    @ScaledMetric private var spacing16: CGFloat = 16
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
 
@@ -259,13 +274,13 @@ private struct ItemHeaderEditorCard: View {
     var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: spacing16) {
             ItemHeaderEditorHeaderRow(dismissAction: dismissAction, saveAction: saveAction, isSaveEnabled: isSaveEnabled)
             ItemHeaderEditorNameSection(attributedName: $attributedName, currentFocus: currentFocus)
             ItemHeaderEditorDescriptionSection(attributedInformation: $attributedInformation, currentFocus: currentFocus)
             ItemHeaderEditorTagsSection(tags: $tags, tagController: tagController, module: tagModule)
         }
-        .padding(20)
+        .padding(padding20)
         .background {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(theme.panelColor.opacity(accessibilityReduceTransparency ? 1 : 0.58))
@@ -281,12 +296,14 @@ private struct ItemHeaderEditorCard: View {
 }
 
 private struct ItemHeaderEditorHeaderRow: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var spacing12: CGFloat = 12
     let dismissAction: () -> Void
     let saveAction: () -> Void
     let isSaveEnabled: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: spacing12) {
             GlassButton(action: dismissAction) {
                 Label {
                     Text("Cancel", bundle: .module)
@@ -321,19 +338,23 @@ private struct ItemHeaderEditorHeaderRow: View {
 }
 
 private struct ItemHeaderEditorNameSection: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding12: CGFloat = 12
+    @ScaledMetric private var spacing6: CGFloat = 6
+    @ScaledMetric private var spacing8: CGFloat = 8
     @Binding var attributedName: AttributedString
     var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: spacing6) {
             Text("Name", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 8) {
+            HStack(spacing: spacing8) {
                 AttributedTextEditorSurface(
                     text: $attributedName,
                     links: [],
@@ -350,7 +371,7 @@ private struct ItemHeaderEditorNameSection: View {
                     if attributedName.characters.isEmpty {
                         Text("Enter a name", bundle: .module)
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, padding12)
                             .allowsHitTesting(false)
                     }
                 }
@@ -381,11 +402,14 @@ private struct ItemHeaderEditorNameSection: View {
 }
 
 private struct ItemHeaderEditorDescriptionSection: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var padding6: CGFloat = 6
+    @ScaledMetric private var spacing6: CGFloat = 6
     @Binding var attributedInformation: AttributedString
     var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: spacing6) {
             Text("Description", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -405,7 +429,7 @@ private struct ItemHeaderEditorDescriptionSection: View {
             .lineLimit(5...10)
             .frame(minHeight: 120, maxHeight: 200)
             .border(Color.accentColor.secondary)
-            .padding(.bottom, 6)
+            .padding(.bottom, padding6)
             .focused(currentFocus, equals: .information)
 #else
             AttributedTextEditorSurface(
@@ -422,12 +446,14 @@ private struct ItemHeaderEditorDescriptionSection: View {
 }
 
 private struct ItemHeaderEditorTagsSection: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var spacing6: CGFloat = 6
     @Binding var tags: [String]
     let tagController: TagController
     let module: NetworkModules
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: spacing6) {
             Text("Tags", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)

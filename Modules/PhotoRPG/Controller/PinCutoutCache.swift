@@ -33,7 +33,8 @@ struct PinCutoutKey: Hashable, Sendable {
 actor PinCutoutCache {
     static let shared = PinCutoutCache()
 
-    private final class Box: @unchecked Sendable {
+    /// Checked: `CGImage` is `Sendable` on every SDK. See CODE_AUDIT_29 §3.9.
+    private final class Box: Sendable {
         let image: CGImage?
         init(_ image: CGImage?) { self.image = image }
     }
@@ -43,25 +44,56 @@ actor PinCutoutCache {
         cache.countLimit = 64
         return cache
     }()
-    private var inFlight: [PinCutoutKey: Task<CGImage?, Never>] = [:]
+    private var inFlight: [PinCutoutKey: Task<Outcome, Never>] = [:]
+    private var hasPruned = false
+
+    /// What one request found. Only `.cutout` and `.noSubject` are remembered: a photo that could
+    /// not be read yet (not downloaded) is tried again on the next request instead of showing no
+    /// cutout until relaunch. See CODE_AUDIT_29 §7.7.
+    private enum Outcome: Sendable {
+        case cutout(CGImage)
+        case noSubject
+        case sourceUnavailable
+
+        var image: CGImage? {
+            if case .cutout(let image) = self { return image }
+            return nil
+        }
+    }
 
     /// - Parameter source: decodes the photo downsampled to `PinCutoutPolicy.sourceMaxPixelSize`;
     ///   only called when neither cache has the key.
     func cutout(for key: PinCutoutKey, source: @escaping @Sendable () async -> CGImage?) async -> CGImage? {
+        pruneOnce()
         if let box = memory.object(forKey: key.fileName as NSString) { return box.image }
-        if let running = inFlight[key] { return await running.value }
-        let task = Task<CGImage?, Never> {
-            if let stored = await Self.loadFromDisk(fileName: key.fileName) { return stored }
-            guard let photo = await source() else { return nil }
-            let generated = await PinCutoutGenerator.cutout(from: photo)
-            if let generated { await Self.saveToDisk(generated, fileName: key.fileName) }
-            return generated
+        if let running = inFlight[key] { return await running.value.image }
+        let task = Task<Outcome, Never> {
+            if let stored = await Self.loadFromDisk(fileName: key.fileName) { return .cutout(stored) }
+            guard let photo = await source() else { return .sourceUnavailable }
+            guard let generated = await PinCutoutGenerator.cutout(from: photo) else { return .noSubject }
+            await Self.saveToDisk(generated, fileName: key.fileName, replacingOthersOf: key.photoId)
+            return .cutout(generated)
         }
         inFlight[key] = task
         let result = await task.value
         inFlight[key] = nil
-        memory.setObject(Box(result), forKey: key.fileName as NSString)
-        return result
+        switch result {
+        case .cutout(let image): memory.setObject(Box(image), forKey: key.fileName as NSString)
+        case .noSubject: memory.setObject(Box(nil), forKey: key.fileName as NSString)
+        case .sourceUnavailable: break
+        }
+        return result.image
+    }
+
+    /// Once per launch: removes the cutouts of older generator revisions, which no key can name
+    /// any more. See CODE_AUDIT_29 §7.7.
+    private func pruneOnce() {
+        guard !hasPruned else { return }
+        hasPruned = true
+        let suffix = "-r\(PinCutoutPolicy.revision).png"
+        Task.detached(priority: .utility) {
+            Self.removeFiles { !$0.hasSuffix(suffix) }
+        }
     }
 
     // MARK: - Disk
@@ -77,12 +109,21 @@ actor PinCutoutCache {
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
 
+    /// Also removes the photo's cutouts of a file it no longer has.
     @concurrent
-    private static func saveToDisk(_ image: CGImage, fileName: String) async {
+    private static func saveToDisk(_ image: CGImage, fileName: String, replacingOthersOf photoId: UUID) async {
+        removeFiles { $0.hasPrefix(photoId.uuidString) && $0 != fileName }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appending(path: fileName)
         guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { return }
         CGImageDestinationAddImage(destination, image, nil)
         CGImageDestinationFinalize(destination)
+    }
+
+    private static func removeFiles(where shouldRemove: (String) -> Bool) {
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path(percentEncoded: false)) else { return }
+        for name in names where shouldRemove(name) {
+            try? FileManager.default.removeItem(at: directory.appending(path: name))
+        }
     }
 }

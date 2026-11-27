@@ -311,7 +311,9 @@ private extension MapEditor {
                 monsters: dropPinModel.items,
                 editorModel: session
             )
-        } else {
+        } else if session.mapMode == .gameMaster {
+            // Only the game master adds pins to the shared map; a player's drop made local-only
+            // pins, and the game master's never reached the players. See CODE_AUDIT_29 §5.8.
             let location = session.contentPoint(fromViewport: dropPinModel.point)
             let entry = session.entry(for: location, in: map)
             let characters = dropPinModel.items.filter { $0.typeId != .photo }
@@ -333,6 +335,7 @@ private extension MapEditor {
                     photoIds: photoIds
                 )
             }
+            session.broadcastMapEdit()
         }
         dropPinModel.items = []
         dropPinModel.isTarget = false

@@ -24,6 +24,8 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
 
     @MainActor
     mutating func update(interaction: TabletopKit.TabletopInteraction) {
+        // A die in the hand moves without an action. See CODE_AUDIT_29 §7.4.
+        game.diceMayBeMoving = true
         if interaction.value.phase == .started {
             onPhaseStarted(interaction: interaction)
         }

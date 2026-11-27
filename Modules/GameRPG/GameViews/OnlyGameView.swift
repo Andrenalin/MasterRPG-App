@@ -38,6 +38,6 @@ struct OnlyGameView: View {
 }
 
 #Preview {
-    OnlyGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureID)
+    OnlyGameView(root: .previewFixture(), adventureId: GamePreviewData.adventureId)
         .environment(GameScreenModel())
 }

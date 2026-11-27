@@ -17,23 +17,23 @@ public struct ExternalImportSourceDescriptor: Sendable {
     public init(
         format: String,
         semanticKey: String? = nil,
-        intrinsicScopeID: UUID? = nil,
-        sourceURL: URL,
+        intrinsicScopeId: UUID? = nil,
+        sourceUrl: URL,
         contentHash: String? = nil,
         semanticMatchPolicy: ExternalImportSemanticMatchPolicy = .requiresConfirmation
     ) {
         self.format = format
         self.semanticKey = semanticKey
-        self.intrinsicScopeID = intrinsicScopeID
-        self.sourceURL = sourceURL
+        self.intrinsicScopeId = intrinsicScopeId
+        self.sourceUrl = sourceUrl
         self.contentHash = contentHash
         self.semanticMatchPolicy = semanticMatchPolicy
     }
 
     public let format: String
     public let semanticKey: String?
-    public let intrinsicScopeID: UUID?
-    public let sourceURL: URL
+    public let intrinsicScopeId: UUID?
+    public let sourceUrl: URL
     public let contentHash: String?
     public let semanticMatchPolicy: ExternalImportSemanticMatchPolicy
 }
@@ -41,7 +41,7 @@ public struct ExternalImportSourceDescriptor: Sendable {
 /// Small source index entry. Bookmarks and source contents are deliberately not stored.
 public struct ExternalImportSourceEntry: Codable, Equatable, Identifiable, Sendable {
     public init(
-        scopeID: UUID,
+        scopeId: UUID,
         format: String,
         semanticKey: String?,
         fileResourceAlias: String?,
@@ -52,7 +52,7 @@ public struct ExternalImportSourceEntry: Codable, Equatable, Identifiable, Senda
         lastImportedAt: Date,
         intrinsicScopeAlias: UUID? = nil
     ) {
-        self.scopeID = scopeID
+        self.scopeId = scopeId
         self.format = format
         self.semanticKey = semanticKey
         self.fileResourceAlias = fileResourceAlias
@@ -64,9 +64,9 @@ public struct ExternalImportSourceEntry: Codable, Equatable, Identifiable, Senda
         self.intrinsicScopeAlias = intrinsicScopeAlias
     }
 
-    public var id: UUID { scopeID }
+    public var id: UUID { scopeId }
 
-    public let scopeID: UUID
+    public let scopeId: UUID
     public let format: String
     public let semanticKey: String?
     public let fileResourceAlias: String?
@@ -77,42 +77,57 @@ public struct ExternalImportSourceEntry: Codable, Equatable, Identifiable, Senda
     public let lastImportedAt: Date
     /// Records a deliberate reassignment of a Foundry bridge instance identity to another scope.
     ///
-    /// Older index entries omit this optional field. An entry whose `scopeID` is the bridge's
+    /// Older index entries omit this optional field. An entry whose `scopeId` is the bridge's
     /// intrinsic ID remains a backwards-compatible implicit candidate alongside explicit aliases.
     public let intrinsicScopeAlias: UUID?
+
+    /// The stored keys keep their `ID` spelling; the properties follow the project's `Id`
+    /// casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case scopeId = "scopeID"
+        case format
+        case semanticKey
+        case fileResourceAlias
+        case volumeResourceAlias
+        case lastKnownPathAlias
+        case lastContentHash
+        case createdAt
+        case lastImportedAt
+        case intrinsicScopeAlias
+    }
 }
 
 public enum ExternalImportSourceResolution: Equatable, Sendable {
     /// The source is new or has an unambiguous intrinsic, file-resource, path, or semantic match.
-    case resolved(scopeID: UUID)
+    case resolved(scopeId: UUID)
     /// A copied/moved semantic source could update an existing import or become a new source.
-    case requiresSelection(existing: [ExternalImportSourceEntry], proposedScopeID: UUID)
+    case requiresSelection(existing: [ExternalImportSourceEntry], proposedScopeId: UUID)
 }
 
 /// The identity choice that was reviewed before a commit began.
 public enum ExternalImportSourceClaimIntent: Equatable, Sendable {
     /// Preflight found no ambiguity. The registry must revalidate this proposal at commit time.
-    case resolved(scopeID: UUID)
+    case resolved(scopeId: UUID)
     /// The user explicitly chose one of the existing source scopes offered by preflight.
-    case selectedExisting(scopeID: UUID)
+    case selectedExisting(scopeId: UUID)
     /// The user explicitly chose to keep a copied source separate.
-    case selectedNew(scopeID: UUID)
+    case selectedNew(scopeId: UUID)
 
-    public var scopeID: UUID {
+    public var scopeId: UUID {
         switch self {
-        case .resolved(let scopeID), .selectedExisting(let scopeID), .selectedNew(let scopeID):
-            scopeID
+        case .resolved(let scopeId), .selectedExisting(let scopeId), .selectedNew(let scopeId):
+            scopeId
         }
     }
 }
 
 /// Result of atomically revalidating and reserving a source scope immediately before a commit.
 public enum ExternalImportSourceClaimResult: Equatable, Sendable {
-    case claimed(scopeID: UUID)
+    case claimed(scopeId: UUID)
     /// Another commit claimed the same unambiguous source after this review was prepared.
-    case requiresRemapping(canonicalScopeID: UUID)
+    case requiresRemapping(canonicalScopeId: UUID)
     /// Source identity became ambiguous after review and needs a fresh explicit choice.
-    case requiresSelection(existing: [ExternalImportSourceEntry], proposedScopeID: UUID)
+    case requiresSelection(existing: [ExternalImportSourceEntry], proposedScopeId: UUID)
 }
 
 public enum ExternalImportSourceRegistryError: LocalizedError, Equatable, Sendable {

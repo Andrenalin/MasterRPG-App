@@ -43,7 +43,7 @@ struct FoundryImportArchiveTests {
                 )]
             )]
         )
-        let store = FoundryImportArchiveStore(directoryURL: directory)
+        let store = FoundryImportArchiveStore(directoryUrl: directory)
 
         try await store.save(archive)
 
@@ -53,7 +53,7 @@ struct FoundryImportArchiveTests {
         #expect(summaries.first?.id == archive.id)
         #expect(summaries.first?.sourceFileName == "world.zip")
         let sources = try await store.sourceRegistryEntries()
-        #expect(sources.first?.scopeID == archive.id)
+        #expect(sources.first?.scopeId == archive.id)
         #expect(sources.first?.format == "foundry-world")
         #expect(sources.first?.semanticKey == "world:demo")
     }
@@ -87,7 +87,7 @@ struct FoundryImportArchiveTests {
             warnings: [String(repeating: "x", count: 512)]
         )
         let store = FoundryImportArchiveStore(
-            directoryURL: directory,
+            directoryUrl: directory,
             maximumEncodedByteCount: 64
         )
 
@@ -103,7 +103,7 @@ struct FoundryImportArchiveTests {
             path: "FoundryImportArchiveBridgeIdentityTests-\(UUID().uuidString)"
         )
         defer { try? FileManager.default.removeItem(at: directory) }
-        let intrinsicScopeID = UUID()
+        let intrinsicScopeId = UUID()
         let reassignedScopeID = UUID()
         let package = FoundryVTTImportPackage(
             kind: .world,
@@ -114,11 +114,11 @@ struct FoundryImportArchiveTests {
                 title: "Demo",
                 descriptionHTML: nil,
                 version: "1",
-                systemID: "demo",
+                systemId: "demo",
                 compatibility: FoundryCompatibility(minimum: nil, verified: nil, maximum: nil),
                 rawData: .object([
                     "source": .object([
-                        "instanceID": .string(intrinsicScopeID.uuidString),
+                        "instanceID": .string(intrinsicScopeId.uuidString),
                     ]),
                 ])
             ),
@@ -136,22 +136,22 @@ struct FoundryImportArchiveTests {
         )
         let archive = FoundryImportArchive(
             id: reassignedScopeID,
-            sourceScopeID: reassignedScopeID,
+            sourceScopeId: reassignedScopeID,
             sourceFormat: "foundry-world",
             sourceSemanticKey: "world:demo",
             sourceFileName: "demo.mrpgfoundry",
             package: package,
             mappings: []
         )
-        let store = FoundryImportArchiveStore(directoryURL: directory)
+        let store = FoundryImportArchiveStore(directoryUrl: directory)
         try await store.save(archive)
 
         // When
         let sources = try await store.sourceRegistryEntries()
 
         // Then
-        #expect(sources.first?.scopeID == reassignedScopeID)
-        #expect(sources.first?.intrinsicScopeAlias == intrinsicScopeID)
+        #expect(sources.first?.scopeId == reassignedScopeID)
+        #expect(sources.first?.intrinsicScopeAlias == intrinsicScopeId)
     }
 
     @Test("Corrupt archives do not hide valid hints and duplicate scopes use the newest archive")
@@ -160,7 +160,7 @@ struct FoundryImportArchiveTests {
             path: "FoundryImportArchiveRecoveryTests-\(UUID().uuidString)"
         )
         defer { try? FileManager.default.removeItem(at: directory) }
-        let scopeID = UUID()
+        let scopeId = UUID()
         let package = FoundryVTTImportPackage(
             sourceSHA256: "source-hash",
             kind: .world,
@@ -178,10 +178,10 @@ struct FoundryImportArchiveTests {
                 documentCounts: [:]
             )
         )
-        let store = FoundryImportArchiveStore(directoryURL: directory)
+        let store = FoundryImportArchiveStore(directoryUrl: directory)
         try await store.save(FoundryImportArchive(
             id: UUID(),
-            sourceScopeID: scopeID,
+            sourceScopeId: scopeId,
             sourceFormat: "foundry-world",
             sourceSemanticKey: "world:demo",
             importedAt: Date(timeIntervalSince1970: 1),
@@ -191,7 +191,7 @@ struct FoundryImportArchiveTests {
         ))
         try await store.save(FoundryImportArchive(
             id: UUID(),
-            sourceScopeID: scopeID,
+            sourceScopeId: scopeId,
             sourceFormat: "foundry-world",
             sourceSemanticKey: "world:demo",
             importedAt: Date(timeIntervalSince1970: 2),
@@ -208,7 +208,7 @@ struct FoundryImportArchiveTests {
         let summaries = try await store.summaries()
 
         #expect(sources.count == 1)
-        #expect(sources.first?.scopeID == scopeID)
+        #expect(sources.first?.scopeId == scopeId)
         #expect(sources.first?.lastKnownPathAlias == "new-world.zip")
         #expect(sources.first?.lastImportedAt == Date(timeIntervalSince1970: 2))
         #expect(summaries.count == 2)

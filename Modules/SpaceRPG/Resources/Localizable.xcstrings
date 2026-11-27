@@ -633,6 +633,22 @@
         }
       }
     },
+    "Capturing Objects" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objekte erfassen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การจับภาพวัตถุ"
+          }
+        }
+      }
+    },
     "change" : {
       "localizations" : {
         "de" : {
@@ -881,6 +897,22 @@
         }
       }
     },
+    "Diffuse, consistent lighting" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diffuses, gleichmäßiges Licht"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แสงกระจายและสม่ำเสมอ"
+          }
+        }
+      }
+    },
     "edit" : {
       "localizations" : {
         "de" : {
@@ -893,6 +925,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แก้ไข"
+          }
+        }
+      }
+    },
+    "Environment" : {
+      "comment" : "Title of the object capture tutorial page about the scanning environment.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umgebung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สภาพแวดล้อม"
           }
         }
       }
@@ -1337,6 +1386,38 @@
         }
       }
     },
+    "Ideal Environment Characteristics" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ideale Umgebung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ลักษณะสภาพแวดล้อมที่เหมาะสม"
+          }
+        }
+      }
+    },
+    "Ideal Object Characteristics" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ideale Objekteigenschaften"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ลักษณะวัตถุที่เหมาะสม"
+          }
+        }
+      }
+    },
     "Importer" : {
       "localizations" : {
         "de" : {
@@ -1349,6 +1430,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "นำเข้า"
+          }
+        }
+      }
+    },
+    "Inconsistent shadows" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungleichmäßige Schatten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เงาที่ไม่สม่ำเสมอ"
           }
         }
       }
@@ -1497,6 +1594,22 @@
         }
       }
     },
+    "Make sure you have even, good lighting and a stable environment for scanning. If scanning outdoors, cloudy days work best." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorge für gleichmäßiges, gutes Licht und eine ruhige Umgebung. Draußen eignen sich bewölkte Tage am besten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ตรวจสอบให้แน่ใจว่ามีแสงสว่างที่ดีและสม่ำเสมอ และสภาพแวดล้อมที่มั่นคงสำหรับการสแกน หากสแกนกลางแจ้ง วันที่มีเมฆมากจะดีที่สุด"
+          }
+        }
+      }
+    },
     "Mapping Texture (Reconstruction)" : {
       "comment" : "Feedback message during the object reconstruction phase.",
       "extractionState" : "extracted_with_value",
@@ -1517,6 +1630,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "กำลังแมปพื้นผิว…"
+          }
+        }
+      }
+    },
+    "May Reduce Quality" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kann die Qualität mindern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "อาจลดคุณภาพ"
           }
         }
       }
@@ -2048,6 +2177,22 @@
         }
       }
     },
+    "Non-reflective, matte surface" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht spiegelnde, matte Oberfläche"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "พื้นผิวด้านที่ไม่สะท้อนแสง"
+          }
+        }
+      }
+    },
     "note" : {
       "localizations" : {
         "de" : {
@@ -2110,6 +2255,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตกลง"
+          }
+        }
+      }
+    },
+    "Opaque, matte objects with varied surface textures scan best. Capture all sides of your object in a series of orbits." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undurchsichtige, matte Objekte mit abwechslungsreicher Oberfläche lassen sich am besten scannen. Erfasse alle Seiten des Objekts in mehreren Umrundungen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "วัตถุทึบแสงและด้านที่มีพื้นผิวหลากหลายจะสแกนได้ดีที่สุด จับภาพวัตถุทุกด้านโดยเดินวนรอบหลายรอบ"
           }
         }
       }
@@ -2569,6 +2730,22 @@
         }
       }
     },
+    "Shiny materials" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glänzende Materialien"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "วัสดุมันวาว"
+          }
+        }
+      }
+    },
     "show" : {
       "localizations" : {
         "de" : {
@@ -2625,6 +2802,22 @@
         }
       }
     },
+    "Solid, opaque" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fest, undurchsichtig"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แข็งและทึบแสง"
+          }
+        }
+      }
+    },
     "Space" : {
       "localizations" : {
         "de" : {
@@ -2637,6 +2830,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "3D"
+          }
+        }
+      }
+    },
+    "Space around intended object" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platz um das Objekt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "พื้นที่รอบวัตถุ"
           }
         }
       }
@@ -2661,6 +2870,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เริ่มถ่ายภาพ"
+          }
+        }
+      }
+    },
+    "Sunny, directional lighting" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonniges, gerichtetes Licht"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แสงแดดที่ส่องเป็นทิศทาง"
           }
         }
       }
@@ -2833,6 +3058,22 @@
         }
       }
     },
+    "Transparent, translucent objects" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transparente, durchscheinende Objekte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "วัตถุโปร่งใสหรือโปร่งแสง"
+          }
+        }
+      }
+    },
     "trash" : {
       "localizations" : {
         "de" : {
@@ -2912,6 +3153,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "URL"
+          }
+        }
+      }
+    },
+    "Varied Surface Texture" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abwechslungsreiche Oberfläche"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "พื้นผิวที่หลากหลาย"
           }
         }
       }

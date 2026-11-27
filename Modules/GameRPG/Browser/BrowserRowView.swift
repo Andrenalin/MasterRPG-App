@@ -259,7 +259,7 @@ private struct GameJoinCodeEntrySheet: View {
         root: .previewFixture(game: .player),
         playerNetworkControllable: PlayerNetworkController(name: "Aria"),
         model: BrowserGameModel(
-            id: GamePreviewData.masterID,
+            id: GamePreviewData.masterId,
             endpointName: "Morgan.MasterRPG",
             connectionMode: .observer,
             supporterTier: .gold

@@ -88,7 +88,9 @@ public extension GameControllable {
               // A caller that was superseded while the item loaded must not change the game.
               !Task.isCancelled
         else { return false }
-        await gameModel.insert(itemId: item.id, item: item)
+        // Game memory never holds the library instance: memory-only game edits mutate the game
+        // copy in place, so an alias would change the library object. See CODE_AUDIT_29 §5.1.
+        await gameModel.insert(itemId: item.id, item: item.copy())
         return true
     }
 
@@ -270,7 +272,8 @@ public extension GameControllable {
     private func completeReveal(itemId: UUID, save: Bool, generation: Int) -> Bool {
         guard gameModel.resetGeneration == generation else { return false }
         if !gameModel.moveToFront(itemId: itemId), let item = itemControllable.itemSync(for: itemId) {
-            gameModel.insert(itemId: item.id, item: item)
+            // A copy, never the library instance. See CODE_AUDIT_29 §5.1.
+            gameModel.insert(itemId: item.id, item: item.copy())
         }
         if save, let model = gameModel.itemData[itemId] {
             itemControllable.persistFromGame(model: model, authoritative: false)
@@ -350,7 +353,9 @@ public extension GameControllable {
     private func applyGameUpdate(itemId: UUID, hide: Bool, policy: GameMutationPolicy, dependentIds: Set<UUID>, authoritative: Bool, generation: Int) throws {
         guard gameModel.resetGeneration == generation else { throw CancellationError() }
         let gameItem: ModelType? = gameModel.item(for: itemId)
-        guard let item = gameItem ?? itemControllable.itemSync(for: itemId) else { throw ItemGameStorableError.itemMissing }
+        // The library fallback is copied: a delivery that merged as unchanged must not put the
+        // library instance into game memory. See CODE_AUDIT_29 §5.1.
+        guard let item = gameItem ?? itemControllable.itemSync(for: itemId)?.copy() else { throw ItemGameStorableError.itemMissing }
         gameModel.apply(itemId: itemId, item: item, hide: hide)
         guard policy == .persist else { return }
         itemControllable.persistFromGame(model: item, authoritative: authoritative)

@@ -4,441 +4,11 @@ import CryptoKit
 import Foundation
 import Synchronization
 
-/// A lossless, concurrency-safe representation of a value stored in a Foundry document.
-///
-/// `RuleRPG` can persist or map these values without depending on a specific Foundry game
-/// system's Swift types.
-public enum FoundryJSONValue: Codable, Equatable, Sendable {
-    case object([String: FoundryJSONValue])
-    case array([FoundryJSONValue])
-    case string(String)
-    case integer(Int64)
-    case unsignedInteger(UInt64)
-    case number(Double)
-    case bool(Bool)
-    case null
-
-    /// A ~200 KB payload of ~100,000 nested arrays (`[[[[[…]]]]]`) — well under any
-    /// per-entry size cap — would otherwise recurse one native stack frame per level
-    /// during decode and crash the process via stack overflow. See CODE_AUDIT §5.9.
-    static let maximumNestingDepth = 128
-
-    /// Longest coding path accepted when no depth counter is installed.
-    static let maximumUncountedCodingPathLength = 2 * maximumNestingDepth
-
-    public init(from decoder: any Decoder) throws {
-        let depthCounter = decoder.userInfo[.masterRPGFoundryJSONDepth] as? FoundryJSONDepthCounter
-        depthCounter?.depth += 1
-        defer { depthCounter?.depth -= 1 }
-        if let depthCounter {
-            if depthCounter.depth > Self.maximumNestingDepth {
-                throw DecodingError.dataCorrupted(DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Foundry JSON nesting exceeds the maximum supported depth of \(Self.maximumNestingDepth)."
-                ))
-            }
-        } else if decoder.codingPath.count > Self.maximumUncountedCodingPathLength {
-            // Decodes from CoreData, the network and `.gmz` imports install no counter, so the
-            // guard lives here: every nesting level adds one coding-path element. The limit
-            // leaves room for the enclosing model's own path. See CODE_AUDIT_20 §6.3.
-            throw DecodingError.dataCorrupted(DecodingError.Context(
-                codingPath: [],
-                debugDescription: "Foundry JSON nesting exceeds the maximum supported depth."
-            ))
-        }
-
-        if decoder.userInfo[.masterRPGFoundrySourceJSON] as? Bool != true,
-           let taggedContainer = try? decoder.container(keyedBy: FoundryJSONCodingKey.self),
-           Set(taggedContainer.allKeys.map(\.stringValue)) == FoundryJSONCodingKey.numericKeys,
-           let numericType = try? taggedContainer.decode(
-               FoundryJSONNumericType.self,
-               forKey: .numericType
-           ) {
-            switch numericType {
-            case .integer:
-                self = .integer(try taggedContainer.decode(Int64.self, forKey: .numericValue))
-            case .unsignedInteger:
-                self = .unsignedInteger(try taggedContainer.decode(UInt64.self, forKey: .numericValue))
-            case .number:
-                self = .number(try taggedContainer.decode(Double.self, forKey: .numericValue))
-            }
-            return
-        }
-
-        let container = try decoder.singleValueContainer()
-        if container.decodeNil() {
-            self = .null
-        } else if let value = try? container.decode(Bool.self) {
-            self = .bool(value)
-        } else if let value = try? container.decode(Int64.self) {
-            self = .integer(value)
-        } else if let value = try? container.decode(UInt64.self) {
-            self = .unsignedInteger(value)
-        } else if let value = try? container.decode(Double.self) {
-            self = .number(value)
-        } else if let value = try? container.decode(String.self) {
-            self = .string(value)
-        } else if let value = try? container.decode([FoundryJSONValue].self) {
-            self = .array(value)
-        } else if let value = try? container.decode([String: FoundryJSONValue].self) {
-            self = .object(value)
-        } else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported Foundry JSON value")
-        }
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        switch self {
-        case .object(let value):
-            var container = encoder.singleValueContainer()
-            try container.encode(value)
-        case .array(let value):
-            var container = encoder.singleValueContainer()
-            try container.encode(value)
-        case .string(let value):
-            var container = encoder.singleValueContainer()
-            try container.encode(value)
-        case .integer(let value):
-            var container = encoder.container(keyedBy: FoundryJSONCodingKey.self)
-            try container.encode(FoundryJSONNumericType.integer, forKey: .numericType)
-            try container.encode(value, forKey: .numericValue)
-        case .unsignedInteger(let value):
-            var container = encoder.container(keyedBy: FoundryJSONCodingKey.self)
-            try container.encode(FoundryJSONNumericType.unsignedInteger, forKey: .numericType)
-            try container.encode(value, forKey: .numericValue)
-        case .number(let value):
-            var container = encoder.container(keyedBy: FoundryJSONCodingKey.self)
-            try container.encode(FoundryJSONNumericType.number, forKey: .numericType)
-            try container.encode(value, forKey: .numericValue)
-        case .bool(let value):
-            var container = encoder.singleValueContainer()
-            try container.encode(value)
-        case .null:
-            var container = encoder.singleValueContainer()
-            try container.encodeNil()
-        }
-    }
-
-    public var objectValue: [String: FoundryJSONValue]? {
-        guard case .object(let value) = self else { return nil }
-        return value
-    }
-
-    public var arrayValue: [FoundryJSONValue]? {
-        guard case .array(let value) = self else { return nil }
-        return value
-    }
-
-    public var stringValue: String? {
-        guard case .string(let value) = self else { return nil }
-        return value
-    }
-
-    public var integerValue: Int64? {
-        switch self {
-        case .integer(let value): value
-        case .unsignedInteger(let value): Int64(exactly: value)
-        case .number(let value) where value.rounded() == value: Int64(exactly: value)
-        default: nil
-        }
-    }
-
-    public var boolValue: Bool? {
-        guard case .bool(let value) = self else { return nil }
-        return value
-    }
-
-    public subscript(key: String) -> FoundryJSONValue? {
-        objectValue?[key]
-    }
-
-    public func value(at path: String) -> FoundryJSONValue? {
-        value(at: path.split(separator: ".").map(String.init))
-    }
-
-    public func value(at path: [String]) -> FoundryJSONValue? {
-        path.reduce(Optional(self)) { value, component in
-            value?[component]
-        }
-    }
-}
-
-extension CodingUserInfoKey {
-    static let masterRPGFoundrySourceJSON = Self(
-        rawValue: BundleIds.app("decodeFoundrySourceJSON")
-    )!
-    static let masterRPGFoundryJSONDepth = Self(
-        rawValue: BundleIds.app("decodeFoundryJSONDepth")
-    )!
-}
-
-/// Recursion-depth counter threaded through a `JSONDecoder`'s `userInfo` so
-/// `FoundryJSONValue.init(from:)` can bound its own nesting. Codable hands each
-/// nested array/object element its own fresh `Decoder`/`init(from:)` call, so a
-/// plain local variable can't observe depth across those calls — `userInfo` is
-/// the only channel threaded through the whole recursive decode, and it needs a
-/// reference type since `Decoder` only exposes it for reading.
-// Checked `Sendable`: the depth lives in a `Mutex` instead of an unsynchronized `var`
-// justified only by how it is used. See CODE_AUDIT §3.5 and CODE_AUDIT_18 §3.18.
-final class FoundryJSONDepthCounter: Sendable {
-    private let storage = Mutex(0)
-
-    var depth: Int {
-        get { storage.withLock { $0 } }
-        set { storage.withLock { $0 = newValue } }
-    }
-}
-
-private enum FoundryJSONNumericType: String, Codable {
-    case integer
-    case unsignedInteger
-    case number
-}
-
-private struct FoundryJSONCodingKey: CodingKey, Hashable {
-    static let numericType = Self(stringValue: "__masterRPGFoundryNumericType")
-    static let numericValue = Self(stringValue: "__masterRPGFoundryNumericValue")
-    static let numericKeys = Set([numericType.stringValue, numericValue.stringValue])
-
-    let stringValue: String
-    let intValue: Int?
-
-    init(stringValue: String) {
-        self.stringValue = stringValue
-        intValue = nil
-    }
-
-    init(intValue: Int) {
-        stringValue = String(intValue)
-        self.intValue = intValue
-    }
-}
-
-public struct FoundrySystemManifest: Codable, Equatable, Sendable {
-    public let id: String
-    public let title: String
-    public let description: String?
-    public let version: String
-    public let compatibility: FoundryCompatibility
-    public let packs: [FoundryPackManifest]
-    public let rawData: FoundryJSONValue
-
-    public init(
-        id: String,
-        title: String,
-        description: String?,
-        version: String,
-        compatibility: FoundryCompatibility,
-        packs: [FoundryPackManifest],
-        rawData: FoundryJSONValue
-    ) {
-        self.id = id
-        self.title = title
-        self.description = description
-        self.version = version
-        self.compatibility = compatibility
-        self.packs = packs
-        self.rawData = rawData
-    }
-}
-
-public struct FoundryCompatibility: Codable, Equatable, Sendable {
-    public let minimum: String?
-    public let verified: String?
-    public let maximum: String?
-
-    public init(minimum: String?, verified: String?, maximum: String?) {
-        self.minimum = minimum
-        self.verified = verified
-        self.maximum = maximum
-    }
-}
-
-public struct FoundryPackManifest: Codable, Equatable, Identifiable, Sendable {
-    public var id: String { name }
-
-    public let name: String
-    public let label: String
-    public let path: String
-    public let documentType: String
-    public let systemID: String?
-
-    public init(name: String, label: String, path: String, documentType: String, systemID: String?) {
-        self.name = name
-        self.label = label
-        self.path = path
-        self.documentType = documentType
-        self.systemID = systemID
-    }
-}
-
-public struct FoundryRulePackage: Codable, Equatable, Sendable {
-    public static let currentFormatVersion = 1
-
-    public let formatVersion: Int
-    public let sourceSHA256: String?
-    public let manifest: FoundrySystemManifest
-    public let manifestPath: String
-    public let templatePath: String?
-    public let templateData: FoundryJSONValue?
-    public let schemas: [FoundryRuleSchema]
-    public let compendiums: [FoundryCompendium]
-    public let localizations: [FoundryLocalizationCatalog]
-    public let assetPaths: [String]
-    public let resources: [FoundryPackageResource]
-    public let licensePaths: [String]
-    public let licenseDocuments: [FoundryPackageTextResource]
-    public let diagnostics: [FoundryImportDiagnostic]
-
-    public init(
-        formatVersion: Int = Self.currentFormatVersion,
-        sourceSHA256: String? = nil,
-        manifest: FoundrySystemManifest,
-        manifestPath: String,
-        templatePath: String?,
-        templateData: FoundryJSONValue?,
-        schemas: [FoundryRuleSchema],
-        compendiums: [FoundryCompendium],
-        localizations: [FoundryLocalizationCatalog] = [],
-        assetPaths: [String],
-        resources: [FoundryPackageResource] = [],
-        licensePaths: [String],
-        licenseDocuments: [FoundryPackageTextResource] = [],
-        diagnostics: [FoundryImportDiagnostic]
-    ) {
-        self.formatVersion = formatVersion
-        self.sourceSHA256 = sourceSHA256
-        self.manifest = manifest
-        self.manifestPath = manifestPath
-        self.templatePath = templatePath
-        self.templateData = templateData
-        self.schemas = schemas
-        self.compendiums = compendiums
-        self.localizations = localizations
-        self.assetPaths = assetPaths
-        self.resources = resources
-        self.licensePaths = licensePaths
-        self.licenseDocuments = licenseDocuments
-        self.diagnostics = diagnostics
-    }
-
-    public var rules: [FoundryRuleDefinition] {
-        compendiums.flatMap(\.rules)
-    }
-
-    public var ruleCount: Int {
-        compendiums.reduce(into: 0) { count, compendium in
-            count += compendium.rules.count
-        }
-    }
-}
-
-/// Describes where a rule-referenced file came from without retaining a live file URL.
-///
-/// Packaged resources can be reopened through `FoundrySystemPackageReader`. Other locations are
-/// retained so RuleRPG can report or deliberately resolve external dependencies.
-public struct FoundryPackageResource: Codable, Equatable, Hashable, Identifiable, Sendable {
-    public enum Location: String, Codable, Equatable, Hashable, Sendable {
-        case packaged
-        case foundryInstallation
-        case remote
-        case unresolved
-    }
-
-    public var id: String { "\(location.rawValue):\(logicalPath):\(packagePath ?? "-")" }
-
-    public let logicalPath: String
-    public let packagePath: String?
-    public let location: Location
-    public let byteCount: Int?
-    public let sha256: String?
-
-    public init(
-        logicalPath: String,
-        packagePath: String?,
-        location: Location,
-        byteCount: Int?,
-        sha256: String?
-    ) {
-        self.logicalPath = logicalPath
-        self.packagePath = packagePath
-        self.location = location
-        self.byteCount = byteCount
-        self.sha256 = sha256
-    }
-}
-
-public struct FoundryPackageResourceData: Equatable, Sendable {
-    public let resource: FoundryPackageResource
-    public let data: Data
-
-    public init(resource: FoundryPackageResource, data: Data) {
-        self.resource = resource
-        self.data = data
-    }
-}
-
-public struct FoundryLocalizationCatalog: Codable, Equatable, Identifiable, Sendable {
-    public var id: String { languageCode }
-
-    public let languageCode: String
-    public let name: String
-    public let path: String
-    public let translations: FoundryJSONValue
-
-    public init(languageCode: String, name: String, path: String, translations: FoundryJSONValue) {
-        self.languageCode = languageCode
-        self.name = name
-        self.path = path
-        self.translations = translations
-    }
-}
-
-public struct FoundryPackageTextResource: Codable, Equatable, Identifiable, Sendable {
-    public var id: String { path }
-
-    public let path: String
-    public let content: String
-
-    public init(path: String, content: String) {
-        self.path = path
-        self.content = content
-    }
-}
-
-public struct FoundryCompendium: Codable, Equatable, Identifiable, Sendable {
-    public var id: String { manifest.name }
-
-    public let manifest: FoundryPackManifest
-    public let rules: [FoundryRuleDefinition]
-    public let folders: [FoundryFolder]
-
-    public init(manifest: FoundryPackManifest, rules: [FoundryRuleDefinition], folders: [FoundryFolder]) {
-        self.manifest = manifest
-        self.rules = rules
-        self.folders = folders
-    }
-}
-
-public struct FoundryFolder: Codable, Equatable, Identifiable, Sendable {
-    public let id: String
-    public let name: String
-    public let parentID: String?
-    public let sort: Int64?
-
-    public init(id: String, name: String, parentID: String?, sort: Int64?) {
-        self.id = id
-        self.name = name
-        self.parentID = parentID
-        self.sort = sort
-    }
-}
-
 /// A lossless rule document with a small amount of system-independent interpretation.
 public struct FoundryRuleDefinition: Codable, Equatable, Identifiable, Sendable {
     /// Stable across repeated imports of the same Foundry compendium.
     public let id: String
-    public let documentID: String
+    public let documentId: String
     public let packName: String
     public let documentType: String
     public let subtype: String
@@ -446,7 +16,7 @@ public struct FoundryRuleDefinition: Codable, Equatable, Identifiable, Sendable 
     public let name: String
     public let descriptionHTML: String?
     public let imagePath: String?
-    public let folderID: String?
+    public let folderId: String?
     public let values: [FoundryRuleValue]
     public let tags: [String]
     public let references: [FoundryRuleReference]
@@ -455,11 +25,11 @@ public struct FoundryRuleDefinition: Codable, Equatable, Identifiable, Sendable 
     public let rawData: FoundryJSONValue
 
     /// A deterministic UUID suitable for a Core Data `RuleRPG` identity.
-    public var masterRPGID: UUID { FoundryRuleIdentity.uuid(for: id) }
+    public var masterRPGId: UUID { FoundryRuleIdentity.uuid(for: id) }
 
     public init(
         id: String,
-        documentID: String,
+        documentId: String,
         packName: String,
         documentType: String,
         subtype: String,
@@ -467,7 +37,7 @@ public struct FoundryRuleDefinition: Codable, Equatable, Identifiable, Sendable 
         name: String,
         descriptionHTML: String?,
         imagePath: String?,
-        folderID: String?,
+        folderId: String?,
         values: [FoundryRuleValue],
         tags: [String],
         references: [FoundryRuleReference],
@@ -476,7 +46,7 @@ public struct FoundryRuleDefinition: Codable, Equatable, Identifiable, Sendable 
         rawData: FoundryJSONValue
     ) {
         self.id = id
-        self.documentID = documentID
+        self.documentId = documentId
         self.packName = packName
         self.documentType = documentType
         self.subtype = subtype
@@ -484,13 +54,34 @@ public struct FoundryRuleDefinition: Codable, Equatable, Identifiable, Sendable 
         self.name = name
         self.descriptionHTML = descriptionHTML
         self.imagePath = imagePath
-        self.folderID = folderID
+        self.folderId = folderId
         self.values = values
         self.tags = tags
         self.references = references
         self.embeddedRules = embeddedRules
         self.effects = effects
         self.rawData = rawData
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case documentId = "documentID"
+        case packName
+        case documentType
+        case subtype
+        case category
+        case name
+        case descriptionHTML
+        case imagePath
+        case folderId = "folderID"
+        case values
+        case tags
+        case references
+        case embeddedRules
+        case effects
+        case rawData
     }
 }
 
@@ -506,7 +97,7 @@ public struct FoundryEmbeddedRule: Codable, Equatable, Identifiable, Sendable {
     public let effects: [FoundryRuleEffect]
     public let rawData: FoundryJSONValue
 
-    public var masterRPGID: UUID { FoundryRuleIdentity.uuid(for: id) }
+    public var masterRPGId: UUID { FoundryRuleIdentity.uuid(for: id) }
 
     public init(
         id: String,
@@ -530,6 +121,21 @@ public struct FoundryEmbeddedRule: Codable, Equatable, Identifiable, Sendable {
         self.references = references
         self.effects = effects
         self.rawData = rawData
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case subtype
+        case category
+        case descriptionHTML
+        case imagePath
+        case values
+        case references
+        case effects
+        case rawData
     }
 }
 
@@ -630,7 +236,7 @@ public struct FoundryRuleReference: Codable, Equatable, Hashable, Sendable {
     public let target: String
     public let label: String?
     public let packName: String?
-    public let documentID: String?
+    public let documentId: String?
 
     public init(
         kind: Kind,
@@ -639,7 +245,7 @@ public struct FoundryRuleReference: Codable, Equatable, Hashable, Sendable {
         target: String,
         label: String?,
         packName: String?,
-        documentID: String?
+        documentId: String?
     ) {
         self.kind = kind
         self.sourcePath = sourcePath
@@ -647,7 +253,19 @@ public struct FoundryRuleReference: Codable, Equatable, Hashable, Sendable {
         self.target = target
         self.label = label
         self.packName = packName
-        self.documentID = documentID
+        self.documentId = documentId
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case sourcePath
+        case rawToken
+        case target
+        case label
+        case packName
+        case documentId = "documentID"
     }
 }
 
@@ -661,7 +279,7 @@ public struct FoundryRuleEffect: Codable, Equatable, Identifiable, Sendable {
     public let duration: FoundryJSONValue?
     public let rawData: FoundryJSONValue
 
-    public var masterRPGID: UUID { FoundryRuleIdentity.uuid(for: id) }
+    public var masterRPGId: UUID { FoundryRuleIdentity.uuid(for: id) }
 
     public init(
         id: String,
@@ -681,6 +299,19 @@ public struct FoundryRuleEffect: Codable, Equatable, Identifiable, Sendable {
         self.changes = changes
         self.duration = duration
         self.rawData = rawData
+    }
+
+    /// The archived and sent keys keep their `ID` spelling; the properties follow the
+    /// project's `Id` casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case isDisabled
+        case transfersToActor
+        case statuses
+        case changes
+        case duration
+        case rawData
     }
 }
 
@@ -705,145 +336,3 @@ public enum FoundryRuleIdentity {
     }
 }
 
-public struct FoundryImportDiagnostic: Codable, Equatable, Identifiable, Sendable {
-    public enum Severity: String, Codable, Equatable, Sendable {
-        case information
-        case warning
-    }
-
-    public var id: String { "\(code):\(packName ?? "package"): \(message)" }
-
-    public let severity: Severity
-    public let code: String
-    public let message: String
-    public let packName: String?
-
-    public init(severity: Severity, code: String, message: String, packName: String? = nil) {
-        self.severity = severity
-        self.code = code
-        self.message = message
-        self.packName = packName
-    }
-}
-
-public struct FoundryImportLimits: Equatable, Sendable {
-    public static let `default` = Self()
-
-    /// Decoded rule data (and one batch of resources) the importer keeps in memory. A document
-    /// tree takes 5-10 times the size of its JSON, so a limit sized for a Mac gets an iPhone or
-    /// an Apple TV killed by jetsam instead of rejecting the file with `fileTooLarge`. The
-    /// archive itself is read from disk and keeps its limit. See CODE_AUDIT_26 §7.3.
-#if os(macOS)
-    public static let platformMemoryLimit = 512 * ByteUnit.mebibyte
-#else
-    public static let platformMemoryLimit = 128 * ByteUnit.mebibyte
-#endif
-
-    public let maximumArchiveSize: Int
-    public let maximumEntrySize: Int
-    public let maximumRuleDataSize: Int
-    public let maximumResourceBatchSize: Int
-    public let maximumDocumentCount: Int
-    /// Bounds newline-delimited transport records, including tombstones and malformed records.
-    public let maximumRecordCount: Int
-    /// Bounds warnings created from repeated malformed or forward-versioned records.
-    public let maximumDiagnosticCount: Int
-    public let maximumUniversalVTTElementCount: Int
-    public let maximumUniversalVTTCoordinateMagnitude: Double
-    public let maximumUniversalVTTPixelDimension: Double
-
-    public init(
-        maximumArchiveSize: Int = ByteUnit.gibibyte,
-        maximumEntrySize: Int = 64 * ByteUnit.mebibyte,
-        maximumRuleDataSize: Int = FoundryImportLimits.platformMemoryLimit,
-        maximumResourceBatchSize: Int = FoundryImportLimits.platformMemoryLimit,
-        maximumDocumentCount: Int = 100_000,
-        maximumRecordCount: Int = 400_000,
-        maximumDiagnosticCount: Int = 1_000,
-        maximumUniversalVTTElementCount: Int = 1_000_000,
-        maximumUniversalVTTCoordinateMagnitude: Double = 1_000_000,
-        maximumUniversalVTTPixelDimension: Double = 1_000_000
-    ) {
-        self.maximumArchiveSize = maximumArchiveSize
-        self.maximumEntrySize = maximumEntrySize
-        self.maximumRuleDataSize = maximumRuleDataSize
-        self.maximumResourceBatchSize = maximumResourceBatchSize
-        self.maximumDocumentCount = maximumDocumentCount
-        self.maximumRecordCount = maximumRecordCount
-        self.maximumDiagnosticCount = maximumDiagnosticCount
-        self.maximumUniversalVTTElementCount = maximumUniversalVTTElementCount
-        self.maximumUniversalVTTCoordinateMagnitude = maximumUniversalVTTCoordinateMagnitude
-        self.maximumUniversalVTTPixelDimension = maximumUniversalVTTPixelDimension
-    }
-}
-
-public enum FoundryImportError: Error, Equatable, LocalizedError, Sendable {
-    case fileTooLarge(Int)
-    case invalidArchive(String)
-    case encryptedArchive
-    case unsupportedZIPCompression(UInt16)
-    case unsupportedLevelDBCompression(UInt8)
-    case unsupportedLevelDBLog(String)
-    case unsupportedLevelDBTableSet(pack: String, tableCount: Int)
-    case corruptLevelDB(String)
-    case missingManifest
-    case ambiguousManifest
-    case invalidManifest(String)
-    case invalidDocument(pack: String, key: String)
-    case missingPack(String)
-    case tooManyDocuments(Int)
-    case tooManyUniversalVTTElements(Int)
-    case resourceUnavailable(String)
-    case duplicateResourceRequest
-    case sourceMismatch
-    case resourceIntegrityFailure(String)
-    case bareManifestRequiresContainer(String)
-    case unsupportedSource
-
-    public var errorDescription: String? {
-        switch self {
-        case .fileTooLarge(let size):
-            String(localized: "The Foundry package is too large (\(size) bytes).", bundle: .module)
-        case .invalidArchive(let reason):
-            String(localized: "The Foundry ZIP archive is invalid: \(reason)", bundle: .module)
-        case .encryptedArchive:
-            String(localized: "Encrypted ZIP archives are not supported.", bundle: .module)
-        case .unsupportedZIPCompression(let method):
-            String(localized: "ZIP compression method \(Int(method)) is not supported.", bundle: .module)
-        case .unsupportedLevelDBCompression(let method):
-            String(localized: "LevelDB compression method \(Int(method)) is not supported.", bundle: .module)
-        case .unsupportedLevelDBLog(let path):
-            String(localized: "The mutable LevelDB log \(path) contains data that cannot be imported safely. Compact the Foundry pack first.", bundle: .module)
-        case .unsupportedLevelDBTableSet(let pack, let tableCount):
-            String(localized: "The Foundry compendium \(pack) contains \(tableCount) LevelDB tables. Import currently requires a compacted pack with exactly one table.", bundle: .module)
-        case .corruptLevelDB(let reason):
-            String(localized: "The Foundry compendium database is corrupt: \(reason)", bundle: .module)
-        case .missingManifest:
-            String(localized: "The package does not contain a supported Foundry manifest.", bundle: .module)
-        case .ambiguousManifest:
-            String(localized: "The package contains more than one equally likely Foundry manifest.", bundle: .module)
-        case .invalidManifest(let reason):
-            String(localized: "The Foundry package manifest is invalid: \(reason)", bundle: .module)
-        case .invalidDocument(let pack, let key):
-            String(localized: "The Foundry compendium \(pack) contains an invalid document at \(key).", bundle: .module)
-        case .missingPack(let name):
-            String(localized: "The Foundry compendium \(name) is missing.", bundle: .module)
-        case .tooManyDocuments(let count):
-            String(localized: "The Foundry package contains too many documents (\(count)).", bundle: .module)
-        case .tooManyUniversalVTTElements(let count):
-            String(localized: "The Universal VTT map contains too many geometry elements (\(count)).", bundle: .module)
-        case .resourceUnavailable(let path):
-            String(localized: "The Foundry resource \(path) is not packaged in the selected artifact.", bundle: .module)
-        case .duplicateResourceRequest:
-            String(localized: "A Foundry resource was requested more than once in the same batch.", bundle: .module)
-        case .sourceMismatch:
-            String(localized: "The selected Foundry source does not match the package that was inspected.", bundle: .module)
-        case .resourceIntegrityFailure(let path):
-            String(localized: "The Foundry resource \(path) changed or failed its integrity check.", bundle: .module)
-        case .bareManifestRequiresContainer(let filename):
-            String(localized: "Select the folder or ZIP package containing \(filename), not the manifest file by itself.", bundle: .module)
-        case .unsupportedSource:
-            String(localized: "Select a supported Foundry package, document export, database, bridge file, or Universal VTT map.", bundle: .module)
-        }
-    }
-}

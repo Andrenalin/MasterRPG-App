@@ -12,6 +12,8 @@ import SwiftUI
 /// (`dismissalConfirmationDialog` is unavailable there), so closing the table brings this window
 /// back instead, with the question whether to quit the game. The game keeps running meanwhile.
 struct GameTableLaunchView: View {
+    // Scaled with Dynamic Type instead of fixed points. See CODE_AUDIT_29 §8.7.
+    @ScaledMetric private var spacing24: CGFloat = 24
     let root: GameRoot
 
     @Environment(ScenesManager.self) private var scenesManager
@@ -23,7 +25,7 @@ struct GameTableLaunchView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        VStack(spacing: 24) {
+        VStack(spacing: spacing24) {
             ProgressView()
             Text("Game is running", bundle: .module)
                 .font(.title2)

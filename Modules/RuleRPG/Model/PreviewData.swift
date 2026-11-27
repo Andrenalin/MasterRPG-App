@@ -80,12 +80,12 @@ public extension RuleModel {
         ],
         sourceMetadata: RuleSourceMetadata(
             sourceIdentifier: "Compendium.ds4.spells.arcane-shield",
-            systemID: "ds4",
+            systemId: "ds4",
             systemTitle: "Dungeon Slayers 4",
             systemVersion: "1.0",
             packageIdentifier: "ds4.spells",
             packageName: "Spells",
-            documentID: "arcane-shield",
+            documentId: "arcane-shield",
             documentType: "Item",
             subtype: "spell",
             ruleCategory: "spell"

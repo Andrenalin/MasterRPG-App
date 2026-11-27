@@ -98,13 +98,13 @@ extension GameRootModel {
         gameConfig = game
         gameRoster = game.isMaster ? .master : .player
         gameControl = .master
-        selectedAdventure = GamePreviewData.adventureID
-        selectedCharacter = GamePreviewData.characterID
-        selectedGameMaster = GamePreviewData.masterID
+        selectedAdventure = GamePreviewData.adventureId
+        selectedCharacter = GamePreviewData.characterId
+        selectedGameMaster = GamePreviewData.masterId
         startGameTime = GamePreviewData.referenceDate.addingTimeInterval(-5_400)
         logs = LogGameModel.previewFixtures.map(\.id)
         logData = Dictionary(uniqueKeysWithValues: LogGameModel.previewFixtures.map { ($0.id, $0) })
-        metaDataAttachments = [NetworkModules.map: GamePreviewData.mapID]
+        metaDataAttachments = [NetworkModules.map: GamePreviewData.mapId]
     }
 }
 
@@ -124,9 +124,9 @@ extension GameStatisticsModel {
 }
 
 extension GameConfigModel {
-    static let masterId = GamePreviewData.masterID
-    static let playerId = GamePreviewData.playerID
-    static let playerId2 = GamePreviewData.secondPlayerID
+    static let masterId = GamePreviewData.masterId
+    static let playerId = GamePreviewData.playerId
+    static let playerId2 = GamePreviewData.secondPlayerId
 
     static let player = GameConfigModel(
         id: playerId,
@@ -135,7 +135,7 @@ extension GameConfigModel {
             id: masterId,
             type: .master,
             name: "Morgan",
-            adventureId: GamePreviewData.adventureID,
+            adventureId: GamePreviewData.adventureId,
             adventureTitle: "The Shattered Crown"
         )
     )
@@ -147,7 +147,7 @@ extension GameConfigModel {
             id: masterId,
             type: .master,
             name: "Morgan",
-            adventureId: GamePreviewData.adventureID,
+            adventureId: GamePreviewData.adventureId,
             adventureTitle: "The Shattered Crown"
         )
     )
@@ -160,7 +160,7 @@ extension GameRosterModel {
                 id: GameConfigModel.playerId,
                 type: .player,
                 name: "Aria",
-                characterId: GamePreviewData.characterID
+                characterId: GamePreviewData.characterId
             )
         ]
     )
@@ -171,13 +171,13 @@ extension GameRosterModel {
                 id: GameConfigModel.playerId,
                 type: .player,
                 name: "Aria",
-                characterId: GamePreviewData.characterID
+                characterId: GamePreviewData.characterId
             ),
             PlayerGameModel(
                 id: GameConfigModel.playerId2,
                 type: .player,
                 name: "Borin",
-                characterId: GamePreviewData.secondCharacterID
+                characterId: GamePreviewData.secondCharacterId
             )
         ]
     )
@@ -213,7 +213,7 @@ extension LogGameModel {
             type: .store,
             subType: .show,
             module: .photo,
-            itemId: GamePreviewData.photoID
+            itemId: GamePreviewData.photoId
         )
         photo.players = [GameConfigModel.playerId, GameConfigModel.playerId2]
 
@@ -222,7 +222,7 @@ extension LogGameModel {
             type: .store,
             subType: .show,
             module: .map,
-            itemId: GamePreviewData.mapID
+            itemId: GamePreviewData.mapId
         )
         map.players = [GameConfigModel.playerId]
 
@@ -231,7 +231,7 @@ extension LogGameModel {
             type: .store,
             subType: .show,
             module: .map,
-            itemId: GamePreviewData.hiddenMapID
+            itemId: GamePreviewData.hiddenMapId
         )
         hiddenMap.players = []
         return [photo, map, hiddenMap]
@@ -245,33 +245,33 @@ enum GamePreviewData {
         return calendar
     }()
     static let referenceDate = Date(timeIntervalSince1970: 1_767_225_600)
-    static let masterID = identifier(0x11)
-    static let playerID = identifier(0x12)
-    static let secondPlayerID = identifier(0x13)
-    static let adventureID = UUID(
+    static let masterId = identifier(0x11)
+    static let playerId = identifier(0x12)
+    static let secondPlayerId = identifier(0x13)
+    static let adventureId = UUID(
         uuid: (0x5F, 0x6D, 0x6D, 0x52, 0x3D, 0xDB, 0x4B, 0x20,
                0x8D, 0x45, 0xDF, 0xB5, 0x43, 0x79, 0x94, 0x17)
     )
-    static let characterID = UUID(
+    static let characterId = UUID(
         uuid: (0x15, 0x27, 0x14, 0x0F, 0x01, 0x01, 0x46, 0xC3,
                0x91, 0x2E, 0xB0, 0x2F, 0xE0, 0xFF, 0x76, 0x96)
     )
-    static let secondCharacterID = identifier(0x32)
-    static let mapID = UUID(
+    static let secondCharacterId = identifier(0x32)
+    static let mapId = UUID(
         uuid: (0x50, 0xDF, 0xDB, 0x6F, 0xE8, 0xB1, 0x41, 0xA4,
                0xA4, 0x09, 0x91, 0x1D, 0x88, 0x81, 0x19, 0xE8)
     )
-    static let hiddenMapID = UUID(
+    static let hiddenMapId = UUID(
         uuid: (0xB1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
     )
-    static let photoID = UUID(
+    static let photoId = UUID(
         uuid: (0x12, 0x97, 0x55, 0x03, 0xCC, 0x29, 0x48, 0x37,
                0x80, 0x18, 0xEF, 0xF7, 0x74, 0xE9, 0x75, 0x95)
     )
-    static let searchItemID = identifier(0x61)
-    static let searchEntryID = identifier(0x62)
-    static let secondSearchItemID = identifier(0x63)
-    static let secondSearchEntryID = identifier(0x64)
+    static let searchItemId = identifier(0x61)
+    static let searchEntryId = identifier(0x62)
+    static let secondSearchItemId = identifier(0x63)
+    static let secondSearchEntryId = identifier(0x64)
 
     private static func identifier(_ finalByte: UInt8) -> UUID {
         UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, finalByte))

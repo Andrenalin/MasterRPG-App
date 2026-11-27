@@ -18,7 +18,7 @@ struct RuleMetadataEditor: View {
             )
             TextField(
                 String(localized: "System ID", bundle: .ruleModule),
-                text: binding(\.systemID)
+                text: binding(\.systemId)
             )
             TextField(
                 String(localized: "Version", bundle: .ruleModule),
@@ -34,7 +34,7 @@ struct RuleMetadataEditor: View {
             )
             TextField(
                 String(localized: "Document ID", bundle: .ruleModule),
-                text: binding(\.documentID)
+                text: binding(\.documentId)
             )
             TextField(
                 String(localized: "Document Type", bundle: .ruleModule),

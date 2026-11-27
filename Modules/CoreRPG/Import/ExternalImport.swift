@@ -11,14 +11,14 @@ import os.log
 public struct ExternalImportProvenance: Hashable, Codable, Sendable {
     public init(
         source: String,
-        sourceScopeID: UUID? = nil,
+        sourceScopeId: UUID? = nil,
         packageIdentifier: String? = nil,
         documentIdentifier: String? = nil,
         sourcePath: String? = nil,
         sourceVersion: String? = nil
     ) {
         self.source = source
-        self.sourceScopeID = sourceScopeID
+        self.sourceScopeId = sourceScopeId
         self.packageIdentifier = packageIdentifier
         self.documentIdentifier = documentIdentifier
         self.sourcePath = sourcePath
@@ -27,11 +27,22 @@ public struct ExternalImportProvenance: Hashable, Codable, Sendable {
 
     public let source: String
     /// Stable registry identity; mutable hashes and filenames must not be used as item identity.
-    public let sourceScopeID: UUID?
+    public let sourceScopeId: UUID?
     public let packageIdentifier: String?
     public let documentIdentifier: String?
     public let sourcePath: String?
     public let sourceVersion: String?
+
+    /// The stored keys keep their `ID` spelling; the properties follow the project's `Id`
+    /// casing. See CODE_AUDIT_29 §4.3.
+    private enum CodingKeys: String, CodingKey {
+        case source
+        case sourceScopeId = "sourceScopeID"
+        case packageIdentifier
+        case documentIdentifier
+        case sourcePath
+        case sourceVersion
+    }
 }
 
 /// Binary data associated with one staged item. The loader is deliberately lazy:
@@ -41,7 +52,7 @@ public struct ExternalImportAttachment: Identifiable, Sendable {
 
     public init(
         id: UUID = UUID(),
-        fileID: UUID? = nil,
+        fileId: UUID? = nil,
         suggestedFilename: String,
         contentTypeIdentifier: String? = nil,
         expectedByteCount: Int? = nil,
@@ -49,7 +60,7 @@ public struct ExternalImportAttachment: Identifiable, Sendable {
         load: @escaping Loader
     ) {
         self.id = id
-        self.fileID = fileID ?? id
+        self.fileId = fileId ?? id
         self.suggestedFilename = suggestedFilename
         self.contentTypeIdentifier = contentTypeIdentifier
         self.expectedByteCount = expectedByteCount
@@ -59,7 +70,7 @@ public struct ExternalImportAttachment: Identifiable, Sendable {
 
     public init(
         id: UUID = UUID(),
-        fileID: UUID? = nil,
+        fileId: UUID? = nil,
         suggestedFilename: String,
         contentTypeIdentifier: String? = nil,
         data: Data
@@ -67,7 +78,7 @@ public struct ExternalImportAttachment: Identifiable, Sendable {
         let hash = FileUrl.contentHash(of: data)
         self.init(
             id: id,
-            fileID: fileID,
+            fileId: fileId,
             suggestedFilename: suggestedFilename,
             contentTypeIdentifier: contentTypeIdentifier,
             expectedByteCount: data.count,
@@ -77,7 +88,7 @@ public struct ExternalImportAttachment: Identifiable, Sendable {
     }
 
     public let id: UUID
-    public let fileID: UUID
+    public let fileId: UUID
     public let suggestedFilename: String
     public let contentTypeIdentifier: String?
     public let expectedByteCount: Int?
@@ -104,18 +115,18 @@ public struct ExternalImportBatchItem: Identifiable, Sendable {
         model: Model,
         provenance: ExternalImportProvenance,
         attachment: ExternalImportAttachment? = nil,
-        decisionOwnerID: UUID? = nil,
+        decisionOwnerId: UUID? = nil,
         warnings: [String] = []
     ) where Model: ItemDataAccessible & Observable {
         self.id = id
         self.module = module
         self.name = name
         self.model = model
-        self.modelID = model.id
+        self.modelId = model.id
         self.modelModule = Model.typeId
         self.provenance = provenance
         self.attachment = attachment
-        self.decisionOwnerID = decisionOwnerID
+        self.decisionOwnerId = decisionOwnerId
         self.warnings = warnings
         self.modelCopier = { candidate in
             guard let candidate = candidate as? Model else { return nil }
@@ -135,16 +146,16 @@ public struct ExternalImportBatchItem: Identifiable, Sendable {
     public let module: NetworkModules
     public let name: String
     public let model: any ModelType
-    public let modelID: UUID
+    public let modelId: UUID
     public let modelModule: NetworkModules
     public let provenance: ExternalImportProvenance
     public let attachment: ExternalImportAttachment?
     /// An auxiliary item follows its same-module owner's review decision and is not presented as
     /// an independently selectable row. This keeps recursive imported models atomic.
-    public let decisionOwnerID: UUID?
+    public let decisionOwnerId: UUID?
     public let warnings: [String]
 
-    public var isAuxiliary: Bool { decisionOwnerID != nil }
+    public var isAuxiliary: Bool { decisionOwnerId != nil }
 
     private let modelCopier: @MainActor @Sendable (any ModelType) -> (any ModelType)?
     private let fileUrlReader: @MainActor @Sendable (any ModelType) -> FileUrl?
@@ -227,7 +238,7 @@ public struct ExternalImportResult: Equatable, Sendable {
         skippedItemCount: Int,
         installedAttachmentCount: Int,
         reusedAttachmentCount: Int,
-        importedItemIDs: [NetworkModules: Set<UUID>]
+        importedItemIds: [NetworkModules: Set<UUID>]
     ) {
         self.insertedItemCount = insertedItemCount
         self.mergedItemCount = mergedItemCount
@@ -236,7 +247,7 @@ public struct ExternalImportResult: Equatable, Sendable {
         self.skippedItemCount = skippedItemCount
         self.installedAttachmentCount = installedAttachmentCount
         self.reusedAttachmentCount = reusedAttachmentCount
-        self.importedItemIDs = importedItemIDs
+        self.importedItemIds = importedItemIds
     }
 
     public let insertedItemCount: Int
@@ -246,7 +257,7 @@ public struct ExternalImportResult: Equatable, Sendable {
     public let skippedItemCount: Int
     public let installedAttachmentCount: Int
     public let reusedAttachmentCount: Int
-    public let importedItemIDs: [NetworkModules: Set<UUID>]
+    public let importedItemIds: [NetworkModules: Set<UUID>]
 }
 
 public enum ExternalImportError: LocalizedError, Equatable, Sendable {
@@ -256,10 +267,10 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
     case unsupportedModule(NetworkModules)
     case incompatibleModel(itemId: UUID, module: NetworkModules)
     case missingFileController(itemId: UUID, module: NetworkModules)
-    case attachmentSizeMismatch(attachmentID: UUID, expected: Int, actual: Int)
-    case attachmentHashMismatch(attachmentID: UUID)
-    case attachmentInstallFailed(attachmentID: UUID)
-    case duplicateAttachmentFileID(UUID)
+    case attachmentSizeMismatch(attachmentId: UUID, expected: Int, actual: Int)
+    case attachmentHashMismatch(attachmentId: UUID)
+    case attachmentInstallFailed(attachmentId: UUID)
+    case duplicateAttachmentFileId(UUID)
     case itemChangedDuringImport(itemId: UUID, module: NetworkModules)
     case rollbackIncomplete(originalError: String, rollbackErrors: [String])
 
@@ -283,8 +294,8 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
             String(localized: "Attachment integrity validation failed.", bundle: .module)
         case .attachmentInstallFailed:
             String(localized: "The attachment could not be installed.", bundle: .module)
-        case .duplicateAttachmentFileID(let fileID):
-            String(localized: "More than one selected attachment uses file id \(fileID.uuidString).", bundle: .module)
+        case .duplicateAttachmentFileId(let fileId):
+            String(localized: "More than one selected attachment uses file id \(fileId.uuidString).", bundle: .module)
         case .itemChangedDuringImport(let itemId, let module):
             String(localized: "\(module.title) item \(itemId.uuidString) changed on this device while its attachment was installed. Nothing was imported; start the import again.", bundle: .module)
         case .rollbackIncomplete(let originalError, let rollbackErrors):

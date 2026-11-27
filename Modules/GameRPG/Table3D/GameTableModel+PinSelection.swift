@@ -250,6 +250,9 @@ extension GameTableModel {
             ? mapRoot.mapGameControllable.joinBattle(itemId: mapId, pinId: pinId)
             : mapRoot.mapGameControllable.addBattleCombatant(itemId: mapId, pinId: pinId)
         guard added else { return false }
+        // The same defender and health step as `BattleRoundController.broadcast(mapId:)`.
+        // See CODE_AUDIT_29 §5.6.
+        _ = mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: mapId, isGameMaster: true)
         syncPawnsWithMapPins()
         broadcastMapEdit(for: mapId)
         broadcastBattleRoundState(for: mapId)

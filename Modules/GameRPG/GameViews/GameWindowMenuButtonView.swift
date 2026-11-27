@@ -78,7 +78,7 @@ struct GameWindowMenuButtonView: View {
 }
 
 #Preview("Master", traits: .mockData) {
-    GameWindowMenuButtonView(isMaster: true, itemId: GamePreviewData.adventureID)
+    GameWindowMenuButtonView(isMaster: true, itemId: GamePreviewData.adventureId)
         .environment(GameScreenModel())
 }
 

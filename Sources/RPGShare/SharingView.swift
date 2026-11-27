@@ -178,7 +178,9 @@ struct SharingView: View {
     
     @MainActor
     private func saveContent() async {
-        guard let controller = saveController else { return }
+        // A fast double tap starts two tasks before `.disabled(isSaving)` renders: only the first
+        // saves. See CODE_AUDIT_29 §5.19.
+        guard !isSaving, let controller = saveController else { return }
         let selectedModule = moduleChooserModel.currentModule
         
         isSaving = true

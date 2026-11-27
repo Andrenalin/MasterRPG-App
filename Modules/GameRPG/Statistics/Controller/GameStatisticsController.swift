@@ -84,9 +84,9 @@ struct GameStatisticsController: Sendable {
             players.append(PlayerGameModel(id: model.masterId, type: .master, name: model.sender.name))
         }
 
-        var participantIDs = Set<UUID>()
+        var participantIds = Set<UUID>()
         return players.compactMap { player in
-            guard participantIDs.insert(player.id).inserted else { return nil }
+            guard participantIds.insert(player.id).inserted else { return nil }
             return participantDraft(player: player, localParticipantId: localParticipantId)
         }
     }
@@ -123,9 +123,9 @@ struct GameStatisticsController: Sendable {
             $0.duration >= Self.minimumCountedSessionDuration && !Self.uncountedRoles.contains($0.role)
         }
         .map { $0.capped(to: Self.maximumCountedSessionDuration) }
-        let countedSessionIDs = Set(sessions.map(\.id))
-        let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionId) }
-        let participants = dataSet.participants.filter { countedSessionIDs.contains($0.sessionId) }
+        let countedSessionIds = Set(sessions.map(\.id))
+        let events = dataSet.events.filter { countedSessionIds.contains($0.sessionId) }
+        let participants = dataSet.participants.filter { countedSessionIds.contains($0.sessionId) }
         let totalDuration = sessions.reduce(0) { $0 + $1.duration }
         // Dice statistics count the person's own rolls only: the table's dice (every roll the
         // game master receives) would otherwise count as their own. A session without a recorded

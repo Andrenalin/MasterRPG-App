@@ -87,9 +87,9 @@ struct LogGameController: Sendable {
     /// A test affordance: logs a message under the current session with a chosen counter.
     @MainActor
     func addMessage(counter: Int, type: RPGMessageType, subType: RPGMessageActionType, module: NetworkModules, itemId: UUID) {
-        let sessionID = currentSessionID ?? GameDeliveryMessageID.legacySessionID
+        let sessionId = currentSessionId ?? GameDeliveryMessageId.legacySessionId
         addMessage(
-            messageID: GameDeliveryMessageID(sessionID: sessionID, counter: counter),
+            messageId: GameDeliveryMessageId(sessionId: sessionId, counter: counter),
             type: type,
             subType: subType,
             module: module,
@@ -102,14 +102,14 @@ struct LogGameController: Sendable {
     /// game and are removed so a restarted counter can never overwrite or
     /// complete them.
     @MainActor
-    func beginDeliverySession(_ sessionID: UUID) {
-        guard currentSessionID != sessionID else { return }
+    func beginDeliverySession(_ sessionId: UUID) {
+        guard currentSessionId != sessionId else { return }
         // Notes made before the first send have no session yet (the legacy one): they are
         // notices for this device, not rows of a previous game, and stay.
         // See CODE_AUDIT_26 §5.83.
         let keptNotes = gameModel.logs.filter { counter in
             guard let log = gameModel.logData[counter] else { return false }
-            return log.note != nil && log.messageID.sessionID == GameDeliveryMessageID.legacySessionID
+            return log.note != nil && log.messageId.sessionId == GameDeliveryMessageId.legacySessionId
         }
         let keptData = gameModel.logData.filter { keptNotes.contains($0.key) }
         gameModel.logs = keptNotes
@@ -121,29 +121,29 @@ struct LogGameController: Sendable {
     /// roster.
     @MainActor
     func addMessage(
-        messageID: GameDeliveryMessageID,
+        messageId: GameDeliveryMessageId,
         type: RPGMessageType,
         subType: RPGMessageActionType,
         module: NetworkModules,
         itemId: UUID,
-        targetID: UUID? = nil,
+        targetId: UUID? = nil,
         tracksDelivery: Bool? = nil
     ) {
-        beginDeliverySession(messageID.sessionID)
+        beginDeliverySession(messageId.sessionId)
 
         let log = LogGameModel(
-            id: messageID.counter,
+            id: messageId.counter,
             type: type,
             subType: subType,
             module: module,
             itemId: itemId,
-            messageID: messageID,
-            expectedRecipients: recipientSnapshot(targetID: targetID),
+            messageId: messageId,
+            expectedRecipients: recipientSnapshot(targetId: targetId),
             tracksDelivery: tracksDelivery
         )
 
-        if gameModel.logData[messageID.counter] == nil {
-            gameModel.logs.append(messageID.counter)
+        if gameModel.logData[messageId.counter] == nil {
+            gameModel.logs.append(messageId.counter)
             // Unbounded before this — a long session produced thousands of
             // entries even though the UI only ever renders `maximumVisibleMessages`.
             // Same bounded-FIFO treatment as the other per-session logs.
@@ -152,7 +152,7 @@ struct LogGameController: Sendable {
                 gameModel.logData[gameModel.logs.removeFirst()] = nil
             }
         }
-        gameModel.logData[messageID.counter] = log
+        gameModel.logData[messageId.counter] = log
     }
     
     /// Adds a notice for the person at this device to the log. Notes count down from -1, so
@@ -161,7 +161,7 @@ struct LogGameController: Sendable {
     @MainActor
     func addNote(_ text: String) {
         let id = min(gameModel.logs.min() ?? 0, 0) - 1
-        let sessionID = currentSessionID ?? GameDeliveryMessageID.legacySessionID
+        let sessionId = currentSessionId ?? GameDeliveryMessageId.legacySessionId
         gameModel.logs.append(id)
         while gameModel.logs.count > Self.maximumRetainedMessages {
             gameModel.logData[gameModel.logs.removeFirst()] = nil
@@ -172,19 +172,19 @@ struct LogGameController: Sendable {
             subType: .failed,
             module: .value,
             itemId: UUID(),
-            messageID: GameDeliveryMessageID(sessionID: sessionID, counter: id),
+            messageId: GameDeliveryMessageId(sessionId: sessionId, counter: id),
             tracksDelivery: false,
             note: text
         )
     }
 
 #if DEBUG
-    /// A test affordance: production code calls `updateMessage(messageID:player:)` directly,
-    /// already having the full `GameDeliveryMessageID`.
+    /// A test affordance: production code calls `updateMessage(messageId:player:)` directly,
+    /// already having the full `GameDeliveryMessageId`.
     @MainActor
     func updateMessage(counter: Int, player: UUID) {
-        guard let messageID = gameModel.logData[counter]?.messageID else { return }
-        updateMessage(messageID: messageID, player: player)
+        guard let messageId = gameModel.logData[counter]?.messageId else { return }
+        updateMessage(messageId: messageId, player: player)
     }
 #endif
 
@@ -193,11 +193,11 @@ struct LogGameController: Sendable {
     /// ignored.
     @MainActor
     @discardableResult
-    func updateMessage(messageID: GameDeliveryMessageID, player: UUID) -> Bool {
-        guard let log = gameModel.logData[messageID.counter],
-              log.messageID == messageID
+    func updateMessage(messageId: GameDeliveryMessageId, player: UUID) -> Bool {
+        guard let log = gameModel.logData[messageId.counter],
+              log.messageId == messageId
         else { return false }
-        return log.acknowledge(playerID: player)
+        return log.acknowledge(playerId: player)
     }
 
 #if DEBUG
@@ -270,34 +270,34 @@ struct LogGameController: Sendable {
     }
 
     @MainActor
-    private var currentSessionID: UUID? {
+    private var currentSessionId: UUID? {
         for counter in gameModel.logs.reversed() {
-            if let messageID = gameModel.logData[counter]?.messageID {
-                return messageID.sessionID
+            if let messageId = gameModel.logData[counter]?.messageId {
+                return messageId.sessionId
             }
         }
         return nil
     }
 
     @MainActor
-    private func recipientSnapshot(targetID: UUID?) -> [LogMessageRecipient] {
+    private func recipientSnapshot(targetId: UUID?) -> [LogMessageRecipient] {
         let controls = gameModel.gameControl.controls
         // `controls` is fed by the master's broadcast state — on a
         // proxy-hosting player device it came straight off the wire, so a
         // malformed/hostile master must not crash every relaying player.
         // See CODE_AUDIT_Game §5.5.
-        let controlsByID = Dictionary(controls.map { ($0.id, $0.show) }, uniquingKeysWith: { _, new in new })
+        let controlsById = Dictionary(controls.map { ($0.id, $0.show) }, uniquingKeysWith: { _, new in new })
         var seen = Set<UUID>()
 
         return gameModel.gameRoster.players.compactMap { player in
             guard seen.insert(player.id).inserted else { return nil }
-            if let targetID, player.id != targetID { return nil }
+            if let targetId, player.id != targetId { return nil }
 
             let receivesMasterMessages = switch player.type {
             case .observer, .proxy:
                 true
             default:
-                controls.isEmpty || controlsByID[player.id] == true
+                controls.isEmpty || controlsById[player.id] == true
             }
             guard receivesMasterMessages else { return nil }
             return LogMessageRecipient(id: player.id, name: player.name)

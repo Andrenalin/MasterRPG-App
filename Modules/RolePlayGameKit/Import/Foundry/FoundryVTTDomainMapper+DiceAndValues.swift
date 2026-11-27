@@ -19,7 +19,7 @@ import UniformTypeIdentifiers
 // MARK: - Dice and values
 
 extension FoundryMappingState {
-    func createDice(formula: String, name: String, sourceID: String) -> UUID? {
+    func createDice(formula: String, name: String, sourceId: String) -> UUID? {
         let range = NSRange(formula.startIndex..<formula.endIndex, in: formula)
         // MasterRPG can represent additive dice plus a numeric modifier. Foundry roll syntax also
         // supports pools, keep/drop, functions, variables, comparisons, and multiplication. Never
@@ -57,7 +57,7 @@ extension FoundryMappingState {
             }
             for index in 0..<count {
                 dice.append(DieModel(
-                    id: stableID("\(sourceID)#die#\(match.range.location)#\(index)"),
+                    id: stableId("\(sourceId)#die#\(match.range.location)#\(index)"),
                     die: RawDie(text: "d\(sides)")
                 ))
             }
@@ -71,7 +71,7 @@ extension FoundryMappingState {
             warnings.append(String(localized: "Roll formula ‘\(formula)’ has a modifier outside the supported numeric range and remains text in the raw archive.", bundle: .module))
             return nil
         }
-        let id = stableID("\(sourceID)#dice")
+        let id = stableId("\(sourceId)#dice")
         let model = DiceModel(
             id: id,
             name: "\(name) (\(formula))",
@@ -81,63 +81,68 @@ extension FoundryMappingState {
             dice: dice,
             modifier: modifier
         )
-        add(model, module: .dice, sourceID: "\(sourceID)#formula")
+        add(model, module: .dice, sourceId: "\(sourceId)#formula")
         return id
     }
 
     func hierarchicalEntries(
         _ value: FoundryJSONValue?,
-        sourceID: String,
-        ownerID: UUID,
-        decisionOwnerID: UUID
+        sourceId: String,
+        ownerId: UUID,
+        decisionOwnerId: UUID
     ) -> [ValueEntryModel] {
         guard let value else { return [] }
-        let nodes = FoundryValueHierarchy.nodes(from: value)
+        // Planned off the main actor when the pre-pass saw this value. See CODE_AUDIT_29 §3.4.
+        let nodes: [FoundryValuePlanNode]
+        if let plan = valuePlans[sourceId], plan.value == value {
+            nodes = plan.nodes
+        } else {
+            nodes = FoundryValuePrepass.plan(value, sourceId: sourceId, scope: sourceScopeId)
+        }
         let valueCount = nodes.reduce(0) { $0 + $1.valueCount }
         let maximumPresentedValues = 500
         if valueCount > maximumPresentedValues {
-            warnings.append(String(localized: "\(sourceID) has \(valueCount) system fields; the display projection includes the first \(maximumPresentedValues) and the archive retains all fields.", bundle: .module))
+            warnings.append(String(localized: "\(sourceId) has \(valueCount) system fields; the display projection includes the first \(maximumPresentedValues) and the archive retains all fields.", bundle: .module))
         }
         var remainingValues = maximumPresentedValues
         return projectedValueEntries(
             nodes,
-            sourceID: sourceID,
-            ownerID: ownerID,
-            decisionOwnerID: decisionOwnerID,
+            sourceId: sourceId,
+            ownerId: ownerId,
+            decisionOwnerId: decisionOwnerId,
             remainingValues: &remainingValues
         )
     }
 
     func projectedValueEntries(
-        _ nodes: [FoundryValueNode],
-        sourceID: String,
-        ownerID: UUID,
-        decisionOwnerID: UUID,
+        _ nodes: [FoundryValuePlanNode],
+        sourceId: String,
+        ownerId: UUID,
+        decisionOwnerId: UUID,
         remainingValues: inout Int
     ) -> [ValueEntryModel] {
         var entries: [ValueEntryModel] = []
         for node in nodes {
             guard remainingValues > 0 else { break }
-            let pathIdentity = valuePathIdentity(node.pathComponents)
-            if node.children.isEmpty, let value = node.value {
+            guard let groupIds = node.groupIds else {
+                guard let value = node.value else { continue }
                 remainingValues -= 1
                 let presentation = valuePresentation(value)
                 entries.append(ValueEntryModel(
-                    id: stableID("\(sourceID)#field#\(pathIdentity)"),
-                    name: FoundryTextDecoder.decodedText(node.component),
+                    id: node.fieldId,
+                    name: node.name,
                     type: presentation.type,
                     value: presentation.value
                 ))
                 continue
             }
 
-            let groupID = stableID("\(sourceID)#field-group#\(pathIdentity)")
             var childEntries: [ValueEntryModel] = []
             if let value = node.value, remainingValues > 0 {
                 remainingValues -= 1
                 let presentation = valuePresentation(value)
                 childEntries.append(ValueEntryModel(
-                    id: stableID("\(sourceID)#field#\(pathIdentity)#value"),
+                    id: groupIds.value,
                     name: "value",
                     type: presentation.type,
                     value: presentation.value
@@ -145,44 +150,36 @@ extension FoundryMappingState {
             }
             childEntries.append(contentsOf: projectedValueEntries(
                 node.children,
-                sourceID: sourceID,
-                ownerID: groupID,
-                decisionOwnerID: decisionOwnerID,
+                sourceId: sourceId,
+                ownerId: groupIds.group,
+                decisionOwnerId: decisionOwnerId,
                 remainingValues: &remainingValues
             ))
             guard !childEntries.isEmpty else { continue }
 
-            let groupName = FoundryTextDecoder.decodedText(node.component)
             let groupModel = ValueModel(
-                id: groupID,
-                name: groupName,
+                id: groupIds.group,
+                name: node.name,
                 category: .item,
                 displayState: DisplayStateMask.groupHidden.rawValue,
                 entries: childEntries,
-                groupId: ownerID
+                groupId: ownerId
             )
             add(
                 groupModel,
                 module: .value,
-                sourceID: sourceID,
-                decisionOwnerID: decisionOwnerID
+                sourceId: sourceId,
+                decisionOwnerId: decisionOwnerId
             )
             entries.append(ValueEntryModel(
-                id: stableID("\(sourceID)#field-group-link#\(pathIdentity)"),
-                name: groupName,
+                id: groupIds.link,
+                name: node.name,
                 type: .text,
                 value: "",
-                valueId: groupID
+                valueId: groupIds.group
             ))
         }
         return entries
-    }
-
-    func valuePathIdentity(_ components: [String]) -> String {
-        guard !components.isEmpty else { return "root" }
-        return components.map { component in
-            "\(component.utf8.count):\(component)"
-        }.joined()
     }
 
     func valuePresentation(_ value: FoundryJSONValue) -> (type: ValueEntryModel.ValueType, value: String) {

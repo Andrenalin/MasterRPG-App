@@ -133,8 +133,15 @@ extension EditController {
         let gameEntry = gameItem[entryId]
         permanentItem[entryId] = gameEntry
 
-        // Save to permanent storage with forceSave flag
-        itemController.replace(model: permanentItem, isInsert: false, forceSave: true)
+        // The edit lives in game memory already (and the register skipped it there), so the
+        // library write brings the register along.
+        if let stored = itemController.itemSync(for: itemId, noGame: true) {
+            updateLinkRegister(to: permanentItem, from: stored)
+        }
+        // `syncGameMemory: false`: the game copy already has this entry, and copying the whole
+        // library item over it reverted the game's other session-only changes on that
+        // character. See CODE_AUDIT_29 §5.2.
+        itemController.replace(model: permanentItem, isInsert: false, forceSave: true, syncGameMemory: false)
     }
 }
 

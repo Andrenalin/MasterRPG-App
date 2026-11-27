@@ -16,12 +16,12 @@ public extension RuleModel {
     ) -> RuleModel {
         let metadata = RuleSourceMetadata(
             sourceIdentifier: rule.id,
-            systemID: manifest.id,
+            systemId: manifest.id,
             systemTitle: FoundryTextDecoder.decodedText(manifest.title),
             systemVersion: manifest.version,
             packageIdentifier: "\(manifest.id).\(rule.packName)",
             packageName: FoundryTextDecoder.decodedText(rule.packName),
-            documentID: rule.documentID,
+            documentId: rule.documentId,
             documentType: FoundryTextDecoder.decodedText(rule.documentType),
             subtype: FoundryTextDecoder.decodedText(rule.subtype),
             ruleCategory: FoundryTextDecoder.decodedText(rule.category.rawValue),
@@ -36,7 +36,7 @@ public extension RuleModel {
         )
 
         return RuleModel(
-            id: id ?? rule.masterRPGID,
+            id: id ?? rule.masterRPGId,
             name: FoundryTextDecoder.decodedText(rule.name),
             description: inertParagraphs(readableText(fromHTML: rule.descriptionHTML)),
             tags: generatedTags,
@@ -63,17 +63,17 @@ public extension RuleModel {
         identityNamespace: String? = nil
     ) -> RuleModel {
         let sourceIdentifier = rawData["_id"]?.stringValue ?? id.uuidString.lowercased()
-        let systemID = rawData.value(at: "_stats.systemId")?.stringValue ?? ""
+        let systemId = rawData.value(at: "_stats.systemId")?.stringValue ?? ""
         let systemVersion = rawData.value(at: "_stats.systemVersion")?.stringValue ?? ""
         let category = rawData["type"]?.stringValue ?? subtype
         let imagePath = rawData["img"]?.stringValue ?? ""
         let metadata = RuleSourceMetadata(
             sourceIdentifier: sourceIdentifier,
-            systemID: systemID,
+            systemId: systemId,
             systemVersion: systemVersion,
             packageIdentifier: packageIdentifier,
             packageName: FoundryTextDecoder.decodedText(packageIdentifier),
-            documentID: sourceIdentifier,
+            documentId: sourceIdentifier,
             documentType: FoundryTextDecoder.decodedText(documentType),
             subtype: FoundryTextDecoder.decodedText(subtype),
             ruleCategory: FoundryTextDecoder.decodedText(category),
@@ -117,8 +117,8 @@ extension RuleModel {
             if let packName = reference.packName, !packName.isEmpty {
                 details += "\n\n**Pack:** \(inert(FoundryTextDecoder.decodedText(packName)))"
             }
-            if let documentID = reference.documentID, !documentID.isEmpty {
-                details += "\n\n**Document:** \(inert(documentID))"
+            if let documentId = reference.documentId, !documentId.isEmpty {
+                details += "\n\n**Document:** \(inert(documentId))"
             }
             return RuleEntryModel(
                 id: FoundryRuleIdentity.uuid(
@@ -245,8 +245,8 @@ extension RuleModel {
         if let packName = reference.packName, !packName.isEmpty {
             lines.append("- **Pack:** \(inert(FoundryTextDecoder.decodedText(packName)))")
         }
-        if let documentID = reference.documentID, !documentID.isEmpty {
-            lines.append("- **Document:** \(inert(documentID))")
+        if let documentId = reference.documentId, !documentId.isEmpty {
+            lines.append("- **Document:** \(inert(documentId))")
         }
         return lines.joined(separator: "\n")
     }

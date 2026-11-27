@@ -148,7 +148,11 @@ public extension ItemControllable {
         }
         let knownIds = Set(itemDataModel.items)
         var updatedItems: [UUID] = []
-        for item in sortedModels {
+        // An item being deleted right now may still be in the fetched rows: re-adding it would
+        // undo the delete in memory, as the incremental sync path already avoids.
+        // See CODE_AUDIT_29 §5.14.
+        let deletingIds = itemDataModel.deletingIds
+        for item in sortedModels where !deletingIds.contains(item.id) {
             if knownIds.contains(item.id), itemSync(for: item.id, noGame: true) != nil {
                 applyMergedUpdate(model: item)
             } else {

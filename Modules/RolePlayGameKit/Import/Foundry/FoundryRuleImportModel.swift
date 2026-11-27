@@ -138,7 +138,7 @@ final class FoundryImportModel {
             }
             try Task.checkCancellation()
             guard selectionId == requestedSelectionId, selectedUrl == requestedUrl else { return }
-            let descriptor = makeSourceDescriptor(sourceURL: requestedUrl)
+            let descriptor = makeSourceDescriptor(sourceUrl: requestedUrl)
             let archiveEntries: [ExternalImportSourceEntry]
             do {
                 archiveEntries = try await archiveStore.sourceRegistryEntries()
@@ -156,8 +156,8 @@ final class FoundryImportModel {
             sourceDescriptor = descriptor
             sourceResolution = resolution
             switch resolution {
-            case .resolved(let scopeID):
-                selectedSourceScopeId = scopeID
+            case .resolved(let scopeId):
+                selectedSourceScopeId = scopeId
             case .requiresSelection:
                 selectedSourceScopeId = nil
             }
@@ -188,8 +188,8 @@ final class FoundryImportModel {
                 }
                 let mapped = try await FoundryVTTDomainMapper().map(
                     package: package,
-                    sourceURL: selectedUrl,
-                    sourceScopeID: selectedSourceScopeId,
+                    sourceUrl: selectedUrl,
+                    sourceScopeId: selectedSourceScopeId,
                     selectedCategories: selectedCategories,
                     resourceLoader: resourceLoader
                 )
@@ -206,8 +206,8 @@ final class FoundryImportModel {
                 }
                 let mapped = try await UniversalVTTDomainMapper().map(
                     document: universalVTT,
-                    sourceURL: selectedUrl,
-                    sourceScopeID: selectedSourceScopeId,
+                    sourceUrl: selectedUrl,
+                    sourceScopeId: selectedSourceScopeId,
                     resourceLoader: resourceLoader
                 )
                 let session = ExternalImportReviewSession(batch: mapped.batch)
@@ -265,26 +265,26 @@ final class FoundryImportModel {
             try Task.checkCancellation()
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             switch claimResult {
-            case .claimed(let claimedScopeID):
-                guard claimedScopeID == selectedSourceScopeId else {
+            case .claimed(let claimedScopeId):
+                guard claimedScopeId == selectedSourceScopeId else {
                     await remapReview(
-                        to: claimedScopeID,
+                        to: claimedScopeId,
                         rootManager: appModel.root
                     )
                     return
                 }
-            case .requiresRemapping(let canonicalScopeID):
+            case .requiresRemapping(let canonicalScopeId):
                 await remapReview(
-                    to: canonicalScopeID,
+                    to: canonicalScopeId,
                     rootManager: appModel.root
                 )
                 return
-            case .requiresSelection(let existing, let proposedScopeID):
+            case .requiresSelection(let existing, let proposedScopeId):
                 self.mappedImport = nil
                 self.reviewSession = nil
                 sourceResolution = .requiresSelection(
                     existing: existing,
-                    proposedScopeID: proposedScopeID
+                    proposedScopeId: proposedScopeId
                 )
                 self.selectedSourceScopeId = nil
                 commitError = String(localized: "Source identity changed while this review was open. Choose its identity and prepare the review again.", bundle: .module)
@@ -304,8 +304,8 @@ final class FoundryImportModel {
             self.result = result
             loadState = .finalizing
             let archive = FoundryImportArchive(
-                id: mappedImport.archiveID,
-                sourceScopeID: selectedSourceScopeId,
+                id: mappedImport.archiveId,
+                sourceScopeId: selectedSourceScopeId,
                 sourceFormat: sourceDescriptor.format,
                 sourceSemanticKey: sourceDescriptor.semanticKey,
                 sourceFileName: selectedUrl.lastPathComponent,
@@ -313,17 +313,23 @@ final class FoundryImportModel {
                 mappings: selectedMappings(from: mappedImport, session: reviewSession),
                 warnings: mappedImport.batch.warnings
             )
+            // The RPG data is committed: its archive and source identity are finished even when
+            // the import is cancelled now, in a task that does not inherit the cancellation (a
+            // cancellation here was reported as "archive could not be saved").
+            // See CODE_AUDIT_29 §5.18.
+            let archiveStore = archiveStore
             do {
-                try await archiveStore.save(archive)
+                try await Task { try await archiveStore.save(archive) }.value
             } catch {
                 appendArchiveWarning(String(localized: "The RPG data was imported, but its RuleRPG source archive could not be saved: \(error.localizedDescription)", bundle: .module))
             }
             guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
+            let sourceRegistry = sourceRegistry
+            let scopeId = selectedSourceScopeId
             do {
-                try await sourceRegistry.register(
-                    scopeID: selectedSourceScopeId,
-                    descriptor: sourceDescriptor
-                )
+                try await Task {
+                    try await sourceRegistry.register(scopeId: scopeId, descriptor: sourceDescriptor)
+                }.value
             } catch {
                 appendArchiveWarning(String(localized: "The RPG data was imported, but its source identity could not be finalized: \(error.localizedDescription)", bundle: .module))
             }
@@ -346,15 +352,15 @@ final class FoundryImportModel {
         }
     }
 
-    func chooseExistingSource(scopeID: UUID) {
+    func chooseExistingSource(scopeId: UUID) {
         guard case .requiresSelection(let existing, _) = sourceResolution,
-              existing.contains(where: { $0.scopeID == scopeID }) else { return }
-        selectedSourceScopeId = scopeID
+              existing.contains(where: { $0.scopeId == scopeId }) else { return }
+        selectedSourceScopeId = scopeId
     }
 
     func chooseNewSource() {
-        guard case .requiresSelection(_, let proposedScopeID) = sourceResolution else { return }
-        selectedSourceScopeId = proposedScopeID
+        guard case .requiresSelection(_, let proposedScopeId) = sourceResolution else { return }
+        selectedSourceScopeId = proposedScopeId
     }
 
     func reportSelectionError(_ error: any Error) {
@@ -373,10 +379,10 @@ final class FoundryImportModel {
         loadState = .failed(error.localizedDescription)
     }
 
-    private func makeSourceDescriptor(sourceURL: URL) -> ExternalImportSourceDescriptor {
+    private func makeSourceDescriptor(sourceUrl: URL) -> ExternalImportSourceDescriptor {
         if let package {
             let semanticKey = package.manifest.map { "\(package.kind.rawValue):\($0.id)" }
-            let instanceID = package.manifest?.rawData.value(at: "source.instanceID")?.stringValue
+            let instanceId = package.manifest?.rawData.value(at: "source.instanceID")?.stringValue
                 .flatMap(UUID.init(uuidString:))
             let matchPolicy: ExternalImportSemanticMatchPolicy = switch package.kind {
             case .system, .module: .automatic
@@ -385,44 +391,44 @@ final class FoundryImportModel {
             return ExternalImportSourceDescriptor(
                 format: "foundry-\(package.kind.rawValue)",
                 semanticKey: semanticKey,
-                intrinsicScopeID: instanceID,
-                sourceURL: sourceURL,
+                intrinsicScopeId: instanceId,
+                sourceUrl: sourceUrl,
                 contentHash: package.sourceSHA256,
                 semanticMatchPolicy: matchPolicy
             )
         }
         return ExternalImportSourceDescriptor(
             format: "universal-vtt",
-            sourceURL: sourceURL,
+            sourceUrl: sourceUrl,
             contentHash: universalVTT?.sourceSHA256
         )
     }
 
-    private func sourceClaimIntent(for scopeID: UUID) -> ExternalImportSourceClaimIntent? {
+    private func sourceClaimIntent(for scopeId: UUID) -> ExternalImportSourceClaimIntent? {
         switch sourceResolution {
-        case .resolved(let resolvedScopeID):
-            guard resolvedScopeID == scopeID else { return nil }
-            return .resolved(scopeID: scopeID)
-        case .requiresSelection(let existing, let proposedScopeID):
-            if existing.contains(where: { $0.scopeID == scopeID }) {
-                return .selectedExisting(scopeID: scopeID)
+        case .resolved(let resolvedScopeId):
+            guard resolvedScopeId == scopeId else { return nil }
+            return .resolved(scopeId: scopeId)
+        case .requiresSelection(let existing, let proposedScopeId):
+            if existing.contains(where: { $0.scopeId == scopeId }) {
+                return .selectedExisting(scopeId: scopeId)
             }
-            guard proposedScopeID == scopeID else { return nil }
-            return .selectedNew(scopeID: scopeID)
+            guard proposedScopeId == scopeId else { return nil }
+            return .selectedNew(scopeId: scopeId)
         case nil:
             return nil
         }
     }
 
-    private func isCurrentSelection(_ expectedSelectionID: UUID, url: URL) -> Bool {
-        selectionId == expectedSelectionID && selectedUrl == url
+    private func isCurrentSelection(_ expectedSelectionId: UUID, url: URL) -> Bool {
+        selectionId == expectedSelectionId && selectedUrl == url
     }
 
-    private func remapReview(to canonicalScopeID: UUID, rootManager: RootManager) async {
+    private func remapReview(to canonicalScopeId: UUID, rootManager: RootManager) async {
         mappedImport = nil
         reviewSession = nil
-        sourceResolution = .resolved(scopeID: canonicalScopeID)
-        selectedSourceScopeId = canonicalScopeID
+        sourceResolution = .resolved(scopeId: canonicalScopeId)
+        selectedSourceScopeId = canonicalScopeId
         loadState = .preflight
         await prepareReview(rootManager: rootManager)
         if loadState == .review {

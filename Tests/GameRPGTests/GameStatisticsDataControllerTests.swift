@@ -50,36 +50,36 @@ struct GameStatisticsDataControllerTests {
         let store = try PersistentGameStatisticsTestStore()
         let sut = GameStatisticsDataController()
         let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
-        let sessionID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+        let sessionId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
         let participantId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
         let participant = GameStatisticParticipantDraft.fixture(participantId: participantId)
         let session = GameStatisticSessionDraft.fixture(
-            id: sessionID,
+            id: sessionId,
             startedAt: startedAt,
             localParticipantId: participantId,
             participants: [participant]
         )
         let event = GameStatisticEventDraft.fixture(
-            sessionId: sessionID,
+            sessionId: sessionId,
             occurredAt: startedAt.addingTimeInterval(60)
         )
 
         // When
         try await sut.beginSession(session, in: store.context)
         try await sut.checkpointSession(
-            id: sessionID,
+            id: sessionId,
             participants: [participant],
             at: startedAt.addingTimeInterval(600),
             in: store.context
         )
         try await sut.participantLeft(
-            sessionID: sessionID,
+            sessionId: sessionId,
             participantId: participantId,
             at: startedAt.addingTimeInterval(1_200),
             in: store.context
         )
         try await sut.checkpointSession(
-            id: sessionID,
+            id: sessionId,
             participants: [participant],
             at: startedAt.addingTimeInterval(1_800),
             in: store.context
@@ -87,7 +87,7 @@ struct GameStatisticsDataControllerTests {
         try await sut.recordEvents([(event, participant)], in: store.context)
         try await sut.recordEvents([(event, participant)], in: store.context)
         try await sut.finishSession(
-            id: sessionID,
+            id: sessionId,
             at: startedAt.addingTimeInterval(2_400),
             reason: .stopped,
             in: store.context

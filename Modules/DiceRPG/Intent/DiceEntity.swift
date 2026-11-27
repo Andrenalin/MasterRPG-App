@@ -161,34 +161,40 @@ extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {}
 extension DiceEntityQuery: EntityPropertyQuery {
     typealias ComparatorMappingType = Predicate<DiceEntity>
 
-    nonisolated(unsafe) static let properties = QueryProperties {
-        Property(\DiceEntity.$name) {
-            ContainsComparator { searchValue in
-                #Predicate<DiceEntity> { $0.name.localizedStandardContains(searchValue) }
+    /// Built per access instead of held in a `nonisolated(unsafe)` static, as in
+    /// `AdventureEntityQuery`. See CODE_AUDIT_29 §3.5.
+    nonisolated static var properties: QueryProperties {
+        QueryProperties {
+            Property(\DiceEntity.$name) {
+                ContainsComparator { searchValue in
+                    #Predicate<DiceEntity> { $0.name.localizedStandardContains(searchValue) }
+                }
+                EqualToComparator { searchValue in
+                    #Predicate<DiceEntity> { $0.name == searchValue }
+                }
             }
-            EqualToComparator { searchValue in
-                #Predicate<DiceEntity> { $0.name == searchValue }
+            Property(\DiceEntity.$description) {
+                ContainsComparator { searchValue in
+                    #Predicate<DiceEntity> { $0.description.localizedStandardContains(searchValue) }
+                }
             }
-        }
-        Property(\DiceEntity.$description) {
-            ContainsComparator { searchValue in
-                #Predicate<DiceEntity> { $0.description.localizedStandardContains(searchValue) }
+            Property(\DiceEntity.$tags) {
+                ContainsComparator { searchValue in
+                    #Predicate<DiceEntity> { entity in entity.tags.contains { tag in tag.localizedStandardContains(searchValue) } }
+                }
             }
-        }
-        Property(\DiceEntity.$tags) {
-            ContainsComparator { searchValue in
-                #Predicate<DiceEntity> { entity in entity.tags.contains { tag in tag.localizedStandardContains(searchValue) } }
-            }
-        }
-        Property(\DiceEntity.$isFolder) {
-            EqualToComparator { searchValue in
-                #Predicate<DiceEntity> { $0.isFolder == searchValue }
+            Property(\DiceEntity.$isFolder) {
+                EqualToComparator { searchValue in
+                    #Predicate<DiceEntity> { $0.isFolder == searchValue }
+                }
             }
         }
     }
 
-    nonisolated(unsafe) static let sortingOptions = SortingOptions {
-        SortableBy(\DiceEntity.$name)
+    nonisolated static var sortingOptions: SortingOptions {
+        SortingOptions {
+            SortableBy(\DiceEntity.$name)
+        }
     }
 
     nonisolated static var findIntentDescription: IntentDescription? {
