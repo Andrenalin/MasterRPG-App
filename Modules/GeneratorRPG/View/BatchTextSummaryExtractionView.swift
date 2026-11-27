@@ -76,7 +76,7 @@ public struct BatchTextSummaryExtractionView: View {
     let itemController: any ItemControllable
     let editController: any EditControllable
     /// The text an item is analyzed from; `compactText(for:)` when `nil`. Character adds its
-    /// portrait's description and tags this way.
+    /// portrait's description and tags this way, Map its map photo's.
     let entriesText: (@MainActor (UUID) async -> String)?
 
     @State private var selectedLanguage: OutputLanguage = .forCurrentLocale()

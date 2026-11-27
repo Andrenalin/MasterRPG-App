@@ -5,6 +5,8 @@ import CoreRPG
 import GeneratorRPG
 import SwiftUI
 
+/// The single-map "Extract Information" sheet: name, description and tags generated from the
+/// map's rooms and its photo's description and tags.
 struct MapExtractionDestination: View {
     let itemId: UUID
 
@@ -12,8 +14,7 @@ struct MapExtractionDestination: View {
 
     var body: some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
-        let visibleEntries = model.entries.filter { !$0.isHexGrid }
-        if visibleEntries.isEmpty {
+        if MapSheetText.rooms(of: model).isEmpty {
             ContentUnavailableView {
                 Label {
                     Text("No Rooms", bundle: .module)
@@ -26,23 +27,15 @@ struct MapExtractionDestination: View {
         } else {
             TextSummaryExtractionView(
                 module: .map,
-                entriesText: formatEntries(model, entries: visibleEntries)
+                entriesText: MapSheetText.text(for: model, photoRoot: root.photoRoot),
+                itemName: model.name,
+                notice: MapSheetText.hasPhotoText(for: model, photoRoot: root.photoRoot)
+                    ? nil
+                    : LocalizedStringResource("Add a photo description and tags to improve the map information", bundle: .module)
             ) { content, selection in
                 root.editController.applyExtractedContent(content, to: itemId, selection: selection)
             }
         }
-    }
-
-    private func formatEntries(_ model: MapModel, entries: [MapEntryModel]) -> String {
-        var lines: [String] = []
-        if !model.name.isEmpty {
-            lines.append("Map: \(model.name)")
-            lines.append("")
-        }
-        for entry in entries {
-            lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
-        }
-        return lines.joined(separator: "\n")
     }
 }
 

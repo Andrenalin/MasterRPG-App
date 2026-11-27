@@ -60,6 +60,9 @@ struct TableSummaryEvaluator: Sendable {
     var maximumDescriptionCharacters = 320
     /// Mirrors "A 1–2 sentence description" in `TableSummaryAnalysis.description`.
     var maximumDescriptionSentences = 2
+    /// Whole words a description must not call the item, e.g. "table" for a map or an adventure,
+    /// which reuse the table analysis. Empty for tables.
+    var misnamingWords: [String] = []
     /// Titles that say nothing about this table. The label form "Table: ..." is caught by the same list.
     var genericTitles: Set<String> = [
         "table", "tables", "random table", "rpg table", "table entries", "entries", "untitled", "title",
@@ -85,6 +88,7 @@ struct TableSummaryEvaluator: Sendable {
         var titleViolations = titleRuleViolations(title)
         var descriptionViolations = descriptionRuleViolations(description, title: title)
         descriptionViolations.append(contentsOf: tagEvaluator.bannedWordViolations(in: description))
+        descriptionViolations.append(contentsOf: misnamingViolations(in: description))
         appendForbiddenTerms(expectation.forbiddenTerms, in: title, to: &titleViolations)
         appendForbiddenTerms(expectation.forbiddenTerms, in: description, to: &descriptionViolations)
 
@@ -173,6 +177,13 @@ struct TableSummaryEvaluator: Sendable {
     }
 
     // MARK: - Helpers
+
+    private func misnamingViolations(in text: String) -> [String] {
+        let words = Set(text.split { !$0.isLetter }.map { PdfTagEvaluator.normalized(String($0)) })
+        return misnamingWords
+            .filter { words.contains(PdfTagEvaluator.normalized($0)) }
+            .map { "calls the item a '\($0)'" }
+    }
 
     private func appendForbiddenTerms(_ terms: [String], in text: String, to violations: inout [String]) {
         for term in terms where text.localizedStandardContains(term) {

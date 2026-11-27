@@ -223,7 +223,7 @@ struct CharacterSummaryEvaluatorTests {
             portraitTags: [" ", ""]
         )
 
-        #expect(text == "- Class: Bard\n\nPortrait: " + String(repeating: "a", count: TextSummaryExtractionFormatter.maximumPortraitDescriptionLength))
+        #expect(text == "- Class: Bard\n\nPortrait: " + String(repeating: "a", count: TextSummaryExtractionFormatter.maximumPhotoDescriptionLength))
     }
 
     // MARK: - Fixtures

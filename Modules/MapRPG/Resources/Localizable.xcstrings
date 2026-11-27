@@ -344,6 +344,23 @@
         }
       }
     },
+    "Add a photo description and tags to improve the map information" : {
+      "comment" : "Shown in the map analysis when the map photo has no description and no tags.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge dem Foto eine Beschreibung und Tags hinzu, um die Karteninformationen zu verbessern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มคำอธิบายและแท็กให้รูปภาพเพื่อปรับปรุงข้อมูลแผนที่"
+          }
+        }
+      }
+    },
     "Add Link" : {
       "extractionState" : "stale",
       "localizations" : {

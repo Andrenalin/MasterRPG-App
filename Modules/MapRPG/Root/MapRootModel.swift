@@ -111,7 +111,7 @@ public final class MapRootModel {
         self.sheetController = SheetController(itemController: itemController)
         let searchController = SearchController(itemController: itemController)
         self.searchController = searchController
-        self._viewController = ViewController()
+        self._viewController = ViewController(photoRoot: photoRoot)
 
         let folderListModel = FolderListModel(isSelectionMode: false, selection: [], navigationModel: navigationModel)
         let folderListController = FolderListController(listModel: folderListModel, listDisplayModel: listDisplayModel, itemControllable: itemController, searchRootControllable: SearchListController(searchController: searchController, searchModel: searchModel, listDisplayModel: listDisplayModel))

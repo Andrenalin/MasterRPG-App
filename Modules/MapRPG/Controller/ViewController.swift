@@ -12,6 +12,12 @@ import SwiftUI
 public struct ViewController {
     public let sharingViewType: SharingViewType = .share
     public let thumbnailRowViewType: ThumbnailRowViewType = .custom
+    /// Reads the map photo's description and tags for the batch extraction.
+    let photoRoot: PhotoRootModel?
+
+    init(photoRoot: PhotoRootModel? = nil) {
+        self.photoRoot = photoRoot
+    }
 }
 
 extension ViewController: ViewControllable {
@@ -39,13 +45,18 @@ extension ViewController {
     public var supportsBatchExtraction: Bool { true }
 
     @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
-        guard itemController is ItemController else { return nil }
+        guard let mapController = itemController as? ItemController else { return nil }
+        let photoRoot = photoRoot
         return AnyView(
             BatchTextSummaryExtractionView(
                 module: .map,
                 ids: ids,
                 itemController: itemController,
-                editController: editController
+                editController: editController,
+                entriesText: { itemId in
+                    guard let model = mapController.itemSync(for: itemId) else { return "" }
+                    return MapSheetText.text(for: model, photoRoot: photoRoot)
+                }
             )
         )
     }

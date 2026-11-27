@@ -266,7 +266,8 @@ extension CharacterSummaryFixture {
             traitConcepts: ["archer", "archery", "bow", "marksman", "dexter", "agil", "nimble", "wolf", "companion", "beast", "guard", "watchful", "vigilant", "quick"],
             descriptionConcepts: ["ranger", "elf", "elven", "forest", "wolf", "border", "orc"],
             descriptiveNameTerms: ["ranger", "elf", "elven", "forest", "warden", "guardian"],
-            forbiddenTerms: ["Waldläufer", "Elfe", "Nebelwald", "Bogen", "Grenze", "weiblich"]
+            // "Nebelwald" is the forest's name, which may stay as it is, like "Fjordzwerg".
+            forbiddenTerms: ["Waldläufer", "Elfe", "Bogen", "Grenze", "weiblich"]
         )
     )
 }

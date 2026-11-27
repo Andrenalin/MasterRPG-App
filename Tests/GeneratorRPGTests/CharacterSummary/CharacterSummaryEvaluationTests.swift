@@ -19,9 +19,10 @@ enum CharacterSummaryEvaluationConfiguration {
         ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL"] == "1"
     }
 
-    /// How often each character is analyzed. `CHARACTER_SUMMARY_EVAL_RUNS`
+    /// How often each character is analyzed. `CHARACTER_SUMMARY_EVAL_RUNS`. Five runs (40 samples)
+    /// by default: with three, one sample is about 4 %, so prompt changes drowned in the noise.
     static var runs: Int {
-        Int(ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL_RUNS"] ?? "").map { max($0, 1) } ?? 3
+        Int(ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL_RUNS"] ?? "").map { max($0, 1) } ?? 5
     }
 
     /// Share of runs that must pass every rule. `CHARACTER_SUMMARY_EVAL_THRESHOLD`
