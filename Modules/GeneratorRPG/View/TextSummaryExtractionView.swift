@@ -4,6 +4,13 @@
 
 import CoreRPG
 import SwiftUI
+#if DEBUG
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+#endif
 
 // MARK: - Property Selection
 
@@ -58,6 +65,13 @@ public struct TextSummaryExtractionView: View {
 
     public var body: some View {
         ContentView(module: module, entriesText: entriesText, itemName: itemName, notice: notice, viewState: $viewState, propertySelection: $propertySelection)
+            #if DEBUG && os(macOS)
+            // A macOS sheet's toolbar shows only the cancel and confirm actions.
+            .safeAreaInset(edge: .bottom) {
+                CopyAnalysisInputButton(entriesText: entriesText)
+                    .padding(.bottom)
+            }
+            #endif
             .navigationTitle(navigationTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -72,6 +86,12 @@ public struct TextSummaryExtractionView: View {
                     }
                     .accessibilityLabel(Text("Cancel extraction", bundle: .module))
                 }
+
+                #if DEBUG && !os(macOS)
+                ToolbarItem(placement: .secondaryAction) {
+                    CopyAnalysisInputButton(entriesText: entriesText)
+                }
+                #endif
 
                 if case .extracted = viewState {
                     ToolbarItem(placement: .confirmationAction) {
@@ -117,6 +137,32 @@ public struct TextSummaryExtractionView: View {
         case extracted(TableSummaryAnalysis)
     }
 }
+
+#if DEBUG
+/// Debug builds only: copies the exact text the analysis reads (values or entries with links
+/// reduced to labels, plus photo description and tags) so a real item can become an evaluation
+/// fixture (`Tests/GeneratorRPGTests`). Not localized on purpose: it never ships.
+private struct CopyAnalysisInputButton: View {
+    let entriesText: String
+
+    var body: some View {
+        Button {
+            #if os(macOS)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(entriesText, forType: .string)
+            #else
+            UIPasteboard.general.string = entriesText
+            #endif
+        } label: {
+            Label {
+                Text(verbatim: "Copy Analysis Input")
+            } icon: {
+                Image(systemName: "doc.on.clipboard")
+            }
+        }
+    }
+}
+#endif
 
 private struct ContentView: View {
     let module: NetworkModules

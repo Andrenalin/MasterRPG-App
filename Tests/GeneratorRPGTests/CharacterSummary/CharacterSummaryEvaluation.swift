@@ -32,7 +32,7 @@ struct CharacterSummarySample: ModelSampleProtocol {
 extension CharacterSummarySample {
     static func dataset(runs: Int) -> [CharacterSummarySample] {
         (0..<runs).flatMap { run in
-            CharacterSummaryFixture.all.map { CharacterSummarySample(fixture: $0, runIndex: run) }
+            CharacterSummaryEvaluationConfiguration.fixtures.map { CharacterSummarySample(fixture: $0, runIndex: run) }
         }
     }
 }
@@ -80,6 +80,9 @@ struct CharacterSummaryEvaluation: Evaluation {
     var evaluators: Evaluators {
         Evaluator<CharacterSummarySample> { [passed] sample, subject in
             let result = Self.evaluate(subject.value, for: sample)
+            if result.passed, CharacterSummaryEvaluationConfiguration.showsAllSamples {
+                print("passed sample: \(Self.rationale(result))")
+            }
             return result.passed ? passed.passing() : passed.failing(rationale: Self.rationale(result))
         }
         Evaluator<CharacterSummarySample> { [nameRules] sample, subject in

@@ -36,7 +36,7 @@ struct CharacterSheetTextTests {
         let model = character(photoId: nil)
 
         #expect(!CharacterSheetText.hasPortraitText(for: model, photoRoot: root.photoRoot))
-        #expect(!CharacterSheetText.text(for: model, photoRoot: root.photoRoot).contains("Portrait"))
+        #expect(!CharacterSheetText.text(for: model, photoRoot: root.photoRoot, resolve: { _ in nil }).contains("Portrait"))
     }
 
     @Test("A portrait without description and tags shows the hint")
@@ -47,7 +47,7 @@ struct CharacterSheetTextTests {
         let model = character(photoId: photoId)
 
         #expect(!CharacterSheetText.hasPortraitText(for: model, photoRoot: root.photoRoot))
-        #expect(!CharacterSheetText.text(for: model, photoRoot: root.photoRoot).contains("Portrait"))
+        #expect(!CharacterSheetText.text(for: model, photoRoot: root.photoRoot, resolve: { _ in nil }).contains("Portrait"))
     }
 
     @Test("A portrait description or tags alone hide the hint and reach the text")
@@ -58,11 +58,65 @@ struct CharacterSheetTextTests {
 
         setPortrait(photoId, description: "A bearded dwarf with a warhammer.", tags: [], in: root)
         #expect(CharacterSheetText.hasPortraitText(for: model, photoRoot: root.photoRoot))
-        #expect(CharacterSheetText.text(for: model, photoRoot: root.photoRoot).contains("\nPortrait: A bearded dwarf with a warhammer."))
+        #expect(CharacterSheetText.text(for: model, photoRoot: root.photoRoot, resolve: { _ in nil }).contains("\nPortrait: A bearded dwarf with a warhammer."))
 
         setPortrait(photoId, description: "", tags: ["Dwarf", "Warhammer"], in: root)
         #expect(CharacterSheetText.hasPortraitText(for: model, photoRoot: root.photoRoot))
-        #expect(CharacterSheetText.text(for: model, photoRoot: root.photoRoot).hasSuffix("\nPortrait tags: Dwarf, Warhammer"))
+        #expect(CharacterSheetText.text(for: model, photoRoot: root.photoRoot, resolve: { _ in nil }).hasSuffix("\nPortrait tags: Dwarf, Warhammer"))
+    }
+
+    // MARK: - Groups
+
+    private func group(_ name: String, entries: [ValueEntryModel]) -> ValueModel {
+        ValueModel(id: UUID(), name: name, entries: entries)
+    }
+
+    private func value(_ name: String, _ value: String) -> ValueEntryModel {
+        ValueEntryModel(id: UUID(), name: name, type: .text, value: value)
+    }
+
+    private func groupEntry(_ name: String, to group: ValueModel) -> ValueEntryModel {
+        ValueEntryModel(id: UUID(), name: name, type: .text, value: "", valueId: group.id)
+    }
+
+    @Test("A group is its name followed by its own values, so race and player reach the model")
+    func groupIsExpanded() {
+        let basics = group("Adalbert's Group", entries: [value("Rasse", "Gnom"), value("Spieler", "Karsten")])
+        let model = ValueModel(id: UUID(), name: "Adalbert Unheil", entries: [groupEntry("Basiswerte", to: basics), value("Zauber", "Feuerstrahl")])
+        let groups = [basics.id: basics]
+
+        let text = CharacterSheetText.text(for: model, photoRoot: nil, resolve: { groups[$0] })
+
+        #expect(text.contains("- Basiswerte\n- Rasse: Gnom\n- Spieler: Karsten\n- Zauber: Feuerstrahl"))
+        #expect(!text.contains("Adalbert's Group"))
+    }
+
+    @Test("Groups inside groups are followed")
+    func nestedGroups() {
+        let inner = group("Inner", entries: [value("Kultur", "Narrländer")])
+        let outer = group("Outer", entries: [groupEntry("Herkunft", to: inner)])
+        let model = ValueModel(id: UUID(), name: "Adalbert", entries: [groupEntry("Basiswerte", to: outer)])
+        let groups = [inner.id: inner, outer.id: outer]
+
+        #expect(CharacterSheetText.text(for: model, photoRoot: nil, resolve: { groups[$0] }).contains("- Basiswerte\n- Herkunft\n- Kultur: Narrländer"))
+    }
+
+    @Test("A group that links back or is missing keeps only its name and does not loop")
+    func cyclicAndMissingGroups() {
+        let modelId = UUID()
+        let loop = ValueModel(id: UUID(), name: "Loop", entries: [
+            value("Rasse", "Gnom"),
+            ValueEntryModel(id: UUID(), name: "Zurück", type: .text, value: "", valueId: modelId)
+        ])
+        let model = ValueModel(id: modelId, name: "Adalbert", entries: [
+            groupEntry("Basiswerte", to: loop),
+            ValueEntryModel(id: UUID(), name: "Fehlt", type: .text, value: "", valueId: UUID())
+        ])
+        let groups = [loop.id: loop, modelId: model]
+
+        let text = CharacterSheetText.text(for: model, photoRoot: nil, resolve: { groups[$0] })
+
+        #expect(text.hasSuffix("- Basiswerte\n- Rasse: Gnom\n- Zurück\n- Fehlt"))
     }
 
     @Test("A character without values has no text, so the batch skips it")
@@ -70,7 +124,7 @@ struct CharacterSheetTextTests {
         let root = try await MockRoot.importTestData()
         let model = ValueModel(id: UUID(), name: "Empty")
 
-        #expect(CharacterSheetText.text(for: model, photoRoot: root.photoRoot).isEmpty)
+        #expect(CharacterSheetText.text(for: model, photoRoot: root.photoRoot, resolve: { _ in nil }).isEmpty)
     }
 }
 #endif

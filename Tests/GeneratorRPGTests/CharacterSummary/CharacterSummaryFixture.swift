@@ -63,7 +63,7 @@ extension CharacterSummaryFixture {
     static let all: [CharacterSummaryFixture] = [
         dwarfFighter, innkeeper, ashWyrm, goblinSkirmisher, freighterPilot,
         aerztinBerlin, fjordzwergWalfaenger, elvenRangerFromGerman, caveBear
-    ]
+    ] + real
 
     static let dwarfFighter = CharacterSummaryFixture(
         name: "Dwarf fighter (named player character)",

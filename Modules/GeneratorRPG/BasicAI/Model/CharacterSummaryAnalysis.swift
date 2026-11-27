@@ -70,10 +70,12 @@ struct CharacterSummaryGeneration: Equatable, Sendable {
     @Guide(
         description: """
         Up to two short tags of 1 to 3 words, in the output language, for what is special about \
-        this character, read from the sheet: values clearly higher than the others, the \
-        background, the weapon or special abilities. None when nothing stands out. A low or \
-        average value is no trait. Not the race or the class or occupation again, no label, no \
-        sentence, and no generic word such as Character, Stats or Attributes.
+        this character, only what the sheet or portrait says, never what you know about the race: \
+        the value clearly higher than the others, or a special feature such as armor, a natural \
+        ability, a talent or the background; an ordinary weapon only when nothing else stands out. \
+        As close to the sheet's word as the output language allows, not a new word; for a text \
+        value, what it says, never its label. None when nothing stands out. A low or average value is no trait. Not the race or the class or occupation again, no \
+        label, no sentence, and no generic word such as Character, Stats or Attributes.
         """,
         .maximumCount(2)
     )
@@ -142,6 +144,23 @@ public struct CharacterSummaryAnalysis: Equatable, Sendable, Codable {
     static func tags(race: String?, occupation: String?, traits: [String]?, playerName: String?) -> [String] {
         let parts = [race, occupation].compactMap { $0 } + (traits ?? []).prefix(2) + [playerName].compactMap { $0 }
         return GeneratedTagRules.cleaned(parts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+    }
+}
+
+// MARK: - Occupation
+
+extension CharacterSummaryGeneration {
+    /// The model's occupation, or, when it gave none, a class word of the name the user typed
+    /// ("Aquater Kämpfer" → Kämpfer). A class in the name counts as named (user decision
+    /// 2026-11-27), but the model left it empty in every run even when told so. Only glossary
+    /// class words are taken, so a name such as "Brakka Ironvein" never becomes an occupation.
+    static func occupation(_ occupation: String?, characterName: String, outputLanguage: String) -> String {
+        let given = (occupation ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard given.isEmpty else { return given }
+        guard let term = CharacterTermGlossary.matches(in: characterName).first(where: { $0.kind == .characterClass }) else {
+            return ""
+        }
+        return outputLanguage == "German" ? term.german : term.english
     }
 }
 

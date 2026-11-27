@@ -25,6 +25,21 @@ enum CharacterSummaryEvaluationConfiguration {
         Int(ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL_RUNS"] ?? "").map { max($0, 1) } ?? 5
     }
 
+    /// `CHARACTER_SUMMARY_EVAL_REAL_ONLY=1` runs only the examples copied from the app
+    /// (`CharacterSummaryFixture.real`), for a quick check while working on one of them.
+    static var fixtures: [CharacterSummaryFixture] {
+        ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL_REAL_ONLY"] == "1"
+            ? CharacterSummaryFixture.real
+            : CharacterSummaryFixture.all
+    }
+
+    /// Also print the passing samples' results (from the evaluator, a passing verdict has no
+    /// rationale), to see what real examples get.
+    /// `CHARACTER_SUMMARY_EVAL_SHOW_ALL=1`
+    static var showsAllSamples: Bool {
+        ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL_SHOW_ALL"] == "1"
+    }
+
     /// Share of runs that must pass every rule. `CHARACTER_SUMMARY_EVAL_THRESHOLD`
     static var passRateThreshold: Double {
         Double(ProcessInfo.processInfo.environment["CHARACTER_SUMMARY_EVAL_THRESHOLD"] ?? "")

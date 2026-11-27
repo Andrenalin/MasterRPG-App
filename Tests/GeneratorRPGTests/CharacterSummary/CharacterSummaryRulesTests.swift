@@ -38,6 +38,22 @@ struct CharacterSummaryRulesTests {
         #expect(CharacterSummaryGeneration.verifiedPlayerName(nil, in: sheet, characterName: "").isEmpty)
     }
 
+    // MARK: - Occupation
+
+    @Test("An empty occupation is taken from a class word in the character's name", arguments: [
+        ("Aquater Kämpfer", "German", "Kämpfer"), ("Aquater Kämpfer", "English", "Fighter"),
+        ("Grimbart der Schmied", "German", "Schmied"), ("Brakka Ironvein", "German", ""), ("", "German", "")
+    ])
+    func occupationFromName(name: String, language: String, occupation: String) {
+        #expect(CharacterSummaryGeneration.occupation(nil, characterName: name, outputLanguage: language) == occupation)
+        #expect(CharacterSummaryGeneration.occupation("  ", characterName: name, outputLanguage: language) == occupation)
+    }
+
+    @Test("The model's occupation wins over the name")
+    func occupationFromModel() {
+        #expect(CharacterSummaryGeneration.occupation(" Söldner ", characterName: "Aquater Kämpfer", outputLanguage: "German") == "Söldner")
+    }
+
     // MARK: - Traits
 
     @Test("Trailing values and short labels leave a trait", arguments: [

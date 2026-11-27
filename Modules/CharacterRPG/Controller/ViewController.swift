@@ -53,7 +53,7 @@ extension ViewController {
                 editController: editController,
                 entriesText: { itemId in
                     guard let model = characterController.itemSync(for: itemId) else { return "" }
-                    return CharacterSheetText.text(for: model, photoRoot: photoRoot)
+                    return CharacterSheetText.text(for: model, photoRoot: photoRoot) { characterController.itemSync(for: $0) }
                 }
             )
         )

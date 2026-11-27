@@ -218,6 +218,17 @@ struct CharacterSummaryEvaluatorTests {
         #expect(result.conceptScore == 1)
     }
 
+    @Test("A trait from world knowledge or an ordinary weapon fails when the fixture forbids it")
+    func forbiddenTraitTerms() {
+        var expectation = CharacterSummaryFixture.dwarfFighter.expectation
+        expectation.forbiddenTraitTerms = ["mountain", "dagger"]
+
+        let result = evaluate({ $0.traits = ["Mountain Dweller", "Strong"] }, expectation: expectation)
+
+        #expect(result.tagRuleViolations.contains("trait 'Mountain Dweller' is not on the sheet or not special ('mountain')"))
+        #expect(evaluate({ $0.traits = ["Strong", "Hammer Expert"] }, expectation: expectation).tagRuleViolations.isEmpty)
+    }
+
     @Test("A trait that repeats the occupation fails")
     func traitRepeatsOccupation() {
         #expect(evaluate { $0.traits = ["Fighter", "Strong"] }.tagRuleViolations.contains("trait 'Fighter' repeats the race or occupation"))
@@ -275,7 +286,9 @@ struct CharacterSummaryEvaluatorTests {
     @Test("Every fixture is a usable character", arguments: CharacterSummaryFixture.all)
     func fixtureIsUsable(fixture: CharacterSummaryFixture) {
         #expect(fixture.entries.count >= 6)
-        #expect(fixture.entries.allSatisfy { !$0.name.isEmpty && !$0.value.isEmpty })
+        // A group header line ("Basiswerte") has no value of its own, so only names must be given.
+        #expect(fixture.entries.allSatisfy { !$0.name.isEmpty })
+        #expect(fixture.entries.filter { !$0.value.isEmpty }.count >= 6)
         #expect(!fixture.expectation.race.isEmpty)
         #expect(!fixture.expectation.traitConcepts.isEmpty)
         #expect(!fixture.expectation.descriptionConcepts.isEmpty)
@@ -288,6 +301,15 @@ struct CharacterSummaryEvaluatorTests {
     @Test("An expected player's name is a value of the sheet", arguments: CharacterSummaryFixture.all.filter { $0.expectation.playerName != nil })
     func playerOnSheet(fixture: CharacterSummaryFixture) {
         #expect(fixture.entriesText.contains(fixture.expectation.playerName ?? "-"))
+    }
+
+    @Test("A real example reads like the copied analysis input: groups are header lines before their values")
+    func realExampleText() {
+        let text = CharacterSummaryFixture.adalbertUnheil.entriesText
+
+        #expect(text.hasPrefix("Charakter: Adalbert Unheil\n\n- Basiswerte\n- Spieler: Torben Albrecht\n- Volk (Narrländer): Gnom\n"))
+        #expect(text.hasSuffix("- Zauber: Feuerstrahl\n\nPortrait: Charakterbild von Adalbert\nPortrait tags: Character, CHARAKTER, DS"))
+        #expect(!text.contains("Karsten"))
     }
 
     @Test("Fixture names are unique")
@@ -321,7 +343,7 @@ struct CharacterSummaryEvaluatorTests {
 
     @Test("The sample dataset repeats every fixture once per run")
     func datasetSize() {
-        #expect(CharacterSummarySample.dataset(runs: 3).count == CharacterSummaryFixture.all.count * 3)
+        #expect(CharacterSummarySample.dataset(runs: 3).count == CharacterSummaryEvaluationConfiguration.fixtures.count * 3)
     }
 }
 

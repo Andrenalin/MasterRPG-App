@@ -70,7 +70,7 @@ struct CharacterSummaryAnalyzer: Sendable {
             name: finalName,
             description: description,
             race: race,
-            occupation: partial.occupation ?? "",
+            occupation: CharacterSummaryGeneration.occupation(partial.occupation, characterName: existingName, outputLanguage: outputLanguage),
             traits: (partial.traits ?? []).prefix(2).map(CharacterSummaryGeneration.cleanedTrait),
             playerName: playerName
         )
@@ -105,7 +105,7 @@ struct CharacterSummaryAnalyzer: Sendable {
         - The race: a people, the animal's name for an animal, or the monster's own name
         - The class, occupation or role, only when the sheet names one, otherwise nothing
         - The player's name, only when the sheet names the player, otherwise nothing
-        - Up to two traits of 1 to 3 words that are special about this character, based on the highest values and the background
+        - Up to two traits of 1 to 3 words in \(outputLanguage) that are special about this character: the clearly highest value or a special feature, named as close to the sheet as \(outputLanguage) allows
         """
     }
 
@@ -134,10 +134,14 @@ struct CharacterSummaryAnalyzer: Sendable {
     is written as the game term. When nothing names one, leave it empty. Never guess.
     The player's name is the real person who plays the character, only when a value of the sheet \
     names the player. Copy it exactly. Never use the character's own name for it.
-    The traits say what is special about this character and are read from the sheet, not \
-    imagined: the values that are clearly higher than the others, the background, the weapon or \
-    the special abilities. Give two, one or none: none is better than a weak trait. Name what \
-    they show in your own words, in the output language. A low or average value is no trait. A \
+    The traits say what is special about this character and are only what the sheet or the \
+    portrait says, never what you know about the race or world: the value that is clearly higher \
+    than the others, or a special feature such as armor, a natural ability, a talent or the \
+    background. An ordinary weapon is a trait only when nothing else stands out. Give two, one \
+    or none: none is better than a weak trait. Name it as close to the sheet's word as the \
+    output language allows, not with a new word; a word from a sheet in another language is \
+    translated. For a text value such as the background, the trait is what the text says, never \
+    its label. A low or average value is no trait. A \
     trait has 1 to 3 words and is no sentence, does not repeat the race or the class or \
     occupation, has no label and is never a generic word such as "Character", "Stats" or \
     "Attributes".

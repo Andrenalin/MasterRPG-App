@@ -29,7 +29,7 @@ struct CharacterExtractionDestination: View {
         } else {
             TextSummaryExtractionView(
                 module: .value,
-                entriesText: CharacterSheetText.text(for: model, photoRoot: root.photoRoot),
+                entriesText: CharacterSheetText.text(for: model, photoRoot: root.photoRoot) { root.itemController.itemSync(for: $0) },
                 itemName: model.name,
                 notice: CharacterSheetText.hasPortraitText(for: model, photoRoot: root.photoRoot)
                     ? nil

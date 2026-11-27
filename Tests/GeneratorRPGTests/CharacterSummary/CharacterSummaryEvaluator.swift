@@ -26,6 +26,9 @@ struct CharacterSummaryExpectation: Codable, Sendable, Equatable {
     var descriptiveNameTerms: [String] = []
     /// Terms that must not appear anywhere, e.g. English words when the output language is German.
     var forbiddenTerms: [String] = []
+    /// Terms no trait may contain: what the sheet does not say (world knowledge about the race,
+    /// "Meer") or what is not special about the character (an ordinary weapon).
+    var forbiddenTraitTerms: [String] = []
 }
 
 /// The result of checking one generated `CharacterSummaryAnalysis`.
@@ -220,6 +223,9 @@ struct CharacterSummaryEvaluator: Sendable {
             }
             if !seen.insert(key).inserted {
                 violations.append("trait '\(trimmed)' is repeated")
+            }
+            for term in expectation.forbiddenTraitTerms where trimmed.localizedStandardContains(term) {
+                violations.append("trait '\(trimmed)' is not on the sheet or not special ('\(term)')")
             }
         }
         return violations
