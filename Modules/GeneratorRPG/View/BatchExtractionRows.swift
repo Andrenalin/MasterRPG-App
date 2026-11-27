@@ -5,7 +5,7 @@
 import SwiftUI
 
 /// The state of one item in a batch "Extract Information" run
-/// (`BatchTextSummaryExtractionView`, `BatchPdfSummaryExtractionView`).
+/// (`BatchTextSummaryExtractionView`, `BatchPdfSummaryExtractionView`, `BatchPhotoSummaryExtractionView`).
 enum BatchItemStatus: Sendable {
     case pending
     case analyzing

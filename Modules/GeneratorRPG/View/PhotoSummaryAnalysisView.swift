@@ -56,7 +56,7 @@ public struct PhotoSummaryAnalysisView: View {
                 .keyboardShortcut(.defaultAction)
 
                 if PhotoSummaryAnalyzer.isPrivateCloudComputeEnabled {
-                    CloudToggle(consent: $consent)
+                    PhotoCloudConsentToggle(consent: $consent)
                 }
             }
 
@@ -125,7 +125,9 @@ public struct PhotoSummaryAnalysisView: View {
 
 // MARK: - Subviews
 
-private struct CloudToggle: View {
+/// Whether the photo analysis may use Private Cloud Compute; shared with
+/// `BatchPhotoSummaryExtractionView`. Stores the decision.
+struct PhotoCloudConsentToggle: View {
     @Binding var consent: PhotoCloudConsent
 
     var body: some View {

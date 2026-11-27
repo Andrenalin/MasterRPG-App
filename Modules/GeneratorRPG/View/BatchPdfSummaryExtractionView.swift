@@ -193,7 +193,7 @@ public struct BatchPdfSummaryExtractionView: View {
     }
 }
 
-/// The counts the PDF batch shows when it has run. Pure, so it is tested.
+/// The counts the PDF and photo batches show when they have run (photos add no bookmarks). Pure, so it is tested.
 struct BatchPdfRunSummary: Equatable {
     var changedItems = 0
     var filledNames = 0

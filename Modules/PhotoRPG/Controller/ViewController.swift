@@ -1,6 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import SwiftUI
 
 public struct ViewController {
@@ -28,6 +31,32 @@ extension ViewController: ViewControllable {
         AnyView(InlineRowViewer(source: source, destination: destination, sourceModel: sourceModel, isShareable: isShareable).equatable())
     }
 }
+
+// MARK: - Batch Extraction
+
+#if !os(tvOS)
+extension ViewController {
+    /// The photo analysis needs the OS 27 Foundation Models image input.
+    public var supportsBatchExtraction: Bool {
+        if #available(anyAppleOS 27.0, *) { true } else { false }
+    }
+
+    @MainActor public func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? {
+        guard #available(anyAppleOS 27.0, *), let photoController = itemController as? ItemController else { return nil }
+        return AnyView(
+            BatchPhotoSummaryExtractionView(
+                module: .photo,
+                ids: ids,
+                itemController: itemController,
+                editController: editController,
+                loadImage: { itemId in
+                    await photoController.analysisImage(for: itemId)
+                }
+            )
+        )
+    }
+}
+#endif
 
 // MARK: - External Views
 

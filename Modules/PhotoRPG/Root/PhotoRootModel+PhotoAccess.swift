@@ -77,7 +77,17 @@ public extension PhotoRootModel {
     /// when it is not downloaded or cannot be decoded.
     @MainActor
     func fetchPhotoAnalysisImage(for id: UUID) async -> CGImage? {
-        guard let item = await itemController.item(for: id), let fileUrl = item.fileUrl,
+        await itemController.analysisImage(for: id)
+    }
+}
+
+extension ItemController {
+    /// The photo of `id` as a bounded, upright image for the Apple Intelligence analysis, or `nil`
+    /// when it is not downloaded or cannot be decoded. Used by the single photo analysis and the
+    /// batch "Extract Information".
+    @MainActor
+    func analysisImage(for id: UUID) async -> CGImage? {
+        guard let item = await item(for: id), let fileUrl = item.fileUrl,
               let fileUrlDataController else { return nil }
         // A dataless iCloud placeholder is skipped, not downloaded: a batch extraction over many
         // photos must not fetch the whole selection. See CODE_AUDIT_29 §5.23.

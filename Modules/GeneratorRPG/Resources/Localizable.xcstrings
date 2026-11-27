@@ -189,6 +189,38 @@
         }
       }
     },
+    "Skipped: photo not available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersprungen: Foto nicht verfügbar"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้าม: ไม่มีรูปภาพ"
+          }
+        }
+      }
+    },
+    "Start replaces the description and the tags of the selected photos with generated ones. A name is only filled in when it is empty." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten Fotos durch generierte. Ein Name wird nur ergänzt, wenn er leer ist."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของรูปภาพที่เลือกด้วยข้อมูลที่สร้างขึ้น ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่"
+          }
+        }
+      }
+    },
     "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
