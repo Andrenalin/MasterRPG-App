@@ -15,7 +15,7 @@ Use the `build-verify` skill for build/test commands, simulator selection, visio
 - Don't introduce third-party frameworks without asking first. Avoid UIKit unless requested.
 
 ## Git workflow
-- Work happens on `develop`. "Ship it" means: commit logically split changes, push develop, fast-forward main to develop, push main.
+- Work happens on `develop`. "Ship it" means: follow `.claude/skills/ship-rpg/SKILL.md` (also `/ship-rpg`).
 - GitHub `origin` is the only remote.
 
 ## Swift & concurrency
