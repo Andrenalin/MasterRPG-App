@@ -192,15 +192,15 @@ public extension ImportControllable {
                     folderRepairIds.insert(deferredFolderItem.id)
                 }
             }
-            await repairFolders(folderRepairIds)
+            await repairFolders(folderRepairIds, forceSave: !policy.writesGameMemory)
         } catch {
             // The items applied so far stay; repair their folder links before failing, or a
             // child whose folder comes later in the stream stays orphaned until the user runs
             // Validate. See CODE_AUDIT_Folder §3.3.
-            await repairFolders(folderRepairIds)
+            await repairFolders(folderRepairIds, forceSave: !policy.writesGameMemory)
             if policy.repairsImportedItems {
                 await removeStaleGroups(importModel: importModel)
-                await repairImportedItems(importedIds)
+                await repairImportedItems(importedIds, forceSave: !policy.writesGameMemory)
             }
             throw error
         }
@@ -215,7 +215,7 @@ public extension ImportControllable {
             }
         } else if policy.repairsImportedItems {
             await removeStaleGroups(importModel: importModel)
-            await repairImportedItems(importedIds)
+            await repairImportedItems(importedIds, forceSave: !policy.writesGameMemory)
         }
 
         try await finalImport(

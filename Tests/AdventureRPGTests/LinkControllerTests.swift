@@ -77,19 +77,19 @@ struct LinkControllerTests {
 
         let photoId = UUID()
         let photo = PhotoModel(id: photoId, name: "Photo", description: "Some Text", tags: ["Some"], category: .adventure)
-        root.photoRoot.editController.save(updated: photo, message: "Test")
+        root.photoRoot.editController.save(updated: photo, message: "Test", forceSave: false)
         
         let tableEntryId = UUID()
         let tableEntry = TableEntryModel(id: tableEntryId, name: "Table", content: "Some Text")
         let tableId = UUID()
         let table = TableModel(id: tableId, name: "Table", description: "Some Text", tags: ["Some"], category: .rules, entries: [tableEntry])
-        root.tableRoot.editController.save(updated: table, message: "Test")
+        root.tableRoot.editController.save(updated: table, message: "Test", forceSave: false)
         
         let valueEntryId = UUID()
         let valueEntry = ValueEntryModel(id: valueEntryId, name: "Value", type: .text, value: "Some Text")
         let valueId = UUID()
         let value = ValueModel(id: valueId, name: "Value", description: "Some Text", tags: ["Some"], category: .rules, entries: [valueEntry])
-        root.characterRoot.editController.save(updated: value, message: "Test")
+        root.characterRoot.editController.save(updated: value, message: "Test", forceSave: false)
         
         var content = "Link to Photo "
         content = root.photoRoot.linkControllable.generateLinks(itemId: photoId, entryId: nil, into: content)
@@ -103,7 +103,7 @@ struct LinkControllerTests {
         
         let itemId = UUID()
         let item = AdventureModel(id: itemId, name: "Name", description: "Some Text", tags: ["Some"], category: .scenario, photoId: photoId, entries: [entry1, entry2, entry3])
-        root.editController.save(updated: item, message: "Test")
+        root.editController.save(updated: item, message: "Test", forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)
         #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id] == entry2)
@@ -132,7 +132,7 @@ struct LinkControllerTests {
         #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id] == entry3)
 
         root.tableRoot.editController.setCurrentItem(to: ItemRowTreeModel(itemId: tableId, typeId: .table))
-        root.tableRoot.editController.remove(itemId: tableId, entryId: tableEntryId)
+        root.tableRoot.editController.remove(itemId: tableId, entryId: tableEntryId, forceSave: false)
         
         #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: tableId, typeId: .table)).count == 2)
         #expect(root.linkRegisterController.used(for: ItemRowModel(itemId: tableId, entryId: tableEntryId, typeId: .table)).count == 2)
@@ -265,7 +265,7 @@ struct LinkControllerTests {
     @Test func repairLinksAndValidateLinksHandleMissingPhotoReferences() async throws {
         let root = makeRoot()
         let oldPhotoId = await root.photoRoot.itemController.addNew(type: .item)
-        root.photoRoot.editController.reset(name: "Portrait", itemId: oldPhotoId)
+        root.photoRoot.editController.reset(name: "Portrait", itemId: oldPhotoId, forceSave: false)
         let content = root.photoRoot.linkControllable.generateLinks(itemId: oldPhotoId, entryId: nil, into: "Look ")
         let links = LinkReplaceController.links(for: content)
 
@@ -273,7 +273,7 @@ struct LinkControllerTests {
         root.photoRoot.itemController.itemDataModel.itemData[oldPhotoId] = nil
 
         let newPhotoId = await root.photoRoot.itemController.addNew(type: .item)
-        root.photoRoot.editController.reset(name: "Portrait", itemId: newPhotoId)
+        root.photoRoot.editController.reset(name: "Portrait", itemId: newPhotoId, forceSave: false)
 
         let repaired = root.linkController.repairLinks(links, in: content)
 
@@ -301,7 +301,7 @@ struct LinkControllerTests {
         root.mapRoot.editController.add(photoId: mapPhotoId, itemId: mapId)
 
         let weatherId = await root.weatherRoot.itemController.addNew(type: .scenario)
-        root.weatherRoot.editController.add(photoId: weatherPhotoId, itemId: weatherId)
+        root.weatherRoot.editController.add(photoId: weatherPhotoId, itemId: weatherId, forceSave: false)
 
         let nestedAdventure = AdventureModel(
             id: UUID(),

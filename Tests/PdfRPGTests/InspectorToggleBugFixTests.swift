@@ -58,7 +58,7 @@ struct InspectorToggleBugFixTests {
     func toggleFolderLoadsEntriesNotCircularSelf() async throws {
         let root   = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Tome", itemId: itemId)
+        root.editController.reset(name: "Dragon Tome", itemId: itemId, forceSave: false)
         let entryId = addEntry(to: itemId, name: "Fire Chapter", content: "Dragons breathe fire", root: root)
 
         // Populate the link inspector list (unscoped, no parentModel)
@@ -118,9 +118,9 @@ struct InspectorToggleBugFixTests {
         let folderId  = await root.itemController.addNew(type: .folder)
         let childId   = await root.itemController.addNew(type: .item)
         let unrelated = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder",    itemId: folderId)
-        root.editController.reset(name: "Child",     itemId: childId)
-        root.editController.reset(name: "Unrelated", itemId: unrelated)
+        root.editController.reset(name: "Folder",    itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child",     itemId: childId, forceSave: false)
+        root.editController.reset(name: "Unrelated", itemId: unrelated, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         guard let folderModel = root.itemController.itemSync(for: folderId) else {
@@ -193,7 +193,7 @@ struct InspectorToggleShowsAllContentTests {
     func inspectorToggleShowsAllEntries() async throws {
         let root   = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Codex", itemId: itemId)  // name matches "Dragon"
+        root.editController.reset(name: "Dragon Codex", itemId: itemId, forceSave: false)  // name matches "Dragon"
 
         // Add entries: only one matches "Dragon" in its name
         let e1 = addEntry(to: itemId, name: "Dragon Lore",  content: "About fire", root: root)
@@ -225,9 +225,9 @@ struct InspectorToggleShowsAllContentTests {
         let folderId = await root.itemController.addNew(type: .folder)
         let child1   = await root.itemController.addNew(type: .item)
         let child2   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Archive",  itemId: folderId) // matches "Dragon"
-        root.editController.reset(name: "Coastal Shot",    itemId: child1)   // no "Dragon"
-        root.editController.reset(name: "Forest Path",     itemId: child2)   // no "Dragon"
+        root.editController.reset(name: "Dragon Archive",  itemId: folderId, forceSave: false) // matches "Dragon"
+        root.editController.reset(name: "Coastal Shot",    itemId: child1, forceSave: false)   // no "Dragon"
+        root.editController.reset(name: "Forest Path",     itemId: child2, forceSave: false)   // no "Dragon"
         root.editController.addItem(itemId: child1, parentId: folderId)
         root.editController.addItem(itemId: child2, parentId: folderId)
 
@@ -254,7 +254,7 @@ struct InspectorToggleShowsAllContentTests {
     func inspectorItemStaysOpenAfterSearchChange() async throws {
         let root   = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Manual", itemId: itemId)
+        root.editController.reset(name: "Dragon Manual", itemId: itemId, forceSave: false)
         let e1 = addEntry(to: itemId, name: "Intro",   content: "No match", root: root)
         let e2 = addEntry(to: itemId, name: "Dragon Chapter", content: "Fire", root: root)
 

@@ -1074,7 +1074,7 @@ struct MasterControllerDirectProxyTests {
     func proxyReadySendsSelectedCharacter() async throws {
         let env = try await MasterControllerHarness.make(asProxy: true)
         let characterId = await env.root.characterRoot.itemController.addNew(type: .character)
-        env.root.characterRoot.editController.reset(name: "Proxy Hero", itemId: characterId)
+        env.root.characterRoot.editController.reset(name: "Proxy Hero", itemId: characterId, forceSave: false)
         let playerId = env.root.gameModel.gameConfig.id
         env.root.gameModel.gameRoster = GameRosterModel(players: [
             PlayerGameModel(id: playerId, type: .proxy, name: "Proxy", characterId: characterId)
@@ -1096,7 +1096,7 @@ struct MasterControllerDirectProxyTests {
         // told apart from a real export error.
         let env = try await MasterControllerHarness.make(asProxy: true)
         let characterId = await env.root.characterRoot.itemController.addNew(type: .character)
-        env.root.characterRoot.editController.reset(name: "Proxy Hero", itemId: characterId)
+        env.root.characterRoot.editController.reset(name: "Proxy Hero", itemId: characterId, forceSave: false)
         let playerId = env.root.gameModel.gameConfig.id
         env.root.gameModel.gameRoster = GameRosterModel(players: [
             PlayerGameModel(id: playerId, type: .proxy, name: "Proxy", characterId: characterId)
@@ -1139,7 +1139,7 @@ struct MasterControllerDirectProxyTests {
     func weatherAndGameHandlers() async throws {
         let env = try await MasterControllerHarness.make(asProxy: false)
         let weatherId = await env.root.weatherRoot.itemController.addNew(type: .scenario)
-        env.root.weatherRoot.editController.reset(name: "Storm", itemId: weatherId)
+        env.root.weatherRoot.editController.reset(name: "Storm", itemId: weatherId, forceSave: false)
         let playerConfig = GameConfigModel(id: UUID(), state: .started, master: .empty)
         let weatherData = try await env.root.weatherRoot.gameControllable.createGameData(for: weatherId)
 

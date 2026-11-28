@@ -59,7 +59,10 @@ extension ImportControllable {
         switch policy.mode {
         case .merge:
             let groupsBefore = groupItemIdsBeforeImport(id: id, policy: policy)
-            var finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory)
+            // A persisted import merges with the library item: merging with the game copy
+            // persisted the session's changes, and an `isSame` result against it skipped the
+            // library write. See CODE_AUDIT_Edit_Save §5.21.
+            var finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory, noGame: !policy.writesGameMemory)
             if !policy.writesGameMemory {
                 let merged = finalItem
                 finalItem = itemController.restoringTrashedItem(merged: merged, imported: importableItem)
@@ -130,9 +133,9 @@ extension ImportControllable {
     }
 
     @MainActor
-    func repairFolders(_ itemIds: Set<UUID>) {
+    func repairFolders(_ itemIds: Set<UUID>, forceSave: Bool) {
         guard !itemIds.isEmpty else { return }
-        editControllable.repairFolders(itemIds: itemIds)
+        editControllable.repairFolders(itemIds: itemIds, forceSave: forceSave)
     }
 
     /// Cleans up after a file the import wrote for `itemId`. A library import keeps the file the
@@ -153,13 +156,16 @@ extension ImportControllable {
     /// Runs the post-import folder and orphan repair for `importedIds`. In an unstructured task:
     /// the repair stops at `Task.isCancelled`, and after a cancelled import it must still run
     /// for the items already applied. See CODE_AUDIT_Folder §3.3.
-    func repairImportedItems(_ importedIds: Set<UUID>) async {
+    ///
+    /// - Parameter forceSave: The import's write policy: a persisted import during a game
+    ///   repairs the library too. See CODE_AUDIT_Edit_Save §5.20.
+    func repairImportedItems(_ importedIds: Set<UUID>, forceSave: Bool) async {
         guard !importedIds.isEmpty else { return }
         let itemController = itemControllable
         let editController = editControllable
         await Task { @MainActor in
             let repair = ConvertController(itemController: itemController, editController: editController)
-            await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds)
+            await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds, forceSave: forceSave)
         }.value
     }
 

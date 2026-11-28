@@ -325,6 +325,40 @@ public extension LinkControllable {
 
     @MainActor func validateLinks(on itemId: UUID) {}
 
+    /// Repairs the links of item `itemId` with `repair`, which returns the repaired copy of the
+    /// item it is given, or `nil` to leave it alone. Link repair follows deletes, entry moves and
+    /// Validate, which are permanent, so the library copy is repaired and persisted also during a
+    /// game; a loaded game copy is repaired in game memory on its own, keeping its session state.
+    /// The register is rebuilt from the library value: it describes the library. Repairing only
+    /// the game copy (memory-only) while resetting the register left the library with dead links
+    /// the register no longer listed, so nothing repaired them later.
+    /// Returns the repaired library value. See CODE_AUDIT_Edit_Save §5.18.
+    @discardableResult
+    @MainActor func repairItemLinks<Model: ItemDataAccessible & ItemDiffComparable & ItemLinkRegistrable & ModelType>(
+        itemId: UUID,
+        as _: Model.Type,
+        _ repair: (Model) -> Model?
+    ) -> Model? {
+        let library = itemControllable.itemSync(for: itemId, noGame: true) as? Model
+        var repairedLibrary: Model?
+        if let library, !library.isHidden, let repaired = repair(library) {
+            if !repaired.isSame(library) {
+                Logger.linkController.info("\(itemControllable.config.module.token, privacy: .public): \(repaired.name, privacy: .private) will be replaced from repairing links.")
+                itemControllable.replace(model: repaired, isInsert: false, forceSave: true, syncGameMemory: false)
+            }
+            resetLinkRegister(repaired)
+            repairedLibrary = repaired
+        }
+        if let game = itemControllable.itemSync(for: itemId) as? Model,
+           (game as AnyObject) !== (library as AnyObject?),
+           !game.isHidden,
+           let repaired = repair(game),
+           !repaired.isSame(game) {
+            itemControllable.replaceInGameMemory(model: repaired)
+        }
+        return repairedLibrary
+    }
+
     /// Clears all registered links whose source is `item`, then re-registers `item.linkRegisterModels`.
     /// Call unconditionally inside `validateLinks(on:)` — safe no-op when the item has no links.
     @MainActor func resetLinkRegister<M: ItemLinkRegistrable>(_ item: M) {

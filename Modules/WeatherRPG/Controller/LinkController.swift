@@ -37,20 +37,16 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
-
-        if let photoId = replacedItem.photoId {
-            if !photoRoot.linkControllable.validateLink(itemId: photoId) {
-                Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
-                replacedItem.photoId = nil
+        repairItemLinks(itemId: itemId, as: WeatherModel.self) { inspectedItem in
+            let replacedItem = inspectedItem.copy()
+            if let photoId = replacedItem.photoId {
+                if !photoRoot.linkControllable.validateLink(itemId: photoId) {
+                    Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+                    replacedItem.photoId = nil
+                }
             }
+            return replacedItem
         }
-
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
-        }
-        resetLinkRegister(replacedItem)
     }
 }
 

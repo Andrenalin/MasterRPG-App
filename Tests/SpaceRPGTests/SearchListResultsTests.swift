@@ -54,8 +54,8 @@ struct SearchListResultsTests {
         let root = await makeRoot()
 
         let tagOnlyId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Wanderer",       itemId: tagOnlyId)
-        root.editController.reset(tags: ["dragon-class"], itemId: tagOnlyId)
+        root.editController.reset(name: "Wanderer",       itemId: tagOnlyId, forceSave: false)
+        root.editController.reset(tags: ["dragon-class"], itemId: tagOnlyId, forceSave: false)
         // Name and description contain no "dragon" — only the tag does.
 
         let results = await listResults(root: root, text: "dragon", displayMode: mode)
@@ -74,10 +74,10 @@ struct SearchListResultsTests {
 
         let descMatchId = await root.itemController.addNew(type: .item)
         let tagOnlyId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Scout A",                    itemId: descMatchId)
-        root.editController.reset(description: "Dragon-class vessel", itemId: descMatchId)
-        root.editController.reset(name: "Scout B",                    itemId: tagOnlyId)
-        root.editController.reset(tags: ["dragon-class"],             itemId: tagOnlyId)
+        root.editController.reset(name: "Scout A",                    itemId: descMatchId, forceSave: false)
+        root.editController.reset(description: "Dragon-class vessel", itemId: descMatchId, forceSave: false)
+        root.editController.reset(name: "Scout B",                    itemId: tagOnlyId, forceSave: false)
+        root.editController.reset(tags: ["dragon-class"],             itemId: tagOnlyId, forceSave: false)
 
         let results = await listResults(root: root, text: "dragon", displayMode: .medium)
         let ids = results.map(\.itemId)
@@ -93,11 +93,11 @@ struct SearchListResultsTests {
         let nameMatchId = await root.itemController.addNew(type: .item)
         let descMatchId = await root.itemController.addNew(type: .item)
         let tagMatchId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout",               itemId: nameMatchId)
-        root.editController.reset(name: "Alpha",                      itemId: descMatchId)
-        root.editController.reset(description: "Dragon-class vessel", itemId: descMatchId)
-        root.editController.reset(name: "Beta",                       itemId: tagMatchId)
-        root.editController.reset(tags: ["dragon-class"],             itemId: tagMatchId)
+        root.editController.reset(name: "Dragon Scout",               itemId: nameMatchId, forceSave: false)
+        root.editController.reset(name: "Alpha",                      itemId: descMatchId, forceSave: false)
+        root.editController.reset(description: "Dragon-class vessel", itemId: descMatchId, forceSave: false)
+        root.editController.reset(name: "Beta",                       itemId: tagMatchId, forceSave: false)
+        root.editController.reset(tags: ["dragon-class"],             itemId: tagMatchId, forceSave: false)
 
         let results = await listResults(root: root, text: "dragon", displayMode: .compact)
         let ids = results.map(\.itemId)
@@ -118,11 +118,11 @@ struct SearchListResultsTests {
         let containsId = await root.itemController.addNew(type: .item)
         let descId     = await root.itemController.addNew(type: .item)
 
-        root.editController.reset(name: "Dragon",                 itemId: exactId)
-        root.editController.reset(name: "Dragon Slayer",          itemId: prefixId)
-        root.editController.reset(name: "Fire-breathing Dragon",  itemId: containsId)
-        root.editController.reset(name: "Probe",                  itemId: descId)
-        root.editController.reset(description: "Dragon patrol",   itemId: descId)
+        root.editController.reset(name: "Dragon",                 itemId: exactId, forceSave: false)
+        root.editController.reset(name: "Dragon Slayer",          itemId: prefixId, forceSave: false)
+        root.editController.reset(name: "Fire-breathing Dragon",  itemId: containsId, forceSave: false)
+        root.editController.reset(name: "Probe",                  itemId: descId, forceSave: false)
+        root.editController.reset(description: "Dragon patrol",   itemId: descId, forceSave: false)
 
         let results = await listResults(root: root, text: "Dragon", displayMode: .medium)
         let ids = results.map(\.itemId)
@@ -151,9 +151,9 @@ struct SearchListResultsTests {
         let idC = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         let idB = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Charlie", itemId: idC)
-        root.editController.reset(name: "Alice",   itemId: idA)
-        root.editController.reset(name: "Bob",     itemId: idB)
+        root.editController.reset(name: "Charlie", itemId: idC, forceSave: false)
+        root.editController.reset(name: "Alice",   itemId: idA, forceSave: false)
+        root.editController.reset(name: "Bob",     itemId: idB, forceSave: false)
 
         let results = await listResults(root: root, text: "")
         let names = results.map(\.itemName)
@@ -170,8 +170,8 @@ struct SearchListResultsTests {
 
         let visibleId = await root.itemController.addNew(type: .item)
         let hiddenId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout",  itemId: visibleId)
-        root.editController.reset(name: "Dragon Hidden", itemId: hiddenId)
+        root.editController.reset(name: "Dragon Scout",  itemId: visibleId, forceSave: false)
+        root.editController.reset(name: "Dragon Hidden", itemId: hiddenId, forceSave: false)
         root.itemController.itemOrEmpty(for: hiddenId).displayState = 1
 
         let results = await listResults(root: root, text: "Dragon")
@@ -192,8 +192,8 @@ struct SearchListResultsTests {
 
         let itemId   = await root.itemController.addNew(type: .item)
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Dragon Scout", itemId: itemId)
-        root.editController.reset(name: "Dragon Dock",  itemId: folderId)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId, forceSave: false)
+        root.editController.reset(name: "Dragon Dock",  itemId: folderId, forceSave: false)
 
         let results = await listResults(root: root, text: "", displayMode: displayMode)
         let ids = results.map(\.itemId)
@@ -210,7 +210,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Station Alpha", itemId: folderId)
+        root.editController.reset(name: "Station Alpha", itemId: folderId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "", listMode: .folder)
@@ -228,8 +228,8 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Fleet Base",  itemId: folderId)
-        root.editController.reset(name: "Dragon Wing", itemId: childId)
+        root.editController.reset(name: "Fleet Base",  itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Wing", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "Dragon", listMode: .folder)
@@ -247,8 +247,8 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Dock",  itemId: folderId)
-        root.editController.reset(name: "Scout Vessel", itemId: childId)
+        root.editController.reset(name: "Dragon Dock",  itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Scout Vessel", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "Dragon", listMode: .folder)
@@ -268,8 +268,8 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Nebula Base",  itemId: folderId)
-        root.editController.reset(name: "Scout Vessel", itemId: childId)
+        root.editController.reset(name: "Nebula Base",  itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Scout Vessel", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let results = await listResults(root: root, text: "Dragon", listMode: .folder)
@@ -286,9 +286,9 @@ struct SearchListResultsTests {
         let outerFolderId = await root.itemController.addNew(type: .folder)
         let innerFolderId = await root.itemController.addNew(type: .folder)
         let deepItemId    = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Outer Base",  itemId: outerFolderId)
-        root.editController.reset(name: "Inner Dock",  itemId: innerFolderId)
-        root.editController.reset(name: "Dragon Core", itemId: deepItemId)
+        root.editController.reset(name: "Outer Base",  itemId: outerFolderId, forceSave: false)
+        root.editController.reset(name: "Inner Dock",  itemId: innerFolderId, forceSave: false)
+        root.editController.reset(name: "Dragon Core", itemId: deepItemId, forceSave: false)
         root.editController.addItem(itemId: innerFolderId, parentId: outerFolderId)
         root.editController.addItem(itemId: deepItemId,    parentId: innerFolderId)
 
@@ -323,9 +323,9 @@ struct SearchListResultsTests {
         let idA        = await root.itemController.addNew(type: .item)
         let idM        = await root.itemController.addNew(type: .item)
         let unrelatedId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Zulu Station",  itemId: idZ)
-        root.editController.reset(name: "Alpha Station", itemId: idA)
-        root.editController.reset(name: "Midway Base",   itemId: idM)
+        root.editController.reset(name: "Zulu Station",  itemId: idZ, forceSave: false)
+        root.editController.reset(name: "Alpha Station", itemId: idA, forceSave: false)
+        root.editController.reset(name: "Midway Base",   itemId: idM, forceSave: false)
         root.editController.addItem(itemId: idZ, parentId: folderId)
         root.editController.addItem(itemId: idA, parentId: folderId)
         root.editController.addItem(itemId: idM, parentId: folderId)
@@ -349,8 +349,8 @@ struct SearchListResultsTests {
         let folderId  = await root.itemController.addNew(type: .folder)
         let matchId   = await root.itemController.addNew(type: .item)
         let noMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout",  itemId: matchId)
-        root.editController.reset(name: "Space Station", itemId: noMatchId)
+        root.editController.reset(name: "Dragon Scout",  itemId: matchId, forceSave: false)
+        root.editController.reset(name: "Space Station", itemId: noMatchId, forceSave: false)
         root.editController.addItem(itemId: matchId,   parentId: folderId)
         root.editController.addItem(itemId: noMatchId, parentId: folderId)
 
@@ -402,7 +402,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Galaxy Base", itemId: itemId)
+        root.editController.reset(name: "Galaxy Base", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         let entryId = UUID()
@@ -427,7 +427,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Nebula Station", itemId: itemId)  // does not contain "Space"
+        root.editController.reset(name: "Nebula Station", itemId: itemId, forceSave: false)  // does not contain "Space"
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         let entryId = UUID()
@@ -452,7 +452,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Dock", itemId: itemId)
+        root.editController.reset(name: "Dragon Dock", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         // Add an entry whose name does NOT match "Dragon"
@@ -478,7 +478,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Nebula Station", itemId: itemId)
+        root.editController.reset(name: "Nebula Station", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
         // No entries added; searching "Dragon" → no match at any level
 
@@ -495,7 +495,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Galaxy Base", itemId: itemId)
+        root.editController.reset(name: "Galaxy Base", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         root.itemController.itemOrEmpty(for: itemId)
@@ -519,7 +519,7 @@ struct SearchListResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Nebula Station", itemId: itemId)
+        root.editController.reset(name: "Nebula Station", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         root.itemController.itemOrEmpty(for: itemId)
@@ -545,9 +545,9 @@ struct SearchListResultsTests {
         let innerFolderId = await root.itemController.addNew(type: .folder)
         let item2Id       = await root.itemController.addNew(type: .item)
 
-        root.editController.reset(name: "Wanderer",      itemId: itemId)
-        root.editController.reset(name: "Dragon Cruiser", itemId: item2Id)
-        root.editController.reset(name: "Inner Base",     itemId: innerFolderId)
+        root.editController.reset(name: "Wanderer",      itemId: itemId, forceSave: false)
+        root.editController.reset(name: "Dragon Cruiser", itemId: item2Id, forceSave: false)
+        root.editController.reset(name: "Inner Base",     itemId: innerFolderId, forceSave: false)
         root.editController.addItem(itemId: itemId,        parentId: outerFolderId)
         root.editController.addItem(itemId: innerFolderId, parentId: outerFolderId)
         root.editController.addItem(itemId: item2Id,       parentId: innerFolderId)

@@ -100,7 +100,7 @@ struct SheetControllerTests {
             description: "A fierce orc",
             category: .character
         )
-        root.characterRoot.editController.save(updated: orc, message: "Add Orc")
+        root.characterRoot.editController.save(updated: orc, message: "Add Orc", forceSave: false)
 
         let entry = AdventureEntryModel.fixture(name: "Encounter", content: "")
         let adventure = AdventureModel(
@@ -108,7 +108,7 @@ struct SheetControllerTests {
             name: "Orc Encounter",
             entries: [entry]
         )
-        root.editController.save(updated: adventure, message: "Add Adventure")
+        root.editController.save(updated: adventure, message: "Add Adventure", forceSave: false)
 
         // When
         for _ in 0..<2 {
@@ -118,7 +118,8 @@ struct SheetControllerTests {
                 itemId: orc.id,
                 entryId: nil,
                 destinationItemId: adventure.id,
-                destinationEntryId: entry.id
+                destinationEntryId: entry.id,
+                forceSave: false
             )
         }
 
@@ -577,7 +578,7 @@ struct SheetControllerTests {
         let entrySheet = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
         #expect(entrySheet.sheetType == .item)
 
-        let groupId = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+        let groupId = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil, forceSave: false)
 
         sut.update(root: try rootManager(for: root), sheetModel: sheetModel, isEditor: false)
 

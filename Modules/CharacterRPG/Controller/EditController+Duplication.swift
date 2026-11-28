@@ -55,10 +55,13 @@ extension EditController {
     /// `visited` guards against a cycle in the item/value graph recursing
     /// indefinitely and crashing with a stack overflow; `RecursionLimits.maxValueLinkDepth`
     /// bounds legitimately-deep-but-acyclic nesting. See CODE_AUDIT_13 §5.2.
+    /// Copies the library item (the duplicate is persisted), like the generic `duplicate(item:)`:
+    /// the game copy made a permanent Character with in-game values. An item only the game
+    /// holds is copied from game memory. See CODE_AUDIT_Edit_Save §5.22.
     @MainActor
     private func duplicateSubValue(id: UUID, withCopy: Bool, visited: Set<UUID> = []) -> ([ValueModel], UUID, [UUID: UUID]) {
         guard !visited.contains(id), visited.count < RecursionLimits.maxValueLinkDepth,
-              let item = itemController.itemSync(for: id) else { return ([], id, [:]) }
+              let item = itemController.itemSync(for: id, noGame: true) ?? itemController.itemSync(for: id) else { return ([], id, [:]) }
         let visited = visited.union([id])
 
         var duplicates: [ValueModel] = []
@@ -104,7 +107,7 @@ extension EditController {
               !original.specialCategory else { return nil }
         let copyId = await duplicate(itemId: itemId, withCopy: true)
         placeDuplicate(copyId, of: original)
-        add(selection: [WindowItemSelection(itemId: photoId)], itemId: copyId)
+        add(selection: [WindowItemSelection(itemId: photoId)], itemId: copyId, forceSave: true)
         return copyId
     }
 }

@@ -7,11 +7,6 @@ import SwiftUI
 public final class ItemEditorModel: Sendable {
     public init(sheetEditorModel: SheetEditorModel) {
         self.sheetEditorModel = sheetEditorModel
-        self.undoManaged = UndoManaged(initialValue: nil)
-    }
-
-    public var currentModel: ModelType? {
-        undoManaged.value
     }
 
     public var deactivateEntryEditor: Bool = false
@@ -53,40 +48,74 @@ public final class ItemEditorModel: Sendable {
         linkSelectionSheetRootModel = nil
     }
 
-    @ObservationIgnored public var undoManaged: UndoManaged<ModelType?>
+    /// The undo history of every item edited in this module. Each step carries its own write
+    /// scope and game generation (`ItemEditUndoStep`), so no side table can lose track of it.
+    /// See CODE_AUDIT_Edit_Save §5.6.
+    @ObservationIgnored public let undoManaged = UndoManaged<ItemEditUndoStep>()
 
-    /// The undo and redo values that belong to a folder edit made on the library, not on what
-    /// is being edited: restoring one writes the library, also during a game. The newest are
-    /// kept; an undo stack is not deeper. See CODE_AUDIT_21 §5.31.
-    @ObservationIgnored private var libraryScopedUndoValues: [AnyObject] = []
+    /// Called with the item id after an edit during a game that persisted (forced, or written to
+    /// the library). The game installs it for its own length: a player announces an edited
+    /// Character again, which only the inline editor's `.valueUpdate` did before. Never captures
+    /// a view. See CODE_AUDIT_Edit_Save §5.24.
+    @ObservationIgnored public var persistedGameEditHandler: (@MainActor (UUID) -> Void)?
 
-    func markLibraryScopedUndo(_ value: ModelType) {
-        libraryScopedUndoValues.append(value as AnyObject)
-        if libraryScopedUndoValues.count > UndoManaged<ModelType?>.maxDepth {
-            libraryScopedUndoValues.removeFirst(libraryScopedUndoValues.count - UndoManaged<ModelType?>.maxDepth)
+    /// The item the editor shows. Selecting another item starts a new undo history.
+    @ObservationIgnored public private(set) var currentItemId: UUID?
+
+    func setCurrentItemId(_ itemId: UUID?) {
+        currentItemId = itemId
+    }
+
+    /// Open `beginUndoGroup` calls: while one is open, every saved change joins one step.
+    @ObservationIgnored private var undoGroupDepth = 0
+    @ObservationIgnored private var undoGroupTitle: String?
+    @ObservationIgnored private var undoGroupHasStep = false
+
+    /// Starts one undo step for a user action that saves several times (move an entry between
+    /// items, convert to group, ...). Nested groups join the outer one. See CODE_AUDIT_Edit_Save §5.5.
+    public func beginUndoGroup(title: String) {
+        if undoGroupDepth == 0 {
+            undoGroupTitle = title
+            undoGroupHasStep = false
+        }
+        undoGroupDepth += 1
+    }
+
+    public func endUndoGroup() {
+        undoGroupDepth = max(0, undoGroupDepth - 1)
+        if undoGroupDepth == 0 {
+            undoGroupTitle = nil
+            undoGroupHasStep = false
         }
     }
 
-    func isLibraryScopedUndo(_ value: ModelType) -> Bool {
-        let object = value as AnyObject
-        return libraryScopedUndoValues.contains { $0 === object }
-    }
-
-    /// The undo and redo values of an edit the editor saved with `forceSave` (the editor window
-    /// during a game): restoring one writes the library and the game copy, as the edit did,
-    /// instead of only game memory. The newest are kept, like `libraryScopedUndoValues`.
-    @ObservationIgnored private var forcedUndoValues: [AnyObject] = []
-
-    func markForcedUndo(_ value: ModelType) {
-        forcedUndoValues.append(value as AnyObject)
-        if forcedUndoValues.count > UndoManaged<ModelType?>.maxDepth {
-            forcedUndoValues.removeFirst(forcedUndoValues.count - UndoManaged<ModelType?>.maxDepth)
+    /// Records one saved change, as a step of its own or as part of the open group. Steps of an
+    /// earlier game generation are dropped first: they can never be applied again.
+    func recordUndo(_ change: ItemEditUndoStep.Change, title: String, gameGeneration: Int) {
+        if undoManaged.nextUndoStep.map({ $0.gameGeneration != gameGeneration }) == true
+            || undoManaged.nextRedoStep.map({ $0.gameGeneration != gameGeneration }) == true {
+            undoManaged.removeAll()
+            undoGroupHasStep = false
+        }
+        if undoGroupDepth > 0, undoGroupHasStep, var step = undoManaged.nextUndoStep {
+            step.changes.append(change)
+            undoManaged.replaceLast(with: step)
+            return
+        }
+        undoManaged.record(ItemEditUndoStep(changes: [change], gameGeneration: gameGeneration), title: undoGroupTitle ?? title)
+        if undoGroupDepth > 0 {
+            undoGroupHasStep = true
         }
     }
 
-    func isForcedUndo(_ value: ModelType) -> Bool {
-        let object = value as AnyObject
-        return forcedUndoValues.contains { $0 === object }
+    /// Drops the changes of a deleted item; a step left without changes goes. Undo would have
+    /// inserted the item again. See CODE_AUDIT_Edit_Save §5.4.
+    func removeUndoChanges(of itemId: UUID) {
+        undoManaged.compactMapSteps { step in
+            var step = step
+            step.changes.removeAll { $0.itemId == itemId }
+            return step.changes.isEmpty ? nil : step
+        }
     }
 
     /// The running duplicate started from any menu of this module. A second Duplicate press

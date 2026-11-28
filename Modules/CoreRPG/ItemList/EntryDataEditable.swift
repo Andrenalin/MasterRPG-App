@@ -20,20 +20,14 @@ public protocol SheetEditTypeControllable: Sendable {
     @MainActor func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType, forceSave: Bool)
 }
 
-public extension SheetEditTypeControllable {
-    /// `updateSheetEditType(...forceSave:)` that stays in game memory during a game.
-    @MainActor func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType) {
-        updateSheetEditType(itemId: itemId, entryId: entryId, editType: editType, forceSave: false)
-    }
-}
-
 public protocol EntryDataEditable: EditControllable {
     @MainActor func editEntries(for item: Model) -> [Model.Entry]
 
     // MARK: - EntryList editor
 
     /// `forceSave` persists the link also during a game: the editor (entry editor drop, sheet
-    /// editor, link picker) passes `true`. The 6-argument overload passes `false`.
+    /// editor, link picker) passes `true`. Required on every editor API, so a new control cannot
+    /// silently become memory-only during a game. See CODE_AUDIT_Edit_Save §9.1.
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool)
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
 
@@ -82,30 +76,20 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
-    /// `forceSave` is not defaulted here because protocol requirements cannot carry
-    /// default argument values; use the 3-argument convenience overload in the
-    /// extension below (`forceSave: false`) unless the caller needs to opt into
-    /// persisting regardless of an active game (the standalone item editor does).
+    /// `forceSave` persists also during a game (the standalone item editor passes `true`).
     @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel]
     @MainActor func merge(itemId: UUID, entries: [Model.Entry]) -> [Model.Entry]
-    /// `forceSave` is not defaulted here because protocol requirements cannot carry
-    /// default argument values; use the 2-argument convenience overload in the
-    /// extension below (`forceSave: false`) unless the caller needs to opt into
-    /// persisting regardless of an active game (the standalone item editor does).
+    /// The undo title of `merge(itemId:entries:recoverEntries:forceSave:)`.
+    @MainActor var entriesReplacedUndoTitle: String { get }
+    /// `forceSave` persists also during a game (the standalone item editor passes `true`).
     @MainActor func remove(itemId: UUID, entryId: UUID, forceSave: Bool)
     func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
 
     // MARK: - Entry Editor
 
-    /// `forceSave` is not defaulted here because protocol requirements cannot carry
-    /// default argument values; use the 4-argument convenience overload in the
-    /// extension below (`forceSave: false`) unless the caller needs to opt into
-    /// persisting regardless of an active game (the standalone item editor does).
+    /// `forceSave` persists also during a game (the standalone item editor passes `true`).
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool)
-    /// `forceSave` is not defaulted here because protocol requirements cannot carry
-    /// default argument values; use the 4-argument convenience overload in the
-    /// extension below (`forceSave: false`) unless the caller needs to opt into
-    /// persisting regardless of an active game (the standalone item editor does).
+    /// `forceSave` persists also during a game (the standalone item editor passes `true`).
     @MainActor func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition, forceSave: Bool) -> UUID?
     
     // MARK: - Inline Quick Editor
@@ -124,15 +108,14 @@ public protocol EntryDataEditable: EditControllable {
 }
 
 public extension EntryDataEditable {
+    @MainActor var entriesReplacedUndoTitle: String {
+        String(localized: "Entries replaced", bundle: .module)
+    }
+
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool) {
         guard canAddLink(module: module, entryId: entryId) else { return }
         addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: forceSave)
         MasterRPGTips.recordContentLinked()
-    }
-
-    /// `add(link:...forceSave:)` that stays in game memory during a game.
-    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
-        add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: false)
     }
 
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
@@ -160,25 +143,11 @@ public extension EntryDataEditable {
 
     @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID, forceSave: Bool) -> UUID? { nil }
 
-    // The overloads without `forceSave` stay in game memory during a game.
-
-    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
-        await addNewGroup(itemId: itemId, forceSave: false)
-    }
-
-    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
-        await convertToGroup(itemId: itemId, entryId: entryId, existingItemId: existingItemId, forceSave: false)
-    }
-
-    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID? {
-        moveIntoGroup(itemId: itemId, into: targetId, forceSave: false)
-    }
-
     @MainActor func entryContent(itemId: UUID, entryId: UUID) -> String {
         editModel(for: itemId)?[entryId].content ?? ""
     }
 
-    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ", forceSave: Bool = false) {
+    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ", forceSave: Bool) {
         guard canAddLink(module: module, entryId: entryId), var item = editModel(for: destinationItemId) else { return }
         appendLink(link: link, module: module, itemId: itemId, entryId: entryId, to: &item, destinationEntryId: destinationEntryId, separator: separator)
         save(updated: item, message: String(localized: "Add Link", bundle: .module), forceSave: forceSave)
@@ -212,7 +181,7 @@ public extension EntryDataEditable {
         item.entries
     }
     
-    @MainActor func addNewEntry(itemId: UUID, forceSave: Bool = false) -> UUID {
+    @MainActor func addNewEntry(itemId: UUID, forceSave: Bool) -> UUID {
         let entry = Model.Entry.empty
         add(entry: entry, itemId: itemId, forceSave: forceSave)
         MasterRPGTips.recordEntryCreated()
@@ -220,42 +189,46 @@ public extension EntryDataEditable {
     }
 
     @MainActor
-    func add(entry: Model.Entry, itemId: UUID, forceSave: Bool = false) {
+    func add(entry: Model.Entry, itemId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         add(entry: entry, into: item, forceSave: forceSave)
     }
 
     @MainActor
-    func add(entry: Model.Entry, into itemId: UUID, index: Int? = nil, forceSave: Bool = false) {
+    func add(entry: Model.Entry, into itemId: UUID, index: Int? = nil, forceSave: Bool) {
         guard let editModel = editModel(for: itemId) else { return }
         add(entry: entry, into: editModel, index: index, forceSave: forceSave)
     }
 
     @MainActor
-    private func add(entry: Model.Entry, into item: Model, index: Int? = nil, forceSave: Bool = false) {
+    private func add(entry: Model.Entry, into item: Model, index: Int? = nil, forceSave: Bool) {
         let validatedIndex = index ?? editEntries(for: item).count
         item.entries.insert(entry, at: validatedIndex)
         save(updated: item, message: String(localized: "Add entry", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func copy(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
-        for entryId in entryIds {
-            _ = copy(itemId: itemId, entryId: entryId, forceSave: forceSave)
+    @MainActor func copy(itemId: UUID, entryIds: [UUID], forceSave: Bool) {
+        asOneUndoStep(String(localized: "Copy entry", bundle: .module)) {
+            for entryId in entryIds {
+                _ = copy(itemId: itemId, entryId: entryId, forceSave: forceSave)
+            }
         }
     }
 
-    @MainActor func copy(itemId: UUID, entryId: UUID, forceSave: Bool = false) -> UUID? {
+    @MainActor func copy(itemId: UUID, entryId: UUID, forceSave: Bool) -> UUID? {
         guard let item = editModel(for: itemId) else { return nil }
         let duplicate = item[entryId].duplicate()
         item.entries.append(duplicate)
-        let name = String(duplicate.name.prefix(16))
+        let name = String(duplicate.name.prefix(UndoTitleLimits.entryNameLength))
         save(updated: item, message: String(localized: "Copy entry \(name)", bundle: .module), forceSave: forceSave)
         return duplicate.id
     }
 
-    @MainActor func remove(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
-        for entryId in entryIds {
-            remove(itemId: itemId, entryId: entryId, forceSave: forceSave)
+    @MainActor func remove(itemId: UUID, entryIds: [UUID], forceSave: Bool) {
+        asOneUndoStep(String(localized: "Remove entry", bundle: .module)) {
+            for entryId in entryIds {
+                remove(itemId: itemId, entryId: entryId, forceSave: forceSave)
+            }
         }
     }
 
@@ -266,26 +239,8 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Remove entry", bundle: .module), forceSave: forceSave)
     }
 
-    /// Convenience overload preserving every pre-existing 2-argument call site
-    /// (memory-only during an active game, matching historical behavior).
-    @MainActor func remove(itemId: UUID, entryId: UUID) {
-        remove(itemId: itemId, entryId: entryId, forceSave: false)
-    }
-
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)
-    }
-
-    /// Convenience overload preserving every pre-existing 4-argument call site
-    /// (memory-only during an active game, matching historical behavior).
-    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
-        update(itemId: itemId, entryId: entryId, name: name, content: content, forceSave: false)
-    }
-
-    /// Convenience overload preserving every pre-existing 3-argument call site
-    /// (memory-only during an active game, matching historical behavior).
-    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
-        merge(itemId: itemId, entries: entries, recoverEntries: recoverEntries, forceSave: false)
     }
 
     /// Matches edited entries to the item's existing entries by name, so an entry keeps its id
@@ -303,20 +258,22 @@ public extension EntryDataEditable {
             let name = entry.name.withoutLink()
             guard let index = available.firstIndex(where: { $0.name.withoutLink() == name }) else { return entry }
             var matched = available.remove(at: index)
-            matched.name = entry.name
-            matched.content = entry.content
+            // Assigned only when changed: the CRDT setter stamps a new clock even for the same
+            // value, so every entry of the editor counted as changed, and a forced save during a
+            // game copied all of them (with their session state) into the library.
+            // See CODE_AUDIT_Edit_Save §5.12.
+            if matched.name != entry.name { matched.name = entry.name }
+            if matched.content != entry.content { matched.content = entry.content }
             return matched
         }
     }
 
-    /// Default `merge(itemId:entries:recoverEntries:forceSave:)`: computes the merged
-    /// entries via `merge(itemId:entries:)` (module-specific matching), then applies the
-    /// shared "diff removed ids → check link usage → replace-or-report" skeleton that
-    /// Character/Adventure/Table each hand-copied identically. A module whose merge
-    /// needs genuinely different behavior at this level — RuleRPG's stable-identity +
-    /// hierarchy-fallback matching, or MapRPG's deliberate choice not to thread
-    /// `forceSave` into the final `save(...)` call — keeps its own override instead of
-    /// relying on this default. See CODE_AUDIT_EditItem §9.2.
+    /// The shared `merge(itemId:entries:recoverEntries:forceSave:)`: computes the merged
+    /// entries via `merge(itemId:entries:)` (the module's matching: Rule's stable identity +
+    /// hierarchy fallback, Map's rooms + kept hex grid), then applies the "diff removed ids →
+    /// check link usage → replace-or-report" skeleton. Map and Rule kept copies of it; a module
+    /// varies only the matching step and `entriesReplacedUndoTitle`.
+    /// See CODE_AUDIT_EditItem §9.2, CODE_AUDIT_Edit_Save §9.3.
     @MainActor
     func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
@@ -325,19 +282,13 @@ public extension EntryDataEditable {
         let module = itemControllable.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
-        var affectedLinks = true
-        for itemRowModel in itemRowModels {
-            if !linkRegisterController.used(for: itemRowModel).isEmpty {
-                affectedLinks = false
-                break
-            }
-        }
-        if recoverEntries != nil || affectedLinks {
+        let hasNoLinkedEntries = itemRowModels.allSatisfy { linkRegisterController.used(for: $0).isEmpty }
+        if recoverEntries != nil || hasNoLinkedEntries {
             if let recoverEntries {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module), forceSave: forceSave)
+            save(updated: item, message: entriesReplacedUndoTitle, forceSave: forceSave)
             return []
         }
         return itemRowModels
@@ -361,14 +312,7 @@ public extension EntryDataEditable {
         return entry.id
     }
 
-    /// Convenience overload preserving every pre-existing 4-argument call site
-    /// (memory-only during an active game, matching historical behavior).
-    @MainActor
-    func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID? {
-        insertEntry(itemId: itemId, name: name, content: content, position: position, forceSave: false)
-    }
-
-    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool, forceSave: Bool = false) {
+    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool, forceSave: Bool) {
         guard var item = editModel(for: itemId) else { return }
         let validedName = nameWithLink ? name : name.withoutLink()
         var changed = item[entryId].name != validedName
@@ -389,9 +333,9 @@ public extension EntryDataEditable {
             guard let range = content.range(of: oldLinkText, range: start..<content.endIndex) else { continue }
             searchStart[oldLinkText] = range.upperBound
             guard isDuplicate else { continue }
+            // Registered by the save, if it reaches the library. See CODE_AUDIT_Edit_Save §5.27.
             let newLink = link.duplicate()
             replacements.append((range, newLink.markDown ?? oldLinkText))
-            linkRegisterController.register(links: [newLink])
         }
         var newContent = content
         for replacement in replacements.reversed() {
@@ -405,13 +349,13 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Edit entry", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func move(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
+    @MainActor func move(itemId: UUID, entryIds: [UUID], forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         item.entries = EntryOrder.reordered(item.entries, by: entryIds, id: \.id)
         save(updated: item, message: String(localized: "Reorder entries", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func move(itemId: UUID, entryId: UUID, up: Bool, forceSave: Bool = false) {
+    @MainActor func move(itemId: UUID, entryId: UUID, up: Bool, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         if up {
@@ -424,27 +368,33 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: up ? "Move entry up" : "Move entry down", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel, forceSave: Bool = false) -> Bool {
+    /// Moving an entry changes two items and repairs the links to it: one undo step, so one
+    /// Cmd+Z puts the entry back instead of leaving it in neither item. See CODE_AUDIT_Edit_Save §5.5.
+    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel, forceSave: Bool) -> Bool {
         guard let item = editModel(for: into.itemId) else { return false }
         guard let otherItem = editModel(for: itemId), let index = otherItem.entries.firstIndex(where: { $0.id == entryId }) else { return false }
         let entry = otherItem.entries.remove(at: index)
         item.entries.append(entry)
-        save(updated: otherItem, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
-        save(updated: item, message: String(localized: "add entry", bundle: .module), forceSave: forceSave)
-        repairLinks(toMovedEntry: entryId, from: itemId)
+        asOneUndoStep(String(localized: "move entry", bundle: .module)) {
+            save(updated: otherItem, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
+            save(updated: item, message: String(localized: "add entry", bundle: .module), forceSave: forceSave)
+            repairLinks(toMovedEntry: entryId, from: itemId)
+        }
         return true
     }
 
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] { [] }
 
-    @MainActor func move(itemId: UUID, sourceEntryId: UUID, into folder: FolderRepresentable, forceSave: Bool = false) {
+    @MainActor func move(itemId: UUID, sourceEntryId: UUID, into folder: FolderRepresentable, forceSave: Bool) {
         guard let item = editModel(for: itemId), let group = editModel(for: folder.id) else { return }
         let entry = item[sourceEntryId]
         item.entries.removeAll(where: { $0.id == sourceEntryId })
         group.entries.append(entry)
-        save(updated: item, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
-        save(updated: group, message: String(localized: "move entry", bundle: .module), forceSave: forceSave)
-        repairLinks(toMovedEntry: sourceEntryId, from: itemId)
+        asOneUndoStep(String(localized: "move entry", bundle: .module)) {
+            save(updated: item, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
+            save(updated: group, message: String(localized: "move entry", bundle: .module), forceSave: forceSave)
+            repairLinks(toMovedEntry: sourceEntryId, from: itemId)
+        }
     }
 
     /// A moved entry keeps its id, but the links to it still name the item it left. Replaces the
@@ -456,14 +406,16 @@ public extension EntryDataEditable {
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? { nil }
     @MainActor func isValueGroupParent(itemId: UUID) -> Bool { true }
 
-    @MainActor func moveOutOfGroup(itemId: UUID, sourceEntryId: UUID, parent: FolderRepresentable, forceSave: Bool = false) {
+    @MainActor func moveOutOfGroup(itemId: UUID, sourceEntryId: UUID, parent: FolderRepresentable, forceSave: Bool) {
         guard let group = editModel(for: itemId), let parentItem = editModel(for: parent.id) else { return }
         let entry = group[sourceEntryId]
         group.entries.removeAll(where: { $0.id == sourceEntryId })
         parentItem.entries.append(entry)
-        save(updated: group, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
-        save(updated: parentItem, message: String(localized: "move entry out", bundle: .module), forceSave: forceSave)
-        repairLinks(toMovedEntry: sourceEntryId, from: itemId)
+        asOneUndoStep(String(localized: "move entry out", bundle: .module)) {
+            save(updated: group, message: String(localized: "remove entry", bundle: .module), forceSave: forceSave)
+            save(updated: parentItem, message: String(localized: "move entry out", bundle: .module), forceSave: forceSave)
+            repairLinks(toMovedEntry: sourceEntryId, from: itemId)
+        }
     }
 }
 

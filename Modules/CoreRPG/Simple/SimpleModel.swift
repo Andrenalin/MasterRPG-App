@@ -142,7 +142,7 @@ extension SimpleModel: nonisolated ItemDataAccessible {
     }
 }
 
-extension SimpleModel: nonisolated ItemDiffComparable {
+extension SimpleModel: ItemDiffComparable {
     public func isSame(_ other: SimpleModel) -> Bool {
         name == other.name
             && category == other.category
@@ -160,7 +160,7 @@ extension SimpleModel: nonisolated ItemDiffComparable {
     }
 }
 
-extension SimpleModel: nonisolated ItemDuplicatable {
+extension SimpleModel: ItemDuplicatable {
     public func duplicate() -> SimpleModel {
         SimpleModel(id: UUID(), name: duplicateName(from: name), category: category, description: description, tags: tags, displayState: displayState, isGroupHiddenToggle: isGroupHiddenToggle, entries: entries.map { $0.duplicate() }, parentId: nil)
     }

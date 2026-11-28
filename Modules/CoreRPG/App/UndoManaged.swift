@@ -2,89 +2,89 @@
 
 import Observation
 
+/// An undo and a redo stack of steps. A step describes a change on its own (for an item edit:
+/// the values before and after it), so moving between the stacks never rewrites a step: undo
+/// moves the step to the redo stack and redo moves it back. A whole-item snapshot with a
+/// current `value` (the earlier design) reverted every later change on undo.
+/// See CODE_AUDIT_Edit_Save §5.2, §5.6.
 @MainActor @Observable
-public final class UndoManaged<T> {
-
-    private(set) var value: T
-    private var undoStack: [T] = []
-    private var redoStack: [T] = []
-    private(set) var undoTitles: [String] = []
-    private(set) var redoTitles: [String] = []
-
-    public init(initialValue: T) {
-        self.value = initialValue
+public final class UndoManaged<Step> {
+    private struct Entry {
+        let step: Step
+        let title: String
     }
 
-    public func resetValue(_ value: T) {
-        self.value = value
-        undoStack.removeAll()
-        redoStack.removeAll()
-        undoTitles.removeAll()
-        redoTitles.removeAll()
-    }
+    private var undoStack: [Entry] = []
+    private var redoStack: [Entry] = []
+
+    public init() {}
 
     /// The number of undo steps kept. Older ones are dropped.
     public static var maxDepth: Int { 100 }
 
-    public func updateValue(_ value: T) {
-        self.value = value
-    }
-
-    public func previousValue(_ prevValue: T, title: String) {
-        undoStack.append(prevValue)
-        undoTitles.append(title)
-        // Every entry is a full copy of the edited model; keep only the newest ones.
+    /// Records a new step. The redo stack is dropped: it continued a history that no longer is.
+    public func record(_ step: Step, title: String) {
+        undoStack.append(Entry(step: step, title: title))
+        // Every step holds copies of the edited models; keep only the newest ones.
         // See CODE_AUDIT §7.5.
         if undoStack.count > Self.maxDepth {
-            let overflow = undoStack.count - Self.maxDepth
-            undoStack.removeFirst(overflow)
-            undoTitles.removeFirst(min(overflow, undoTitles.count))
+            undoStack.removeFirst(undoStack.count - Self.maxDepth)
         }
-        guard !redoStack.isEmpty else { return }
         redoStack.removeAll()
     }
 
-    public func undo() {
-        if let newValue = undoStack.popLast() {
-            let oldValue = value
-            value = newValue
-            redoStack.append(oldValue)
-            if let title = undoTitles.popLast() {
-                redoTitles.append(title)
-            }
+    /// Replaces the newest undo step, for a step that grows while one user action runs.
+    public func replaceLast(with step: Step) {
+        guard let last = undoStack.popLast() else { return }
+        undoStack.append(Entry(step: step, title: last.title))
+    }
+
+    /// Moves the newest undo step to the redo stack and returns it for the caller to revert.
+    public func undo() -> Step? {
+        guard let entry = undoStack.popLast() else { return nil }
+        redoStack.append(entry)
+        if redoStack.count > Self.maxDepth {
+            redoStack.removeFirst(redoStack.count - Self.maxDepth)
         }
+        return entry.step
     }
 
-    public func redo() {
-        if let newValue = redoStack.popLast() {
-            let oldValue = value
-            value = newValue
-            undoStack.append(oldValue)
-            if let title = redoTitles.popLast() {
-                undoTitles.append(title)
-            }
-        }
+    /// Moves the newest redo step back to the undo stack and returns it for the caller to apply.
+    public func redo() -> Step? {
+        guard let entry = redoStack.popLast() else { return nil }
+        undoStack.append(entry)
+        return entry.step
     }
 
-    public var canUndo: Bool {
-        !undoStack.isEmpty
+    /// Drops every step.
+    public func removeAll() {
+        undoStack.removeAll()
+        redoStack.removeAll()
     }
 
-    /// The value the next `undo()` restores.
-    public var nextUndoValue: T? {
-        undoStack.last
+    /// Drops the steps `shouldRemove` names, from both stacks.
+    public func removeAll(where shouldRemove: (Step) -> Bool) {
+        undoStack.removeAll { shouldRemove($0.step) }
+        redoStack.removeAll { shouldRemove($0.step) }
     }
 
-    /// The value the next `redo()` restores.
-    public var nextRedoValue: T? {
-        redoStack.last
+    /// Rewrites every step, dropping those `transform` maps to `nil`.
+    public func compactMapSteps(_ transform: (Step) -> Step?) {
+        undoStack = undoStack.compactMap { entry in transform(entry.step).map { Entry(step: $0, title: entry.title) } }
+        redoStack = redoStack.compactMap { entry in transform(entry.step).map { Entry(step: $0, title: entry.title) } }
     }
 
-    public var canRedo: Bool {
-        !redoStack.isEmpty
-    }
+    public var canUndo: Bool { !undoStack.isEmpty }
+    public var canRedo: Bool { !redoStack.isEmpty }
 
-    public var undoDepth: Int {
-        undoTitles.count
-    }
+    /// The step the next `undo()` returns.
+    public var nextUndoStep: Step? { undoStack.last?.step }
+
+    /// The step the next `redo()` returns.
+    public var nextRedoStep: Step? { redoStack.last?.step }
+
+    public var undoTitles: [String] { undoStack.map(\.title) }
+    public var redoTitles: [String] { redoStack.map(\.title) }
+
+    public var undoDepth: Int { undoStack.count }
 }

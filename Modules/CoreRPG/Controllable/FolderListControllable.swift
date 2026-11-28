@@ -333,7 +333,8 @@ extension FolderListControllable {
     private func performAdd(type: EditControllerAddType, url: URL?, root: any ItemRootControllable, hasParent: Bool, targetParentId: UUID?) async {
         guard let model = await root.editControllable.addNew(type: type) else { return }
         if let url {
-            await root.editControllable.resetFile(url: url, itemId: model.id)
+            // Add Item creates a library item, so its file is stored there too.
+            await root.editControllable.resetFile(url: url, itemId: model.id, forceSave: true)
         }
         // The file attach above is awaited, so the item is complete here; a fixed settle
         // delay used to stand in for that. See CODE_AUDIT_Folder §3.15.

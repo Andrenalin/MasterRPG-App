@@ -82,56 +82,53 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
-
-        replacedItem.photos = replacedItem.photos.compactMap { photoId in
-            if photoRoot.linkControllable.validateLink(itemId: photoId) {
-                return photoId
-            } else {
-                Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
-                return nil
-            }
-        }
-
-        if let photoId = replacedItem.photoId {
-            if !photoRoot.linkControllable.validateLink(itemId: photoId) {
-                Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
-                replacedItem.photoId = nil
-            }
-        }
-
-        for entry in inspectedItem.entries {
-            var validatedEntry = entry
-
-            if let diceId = validatedEntry.diceId {
-                if !diceRoot.linkControllable.validateLink(itemId: diceId) {
-                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .private) is gone. Reset DiceId, no recovery possible.")
-                    validatedEntry.diceId = nil
+        repairItemLinks(itemId: itemId, as: ValueModel.self) { inspectedItem in
+            let replacedItem = inspectedItem.copy()
+            replacedItem.photos = replacedItem.photos.compactMap { photoId in
+                if photoRoot.linkControllable.validateLink(itemId: photoId) {
+                    return photoId
+                } else {
+                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
+                    return nil
                 }
             }
 
-            if let valueId = validatedEntry.valueId {
-                if !validateLink(itemId: valueId) {
-                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Value \(valueId, privacy: .private) is gone. Reset ValueId, no recovery possible.")
-                    validatedEntry.valueId = nil
+            if let photoId = replacedItem.photoId {
+                if !photoRoot.linkControllable.validateLink(itemId: photoId) {
+                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
+                    replacedItem.photoId = nil
                 }
             }
 
-            var links = LinkReplaceController.links(for: entry.name)
-            validatedEntry.name = repairLinks(links, in: validatedEntry.name)
+            for entry in inspectedItem.entries {
+                var validatedEntry = entry
 
-            links = LinkReplaceController.links(for: entry.value)
-            validatedEntry.value = repairLinks(links, in: validatedEntry.value)
+                if let diceId = validatedEntry.diceId {
+                    if !diceRoot.linkControllable.validateLink(itemId: diceId) {
+                        Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .private) is gone. Reset DiceId, no recovery possible.")
+                        validatedEntry.diceId = nil
+                    }
+                }
 
-            if !entry.isSame(validatedEntry) {
-                replacedItem[entry.id]  = validatedEntry
+                if let valueId = validatedEntry.valueId {
+                    if !validateLink(itemId: valueId) {
+                        Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Value \(valueId, privacy: .private) is gone. Reset ValueId, no recovery possible.")
+                        validatedEntry.valueId = nil
+                    }
+                }
+
+                var links = LinkReplaceController.links(for: entry.name)
+                validatedEntry.name = repairLinks(links, in: validatedEntry.name)
+
+                links = LinkReplaceController.links(for: entry.value)
+                validatedEntry.value = repairLinks(links, in: validatedEntry.value)
+
+                if !entry.isSame(validatedEntry) {
+                    replacedItem[entry.id]  = validatedEntry
+                }
             }
+            return replacedItem
         }
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Value: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
-        }
-        resetLinkRegister(replacedItem)
     }
 
     @MainActor func validateParentId() {

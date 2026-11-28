@@ -59,19 +59,19 @@ struct FolderListControllerTests {
         subEntryName: String
     ) async throws -> (charId: UUID, groupEntryId: UUID, subValueId: UUID, subEntryId: UUID) {
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: characterName, itemId: charId)
+        root.editController.reset(name: characterName, itemId: charId, forceSave: false)
 
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
         root.editController.update(itemId: charId, entryId: groupEntryId,
-                                   name: groupEntryName, content: "")
+                                   name: groupEntryName, content: "", forceSave: false)
 
         let char = root.itemController.itemOrEmpty(for: charId)
         let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
 
-        let subEntryId = await root.editController.addNewGroup(itemId: subValueId)
+        let subEntryId = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
         root.editController.update(itemId: subValueId, entryId: subEntryId,
-                                   name: subEntryName, content: "")
+                                   name: subEntryName, content: "", forceSave: false)
 
         return (charId, groupEntryId, subValueId, subEntryId)
     }
@@ -85,8 +85,8 @@ struct FolderListControllerTests {
 
         let char1 = await root.itemController.addNew(type: .item)
         let char2 = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Aragorn", itemId: char1)
-        root.editController.reset(name: "Legolas",  itemId: char2)
+        root.editController.reset(name: "Aragorn", itemId: char1, forceSave: false)
+        root.editController.reset(name: "Legolas",  itemId: char2, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let results = await sut.results(text: "")
@@ -104,9 +104,9 @@ struct FolderListControllerTests {
         let idC = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         let idB = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Charlie", itemId: idC)
-        root.editController.reset(name: "Alice",   itemId: idA)
-        root.editController.reset(name: "Bob",     itemId: idB)
+        root.editController.reset(name: "Charlie", itemId: idC, forceSave: false)
+        root.editController.reset(name: "Alice",   itemId: idA, forceSave: false)
+        root.editController.reset(name: "Bob",     itemId: idB, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let names = await sut.results(text: "").map(\.itemName)
@@ -122,9 +122,9 @@ struct FolderListControllerTests {
         let characterId = await root.itemController.addNew(type: .item)
         let memberId = await root.itemController.addNew(type: .item)
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Hero", itemId: characterId)
-        root.editController.reset(name: "Member", itemId: memberId)
-        root.editController.reset(name: "Party", itemId: folderId)
+        root.editController.reset(name: "Hero", itemId: characterId, forceSave: false)
+        root.editController.reset(name: "Member", itemId: memberId, forceSave: false)
+        root.editController.reset(name: "Party", itemId: folderId, forceSave: false)
         // Folder needs at least one member so canOpen is true (buildCharacterFolderNode:
         // canOpen = childNodes.isEmpty && !item.entries.isEmpty)
         root.editController.addItem(itemId: memberId, parentId: folderId)
@@ -148,8 +148,8 @@ struct FolderListControllerTests {
 
         let matchId   = await root.itemController.addNew(type: .item)
         let noMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Knight", itemId: matchId)
-        root.editController.reset(name: "Forest Elf",    itemId: noMatchId)
+        root.editController.reset(name: "Dragon Knight", itemId: matchId, forceSave: false)
+        root.editController.reset(name: "Forest Elf",    itemId: noMatchId, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let results = await sut.results(text: "Dragon")
@@ -166,8 +166,8 @@ struct FolderListControllerTests {
 
         let exactId    = await root.itemController.addNew(type: .item)
         let containsId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon",           itemId: exactId)
-        root.editController.reset(name: "The Dragon Rider", itemId: containsId)
+        root.editController.reset(name: "Dragon",           itemId: exactId, forceSave: false)
+        root.editController.reset(name: "The Dragon Rider", itemId: containsId, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let ids = await sut.results(text: "Dragon").map(\.itemId)
@@ -186,8 +186,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Lair",   itemId: folderId)
-        root.editController.reset(name: "Dragon Knight", itemId: charId)
+        root.editController.reset(name: "Dragon Lair",   itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Knight", itemId: charId, forceSave: false)
         root.editController.addItem(itemId: charId, parentId: folderId)
 
         let (sut, ldm) = makeSUT(for: root, listMode: .list)
@@ -224,10 +224,10 @@ struct FolderListControllerTests {
         let memberB   = await root.itemController.addNew(type: .item)
         let standalone = await root.itemController.addNew(type: .item)
 
-        root.editController.reset(name: "Warriors",     itemId: folderId)
-        root.editController.reset(name: "Swordsman",    itemId: memberA)
-        root.editController.reset(name: "Archer",       itemId: memberB)
-        root.editController.reset(name: "Lone Ranger",  itemId: standalone)
+        root.editController.reset(name: "Warriors",     itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Swordsman",    itemId: memberA, forceSave: false)
+        root.editController.reset(name: "Archer",       itemId: memberB, forceSave: false)
+        root.editController.reset(name: "Lone Ranger",  itemId: standalone, forceSave: false)
 
         root.editController.addItem(itemId: memberA, parentId: folderId)
         root.editController.addItem(itemId: memberB, parentId: folderId)
@@ -253,8 +253,8 @@ struct FolderListControllerTests {
 
         let idB = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Boromir", itemId: idB)
-        root.editController.reset(name: "Aragorn", itemId: idA)
+        root.editController.reset(name: "Boromir", itemId: idB, forceSave: false)
+        root.editController.reset(name: "Aragorn", itemId: idA, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root)   // focusId == nil
         let results = await sut.results(text: "")
@@ -275,8 +275,8 @@ struct FolderListControllerTests {
 
         let matchId   = await root.itemController.addNew(type: .item)
         let noMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Knight", itemId: matchId)
-        root.editController.reset(name: "Forest Elf",    itemId: noMatchId)
+        root.editController.reset(name: "Dragon Knight", itemId: matchId, forceSave: false)
+        root.editController.reset(name: "Forest Elf",    itemId: noMatchId, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root)
         let results = await sut.results(text: "Dragon")
@@ -293,12 +293,12 @@ struct FolderListControllerTests {
 
         let charWithNameMatch  = await root.itemController.addNew(type: .item)
         let charWithEntryOnly  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Knight", itemId: charWithNameMatch)  // name matches
-        root.editController.reset(name: "Eldrin",        itemId: charWithEntryOnly)  // name doesn't
+        root.editController.reset(name: "Dragon Knight", itemId: charWithNameMatch, forceSave: false)  // name matches
+        root.editController.reset(name: "Eldrin",        itemId: charWithEntryOnly, forceSave: false)  // name doesn't
 
-        let entryId = await root.editController.addNewGroup(itemId: charWithEntryOnly)
+        let entryId = await root.editController.addNewGroup(itemId: charWithEntryOnly, forceSave: false)
         root.editController.update(itemId: charWithEntryOnly, entryId: entryId,
-                                   name: "Dragon Resistance", content: "")
+                                   name: "Dragon Resistance", content: "", forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root)
         let results = await sut.results(text: "Dragon")
@@ -321,8 +321,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Lair",   itemId: folderId)
-        root.editController.reset(name: "Dragon Knight", itemId: charId)
+        root.editController.reset(name: "Dragon Lair",   itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Knight", itemId: charId, forceSave: false)
         root.editController.addItem(itemId: charId, parentId: folderId)
 
         let (sut, ldm, _) = makeLinkSUT(for: root, listMode: .list)
@@ -348,11 +348,11 @@ struct FolderListControllerTests {
         try await MockRoot.resetTestData(for: root)
 
         let charId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Thorin", itemId: charId)
-        let entry1 = await root.editController.addNewGroup(itemId: charId)
-        let entry2 = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entry1, name: "Strength",  content: "")
-        root.editController.update(itemId: charId, entryId: entry2, name: "Dexterity", content: "")
+        root.editController.reset(name: "Thorin", itemId: charId, forceSave: false)
+        let entry1 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        let entry2 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: entry1, name: "Strength",  content: "", forceSave: false)
+        root.editController.update(itemId: charId, entryId: entry2, name: "Dexterity", content: "", forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root, focusId: charId)
         let results = await sut.results(text: "")
@@ -370,10 +370,10 @@ struct FolderListControllerTests {
         try await MockRoot.resetTestData(for: root)
 
         let charId     = await root.itemController.addNew(type: .item)
-        let matchEntry = await root.editController.addNewGroup(itemId: charId)
-        let noMatch    = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: matchEntry, name: "Dragon Breath", content: "")
-        root.editController.update(itemId: charId, entryId: noMatch,    name: "Sword Skills",  content: "")
+        let matchEntry = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        let noMatch    = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: matchEntry, name: "Dragon Breath", content: "", forceSave: false)
+        root.editController.update(itemId: charId, entryId: noMatch,    name: "Sword Skills",  content: "", forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root, focusId: charId)
         let results = await sut.results(text: "Dragon")
@@ -451,7 +451,7 @@ struct FolderListControllerTests {
             subEntryName:   "Arrow Rain"
         )
         // Name the sub-value item itself so it matches the search
-        root.editController.reset(name: "Dragon Sight", itemId: subValueId)
+        root.editController.reset(name: "Dragon Sight", itemId: subValueId, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root, focusId: charId)
         let results = await sut.results(text: "Dragon")
@@ -472,10 +472,10 @@ struct FolderListControllerTests {
         try await MockRoot.resetTestData(for: root)
 
         let charId  = await root.itemController.addNew(type: .item)
-        let entryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.reset(name: "Knight",   itemId: charId)
+        let entryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.reset(name: "Knight",   itemId: charId, forceSave: false)
         root.editController.update(itemId: charId, entryId: entryId,
-                                   name: "Sword Skill", content: "Very skilled")
+                                   name: "Sword Skill", content: "Very skilled", forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root, focusId: charId)
         let results = await sut.results(text: "Dragon")

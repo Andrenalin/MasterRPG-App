@@ -296,7 +296,7 @@ struct PlayerControllerTests {
         let root = env.root
         let sut = env.playerController
         let characterId = await root.characterRoot.itemController.addNew(type: .character)
-        root.characterRoot.editController.reset(name: "Mira", itemId: characterId)
+        root.characterRoot.editController.reset(name: "Mira", itemId: characterId, forceSave: false)
         root.gameModel.reset(
             gameConfig: env.gameConfig,
             gameRoster: GameRosterModel(players: [
@@ -402,7 +402,7 @@ struct PlayerControllerTests {
         let sut = env.playerController
 
         let characterId = await root.characterRoot.itemController.addNew(type: .character)
-        root.characterRoot.editController.reset(name: "Proxy Mira", itemId: characterId)
+        root.characterRoot.editController.reset(name: "Proxy Mira", itemId: characterId, forceSave: false)
         root.gameModel.reset(
             gameConfig: env.gameConfig,
             gameRoster: GameRosterModel(players: [
@@ -446,7 +446,7 @@ struct PlayerControllerTests {
         let masterConfig = Self.masterConfig()
 
         let weatherId = await root.weatherRoot.itemController.addNew(type: .scenario)
-        root.weatherRoot.editController.reset(name: "Storm Front", itemId: weatherId)
+        root.weatherRoot.editController.reset(name: "Storm Front", itemId: weatherId, forceSave: false)
         let weatherData = try await root.weatherRoot.gameControllable.createGameData(for: weatherId)
 
         var response = try await sut.handle(Self.networkModel(type: .reveal, data: weatherData, gameConfig: masterConfig))

@@ -32,6 +32,13 @@ public final class DebouncerModel<T: Sendable>: Sendable {
     }
 }
 
+/// Shared debounce delays, so editors with the same role wait the same time.
+/// See CODE_AUDIT_Edit_Save §9.9.
+public enum DebounceDelay {
+    /// The quick entry editor's reference text (links typed into an entry).
+    public static let quickEntryEditor: Double = 2
+}
+
 /// Starts a cancellable, delayed action on the main actor — the
 /// sleep-then-check-cancellation-then-act pattern used for the app's short
 /// settle/debounce delays (haptics, focus, link recalculation), previously

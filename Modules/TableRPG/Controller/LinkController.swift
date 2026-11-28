@@ -64,30 +64,27 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
-
-        if let diceId = replacedItem.diceId {
-            if !diceRoot.linkControllable.validateLink(itemId: diceId) {
-                Logger.linkController.warning("Table: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
-                replacedItem.diceId = nil
+        repairItemLinks(itemId: itemId, as: TableModel.self) { inspectedItem in
+            let replacedItem = inspectedItem.copy()
+            if let diceId = replacedItem.diceId {
+                if !diceRoot.linkControllable.validateLink(itemId: diceId) {
+                    Logger.linkController.warning("Table: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
+                    replacedItem.diceId = nil
+                }
             }
-        }
 
-        for entry in inspectedItem.entries {
-            var validatedEntry = entry
+            for entry in inspectedItem.entries {
+                var validatedEntry = entry
 
-            let links = LinkReplaceController.links(for: entry.content)
-            validatedEntry.content = repairLinks(links, in: validatedEntry.content)
+                let links = LinkReplaceController.links(for: entry.content)
+                validatedEntry.content = repairLinks(links, in: validatedEntry.content)
 
-            if !entry.isSame(validatedEntry) {
-                replacedItem[entry.id]  = validatedEntry
+                if !entry.isSame(validatedEntry) {
+                    replacedItem[entry.id]  = validatedEntry
+                }
             }
+            return replacedItem
         }
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Table: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
-        }
-        resetLinkRegister(replacedItem)
     }
 }
 

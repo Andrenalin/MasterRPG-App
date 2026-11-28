@@ -154,17 +154,20 @@ private extension WeatherMessageFlowTests {
         let photoId = await environment.masterRoot.photoRoot.itemController.addNew(type: .entry)
         environment.masterRoot.photoRoot.editController.reset(
             name: "Storm backdrop",
-            itemId: photoId
+            itemId: photoId,
+            forceSave: false
         )
 
         let weatherId = await environment.masterRoot.weatherRoot.itemController.addNew(type: .scenario)
         environment.masterRoot.weatherRoot.editController.reset(
             name: "Storm front",
-            itemId: weatherId
+            itemId: weatherId,
+            forceSave: false
         )
         environment.masterRoot.weatherRoot.editController.add(
             photoId: photoId,
-            itemId: weatherId
+            itemId: weatherId,
+            forceSave: false
         )
 
         environment.masterRoot.adventureRoot.startGame()

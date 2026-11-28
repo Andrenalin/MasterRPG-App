@@ -44,19 +44,19 @@ struct GroupEntryInspectorBugFixTests {
         subEntryContent: String = "Deals extra cleave damage"
     ) async throws -> (charId: UUID, groupEntryId: UUID, subValueId: UUID, subEntryId: UUID) {
         let charId       = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: charName, itemId: charId)
+        root.editController.reset(name: charName, itemId: charId, forceSave: false)
 
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
         root.editController.update(itemId: charId, entryId: groupEntryId,
-                                   name: groupEntryName, content: "")
+                                   name: groupEntryName, content: "", forceSave: false)
 
         let char       = root.itemController.itemOrEmpty(for: charId)
         let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
 
-        let subEntryId = await root.editController.addNewGroup(itemId: subValueId)
+        let subEntryId = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
         root.editController.update(itemId: subValueId, entryId: subEntryId,
-                                   name: subEntryName, content: subEntryContent)
+                                   name: subEntryName, content: subEntryContent, forceSave: false)
 
         return (charId, groupEntryId, subValueId, subEntryId)
     }
@@ -285,25 +285,25 @@ struct GroupEntryInspectorBugFixTests {
     func onlyMatchingGroupEntryAppears() async throws {
         let root = try await makeRoot()
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Gimli", itemId: charId)
+        root.editController.reset(name: "Gimli", itemId: charId, forceSave: false)
 
         // Group entry 1: has sub-entry containing "Axe"
-        let group1Id = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: group1Id, name: "Combat", content: "")
+        let group1Id = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: group1Id, name: "Combat", content: "", forceSave: false)
         let char   = root.itemController.itemOrEmpty(for: charId)
         let entry1 = try #require(char.entries.first(where: { $0.id == group1Id }))
         let sub1   = try #require(entry1.valueId)
-        let subE1  = await root.editController.addNewGroup(itemId: sub1)
-        root.editController.update(itemId: sub1, entryId: subE1, name: "Axe Throw", content: "")
+        let subE1  = await root.editController.addNewGroup(itemId: sub1, forceSave: false)
+        root.editController.update(itemId: sub1, entryId: subE1, name: "Axe Throw", content: "", forceSave: false)
 
         // Group entry 2: sub-entry has no mention of "Axe"
-        let group2Id = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: group2Id, name: "Defense", content: "")
+        let group2Id = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: group2Id, name: "Defense", content: "", forceSave: false)
         let char2  = root.itemController.itemOrEmpty(for: charId)
         let entry2 = try #require(char2.entries.first(where: { $0.id == group2Id }))
         let sub2   = try #require(entry2.valueId)
-        let subE2  = await root.editController.addNewGroup(itemId: sub2)
-        root.editController.update(itemId: sub2, entryId: subE2, name: "Shield Block", content: "")
+        let subE2  = await root.editController.addNewGroup(itemId: sub2, forceSave: false)
+        root.editController.update(itemId: sub2, entryId: subE2, name: "Shield Block", content: "", forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(
             searchText: "Axe",
@@ -343,9 +343,9 @@ struct CharacterInspectorFolderModeBugFixTests {
     func focusedInspectorFolderModeReturnsEntries() async throws {
         let root = try await makeRoot()
         let charId       = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Gimli", itemId: charId)
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Axe Skills", content: "")
+        root.editController.reset(name: "Gimli", itemId: charId, forceSave: false)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Axe Skills", content: "", forceSave: false)
 
         guard let charModel = root.itemController.itemSync(for: charId) else {
             #expect(Bool(false), "Character must be findable")
@@ -371,9 +371,9 @@ struct CharacterInspectorFolderModeBugFixTests {
     func folderModeTogglePreservesEntries() async throws {
         let root = try await makeRoot()
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Legolas", itemId: charId)
-        _ = await root.editController.addNewGroup(itemId: charId)
-        _ = await root.editController.addNewGroup(itemId: charId)
+        root.editController.reset(name: "Legolas", itemId: charId, forceSave: false)
+        _ = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        _ = await root.editController.addNewGroup(itemId: charId, forceSave: false)
 
         guard let charModel = root.itemController.itemSync(for: charId) else { return }
 
@@ -409,21 +409,21 @@ struct CharacterInspectorToggleAllContentTests {
         let root = try await makeRoot()
 
         let charId       = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Gimli", itemId: charId)
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Combat Skills", content: "")
+        root.editController.reset(name: "Gimli", itemId: charId, forceSave: false)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Combat Skills", content: "", forceSave: false)
 
         let char       = root.itemController.itemOrEmpty(for: charId)
         let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
 
         // Add sub-entries: NONE match "Combat" in their name
-        let subE1 = await root.editController.addNewGroup(itemId: subValueId)
-        let subE2 = await root.editController.addNewGroup(itemId: subValueId)
-        let subE3 = await root.editController.addNewGroup(itemId: subValueId)
-        root.editController.update(itemId: subValueId, entryId: subE1, name: "Footwork",   content: "Movement")
-        root.editController.update(itemId: subValueId, entryId: subE2, name: "Guard",      content: "Defense")
-        root.editController.update(itemId: subValueId, entryId: subE3, name: "Riposte",    content: "Counter")
+        let subE1 = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        let subE2 = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        let subE3 = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: subE1, name: "Footwork",   content: "Movement", forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: subE2, name: "Guard",      content: "Defense", forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: subE3, name: "Riposte",    content: "Counter", forceSave: false)
 
         guard let charModel = root.itemController.itemSync(for: charId) else { return }
 
@@ -458,14 +458,14 @@ struct CharacterInspectorToggleAllContentTests {
         let root = try await makeRoot()
 
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Aragorn", itemId: charId)
+        root.editController.reset(name: "Aragorn", itemId: charId, forceSave: false)
 
-        let e1 = await root.editController.addNewGroup(itemId: charId)
-        let e2 = await root.editController.addNewGroup(itemId: charId)
-        let e3 = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: e1, name: "Sword Skill",   content: "Expert")
-        root.editController.update(itemId: charId, entryId: e2, name: "Archery",       content: "Proficient")
-        root.editController.update(itemId: charId, entryId: e3, name: "Leadership",    content: "Natural")
+        let e1 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        let e2 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        let e3 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: e1, name: "Sword Skill",   content: "Expert", forceSave: false)
+        root.editController.update(itemId: charId, entryId: e2, name: "Archery",       content: "Proficient", forceSave: false)
+        root.editController.update(itemId: charId, entryId: e3, name: "Leadership",    content: "Natural", forceSave: false)
         // None of the entry names contain "Aragorn"
 
         // Search "Aragorn" → character appears by name, canOpen=true, entries don't match

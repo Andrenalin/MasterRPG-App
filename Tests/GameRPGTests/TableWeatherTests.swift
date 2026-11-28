@@ -218,10 +218,10 @@ struct TableWeatherTests {
     private static func fixture() async throws -> Fixture {
         let environment = try await MultiConnectionTestEnvironment.create()
         let photoId = await environment.masterRoot.photoRoot.itemController.addNew(type: .entry)
-        environment.masterRoot.photoRoot.editController.reset(name: "Storm backdrop", itemId: photoId)
+        environment.masterRoot.photoRoot.editController.reset(name: "Storm backdrop", itemId: photoId, forceSave: false)
         let weatherId = await environment.masterRoot.weatherRoot.itemController.addNew(type: .scenario)
-        environment.masterRoot.weatherRoot.editController.reset(name: "Storm front", itemId: weatherId)
-        environment.masterRoot.weatherRoot.editController.add(photoId: photoId, itemId: weatherId)
+        environment.masterRoot.weatherRoot.editController.reset(name: "Storm front", itemId: weatherId, forceSave: false)
+        environment.masterRoot.weatherRoot.editController.add(photoId: photoId, itemId: weatherId, forceSave: false)
         environment.masterRoot.adventureRoot.startGame()
         environment.player1Root.adventureRoot.startGame()
         environment.player2Root.adventureRoot.startGame()

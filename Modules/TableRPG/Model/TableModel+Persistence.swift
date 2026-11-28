@@ -8,46 +8,42 @@ import Foundation
 // canonical-content helper types — the CRDT/Codable/CoreData-snapshot
 // persistence boilerplate. See CODE_AUDIT_Table §9.10.
 
-extension TableModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: TableModel) -> TableModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
-            return TableModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                tableType: tableType_.merged(other: other.tableType_),
-                diceId: diceId_.merged(other: other.diceId_),
-                entries: mergedEntries,
-                diceResult: other.diceResult,
-                parentId: other.parentId
-            )
-
-        }
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension TableModel: ItemDiffComparable {
+    public func merge(_ other: TableModel) -> TableModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
+        return TableModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            tableType: tableType_.merged(other: other.tableType_),
+            diceId: diceId_.merged(other: other.diceId_),
+            entries: mergedEntries,
+            diceResult: other.diceResult,
+            parentId: other.parentId
+        )
     }
 
-    nonisolated public func isSame(_ other: TableModel) -> Bool {
-        return assumeMainActorIsolated {
-            guard entries.count == other.entries.count else { return false }
-            // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
-            // that every load regenerates, and a position compare failed for a reordered list.
-            // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
-            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            tableType == other.tableType &&
-            diceId == other.diceId &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
-        }
+    public func isSame(_ other: TableModel) -> Bool {
+        guard entries.count == other.entries.count else { return false }
+        // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
+        // that every load regenerates, and a position compare failed for a reordered list.
+        // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
+        let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        tableType == other.tableType &&
+        diceId == other.diceId &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
     }
 
     /// Deterministic identity of the Table content sent by the game master.
@@ -114,12 +110,10 @@ extension TableModel {
     }
 }
 
-extension TableModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> TableModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil)
-        }
+extension TableModel: ItemDuplicatable {
+    public func duplicate() -> TableModel {
+        let copyName = duplicateName(from: name)
+        return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil)
     }
 }
 

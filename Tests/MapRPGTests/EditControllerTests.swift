@@ -36,7 +36,7 @@ struct EditControllerTests {
 
         let entryId = UUID()
         let entry = MapEntryModel(id: entryId, name: "Name Eingang", content: "Was ist in 7a", coordinates: [])
-        sut.add(entry: entry, into: item.id)
+        sut.add(entry: entry, into: item.id, forceSave: false)
 
         #expect(item.entries.count == 14)
         #expect(item.entries[13].id == entryId)
@@ -54,7 +54,7 @@ struct EditControllerTests {
             MapEntryModel(id: UUID(), name: "Goblin Den", content: "Smells of smoke.", coordinates: [CGPoint(x: 1, y: 1), CGPoint(x: 5, y: 1), CGPoint(x: 5, y: 4)]),
             MapEntryModel(id: UUID(), name: "Wolf Pit", content: "A wolf sleeps here.", coordinates: [CGPoint(x: 6, y: 6), CGPoint(x: 9, y: 6), CGPoint(x: 9, y: 9)])
         ]
-        rooms.forEach { root.editController.add(entry: $0, into: itemId) }
+        rooms.forEach { root.editController.add(entry: $0, into: itemId, forceSave: false) }
         return (root, itemId, rooms)
     }
 
@@ -185,7 +185,7 @@ struct EditControllerTests {
         )
         let monsterMap = MapModel(id: UUID(), name: "Monster Room", entries: [roomEntry], pinScale: 1)
         let valueId = await root.characterRoot.itemController.addNew(type: .item)
-        root.characterRoot.editController.reset(name: "Sentinel", itemId: valueId)
+        root.characterRoot.editController.reset(name: "Sentinel", itemId: valueId, forceSave: false)
 
         sut.addMonsters(
             map: monsterMap,
@@ -251,7 +251,7 @@ struct EditControllerTests {
         #expect(preview.first?.content == "updated")
 
         let recoverRows = [ItemRowModel(itemId: map.id, entryId: removeId, typeId: .map)]
-        let blockedRows = sut.merge(itemId: map.id, entries: [incoming[0]], recoverEntries: recoverRows)
+        let blockedRows = sut.merge(itemId: map.id, entries: [incoming[0]], recoverEntries: recoverRows, forceSave: false)
 
         #expect(blockedRows.isEmpty)
         #expect(map.entries.map(\.id) == [keepId, removeId])
@@ -346,7 +346,8 @@ struct EditControllerTests {
             itemId: sourceItemId,
             entryId: nil,
             destinationItemId: destination.id,
-            destinationEntryId: destinationEntryId
+            destinationEntryId: destinationEntryId,
+            forceSave: false
         )
 
         let content = destination[destinationEntryId].content

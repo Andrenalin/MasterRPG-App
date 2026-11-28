@@ -287,7 +287,7 @@ public struct BatchTextSummaryExtractionView: View {
             generatedTags: result.tags
         )
         guard !change.isEmpty else { return }
-        editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId)
+        editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId, forceSave: true)
         changedItems += 1
         if change.name != nil { filledNames += 1 }
         if change.description != nil { replacedDescriptions += 1 }

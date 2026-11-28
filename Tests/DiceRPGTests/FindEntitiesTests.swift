@@ -49,7 +49,7 @@ struct FindEntitiesTests {
         let root = DiceRootModel.testRoot()
         for name in names {
             let id = await root.itemController.addNew(type: .item)
-            root.editController.reset(name: name, itemId: id)
+            root.editController.reset(name: name, itemId: id, forceSave: false)
         }
         FindProbe.root = root
         FindProbe.fullEntities = 0

@@ -48,7 +48,7 @@ struct FolderListControllerTests {
     func resetFilterKeepsListWhenSearchHasNoResults() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Alpha", itemId: itemId)
+        root.editController.reset(name: "Alpha", itemId: itemId, forceSave: false)
 
         // First search populates the list
         await searchList(root)
@@ -67,7 +67,7 @@ struct FolderListControllerTests {
     func resetFilterEmptiesListWhenNothingIsLeft() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Alpha", itemId: itemId)
+        root.editController.reset(name: "Alpha", itemId: itemId, forceSave: false)
         await searchList(root)
         #expect(!root.folderListController.listModel.list.isEmpty)
 
@@ -83,8 +83,8 @@ struct FolderListControllerTests {
 
         let idB = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Beta",  itemId: idB)
-        root.editController.reset(name: "Alpha", itemId: idA)
+        root.editController.reset(name: "Beta",  itemId: idB, forceSave: false)
+        root.editController.reset(name: "Alpha", itemId: idA, forceSave: false)
 
         await searchList(root)
         let names = root.folderListController.listModel.list.map(\.source.itemId)
@@ -103,8 +103,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Nature Folder", itemId: folderId)
-        root.editController.reset(name: "Sunset Shot",   itemId: childId)
+        root.editController.reset(name: "Nature Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Sunset Shot",   itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Non-empty search: folder gets matched children → auto-opened
@@ -121,8 +121,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "City Folder", itemId: folderId)
-        root.editController.reset(name: "Night View",  itemId: childId)
+        root.editController.reset(name: "City Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Night View",  itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Step 1: empty search (folder closed, canOpen=true)
@@ -152,7 +152,7 @@ struct FolderListControllerTests {
         let root = await makeRoot()
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Thorin Photo", itemId: itemId)
+        root.editController.reset(name: "Thorin Photo", itemId: itemId, forceSave: false)
 
         // Build a SearchResult with shouldOpen=true and a child entry
         let entryId = UUID()
@@ -189,7 +189,7 @@ struct FolderListControllerTests {
     func resetItemOnceIsIdempotent() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Landscape", itemId: itemId)
+        root.editController.reset(name: "Landscape", itemId: itemId, forceSave: false)
 
         let controller = root.folderListController
         #expect(controller.listModel.updatedOnce == false, "Fresh controller must not be marked updated")
@@ -236,7 +236,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "City Night", itemId: childId)
+        root.editController.reset(name: "City Night", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         guard let folderModel = root.itemController.itemSync(for: folderId) else {
@@ -291,7 +291,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Forest Walk", itemId: childId)
+        root.editController.reset(name: "Forest Walk", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Empty folder search: folder appears with canOpen=true, no children in result
@@ -317,7 +317,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Forest Walk", itemId: childId)
+        root.editController.reset(name: "Forest Walk", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         await searchFolder(root)
@@ -523,7 +523,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Autumn Leaves", itemId: childId)
+        root.editController.reset(name: "Autumn Leaves", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Step 1: empty search — user opens folder (lastIsOpen = true)
@@ -554,7 +554,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Shoreline", itemId: childId)
+        root.editController.reset(name: "Dragon Shoreline", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Step 1: empty search — folder starts closed (lastIsOpen = false, default)
@@ -583,15 +583,15 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Forest Trail", itemId: folderId)
-        root.editController.reset(name: "Unrelated",    itemId: childId)
+        root.editController.reset(name: "Forest Trail", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Unrelated",    itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // A root item that DOES match "XYZ" is needed so that searchModel.results is non-empty.
         // buildList() has `guard !results.isEmpty else { return listModel.list }` — without
         // at least one result the guard preserves the old list, keeping the folder visible.
         let matchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "XYZ Landscape", itemId: matchId)
+        root.editController.reset(name: "XYZ Landscape", itemId: matchId, forceSave: false)
 
         // Step 1: empty search, user opens folder (lastIsOpen = true)
         await searchFolder(root)
@@ -621,7 +621,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Coastal Cliffs", itemId: childId)
+        root.editController.reset(name: "Coastal Cliffs", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Step 1: non-empty search → folder auto-opens (lastIsOpen stays false, wasExplicitlyClosed=false)
@@ -652,8 +652,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Glacier View",  itemId: folderId) // name matches "Glacier"
-        root.editController.reset(name: "Tropical Beach", itemId: childId) // does NOT match "Glacier"
+        root.editController.reset(name: "Glacier View",  itemId: folderId, forceSave: false) // name matches "Glacier"
+        root.editController.reset(name: "Tropical Beach", itemId: childId, forceSave: false) // does NOT match "Glacier"
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Step 1: search → folder appears (name match), starts closed (no children match)
@@ -694,7 +694,7 @@ struct FolderListControllerTests {
     func noResultsFlagFalseOnEmptySearch() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon", itemId: itemId)
+        root.editController.reset(name: "Dragon", itemId: itemId, forceSave: false)
 
         await searchList(root)   // empty text
         #expect(root.folderListController.searchModel.searchReturnedNoResults == false,
@@ -705,7 +705,7 @@ struct FolderListControllerTests {
     func noResultsFlagTrueWhenNothingFound() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId, forceSave: false)
 
         await searchList(root, text: "XYZ_NO_MATCH_99")
         #expect(root.folderListController.searchModel.searchReturnedNoResults == true,
@@ -716,7 +716,7 @@ struct FolderListControllerTests {
     func noResultsFlagFalseWhenSomethingFound() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId, forceSave: false)
 
         await searchList(root, text: "Dragon")
         #expect(root.folderListController.searchModel.searchReturnedNoResults == false,
@@ -727,7 +727,7 @@ struct FolderListControllerTests {
     func noResultsFlagResetsOnClear() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId, forceSave: false)
 
         // First set it to true
         await searchList(root, text: "XYZ_NO_MATCH")
@@ -743,7 +743,7 @@ struct FolderListControllerTests {
     func listPreservedWhenSearchEmpty() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId, forceSave: false)
 
         await searchList(root)
         let countBeforeSearch = root.folderListController.listModel.list.count
@@ -760,7 +760,7 @@ struct FolderListControllerTests {
     func noResultsFlagInFolderMode() async {
         let root = await makeRoot()
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Nature Archive", itemId: folderId)
+        root.editController.reset(name: "Nature Archive", itemId: folderId, forceSave: false)
 
         // Search that matches folder
         await searchFolder(root, text: "Nature")
@@ -782,9 +782,9 @@ struct FolderListControllerTests {
         let dragonId = await root.itemController.addNew(type: .item)
         let knightId = await root.itemController.addNew(type: .item)
         let forestId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Scout",  itemId: dragonId)
-        root.editController.reset(name: "Knight Errant", itemId: knightId)
-        root.editController.reset(name: "Forest Walker", itemId: forestId)
+        root.editController.reset(name: "Dragon Scout",  itemId: dragonId, forceSave: false)
+        root.editController.reset(name: "Knight Errant", itemId: knightId, forceSave: false)
+        root.editController.reset(name: "Forest Walker", itemId: forestId, forceSave: false)
 
         // Step 1: empty search → populates cache with FolderListItemModel ids
         await searchList(root)
@@ -812,8 +812,8 @@ struct FolderListControllerTests {
 
         let dragonId = await root.itemController.addNew(type: .item)
         let knightId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Slayer", itemId: dragonId)
-        root.editController.reset(name: "Knight",        itemId: knightId)
+        root.editController.reset(name: "Dragon Slayer", itemId: dragonId, forceSave: false)
+        root.editController.reset(name: "Knight",        itemId: knightId, forceSave: false)
 
         await searchList(root)
         let dragonRow = root.folderListController.listModel.list.first(where: { $0.source.itemId == dragonId })
@@ -833,8 +833,8 @@ struct FolderListControllerTests {
 
         let dragonId = await root.itemController.addNew(type: .item)
         let knightId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon",  itemId: dragonId)
-        root.editController.reset(name: "Knight",  itemId: knightId)
+        root.editController.reset(name: "Dragon",  itemId: dragonId, forceSave: false)
+        root.editController.reset(name: "Knight",  itemId: knightId, forceSave: false)
 
         await searchList(root)
         // Ensure nothing is selected
@@ -854,9 +854,9 @@ struct FolderListControllerTests {
         let folderId = await root.itemController.addNew(type: .folder)
         let dragonId = await root.itemController.addNew(type: .item)
         let knightId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Archive", itemId: folderId) // folder name: "Dragon"
-        root.editController.reset(name: "Sunset Photo",   itemId: dragonId)
-        root.editController.reset(name: "Knight Photo",   itemId: knightId)
+        root.editController.reset(name: "Dragon Archive", itemId: folderId, forceSave: false) // folder name: "Dragon"
+        root.editController.reset(name: "Sunset Photo",   itemId: dragonId, forceSave: false)
+        root.editController.reset(name: "Knight Photo",   itemId: knightId, forceSave: false)
         // Both items are NOT in a folder (root level, don't match "Dragon")
 
         await searchFolder(root)
@@ -878,7 +878,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Coastal Photo", itemId: childId)
+        root.editController.reset(name: "Coastal Photo", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Step 1: search opens folder (child matches)
@@ -905,7 +905,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Photo", itemId: childId)
+        root.editController.reset(name: "Dragon Photo", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Search → folder auto-opens
@@ -943,7 +943,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Photo", itemId: childId)
+        root.editController.reset(name: "Dragon Photo", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Auto-open, then close
@@ -981,10 +981,10 @@ struct FolderListControllerTests {
         let child1   = await root.itemController.addNew(type: .item)
         let child2   = await root.itemController.addNew(type: .item)
         let child3   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Nature Archive", itemId: folderId) // matches "Nature"
-        root.editController.reset(name: "Sunset Photo",   itemId: child1)   // no "Nature"
-        root.editController.reset(name: "Mountain Peak",  itemId: child2)   // no "Nature"
-        root.editController.reset(name: "Ocean Wave",     itemId: child3)   // no "Nature"
+        root.editController.reset(name: "Nature Archive", itemId: folderId, forceSave: false) // matches "Nature"
+        root.editController.reset(name: "Sunset Photo",   itemId: child1, forceSave: false)   // no "Nature"
+        root.editController.reset(name: "Mountain Peak",  itemId: child2, forceSave: false)   // no "Nature"
+        root.editController.reset(name: "Ocean Wave",     itemId: child3, forceSave: false)   // no "Nature"
         root.editController.addItem(itemId: child1, parentId: folderId)
         root.editController.addItem(itemId: child2, parentId: folderId)
         root.editController.addItem(itemId: child3, parentId: folderId)
@@ -1008,8 +1008,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Glacier View",  itemId: folderId)
-        root.editController.reset(name: "Forest Trail",  itemId: childId)   // matches neither "Glacier" nor "Sunset"
+        root.editController.reset(name: "Glacier View",  itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Forest Trail",  itemId: childId, forceSave: false)   // matches neither "Glacier" nor "Sunset"
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Search "Glacier", open folder
@@ -1126,8 +1126,8 @@ struct FolderListControllerTests {
         let folderB = await root.itemController.addNew(type: .folder)
         let photoA  = await root.itemController.addNew(type: .item)
         let photoB  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Sunset",  itemId: photoA)
-        root.editController.reset(name: "Sunrise", itemId: photoB)
+        root.editController.reset(name: "Sunset",  itemId: photoA, forceSave: false)
+        root.editController.reset(name: "Sunrise", itemId: photoB, forceSave: false)
 
         root.editController.addItem(itemId: photoA, parentId: folderA)
         root.editController.addItem(itemId: photoB, parentId: folderB)
@@ -1186,9 +1186,9 @@ struct FolderListControllerTests {
         let childX     = await root.itemController.addNew(type: .item)
         let childY     = await root.itemController.addNew(type: .item)
         let shared     = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Alpha",  itemId: standalone)
-        root.editController.reset(name: "Folder", itemId: folderA)
-        root.editController.reset(name: "GalleryB", itemId: folderB)
+        root.editController.reset(name: "Alpha",  itemId: standalone, forceSave: false)
+        root.editController.reset(name: "Folder", itemId: folderA, forceSave: false)
+        root.editController.reset(name: "GalleryB", itemId: folderB, forceSave: false)
 
         root.editController.addItem(itemId: childX, parentId: folderA)
         root.editController.addItem(itemId: childY, parentId: folderA)
@@ -1224,7 +1224,7 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Sunset Shot", itemId: childId)
+        root.editController.reset(name: "Sunset Shot", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         // Use folderLinkController — the controller behind LinkItemListView (inspector)
@@ -1272,8 +1272,8 @@ struct FolderListControllerTests {
         // Add two children — one named, one with default name
         let child1 = await root.itemController.addNew(type: .item)
         let child2 = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Mountain View", itemId: child1)
-        root.editController.reset(name: "Seascape",      itemId: child2)
+        root.editController.reset(name: "Mountain View", itemId: child1, forceSave: false)
+        root.editController.reset(name: "Seascape",      itemId: child2, forceSave: false)
         root.editController.addItem(itemId: child1, parentId: folderId)
         root.editController.addItem(itemId: child2, parentId: folderId)
 
@@ -1310,8 +1310,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let controller = root.folderListController
@@ -1354,8 +1354,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         await searchFolder(root)
         #expect(rootRowItemIds(root).contains(childId))
 
@@ -1379,9 +1379,9 @@ struct FolderListControllerTests {
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
         let otherId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
-        root.editController.reset(name: "Other", itemId: otherId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
+        root.editController.reset(name: "Other", itemId: otherId, forceSave: false)
         root.editController.addItem(itemId: otherId, parentId: folderId)
         await searchFolder(root)
         let controller = root.folderListController
@@ -1406,8 +1406,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
         await searchFolder(root)
         let controller = root.folderListController
@@ -1435,9 +1435,9 @@ struct FolderListControllerTests {
         let activeId = await root.itemController.addNew(type: .folder)
         let subId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Active", itemId: activeId)
-        root.editController.reset(name: "Sub", itemId: subId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Active", itemId: activeId, forceSave: false)
+        root.editController.reset(name: "Sub", itemId: subId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: subId, parentId: activeId)
         root.editController.addItem(itemId: childId, parentId: activeId)
         await searchFolder(root)
@@ -1465,9 +1465,9 @@ struct FolderListControllerTests {
         let activeId = await root.itemController.addNew(type: .folder)
         let subId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Active", itemId: activeId)
-        root.editController.reset(name: "Sub", itemId: subId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Active", itemId: activeId, forceSave: false)
+        root.editController.reset(name: "Sub", itemId: subId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: subId, parentId: activeId)
         root.editController.addItem(itemId: childId, parentId: subId)
         await searchFolder(root)
@@ -1493,8 +1493,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         await searchFolder(root)
         let controller = root.folderListController
         let row = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
@@ -1520,8 +1520,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         await searchFolder(root)
         let controller = root.folderListController
         let row = try #require(controller.listModel.list.first(where: { $0.source.itemId == childId }))
@@ -1550,9 +1550,9 @@ struct FolderListControllerTests {
         let activeId = await root.itemController.addNew(type: .folder)
         let subId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Active", itemId: activeId)
-        root.editController.reset(name: "Sub", itemId: subId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Active", itemId: activeId, forceSave: false)
+        root.editController.reset(name: "Sub", itemId: subId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: subId, parentId: activeId)
         root.editController.addItem(itemId: childId, parentId: activeId)
         await searchFolder(root)

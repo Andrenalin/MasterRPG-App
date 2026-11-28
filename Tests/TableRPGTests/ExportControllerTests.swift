@@ -47,8 +47,8 @@ struct ExportControllerTests {
         let deleted = await edit.addNew(type: .item)
         try #require(item != nil)
         try #require(deleted != nil)
-        edit.reset(name: "keep", itemId: item!.id)
-        edit.reset(name: "delete", itemId: deleted!.id)
+        edit.reset(name: "keep", itemId: item!.id, forceSave: false)
+        edit.reset(name: "delete", itemId: deleted!.id, forceSave: false)
 
         await edit.delete(itemId: deleted!.id)
 
@@ -173,7 +173,7 @@ struct ExportControllerTests {
 
         let diceId = await root.diceRoot.itemControllable.addNew(type: .rules)
         let itemId = await root.itemController.addNew(type: .item)
-        edit.add(diceId: diceId, itemId: itemId)
+        edit.add(diceId: diceId, itemId: itemId, forceSave: false)
 
         let ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .table))
         let tableIds = ids.ids[.table]

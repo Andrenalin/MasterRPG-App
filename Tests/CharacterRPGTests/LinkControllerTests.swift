@@ -110,11 +110,11 @@ struct LinkControllerTests {
         let editController = root.editController
         let folderId = await root.itemController.addNew(type: .folder)
         let charlieId = await root.itemController.addNew(type: .item)
-        editController.reset(name: "Charlie", itemId: charlieId)
+        editController.reset(name: "Charlie", itemId: charlieId, forceSave: false)
         let alphaId = await root.itemController.addNew(type: .item)
-        editController.reset(name: "Alpha", itemId: alphaId)
+        editController.reset(name: "Alpha", itemId: alphaId, forceSave: false)
         let bravoId = await root.itemController.addNew(type: .item)
-        editController.reset(name: "Bravo", itemId: bravoId)
+        editController.reset(name: "Bravo", itemId: bravoId, forceSave: false)
         let itemIds = [charlieId, alphaId, bravoId]
 
         for itemId in itemIds {
@@ -125,7 +125,7 @@ struct LinkControllerTests {
         for itemId in itemIds {
             var groupItemIds: [UUID] = []
             for _ in 0..<3 {
-                let entryId = await editController.addNewGroup(itemId: itemId)
+                let entryId = await editController.addNewGroup(itemId: itemId, forceSave: false)
                 let item = root.itemController.itemOrEmpty(for: itemId)
                 let entry = try #require(item.entries.first(where: { $0.id == entryId }))
                 let groupItemId = try #require(entry.valueId)
@@ -482,12 +482,12 @@ struct LinkControllerTests {
 
         let itemId = await root.itemController.addNew(type: .character)
         let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
-        edit.add(entry: aEntry, itemId: itemId)
+        edit.add(entry: aEntry, itemId: itemId, forceSave: false)
         let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
         let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText)
-        edit.add(entry: bEntry, itemId: itemId)
+        edit.add(entry: bEntry, itemId: itemId, forceSave: false)
         let textEntry = ValueEntryModel(id: UUID(), name: "Notes", type: .text, value: "45")
-        edit.add(entry: textEntry, itemId: itemId)
+        edit.add(entry: textEntry, itemId: itemId, forceSave: false)
 
         #expect(sut.diceCompareValue(itemId: itemId, entryId: aEntry.id) == 45)
         #expect(sut.diceCompareValue(itemId: itemId, entryId: bEntry.id) == 45)
@@ -503,7 +503,7 @@ struct LinkControllerTests {
 
         let itemId = await root.itemController.addNew(type: .character)
         let entry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: "10", diceId: diceTemplate.id)
-        edit.add(entry: entry, itemId: itemId)
+        edit.add(entry: entry, itemId: itemId, forceSave: false)
 
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
@@ -529,7 +529,7 @@ struct LinkControllerTests {
         let text = ValueEntryModel(id: UUID(), name: "Text", type: .text, value: "45", diceId: diceTemplate.id)
         let selection = ValueEntryModel(id: UUID(), name: "Selection", type: .selection, value: "45", diceId: diceTemplate.id)
         for entry in [number, decimal, text, selection] {
-            edit.add(entry: entry, itemId: itemId)
+            edit.add(entry: entry, itemId: itemId, forceSave: false)
         }
 
         root.itemController.itemDataModel.isGameMode = true
@@ -562,10 +562,10 @@ struct LinkControllerTests {
 
         let itemId = await root.itemController.addNew(type: .character)
         let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
-        edit.add(entry: aEntry, itemId: itemId)
+        edit.add(entry: aEntry, itemId: itemId, forceSave: false)
         let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
         let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText, diceId: diceTemplate.id)
-        edit.add(entry: bEntry, itemId: itemId)
+        edit.add(entry: bEntry, itemId: itemId, forceSave: false)
 
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
@@ -595,13 +595,13 @@ struct LinkControllerTests {
 
         let itemId = await root.itemController.addNew(type: .character)
         let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "0")
-        edit.add(entry: aEntry, itemId: itemId)
+        edit.add(entry: aEntry, itemId: itemId, forceSave: false)
         let cEntry = ValueEntryModel(id: UUID(), name: "Skill", type: .number, value: "15")
-        edit.add(entry: cEntry, itemId: itemId)
+        edit.add(entry: cEntry, itemId: itemId, forceSave: false)
         let character = root.itemController.itemOrEmpty(for: itemId)
         let formula = "\(character.url(linkNumber: 0, entryId: aEntry.id))+\(character.url(linkNumber: 0, entryId: cEntry.id))"
         let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: formula, diceId: diceTemplate.id)
-        edit.add(entry: bEntry, itemId: itemId)
+        edit.add(entry: bEntry, itemId: itemId, forceSave: false)
 
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
@@ -628,13 +628,13 @@ struct LinkControllerTests {
 
         let itemId = await root.itemController.addNew(type: .character)
         let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "5")
-        edit.add(entry: aEntry, itemId: itemId)
+        edit.add(entry: aEntry, itemId: itemId, forceSave: false)
         let bLink = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
         let bEntry = ValueEntryModel(id: UUID(), name: "Bonus", type: .number, value: bLink)
-        edit.add(entry: bEntry, itemId: itemId)
+        edit.add(entry: bEntry, itemId: itemId, forceSave: false)
         let cLink = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: bEntry.id)
         let cEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: cLink, diceId: diceTemplate.id)
-        edit.add(entry: cEntry, itemId: itemId)
+        edit.add(entry: cEntry, itemId: itemId, forceSave: false)
 
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }
@@ -657,10 +657,10 @@ struct LinkControllerTests {
 
         let itemId = await root.itemController.addNew(type: .character)
         let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
-        edit.add(entry: aEntry, itemId: itemId)
+        edit.add(entry: aEntry, itemId: itemId, forceSave: false)
         let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
         let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText, diceId: diceTemplate.id)
-        edit.add(entry: bEntry, itemId: itemId)
+        edit.add(entry: bEntry, itemId: itemId, forceSave: false)
 
         root.itemController.itemDataModel.isGameMode = true
         defer { root.itemController.itemDataModel.isGameMode = false }

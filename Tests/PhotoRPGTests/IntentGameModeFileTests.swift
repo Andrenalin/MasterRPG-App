@@ -37,7 +37,7 @@ struct IntentGameModeFileTests {
         let created = PhotoModel(id: UUID(), name: "Map Scroll")
         root.itemController.replace(model: created, isInsert: true, forceSave: true)
 
-        root.editController.reset(fileUrl: fileUrl(for: created.id), itemId: created.id)
+        root.editController.reset(fileUrl: fileUrl(for: created.id), itemId: created.id, forceSave: false)
 
         #expect(root.itemController.itemSync(for: created.id, noGame: true)?.fileUrl == nil)
         #expect((data.gameItemData[created.id] as? PhotoModel)?.fileUrl == fileUrl(for: created.id))

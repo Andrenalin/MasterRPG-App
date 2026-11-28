@@ -4,31 +4,17 @@ import CoreRPG
 import DiceRPG
 import SwiftUI
 
+/// The shared `DiceDropSelectionEditor`. See CODE_AUDIT_Edit_Save §9.6.
 struct DetailSelectionEditorView: View {
     let root: TableRootModel
     let model: TableModel
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
-        root.diceRoot.viewController.dropChooseView(
-            model: root.editController.tableEditModel.selectionDice
-        )
-        .onChange(of: root.editController.tableEditModel.selectionDice.selection) {
-            withAnimation(reduceMotion ? nil : .easeInOut) {
-                root.editController.add(
-                    diceId: root.editController.tableEditModel.selectionDice.itemId,
-                    itemId: model.id,
-                    // The editor persists also during a game.
-                    forceSave: true
-                )
-            }
-        }
-        .task(id: model.diceId) {
-            root.editController.tableEditModel.selectionDice.resetSelection(
-                itemId: model.diceId,
-                entryId: nil
-            )
+        let editController = root.editController
+        let itemId = model.id
+        DiceDropSelectionEditor(diceRoot: root.diceRoot, selection: editController.tableEditModel.selectionDice, diceId: model.diceId) { diceId in
+            // The editor persists also during a game.
+            editController.add(diceId: diceId, itemId: itemId, forceSave: true)
         }
     }
 }

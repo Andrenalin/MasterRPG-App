@@ -85,6 +85,13 @@ final class CoreDataModel: Sendable {
         unsavedInserts.withLock { _ = $0.remove(id) }
     }
 
+    /// Whether a local edit of `id` is queued or flushed into the context but not committed.
+    /// The sync merge must not overwrite such an item with the store row. See CODE_AUDIT_Edit_Save §3.1.
+    func hasPendingOperation(for id: UUID) -> Bool {
+        queue.withLock { queue in queue.operations.contains { $0.id == id } }
+            || inFlight.withLock { flushed in flushed.contains { $0.id == id } }
+    }
+
     /// Whether an edit a failed save rolled back is still waiting for its retry.
     /// See CODE_AUDIT_20 §5.11.
     var hasRetryingOperations: Bool {

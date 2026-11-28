@@ -35,8 +35,8 @@ struct SimpleSheetEditingSessionTests {
     func insertedEntriesGoToTheResult() throws {
         let session = SimpleSheetEditingSession(module: .table, name: "Loot")
 
-        let first = session.editController.insertEntry(itemId: session.resultItemId, name: "Sword", content: "1d8", position: .end)
-        let second = session.editController.insertEntry(itemId: session.resultItemId, name: "Shield", content: "AC 2", position: .end)
+        let first = session.editController.insertEntry(itemId: session.resultItemId, name: "Sword", content: "1d8", position: .end, forceSave: false)
+        let second = session.editController.insertEntry(itemId: session.resultItemId, name: "Shield", content: "AC 2", position: .end, forceSave: false)
 
         let result = try #require(session.resultModel)
         #expect(result.entries.map(\.name) == ["Sword", "Shield"])
@@ -48,10 +48,10 @@ struct SimpleSheetEditingSessionTests {
     @Test("An entry can be inserted after another one")
     func insertAfter() throws {
         let session = SimpleSheetEditingSession(module: .table)
-        let a = try #require(session.editController.insertEntry(itemId: session.resultItemId, name: "A", content: "", position: .end))
-        _ = session.editController.insertEntry(itemId: session.resultItemId, name: "C", content: "", position: .end)
+        let a = try #require(session.editController.insertEntry(itemId: session.resultItemId, name: "A", content: "", position: .end, forceSave: false))
+        _ = session.editController.insertEntry(itemId: session.resultItemId, name: "C", content: "", position: .end, forceSave: false)
 
-        _ = session.editController.insertEntry(itemId: session.resultItemId, name: "B", content: "", position: .after(a))
+        _ = session.editController.insertEntry(itemId: session.resultItemId, name: "B", content: "", position: .after(a), forceSave: false)
 
         #expect(session.resultModel?.entries.map(\.name) == ["A", "B", "C"])
     }
@@ -61,7 +61,7 @@ struct SimpleSheetEditingSessionTests {
         let first = SimpleSheetEditingSession(module: .table, name: "One")
         let second = SimpleSheetEditingSession(module: .table, name: "Two")
 
-        _ = first.editController.insertEntry(itemId: first.resultItemId, name: "Only in one", content: "", position: .end)
+        _ = first.editController.insertEntry(itemId: first.resultItemId, name: "Only in one", content: "", position: .end, forceSave: false)
 
         #expect(first.resultModel?.entries.count == 1)
         #expect(second.resultModel?.entries.isEmpty == true)

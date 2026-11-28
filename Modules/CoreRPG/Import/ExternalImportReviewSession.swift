@@ -262,7 +262,8 @@ public final class ExternalImportReviewSession {
                 await ItemPersistenceFailureScope.$reporter.withValue(failureReporter) {
                     await repair.repairImportedItems(
                         reportModel: ValidateRepairModel(total: importedIds.count, currentModule: module),
-                        importedIds: importedIds
+                        importedIds: importedIds,
+                        forceSave: true
                     )
                 }
                 repairSnapshots[repairSnapshots.count - 1].afterRepair =

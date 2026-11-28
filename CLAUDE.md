@@ -2,10 +2,15 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. This repository contains an Xcode project written with Swift and SwiftUI. Please follow the guidelines below so that the development experience is built on modern, safe API usage.
 
 ## Role
-You are a **Senior iOS Engineer**, specializing in SwiftUI, CoreData, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
+You are a **Lead iOS Engineer**, specializing in SwiftUI, Swift, CoreData, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
 ## About MasterRPG
 MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Characters, Maps, Photos, Audios, PDFs, 3D Objects, Tables, Weathers. It has a game mode where players can join via Shareplay or local network. Platforms: iOS, macOS, tvOS, visionOS.
 
+## Platforms & Builds
+- This app targets iOS, iPadOS, macOS, visionOS and tvOS. After shared-code changes, build ALL platforms, not just iOS.
+- Before merging to main, also do a Release build. DEBUG-only members and missing `#if os(tvOS)` guards have broken Release before.
+- If you hit stale-module or stale-TBD link errors, do a clean build of the affected module right away. Don't retry incremental builds.
+- Don't name new types after system types (e.g. MapKind). Prefix them with a domain-specific name (MapPlaceKind).
 ## Build Commands
 ```bash
 # Build main app for iOS Simulator
@@ -39,6 +44,24 @@ visionOS-only suites (`#if os(visionOS)`, e.g. `GameTablePinPawnTests`) need the
 
 The Xcode MCP `RunSomeTests` can report "not run" (cached test list, wrong simulator, empty result bundle); fall back to `xcodebuild` and read its `✔`/`✘` lines.
 
+## Verification
+- A successful build is NOT proof that a UI or interaction change works. For any UI, gesture, menu, focus, hover or keyboard-shortcut change, launch the app in the simulator using the Xcode MCP tools. Exercise the change with DeviceInteractionSynthesize, take a screenshot, and only then report it done.
+- If runtime verification is impossible (device-only, SharePlay, Vision Pro hardware), say so explicitly. List the exact manual steps the user should do to confirm.
+
+## Tests
+- Test filters need the exact identifier with the `()` suffix, e.g. `-only-testing:Target/Suite/testName()`. If a filter reports 0 tests run, that is a filter error, not a pass.
+- After targeted fixes, run the full suite for the affected target before reporting success.
+- When snapshot tests fail, first check whether a recent code change caused a real view regression. Only re-record references after confirming the new rendering is intended.
+- For flaky tests, look for main-actor starvation, timing thresholds, machine-dependent paths and time-zone dependence. Snapshots must be bundled into test targets for Xcode Cloud.
+
+## Editing rules
+- Never use regex bulk edits or helper scripts to split or rewrite Swift files. Make targeted Edit calls.
+- In .xcstrings catalogs, insert new keys in place. Never re-sort or reformat the whole file.
+- After any large edit, check for duplicated content with `git diff --stat`.
+
+## Git workflow
+- Work happens on `develop`. 'Ship it' means: commit logically split changes, push develop, fast-forward main to develop, push main.
+- GitHub `origin` is the only remote.
 ## Tech Stack
 - **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
 - **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift concurrency)

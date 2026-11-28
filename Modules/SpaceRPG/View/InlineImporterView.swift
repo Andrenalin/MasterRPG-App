@@ -132,7 +132,7 @@ private struct InlineImporterContentView: View {
             // frames arriving, nothing rendered). Presenting the plain view removes that
             // extra layer rather than trying to work around it.
             Scanner3DRootView(itemId: itemId) { [replaced = scannerReplacedFile] url in
-                await root.editController.resetFile(url: url, itemId: itemId, replaced: replaced)
+                await root.editController.resetFile(url: url, itemId: itemId, replaced: replaced, forceSave: true)
             }
         }
         .alert(Text("3D Scanner", bundle: .module), isPresented: $showRelaunchAlert) {

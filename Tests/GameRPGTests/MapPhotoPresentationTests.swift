@@ -355,7 +355,7 @@ struct MapPhotoPresentationTests {
     private static func weatherData(in fixture: PlayerFixture, name: String) async throws -> NetworkCodableDataType {
         let weatherRoot = fixture.env.root.weatherRoot
         let weatherId = await weatherRoot.itemController.addNew(type: .scenario)
-        weatherRoot.editController.reset(name: name, itemId: weatherId)
+        weatherRoot.editController.reset(name: name, itemId: weatherId, forceSave: false)
         return try await weatherRoot.weatherGameControllable.createWeatherGameData(for: weatherId)
     }
 

@@ -127,11 +127,32 @@ public extension ItemControllable {
 // MARK: - EditControllable
 
 public extension ItemControllable {
+    /// Creates an empty item of `type` in the library, also during a game: the user's "Add Item"
+    /// (and every test fixture). An item created as part of another edit takes that edit's
+    /// policy with `addNew(type:forceSave:)`.
     @MainActor func addNew(type: ItemListCategory) async -> UUID {
-        CloudKitOperationCounter.shared.recordOperation(function: "ItemControllable.addNew(type:\(type))")
-        
+        await addNew(type: type, forceSave: true)
+    }
+
+    /// Creates an empty item of `type`. - Parameter forceSave: see `insertNew(model:forceSave:)`.
+    @MainActor func addNew(type: ItemListCategory, forceSave: Bool) async -> UUID {
         var model = Model.empty.copy()
         model.category = type
+        await insertNew(model: model, forceSave: forceSave)
+        return model.id
+    }
+
+    /// Inserts the new item `model` once, complete, with the caller's write policy: during a game
+    /// a memory-only create stays in game memory. `addNew` always wrote an empty item to the
+    /// store while the caller filled it memory-only, which left empty, nameless items in the
+    /// library. See CODE_AUDIT_Edit_Save §5.9.
+    @MainActor func insertNew(model: ModelType, forceSave: Bool) async {
+        guard let model = model as? Model else { return }
+        if itemDataModel.isGameMode && !forceSave {
+            replaceInGameMemory(model: model)
+            return
+        }
+        CloudKitOperationCounter.shared.recordOperation(function: "ItemControllable.insertNew(category:\(model.category))")
         // Protects the new item from the sync-deletion diff until its insert commits, also when
         // another module's failed save rolls it back. Marked before `replace`: a save by another
         // module during its suspension could commit the insert first, and nothing would then
@@ -147,15 +168,19 @@ public extension ItemControllable {
         }
         resetModel(with: model)
         await save()
-        return model.id
     }
 
     @MainActor func copy(of itemId: UUID) -> Model? {
         self.itemOrEmpty(for: itemId).copy()
     }
     
+    /// Works on the library item: its row, its file, and on a failed delete the instance put
+    /// back. The game copy's file was deleted instead (a delivered newer file), orphaning the
+    /// library file, and a failure made session state the library object. A file only the game
+    /// copy names is a game file, removed at game end (`removeUnreferencedGameFiles`). An item
+    /// only game memory holds is deleted as that copy. See CODE_AUDIT_Edit_Save §5.25.
     @MainActor func delete(itemId: UUID, withFileData: Bool = true, withDatabase: Bool = true) async {
-        guard let item = itemSync(for: itemId) else { return }
+        guard let item = itemSync(for: itemId, noGame: true) ?? itemSync(for: itemId) else { return }
 
         // Leave memory before the first suspension: from here on no editor, import or sync
         // can find the item and queue a fresh upsert for it while the deletion below awaits.
@@ -306,7 +331,9 @@ public extension ItemControllable {
     /// must use this method instead of plain `replace(model:isInsert:forceSave:)`.
     @MainActor func replaceImportedModel(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
         guard let model = model as? Model else { return }
-        registerImportedLinks(of: model)
+        if forceSave || !itemDataModel.isGameMode {
+            registerImportedLinks(of: model)
+        }
         replace(model: model, isInsert: isInsert, forceSave: forceSave)
     }
 
@@ -316,12 +343,19 @@ public extension ItemControllable {
     /// to the permanent library. See CODE_AUDIT_Folder §3.4.
     @MainActor func replaceImportedModel(model: ModelType?, isInsert: Bool, policy: GameMutationPolicy) {
         guard let model = model as? Model else { return }
-        registerImportedLinks(of: model)
+        // A game delivery stays in game memory, and so do its links: the persistent register
+        // lists only what the library holds. See CODE_AUDIT_Edit_Save §5.27.
+        if policy == .persist {
+            registerImportedLinks(of: model)
+        }
         replaceForGame(model: model, isInsert: isInsert, policy: policy)
     }
 
+    /// Diffs against the library item, which the register describes; the game copy carried
+    /// session links into the register and missed links only the library had.
+    /// See CODE_AUDIT_Edit_Save §5.21.
     @MainActor private func registerImportedLinks(of model: Model) {
-        if let previous = itemSync(for: model.id)?.copy() {
+        if let previous = itemSync(for: model.id, noGame: true)?.copy() {
             let changes = model.changedLinkRegisterModels(oldValue: previous)
             linkRegisterController.deregister(links: changes.removed)
             linkRegisterController.register(links: changes.added)
@@ -367,9 +401,26 @@ public extension ItemControllable {
     /// Applies a synced copy of an existing item. The image cache for a changed file is dropped
     /// before the model changes, so a view re-rendering from the new model never reads the old
     /// cached bytes. See CODE_AUDIT_Folder §3.19.
-    @MainActor func mergeUpdates(model: ModelType) async {
+    ///
+    /// `keepingLocalEdit`: this device has an edit of the item queued but not committed. The
+    /// store row predates it, so it is CRDT-merged with the in-memory item instead of replacing
+    /// it, and the merged value is queued after the local edit. Replacing it dropped the local
+    /// edit from the UI, and the flush then wrote the stale snapshot over the remote change.
+    /// See CODE_AUDIT_Edit_Save §3.1.
+    @MainActor func mergeUpdates(model: ModelType, keepingLocalEdit: Bool = false) async {
         await invalidateCacheForChangedFile(of: model)
-        applyMergedUpdate(model: model)
+        guard keepingLocalEdit, let fetched = model as? Model,
+              let current = itemSync(for: fetched.id, noGame: true) else {
+            applyMergedUpdate(model: model)
+            return
+        }
+        let merged = fetched.merge(current)
+        applyMergedUpdate(model: merged)
+        do {
+            try dataControllable?.replaceSync(id: merged.id, with: merged)
+        } catch {
+            recordPersistenceFailure(error, operation: "ItemControllable.mergeUpdates(keepingLocalEdit:)")
+        }
     }
 
     /// Drops the image cache of the stored item when `model` carries a different file.

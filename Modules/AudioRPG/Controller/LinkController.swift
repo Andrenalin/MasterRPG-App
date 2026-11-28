@@ -71,16 +71,12 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
-
-        // Entries are single-child references (`ChildEntryModel`) with no free-text `content`
-        // of their own to repair — only the item's own `description` can embed a link.
-        replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
-
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Audio: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
+        repairItemLinks(itemId: itemId, as: AudioModel.self) { inspectedItem in
+            let replacedItem = inspectedItem.copy()
+            // Entries are single-child references (`ChildEntryModel`) with no free-text `content`
+            // of their own to repair — only the item's own `description` can embed a link.
+            replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
+            return replacedItem
         }
-        resetLinkRegister(replacedItem)
     }
 }

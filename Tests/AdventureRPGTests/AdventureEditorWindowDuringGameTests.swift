@@ -51,8 +51,8 @@ struct AdventureEditorWindowDuringGameTests {
         let store = try GameEditorStore(bundles: [CoreRPG.Resources.bundle, AdventureRPG.Resources.bundle])
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.adventure.token)
         let itemId = await root.itemController.addNew(type: .adventure)
-        root.editController.update(id: itemId, name: "Journey", description: Self.libraryDescription, category: nil, tags: ["campaign"])
-        let entryId = root.editController.addNewEntry(itemId: itemId)
+        root.editController.update(id: itemId, name: "Journey", description: Self.libraryDescription, category: nil, tags: ["campaign"], forceSave: false)
+        let entryId = root.editController.addNewEntry(itemId: itemId, forceSave: false)
         root.editController.update(itemId: itemId, entryId: entryId, name: "Arrival", content: "Open the gate", forceSave: false)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId, entryId: entryId)
@@ -61,7 +61,7 @@ struct AdventureEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 
@@ -198,8 +198,8 @@ struct AdventureEditorWindowDuringGameTests {
     func inGameEditStaysInGameMemory() async throws {
         let fixture = try await makeFixture()
 
-        fixture.root.editController.update(id: fixture.itemId, name: "Session name", description: nil, category: nil, tags: nil)
-        fixture.root.editController.add(photoId: UUID(), itemId: fixture.itemId)
+        fixture.root.editController.update(id: fixture.itemId, name: "Session name", description: nil, category: nil, tags: nil, forceSave: false)
+        fixture.root.editController.add(photoId: UUID(), itemId: fixture.itemId, forceSave: false)
 
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.name == "Session name" }
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.photoId != nil }

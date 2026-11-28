@@ -1129,7 +1129,7 @@ final class MasterPlayerControllerTests {
         let version = rootSut.photoRoot.itemController.itemOrEmpty(for: photoId).version
         let photoShareData = await rootSut.photoRoot.gameController.share(id: photoId)
         let sendedShowPhotoData = try await showDelivering(photoShareData)
-        #expect(sendedShowPhotoData.data.version == version)
+        #expect(sendedShowPhotoData.data.effectiveAssetVersion == version)
 
         var result = try await sutPlayer.handle(sendedShowPhotoData)
         #expect(nil != result)
@@ -1335,7 +1335,7 @@ final class MasterPlayerControllerTests {
         let version = rootSut.spaceRoot.itemController.itemOrEmpty(for: spaceId).version
         let spaceShareData = await rootSut.spaceRoot.gameController.share(id: spaceId)
         let sendedShowSpaceData = try await showDelivering(spaceShareData)
-        #expect(sendedShowSpaceData.data.version == version)
+        #expect(sendedShowSpaceData.data.effectiveAssetVersion == version)
 
         let result = try await sutPlayer.handle(sendedShowSpaceData)
         #expect(nil != result)

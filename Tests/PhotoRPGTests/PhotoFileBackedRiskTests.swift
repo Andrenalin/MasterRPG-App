@@ -64,7 +64,7 @@ struct PhotoFileBackedRiskTests {
         let itemId = photoWithFile(named: "photo.jpg", in: root)
         let before = root.itemController.itemOrEmpty(for: itemId).fileUrl
 
-        let replaced = try await root.editController.resetPhoto(data: data, itemId: itemId)
+        let replaced = try await root.editController.resetPhoto(data: data, itemId: itemId, forceSave: true)
 
         #expect(replaced == false)
         #expect(root.itemController.itemOrEmpty(for: itemId).fileUrl == before)

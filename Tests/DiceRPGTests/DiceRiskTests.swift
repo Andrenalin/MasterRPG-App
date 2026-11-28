@@ -18,7 +18,7 @@ struct DiceRiskTests {
         let full = (0..<DiceModel.maximumDecodedDiceCount).map { _ in DieModel(id: UUID(), die: .six) }
         root.itemController.replace(model: DiceModel(id: itemId, name: "Full", dice: full), isInsert: true)
 
-        let added = root.editController.add(die: DieModel(id: UUID(), die: .twenty), itemId: itemId)
+        let added = root.editController.add(die: DieModel(id: UUID(), die: .twenty), itemId: itemId, forceSave: false)
 
         #expect(added == false)
         #expect(root.itemController.itemOrEmpty(for: itemId).dice.count == DiceModel.maximumDecodedDiceCount)
@@ -31,7 +31,7 @@ struct DiceRiskTests {
         let itemId = UUID()
         root.itemController.replace(model: DiceModel(id: itemId, name: "Bag", dice: []), isInsert: true)
 
-        #expect(root.editController.add(die: DieModel(id: UUID(), die: .six), itemId: itemId))
+        #expect(root.editController.add(die: DieModel(id: UUID(), die: .six), itemId: itemId, forceSave: false))
         #expect(root.itemController.itemOrEmpty(for: itemId).dice.count == 1)
     }
 

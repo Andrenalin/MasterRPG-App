@@ -116,51 +116,43 @@ extension GeneratorModel {
 
 extension GeneratorModel: nonisolated ItemLinkRegistrable {}
 
-extension GeneratorModel: nonisolated ItemDiffComparable {
-    nonisolated func merge(_ other: GeneratorModel) -> GeneratorModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
-            return GeneratorModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                entries: mergedEntries,
-                parentId: other.parentId,
-                genType: other.genType,
-                referenceId: other.referenceId
-            )
-    
-        }
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension GeneratorModel: ItemDiffComparable {
+    func merge(_ other: GeneratorModel) -> GeneratorModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
+        return GeneratorModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            entries: mergedEntries,
+            parentId: other.parentId,
+            genType: other.genType,
+            referenceId: other.referenceId
+        )
     }
 
-    nonisolated func isSame(_ other: GeneratorModel) -> Bool {
-        return assumeMainActorIsolated {
-            name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            genType == other.genType &&
-            referenceId == other.referenceId
-    
-        }
+    func isSame(_ other: GeneratorModel) -> Bool {
+        name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        genType == other.genType &&
+        referenceId == other.referenceId
     }
 }
 
-extension GeneratorModel: nonisolated ItemDuplicatable {
-    nonisolated func duplicate() -> GeneratorModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
-            return GeneratorModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, parentId: nil, genType: genType, referenceId: referenceId)
-    
-        }
+extension GeneratorModel: ItemDuplicatable {
+    func duplicate() -> GeneratorModel {
+        let copyName = duplicateName(from: name)
+        // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
+        return GeneratorModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, parentId: nil, genType: genType, referenceId: referenceId)
     }
 }
 

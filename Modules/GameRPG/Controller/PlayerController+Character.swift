@@ -14,6 +14,28 @@ extension PlayerController {
         scheduleSendCharacterTask()
     }
 
+    /// For the length of this game, a persisted edit of this player's Character or a companion
+    /// (editor window, header and entry editors, the add-entry overlay) announces it again, and
+    /// the master asks for the package when its version differs. Only the inline editor's
+    /// `.valueUpdate` reached the master before. See CODE_AUDIT_Edit_Save §5.24.
+    func installCharacterEditAnnouncement() {
+        root.characterRoot.editControllable.editorModel.persistedGameEditHandler = { [weak self] itemId in
+            self?.announceEditedCharacter(itemId)
+        }
+    }
+
+    func uninstallCharacterEditAnnouncement() {
+        root.characterRoot.editControllable.editorModel.persistedGameEditHandler = nil
+    }
+
+    private func announceEditedCharacter(_ itemId: UUID) {
+        guard isOwnOrCompanionCharacter(itemId) else { return }
+        // A send already running announces the old version; the new generation runs it again.
+        gameModel.noteCompanionsChanged()
+        gameModel.reset(sendPlayer: false)
+        scheduleSendCharacter()
+    }
+
     /// The whole task-scheduling block (nil-check, id mint, task assignment)
     /// needs to stay one @MainActor unit so a concurrent caller can't observe
     /// a half-scheduled task. See CODE_AUDIT §3.1.

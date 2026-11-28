@@ -125,10 +125,11 @@ extension ImportControllable {
         return existingFileUrl
     }
 
+    /// Writes `fileUrl` onto the library item and mirrors only that field into a loaded game
+    /// copy: copying the library item over the game copy reverted its session state.
+    /// See CODE_AUDIT_Edit_Save §5.16.
     @MainActor
     func persist(fileUrl: FileUrl, itemId: UUID) {
-        guard var copy = itemControllable.itemSync(for: itemId, noGame: true)?.copy() else { return }
-        copy.fileUrl = fileUrl
-        itemControllable.replace(model: copy, isInsert: false, forceSave: true)
+        itemControllable.persistFileUrl(fileUrl, itemId: itemId)
     }
 }

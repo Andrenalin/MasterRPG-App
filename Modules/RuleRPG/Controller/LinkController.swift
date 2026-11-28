@@ -140,26 +140,21 @@ extension LinkController: LinkControllable {
 
     @MainActor
     func validateLinks(on itemId: UUID) {
-        guard let inspected = itemController.itemSync(for: itemId),
-              !inspected.isHidden,
-              let replacement = itemController.copy(of: itemId) else { return }
-
-        replacement.description = repairLinks(
-            LinkReplaceController.links(for: inspected.description),
-            in: inspected.description
-        )
-        for entry in inspected.entries {
-            var updated = entry
-            updated.content = repairLinks(LinkReplaceController.links(for: entry.content), in: entry.content)
-            if updated != entry {
-                replacement[entry.id] = updated
+        repairItemLinks(itemId: itemId, as: RuleModel.self) { inspected in
+            let replacement = inspected.copy()
+            replacement.description = repairLinks(
+                LinkReplaceController.links(for: inspected.description),
+                in: inspected.description
+            )
+            for entry in inspected.entries {
+                var updated = entry
+                updated.content = repairLinks(LinkReplaceController.links(for: entry.content), in: entry.content)
+                if updated != entry {
+                    replacement[entry.id] = updated
+                }
             }
+            return replacement
         }
-        if !replacement.isSame(inspected) {
-            Logger.linkController.info("Rule links repaired for \(replacement.name, privacy: .private)")
-            itemController.replace(model: replacement, isInsert: false)
-        }
-        resetLinkRegister(replacement)
     }
 
     @MainActor

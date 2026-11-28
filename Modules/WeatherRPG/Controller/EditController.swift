@@ -37,62 +37,67 @@ extension EditController: EditControllable {
 extension EditController {
     // `forceSave` is `true` from the weather editor, which persists also during a game.
 
-    @MainActor func add(photoId: UUID?, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        item.photoId = photoId
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module), forceSave: forceSave)
+    @MainActor func add(photoId: UUID?, itemId: UUID, forceSave: Bool) {
+        saveField(itemId: itemId, \.photoId, to: photoId, message: String(localized: "Change Photo", bundle: .module), forceSave: forceSave)
     }
     
-    @MainActor func reset(cloudThickness: Cloud.Thickness, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(rainDirection: Bool, itemId: UUID, forceSave: Bool) {
+        reset(
+            \.rainDirection, value: rainDirection, itemId: itemId, forceSave: forceSave,
+            message: String(localized: "toggle rain direction", bundle: .module)
+        )
+    }
+
+    @MainActor func reset(cloudThickness: Cloud.Thickness, itemId: UUID, forceSave: Bool) {
         reset(
             \.cloudThickness, value: cloudThickness, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change cloud thickness", bundle: .module)
         )
     }
 
-    @MainActor func reset(stormType: Storm.Contents, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(stormType: Storm.Contents, itemId: UUID, forceSave: Bool) {
         reset(
             \.stormType, value: stormType, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change storm type", bundle: .module)
         )
     }
 
-    @MainActor func reset(time: Double, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(time: Double, itemId: UUID, forceSave: Bool) {
         reset(
             \.time, value: time, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change time", bundle: .module)
         )
     }
 
-    @MainActor func reset(rainIntensity: Double, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(rainIntensity: Double, itemId: UUID, forceSave: Bool) {
         reset(
             \.rainIntensity, value: rainIntensity, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change rain intensity", bundle: .module)
         )
     }
 
-    @MainActor func reset(rainAngle: Double, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(rainAngle: Double, itemId: UUID, forceSave: Bool) {
         reset(
             \.rainAngle, value: rainAngle, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change rain angle", bundle: .module)
         )
     }
 
-    @MainActor func reset(lightningFrequency: Double, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(lightningFrequency: Double, itemId: UUID, forceSave: Bool) {
         reset(
             \.lightningFrequency, value: lightningFrequency, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change lightning frequency", bundle: .module)
         )
     }
 
-    @MainActor func reset(lightningMaxBolts: Double, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(lightningMaxBolts: Double, itemId: UUID, forceSave: Bool) {
         reset(
             \.lightningMaxBolts, value: lightningMaxBolts, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change lightning max bolts", bundle: .module)
         )
     }
 
-    @MainActor func reset(lightningForkProbability: Double, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func reset(lightningForkProbability: Double, itemId: UUID, forceSave: Bool) {
         reset(
             \.lightningForkProbability, value: lightningForkProbability, itemId: itemId, forceSave: forceSave,
             message: String(localized: "change lightning fork probability", bundle: .module)
@@ -108,8 +113,6 @@ extension EditController {
         forceSave: Bool,
         message: String
     ) {
-        guard var item = editModel(for: itemId) else { return }
-        item[keyPath: keyPath] <=> value
-        save(updated: item, message: message, forceSave: forceSave)
+        saveField(itemId: itemId, keyPath, to: value, message: message, forceSave: forceSave)
     }
 }

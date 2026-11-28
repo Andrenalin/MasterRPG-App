@@ -20,7 +20,7 @@ extension EditController {
             validatedIndex = model.mapPins.count
         }
         model.mapPins.insert(pin, at: validatedIndex)
-        save(updated: model, message: String(localized: "Added pin", bundle: .module))
+        save(updated: model, message: String(localized: "Added pin", bundle: .module), forceSave: false)
     }
 
 }
@@ -32,7 +32,7 @@ extension EditController {
 
     @MainActor private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
         guard appendMonsters(to: model, entryId: entryId, location: location, monsters: monsters, number: number) else { return }
-        save(updated: model, message: String(localized: "Added pin", bundle: .module))
+        save(updated: model, message: String(localized: "Added pin", bundle: .module), forceSave: false)
     }
 
     /// Adds the monster pins without saving. `false` when there were none.
@@ -62,6 +62,6 @@ extension EditController {
             pins = MapPinPlacement.cascade(pins: pins, in: map[entryId], pinScale: map.pinScale)
         }
         map.mapPins.append(contentsOf: pins)
-        save(updated: map, message: String(localized: "Added pin", bundle: .module))
+        save(updated: map, message: String(localized: "Added pin", bundle: .module), forceSave: false)
     }
 }

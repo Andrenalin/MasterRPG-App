@@ -117,7 +117,7 @@ struct LinkControllerTests {
     @Test func repairLinksDelegatesToPhotoRoot() async {
         let root = makeRoot()
         let oldPhotoId = await root.photoRoot.itemController.addNew(type: .item)
-        root.photoRoot.editController.reset(name: "Portrait", itemId: oldPhotoId)
+        root.photoRoot.editController.reset(name: "Portrait", itemId: oldPhotoId, forceSave: false)
         let content = root.photoRoot.linkControllable.generateLinks(itemId: oldPhotoId, entryId: nil, into: "Look ")
         let links = LinkReplaceController.links(for: content)
 
@@ -125,7 +125,7 @@ struct LinkControllerTests {
         root.photoRoot.itemController.itemDataModel.itemData[oldPhotoId] = nil
 
         let newPhotoId = await root.photoRoot.itemController.addNew(type: .item)
-        root.photoRoot.editController.reset(name: "Portrait", itemId: newPhotoId)
+        root.photoRoot.editController.reset(name: "Portrait", itemId: newPhotoId, forceSave: false)
 
         let repaired = root.linkController.repairLinks(links, in: content)
 

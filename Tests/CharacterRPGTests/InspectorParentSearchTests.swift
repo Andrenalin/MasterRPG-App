@@ -20,11 +20,11 @@ struct InspectorParentSearchTests {
 
     private func addCharacter(_ root: CharacterRootModel, name: String, entries: [(name: String, content: String)] = []) async -> (id: UUID, entryIds: [UUID]) {
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: name, itemId: itemId)
+        root.editController.reset(name: name, itemId: itemId, forceSave: false)
         var ids: [UUID] = []
         for entry in entries {
             let model = ValueEntryModel(id: UUID(), name: entry.name, type: .text, value: entry.content)
-            root.editController.add(entry: model, itemId: itemId)
+            root.editController.add(entry: model, itemId: itemId, forceSave: false)
             ids.append(model.id)
         }
         return (itemId, ids)
@@ -83,10 +83,10 @@ struct InspectorParentSearchTests {
     func groupEntriesBelongToTheCharacter() async throws {
         let root = try await makeRoot()
         let hero = await addCharacter(root, name: "Thorin")
-        let groupEntryId = await root.editController.addNewGroup(itemId: hero.id)
+        let groupEntryId = await root.editController.addNewGroup(itemId: hero.id, forceSave: false)
         let groupItemId = try #require(root.itemController.itemOrEmpty(for: hero.id).entries.first { $0.id == groupEntryId }?.valueId)
-        let subEntryId = await root.editController.addNewGroup(itemId: groupItemId)
-        root.editController.update(itemId: groupItemId, entryId: subEntryId, name: "Hidden Talent", content: "")
+        let subEntryId = await root.editController.addNewGroup(itemId: groupItemId, forceSave: false)
+        root.editController.update(itemId: groupItemId, entryId: subEntryId, name: "Hidden Talent", content: "", forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(searchText: "Talent", parentId: hero.id)
 
@@ -103,7 +103,7 @@ struct InspectorParentSearchTests {
         let hero = await addCharacter(root, name: "Loop")
         var cyclic = ValueEntryModel(id: UUID(), name: "Self", type: .text, value: "needle")
         cyclic.valueId = hero.id
-        root.editController.add(entry: cyclic, itemId: hero.id)
+        root.editController.add(entry: cyclic, itemId: hero.id, forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(searchText: "needle", parentId: hero.id)
 

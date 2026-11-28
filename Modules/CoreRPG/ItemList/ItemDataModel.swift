@@ -87,15 +87,38 @@ public final class ItemDataModel: Sendable {
         discardedSyncBatchSequence = syncBatchSequence.withLock { $0 }
     }
 
+    /// Ends the sync consumer for good: a model whose module root is discarded (a rebuilt root,
+    /// a test, a preview). The consumer holds the module's item controller, a struct that holds
+    /// this model, so the pair is a cycle that only this breaks; a weak capture cannot.
+    /// Batches enqueued afterwards are dropped. See CODE_AUDIT_Edit_Save §3.5.
+    public func stopSyncConsumer() {
+        syncBatchContinuation.finish()
+        syncBatchConsumer?.cancel()
+        syncBatchConsumer = nil
+    }
+
     public let version: Int
            
-    public var isGameMode: Bool = false
+    public var isGameMode: Bool = false {
+        didSet {
+            if oldValue != isGameMode { gameGeneration &+= 1 }
+        }
+    }
 
     /// A saved game is loaded into game memory but the game has not started. Until it starts,
     /// reads keep showing the library: preferring the staged game copies made every view and
     /// export show the saved versions, and the first edit wrote the saved state into the
     /// permanent item. See CODE_AUDIT_Folder §5.25.
-    public internal(set) var isSavedGameStaged = false
+    public internal(set) var isSavedGameStaged = false {
+        didSet {
+            if oldValue != isSavedGameStaged { gameGeneration &+= 1 }
+        }
+    }
+
+    /// Changes whenever reads and writes switch between the library and game memory (a game
+    /// starts or ends, a saved game is staged). An undo step made in one generation would write
+    /// into the wrong place in another, so it is dropped. See CODE_AUDIT_Edit_Save §5.1.
+    public private(set) var gameGeneration = 0
 
     public func resetGame(start: Bool = false) {
         isGameMode = start

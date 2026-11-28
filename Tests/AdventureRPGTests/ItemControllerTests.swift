@@ -33,7 +33,7 @@ struct ItemControllerTests {
         changed.name = "Updated"
         let newId = UUID()
         changed.photoId = newId
-        root.editController.save(updated: changed, message: "")
+        root.editController.save(updated: changed, message: "", forceSave: false)
         let isUsed = sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: newId, typeId: .photo))
         #expect(isUsed)
 
@@ -49,7 +49,7 @@ struct ItemControllerTests {
 
         let photoId = UUID()
         let photo = PhotoModel(id: photoId, name: "Referenced Photo")
-        root.photoRoot.editController.save(updated: photo, message: "Test")
+        root.photoRoot.editController.save(updated: photo, message: "Test", forceSave: false)
 
         let content = root.photoRoot.linkControllable.generateLinks(
             itemId: photoId,
@@ -63,7 +63,7 @@ struct ItemControllerTests {
             photoId: photoId,
             entries: [entry]
         )
-        root.editController.save(updated: item, message: "Test")
+        root.editController.save(updated: item, message: "Test", forceSave: false)
 
         // Re-registering the item's links must remain idempotent.
         sut.linkRegisterController.register(links: item.linkRegisterModels)

@@ -62,9 +62,9 @@ struct FolderListControllerTests {
         let idC = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         let idB = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Cruiser",  itemId: idC)
-        root.editController.reset(name: "Asteroid", itemId: idA)
-        root.editController.reset(name: "Battleship", itemId: idB)
+        root.editController.reset(name: "Cruiser",  itemId: idC, forceSave: false)
+        root.editController.reset(name: "Asteroid", itemId: idA, forceSave: false)
+        root.editController.reset(name: "Battleship", itemId: idB, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let results = await sut.results(text: "")
@@ -83,8 +83,8 @@ struct FolderListControllerTests {
 
         let itemId   = await root.itemController.addNew(type: .item)
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Probe",  itemId: itemId)
-        root.editController.reset(name: "Hangar", itemId: folderId)
+        root.editController.reset(name: "Probe",  itemId: itemId, forceSave: false)
+        root.editController.reset(name: "Hangar", itemId: folderId, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let results = await sut.results(text: "")
@@ -103,9 +103,9 @@ struct FolderListControllerTests {
         let exactId    = await root.itemController.addNew(type: .item)
         let containsId = await root.itemController.addNew(type: .item)
         let noMatchId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon",           itemId: exactId)
-        root.editController.reset(name: "The Dragon Ship",  itemId: containsId)
-        root.editController.reset(name: "Nebula Cruiser",   itemId: noMatchId)
+        root.editController.reset(name: "Dragon",           itemId: exactId, forceSave: false)
+        root.editController.reset(name: "The Dragon Ship",  itemId: containsId, forceSave: false)
+        root.editController.reset(name: "Nebula Cruiser",   itemId: noMatchId, forceSave: false)
 
         let (sut, _) = makeSUT(for: root)
         let results = await sut.results(text: "Dragon")
@@ -125,8 +125,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
 
         let descOnlyId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Wanderer",              itemId: descOnlyId)
-        root.editController.reset(description: "Dragon-class scout vessel", itemId: descOnlyId)
+        root.editController.reset(name: "Wanderer",              itemId: descOnlyId, forceSave: false)
+        root.editController.reset(description: "Dragon-class scout vessel", itemId: descOnlyId, forceSave: false)
 
         // Compact: name only — description match must NOT appear
         let (compactSUT, _) = makeSUT(for: root, displayMode: .compact)
@@ -149,8 +149,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Dock", itemId: folderId)
-        root.editController.reset(name: "Dragon Wing", itemId: itemId)
+        root.editController.reset(name: "Dragon Dock", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Wing", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         let (sut, ldm) = makeSUT(for: root, listMode: .list)
@@ -179,9 +179,9 @@ struct FolderListControllerTests {
         let folderId  = await root.itemController.addNew(type: .folder)
         let memberA   = await root.itemController.addNew(type: .item)
         let standalone = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Fleet HQ",    itemId: folderId)
-        root.editController.reset(name: "Fighter",     itemId: memberA)
-        root.editController.reset(name: "Lone Probe",  itemId: standalone)
+        root.editController.reset(name: "Fleet HQ",    itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Fighter",     itemId: memberA, forceSave: false)
+        root.editController.reset(name: "Lone Probe",  itemId: standalone, forceSave: false)
         root.editController.addItem(itemId: memberA, parentId: folderId)
 
         let (sut, _) = makeSUT(for: root, listMode: .folder)
@@ -205,7 +205,7 @@ struct FolderListControllerTests {
     func inspectorEmptyNoFocusReturnsAllItems() async throws {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Probe", itemId: itemId)
+        root.editController.reset(name: "Probe", itemId: itemId, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root)
         let results = await sut.results(text: "")
@@ -219,8 +219,8 @@ struct FolderListControllerTests {
 
         let matchId   = await root.itemController.addNew(type: .item)
         let noMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Ship",  itemId: matchId)
-        root.editController.reset(name: "Space Station", itemId: noMatchId)
+        root.editController.reset(name: "Dragon Ship",  itemId: matchId, forceSave: false)
+        root.editController.reset(name: "Space Station", itemId: noMatchId, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root)
         let results = await sut.results(text: "Dragon")
@@ -235,8 +235,8 @@ struct FolderListControllerTests {
         let root = await makeRoot()
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Wanderer", itemId: itemId)
-        root.editController.reset(description: "Dragon-class scout", itemId: itemId)
+        root.editController.reset(name: "Wanderer", itemId: itemId, forceSave: false)
+        root.editController.reset(description: "Dragon-class scout", itemId: itemId, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root)    // medium by default
         let results = await sut.results(text: "Dragon")
@@ -253,7 +253,7 @@ struct FolderListControllerTests {
         // a child of the item result (not a flat sibling).
         let itemId   = await root.itemController.addNew(type: .item)
         let linkedId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Galaxy Base", itemId: itemId)
+        root.editController.reset(name: "Galaxy Base", itemId: itemId, forceSave: false)
         // Append an entry that links to another 3D object; its name = "Space Model"
         let entryId = UUID()
         root.itemController.itemOrEmpty(for: itemId)
@@ -277,8 +277,8 @@ struct FolderListControllerTests {
 
         let focusId = await root.itemController.addNew(type: .item)
         let otherId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Probe",   itemId: focusId)
-        root.editController.reset(name: "Dragon Station", itemId: otherId)
+        root.editController.reset(name: "Dragon Probe",   itemId: focusId, forceSave: false)
+        root.editController.reset(name: "Dragon Station", itemId: otherId, forceSave: false)
 
         let (sut, _, _) = makeLinkSUT(for: root, focusId: focusId)
         let results = await sut.results(text: "Dragon")
@@ -296,7 +296,7 @@ struct FolderListControllerTests {
         let root = await makeRoot()
 
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Hangar Bay", itemId: folderId)
+        root.editController.reset(name: "Hangar Bay", itemId: folderId, forceSave: false)
         let folder = root.itemController.itemOrEmpty(for: folderId)
 
         #expect(root.folderListControllable.listModel.detailListModel == nil,
@@ -315,9 +315,9 @@ struct FolderListControllerTests {
         let folderId = await root.itemController.addNew(type: .folder)
         let child1   = await root.itemController.addNew(type: .item)
         let child2   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Hangar Bay", itemId: folderId)
-        root.editController.reset(name: "Fighter",    itemId: child1)
-        root.editController.reset(name: "Bomber",     itemId: child2)
+        root.editController.reset(name: "Hangar Bay", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Fighter",    itemId: child1, forceSave: false)
+        root.editController.reset(name: "Bomber",     itemId: child2, forceSave: false)
         root.editController.addItem(itemId: child1, parentId: folderId)
         root.editController.addItem(itemId: child2, parentId: folderId)
 
@@ -341,9 +341,9 @@ struct FolderListControllerTests {
         let folderId    = await root.itemController.addNew(type: .folder)
         let childId     = await root.itemController.addNew(type: .item)
         let unrelatedId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Fleet HQ", itemId: folderId)
-        root.editController.reset(name: "Fighter",   itemId: childId)
-        root.editController.reset(name: "Station",   itemId: unrelatedId)
+        root.editController.reset(name: "Fleet HQ", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Fighter",   itemId: childId, forceSave: false)
+        root.editController.reset(name: "Station",   itemId: unrelatedId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
 
         let folder = root.itemController.itemOrEmpty(for: folderId)
@@ -366,9 +366,9 @@ struct FolderListControllerTests {
         let idC = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         let idB = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Charlie", itemId: idC)
-        root.editController.reset(name: "Alpha",   itemId: idA)
-        root.editController.reset(name: "Bravo",   itemId: idB)
+        root.editController.reset(name: "Charlie", itemId: idC, forceSave: false)
+        root.editController.reset(name: "Alpha",   itemId: idA, forceSave: false)
+        root.editController.reset(name: "Bravo",   itemId: idB, forceSave: false)
         root.editController.addItem(itemId: idC, parentId: folderId)
         root.editController.addItem(itemId: idA, parentId: folderId)
         root.editController.addItem(itemId: idB, parentId: folderId)
@@ -391,8 +391,8 @@ struct FolderListControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Dock",  itemId: folderId)
-        root.editController.reset(name: "Dragon Scout", itemId: itemId)
+        root.editController.reset(name: "Dragon Dock",  itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Scout", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         let (sut, ldm, _) = makeLinkSUT(for: root, listMode: .list)
@@ -418,12 +418,12 @@ struct FolderListControllerTests {
         var items: [UUID] = []
         for index in 0..<3 {
             let id = await root.itemController.addNew(type: .folder)
-            root.editController.reset(name: "Folder \(index)", itemId: id)
+            root.editController.reset(name: "Folder \(index)", itemId: id, forceSave: false)
             folders.append(id)
         }
         for index in 0..<4 {
             let id = await root.itemController.addNew(type: .item)
-            root.editController.reset(name: "Item \(index)", itemId: id)
+            root.editController.reset(name: "Item \(index)", itemId: id, forceSave: false)
             items.append(id)
         }
         root.editController.addItem(itemId: folders[2], parentId: folders[0])
@@ -453,7 +453,7 @@ struct FolderListControllerTests {
                 log.append("remove(stale) \(itemId.uuidString.prefix(4)) from \(target.uuidString.prefix(4))")
                 root.editController.remove(itemId: itemId, parentId: target, oneUp: false)
             default:
-                root.editController.repairFolders(itemIds: [itemId])
+                root.editController.repairFolders(itemIds: [itemId], forceSave: false)
                 log.append("repair \(itemId.uuidString.prefix(4))")
             }
             for folderId in folders {
@@ -478,8 +478,8 @@ struct FolderListControllerTests {
     private func makeSharedFolder(_ root: SpaceRootModel) async throws -> (folderId: UUID, itemId: UUID, sender: SpaceModel) {
         let folderId = await root.itemController.addNew(type: .folder)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Ruines", itemId: folderId)
-        root.editController.reset(name: "Item", itemId: itemId)
+        root.editController.reset(name: "Ruines", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Item", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
         let local = try #require(root.itemController.itemSync(for: folderId, noGame: true))
         let sender = local.copy()
@@ -516,7 +516,7 @@ struct FolderListControllerTests {
         root.itemController.itemDataModel.isGameMode = true
         // As `applyImportedItem` does in game mode: the delivery replaces the game-memory copy.
         root.itemController.replaceInGameMemory(model: sender)
-        root.editController.repairFolders(itemIds: [folderId, itemId])
+        root.editController.repairFolders(itemIds: [folderId, itemId], forceSave: false)
         #expect(memberCount(folderId, of: itemId, in: root, noGame: false) == 1, "game copy")
         #expect(memberCount(folderId, of: itemId, in: root, noGame: true) == 1, "library copy")
     }
@@ -581,7 +581,7 @@ struct FolderListControllerTests {
         let (folderId, itemId, sender) = try await makeSharedFolder(root)
         let folder = try #require(root.itemController.itemSync(for: folderId, noGame: true))
         folder.entries.append(contentsOf: sender.entries)
-        root.editController.repairFolders(itemIds: [folderId])
+        root.editController.repairFolders(itemIds: [folderId], forceSave: false)
         #expect(memberCount(folderId, of: itemId, in: root) == 1)
     }
 }

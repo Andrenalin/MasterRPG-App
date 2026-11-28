@@ -179,7 +179,7 @@ public struct BatchPhotoSummaryExtractionView: View {
             generatedTags: result.tags
         )
         if !change.isEmpty {
-            editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId)
+            editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId, forceSave: true)
         }
         summary.record(change, addedBookmarks: 0)
     }

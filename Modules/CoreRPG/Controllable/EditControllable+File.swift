@@ -20,12 +20,14 @@ public extension EditControllable {
     /// The item's path below the module folder: its folder names and its own name. Walks up the
     /// `parentId` chain iteratively with a cycle guard; a parent cycle from imported or merged
     /// data recursed until the stack overflowed. See CODE_AUDIT_Folder §5.30.
+    /// The library's folder names: files are persisted, so a folder renamed only in game memory
+    /// does not name a path. See CODE_AUDIT_Edit_Save §5.15.
     @MainActor func folderPath(itemId: UUID?) async -> String {
         var names: [String] = []
         var visited: Set<UUID> = []
         var currentId = itemId
         while let id = currentId, visited.count < FolderTreeDepthLimit.max, visited.insert(id).inserted,
-              let item = editModel(for: id) {
+              let item = itemControllable.itemSync(for: id, noGame: true) ?? itemControllable.itemSync(for: id) {
             names.append(item.name)
             currentId = item.parentId
         }
@@ -99,10 +101,11 @@ public extension EditControllable {
     /// Returns whether the item has the requested file afterwards. A caller that owns the
     /// source (the 3D scanner and its scan folder) must keep it when this is `false`.
     /// See CODE_AUDIT_21 §5.21.
-    /// `forceSave` (the default) stores the new file on the library item also during a running
-    /// game: the replaced file is deleted, so a reference that only reached game memory would
-    /// point at a deleted file once the game ends. See CODE_AUDIT_26 §5.1.
-    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = true) async -> Bool {
+    /// `forceSave` stores the new file on the library item also during a running game: the
+    /// replaced file is deleted, so a reference that only reached game memory would point at a
+    /// deleted file once the game ends. See CODE_AUDIT_26 §5.1. Required, like on every file
+    /// API: the default differed between them. See CODE_AUDIT_Edit_Save §9.2.
+    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool) async -> Bool {
         let result = await enqueueFileOperation(itemId: itemId) {
             await replaceFile(url: url, itemId: itemId, replaced: replaced, forceSave: forceSave)
         }.result
@@ -162,9 +165,11 @@ public extension EditControllable {
         defer { securityScope.stop() }
 
         // Re-read: a name typed while the awaits above ran must not be replaced by the file name.
+        // With the file's write policy: unforced, the name reached only a game copy and the
+        // library item stayed nameless. See CODE_AUDIT_Edit_Save §5.15.
         if editModel(for: itemId)?.name.isEmpty == true {
             let name = url.deletingPathExtension().lastPathComponent
-            reset(name: name, itemId: itemId)
+            reset(name: name, itemId: itemId, forceSave: forceSave)
         }
 
         do {
@@ -233,7 +238,7 @@ public extension EditControllable {
     /// `forceSave` stores the new file on the library item also during a game (the Create
     /// intents); without it the file reached only a game copy. See CODE_AUDIT_20 §5.4,
     /// CODE_AUDIT_21 §5.2, CODE_AUDIT_Since_3.0.1 §5.2.
-    @MainActor func resetFile(data: Data?, itemId: UUID, path: String, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = false) async throws {
+    @MainActor func resetFile(data: Data?, itemId: UUID, path: String, replaced: ReplacedFileDisposal = .delete, forceSave: Bool) async throws {
         try await enqueueFileOperation(itemId: itemId) {
             try await writeFile(data: data, itemId: itemId, replaced: replaced, forceSave: forceSave)
         }.value

@@ -19,9 +19,10 @@ struct UndoSideEffectsTests {
         let id = await root.itemController.addNew(type: .item)
         root.editController.save(
             updated: TableModel(id: id, name: "Table", description: "", tags: [], category: .loot, displayState: 0, tableType: .list, diceId: nil, entries: [], parentId: nil),
-            message: "Create table"
+            message: "Create table",
+            forceSave: false
         )
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: id))
+        root.editController.editorModel.undoManaged.removeAll()
         return (root, id)
     }
 
@@ -40,7 +41,7 @@ struct UndoSideEffectsTests {
         let content = LinkBuilder.markdown(name: "Book", module: .pdf, itemId: target)
         let model = try #require(root.editController.editModel(for: id))
         model.entries = [TableEntryModel(id: UUID(), name: "Row", content: content)]
-        root.editController.save(updated: model, message: "Add link")
+        root.editController.save(updated: model, message: "Add link", forceSave: false)
         try #require(links(root, of: id) == 1)
 
         root.editController.undo()
@@ -53,7 +54,7 @@ struct UndoSideEffectsTests {
     @Test("Undoing a tag edit and a trash step keeps the tag counts")
     func undoTagsAndTrashUpdateCounts() async throws {
         let (root, id) = await fixture()
-        root.editController.reset(tags: ["hero"], itemId: id)
+        root.editController.reset(tags: ["hero"], itemId: id, forceSave: false)
         try #require(tagCount(root, "hero") == 1)
 
         root.editController.undo()
@@ -61,7 +62,7 @@ struct UndoSideEffectsTests {
         root.editController.redo()
         #expect(tagCount(root, "hero") == 1)
 
-        root.editController.markForDeletion(itemId: id)
+        root.editController.markForDeletion(itemId: id, forceSave: false)
         try #require(tagCount(root, "hero") == 0)
         root.editController.undo()
         #expect(root.itemController.itemSync(for: id)?.isHidden == false)

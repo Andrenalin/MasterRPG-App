@@ -43,8 +43,8 @@ struct RuleEditorWindowDuringGameTests {
         let root = RuleRootModel.testRoot()
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.rule.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Fireball", description: Self.libraryDescription, category: nil, tags: ["spell"])
-        let entryId = root.editController.addNewEntry(itemId: itemId)
+        root.editController.update(id: itemId, name: "Fireball", description: Self.libraryDescription, category: nil, tags: ["spell"], forceSave: false)
+        let entryId = root.editController.addNewEntry(itemId: itemId, forceSave: false)
         root.editController.update(itemId: itemId, entryId: entryId, name: "Damage", content: "3d6", forceSave: false)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId, entryId: entryId)
@@ -53,7 +53,7 @@ struct RuleEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 

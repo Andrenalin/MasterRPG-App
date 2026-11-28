@@ -4,91 +4,104 @@ import SwiftUI
 
 // MARK: - Undo / Redo
 
+/// Undo and redo apply a step's changes as deltas: each change reverts (or re-applies) only what
+/// that edit changed, by a three-way merge onto the item as it is now, written to where the edit
+/// was written. A sync merge or game change made since stays. A step from another game
+/// generation is dropped instead of applied: its scope would now write into the library what was
+/// written to game memory, or the other way round. The file is never undone: the file a step
+/// referenced was deleted or moved. See CODE_AUDIT_Edit_Save §5.1-§5.7.
 public extension EditControllable {
     @MainActor
     var canUndo: Bool {
-        editorModel.undoManaged.canUndo
+        editorModel.undoManaged.nextUndoStep?.gameGeneration == itemControllable.itemDataModel.gameGeneration
     }
 
     @MainActor
     var canRedo: Bool {
-        editorModel.undoManaged.canRedo
+        editorModel.undoManaged.nextRedoStep?.gameGeneration == itemControllable.itemDataModel.gameGeneration
     }
 
     @MainActor
     func undo() {
-        recordLiveValue(before: editorModel.undoManaged.nextUndoValue as? Model)
-        editorModel.undoManaged.undo()
-        applyUndoValue()
+        guard let step = editorModel.undoManaged.nextUndoStep else { return }
+        guard step.gameGeneration == itemControllable.itemDataModel.gameGeneration else {
+            editorModel.undoManaged.removeAll()
+            return
+        }
+        _ = editorModel.undoManaged.undo()
+        for change in step.changes.reversed() {
+            guard let before = change.before as? Model, let after = change.after as? Model else { continue }
+            apply(change, from: after, to: before)
+        }
     }
 
     @MainActor
     func redo() {
-        recordLiveValue(before: editorModel.undoManaged.nextRedoValue as? Model)
-        editorModel.undoManaged.redo()
-        applyUndoValue()
-    }
-
-    /// `UndoManaged.undo()`/`redo()` push their current `value` onto the opposite stack, and a
-    /// save never advances `value`, so it is stale (the state from when the item was selected).
-    /// Before moving, make it the item as it is now: that is what the opposite step must bring
-    /// back, so edit, edit, undo, redo ends on the second edit instead of the original. The item
-    /// to read is the one the step restores, as the stack holds the states of every item edited.
-    /// An edit made on the library (a folder edit during a game) is a library edit again when it
-    /// is undone: what redo brings back is the library's state now. See CODE_AUDIT §5.1 and
-    /// CODE_AUDIT_21 §5.31.
-    @MainActor
-    private func recordLiveValue(before next: Model?) {
-        guard let next else { return }
-        if editorModel.isLibraryScopedUndo(next) {
-            guard let current = itemControllable.itemSync(for: next.id, noGame: true)?.copy() else { return }
-            editorModel.markLibraryScopedUndo(current)
-            editorModel.undoManaged.updateValue(current)
-        } else if let current = itemControllable.itemSync(for: next.id)?.copy() {
-            // The opposite step of a forced edit is forced too: redo writes the library again.
-            if editorModel.isForcedUndo(next) {
-                editorModel.markForcedUndo(current)
-            }
-            editorModel.undoManaged.updateValue(current)
+        guard let step = editorModel.undoManaged.nextRedoStep else { return }
+        guard step.gameGeneration == itemControllable.itemDataModel.gameGeneration else {
+            editorModel.undoManaged.removeAll()
+            return
+        }
+        _ = editorModel.undoManaged.redo()
+        for change in step.changes {
+            guard let before = change.before as? Model, let after = change.after as? Model else { continue }
+            apply(change, from: before, to: after)
         }
     }
 
-    /// Writes the value undo or redo just restored. A folder edit made on the library goes
-    /// back to the library: through `replace` with its default it only reached game memory
-    /// during a game, and the library kept the move. See CODE_AUDIT_21 §5.31.
+    /// Writes what `base` → `target` changes onto the item, where the change was written. An item
+    /// that is gone is skipped: undo used to insert it again. See CODE_AUDIT_Edit_Save §5.4.
     @MainActor
-    private func applyUndoValue() {
-        guard let model = editorModel.undoManaged.value as? Model else { return }
-        if editorModel.isLibraryScopedUndo(model) {
-            itemControllable.persistMembershipChange(model: model)
-        } else if editorModel.isForcedUndo(model) {
-            // A step the editor saved with `forceSave` (the editor window during a game): undone
-            // like it was saved, into the library and the game copy, not only game memory. With
-            // a game copy only the change goes to the library, so its session state stays out.
-            if !writeForcedEditOfGameCopy(model) {
-                updateLinkRegister(to: model)
-                updateTagCounts(to: model)
-                itemControllable.replace(model: model, isInsert: false, forceSave: true)
-            }
-        } else {
+    private func apply(_ change: ItemEditUndoStep.Change, from base: Model, to target: Model) {
+        switch change.scope {
+        case .library:
+            // A folder edit made on the library goes back to the library, also during a game.
+            // See CODE_AUDIT_21 §5.31.
+            guard var library = itemControllable.itemSync(for: change.itemId, noGame: true)?.copy() as? Model else { return }
+            library.applyEdit(from: base, to: target, includingSessionContent: true, includingFile: false)
+            itemControllable.persistMembershipChange(model: library)
+        case .forced:
+            applyForced(itemId: change.itemId, from: base, to: target)
+        case .current:
+            guard var current = editModel(for: change.itemId) else { return }
+            current.applyEdit(from: base, to: target, includingSessionContent: true, includingFile: false)
             // The same register and tag count steps as a save, before the stored value is replaced.
             // Not for a memory-only game write. See CODE_AUDIT_29 §5.3.
             if persistsEdit(forceSave: false) {
-                updateLinkRegister(to: model)
-                updateTagCounts(to: model)
+                updateLinkRegister(to: current)
+                updateTagCounts(to: current)
             }
-            itemControllable.replace(model: model, isInsert: false)
+            itemControllable.replace(model: current, isInsert: false, forceSave: false)
         }
-        editorModel.cacheItemListModel.reset(itemId: model.id)
+        editorModel.cacheItemListModel.reset(itemId: change.itemId)
+    }
+
+    /// A step the editor saved with `forceSave` (the editor window during a game) is undone like
+    /// it was saved: into the library and the game copy. The library gets the change without
+    /// the game's session state; the game copy gets all of it. See CODE_AUDIT_Edit_Save §5.7.
+    @MainActor
+    private func applyForced(itemId: UUID, from base: Model, to target: Model) {
+        guard let stored = itemControllable.itemSync(for: itemId, noGame: true) as? Model else { return }
+        let gameValue = gameCopy(of: itemId)?.copy()
+        var library = stored.copy()
+        // Outside a game the library is where the whole edit was written.
+        library.applyEdit(from: base, to: target, includingSessionContent: !itemControllable.itemDataModel.isGameMode, includingFile: false)
+        updateLinkRegister(to: library, from: stored)
+        updateTagCounts(to: library, from: stored)
+        itemControllable.replace(model: library, isInsert: false, forceSave: true, syncGameMemory: false)
+        if var gameValue {
+            gameValue.applyEdit(from: base, to: target, includingSessionContent: true, includingFile: false)
+            itemControllable.replaceInGameMemory(model: gameValue)
+        }
     }
 
     @MainActor
     var undoTitle: String {
-        editorModel.undoManaged.undoTitles.last ?? ""
+        canUndo ? editorModel.undoManaged.undoTitles.last ?? "" : ""
     }
 
     @MainActor
     var redoTitle: String {
-        editorModel.undoManaged.redoTitles.last ?? ""
+        canRedo ? editorModel.undoManaged.redoTitles.last ?? "" : ""
     }
 }

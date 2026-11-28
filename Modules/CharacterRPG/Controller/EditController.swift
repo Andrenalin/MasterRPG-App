@@ -198,7 +198,7 @@ extension EditController {
     /// Unlinks an entry's dice, mirroring the `.dice` case of `add(link:...)`.
     /// The entry's value type is left as-is — only the link itself is removed.
     /// - Parameter forceSave: `true` from the sheet editor, which persists also during a game.
-    @MainActor public func removeDice(itemId: UUID, entryId: UUID, forceSave: Bool = false) {
+    @MainActor public func removeDice(itemId: UUID, entryId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         var entry = item[entryId]
         guard entry.diceId != nil else { return }
@@ -239,7 +239,7 @@ extension EditController {
 
 extension EditController {
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    @MainActor func add(selection: [WindowItemSelection], itemId: UUID, forceSave: Bool = false) {
+    @MainActor func add(selection: [WindowItemSelection], itemId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         item.photos <=> selection.map { $0.itemId }
         item.photoId <=> item.photos.first
@@ -247,10 +247,8 @@ extension EditController {
     }
     
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice", bundle: .module), forceSave: forceSave)
+    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool) {
+        saveField(itemId: itemId, \.diceId, to: diceId, message: String(localized: "Change Dice", bundle: .module), forceSave: forceSave)
     }
     
     /// Clears the item's own dice. Unlike `removeDice(itemId:entryId:)`, which unlinks an entry's
@@ -258,7 +256,7 @@ extension EditController {
     @MainActor func removeDice(itemId: UUID) {
         guard let item = editModel(for: itemId), item.diceId != nil else { return }
         item.diceId = nil
-        save(updated: item, message: String(localized: "Remove Dice", bundle: .module))
+        save(updated: item, message: String(localized: "Remove Dice", bundle: .module), forceSave: true)
     }
 
     /// Restores the rule `add(selection:)` keeps: the portrait (`photoId`) is the first photo of the list.
@@ -274,14 +272,14 @@ extension EditController {
             guard let first = item.photos.first else { return }
             item.photoId = first
         }
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module), forceSave: true)
     }
 
     @MainActor func removePhotos(itemId: UUID) async {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = nil
         item.photos.removeAll()
-        save(updated: item, message: String(localized: "remove photos", bundle: .module))
+        save(updated: item, message: String(localized: "remove photos", bundle: .module), forceSave: true)
     }
 
     // `addNewGroup`, `convertToGroup`, `canBecomeGroup`, `groupFolders`, `parentFolder`,
@@ -290,16 +288,9 @@ extension EditController {
     // CODE_AUDIT_Folder §9.9.
 
     
-    @MainActor func addItemAsGroup(itemId: UUID, groupId: UUID, forceSave: Bool = false) async -> UUID {
-        reset(hidden: true, itemId: groupId, forceSave: forceSave)
-        guard let group = editModel(for: groupId) else { return groupId }
-        group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
-        var entry = Model.Entry.empty
-        entry.name = group.name
-        entry.valueId = groupId
-        add(entry: entry, itemId: itemId, forceSave: forceSave)
-        return entry.id
+    /// The shared `attachAsGroup`. See CODE_AUDIT_Edit_Save §9.4.
+    @MainActor func addItemAsGroup(itemId: UUID, groupId: UUID, forceSave: Bool) async -> UUID {
+        attachAsGroup(itemId: itemId, groupId: groupId, forceSave: forceSave)
     }
 
 
@@ -313,10 +304,7 @@ extension EditController {
             save(updated: item, message: String(localized: "update value type", bundle: .module), forceSave: forceSave)
         }
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true, forceSave: forceSave)
-        guard let valueId = item[entryId].valueId else { return }
-        let fixedName = name.withoutLink()
-        reset(name: fixedName, itemId: valueId, forceSave: forceSave)
-        reset(description: content, itemId: valueId, forceSave: forceSave)
+        updateGroupItem(itemId: itemId, entryId: entryId, name: name, content: content, forceSave: forceSave)
     }
 
     /// Internal (not `private`): shared with `create(name:content:)` in
@@ -373,7 +361,8 @@ extension EditController {
     /// value's own entries.
     @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID? {
         guard let wrapper = sheet.entries.first else { return nil }
-        let itemId = await itemController.addNew(type: .item)
+        // Created with the fill's write policy. See CODE_AUDIT_Edit_Save §5.9.
+        let itemId = await itemController.addNew(type: .item, forceSave: forceSave)
         guard let item = editModel(for: itemId) else { return nil }
         item.name = wrapper.name
         item.description = wrapper.description

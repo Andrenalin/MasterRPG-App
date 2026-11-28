@@ -76,6 +76,7 @@ extension GameRoot {
         gameModel.masterController = nil
         await gameModel.playerController?.stop()
         gameModel.playerController?.uninstallMapPhotoActions()
+        gameModel.playerController?.uninstallCharacterEditAnnouncement()
         gameModel.playerController = nil
         // Only now: a message built while the controllers were stopping (a pending receipt, a
         // debounced value update) must not go out under the empty config's random master id.

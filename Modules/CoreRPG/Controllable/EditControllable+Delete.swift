@@ -50,11 +50,18 @@ public extension EditControllable {
     /// are trashed and the kept ones restored together, in one step, so a kept child of a
     /// removed folder leaves that folder by the rules of `restore(itemIds:)`.
     /// See CODE_AUDIT_Folder §5.1, §5.4, CODE_AUDIT_21 §5.29.
-    @MainActor func confirmRemoval(of candidates: [ItemRowModel], keeping kept: [ItemRowModel]) {
-        candidates.forEach {
-            markForDeletion(itemId: $0.itemId)
+    ///
+    /// - Parameter forceSave: `true` from the library UI: the trash is a library change, also
+    ///   during a game. It used to be memory-only there while the tag counts changed for good,
+    ///   so the items came back after the game with their tags uncounted.
+    ///   See CODE_AUDIT_Edit_Save §5.17.
+    @MainActor func confirmRemoval(of candidates: [ItemRowModel], keeping kept: [ItemRowModel], forceSave: Bool) {
+        asOneUndoStep(String(localized: "Delete", bundle: .module)) {
+            candidates.forEach {
+                markForDeletion(itemId: $0.itemId, forceSave: forceSave)
+            }
+            restore(itemIds: kept.map(\.itemId), forceSave: forceSave)
         }
-        restore(itemIds: kept.map(\.itemId))
     }
 }
 
@@ -77,7 +84,9 @@ public extension EditControllable {
 
         recordOperation("EditControllable.delete(itemId:)")
 
-        guard let item = await itemControllable.item(for: itemId) as? Model else { return }
+        // The row delete is permanent: the library item decides what goes with it.
+        // See CODE_AUDIT_Edit_Save §5.18, §5.25.
+        guard let item = (itemControllable.itemSync(for: itemId, noGame: true) ?? itemControllable.itemSync(for: itemId)) as? Model else { return }
         let isTrashed = item.isHidden
         await willDeleteChildren(of: item)
         for entry in item.entries {
@@ -93,7 +102,9 @@ public extension EditControllable {
                 await delete(itemId: entry.childId, visited: visited)
             } else if !item.specialCategory {
                 linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
-                reset(displayState: DisplayStateMask.fullVisible.rawValue, itemId: entry.childId)
+                // Persisted like the delete itself: memory-only during a game, the grouped
+                // children stayed hidden orphans in the library. See CODE_AUDIT_Edit_Save §5.18.
+                reset(hidden: false, itemId: entry.childId, forceSave: true)
             }
         }
 
@@ -219,19 +230,22 @@ public extension EditControllable {
 
     /// - Parameter forceSave: `true` trashes the library item also during a game (the Delete
     ///   intents). See CODE_AUDIT_Since_3.0.1 §5.2.
-    @MainActor func markForDeletion(itemId: UUID, forceSave: Bool = false) {
+    @MainActor func markForDeletion(itemId: UUID, forceSave: Bool) {
         guard var item = editModel(for: itemId),
               !item.isHidden else { return }
         // Idempotent: a second pass over an already trashed item removed the tags twice.
-        // See CODE_AUDIT_Folder §5.19.
-        tagController.remove(tags: item.tags, module: itemControllable.config.module)
+        // See CODE_AUDIT_Folder §5.19. A memory-only trash leaves the persisted counts alone.
+        // See CODE_AUDIT_Edit_Save §5.17.
+        if persistsEdit(forceSave: forceSave) {
+            tagController.remove(tags: item.tags, module: itemControllable.config.module)
+        }
         item.displayState = DisplayStateMask.totalHidden.rawValue
         save(updated: item, message: String(localized: "Delete", bundle: .module), forceSave: forceSave)
         IntentDonations.forget(itemId: itemId, module: itemControllable.config.module)
     }
 
-    @MainActor func restore(itemId: UUID) {
-        restore(itemIds: [itemId])
+    @MainActor func restore(itemId: UUID, forceSave: Bool) {
+        restore(itemIds: [itemId], forceSave: forceSave)
     }
 
     /// Restores `itemIds` together. A child restored with its folder keeps its place in the
@@ -239,15 +253,19 @@ public extension EditControllable {
     /// each child then landed at root. A child restored without its folder is taken out of the
     /// folder's entries as well, so purging the folder later cannot delete it.
     /// See CODE_AUDIT_Folder §5.1, §5.4.
-    @MainActor func restore(itemIds: [UUID]) {
+    ///
+    /// - Parameter forceSave: `true` from the library UI (see `confirmRemoval`).
+    @MainActor func restore(itemIds: [UUID], forceSave: Bool) {
         let restoring = Set(itemIds)
-        for itemId in itemIds {
-            restore(itemId: itemId, restoring: restoring)
+        asOneUndoStep(String(localized: "Restore item", bundle: .module)) {
+            for itemId in itemIds {
+                restore(itemId: itemId, restoring: restoring, forceSave: forceSave)
+            }
         }
     }
 
-    @MainActor private func restore(itemId: UUID, restoring: Set<UUID>) {
-        trackOperation("EditControllable.restore(itemId:)")
+    @MainActor private func restore(itemId: UUID, restoring: Set<UUID>, forceSave: Bool) {
+        recordOperation("EditControllable.restore(itemId:)")
 
         // Only trashed items are restored: Cancel in an entry-removal panel passes items that
         // were never trashed, and "restoring" them unhid group-hidden items.
@@ -268,7 +286,7 @@ public extension EditControllable {
                     keptEntries.removeAll { $0.childId == child.id }
                     if child.parentId == item.id {
                         child.parentId = nil
-                        save(updated: child, message: String(localized: "Restore parent", bundle: .module))
+                        save(updated: child, message: String(localized: "Restore parent", bundle: .module), forceSave: forceSave)
                     }
                 } else if child.parentId != item.id {
                     keptEntries.removeAll { $0.childId == child.id }
@@ -287,14 +305,16 @@ public extension EditControllable {
                 item.parentId = nil
                 if let parentItem, parentItem.entries.contains(where: { $0.childId == item.id }) {
                     parentItem.entries.removeAll { $0.childId == item.id }
-                    save(updated: parentItem, message: String(localized: "Restore item", bundle: .module))
+                    save(updated: parentItem, message: String(localized: "Restore item", bundle: .module), forceSave: forceSave)
                 }
             }
         }
 
-        tagController.add(tags: item.tags, module: itemControllable.config.module)
+        if persistsEdit(forceSave: forceSave) {
+            tagController.add(tags: item.tags, module: itemControllable.config.module)
+        }
         item.displayState = DisplayStateMask.fullVisible.rawValue
-        save(updated: item, message: String(localized: "Restore item", bundle: .module))
+        save(updated: item, message: String(localized: "Restore item", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func removeItem(offsets: IndexSet, itemId: UUID) {

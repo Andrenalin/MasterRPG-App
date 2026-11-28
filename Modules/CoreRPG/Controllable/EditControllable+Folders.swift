@@ -34,11 +34,15 @@ public extension EditControllable {
         }
     }
 
-    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true) {
-        removeItemFromParent(itemId: itemId, oneUp: oneUp, moveFiles: moveFiles, scope: .current)
+    /// Detaches `itemId` from its folder with the caller's write policy. A forced operation
+    /// (an editor or list action during a game) detaches it in the library: the memory-only
+    /// detach it used to make created a game copy that the operation's later forced diff then
+    /// started from, so the library item stayed in its folder. See CODE_AUDIT_Edit_Save §5.8.
+    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true, forceSave: Bool) {
+        removeItemFromParent(itemId: itemId, oneUp: oneUp, moveFiles: moveFiles, scope: forceSave ? .library : .current)
     }
 
-    @MainActor func cleanFolder(itemId: UUID) {
+    @MainActor func cleanFolder(itemId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         item.entries.removeAll {
             guard let child = itemControllable.itemSync(for: $0.childId) else { return true }
@@ -52,7 +56,7 @@ public extension EditControllable {
         if let unique = FolderEntryMerge.deduplicated(item.entries, id: \.id, childId: \.childId) {
             item.entries = unique
         }
-        save(updated: item, message: String(localized: "update folder", bundle: .module))
+        save(updated: item, message: String(localized: "update folder", bundle: .module), forceSave: forceSave)
     }
 }
 
@@ -67,6 +71,10 @@ extension EditControllable {
         // search/list tree-builder (`buildFolderTreeNode`, `appendToFlat`, …) walks this exact
         // `entries`/`childId` graph assuming it's acyclic and has no cycle guard of its own.
         guard !isDescendant(parentId, of: itemId) else { return }
+        // The item and its old and new folder change together: one undo step.
+        // See CODE_AUDIT_Edit_Save §5.5.
+        editorModel.beginUndoGroup(title: String(localized: "Added item", bundle: .module))
+        defer { editorModel.endUndoGroup() }
         // A collection lists a member once: in seven modules the entry id is the member id, so a
         // second entry is one row with one uuid twice, which the database cannot keep.
         // See CODE_AUDIT_28 §5.2.
@@ -105,7 +113,7 @@ extension EditControllable {
         if parentItem.category == .folder || parentItem.category == .item {
             item.parentId <=> parentItem.id
             if parentItem.category == .item {
-                item.displayState <=> 1
+                item.displayState <=> DisplayStateMask.groupHidden.rawValue
             }
             saveFolderEdit(item, message: String(localized: "Added parent", bundle: .module), scope: scope)
             shouldCheckForMove = true
@@ -123,6 +131,8 @@ extension EditControllable {
 
     @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true, scope: FolderEditScope) {
         guard var item = folderEditModel(for: itemId, scope: scope), let parentId = item.parentId else { return }
+        editorModel.beginUndoGroup(title: String(localized: "Removed item", bundle: .module).localizedLowercase.localizedString)
+        defer { editorModel.endUndoGroup() }
         item.parentId = nil
         saveFolderEdit(item, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString, scope: scope)
 
@@ -169,14 +179,12 @@ extension EditControllable {
     @MainActor public func saveFolderEdit(_ item: Model, message: String, scope: FolderEditScope) {
         switch scope {
         case .current:
-            save(updated: item, message: message)
+            save(updated: item, message: message, forceSave: false)
         case .library:
             validateBeforeSave(model: item)
             guard !itemControllable.libraryModel(id: item.id, matches: item) else { return }
-            if let stored = itemControllable.itemSync(for: item.id, noGame: true) {
-                let previous = stored.copy()
-                editorModel.markLibraryScopedUndo(previous)
-                editorModel.undoManaged.previousValue(previous, title: message)
+            if let stored = itemControllable.itemSync(for: item.id, noGame: true) as? Model {
+                recordUndo(before: stored, after: item, scope: .library, title: message)
             }
             itemControllable.persistMembershipChange(model: item)
         }

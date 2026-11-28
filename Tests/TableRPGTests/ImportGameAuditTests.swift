@@ -17,7 +17,7 @@ struct ImportGameAuditTests {
 
     private func addTable(_ root: TableRootModel, name: String, type: ItemListCategory = .item) -> UUID {
         let id = root.itemController.addNewSync(type: type)
-        root.editController.reset(name: name, itemId: id)
+        root.editController.reset(name: name, itemId: id, forceSave: false)
         return id
     }
 
@@ -68,7 +68,7 @@ struct ImportGameAuditTests {
         // Entries a sync merge can leave behind in another folder.
         let staleFolder = try #require(root.editController.editModel(for: staleFolderId))
         staleFolder.entries.append(contentsOf: [TableEntryModel.newChild(id: firstId), TableEntryModel.newChild(id: secondId)])
-        root.editController.save(updated: staleFolder, message: "stale")
+        root.editController.save(updated: staleFolder, message: "stale", forceSave: false)
 
         try await importFile(data, into: root, mode: .overwrite)
 
@@ -81,7 +81,7 @@ struct ImportGameAuditTests {
         let root = makeRoot()
         let tableId = addTable(root, name: "Loot")
         let data = try await export([tableId], from: root)
-        root.editController.markForDeletion(itemId: tableId)
+        root.editController.markForDeletion(itemId: tableId, forceSave: false)
         #expect(root.itemController.itemSync(for: tableId)?.displayState == DisplayStateMask.totalHidden.rawValue)
 
         try await importFile(data, into: root, mode: .merge)
@@ -99,7 +99,7 @@ struct ImportGameAuditTests {
         let first = try await player.gameController.importNetwork(from: try await export([tableId], from: master))
         #expect(first[.table]?.contains(tableId) == true)
 
-        master.editController.reset(name: "Treasure", itemId: tableId)
+        master.editController.reset(name: "Treasure", itemId: tableId, forceSave: false)
         let second = try await player.gameController.importNetwork(from: try await export([tableId], from: master))
 
         #expect(second[.table]?.contains(tableId) == true, "an in-place update of the game copy still counts as imported")

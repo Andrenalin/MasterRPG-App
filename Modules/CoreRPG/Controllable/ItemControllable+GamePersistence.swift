@@ -141,14 +141,29 @@ public extension ItemControllable {
     /// so every stored delivery of a changed file left the old one in iCloud Drive. The
     /// delivered file itself is never removed here; the game still shows it.
     /// See CODE_AUDIT_21 §5.14.
+    ///
+    /// The references are checked again on the main actor right before the deletion: a delivery
+    /// or edit that references the file between the call and the Task kept a dangling file
+    /// reference. See CODE_AUDIT_Edit_Save §3.4.
     @MainActor private func removeFileReplacedFromGame(_ previous: FileUrl?, itemId: UUID) {
-        guard let previous, let controller = fileUrlDataController,
-              let current = itemSync(for: itemId, noGame: true)?.fileUrl,
-              !controller.isSameStoredFile(current, previous),
-              !isFileUsedElsewhere(previous, excluding: itemId) else { return }
-        Task {
+        guard let previous, isReplacedGameFileUnused(previous, itemId: itemId) else { return }
+        Task { @MainActor in
+            guard isReplacedGameFileUnused(previous, itemId: itemId),
+                  let controller = fileUrlDataController,
+                  let current = itemSync(for: itemId, noGame: true)?.fileUrl else { return }
             await controller.deleteReplaced(previous, keeping: current)
         }
+    }
+
+    @MainActor private func isReplacedGameFileUnused(_ previous: FileUrl, itemId: UUID) -> Bool {
+        guard let controller = fileUrlDataController,
+              let current = itemSync(for: itemId, noGame: true)?.fileUrl else { return false }
+        // The game copy may still show the replaced file.
+        let gameFileUrl = itemSync(for: itemId)?.fileUrl
+        let isShownInGame = gameFileUrl.map { controller.isSameStoredFile($0, previous) } ?? false
+        return !controller.isSameStoredFile(current, previous)
+            && !isFileUsedElsewhere(previous, excluding: itemId)
+            && !isShownInGame
     }
 
     /// Removes those of `files` (written for game-memory items) that no library item references.

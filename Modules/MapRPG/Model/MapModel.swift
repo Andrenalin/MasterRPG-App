@@ -238,6 +238,10 @@ extension MapModel: nonisolated ItemDataAccessible {
         MapModel(id: id, name: "")
     }
     nonisolated public static let typeId: NetworkModules = .map
+    /// Map content (rooms, links, pins, border, cover, tiles, photo, hex grid) stays in game memory
+    /// while a game runs, also from the editor window; only the metadata persists.
+    /// See CODE_AUDIT_Edit_Save §5.13.
+    nonisolated public static var hasSessionOnlyEntries: Bool { true }
 
     public func copy() -> MapModel {
         MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, walls: walls_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId, hasRecordedDegrees: hasRecordedDegrees)

@@ -20,8 +20,8 @@ struct FolderAuditPhotoTests {
         let root = PhotoRootModel.persistentTestRoot(context: store.context)
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
         await root.itemController.save()
 
@@ -42,8 +42,8 @@ struct FolderAuditPhotoTests {
         let root = PhotoRootModel.persistentTestRoot(context: store.context)
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Ruines", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Ruines", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
         await root.itemController.save()
         let storage = DataController(context: store.context, token: NetworkModules.photo.token)
@@ -230,10 +230,10 @@ struct FolderAuditPhotoTests {
         try FileManager.default.moveItem(at: topUrl.appending(path: "Old/Moved.png"), to: topUrl.appending(path: "New/Moved.png"))
         try FileManager.default.removeItem(at: topUrl.appending(path: "Old/Gone.png"))
         let strayId = await library.addNew(type: .folder)
-        root.editController.reset(name: "Stray", itemId: strayId)
+        root.editController.reset(name: "Stray", itemId: strayId, forceSave: false)
         let stay = try #require(library.itemSync(for: stayId, noGame: true))
         stay.parentId = strayId
-        root.editController.repairFolders(itemIds: [stayId])
+        root.editController.repairFolders(itemIds: [stayId], forceSave: false)
 
         var plan = try await scannedPlan(controller)
         plan.items.removeAll { $0.file.components.first != top }
@@ -303,8 +303,8 @@ struct FolderAuditPhotoTests {
         await root.itemController.resetData()
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Child", itemId: childId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Child", itemId: childId, forceSave: false)
         root.editController.addItem(itemId: childId, parentId: folderId)
         let list = root.folderListController
         list.listDisplayModel.listMode = .folder

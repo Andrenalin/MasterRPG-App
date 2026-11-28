@@ -15,7 +15,7 @@ extension EditController {
     ///   dice (more would be cut when the set is decoded), so the bag and the intent are refused
     ///   at the limit. See CODE_AUDIT_26 §5.112.
     @discardableResult
-    @MainActor func add(die: DieModel, itemId: UUID, forceSave: Bool = false) -> Bool {
+    @MainActor func add(die: DieModel, itemId: UUID, forceSave: Bool) -> Bool {
         guard let editModel = editModel(for: itemId),
               editModel.dice.count < DiceModel.maximumDecodedDiceCount else { return false }
         // A die of its own: the dice bag hands out its catalog dice, and three taps on "d20" must not
@@ -27,26 +27,26 @@ extension EditController {
 
     // `forceSave` is `true` from the dice editor, which persists also during a game.
 
-    @MainActor func remove(die: DieModel, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func remove(die: DieModel, itemId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.dice.firstIndex(where: { $0.id == die.id }) else { return }
         item.dice.remove(at: index)
         save(updated: item, message: String(localized: "Remove \(die.name)", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func add(coup: Int, isDiceValueCoup: Bool, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func add(coup: Int, isDiceValueCoup: Bool, itemId: UUID, forceSave: Bool) {
         addSpecialValue(coup, isDiceValue: isDiceValueCoup, itemId: itemId, values: \.coupValues, onlyOnFirstDie: \.coupOnlyOnFirstDie, forceSave: forceSave, message: String(localized: "Set coup options", bundle: .module))
     }
 
-    @MainActor func remove(coup: DiceModel.CoupFumbleOption, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func remove(coup: DiceModel.CoupFumbleOption, itemId: UUID, forceSave: Bool) {
         removeSpecialValue(coup, itemId: itemId, values: \.coupValues, forceSave: forceSave, message: String(localized: "Remove coup options", bundle: .module))
     }
 
-    @MainActor func add(fumble: Int, isDiceValueFumble: Bool, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func add(fumble: Int, isDiceValueFumble: Bool, itemId: UUID, forceSave: Bool) {
         addSpecialValue(fumble, isDiceValue: isDiceValueFumble, itemId: itemId, values: \.fumbleValues, onlyOnFirstDie: \.fumbleOnlyOnFirstDie, forceSave: forceSave, message: String(localized: "Set fumble options", bundle: .module))
     }
 
-    @MainActor func remove(fumble: DiceModel.CoupFumbleOption, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func remove(fumble: DiceModel.CoupFumbleOption, itemId: UUID, forceSave: Bool) {
         removeSpecialValue(fumble, itemId: itemId, values: \.fumbleValues, forceSave: forceSave, message: String(localized: "Remove fumble options", bundle: .module))
     }
 
@@ -79,7 +79,7 @@ extension EditController {
         save(updated: editModel, message: message, forceSave: forceSave)
     }
 
-    @MainActor func add(reroll: Int, value: Int, isMaxDiceValue: Bool, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func add(reroll: Int, value: Int, isMaxDiceValue: Bool, itemId: UUID, forceSave: Bool) {
         guard let editModel = editModel(for: itemId) else { return }
         let rerollOption = DiceModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
         // A reroll is identified by its number: adding it again replaces the earlier one.
@@ -92,7 +92,7 @@ extension EditController {
         save(updated: editModel, message: String(localized: "Add reroll options", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func remove(reroll: DiceModel.RerollOption, itemId: UUID, forceSave: Bool = false) {
+    @MainActor func remove(reroll: DiceModel.RerollOption, itemId: UUID, forceSave: Bool) {
         guard let editModel = editModel(for: itemId) else { return }
         guard let index = editModel.rerollOptions.firstIndex(where: { $0 == reroll }) else { return }
         editModel.rerollOptions.remove(at: index)
@@ -101,30 +101,30 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor func reset(addValue: Double, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
+    // The single-field setters go through the shared `saveField` with a required write policy.
+    // See CODE_AUDIT_Edit_Save §9.1, §9.5.
+
+    @MainActor func reset(addValue: Double, itemId: UUID, forceSave: Bool) {
         // `Int(_:)` traps on NaN, infinity and out-of-range values. See CODE_AUDIT_29 §5.22.
-        item.addDiceEvery <=> addValue.saturatingInt
-        save(updated: item, message: String(localized: "Changed add dice value", bundle: .module), forceSave: forceSave)
+        saveField(itemId: itemId, \.addDiceEvery, to: addValue.saturatingInt, message: String(localized: "Changed add dice value", bundle: .module), forceSave: forceSave)
     }
-    
-    @MainActor func reset(compareValue: Double, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        item.compareValue <=> compareValue
-        save(updated: item, message: String(localized: "Changed compare value", bundle: .module), forceSave: forceSave)
+
+    @MainActor func reset(compareValue: Double, itemId: UUID, forceSave: Bool) {
+        saveField(itemId: itemId, \.compareValue, to: compareValue, message: String(localized: "Changed compare value", bundle: .module), forceSave: forceSave)
     }
-    
-    @MainActor func reset(modifier: Double, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
+
+    @MainActor func reset(modifier: Double, itemId: UUID, forceSave: Bool) {
         // The modifier is a whole number everywhere it is used; a fraction is rounded here.
         // See CODE_AUDIT_26 §5.111.
-        item.modifier <=> (modifier.isFinite ? modifier.rounded() : 0)
-        save(updated: item, message: String(localized: "Changed modifier", bundle: .module), forceSave: forceSave)
+        saveField(itemId: itemId, \.modifier, to: modifier.isFinite ? modifier.rounded() : 0, message: String(localized: "Changed modifier", bundle: .module), forceSave: forceSave)
     }
-    
-    @MainActor func reset(compareOption: DiceModel.CompareValue, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        item.compareOption <=> compareOption
-        save(updated: item, message: String(localized: "Changed compare option", bundle: .module), forceSave: forceSave)
+
+    @MainActor func reset(compareOption: DiceModel.CompareValue, itemId: UUID, forceSave: Bool) {
+        saveField(itemId: itemId, \.compareOption, to: compareOption, message: String(localized: "Changed compare option", bundle: .module), forceSave: forceSave)
+    }
+
+    /// A Bool option of the dice editor's toggles (sum up, ...). See CODE_AUDIT_Edit_Save §8.4.
+    @MainActor func reset(toggle keyPath: WritableKeyPath<DiceModel, Bool>, value: Bool, itemId: UUID, message: String, forceSave: Bool) {
+        saveField(itemId: itemId, keyPath, to: value, message: message, forceSave: forceSave)
     }
 }

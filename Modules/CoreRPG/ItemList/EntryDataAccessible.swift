@@ -18,6 +18,13 @@ public protocol EntryDataAccessible {
     func filter(_ filter: String, selectedTags: [TagFilterSelection]) -> Bool
         
     func linkContent() -> String
+
+    /// Applies to `self` (the library's entry) what `edited` changed relative to `base`, field by
+    /// field. A changed entry used to be replaced whole, which carried its session state (a
+    /// Character value changed in the game) into the library and reverted fields another device
+    /// changed meanwhile. The default replaces the entry; a module whose entries hold session
+    /// state or several independent fields diffs them. See CODE_AUDIT_Edit_Save §5.11.
+    @MainActor mutating func applyEdit(from base: Self, to edited: Self)
 }
 
 public extension EntryDataAccessible {
@@ -30,6 +37,10 @@ public extension EntryDataAccessible {
     }
 
     func linkContent() -> String { name }
+
+    @MainActor mutating func applyEdit(from base: Self, to edited: Self) {
+        self = edited
+    }
     
     var isGroupHidden: Bool {
         (displayState & DisplayStateMask.groupHidden.rawValue) > 0

@@ -280,6 +280,8 @@ private struct ItemHeaderEditorCard: View {
             ItemHeaderEditorDescriptionSection(attributedInformation: $attributedInformation, currentFocus: currentFocus)
             ItemHeaderEditorTagsSection(tags: $tags, tagController: tagController, module: tagModule)
         }
+        // Cmd+Z undoes the typing, not the module's last saved edit. See CODE_AUDIT_Edit_Save §8.2.
+        .textInputUndo()
         .padding(padding20)
         .background {
             RoundedRectangle(cornerRadius: 28, style: .continuous)

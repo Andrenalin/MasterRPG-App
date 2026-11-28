@@ -28,7 +28,7 @@ struct ConvertControllerRepairTests {
         let folderId = await root.editController.addNew(type: .folder)
         try #require(folderId != nil)
         guard let folderModel = folderId else { return }
-        root.editController.reset(name: "TestFolder", itemId: folderModel.id)
+        root.editController.reset(name: "TestFolder", itemId: folderModel.id, forceSave: false)
 
         // Create two child items
         let child1Id = await root.editController.addNew(type: .item)
@@ -37,8 +37,8 @@ struct ConvertControllerRepairTests {
         try #require(child2Id != nil)
         guard let child1 = child1Id, let child2 = child2Id else { return }
 
-        root.editController.reset(name: "Child1", itemId: child1.id)
-        root.editController.reset(name: "Child2", itemId: child2.id)
+        root.editController.reset(name: "Child1", itemId: child1.id, forceSave: false)
+        root.editController.reset(name: "Child2", itemId: child2.id, forceSave: false)
 
         // Add children to folder
         root.editController.addItem(itemId: child1.id, parentId: folderModel.id)
@@ -75,8 +75,8 @@ struct ConvertControllerRepairTests {
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "HiddenItem", itemId: item.id)
-        root.editController.reset(displayState: 1, itemId: item.id)
+        root.editController.reset(name: "HiddenItem", itemId: item.id, forceSave: false)
+        root.editController.reset(displayState: 1, itemId: item.id, forceSave: false)
 
         // Verify initial state
         let itemBefore = root.itemController.itemOrEmpty(for: item.id)
@@ -108,10 +108,10 @@ struct ConvertControllerRepairTests {
         try #require(childId != nil)
         guard let folder = folderId, let child = childId else { return }
 
-        root.editController.reset(name: "Folder", itemId: folder.id)
-        root.editController.reset(name: "Child", itemId: child.id)
+        root.editController.reset(name: "Folder", itemId: folder.id, forceSave: false)
+        root.editController.reset(name: "Child", itemId: child.id, forceSave: false)
         root.editController.addItem(itemId: child.id, parentId: folder.id)
-        root.editController.reset(displayState: 1, itemId: child.id)
+        root.editController.reset(displayState: 1, itemId: child.id, forceSave: false)
 
         let reportModel = ValidateRepairModel()
 
@@ -139,9 +139,9 @@ struct ConvertControllerRepairTests {
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "TestItem", itemId: item.id)
-        root.editController.reset(category: .photo, itemId: item.id)
-        root.editController.reset(tags: ["ExistingTag"], itemId: item.id)
+        root.editController.reset(name: "TestItem", itemId: item.id, forceSave: false)
+        root.editController.reset(category: .photo, itemId: item.id, forceSave: false)
+        root.editController.reset(tags: ["ExistingTag"], itemId: item.id, forceSave: false)
 
         // Verify initial state
         let itemBefore = root.itemController.itemOrEmpty(for: item.id)
@@ -173,7 +173,7 @@ struct ConvertControllerRepairTests {
         try #require(folderId != nil)
         guard let folder = folderId else { return }
 
-        root.editController.reset(name: "TestFolder", itemId: folder.id)
+        root.editController.reset(name: "TestFolder", itemId: folder.id, forceSave: false)
 
         let reportModel = ValidateRepairModel()
 
@@ -198,8 +198,8 @@ struct ConvertControllerRepairTests {
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "TestItem", itemId: item.id)
-        root.editController.reset(category: .entry, itemId: item.id)
+        root.editController.reset(name: "TestItem", itemId: item.id, forceSave: false)
+        root.editController.reset(category: .entry, itemId: item.id, forceSave: false)
 
         let reportModel = ValidateRepairModel()
 
@@ -226,7 +226,7 @@ struct ConvertControllerRepairTests {
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "TestFile", itemId: item.id)
+        root.editController.reset(name: "TestFile", itemId: item.id, forceSave: false)
 
         // Set file URL with folder structure
         let updatedItem = root.itemController.itemOrEmpty(for: item.id)
@@ -268,7 +268,7 @@ struct ConvertControllerRepairTests {
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "NoUrlItem", itemId: item.id)
+        root.editController.reset(name: "NoUrlItem", itemId: item.id, forceSave: false)
 
         let initialItemCount = root.itemController.itemDataModel.items.count
         let reportModel = ValidateRepairModel()
@@ -297,13 +297,13 @@ struct ConvertControllerRepairTests {
         let parentId = await root.editController.addNew(type: .folder)
         try #require(parentId != nil)
         guard let parent = parentId else { return }
-        root.editController.reset(name: "ParentFolder", itemId: parent.id)
+        root.editController.reset(name: "ParentFolder", itemId: parent.id, forceSave: false)
 
         // Create orphaned folder with parentId but not in parent's entries
         let orphanedId = await root.editController.addNew(type: .folder)
         try #require(orphanedId != nil)
         guard let orphaned = orphanedId else { return }
-        root.editController.reset(name: "OrphanedFolder", itemId: orphaned.id)
+        root.editController.reset(name: "OrphanedFolder", itemId: orphaned.id, forceSave: false)
 
         // Manually set parentId without adding to parent's entries (simulate corruption)
         let orphanedModel = root.itemController.itemOrEmpty(for: orphaned.id)
@@ -339,7 +339,7 @@ struct ConvertControllerRepairTests {
         let parentId = await root.editController.addNew(type: .folder)
         try #require(parentId != nil)
         guard let parent = parentId else { return }
-        root.editController.reset(name: "ParentFolder", itemId: parent.id)
+        root.editController.reset(name: "ParentFolder", itemId: parent.id, forceSave: false)
 
         // Create three orphaned folders
         let orphaned1Id = await root.editController.addNew(type: .folder)
@@ -352,9 +352,9 @@ struct ConvertControllerRepairTests {
               let orphaned2 = orphaned2Id,
               let orphaned3 = orphaned3Id else { return }
 
-        root.editController.reset(name: "Orphaned1", itemId: orphaned1.id)
-        root.editController.reset(name: "Orphaned2", itemId: orphaned2.id)
-        root.editController.reset(name: "Orphaned3", itemId: orphaned3.id)
+        root.editController.reset(name: "Orphaned1", itemId: orphaned1.id, forceSave: false)
+        root.editController.reset(name: "Orphaned2", itemId: orphaned2.id, forceSave: false)
+        root.editController.reset(name: "Orphaned3", itemId: orphaned3.id, forceSave: false)
 
         // Set all as orphaned
         for orphanedId in [orphaned1, orphaned2, orphaned3] {
@@ -398,9 +398,9 @@ struct ConvertControllerRepairTests {
               let parentFolder = parentFolderId,
               let childFolder = childFolderId else { return }
 
-        root.editController.reset(name: "RootFolder", itemId: rootFolder.id)
-        root.editController.reset(name: "ParentFolder", itemId: parentFolder.id)
-        root.editController.reset(name: "ChildFolder", itemId: childFolder.id)
+        root.editController.reset(name: "RootFolder", itemId: rootFolder.id, forceSave: false)
+        root.editController.reset(name: "ParentFolder", itemId: parentFolder.id, forceSave: false)
+        root.editController.reset(name: "ChildFolder", itemId: childFolder.id, forceSave: false)
 
         // Properly link rootFolder -> parentFolder
         root.editController.addItem(itemId: parentFolder.id, parentId: rootFolder.id)
@@ -445,13 +445,13 @@ struct ConvertControllerRepairTests {
         let parentId = await root.editController.addNew(type: .folder)
         try #require(parentId != nil)
         guard let parent = parentId else { return }
-        root.editController.reset(name: "ParentFolder", itemId: parent.id)
+        root.editController.reset(name: "ParentFolder", itemId: parent.id, forceSave: false)
 
         // Create orphaned item
         let orphanedItemId = await root.editController.addNew(type: .item)
         try #require(orphanedItemId != nil)
         guard let orphanedItem = orphanedItemId else { return }
-        root.editController.reset(name: "OrphanedItem", itemId: orphanedItem.id)
+        root.editController.reset(name: "OrphanedItem", itemId: orphanedItem.id, forceSave: false)
 
         // Manually set parentId without adding to parent's entries
         let orphanedModel = root.itemController.itemOrEmpty(for: orphanedItem.id)
@@ -484,8 +484,8 @@ struct ConvertControllerRepairTests {
         try #require(childId != nil)
         guard let parent = parentId, let child = childId else { return }
 
-        root.editController.reset(name: "ParentFolder", itemId: parent.id)
-        root.editController.reset(name: "ChildFolder", itemId: child.id)
+        root.editController.reset(name: "ParentFolder", itemId: parent.id, forceSave: false)
+        root.editController.reset(name: "ChildFolder", itemId: child.id, forceSave: false)
         root.editController.addItem(itemId: child.id, parentId: parent.id)
 
         // Verify valid state
@@ -522,20 +522,20 @@ struct ConvertControllerRepairTests {
         let parentId = await root.editController.addNew(type: .folder)
         try #require(parentId != nil)
         guard let parent = parentId else { return }
-        root.editController.reset(name: "ParentFolder", itemId: parent.id)
+        root.editController.reset(name: "ParentFolder", itemId: parent.id, forceSave: false)
 
         // Create valid child (properly linked)
         let validChildId = await root.editController.addNew(type: .folder)
         try #require(validChildId != nil)
         guard let validChild = validChildId else { return }
-        root.editController.reset(name: "ValidChild", itemId: validChild.id)
+        root.editController.reset(name: "ValidChild", itemId: validChild.id, forceSave: false)
         root.editController.addItem(itemId: validChild.id, parentId: parent.id)
 
         // Create orphaned child (has parentId but not in entries)
         let orphanedChildId = await root.editController.addNew(type: .folder)
         try #require(orphanedChildId != nil)
         guard let orphanedChild = orphanedChildId else { return }
-        root.editController.reset(name: "OrphanedChild", itemId: orphanedChild.id)
+        root.editController.reset(name: "OrphanedChild", itemId: orphanedChild.id, forceSave: false)
 
         let orphanedModel = root.itemController.itemOrEmpty(for: orphanedChild.id)
         orphanedModel.parentId = parent.id
@@ -572,16 +572,16 @@ struct ConvertControllerRepairTests {
         let folderId = await root.editController.addNew(type: .folder)
         try #require(folderId != nil)
         guard let folder = folderId else { return }
-        root.editController.reset(name: "Folder", itemId: folder.id)
+        root.editController.reset(name: "Folder", itemId: folder.id, forceSave: false)
 
         // Create an item with wrong category and hidden state
         let itemId = await root.editController.addNew(type: .item)
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "Item", itemId: item.id)
-        root.editController.reset(category: .photo, itemId: item.id)
-        root.editController.reset(displayState: 1, itemId: item.id)
+        root.editController.reset(name: "Item", itemId: item.id, forceSave: false)
+        root.editController.reset(category: .photo, itemId: item.id, forceSave: false)
+        root.editController.reset(displayState: 1, itemId: item.id, forceSave: false)
 
         let reportModel = ValidateRepairModel()
 
@@ -611,8 +611,8 @@ struct ConvertControllerRepairTests {
         try #require(itemId != nil)
         guard let item = itemId else { return }
 
-        root.editController.reset(name: "Item", itemId: item.id)
-        root.editController.reset(category: .photo, itemId: item.id)
+        root.editController.reset(name: "Item", itemId: item.id, forceSave: false)
+        root.editController.reset(category: .photo, itemId: item.id, forceSave: false)
 
         let reportModel = ValidateRepairModel()
 

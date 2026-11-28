@@ -4,42 +4,23 @@ import CoreRPG
 import PdfRPG
 import SwiftUI
 
+/// The shared `PdfQuickEntryEditor` with this module's types. See CODE_AUDIT_Edit_Save §9.6.
 struct QuickEntryEditor: View {
     let model: TableModel
 
     @Environment(TableRootModel.self) private var root
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
-    @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
 
     var body: some View {
-        QuickEntryEditorView(root: root.rootController, editController: root.editController, model: model, referenceText: referenceText, pdfEditorRoute: TableEditorRoute.selectionPdf) {
-            EditorLinkView(root: root.rootController, model: model, editorLinkModel: root.editorLinkModel)
-        } pdfOverlay: {
-#if os(iOS) || os(tvOS)
-            if let selectedPdf = root.editController.tableEditModel.selectionPdf.itemId {
-                pdfOverlayView(selectedPdf: selectedPdf)
-            }
-#endif
-        }
-    }
-
-    @ViewBuilder
-    private func pdfOverlayView(selectedPdf: UUID) -> some View {
-        root.pdfRoot.viewController.viewer(
-            root: root.pdfRoot,
-            itemId: selectedPdf,
-            entryId: nil,
-            configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false, aiExtractor: true)
-        ) {
-            withAnimation(reduceMotion ? nil : .default) {
-                root.editController.tableEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil)
-            }
-        }
-        .background(.primary)
+        PdfQuickEntryEditor(
+            rootController: root.rootController,
+            editController: root.editController,
+            model: model,
+            editorLinkModel: root.editorLinkModel,
+            pdfRoot: root.pdfRoot,
+            pdfEditorRoute: TableEditorRoute.selectionPdf,
+            selectionPdf: root.editController.tableEditModel.selectionPdf
+        )
     }
 }
 
-#Preview(traits: .mockData) {
-    QuickEntryEditor(model: .preview)
-}
+#Preview(traits: .mockData) { QuickEntryEditor(model: .preview) }

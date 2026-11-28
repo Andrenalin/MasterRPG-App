@@ -87,7 +87,7 @@ struct ExportControllerTests {
                 pathExtension: "m4a"
             )
         )
-        root.editController.reset(fileUrl: storedFileURL, itemId: itemId)
+        root.editController.reset(fileUrl: storedFileURL, itemId: itemId, forceSave: false)
 
         let withData = try await exportedPayloads(
             root: root,

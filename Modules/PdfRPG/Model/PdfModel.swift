@@ -110,57 +110,54 @@ extension PdfModel: nonisolated Comparable {
 
 extension PdfModel: nonisolated ItemLinkRegistrable {}
 
-extension PdfModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: PdfModel) -> PdfModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            // The rule every module shares: folders union their members (an entry on both
-            // sides keeps its own CRDT fields merged via `PdfEntryModel.merge`), a PDF's
-            // bookmarks merge as one last-writer-wins list. The per-bookmark union of
-            // CODE_AUDIT_Pdf §5.2 was given up by decision. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(
-                category: mergedCategory.wrappedValue,
-                local: entries_,
-                remote: other.entries_,
-                id: \.id,
-                name: \.name,
-                childId: \.childId,
-                combine: { local, remote in local.merge(remote) }
-            )
-            return PdfModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                fileUrl: fileUrl_.merged(other: other.fileUrl_),
-                entries: mergedEntries,
-                parentId: other.parentId
-            )
-    
-        }
+// A plain conformance to the `@MainActor` protocol: an off-main caller fails to compile instead
+// of trapping in `MainActor.assumeIsolated`. See CODE_AUDIT_Edit_Save §4.1.
+extension PdfModel: ItemDiffComparable {
+    public func merge(_ other: PdfModel) -> PdfModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        // The rule every module shares: folders union their members (an entry on both
+        // sides keeps its own CRDT fields merged via `PdfEntryModel.merge`), a PDF's
+        // bookmarks merge as one last-writer-wins list. The per-bookmark union of
+        // CODE_AUDIT_Pdf §5.2 was given up by decision. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(
+            category: mergedCategory.wrappedValue,
+            local: entries_,
+            remote: other.entries_,
+            id: \.id,
+            name: \.name,
+            childId: \.childId,
+            combine: { local, remote in local.merge(remote) }
+        )
+        return PdfModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            fileUrl: fileUrl_.merged(other: other.fileUrl_),
+            entries: mergedEntries,
+            parentId: other.parentId
+        )
     }
 
-    nonisolated public func isSame(_ other: PdfModel) -> Bool {
-        return assumeMainActorIsolated {
-            guard entries.count == other.entries.count else { return false }
-            // Compared by id, not position — entries can legitimately end up in a
-            // different order on each side (e.g. after a merge). See CODE_AUDIT_Pdf §5.5.
-            // First-wins, not a trapping `uniqueKeysWithValues`: imported or peer data can
-            // repeat an entry id. See CODE_AUDIT_21 §6.8.
-            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            fileUrl_.update == other.fileUrl_.update &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            // The entry's own comparator: `==` includes CRDT clocks and actor ids that every load
-            // regenerates. See CODE_AUDIT_28 §7.12.
-            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
-        }
+    public func isSame(_ other: PdfModel) -> Bool {
+        guard entries.count == other.entries.count else { return false }
+        // Compared by id, not position — entries can legitimately end up in a
+        // different order on each side (e.g. after a merge). See CODE_AUDIT_Pdf §5.5.
+        // First-wins, not a trapping `uniqueKeysWithValues`: imported or peer data can
+        // repeat an entry id. See CODE_AUDIT_21 §6.8.
+        let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        fileUrl_.update == other.fileUrl_.update &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        // The entry's own comparator: `==` includes CRDT clocks and actor ids that every load
+        // regenerates. See CODE_AUDIT_28 §7.12.
+        entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
     }
     
     public var version: Int {
@@ -168,13 +165,10 @@ extension PdfModel: nonisolated ItemDiffComparable {
     }
 }
 
-extension PdfModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> PdfModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            return PdfModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() })
-    
-        }
+extension PdfModel: ItemDuplicatable {
+    public func duplicate() -> PdfModel {
+        let copyName = duplicateName(from: name)
+        return PdfModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() })
     }
 }
 

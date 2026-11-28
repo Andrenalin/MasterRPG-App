@@ -52,7 +52,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.spaceRoot.itemController.resetData()
         let itemId = await gameRoot.spaceRoot.itemController.addNew(type: .item)
-        gameRoot.spaceRoot.editController.reset(name: "Dragon Cruiser", itemId: itemId)
+        gameRoot.spaceRoot.editController.reset(name: "Dragon Cruiser", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Dragon Cruiser")
         await sut.performSearch()
@@ -66,7 +66,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.pdfRoot.itemController.resetData()
         let itemId = await gameRoot.pdfRoot.itemController.addNew(type: .item)
-        gameRoot.pdfRoot.editController.reset(name: "Arcane Tome", itemId: itemId)
+        gameRoot.pdfRoot.editController.reset(name: "Arcane Tome", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Arcane Tome")
         await sut.performSearch()
@@ -80,7 +80,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.audioRoot.itemController.resetData()
         let itemId = await gameRoot.audioRoot.itemController.addNew(type: .item)
-        gameRoot.audioRoot.editController.reset(name: "Battle Fanfare", itemId: itemId)
+        gameRoot.audioRoot.editController.reset(name: "Battle Fanfare", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Battle Fanfare")
         await sut.performSearch()
@@ -94,7 +94,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.characterRoot.itemController.resetData()
         let itemId = await gameRoot.characterRoot.itemController.addNew(type: .item)
-        gameRoot.characterRoot.editController.reset(name: "Aldric the Bold", itemId: itemId)
+        gameRoot.characterRoot.editController.reset(name: "Aldric the Bold", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Aldric")
         await sut.performSearch()
@@ -108,7 +108,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.photoRoot.itemController.resetData()
         let itemId = await gameRoot.photoRoot.itemController.addNew(type: .item)
-        gameRoot.photoRoot.editController.reset(name: "Dragon Landscape", itemId: itemId)
+        gameRoot.photoRoot.editController.reset(name: "Dragon Landscape", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Dragon Landscape")
         await sut.performSearch()
@@ -122,7 +122,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.diceRoot.itemController.resetData()
         let itemId = await gameRoot.diceRoot.itemController.addNew(type: .item)
-        gameRoot.diceRoot.editController.reset(name: "Dragon Dice Set", itemId: itemId)
+        gameRoot.diceRoot.editController.reset(name: "Dragon Dice Set", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Dragon Dice Set")
         await sut.performSearch()
@@ -136,7 +136,7 @@ struct SearchGlobalControllerTests {
         let gameRoot = try await MockRoot.createGameRoot()
         await gameRoot.tableRoot.itemController.resetData()
         let itemId = await gameRoot.tableRoot.itemController.addNew(type: .item)
-        gameRoot.tableRoot.editController.reset(name: "Loot Table Alpha", itemId: itemId)
+        gameRoot.tableRoot.editController.reset(name: "Loot Table Alpha", itemId: itemId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Loot Table Alpha")
         await sut.performSearch()
@@ -181,11 +181,11 @@ struct SearchGlobalControllerTests {
 
         await gameRoot.audioRoot.itemController.resetData()
         let audioId = await gameRoot.audioRoot.itemController.addNew(type: .item)
-        gameRoot.audioRoot.editController.reset(name: "Dragon Theme", itemId: audioId)
+        gameRoot.audioRoot.editController.reset(name: "Dragon Theme", itemId: audioId, forceSave: false)
 
         await gameRoot.spaceRoot.itemController.resetData()
         let spaceId = await gameRoot.spaceRoot.itemController.addNew(type: .item)
-        gameRoot.spaceRoot.editController.reset(name: "Dragon Scout", itemId: spaceId)
+        gameRoot.spaceRoot.editController.reset(name: "Dragon Scout", itemId: spaceId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Dragon")
         await sut.performSearch()
@@ -205,8 +205,8 @@ struct SearchGlobalControllerTests {
 
         let exactId = await gameRoot.spaceRoot.itemController.addNew(type: .item)
         let containsId = await gameRoot.spaceRoot.itemController.addNew(type: .item)
-        gameRoot.spaceRoot.editController.reset(name: "Dragon",           itemId: exactId)
-        gameRoot.spaceRoot.editController.reset(name: "The Dragon Fleet", itemId: containsId)
+        gameRoot.spaceRoot.editController.reset(name: "Dragon",           itemId: exactId, forceSave: false)
+        gameRoot.spaceRoot.editController.reset(name: "The Dragon Fleet", itemId: containsId, forceSave: false)
 
         let sut = SearchGlobalController(root: gameRoot, searchText: "Dragon")
         await sut.performSearch()

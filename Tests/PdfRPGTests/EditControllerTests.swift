@@ -41,7 +41,7 @@ struct EditControllerTests {
         let unnamed = sut.createBookmark(content: "", page: "8", bounds: .zero)
         #expect(!unnamed.name.isEmpty)
 
-        sut.addBookmark(itemId: itemId, entry: bookmark)
+        sut.addBookmark(itemId: itemId, entry: bookmark, forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: itemId).entries.map(\.name).contains("Bookmark"))
 
         let merged = sut.merge(itemId: itemId, entries: [
@@ -51,9 +51,9 @@ struct EditControllerTests {
         #expect(merged.count == 2)
         #expect(merged.first?.content == "Updated text")
 
-        let blockedRemovalRows = sut.merge(itemId: itemId, entries: [created], recoverEntries: nil)
+        let blockedRemovalRows = sut.merge(itemId: itemId, entries: [created], recoverEntries: nil, forceSave: false)
         #expect(blockedRemovalRows.isEmpty)
-        let removedWithoutLinks = sut.merge(itemId: itemId, entries: [created], recoverEntries: [])
+        let removedWithoutLinks = sut.merge(itemId: itemId, entries: [created], recoverEntries: [], forceSave: false)
         #expect(removedWithoutLinks.isEmpty)
 
         let content = PdfSummaryAnalysis(
@@ -65,7 +65,7 @@ struct EditControllerTests {
                 PdfSection(heading: "Appendix", summary: "Reference", pageNumber: nil)
             ]
         )
-        sut.applyExtractedContent(content, to: itemId, selection: PdfPropertySelection())
+        sut.applyExtractedContent(content, to: itemId, selection: PdfPropertySelection(), forceSave: false)
 
         let updated = root.itemController.itemOrEmpty(for: itemId)
         #expect(updated.name == "Extracted Title")
@@ -78,11 +78,12 @@ struct EditControllerTests {
         sut.applyExtractedContent(
             skippedContent,
             to: itemId,
-            selection: PdfPropertySelection(applyTitle: false, applyDescription: false, applyTags: false, applySections: false)
+            selection: PdfPropertySelection(applyTitle: false, applyDescription: false, applyTags: false, applySections: false),
+            forceSave: false
         )
         #expect(root.itemController.itemOrEmpty(for: itemId).name == "Extracted Title")
 
         #expect(sut.merge(itemId: UUID(), entries: [created]).count == 1)
-        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil).isEmpty)
+        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil, forceSave: false).isEmpty)
     }
 }

@@ -159,11 +159,12 @@ public final class SheetRootModel: Sendable {
 
     let isEditor: Bool
     /// Whether this instance is a live game view that should nonetheless
-    /// persist its edits like the standalone editor does — e.g. CharacterRPG's
-    /// game view, where "changes on character are saved" even during play
-    /// (unlike Map, which must always stay memory-only during a game). Only
-    /// `ViewerRootView.gameSheetRootModel` (CharacterRPG's persistent game
-    /// slot) sets this `true`; every other instance defaults to `false`.
+    /// persist its edits like the standalone editor does — the game views of
+    /// Character and Adventure, where changes are saved even during play
+    /// (unlike Map, which must always stay memory-only during a game). Only the
+    /// persistent game slot built by `ItemRootControllable.resolveGameSheetRootModel(for:)`
+    /// sets this `true`; every other instance defaults to `false`.
+    /// See CODE_AUDIT_Edit_Save §8.5.
     let isGameEditor: Bool
     /// Whether edits made through this instance should persist regardless of
     /// an active game — true for the standalone editor, and for game views

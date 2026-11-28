@@ -50,7 +50,7 @@ struct PerformanceBudgetTests {
         let source = TableRootModel.testRoot(diceRoot: DiceRootModel.testRoot(), pdfRoot: PdfRootModel.testRoot())
         let tableId = await source.itemController.addNew(type: .item)
         let entries = (0..<5_000).map { TableEntryModel(id: UUID(), name: "Entry \($0)", content: "Result number \($0) of the large table") }
-        source.editController.save(updated: TableModel(id: tableId, name: "Big", entries: entries), message: "Create table")
+        source.editController.save(updated: TableModel(id: tableId, name: "Big", entries: entries), message: "Create table", forceSave: false)
         let exportIds = source.exportController.exporting(itemIds: ItemModuleIds(ids: [tableId], module: .table))
 
         let stream = OutputStream.toMemory()

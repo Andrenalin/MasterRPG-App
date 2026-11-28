@@ -111,45 +111,41 @@ extension PhotoModel: nonisolated Comparable {
     }
 }
 
-extension PhotoModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: PhotoModel) -> PhotoModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
-            return PhotoModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                degrees: degrees_.merged(other: other.degrees_),
-                fileUrl: fileUrl_.merged(other: other.fileUrl_),
-                entries: mergedEntries,
-                parentId: other.parentId
-            )
-    
-        }
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension PhotoModel: ItemDiffComparable {
+    public func merge(_ other: PhotoModel) -> PhotoModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
+        return PhotoModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            degrees: degrees_.merged(other: other.degrees_),
+            fileUrl: fileUrl_.merged(other: other.fileUrl_),
+            entries: mergedEntries,
+            parentId: other.parentId
+        )
     }
 
-    nonisolated public func isSame(_ other: PhotoModel) -> Bool {
-        return assumeMainActorIsolated {
-            guard entries.count == other.entries.count else { return false }
-            // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
-            // that every load regenerates, and a position compare failed for a reordered list.
-            // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
-            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            degrees == other.degrees &&
-            fileUrl_.update == other.fileUrl_.update &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
-        }
+    public func isSame(_ other: PhotoModel) -> Bool {
+        guard entries.count == other.entries.count else { return false }
+        // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
+        // that every load regenerates, and a position compare failed for a reordered list.
+        // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
+        let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        degrees == other.degrees &&
+        fileUrl_.update == other.fileUrl_.update &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
     }
     
     public var version: Int {
@@ -157,13 +153,10 @@ extension PhotoModel: nonisolated ItemDiffComparable {
     }
 }
 
-extension PhotoModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> PhotoModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            return PhotoModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() })
-    
-        }
+extension PhotoModel: ItemDuplicatable {
+    public func duplicate() -> PhotoModel {
+        let copyName = duplicateName(from: name)
+        return PhotoModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() })
     }
 }
 

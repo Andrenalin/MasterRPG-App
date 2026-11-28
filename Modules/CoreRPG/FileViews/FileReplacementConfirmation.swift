@@ -66,7 +66,7 @@ public final class FileReplacementConfirmation {
         guard let replaced = await disposal(forReplacingFileOf: itemId, with: url, editControllable: editControllable) else {
             return false
         }
-        return await editControllable.resetFile(url: url, itemId: itemId, replaced: replaced)
+        return await editControllable.resetFile(url: url, itemId: itemId, replaced: replaced, forceSave: true)
     }
 
     /// The user's answer to `request`; `nil` cancels the replacement.

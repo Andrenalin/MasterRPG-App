@@ -58,7 +58,7 @@ struct InspectorSearchDepthTests {
 
         // Item name does NOT contain "dr"
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rulebook", itemId: itemId)
+        root.editController.reset(name: "Rulebook", itemId: itemId, forceSave: false)
         let entryId = addEntry(to: itemId, name: "Dragon Chapter", content: "About dr monsters", root: root)
 
         // "dr" is 2 chars → entry search disabled
@@ -78,7 +78,7 @@ struct InspectorSearchDepthTests {
         let root = await makeRoot()
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rulebook", itemId: itemId)
+        root.editController.reset(name: "Rulebook", itemId: itemId, forceSave: false)
         let entryId = addEntry(to: itemId, name: "Dra Chapter", content: "irrelevant", root: root)
         // "Dra" matches entry name "Dra Chapter" exactly — 3-char text
 
@@ -99,12 +99,12 @@ struct InspectorSearchDepthTests {
         // 2 items match "Dragon" by name (< 10 → wide mode)
         let item1 = await root.itemController.addNew(type: .item)
         let item2 = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Guide",  itemId: item1)
-        root.editController.reset(name: "Dragon Manual", itemId: item2)
+        root.editController.reset(name: "Dragon Guide",  itemId: item1, forceSave: false)
+        root.editController.reset(name: "Dragon Manual", itemId: item2, forceSave: false)
 
         // item3 does NOT match by name, but has an entry whose CONTENT contains "Dragon"
         let item3 = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Monster Book", itemId: item3)
+        root.editController.reset(name: "Monster Book", itemId: item3, forceSave: false)
         let contentEntryId = addEntry(to: item3, name: "Chapter Three",
                                       content: "Includes a fearsome dragon encounter", root: root)
 
@@ -123,7 +123,7 @@ struct InspectorSearchDepthTests {
         let root = await makeRoot()
 
         let item1 = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Guide", itemId: item1)
+        root.editController.reset(name: "Dragon Guide", itemId: item1, forceSave: false)
 
         // Add entry with matching name and unrelated content
         let nameEntryId = addEntry(to: item1, name: "Dragon Abilities",
@@ -146,7 +146,7 @@ struct InspectorSearchDepthTests {
         var topItemIds: [UUID] = []
         for i in 1...10 {
             let id = await root.itemController.addNew(type: .item)
-            root.editController.reset(name: "Dragon \(i)", itemId: id)
+            root.editController.reset(name: "Dragon \(i)", itemId: id, forceSave: false)
             topItemIds.append(id)
         }
 
@@ -174,7 +174,7 @@ struct InspectorSearchDepthTests {
         var topItemIds: [UUID] = []
         for i in 1...10 {
             let id = await root.itemController.addNew(type: .item)
-            root.editController.reset(name: "Dragon \(i)", itemId: id)
+            root.editController.reset(name: "Dragon \(i)", itemId: id, forceSave: false)
             topItemIds.append(id)
         }
 
@@ -201,7 +201,7 @@ struct InspectorSearchDepthTests {
         var topItemIds: [UUID] = []
         for i in 1...10 {
             let id = await root.itemController.addNew(type: .item)
-            root.editController.reset(name: "Dragon \(i)", itemId: id)
+            root.editController.reset(name: "Dragon \(i)", itemId: id, forceSave: false)
             topItemIds.append(id)
         }
 
@@ -227,7 +227,7 @@ struct InspectorSearchDepthTests {
         var topItemIds: [UUID] = []
         for i in 1...10 {
             let id = await root.itemController.addNew(type: .item)
-            root.editController.reset(name: "Dragon \(i)", itemId: id)
+            root.editController.reset(name: "Dragon \(i)", itemId: id, forceSave: false)
             topItemIds.append(id)
         }
 
@@ -254,18 +254,18 @@ struct InspectorSearchDepthTests {
 
         // itemNameMatch: name = "Dragon Guide"        → item name match (high)
         let itemNameMatch = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Guide", itemId: itemNameMatch)
+        root.editController.reset(name: "Dragon Guide", itemId: itemNameMatch, forceSave: false)
 
         // entryNameMatch: name = "Adventurer's Log"   → item name doesn't match
         //   entry name = "Dragon Slayer"              → entry name match (medium)
         let entryNameMatch = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Adventurer's Log", itemId: entryNameMatch)
+        root.editController.reset(name: "Adventurer's Log", itemId: entryNameMatch, forceSave: false)
         _ = addEntry(to: entryNameMatch, name: "Dragon Slayer", content: "irrelevant", root: root)
 
         // contentOnly: name = "Field Notes"           → item name doesn't match
         //   entry content = "...dragon..."            → content match (low)
         let contentOnly = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Field Notes", itemId: contentOnly)
+        root.editController.reset(name: "Field Notes", itemId: contentOnly, forceSave: false)
         _ = addEntry(to: contentOnly, name: "Chapter One",
                      content: "Spotted a dragon near the ruins", root: root)
 
@@ -295,7 +295,7 @@ struct InspectorSearchDepthTests {
         let root = await makeRoot()
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Codex", itemId: itemId)
+        root.editController.reset(name: "Dragon Codex", itemId: itemId, forceSave: false)
 
         // Insert content match FIRST to prove sorting is not insertion order
         let contentEntryId = addEntry(to: itemId, name: "Chapter Two",

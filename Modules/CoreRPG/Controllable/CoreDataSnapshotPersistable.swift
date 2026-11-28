@@ -41,6 +41,10 @@ public extension CoreDataSnapshotPersistable {
         dataController.model.removePendingOperations(for: id)
     }
 
+    func hasPendingOperation(for id: UUID) async -> Bool {
+        dataController.model.hasPendingOperation(for: id)
+    }
+
     @MainActor func markUnsavedInsert(id: UUID) {
         dataController.model.markUnsavedInsert(id)
     }

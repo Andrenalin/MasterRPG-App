@@ -22,7 +22,8 @@ struct SheetControllerTests {
         root.editController.updateSheetEditType(
             itemId: itemId,
             entryId: entryId,
-            editType: .selection
+            editType: .selection,
+            forceSave: false
         )
 
         #expect(root.itemController.itemOrEmpty(for: itemId)[entryId].type == .selection)
@@ -337,7 +338,7 @@ struct SheetControllerTests {
         let plain = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
         #expect(plain.inlineEntries.contains(where: { $0.sheetType == .dice }), "A plain entry keeps its dice")
 
-        _ = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+        _ = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil, forceSave: false)
         sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
         let group = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
         #expect(group.sheetType == .group)
@@ -421,7 +422,7 @@ struct SheetControllerTests {
         let entrySheet = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
         #expect(entrySheet.sheetType == .item)
 
-        let groupId = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+        let groupId = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil, forceSave: false)
 
         sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
 
@@ -475,12 +476,12 @@ struct SheetControllerTests {
     @Test func convertToGroupRefreshesFolderList() async throws {
         let root = try await MockRoot.importTestData()
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Character", itemId: itemId)
+        root.editController.reset(name: "Character", itemId: itemId, forceSave: false)
         let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "A collection of skills.")
-        root.editController.add(entry: entry, itemId: itemId)
+        root.editController.add(entry: entry, itemId: itemId, forceSave: false)
 
         let existingItemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Inventory", itemId: existingItemId)
+        root.editController.reset(name: "Inventory", itemId: existingItemId, forceSave: false)
 
         await root.folderListController.performSearch(source: "test")
         #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == existingItemId }), "Precondition: the reused item starts out visible in the root list")

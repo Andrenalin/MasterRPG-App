@@ -173,6 +173,22 @@ private extension QuickEntryEditorView {
         }
         return outcome
     }
+
+    /// Removes the line breaks from the text the editor shows, as one undoable step like Quick
+    /// Link. It read the debounced `referenceText.output` (up to a second behind the typing) and
+    /// wrote only `referenceText`, so the editor kept showing the old text and Apply saved
+    /// something else. See CODE_AUDIT_Edit_Save §8.3.
+    func applyRemoveLineBreaks() {
+        let referenceText = referenceText
+        textEditModel.replaceText(
+            removeLineBreak(textEditModel.text),
+            source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module),
+            undoManager: undoManager,
+            actionName: String(localized: "Remove Line Breaks", bundle: .module)
+        ) { text in
+            referenceText.input = text
+        }
+    }
 }
 
 private extension QuickEntryEditorView {
@@ -190,7 +206,7 @@ private extension QuickEntryEditorView {
         ToolbarItemGroup(placement: .automatic) {
             QuickEntryEditorShowHelpButtonView(showHelp: $showHelp)
             Divider()
-            QuickEntryEditorRemoveLineBreakButtonView(referenceText: referenceText, removeLineBreak: removeLineBreak)
+            QuickEntryEditorRemoveLineBreakButtonView(removeLineBreaks: applyRemoveLineBreaks)
             QuickEntryEditorShowResultButtonView(showResult: $showResult)
             Divider()
             QuickEntryEditorPdfButtonView(pdfEditorRoute: pdfEditorRoute, showResult: $showResult)
@@ -203,7 +219,7 @@ private extension QuickEntryEditorView {
         }
 #else
         ToolbarItem(placement: .secondaryActionAll) {
-            QuickEntryEditorSecondaryActionMenuView(pdfEditorRoute: pdfEditorRoute, canShowInspector: canShowInspector, canQuickLink: tableRootController != nil, referenceText: referenceText, removeLineBreak: removeLineBreak, showHelp: $showHelp, showQuickLink: $showQuickLinkPicker, showResult: $showResult, showInspector: $showInspector)
+            QuickEntryEditorSecondaryActionMenuView(pdfEditorRoute: pdfEditorRoute, canShowInspector: canShowInspector, canQuickLink: tableRootController != nil, removeLineBreaks: applyRemoveLineBreaks, showHelp: $showHelp, showQuickLink: $showQuickLinkPicker, showResult: $showResult, showInspector: $showInspector)
         }
 #endif
 
@@ -339,6 +355,7 @@ private struct QuickEntryEditorEditorView: View {
 #if !os(tvOS)
             TextEditorLinkView(model: textEditModel, maxHeight: .infinity)
                 .focused(focusedField, equals: .editor)
+                .textInputUndo()
                 .onChange(of: textEditModel.attributedText) {
                     textEditModel.updateLinks()
                 }
@@ -355,8 +372,7 @@ private struct QuickEntryEditorSecondaryActionMenuView: View {
     let pdfEditorRoute: any NavigationDestination
     let canShowInspector: Bool
     let canQuickLink: Bool
-    let referenceText: DebouncerModel<String>
-    let removeLineBreak: (String) -> String
+    let removeLineBreaks: @MainActor () -> Void
     @Binding var showHelp: Bool
     @Binding var showQuickLink: Bool
     @Binding var showResult: Bool
@@ -368,7 +384,7 @@ private struct QuickEntryEditorSecondaryActionMenuView: View {
         }
 
         ControlGroup {
-            QuickEntryEditorRemoveLineBreakButtonView(referenceText: referenceText, removeLineBreak: removeLineBreak)
+            QuickEntryEditorRemoveLineBreakButtonView(removeLineBreaks: removeLineBreaks)
             QuickEntryEditorShowResultButtonView(showResult: $showResult)
         }
 
@@ -407,13 +423,12 @@ private struct QuickEntryEditorPdfButtonView: View {
 }
 
 private struct QuickEntryEditorRemoveLineBreakButtonView: View {
-    let referenceText: DebouncerModel<String>
-    let removeLineBreak: (String) -> String
+    let removeLineBreaks: @MainActor () -> Void
 
     var body: some View {
         Button {
             withAnimation {
-                referenceText.input = removeLineBreak(referenceText.output)
+                removeLineBreaks()
             }
         } label: {
             Label {

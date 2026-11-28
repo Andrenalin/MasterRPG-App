@@ -11,17 +11,40 @@ public protocol GroupableEntry: EntryDataAccessible {
 /// The group functions Adventure and Character carried as line-for-line copies.
 /// See CODE_AUDIT_Folder §9.9.
 public extension EntryDataEditable where Model: GroupableModel, Model.Entry: GroupableEntry {
+    /// The group is created with the caller's write policy, then filled and linked in one undo
+    /// step. See CODE_AUDIT_Edit_Save §5.5, §5.9.
     @MainActor func addNewGroup(itemId: UUID, forceSave: Bool) async -> UUID {
-        let groupId = await itemControllable.addNew(type: .item)
-        reset(hidden: true, itemId: groupId, forceSave: forceSave)
-        guard var group = editModel(for: groupId) else { return groupId }
-        group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
-        var entry = Model.Entry.empty
-        entry.name = group.name
-        entry.groupItemId = groupId
-        add(entry: entry, itemId: itemId, forceSave: forceSave)
-        return entry.id
+        let groupId = await itemControllable.addNew(type: .item, forceSave: forceSave)
+        return attachAsGroup(itemId: itemId, groupId: groupId, forceSave: forceSave)
+    }
+
+    /// Makes the existing item `groupId` the hidden group of a new entry of `itemId`, in one undo
+    /// step. Returns the new entry's id (`groupId` when the group item is gone). The one rule
+    /// behind `addNewGroup` and Character's `addItemAsGroup`, which kept a copy of it.
+    /// See CODE_AUDIT_Edit_Save §9.4.
+    @MainActor func attachAsGroup(itemId: UUID, groupId: UUID, forceSave: Bool) -> UUID {
+        asOneUndoStep(String(localized: "prepare group", bundle: .module)) {
+            reset(hidden: true, itemId: groupId, forceSave: forceSave)
+            guard var group = editModel(for: groupId) else { return groupId }
+            group.groupId = itemId
+            save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
+            var entry = Model.Entry.empty
+            entry.name = group.name
+            entry.groupItemId = groupId
+            add(entry: entry, itemId: itemId, forceSave: forceSave)
+            return entry.id
+        }
+    }
+
+    /// Writes a group entry's edit to its group item: the name without the link the sheet shows
+    /// it as, and the content as the description, in one save. `false` when the entry is no
+    /// group entry. Adventure and Character each wrote this with two saves.
+    /// See CODE_AUDIT_Edit_Save §9.4, §7.1.
+    @discardableResult
+    @MainActor func updateGroupItem(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) -> Bool {
+        guard let groupId = editModel(for: itemId)?.entries.first(where: { $0.id == entryId })?.groupItemId else { return false }
+        reset(name: name.withoutLink(), description: content, tags: nil, itemId: groupId, forceSave: forceSave)
+        return true
     }
 
     /// Whether the existing item `itemId` can become the group value of an entry. It must be an
@@ -37,38 +60,51 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         return canHostGroupValues(host)
     }
 
+    /// The new group is created first; the host and its entry are read after that await, so an
+    /// edit made while the group was created is kept instead of being overwritten with a stale
+    /// copy. The rest is one undo step, and a folder the existing item leaves follows the write
+    /// policy (memory-only during a game unless forced). See CODE_AUDIT_Edit_Save §3.2, §5.5, §5.8.
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?, forceSave: Bool) async -> UUID {
-        guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return UUID() }
+        guard editModel(for: itemId)?.entries.contains(where: { $0.id == entryId }) == true else { return UUID() }
+        let existingGroupId = existingItemId.flatMap { editModel(for: $0) != nil ? $0 : nil }
+        // The same rules as the candidate list, so a stale or crafted request cannot turn an
+        // item into a group of itself or of its own group. See CODE_AUDIT §5.17.
+        if let existingGroupId, !canBecomeGroup(itemId: existingGroupId, in: itemId) { return UUID() }
+        let newGroupId: UUID? = existingGroupId == nil ? await itemControllable.addNew(type: .item, forceSave: forceSave) : nil
 
-        let groupId: UUID
-        if let existingItemId, editModel(for: existingItemId) != nil {
-            // The same rules as the candidate list, so a stale or crafted request cannot turn an
-            // item into a group of itself or of its own group. See CODE_AUDIT §5.17.
-            guard canBecomeGroup(itemId: existingItemId, in: itemId) else { return UUID() }
-            // A hidden group has no folder, as in `moveIntoGroup`; the folder would keep listing
-            // it. See CODE_AUDIT_26 §5.73.
-            if editModel(for: existingItemId)?.parentId != nil {
-                removeItemFromParent(itemId: existingItemId, oneUp: false, moveFiles: false)
+        return asOneUndoStep(String(localized: "Convert to group", bundle: .module)) {
+            guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else {
+                return newGroupId ?? UUID()
             }
-            guard var existingGroup = editModel(for: existingItemId) else { return UUID() }
-            groupId = existingItemId
-            existingGroup.groupId = itemId
-            existingGroup.isGroupHiddenToggle = true
-            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
-            item.entries[index].name = existingGroup.name
-            item.entries[index].content = existingGroup.description
-        } else {
-            groupId = await itemControllable.addNew(type: .item)
-            reset(hidden: true, itemId: groupId, forceSave: forceSave)
-            guard var group = editModel(for: groupId) else { return groupId }
-            group.name = item.entries[index].name.withoutLink()
-            group.description = item.entries[index].content
-            group.groupId = itemId
-            save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
+            let groupId: UUID
+            if let existingGroupId {
+                // A hidden group has no folder, as in `moveIntoGroup`; the folder would keep
+                // listing it. See CODE_AUDIT_26 §5.73.
+                if editModel(for: existingGroupId)?.parentId != nil {
+                    removeItemFromParent(itemId: existingGroupId, oneUp: false, moveFiles: false, forceSave: forceSave)
+                }
+                guard var existingGroup = editModel(for: existingGroupId) else { return UUID() }
+                groupId = existingGroupId
+                existingGroup.groupId = itemId
+                existingGroup.isGroupHiddenToggle = true
+                save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
+                item.entries[index].name = existingGroup.name
+                item.entries[index].content = existingGroup.description
+            } else if let newGroupId {
+                groupId = newGroupId
+                reset(hidden: true, itemId: groupId, forceSave: forceSave)
+                guard var group = editModel(for: groupId) else { return groupId }
+                group.name = item.entries[index].name.withoutLink()
+                group.description = item.entries[index].content
+                group.groupId = itemId
+                save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
+            } else {
+                return UUID()
+            }
+            item.entries[index].groupItemId = groupId
+            save(updated: item, message: String(localized: "Convert to group", bundle: .module), forceSave: forceSave)
+            return groupId
         }
-        item.entries[index].groupItemId = groupId
-        save(updated: item, message: String(localized: "Convert to group", bundle: .module), forceSave: forceSave)
-        return groupId
     }
 
     /// An item can move into another when it is an ordinary, visible item that is not a group
@@ -87,23 +123,26 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
     @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID, forceSave: Bool) -> UUID? {
         guard canMoveIntoGroup(itemId: itemId, into: targetId), let item = editModel(for: itemId) else { return nil }
 
-        // A hidden group has no folder; the folder would keep listing it.
-        if item.parentId != nil {
-            removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false)
-        }
-        guard var group = editModel(for: itemId) else { return nil }
-        group.groupId = targetId
-        group.isGroupHiddenToggle = true
-        save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
+        return asOneUndoStep(String(localized: "prepare group", bundle: .module)) {
+            // A hidden group has no folder; the folder would keep listing it. With the write
+            // policy: unforced, the folder change stays in game memory. See CODE_AUDIT_Edit_Save §5.8.
+            if item.parentId != nil {
+                removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false, forceSave: forceSave)
+            }
+            guard var group = editModel(for: itemId) else { return nil }
+            group.groupId = targetId
+            group.isGroupHiddenToggle = true
+            save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
 
-        // The entry mirrors the item's name and description, as `convertToGroup` does: editing
-        // the entry writes both back to the item.
-        var entry = Model.Entry.empty
-        entry.name = group.name
-        entry.content = group.description
-        entry.groupItemId = itemId
-        add(entry: entry, itemId: targetId, forceSave: forceSave)
-        return entry.id
+            // The entry mirrors the item's name and description, as `convertToGroup` does:
+            // editing the entry writes both back to the item.
+            var entry = Model.Entry.empty
+            entry.name = group.name
+            entry.content = group.description
+            entry.groupItemId = itemId
+            add(entry: entry, itemId: targetId, forceSave: forceSave)
+            return entry.id
+        }
     }
 
     @MainActor private func isMovableIntoGroup(_ item: Model) -> Bool {

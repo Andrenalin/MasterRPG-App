@@ -50,22 +50,19 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
+        repairItemLinks(itemId: itemId, as: PdfModel.self) { inspectedItem in
+            let replacedItem = inspectedItem.copy()
+            replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
 
-        replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
-
-        for entry in inspectedItem.entries {
-            var validatedEntry = entry
-            let links = LinkReplaceController.links(for: entry.content)
-            validatedEntry.content = repairLinks(links, in: validatedEntry.content)
-            if !entry.isSame(validatedEntry) {
-                replacedItem[entry.id] = validatedEntry
+            for entry in inspectedItem.entries {
+                var validatedEntry = entry
+                let links = LinkReplaceController.links(for: entry.content)
+                validatedEntry.content = repairLinks(links, in: validatedEntry.content)
+                if !entry.isSame(validatedEntry) {
+                    replacedItem[entry.id] = validatedEntry
+                }
             }
+            return replacedItem
         }
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Pdf: \(replacedItem.name) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
-        }
-        resetLinkRegister(replacedItem)
     }
 }

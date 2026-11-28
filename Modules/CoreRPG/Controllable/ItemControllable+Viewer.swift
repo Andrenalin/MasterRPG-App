@@ -23,10 +23,11 @@ public extension ItemControllable {
         return partial
     }
 
+    /// `version` is a package version (`NetworkPackageVersion`). See CODE_AUDIT_Edit_Save §5.10.
     @MainActor func item(for itemId: UUID, version: Int) async -> Model? {
         let item = await self.item(for: itemId)
         guard version != 0, let item else { return item }
-        return item.version == version ? item : nil
+        return NetworkPackageVersion.of(item) == version ? item : nil
     }
     
     @MainActor func itemSync(for itemId: UUID, noGame: Bool = false) -> Model? {

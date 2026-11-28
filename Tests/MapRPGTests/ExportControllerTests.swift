@@ -50,8 +50,8 @@ struct ExportControllerTests {
         let deleted = await edit.addNew(type: .item)
         try #require(item != nil)
         try #require(deleted != nil)
-        edit.reset(name: "keep", itemId: item!.id)
-        edit.reset(name: "delete", itemId: deleted!.id)
+        edit.reset(name: "keep", itemId: item!.id, forceSave: false)
+        edit.reset(name: "delete", itemId: deleted!.id, forceSave: false)
 
         await edit.delete(itemId: deleted!.id)
 

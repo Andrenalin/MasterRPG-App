@@ -111,40 +111,35 @@ extension SpaceModel: nonisolated Comparable {
 
 extension SpaceModel: nonisolated ItemLinkRegistrable {}
 
-extension SpaceModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: SpaceModel) -> SpaceModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
-            return SpaceModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                degrees: degrees_.merged(other: other.degrees_),
-                fileUrl: fileUrl_.merged(other: other.fileUrl_),
-                entries: mergedEntries,
-                parentId: other.parentId
-            )
-    
-        }
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension SpaceModel: ItemDiffComparable {
+    public func merge(_ other: SpaceModel) -> SpaceModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
+        return SpaceModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            degrees: degrees_.merged(other: other.degrees_),
+            fileUrl: fileUrl_.merged(other: other.fileUrl_),
+            entries: mergedEntries,
+            parentId: other.parentId
+        )
     }
 
-    nonisolated public func isSame(_ other: SpaceModel) -> Bool {
-        return assumeMainActorIsolated {
-            name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            degrees == other.degrees &&
-            fileUrl_.update == other.fileUrl_.update &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId
-    
-        }
+    public func isSame(_ other: SpaceModel) -> Bool {
+        name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        degrees == other.degrees &&
+        fileUrl_.update == other.fileUrl_.update &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId
     }
     
     public var version: Int {
@@ -164,14 +159,11 @@ extension SpaceModel {
     }
 }
 
-extension SpaceModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> SpaceModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
-            return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: nil)
-    
-        }
+extension SpaceModel: ItemDuplicatable {
+    public func duplicate() -> SpaceModel {
+        let copyName = duplicateName(from: name)
+        // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
+        return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: nil)
     }
 }
 

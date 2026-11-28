@@ -34,7 +34,8 @@ struct GroupEditorSaveTests {
             let id = await root.itemController.addNew(type: .item)
             root.editController.save(
                 updated: TableModel(id: id, name: table.name, description: table.description, tags: table.tags, category: .loot, displayState: 0, tableType: .list, diceId: nil, entries: [], parentId: nil),
-                message: "Create table"
+                message: "Create table",
+                forceSave: false
             )
             ids.append(id)
         }

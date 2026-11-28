@@ -108,8 +108,13 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
+        repairItemLinks(itemId: itemId, as: AdventureModel.self) { inspectedItem in
+            repairedLinks(of: inspectedItem)
+        }
+    }
 
+    @MainActor private func repairedLinks(of inspectedItem: AdventureModel) -> AdventureModel {
+        let replacedItem = inspectedItem.copy()
         if let photoId = replacedItem.photoId {
             if !resolvedRootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
@@ -149,11 +154,7 @@ extension LinkController: LinkControllable {
                 replacedItem[entry.id]  = validatedEntry
             }
         }
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Adventure: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
-        }
-        resetLinkRegister(replacedItem)
+        return replacedItem
     }
 }
 

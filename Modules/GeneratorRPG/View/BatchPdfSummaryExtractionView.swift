@@ -186,7 +186,7 @@ public struct BatchPdfSummaryExtractionView: View {
             generatedTags: result.tags
         )
         if !change.isEmpty {
-            editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId)
+            editController.reset(name: change.name, description: change.description, tags: change.tags, itemId: itemId, forceSave: true)
         }
         let added = result.sections.isEmpty ? 0 : addBookmarks(result.sections, itemId, document)
         summary.record(change, addedBookmarks: added)

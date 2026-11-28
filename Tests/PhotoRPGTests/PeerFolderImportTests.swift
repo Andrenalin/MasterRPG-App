@@ -16,8 +16,8 @@ struct PeerFolderImportTests {
         let source = PhotoRootModel.testRoot()
         let folderId = await source.itemController.addNew(type: .folder)
         let childId = await source.itemController.addNew(type: .item)
-        source.editController.reset(name: "Folder", itemId: folderId)
-        source.editController.reset(name: "Child", itemId: childId)
+        source.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        source.editController.reset(name: "Child", itemId: childId, forceSave: false)
         source.editController.addItem(itemId: childId, parentId: folderId)
         let hostile = FileUrl(
             fileId: UUID(),
@@ -57,8 +57,8 @@ struct PeerFolderImportTests {
         for index in 0..<40 {
             let folderId = await source.itemController.addNew(type: .folder)
             let childId = await source.itemController.addNew(type: .item)
-            source.editController.reset(name: "Folder \(index)", itemId: folderId)
-            source.editController.reset(name: "Child \(index)", itemId: childId)
+            source.editController.reset(name: "Folder \(index)", itemId: folderId, forceSave: false)
+            source.editController.reset(name: "Child \(index)", itemId: childId, forceSave: false)
             source.editController.addItem(itemId: childId, parentId: folderId)
             ids.formUnion([folderId, childId])
             childOfFolder[folderId] = childId

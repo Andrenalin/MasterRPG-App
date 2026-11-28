@@ -44,7 +44,7 @@ struct WeatherEditorWindowDuringGameTests {
         let root = WeatherRootModel.testRoot(photoRoot: PhotoRootModel.testRoot())
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.weather.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Autumn", description: Self.libraryDescription, category: nil, tags: ["season"])
+        root.editController.update(id: itemId, name: "Autumn", description: Self.libraryDescription, category: nil, tags: ["season"], forceSave: false)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId)
         fixture.game.startGame()
@@ -52,7 +52,7 @@ struct WeatherEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 
@@ -134,7 +134,7 @@ struct WeatherEditorWindowDuringGameTests {
     func inGameEditStaysInGameMemory() async throws {
         let fixture = try await makeFixture()
 
-        fixture.editController.reset(cloudThickness: .ultra, itemId: fixture.itemId)
+        fixture.editController.reset(cloudThickness: .ultra, itemId: fixture.itemId, forceSave: false)
 
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.cloudThickness == .ultra }
     }

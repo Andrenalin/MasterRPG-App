@@ -228,13 +228,10 @@ extension WeatherModel: nonisolated ItemLinkRegistrable {
     }
 }
 
-extension WeatherModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> WeatherModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: nil)
-    
-        }
+extension WeatherModel: ItemDuplicatable {
+    public func duplicate() -> WeatherModel {
+        let copyName = duplicateName(from: name)
+        return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: nil)
     }
 }
 

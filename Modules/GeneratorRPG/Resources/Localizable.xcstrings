@@ -189,54 +189,6 @@
         }
       }
     },
-    "Skipped: photo not available" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übersprungen: Foto nicht verfügbar"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้าม: ไม่มีรูปภาพ"
-          }
-        }
-      }
-    },
-    "Start replaces the description and the tags of the selected photos with generated ones. A name is only filled in when it is empty." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten Fotos durch generierte. Ein Name wird nur ergänzt, wenn er leer ist."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของรูปภาพที่เลือกด้วยข้อมูลที่สร้างขึ้น ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่"
-          }
-        }
-      }
-    },
-    "The on-device model declined to describe this photo." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Modell auf dem Gerät hat die Beschreibung dieses Fotos abgelehnt."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The on-device model declined to describe this photo."
-          }
-        }
-      }
-    },
     "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
@@ -2292,6 +2244,7 @@
       }
     },
     "Reference added" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2522,6 +2475,22 @@
         }
       }
     },
+    "Skipped: photo not available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übersprungen: Foto nicht verfügbar"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้าม: ไม่มีรูปภาพ"
+          }
+        }
+      }
+    },
     "Start" : {
       "localizations" : {
         "de" : {
@@ -2566,6 +2535,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของ PDF ที่เลือกด้วยข้อมูลที่สร้างขึ้น และเพิ่มส่วนต่างๆ เป็นบุ๊กมาร์ก ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่ บุ๊กมาร์กที่มีอยู่จะยังคงอยู่"
+          }
+        }
+      }
+    },
+    "Start replaces the description and the tags of the selected photos with generated ones. A name is only filled in when it is empty." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start ersetzt Beschreibung und Tags der ausgewählten Fotos durch generierte. Ein Name wird nur ergänzt, wenn er leer ist."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มจะแทนที่คำอธิบายและแท็กของรูปภาพที่เลือกด้วยข้อมูลที่สร้างขึ้น ชื่อจะถูกเติมเฉพาะเมื่อว่างอยู่"
           }
         }
       }
@@ -2682,22 +2667,6 @@
         }
       }
     },
-    "The Apple Intelligence model is not downloaded yet. Try again later." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Apple Intelligence-Modell ist noch nicht geladen. Versuche es später noch einmal."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ยังไม่ได้ดาวน์โหลดโมเดล Apple Intelligence ลองอีกครั้งภายหลัง"
-          }
-        }
-      }
-    },
     "The adventure has too much text. Try an adventure with fewer entries." : {
       "localizations" : {
         "de" : {
@@ -2726,6 +2695,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Apple Intelligence ไม่รองรับภาษาของการผจญภัย"
+          }
+        }
+      }
+    },
+    "The Apple Intelligence model is not downloaded yet. Try again later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Apple Intelligence-Modell ist noch nicht geladen. Versuche es später noch einmal."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ยังไม่ได้ดาวน์โหลดโมเดล Apple Intelligence ลองอีกครั้งภายหลัง"
           }
         }
       }
@@ -2870,6 +2855,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The on-device model cannot read images."
+          }
+        }
+      }
+    },
+    "The on-device model declined to describe this photo." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf dem Gerät hat die Beschreibung dieses Fotos abgelehnt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model declined to describe this photo."
           }
         }
       }

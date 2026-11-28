@@ -31,7 +31,8 @@ struct EditControllerTests {
                 itemId: itemId,
                 name: "Generated Scene",
                 content: "A newly generated complication.",
-                position: .after(anchorId)
+                position: .after(anchorId),
+                forceSave: false
             )
         )
         let updated = root.itemController.itemOrEmpty(for: itemId)
@@ -46,7 +47,8 @@ struct EditControllerTests {
                 itemId: UUID(),
                 name: "Missing",
                 content: "Should not be inserted",
-                position: .end
+                position: .end,
+                forceSave: false
             ) == nil
         )
     }
@@ -61,7 +63,7 @@ struct EditControllerTests {
         let originalEntries = item.entries
         
         item.entries[0].content = "New Content"
-        var result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        var result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil, forceSave: false)
         #expect(result.isEmpty)
         
         let savedItem = root.itemController.itemOrEmpty(for: itemId)
@@ -71,7 +73,7 @@ struct EditControllerTests {
         
         let newEntry = AdventureEntryModel(id: UUID(), name: "Newbee", content: "Super")
         item.entries.append(newEntry)
-        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil, forceSave: false)
         #expect(result.isEmpty)
 
         for (index, entry) in originalEntries.enumerated() {
@@ -81,7 +83,7 @@ struct EditControllerTests {
         
         let middleEntry = AdventureEntryModel(id: UUID(), name: "Middle", content: "Super")
         item.entries.insert(middleEntry, at: 4)
-        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil, forceSave: false)
         #expect(result.isEmpty)
 
         for (index, entry) in originalEntries.enumerated() {
@@ -117,8 +119,8 @@ struct EditControllerTests {
         #expect(sut.canAddLink(module: .photo, entryId: entryId))
         #expect(sut.linkModules == [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .rule, .space, .table, .weather])
 
-        sut.add(diceId: diceId, itemId: itemId)
-        sut.add(photoId: photoId, itemId: itemId)
+        sut.add(diceId: diceId, itemId: itemId, forceSave: false)
+        sut.add(photoId: photoId, itemId: itemId, forceSave: false)
         var updated = root.itemController.itemOrEmpty(for: itemId)
         #expect(updated.photoId == photoId)
 
@@ -134,13 +136,14 @@ struct EditControllerTests {
         #expect(merged.first?.content == "Updated content")
 
         #expect(sut.merge(itemId: UUID(), entries: [created]).map(\.name) == ["Created"])
-        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil).isEmpty)
-        #expect(sut.merge(itemId: itemId, entries: [created], recoverEntries: []).isEmpty)
+        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil, forceSave: false).isEmpty)
+        #expect(sut.merge(itemId: itemId, entries: [created], recoverEntries: [], forceSave: false).isEmpty)
 
         sut.applyExtractedContent(
             TableSummaryAnalysis(title: "Extracted Adventure", description: "Extracted description", tags: ["dungeon", "mystery"]),
             to: itemId,
-            selection: TextSummaryPropertySelection()
+            selection: TextSummaryPropertySelection(),
+            forceSave: false
         )
 
         updated = root.itemController.itemOrEmpty(for: itemId)
@@ -151,7 +154,8 @@ struct EditControllerTests {
         sut.applyExtractedContent(
             TableSummaryAnalysis(title: "Skipped", description: "Skipped", tags: ["skip"]),
             to: itemId,
-            selection: TextSummaryPropertySelection(applyTitle: false, applyDescription: false, applyTags: false)
+            selection: TextSummaryPropertySelection(applyTitle: false, applyDescription: false, applyTags: false),
+            forceSave: false
         )
         #expect(root.itemController.itemOrEmpty(for: itemId).name == "Extracted Adventure")
 
@@ -166,7 +170,7 @@ struct EditControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
         #expect(sut.canBecomeGroup(itemId: itemId))
 
-        let entryId = await sut.addNewGroup(itemId: itemId)
+        let entryId = await sut.addNewGroup(itemId: itemId, forceSave: false)
         let item = root.itemController.itemOrEmpty(for: itemId)
         let groupItemId = try #require(item.entries.first(where: { $0.id == entryId })?.adventureId)
 
@@ -179,7 +183,7 @@ struct EditControllerTests {
         let sut = root.editController
 
         let itemId = await root.itemController.addNew(type: .item)
-        let entryId = await sut.addNewGroup(itemId: itemId)
+        let entryId = await sut.addNewGroup(itemId: itemId, forceSave: false)
         let item = root.itemController.itemOrEmpty(for: itemId)
         let groupId = try #require(item.entries.first(where: { $0.id == entryId })?.adventureId)
         let linkedName = root.itemController.itemOrEmpty(for: groupId).url(linkNumber: 0)
@@ -204,11 +208,11 @@ struct EditControllerTests {
 
         let targetId = await root.itemController.addNew(type: .item)
         let movedId = await root.itemController.addNew(type: .item)
-        sut.reset(name: "Battle Value", itemId: movedId)
-        sut.reset(description: "Fighting values.", itemId: movedId)
+        sut.reset(name: "Battle Value", itemId: movedId, forceSave: false)
+        sut.reset(description: "Fighting values.", itemId: movedId, forceSave: false)
         #expect(sut.canMoveIntoGroup(itemId: movedId, into: targetId))
 
-        let entryId = try #require(sut.moveIntoGroup(itemId: movedId, into: targetId))
+        let entryId = try #require(sut.moveIntoGroup(itemId: movedId, into: targetId, forceSave: false))
 
         let target = root.itemController.itemOrEmpty(for: targetId)
         let entry = try #require(target.entries.first(where: { $0.id == entryId }))
@@ -233,7 +237,7 @@ struct EditControllerTests {
         sut.addItem(itemId: movedId, parentId: folderId)
         #expect(root.itemController.itemOrEmpty(for: movedId).parentId == folderId)
 
-        #expect(sut.moveIntoGroup(itemId: movedId, into: targetId) != nil)
+        #expect(sut.moveIntoGroup(itemId: movedId, into: targetId, forceSave: false) != nil)
 
         #expect(root.itemController.itemOrEmpty(for: movedId).parentId == nil)
         #expect(root.itemController.itemOrEmpty(for: folderId).entries.contains(where: { $0.childId == movedId }) == false)
@@ -245,10 +249,10 @@ struct EditControllerTests {
 
         let targetId = await root.itemController.addNew(type: .item)
         let movedId = await root.itemController.addNew(type: .item)
-        _ = await sut.addNewGroup(itemId: movedId)
+        _ = await sut.addNewGroup(itemId: movedId, forceSave: false)
 
         #expect(sut.canMoveIntoGroup(itemId: movedId, into: targetId) == false)
-        #expect(sut.moveIntoGroup(itemId: movedId, into: targetId) == nil)
+        #expect(sut.moveIntoGroup(itemId: movedId, into: targetId, forceSave: false) == nil)
         #expect(root.itemController.itemOrEmpty(for: movedId).groupId == nil)
         #expect(root.itemController.itemOrEmpty(for: targetId).entries.contains(where: { $0.adventureId == movedId }) == false)
     }
@@ -260,7 +264,7 @@ struct EditControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
         let otherId = await root.itemController.addNew(type: .item)
         let folderId = await root.itemController.addNew(type: .folder)
-        let entryId = await sut.addNewGroup(itemId: itemId)
+        let entryId = await sut.addNewGroup(itemId: itemId, forceSave: false)
         let groupId = try #require(root.itemController.itemOrEmpty(for: itemId).entries.first(where: { $0.id == entryId })?.adventureId)
 
         // itself
@@ -272,7 +276,7 @@ struct EditControllerTests {
         #expect(sut.canMoveIntoGroup(itemId: folderId, into: otherId) == false)
         #expect(sut.canMoveIntoGroup(itemId: otherId, into: folderId) == false)
         // an item that was moved already cannot move again
-        #expect(sut.moveIntoGroup(itemId: otherId, into: itemId) != nil)
+        #expect(sut.moveIntoGroup(itemId: otherId, into: itemId, forceSave: false) != nil)
         let third = await root.itemController.addNew(type: .item)
         #expect(sut.canMoveIntoGroup(itemId: otherId, into: third) == false)
     }
@@ -283,9 +287,9 @@ struct EditControllerTests {
 
         let itemId = await root.itemController.addNew(type: .item)
         let entry = AdventureEntryModel(id: UUID(), name: "Rumors", content: "A collection of rumors.")
-        sut.add(entry: entry, itemId: itemId)
+        sut.add(entry: entry, itemId: itemId, forceSave: false)
 
-        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil, forceSave: false)
 
         let item = root.itemController.itemOrEmpty(for: itemId)
         let updatedEntry = try #require(item.entries.first(where: { $0.id == entry.id }))
@@ -304,13 +308,13 @@ struct EditControllerTests {
 
         let itemId = await root.itemController.addNew(type: .item)
         let entry = AdventureEntryModel(id: UUID(), name: "Old Name", content: "Old content.")
-        sut.add(entry: entry, itemId: itemId)
+        sut.add(entry: entry, itemId: itemId, forceSave: false)
 
         let existingItemId = await root.itemController.addNew(type: .item)
-        sut.reset(name: "Locations", itemId: existingItemId)
-        sut.reset(description: "All known locations.", itemId: existingItemId)
+        sut.reset(name: "Locations", itemId: existingItemId, forceSave: false)
+        sut.reset(description: "All known locations.", itemId: existingItemId, forceSave: false)
 
-        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: existingItemId)
+        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: existingItemId, forceSave: false)
         #expect(groupId == existingItemId)
 
         let updatedExisting = root.itemController.itemOrEmpty(for: existingItemId)
@@ -331,15 +335,15 @@ struct EditControllerTests {
         // Item 1 has a normal entry whose content links to item 2.
         let item1Id = await root.itemController.addNew(type: .item)
         let item2Id = await root.itemController.addNew(type: .item)
-        sut.reset(name: "Rumors", itemId: item2Id)
-        sut.reset(description: "All known rumors.", itemId: item2Id)
+        sut.reset(name: "Rumors", itemId: item2Id, forceSave: false)
+        sut.reset(description: "All known rumors.", itemId: item2Id, forceSave: false)
 
         let item2 = root.itemController.itemOrEmpty(for: item2Id)
         let entry = AdventureEntryModel(id: UUID(), name: "Old Name", content: "See \(item2.url(linkNumber: 0))")
-        sut.add(entry: entry, itemId: item1Id)
+        sut.add(entry: entry, itemId: item1Id, forceSave: false)
 
         // Convert entry 1's entry to a group, reusing item 2 (the linked item) as the group.
-        let groupId = await sut.convertToGroup(itemId: item1Id, entryId: entry.id, existingItemId: item2Id)
+        let groupId = await sut.convertToGroup(itemId: item1Id, entryId: entry.id, existingItemId: item2Id, forceSave: false)
         #expect(groupId == item2Id)
 
         // Item 1's entry now carries item 2's name/content.

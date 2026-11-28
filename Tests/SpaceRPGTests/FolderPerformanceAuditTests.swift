@@ -18,7 +18,7 @@ struct FolderPerformanceAuditTests {
 
     private func addItem(_ root: SpaceRootModel, name: String, type: ItemListCategory = .item) async -> UUID {
         let id = await root.itemController.addNew(type: type)
-        root.editController.reset(name: name, itemId: id)
+        root.editController.reset(name: name, itemId: id, forceSave: false)
         return id
     }
 
@@ -29,7 +29,7 @@ struct FolderPerformanceAuditTests {
     private func appendStaleEntry(_ root: SpaceRootModel, folderId: UUID, childId: UUID) throws {
         let folder = try #require(root.editController.editModel(for: folderId))
         folder.entries.append(SpaceEntryModel.newChild(id: childId))
-        root.editController.save(updated: folder, message: "stale")
+        root.editController.save(updated: folder, message: "stale", forceSave: false)
     }
 
     @Test("One batch repair removes every stale folder entry and keeps the real ones (§7.3)")
@@ -46,7 +46,7 @@ struct FolderPerformanceAuditTests {
         try appendStaleEntry(root, folderId: staleFolderId, childId: rootItemId)
         try appendStaleEntry(root, folderId: staleFolderId, childId: untouchedId)
 
-        root.editController.repairFolders(itemIds: [movedId, rootItemId])
+        root.editController.repairFolders(itemIds: [movedId, rootItemId], forceSave: false)
 
         #expect(childIds(root, of: staleFolderId) == [untouchedId], "only the batch's items are repaired")
         #expect(Set(childIds(root, of: currentFolderId)) == [movedId, untouchedId])
@@ -59,7 +59,7 @@ struct FolderPerformanceAuditTests {
         let itemId = await addItem(root, name: "Item")
         try appendStaleEntry(root, folderId: staleFolderId, childId: itemId)
 
-        root.editController.repairFolder(itemId: itemId)
+        root.editController.repairFolder(itemId: itemId, forceSave: false)
 
         #expect(childIds(root, of: staleFolderId).isEmpty)
     }
@@ -79,9 +79,9 @@ struct FolderPerformanceAuditTests {
         // A child whose parent is the folder but which the folder does not list.
         let unlisted = try #require(root.editController.editModel(for: unlistedId))
         unlisted.parentId = folderId
-        root.editController.save(updated: unlisted, message: "parent")
+        root.editController.save(updated: unlisted, message: "parent", forceSave: false)
 
-        root.editController.repairFolders(itemIds: [folderId])
+        root.editController.repairFolders(itemIds: [folderId], forceSave: false)
 
         #expect(Set(childIds(root, of: folderId)) == [keptId, unlistedId])
         #expect(childIds(root, of: otherFolderId) == [movedId])
@@ -94,9 +94,9 @@ struct FolderPerformanceAuditTests {
         let itemId = await addItem(root, name: "Item")
         let item = try #require(root.editController.editModel(for: itemId))
         item.parentId = folderId
-        root.editController.save(updated: item, message: "parent")
+        root.editController.save(updated: item, message: "parent", forceSave: false)
 
-        root.editController.repairFolders(itemIds: [itemId])
+        root.editController.repairFolders(itemIds: [itemId], forceSave: false)
 
         #expect(childIds(root, of: folderId) == [itemId])
     }
@@ -108,7 +108,7 @@ struct FolderPerformanceAuditTests {
         let unknownId = UUID()
         try appendStaleEntry(root, folderId: folderId, childId: unknownId)
 
-        root.editController.repairFolders(itemIds: [folderId])
+        root.editController.repairFolders(itemIds: [folderId], forceSave: false)
 
         #expect(childIds(root, of: folderId) == [unknownId])
     }

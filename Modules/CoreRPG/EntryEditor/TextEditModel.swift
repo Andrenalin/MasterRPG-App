@@ -25,6 +25,14 @@ import SwiftUI
     // Performance: Cache the last processed text to avoid redundant AttributedString creation
     private var lastProcessedName: String = ""
     private var lastProcessedText: String = ""
+
+    /// The stored entry's name and text as this editor last took them: the editor is dirty while
+    /// what the user typed differs. See CODE_AUDIT_Edit_Save §8.1.
+    @ObservationIgnored private var storedName: String = ""
+    @ObservationIgnored private var storedText: String = ""
+
+    /// Whether the user typed something the stored entry does not have yet.
+    var isDirty: Bool { name != storedName || text != storedText }
     
     public func reset(text: String, source: ItemRowModel) {
         // Cancel any pending updates
@@ -32,6 +40,7 @@ import SwiftUI
         
         self.source = source
         self.text = text
+        storedText = text
         lastProcessedText = ""
         
         resetAttributedText()
@@ -66,11 +75,36 @@ import SwiftUI
         self.source = source
         name = entry.name
         text = entry.content
+        storedName = entry.name
+        storedText = entry.content
         lastProcessedName = ""
         lastProcessedText = ""
         
         resetAttributedName()
         resetAttributedText()
+    }
+
+    /// Takes the stored entry after it changed. Another entry, or an unchanged editor, shows the
+    /// stored value. While the user is typing, a change from elsewhere (a sync merge, a game
+    /// update, a menu Undo) no longer replaces the typing and cancels its save: the typing stays
+    /// and is what the editor saves. See CODE_AUDIT_Edit_Save §8.1.
+    func sync(entry: any EntryDataAccessible, source: ItemRowModel) {
+        guard source == self.source else {
+            reset(entry: entry, source: source)
+            return
+        }
+        guard entry.name != name || entry.content != text else {
+            // The editor's own save arrived: in step again.
+            storedName = entry.name
+            storedText = entry.content
+            return
+        }
+        guard isDirty else {
+            reset(entry: entry, source: source)
+            return
+        }
+        storedName = entry.name
+        storedText = entry.content
     }
 
     public func resetAttributedName() {

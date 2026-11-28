@@ -16,8 +16,8 @@ struct EditControllerTests {
         let catalogDie = DieModel(id: UUID(), die: .twenty)
         root.itemController.replace(model: DiceModel(id: itemId, name: "Bag", dice: []), isInsert: true)
 
-        sut.add(die: catalogDie, itemId: itemId)
-        sut.add(die: catalogDie, itemId: itemId)
+        sut.add(die: catalogDie, itemId: itemId, forceSave: false)
+        sut.add(die: catalogDie, itemId: itemId, forceSave: false)
 
         let ids = root.itemController.itemOrEmpty(for: itemId).dice.map(\.id)
         #expect(ids.count == 2)
@@ -33,12 +33,12 @@ struct EditControllerTests {
         let itemId = UUID()
         root.itemController.replace(model: DiceModel(id: itemId, name: "Bag", dice: [DieModel(id: UUID(), die: .twenty)]), isInsert: true)
 
-        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId)
-        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId)
-        sut.add(fumble: 1, isDiceValueFumble: false, itemId: itemId)
-        sut.add(fumble: 1, isDiceValueFumble: false, itemId: itemId)
-        sut.add(reroll: 1, value: 3, isMaxDiceValue: false, itemId: itemId)
-        sut.add(reroll: 1, value: 4, isMaxDiceValue: true, itemId: itemId)
+        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId, forceSave: false)
+        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId, forceSave: false)
+        sut.add(fumble: 1, isDiceValueFumble: false, itemId: itemId, forceSave: false)
+        sut.add(fumble: 1, isDiceValueFumble: false, itemId: itemId, forceSave: false)
+        sut.add(reroll: 1, value: 3, isMaxDiceValue: false, itemId: itemId, forceSave: false)
+        sut.add(reroll: 1, value: 4, isMaxDiceValue: true, itemId: itemId, forceSave: false)
 
         let item = root.itemController.itemOrEmpty(for: itemId)
         #expect(item.coupValues.count == 1)
@@ -67,7 +67,7 @@ struct EditControllerTests {
         _ = sut.fileUrlDataController
         _ = sut.linkRegisterController
 
-        sut.add(die: extraDie, itemId: itemId)
+        sut.add(die: extraDie, itemId: itemId, forceSave: false)
         let added = root.itemController.itemOrEmpty(for: itemId).dice
         #expect(added.count == 2)
         #expect(added.first?.id == baseDie.id)
@@ -75,42 +75,42 @@ struct EditControllerTests {
         #expect(addedDie.id != extraDie.id)
         #expect(addedDie.die == extraDie.die)
 
-        sut.remove(die: addedDie, itemId: itemId)
+        sut.remove(die: addedDie, itemId: itemId, forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: itemId).dice.map(\.id) == [baseDie.id])
 
-        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId)
-        sut.add(coup: 42, isDiceValueCoup: false, itemId: itemId)
+        sut.add(coup: 20, isDiceValueCoup: true, itemId: itemId, forceSave: false)
+        sut.add(coup: 42, isDiceValueCoup: false, itemId: itemId, forceSave: false)
         var edited = root.itemController.itemOrEmpty(for: itemId)
         #expect(edited.coupValues == [.diceValue(20), .result(42)])
         #expect(!edited.coupOnlyOnFirstDie)
 
-        sut.remove(coup: .diceValue(20), itemId: itemId)
+        sut.remove(coup: .diceValue(20), itemId: itemId, forceSave: false)
         edited = root.itemController.itemOrEmpty(for: itemId)
         #expect(edited.coupValues == [.result(42)])
 
-        sut.add(fumble: 1, isDiceValueFumble: true, itemId: itemId)
-        sut.add(fumble: 2, isDiceValueFumble: false, itemId: itemId)
+        sut.add(fumble: 1, isDiceValueFumble: true, itemId: itemId, forceSave: false)
+        sut.add(fumble: 2, isDiceValueFumble: false, itemId: itemId, forceSave: false)
         edited = root.itemController.itemOrEmpty(for: itemId)
         #expect(edited.fumbleValues == [.diceValue(1), .result(2)])
         #expect(!edited.fumbleOnlyOnFirstDie)
 
-        sut.remove(fumble: .diceValue(1), itemId: itemId)
+        sut.remove(fumble: .diceValue(1), itemId: itemId, forceSave: false)
         edited = root.itemController.itemOrEmpty(for: itemId)
         #expect(edited.fumbleValues == [.result(2)])
 
-        sut.add(reroll: 2, value: 5, isMaxDiceValue: true, itemId: itemId)
+        sut.add(reroll: 2, value: 5, isMaxDiceValue: true, itemId: itemId, forceSave: false)
         let reroll = try #require(root.itemController.itemOrEmpty(for: itemId).rerollOptions.first)
         #expect(reroll.number == 2)
         #expect(reroll.value == 5)
         #expect(reroll.maxDiceValue)
 
-        sut.remove(reroll: reroll, itemId: itemId)
+        sut.remove(reroll: reroll, itemId: itemId, forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: itemId).rerollOptions.isEmpty)
 
-        sut.reset(addValue: 3, itemId: itemId)
-        sut.reset(compareValue: 12, itemId: itemId)
-        sut.reset(modifier: -2, itemId: itemId)
-        sut.reset(compareOption: .equalHigher, itemId: itemId)
+        sut.reset(addValue: 3, itemId: itemId, forceSave: false)
+        sut.reset(compareValue: 12, itemId: itemId, forceSave: false)
+        sut.reset(modifier: -2, itemId: itemId, forceSave: false)
+        sut.reset(compareOption: .equalHigher, itemId: itemId, forceSave: false)
 
         edited = root.itemController.itemOrEmpty(for: itemId)
         #expect(edited.addDiceEvery == 3)
@@ -119,17 +119,17 @@ struct EditControllerTests {
         #expect(edited.compareOption == .equalHigher)
 
         let missingId = UUID()
-        sut.add(die: extraDie, itemId: missingId)
-        sut.remove(die: extraDie, itemId: missingId)
-        sut.add(coup: 1, isDiceValueCoup: true, itemId: missingId)
-        sut.remove(coup: .result(42), itemId: missingId)
-        sut.add(fumble: 1, isDiceValueFumble: true, itemId: missingId)
-        sut.remove(fumble: .result(2), itemId: missingId)
-        sut.add(reroll: 1, value: 1, isMaxDiceValue: false, itemId: missingId)
-        sut.remove(reroll: DiceModel.RerollOption(number: 1, value: 1, maxDiceValue: false), itemId: missingId)
-        sut.reset(addValue: 1, itemId: missingId)
-        sut.reset(compareValue: 1, itemId: missingId)
-        sut.reset(modifier: 1, itemId: missingId)
-        sut.reset(compareOption: .off, itemId: missingId)
+        sut.add(die: extraDie, itemId: missingId, forceSave: false)
+        sut.remove(die: extraDie, itemId: missingId, forceSave: false)
+        sut.add(coup: 1, isDiceValueCoup: true, itemId: missingId, forceSave: false)
+        sut.remove(coup: .result(42), itemId: missingId, forceSave: false)
+        sut.add(fumble: 1, isDiceValueFumble: true, itemId: missingId, forceSave: false)
+        sut.remove(fumble: .result(2), itemId: missingId, forceSave: false)
+        sut.add(reroll: 1, value: 1, isMaxDiceValue: false, itemId: missingId, forceSave: false)
+        sut.remove(reroll: DiceModel.RerollOption(number: 1, value: 1, maxDiceValue: false), itemId: missingId, forceSave: false)
+        sut.reset(addValue: 1, itemId: missingId, forceSave: false)
+        sut.reset(compareValue: 1, itemId: missingId, forceSave: false)
+        sut.reset(modifier: 1, itemId: missingId, forceSave: false)
+        sut.reset(compareOption: .off, itemId: missingId, forceSave: false)
     }
 }

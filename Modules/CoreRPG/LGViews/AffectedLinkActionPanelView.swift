@@ -54,7 +54,7 @@ public struct AffectedLinkActionPanelView: View {
                         if let action {
                             action(removedItems)
                         } else {
-                            root.editControllable.confirmRemoval(of: removeEntryList.removeItems, keeping: restoredItems)
+                            root.editControllable.confirmRemoval(of: removeEntryList.removeItems, keeping: restoredItems, forceSave: true)
                             root.folderListControllable.scheduleSearch()
                         }
                         navigator.dismiss()

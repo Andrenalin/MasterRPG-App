@@ -331,12 +331,12 @@ private extension GameControllerTests {
         try await MockRoot.resetTestData(for: root)
 
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Source Folder", itemId: folderId)
+        root.editController.reset(name: "Source Folder", itemId: folderId, forceSave: false)
 
         let audioId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Source Cue", itemId: audioId)
+        root.editController.reset(name: "Source Cue", itemId: audioId, forceSave: false)
         root.editController.addItem(itemId: audioId, parentId: folderId)
-        try await root.editController.resetFile(data: fileData, itemId: audioId, path: "Source Cue.m4a")
+        try await root.editController.resetFile(data: fileData, itemId: audioId, path: "Source Cue.m4a", forceSave: false)
 
         let gameData = try await root.gameController.createGameData(for: audioId)
         let data = try #require(gameData.data)
@@ -360,7 +360,7 @@ private extension GameControllerTests {
             return (root, nil)
         case .differentFolder:
             let folderId = await root.itemController.addNew(type: .folder)
-            root.editController.reset(name: "Local Folder", itemId: folderId)
+            root.editController.reset(name: "Local Folder", itemId: folderId, forceSave: false)
             root.editController.addItem(itemId: audioId, parentId: folderId)
             return (root, folderId)
         }

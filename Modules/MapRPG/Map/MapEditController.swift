@@ -60,9 +60,11 @@ extension MapEditController {
         updated.pinScale = copy.pinScale
         updated.hexMapScale = copy.hexMapScale
         updated.mapPins = copy.mapPins
+        // Map content stays in game memory while a game runs (user decision; CODE_AUDIT_Edit_Save §5.13).
         editController.save(
             updated: updated,
-            message: String(localized: "map updated", bundle: .module)
+            message: String(localized: "map updated", bundle: .module),
+            forceSave: false
         )
     }
 

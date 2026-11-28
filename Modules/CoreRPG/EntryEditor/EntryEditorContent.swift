@@ -27,29 +27,17 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     var body: some View {
         GlassEffectContainerAll {
             EntryEditorContentEditorCardView(editController: editController, editorModel: editorModel, itemId: itemId, editModel: editModel, entry: entry, linkTypes: linkTypes, currentFocus: $currentFocus)
+                .textInputUndo()
         }
         .frame(maxWidth: 800)
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        // Optimization: Combine onChange modifiers to prevent duplicate updates
-        .onChange(of: entry.content, initial: true) { _, newContent in
-            let source = ItemRowModel(
-                itemId: itemId,
-                entryId: entry.id,
-                typeId: editorModel.module
-            )
-            // Check if we actually need to update to prevent unnecessary work
-            if editModel.source != source ||
-                editModel.text != newContent ||
-                editModel.name != entry.name {
-                updateEditModel(entry: entry, itemId: itemId)
-            }
+        // A change of the stored entry keeps what the user is typing. See CODE_AUDIT_Edit_Save §8.1.
+        .onChange(of: entry.content, initial: true) {
+            syncEditModel()
         }
-        .onChange(of: entry.name) { _, newName in
-            // Only update if name actually changed and content didn't already trigger update
-            if editModel.name != newName {
-                updateEditModel(entry: entry, itemId: itemId)
-            }
+        .onChange(of: entry.name) {
+            syncEditModel()
         }
         .background {
             Button {
@@ -72,8 +60,8 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
         }
     }
     
-    private func updateEditModel(entry: any EntryDataAccessible, itemId: UUID) {
-        editModel.reset(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
+    private func syncEditModel() {
+        editModel.sync(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
     }
 }
 

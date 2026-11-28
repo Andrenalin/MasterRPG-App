@@ -29,9 +29,9 @@ struct EditControllerTests {
         await root.itemController.resetData()
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Track A", itemId: itemId)
-        root.editController.reset(description: "A cool track", itemId: itemId)
-        root.editController.reset(tags: ["rock", "loud"], itemId: itemId)
+        root.editController.reset(name: "Track A", itemId: itemId, forceSave: false)
+        root.editController.reset(description: "A cool track", itemId: itemId, forceSave: false)
+        root.editController.reset(tags: ["rock", "loud"], itemId: itemId, forceSave: false)
         let original = root.itemController.itemOrEmpty(for: itemId)
 
         let before = idSet(root)
@@ -55,11 +55,11 @@ struct EditControllerTests {
         await root.itemController.resetData()
 
         let playlistId = await root.itemController.addNew(type: .playlist)
-        root.editController.reset(name: "My Playlist", itemId: playlistId)
-        root.editController.reset(tags: ["chill"], itemId: playlistId)
+        root.editController.reset(name: "My Playlist", itemId: playlistId, forceSave: false)
+        root.editController.reset(tags: ["chill"], itemId: playlistId, forceSave: false)
         let trackId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Track A", itemId: trackId)
-        root.editController.addGroup(itemId: playlistId, childId: trackId)
+        root.editController.reset(name: "Track A", itemId: trackId, forceSave: false)
+        root.editController.addItem(itemId: trackId, parentId: playlistId)
 
         let original = root.itemController.itemOrEmpty(for: playlistId)
         try #require(original.entries.count == 1)
@@ -84,12 +84,12 @@ struct EditControllerTests {
         await root.itemController.resetData()
 
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Folder A", itemId: folderId)
+        root.editController.reset(name: "Folder A", itemId: folderId, forceSave: false)
         let child1Id = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Track 1", itemId: child1Id)
+        root.editController.reset(name: "Track 1", itemId: child1Id, forceSave: false)
         root.editController.addItem(itemId: child1Id, parentId: folderId)
         let child2Id = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Track 2", itemId: child2Id)
+        root.editController.reset(name: "Track 2", itemId: child2Id, forceSave: false)
         root.editController.addItem(itemId: child2Id, parentId: folderId)
 
         let original = root.itemController.itemOrEmpty(for: folderId)
@@ -126,9 +126,9 @@ struct EditControllerTests {
         await root.itemController.resetData()
 
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Folder A", itemId: folderId)
+        root.editController.reset(name: "Folder A", itemId: folderId, forceSave: false)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Track A", itemId: itemId)
+        root.editController.reset(name: "Track A", itemId: itemId, forceSave: false)
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         let item = root.itemController.itemOrEmpty(for: itemId)
@@ -152,10 +152,10 @@ struct EditControllerTests {
         await root.itemController.resetData()
 
         let playlistId = await root.itemController.addNew(type: .playlist)
-        root.editController.reset(name: "My Playlist", itemId: playlistId)
+        root.editController.reset(name: "My Playlist", itemId: playlistId, forceSave: false)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Track A", itemId: itemId)
-        root.editController.addGroup(itemId: playlistId, childId: itemId)
+        root.editController.reset(name: "Track A", itemId: itemId, forceSave: false)
+        root.editController.addItem(itemId: itemId, parentId: playlistId)
 
         let playlist = root.itemController.itemOrEmpty(for: playlistId)
         try #require(playlist.entries.count == 1)

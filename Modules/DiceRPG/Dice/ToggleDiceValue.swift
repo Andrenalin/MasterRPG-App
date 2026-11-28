@@ -40,12 +40,10 @@ struct ToggleDiceValue: View {
         let toggleValue = model[keyPath: toggleKeyPath]
         guard model.id != toggleEditModel.valueId || toggleValue != toggleEditModel.value else { return }
         let editController = root.editController
+        let keyPath = toggleKeyPath
+        let message = saveMessage
         toggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
-            guard var item = editController.editModel(for: itemId) else { return }
-            if value != item[keyPath: toggleKeyPath] {
-                item[keyPath: toggleKeyPath] = value
-                editController.save(updated: item, message: saveMessage, forceSave: true)
-            }
+            editController.reset(toggle: keyPath, value: value, itemId: itemId, message: message, forceSave: true)
         }
     }
 }

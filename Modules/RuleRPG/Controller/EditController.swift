@@ -174,35 +174,15 @@ extension EditController: EntryDataEditable {
         }
     }
 
-    @MainActor
-    func merge(
-        itemId: UUID,
-        entries: [RuleEntryModel],
-        recoverEntries: [ItemRowModel]?,
-        forceSave: Bool
-    ) -> [ItemRowModel] {
-        guard let item = editModel(for: itemId) else { return [] }
-        var merged = merge(itemId: itemId, entries: entries)
-        let removedIds = Set(item.entries.map(\.id)).subtracting(merged.map(\.id))
-        let removedRows = removedIds.map {
-            ItemRowModel(itemId: item.id, entryId: $0, typeId: .rule)
-        }
-        let hasAffectedLinks = removedRows.contains { row in
-            !linkRegisterController.used(for: row).isEmpty
-        }
-
-        guard recoverEntries != nil || !hasAffectedLinks else { return removedRows }
-        if let recoverEntries {
-            merged.append(contentsOf: recoverEntries.compactMap(\.entryId).map { item[$0] })
-        }
-        item.entries = merged
-        save(updated: item, message: String(localized: "Rule sections replaced", bundle: .ruleModule), forceSave: forceSave)
-        return []
+    /// The shared merge skeleton (`EntryDataEditable`) runs Rule's matching above.
+    /// See CODE_AUDIT_Edit_Save §9.3.
+    @MainActor var entriesReplacedUndoTitle: String {
+        String(localized: "Rule sections replaced", bundle: .ruleModule)
     }
 
     @MainActor
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    func reset(sourceMetadata: RuleSourceMetadata, itemId: UUID, forceSave: Bool = false) {
+    func reset(sourceMetadata: RuleSourceMetadata, itemId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId), item.sourceMetadata != sourceMetadata else { return }
         item.sourceMetadata = sourceMetadata
         save(updated: item, message: String(localized: "Rule source updated", bundle: .ruleModule), forceSave: forceSave)

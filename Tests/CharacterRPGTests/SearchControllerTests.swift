@@ -27,7 +27,7 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Aldric the Bold", itemId: itemId)
+        root.editController.reset(name: "Aldric the Bold", itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Aldric")
         #expect(results.contains { $0.itemId == itemId })
@@ -39,8 +39,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Hidden Knight", itemId: itemId)
-        root.editController.reset(displayState: 1, itemId: itemId)
+        root.editController.reset(name: "Hidden Knight", itemId: itemId, forceSave: false)
+        root.editController.reset(displayState: 1, itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Hidden")
         #expect(results.contains { $0.itemId == itemId } == false)
@@ -52,8 +52,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Deleted Ranger", itemId: itemId)
-        root.editController.reset(displayState: 2, itemId: itemId)
+        root.editController.reset(name: "Deleted Ranger", itemId: itemId, forceSave: false)
+        root.editController.reset(displayState: 2, itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Deleted")
         #expect(results.contains { $0.itemId == itemId } == false)
@@ -66,15 +66,15 @@ struct SearchControllerTests {
 
         // Create parent and attach a group sub-value to it
         let parentId = await root.itemController.addNew(type: .item)
-        let entryId = await root.editController.addNewGroup(itemId: parentId)
+        let entryId = await root.editController.addNewGroup(itemId: parentId, forceSave: false)
 
         let parent = root.itemController.itemOrEmpty(for: parentId)
         let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
         let childId = try #require(groupEntry.valueId)
 
         // Make the group item fully visible (displayState 0) and give it a searchable name
-        root.editController.reset(displayState: 0, itemId: childId)
-        root.editController.reset(name: "SubValueStrength", itemId: childId)
+        root.editController.reset(displayState: 0, itemId: childId, forceSave: false)
+        root.editController.reset(name: "SubValueStrength", itemId: childId, forceSave: false)
 
         // groupId != nil must exclude it from list search even when displayState == 0
         let results = await sut.globalSearchResults(searchText: "SubValueStrength")
@@ -87,7 +87,7 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Goblin Scout", itemId: itemId)
+        root.editController.reset(name: "Goblin Scout", itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Dragon")
         #expect(results.contains { $0.itemId == itemId } == false)
@@ -99,8 +99,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Village Elder", itemId: itemId)
-        root.editController.reset(description: "Keeper of ancient lore", itemId: itemId)
+        root.editController.reset(name: "Village Elder", itemId: itemId, forceSave: false)
+        root.editController.reset(description: "Keeper of ancient lore", itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "ancient lore")
         #expect(results.contains { $0.itemId == itemId })
@@ -115,15 +115,15 @@ struct SearchControllerTests {
 
         // Exact name match → score 115
         let exactId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rogue", itemId: exactId)
+        root.editController.reset(name: "Rogue", itemId: exactId, forceSave: false)
 
         // Prefix name match → score 65
         let prefixId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rogueborn", itemId: prefixId)
+        root.editController.reset(name: "Rogueborn", itemId: prefixId, forceSave: false)
 
         // Name contains match → score 40
         let containsId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "The Rogue Assassin", itemId: containsId)
+        root.editController.reset(name: "The Rogue Assassin", itemId: containsId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Rogue")
         let matchIds = results.map(\.itemId)
@@ -143,12 +143,12 @@ struct SearchControllerTests {
 
         // Name contains → score 40
         let nameMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Forest Tracker", itemId: nameMatchId)
+        root.editController.reset(name: "Forest Tracker", itemId: nameMatchId, forceSave: false)
 
         // Description only → score 25
         let descMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Wandering Merchant", itemId: descMatchId)
-        root.editController.reset(description: "Expert forest tracker and guide", itemId: descMatchId)
+        root.editController.reset(name: "Wandering Merchant", itemId: descMatchId, forceSave: false)
+        root.editController.reset(description: "Expert forest tracker and guide", itemId: descMatchId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "forest")
         let matchIds = results.map(\.itemId)
@@ -169,13 +169,13 @@ struct SearchControllerTests {
 
         let charWithNameMatch  = await root.itemController.addNew(type: .item)
         let charWithEntryOnly  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Knight", itemId: charWithNameMatch)  // name matches
-        root.editController.reset(name: "Eldrin",        itemId: charWithEntryOnly)  // name doesn't match
+        root.editController.reset(name: "Dragon Knight", itemId: charWithNameMatch, forceSave: false)  // name matches
+        root.editController.reset(name: "Eldrin",        itemId: charWithEntryOnly, forceSave: false)  // name doesn't match
 
         // Only entry of Eldrin matches — but common inspector never searches entries
-        let entryId = await root.editController.addNewGroup(itemId: charWithEntryOnly)
+        let entryId = await root.editController.addNewGroup(itemId: charWithEntryOnly, forceSave: false)
         root.editController.update(itemId: charWithEntryOnly, entryId: entryId,
-                                   name: "Dragon Strength", content: "Very high")
+                                   name: "Dragon Strength", content: "Very high", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -201,9 +201,9 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Knight", itemId: charId)
-        let entryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entryId, name: "Sword skill", content: "Very skilled")
+        root.editController.reset(name: "Knight", itemId: charId, forceSave: false)
+        let entryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Sword skill", content: "Very skilled", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -224,8 +224,8 @@ struct SearchControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Spieler", itemId: folderId)
-        root.editController.reset(name: "Rupert Raubein", itemId: charId)
+        root.editController.reset(name: "Spieler", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Rupert Raubein", itemId: charId, forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "",
@@ -246,8 +246,8 @@ struct SearchControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Spieler", itemId: folderId)
-        root.editController.reset(name: "Rupert Raubein", itemId: charId)
+        root.editController.reset(name: "Spieler", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Rupert Raubein", itemId: charId, forceSave: false)
         root.editController.addItem(itemId: charId, parentId: folderId)
 
         let results = await sut.inspectorSearchResults(
@@ -268,8 +268,8 @@ struct SearchControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Vault", itemId: folderId)
-        root.editController.reset(name: "Dragon Knight", itemId: charId)
+        root.editController.reset(name: "Dragon Vault", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Knight", itemId: charId, forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -291,11 +291,11 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Thorin", itemId: charId)
-        let entry1 = await root.editController.addNewGroup(itemId: charId)
-        let entry2 = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entry1, name: "Strength", content: "")
-        root.editController.update(itemId: charId, entryId: entry2, name: "Dexterity", content: "")
+        root.editController.reset(name: "Thorin", itemId: charId, forceSave: false)
+        let entry1 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        let entry2 = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: entry1, name: "Strength", content: "", forceSave: false)
+        root.editController.update(itemId: charId, entryId: entry2, name: "Dexterity", content: "", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "",
@@ -319,15 +319,15 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Thorin", itemId: charId)
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        root.editController.reset(name: "Thorin", itemId: charId, forceSave: false)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
         // The group entry has a valueId → a sub-value item
         let char = root.itemController.itemOrEmpty(for: charId)
         let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
         // Add an entry to the sub-value
-        let subEntry1 = await root.editController.addNewGroup(itemId: subValueId)
-        root.editController.update(itemId: subValueId, entryId: subEntry1, name: "SubStrength", content: "")
+        let subEntry1 = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: subEntry1, name: "SubStrength", content: "", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "",
@@ -352,11 +352,11 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Eldrin — no dragon here", itemId: charId)
-        let matchEntry = await root.editController.addNewGroup(itemId: charId)
-        let noMatchEntry = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: matchEntry, name: "Dragon Breath", content: "")
-        root.editController.update(itemId: charId, entryId: noMatchEntry, name: "Sword Skills", content: "")
+        root.editController.reset(name: "Eldrin — no dragon here", itemId: charId, forceSave: false)
+        let matchEntry = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        let noMatchEntry = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: matchEntry, name: "Dragon Breath", content: "", forceSave: false)
+        root.editController.update(itemId: charId, entryId: noMatchEntry, name: "Sword Skills", content: "", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -380,8 +380,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        let entryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entryId, name: "Fire Resistance", content: "Immune to dragon fire")
+        let entryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Fire Resistance", content: "Immune to dragon fire", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "dragon",
@@ -402,12 +402,12 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
         // The group entry points to a sub-value item — name it "Dragon Ability"
         let char = root.itemController.itemOrEmpty(for: charId)
         let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
-        root.editController.reset(name: "Dragon Ability", itemId: subValueId)
+        root.editController.reset(name: "Dragon Ability", itemId: subValueId, forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -428,9 +428,9 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Knight", itemId: charId)
-        let entryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: entryId, name: "Sword", content: "Sharp blade")
+        root.editController.reset(name: "Knight", itemId: charId, forceSave: false)
+        let entryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: entryId, name: "Sword", content: "Sharp blade", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -451,15 +451,15 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let charId = await root.itemController.addNew(type: .item)
-        let groupEntryId = await root.editController.addNewGroup(itemId: charId)
-        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Dragon Powers", content: "")
+        let groupEntryId = await root.editController.addNewGroup(itemId: charId, forceSave: false)
+        root.editController.update(itemId: charId, entryId: groupEntryId, name: "Dragon Powers", content: "", forceSave: false)
 
         // The group entry points to a sub-value; add entries to that sub-value
         let char = root.itemController.itemOrEmpty(for: charId)
         let groupEntry = try #require(char.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
-        let subEntry = await root.editController.addNewGroup(itemId: subValueId)
-        root.editController.update(itemId: subValueId, entryId: subEntry, name: "Fire breath", content: "")
+        let subEntry = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: subEntry, name: "Fire breath", content: "", forceSave: false)
 
         let results = await sut.inspectorSearchResults(
             searchText: "Dragon",
@@ -500,13 +500,13 @@ struct ListSearchResultsTests {
         let root = try await makeRoot()
 
         let parentId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Warrior", itemId: parentId)
+        root.editController.reset(name: "Warrior", itemId: parentId, forceSave: false)
 
-        let groupEntryId = await root.editController.addNewGroup(itemId: parentId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: parentId, forceSave: false)
         let parent = root.itemController.itemOrEmpty(for: parentId)
         let groupEntry = try #require(parent.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
-        root.editController.reset(name: "Warrior Strength", itemId: subValueId)  // searchable name
+        root.editController.reset(name: "Warrior Strength", itemId: subValueId, forceSave: false)  // searchable name
 
         let results = await root.searchController.listSearchResults(
             searchText: "Warrior",
@@ -525,9 +525,9 @@ struct ListSearchResultsTests {
         let root = try await makeRoot()
 
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Dragon Group", itemId: folderId)
+        root.editController.reset(name: "Dragon Group", itemId: folderId, forceSave: false)
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Regular Dragon", itemId: charId)
+        root.editController.reset(name: "Regular Dragon", itemId: charId, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "Dragon",
@@ -548,9 +548,9 @@ struct ListSearchResultsTests {
         let folderId = await root.itemController.addNew(type: .folder)
         let charC = await root.itemController.addNew(type: .item)
         let charA = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Heroes Folder", itemId: folderId)
-        root.editController.reset(name: "Cassia",        itemId: charC)
-        root.editController.reset(name: "Aldric",        itemId: charA)
+        root.editController.reset(name: "Heroes Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Cassia",        itemId: charC, forceSave: false)
+        root.editController.reset(name: "Aldric",        itemId: charA, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "",
@@ -572,8 +572,8 @@ struct ListSearchResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Vault", itemId: folderId)
-        root.editController.reset(name: "Dragon Slayer", itemId: charId)
+        root.editController.reset(name: "Dragon Vault", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Dragon Slayer", itemId: charId, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "Dragon",
@@ -594,9 +594,9 @@ struct ListSearchResultsTests {
         let idC = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         let idB = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Cassia", itemId: idC)
-        root.editController.reset(name: "Aldric", itemId: idA)
-        root.editController.reset(name: "Berin",  itemId: idB)
+        root.editController.reset(name: "Cassia", itemId: idC, forceSave: false)
+        root.editController.reset(name: "Aldric", itemId: idA, forceSave: false)
+        root.editController.reset(name: "Berin",  itemId: idB, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "",
@@ -616,8 +616,8 @@ struct ListSearchResultsTests {
 
         let exactId    = await root.itemController.addNew(type: .item)
         let containsId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rogue",             itemId: exactId)
-        root.editController.reset(name: "Rogue Shadowstep",  itemId: containsId)
+        root.editController.reset(name: "Rogue",             itemId: exactId, forceSave: false)
+        root.editController.reset(name: "Rogue Shadowstep",  itemId: containsId, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "Rogue",
@@ -639,13 +639,13 @@ struct ListSearchResultsTests {
         let root = try await makeRoot()
 
         let parentId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Ranger", itemId: parentId)
+        root.editController.reset(name: "Ranger", itemId: parentId, forceSave: false)
 
-        let groupEntryId = await root.editController.addNewGroup(itemId: parentId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: parentId, forceSave: false)
         let parent = root.itemController.itemOrEmpty(for: parentId)
         let groupEntry = try #require(parent.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
-        root.editController.reset(name: "Ranger Dexterity", itemId: subValueId)
+        root.editController.reset(name: "Ranger Dexterity", itemId: subValueId, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "Ranger",
@@ -665,8 +665,8 @@ struct ListSearchResultsTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Zultan",   itemId: folderId)
-        root.editController.reset(name: "Aerindel", itemId: charId)
+        root.editController.reset(name: "Zultan",   itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Aerindel", itemId: charId, forceSave: false)
 
         let results = await root.searchController.listSearchResults(
             searchText: "",
@@ -703,8 +703,8 @@ struct InspectorSearchFixTests {
 
         let char1 = await root.itemController.addNew(type: .item)
         let char2 = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Aldric", itemId: char1)
-        root.editController.reset(name: "Berin",  itemId: char2)
+        root.editController.reset(name: "Aldric", itemId: char1, forceSave: false)
+        root.editController.reset(name: "Berin",  itemId: char2, forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(
             searchText: "",
@@ -724,8 +724,8 @@ struct InspectorSearchFixTests {
 
         let idC = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Cedric", itemId: idC)
-        root.editController.reset(name: "Asha",   itemId: idA)
+        root.editController.reset(name: "Cedric", itemId: idC, forceSave: false)
+        root.editController.reset(name: "Asha",   itemId: idA, forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(
             searchText: "",
@@ -745,9 +745,9 @@ struct InspectorSearchFixTests {
 
         let charWithEntries    = await root.itemController.addNew(type: .item)
         let charWithoutEntries = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "With Entries",    itemId: charWithEntries)
-        root.editController.reset(name: "Without Entries", itemId: charWithoutEntries)
-        _ = await root.editController.addNewGroup(itemId: charWithEntries)
+        root.editController.reset(name: "With Entries",    itemId: charWithEntries, forceSave: false)
+        root.editController.reset(name: "Without Entries", itemId: charWithoutEntries, forceSave: false)
+        _ = await root.editController.addNewGroup(itemId: charWithEntries, forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(
             searchText: "",
@@ -771,7 +771,7 @@ struct InspectorSearchFixTests {
         let root = try await makeRoot()
 
         let parentId     = await root.itemController.addNew(type: .item)
-        let groupEntryId = await root.editController.addNewGroup(itemId: parentId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: parentId, forceSave: false)
         let parent       = root.itemController.itemOrEmpty(for: parentId)
         let groupEntry   = try #require(parent.entries.first(where: { $0.id == groupEntryId }))
         let subValueId   = try #require(groupEntry.valueId)
@@ -794,8 +794,8 @@ struct InspectorSearchFixTests {
         // Items with single-word names have no space — the old " " trick filtered them out
         let singleWord = await root.itemController.addNew(type: .item)
         let multiWord  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rogue",         itemId: singleWord)
-        root.editController.reset(name: "Forest Ranger", itemId: multiWord)
+        root.editController.reset(name: "Rogue",         itemId: singleWord, forceSave: false)
+        root.editController.reset(name: "Forest Ranger", itemId: multiWord, forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(
             searchText: "",
@@ -815,7 +815,7 @@ struct InspectorSearchFixTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let charId   = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Heroes Guild", itemId: folderId)
+        root.editController.reset(name: "Heroes Guild", itemId: folderId, forceSave: false)
         root.editController.addItem(itemId: charId, parentId: folderId)
 
         let results = await root.searchController.inspectorSearchResults(
@@ -855,7 +855,7 @@ struct MiscSearchControllerTests {
         let root = try await makeRoot()
 
         let folderId = await root.itemController.addNew(type: .folder)
-        root.editController.reset(name: "Archive Vault", itemId: folderId)
+        root.editController.reset(name: "Archive Vault", itemId: folderId, forceSave: false)
 
         let results = await root.searchController.globalSearchResults(searchText: "Archive")
         let folderResult = try #require(results.first(where: { $0.itemId == folderId }))
@@ -869,17 +869,17 @@ struct MiscSearchControllerTests {
         let root = try await makeRoot()
 
         let characterId = await root.itemController.addNew(type: .item)
-        let groupEntryId = await root.editController.addNewGroup(itemId: characterId)
+        let groupEntryId = await root.editController.addNewGroup(itemId: characterId, forceSave: false)
         let character = root.itemController.itemOrEmpty(for: characterId)
         let groupEntry = try #require(character.entries.first(where: { $0.id == groupEntryId }))
         let subValueId = try #require(groupEntry.valueId)
 
-        let zetaId = await root.editController.addNewGroup(itemId: subValueId)
-        let alphaId = await root.editController.addNewGroup(itemId: subValueId)
-        let ignoredId = await root.editController.addNewGroup(itemId: subValueId)
-        root.editController.update(itemId: subValueId, entryId: zetaId, name: "Moon Zeta", content: "")
-        root.editController.update(itemId: subValueId, entryId: alphaId, name: "Alpha", content: "moon light")
-        root.editController.update(itemId: subValueId, entryId: ignoredId, name: "Solar", content: "bright")
+        let zetaId = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        let alphaId = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        let ignoredId = await root.editController.addNewGroup(itemId: subValueId, forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: zetaId, name: "Moon Zeta", content: "", forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: alphaId, name: "Alpha", content: "moon light", forceSave: false)
+        root.editController.update(itemId: subValueId, entryId: ignoredId, name: "Solar", content: "bright", forceSave: false)
 
         let results = await root.searchController.inspectorSearchResults(
             searchText: "Moon",

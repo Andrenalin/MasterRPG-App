@@ -248,7 +248,7 @@ struct GameControllerTests {
 
         let itemId = root.itemController.itemDataModel.items[0]
         let item = root.itemController.itemOrEmpty(for: itemId)
-        let version = item.version
+        let version = NetworkPackageVersion.of(item)
         result = await sut.hasItem(id: itemId, version: version + 1)
         #expect(!result)
         #expect(sut.gameModel.itemData[itemId] == nil)
@@ -322,7 +322,7 @@ struct GameControllerTests {
         let netdata = try await sut.createGameData(for: itemId)
         #expect(netdata.id == itemId)
         #expect(netdata.type == NetworkModules.photo)
-        #expect(netdata.version == version)
+        #expect(netdata.effectiveAssetVersion == version)
 
         await root.itemController.delete(itemId: itemId)
         #expect(root.itemController.itemDataModel.itemData[itemId] == nil)
@@ -369,7 +369,7 @@ struct GameControllerTests {
         let backfilledFileUrl = try #require(root.itemController.itemOrEmpty(for: itemId).fileUrl)
         #expect(backfilledFileUrl.contentHash != nil)
         #expect(netdata.version != staleVersion)
-        #expect(netdata.version == root.itemController.itemOrEmpty(for: itemId).version)
+        #expect(netdata.effectiveAssetVersion == root.itemController.itemOrEmpty(for: itemId).version)
     }
 
     @Test func UpdateGame() async throws {
@@ -386,7 +386,7 @@ struct GameControllerTests {
         let netdata = try await sut.createGameData(for: itemId)
         #expect(netdata.id == itemId)
         #expect(netdata.type == NetworkModules.photo)
-        #expect(netdata.version == version)
+        #expect(netdata.effectiveAssetVersion == version)
         let fileUrl = root.itemController.itemOrEmpty(for: itemId).fileUrl
         root.itemController.itemOrEmpty(for: itemId).fileUrl = nil
         let updatedVersion = root.itemController.itemOrEmpty(for: itemId).version

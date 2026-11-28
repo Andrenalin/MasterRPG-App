@@ -67,34 +67,32 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
+        // A photo that is gone is a dead reference in the library too: cleared like a dead link,
+        // although the map's content is otherwise memory-only during a game.
+        repairItemLinks(itemId: itemId, as: MapModel.self) { inspectedItem in
+            let replacedItem = inspectedItem.copy()
+            for entry in inspectedItem.entries {
+                var validatedEntry = entry
 
-        for entry in inspectedItem.entries {
-            var validatedEntry = entry
+                let links = LinkReplaceController.links(for: entry.content)
+                validatedEntry.content = repairLinks(links, in: validatedEntry.content)
 
-            let links = LinkReplaceController.links(for: entry.content)
-            validatedEntry.content = repairLinks(links, in: validatedEntry.content)
-
-            if !entry.isSame(validatedEntry) {
-                replacedItem[entry.id]  = validatedEntry
+                if !entry.isSame(validatedEntry) {
+                    replacedItem[entry.id]  = validatedEntry
+                }
             }
-        }
-        if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Map: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
-            itemController.replace(model: replacedItem, isInsert: false)
-        }
-
-        defer { resetLinkRegister(replacedItem) }
-
-        guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
-        if photoRoot.linkControllable.validateLink(itemId: photoId) {
-            LinkActionTasks.run {
-                await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
+            if let photoId = replacedItem.photoId, !photoRoot.linkControllable.validateLink(itemId: photoId) {
+                Logger.linkController.warning("Map: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
+                replacedItem.photoId = nil
             }
-        } else {
-            Logger.linkController.warning("Map: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
-            replacedItem.photoId = nil
-            itemController.replace(model: replacedItem, isInsert: false)
+            return replacedItem
+        }
+
+        guard let photoId = itemController.itemSync(for: itemId)?.photoId,
+              photoRoot.linkControllable.validateLink(itemId: photoId),
+              let replacedItem = itemController.copy(of: itemId) else { return }
+        LinkActionTasks.run {
+            await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
         }
     }
 }

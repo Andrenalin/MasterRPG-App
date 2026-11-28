@@ -207,20 +207,9 @@ extension CharacterRootModel {
     /// `onChange`-driven lazy creation. Called once at game join — see
     /// `GameController.startGame(for:)`. Cleared again in
     /// `GameController.resetGameState()` when the game ends.
+    /// The shared `resolveGameSheetRootModel(for:)` builds it. See CODE_AUDIT_Edit_Save §8.5.
     @MainActor func startGameSheetRootModel(itemId: UUID) {
-        if let existing = editController.editorModel.gameSheetRootModel {
-            existing.reset(itemId: itemId)
-            return
-        }
-        guard let rootManager else { return }
-        editController.editorModel.gameSheetRootModel = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: rootController.linkControllable,
-            sheetControllable: rootController.sheetControllable,
-            itemId: itemId,
-            isEditor: false,
-            isGameEditor: true
-        )
+        _ = resolveGameSheetRootModel(for: itemId)
     }
 }
 
@@ -249,16 +238,16 @@ extension CharacterRootModel {
                     if valueItem.parentId == model.id {
                         valueItem.parentId = nil
                     }
-                    valueItem.displayState <=> 1
+                    valueItem.displayState <=> DisplayStateMask.groupHidden.rawValue
                     // Only a changed group item is saved, so a repair run does not move the sync
                     // clocks of unchanged data. See CODE_AUDIT_23 §5.21.
                     if (valueItem.groupId, valueItem.parentId, valueItem.displayState) != before {
-                        editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module))
+                        editController.save(updated: valueItem, message: String(localized: "Repaired Subvalues", bundle: .module), forceSave: true)
                     }
                 }
 
                 if !value.tags.isEmpty {
-                    editController.reset(tags: [], itemId: valueId)
+                    editController.reset(tags: [], itemId: valueId, forceSave: true)
                 }
                 // A group item is shown through its entry; the sheet shows neither its dice nor its
                 // photo (see SheetController), so a leftover one is dropped.
@@ -289,7 +278,7 @@ extension CharacterRootModel {
             if model.entries != entries {
                 guard let item = editController.editModel(for: id) else { continue }
                 item.entries = entries
-                editController.save(updated: item, message: String(localized: "update entries", bundle: .module))
+                editController.save(updated: item, message: String(localized: "update entries", bundle: .module), forceSave: true)
             }
             if !groupItemIds.contains(model.id) {
                 editController.repairPhotoList(itemId: model.id)

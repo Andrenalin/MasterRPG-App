@@ -55,25 +55,25 @@ struct ImportRemovedGroupTests {
     private func makeFixture(in root: CharacterRootModel, nestedGroup: Bool) async throws -> Fixture {
         let edit = root.editController
         let characterId = await root.itemController.addNew(type: .item)
-        edit.reset(name: "Thorin", itemId: characterId)
+        edit.reset(name: "Thorin", itemId: characterId, forceSave: false)
 
-        let entryBId = await edit.addNewGroup(itemId: characterId)
-        edit.update(itemId: characterId, entryId: entryBId, name: "Combat Skills", content: "")
+        let entryBId = await edit.addNewGroup(itemId: characterId, forceSave: false)
+        edit.update(itemId: characterId, entryId: entryBId, name: "Combat Skills", content: "", forceSave: false)
         let groupCId = try #require(root.itemController.itemOrEmpty(for: characterId).entries.first { $0.id == entryBId }?.valueId)
 
         let entryD = ValueEntryModel(id: UUID(), name: "Axe Mastery", type: .text, value: contentOfD)
         let entryDId = entryD.id
-        edit.add(entry: entryD, itemId: groupCId)
+        edit.add(entry: entryD, itemId: groupCId, forceSave: false)
 
         var nestedGroupEId: UUID?
         var nestedEntryGId: UUID?
         if nestedGroup {
-            let entryFId = await edit.addNewGroup(itemId: groupCId)
-            edit.update(itemId: groupCId, entryId: entryFId, name: "Weapons", content: "")
+            let entryFId = await edit.addNewGroup(itemId: groupCId, forceSave: false)
+            edit.update(itemId: groupCId, entryId: entryFId, name: "Weapons", content: "", forceSave: false)
             let groupEId = try #require(root.itemController.itemOrEmpty(for: groupCId).entries.first { $0.id == entryFId }?.valueId)
             let entryG = ValueEntryModel(id: UUID(), name: "Sword", type: .text, value: "Sword 8")
             let entryGId = entryG.id
-            edit.add(entry: entryG, itemId: groupEId)
+            edit.add(entry: entryG, itemId: groupEId, forceSave: false)
             nestedGroupEId = groupEId
             nestedEntryGId = entryGId
         }
@@ -88,7 +88,7 @@ struct ImportRemovedGroupTests {
         entryB.valueId = nil
         entryB.value = contentOfD
         newer.entries = newer.entries.map { $0.id == entryBId ? entryB : $0 }
-        edit.save(updated: newer, message: "B becomes a plain entry")
+        edit.save(updated: newer, message: "B becomes a plain entry", forceSave: false)
         let newerData = try await exportData(of: characterId, in: root)
         #expect(newerData != olderData)
 

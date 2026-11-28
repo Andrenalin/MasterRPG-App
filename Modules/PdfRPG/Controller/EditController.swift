@@ -52,7 +52,7 @@ extension EditController: @retroactive EntryDataEditable {
 extension EditController {
     /// - Parameter forceSave: `true` from the viewer's selection bar: a bookmark is library
     ///   content, kept also when it is added during a game.
-    @MainActor func addBookmark(itemId: UUID, entry: PdfEntryModel, forceSave: Bool = false) {
+    @MainActor func addBookmark(itemId: UUID, entry: PdfEntryModel, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         item.entries.append(entry)
         save(
@@ -85,27 +85,24 @@ extension EditController {
         _ content: PdfSummaryAnalysis,
         to itemId: UUID,
         selection: PdfPropertySelection,
-        forceSave: Bool = false,
+        forceSave: Bool,
         pageLabel: (Int) -> String? = { _ in nil }
     ) {
-        // Update name if selected and (empty or forcing update)
-        if selection.applyTitle {
-            reset(name: content.title, itemId: itemId, forceSave: forceSave)
-        }
-
-        // Update description if selected and (empty or forcing update)
-        if selection.applyDescription {
-            reset(description: content.summary, itemId: itemId, forceSave: forceSave)
-        }
-
-        // Update tags if selected and (empty or forcing update)
-        if selection.applyTags {
-            reset(tags: content.tags, itemId: itemId, forceSave: forceSave)
-        }
-
-        // Create entries from sections if selected
-        if selection.applySections && !content.sections.isEmpty {
-            appendSectionsAsEntries(content.sections, to: itemId, forceSave: forceSave, pageLabel: pageLabel)
+        // One save for the selected title, description and tags, and one undo step with the
+        // sections; it saved up to four times. See CODE_AUDIT_Edit_Save §7.1.
+        asOneUndoStep(String(localized: "Applied PDF sections as bookmarks", bundle: .module)) {
+            if selection.applyTitle || selection.applyDescription || selection.applyTags {
+                reset(
+                    name: selection.applyTitle ? content.title : nil,
+                    description: selection.applyDescription ? content.summary : nil,
+                    tags: selection.applyTags ? content.tags : nil,
+                    itemId: itemId,
+                    forceSave: forceSave
+                )
+            }
+            if selection.applySections && !content.sections.isEmpty {
+                appendSectionsAsEntries(content.sections, to: itemId, forceSave: forceSave, pageLabel: pageLabel)
+            }
         }
     }
 
@@ -125,6 +122,8 @@ extension EditController {
     /// Adds the generated sections as bookmarks for the batch "Extract Information", skipping
     /// sections that already have a bookmark with the same name and page (`PdfBookmarkMerge`).
     /// - Returns: the number of bookmarks added.
+    /// Forced: batch extraction is an explicit library save, also during a game, like the
+    /// description and tags it writes with. See CODE_AUDIT_Edit_Save §5.19.
     @MainActor func addExtractedBookmarks(_ sections: [PdfSection], to itemId: UUID, pageLabel: (Int) -> String?) -> Int {
         guard let item = editModel(for: itemId) else { return 0 }
         let newEntries = PdfBookmarkMerge.newEntries(for: sections, existing: item.entries, pageLabel: pageLabel)
@@ -132,7 +131,8 @@ extension EditController {
         item.entries.append(contentsOf: newEntries)
         save(
             updated: item,
-            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module)
+            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module),
+            forceSave: true
         )
         return newEntries.count
     }

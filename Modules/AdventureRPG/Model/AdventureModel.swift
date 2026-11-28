@@ -202,52 +202,47 @@ extension AdventureModel: nonisolated ItemLinkRegistrable {
     }
 }
 
-extension AdventureModel: nonisolated ItemDiffComparable {
+extension AdventureModel: ItemDiffComparable {
     /// Folders merge their members by the rule every module shares: the union of both sides,
     /// so two devices that add different children offline keep both. A member removed on one
     /// device does not come back: after the import, the child's own `parentId` decides
     /// (`EditControllable.repairFolders(itemIds:)`). That replaces the whole-array
     /// last-writer-wins this model used for folders (CODE_AUDIT §5.3). See CODE_AUDIT_Folder §9.8.
-    nonisolated public func merge(_ other: AdventureModel) -> AdventureModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            return AdventureModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                photoId: photoId_.merged(other: other.photoId_),
-                diceId: other.diceId,
-                entries: FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId),
-                parentId: other.parentId,
-                groupId: other.groupId,
-                tablePlayers: tablePlayers_.merged(other: other.tablePlayers_)
-            )
-
-        }
+    public func merge(_ other: AdventureModel) -> AdventureModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        return AdventureModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            photoId: photoId_.merged(other: other.photoId_),
+            diceId: other.diceId,
+            entries: FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId),
+            parentId: other.parentId,
+            groupId: other.groupId,
+            tablePlayers: tablePlayers_.merged(other: other.tablePlayers_)
+        )
     }
 
-    nonisolated public func isSame(_ other: AdventureModel) -> Bool {
-        return assumeMainActorIsolated {
-            guard entries.count == other.entries.count else { return false }
-            // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
-            // that every load regenerates, and a position compare failed for a reordered list.
-            // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
-            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            photoId == other.photoId &&
-            diceId == other.diceId &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            groupId == other.groupId &&
-            tablePlayers == other.tablePlayers &&
-            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
-        }
+    public func isSame(_ other: AdventureModel) -> Bool {
+        guard entries.count == other.entries.count else { return false }
+        // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
+        // that every load regenerates, and a position compare failed for a reordered list.
+        // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
+        let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        photoId == other.photoId &&
+        diceId == other.diceId &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        groupId == other.groupId &&
+        tablePlayers == other.tablePlayers &&
+        entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
     }
 }
 
@@ -262,20 +257,15 @@ extension AdventureModel {
     }
 }
 
-extension AdventureModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> AdventureModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            // Carries `diceId` too. See CODE_AUDIT_Folder §5.27.
-            return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil, tablePlayers: tablePlayers)
-    
-        }
+extension AdventureModel: ItemDuplicatable {
+    public func duplicate() -> AdventureModel {
+        let copyName = duplicateName(from: name)
+        // Carries `diceId` too. See CODE_AUDIT_Folder §5.27.
+        return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil, tablePlayers: tablePlayers)
     }
 
-    nonisolated func duplicateWithoutCopy() -> AdventureModel {
-        return assumeMainActorIsolated {
-            AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId, tablePlayers: tablePlayers)
-        }
+    func duplicateWithoutCopy() -> AdventureModel {
+        AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId, tablePlayers: tablePlayers)
     }
 }
 

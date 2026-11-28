@@ -24,8 +24,8 @@ struct AdventureControllerRiskTests {
         let controller = root.itemController
         let parentId = await controller.addNew(type: .adventure)
         let groupId = await controller.addNew(type: .adventure)
-        root.editController.reset(name: "Campaign", itemId: parentId)
-        root.editController.reset(name: "Act One", itemId: groupId)
+        root.editController.reset(name: "Campaign", itemId: parentId, forceSave: false)
+        root.editController.reset(name: "Act One", itemId: groupId, forceSave: false)
         let group = try #require(controller.itemSync(for: groupId, noGame: true))
         group.groupId = parentId
         controller.replace(model: group, isInsert: false)
@@ -57,9 +57,9 @@ struct AdventureControllerRiskTests {
         let folderId = await controller.addNew(type: .folder)
         let subId = await controller.addNew(type: .folder)
         let leafId = await controller.addNew(type: .adventure)
-        root.editController.reset(name: "Folder", itemId: folderId)
-        root.editController.reset(name: "Sub", itemId: subId)
-        root.editController.reset(name: "Leaf", itemId: leafId)
+        root.editController.reset(name: "Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Sub", itemId: subId, forceSave: false)
+        root.editController.reset(name: "Leaf", itemId: leafId, forceSave: false)
         root.editController.addItem(itemId: subId, parentId: folderId)
         root.editController.addItem(itemId: leafId, parentId: subId)
         let before = Set(controller.itemDataModel.items)
@@ -86,7 +86,7 @@ struct AdventureControllerRiskTests {
         let root = try await makeRoot()
         let controller = root.itemController
         let adventureId = await controller.addNew(type: .adventure)
-        root.editController.reset(name: "Journey", itemId: adventureId)
+        root.editController.reset(name: "Journey", itemId: adventureId, forceSave: false)
         let library = try #require(controller.itemSync(for: adventureId, noGame: true))
         root.gameController.setGame(item: library.copy(), itemId: adventureId)
         controller.itemDataModel.isGameMode = true

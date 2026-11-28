@@ -1098,7 +1098,7 @@ struct MultiConnectionPhotoTests {
             #expect(fullData.subType == .show)
             #expect(fullData.data.id == photoId)
             #expect(fullData.data.type == .photo)
-            #expect(fullData.data.version == version)
+            #expect(fullData.data.effectiveAssetVersion == version)
             #expect(fullData.data.data != nil)
             let requester = try env.participant(for: role)
             // The package keeps the counter of the show it delivers.

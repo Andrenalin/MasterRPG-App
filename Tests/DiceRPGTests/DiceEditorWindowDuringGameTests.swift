@@ -44,8 +44,8 @@ struct DiceEditorWindowDuringGameTests {
         let root = DiceRootModel.testRoot()
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.dice.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Attack", description: Self.libraryDescription, category: nil, tags: ["combat"])
-        root.editController.add(die: DieModel(id: UUID(), die: .twenty), itemId: itemId)
+        root.editController.update(id: itemId, name: "Attack", description: Self.libraryDescription, category: nil, tags: ["combat"], forceSave: false)
+        root.editController.add(die: DieModel(id: UUID(), die: .twenty), itemId: itemId, forceSave: false)
         let firstDie = try #require(root.itemController.itemSync(for: itemId)?.dice.first)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId, firstDie: firstDie)
@@ -54,7 +54,7 @@ struct DiceEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 
@@ -161,7 +161,7 @@ struct DiceEditorWindowDuringGameTests {
     func inGameEditStaysInGameMemory() async throws {
         let fixture = try await makeFixture()
 
-        fixture.editController.reset(modifier: 2, itemId: fixture.itemId)
+        fixture.editController.reset(modifier: 2, itemId: fixture.itemId, forceSave: false)
 
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.modifier == 2 }
     }

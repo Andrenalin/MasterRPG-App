@@ -28,16 +28,16 @@ struct GameImportFolderPlacementTests {
         var folderIds: [UUID] = []
         for name in folderNames {
             let folderId = await root.itemController.addNew(type: .folder)
-            root.editController.reset(name: name, itemId: folderId)
+            root.editController.reset(name: name, itemId: folderId, forceSave: false)
             if let parentId = folderIds.last {
                 root.editController.addItem(itemId: folderId, parentId: parentId)
             }
             folderIds.append(folderId)
         }
         let audioId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "00 Test", itemId: audioId)
+        root.editController.reset(name: "00 Test", itemId: audioId, forceSave: false)
         root.editController.addItem(itemId: audioId, parentId: folderIds.last)
-        try await root.editController.resetFile(data: Data("master audio".utf8), itemId: audioId, path: "00 Test.m4a")
+        try await root.editController.resetFile(data: Data("master audio".utf8), itemId: audioId, path: "00 Test.m4a", forceSave: false)
 
         let gameData = try await root.gameController.createGameData(for: audioId)
         _ = try #require(gameData.data)
@@ -126,7 +126,7 @@ struct GameImportFolderPlacementTests {
         var ids: [UUID] = []
         for name in names {
             let folderId = await player.itemController.addNew(type: .folder)
-            player.editController.reset(name: name, itemId: folderId)
+            player.editController.reset(name: name, itemId: folderId, forceSave: false)
             if let parentId = ids.last {
                 player.editController.addItem(itemId: folderId, parentId: parentId)
             }

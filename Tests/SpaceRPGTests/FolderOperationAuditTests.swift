@@ -20,7 +20,7 @@ struct FolderOperationAuditTests {
 
     private func addItem(_ root: SpaceRootModel, name: String, type: ItemListCategory = .item) async -> UUID {
         let id = await root.itemController.addNew(type: type)
-        root.editController.reset(name: name, itemId: id)
+        root.editController.reset(name: name, itemId: id, forceSave: false)
         return id
     }
 
@@ -42,7 +42,7 @@ struct FolderOperationAuditTests {
 
         // Delete the folder; the panel keeps the linked child and confirms the rest.
         let candidates = sut.collectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
-        sut.confirmRemoval(of: candidates, keeping: [ItemRowModel(itemId: keptId, typeId: .space)])
+        sut.confirmRemoval(of: candidates, keeping: [ItemRowModel(itemId: keptId, typeId: .space)], forceSave: false)
         #expect(!childIds(root, of: folderId).contains(keptId), "the kept child leaves the trashed folder")
 
         // The launch-time purge of the trashed folder.
@@ -67,9 +67,9 @@ struct FolderOperationAuditTests {
         // A stale entry, as an import or sync merge can leave behind.
         let staleFolder = try #require(sut.editModel(for: staleFolderId))
         staleFolder.entries.append(SpaceEntryModel.newChild(id: itemId))
-        sut.save(updated: staleFolder, message: "stale")
+        sut.save(updated: staleFolder, message: "stale", forceSave: false)
 
-        sut.markForDeletion(itemId: staleFolderId)
+        sut.markForDeletion(itemId: staleFolderId, forceSave: false)
         await sut.delete(itemId: staleFolderId)
 
         #expect(root.itemController.itemSync(for: itemId)?.parentId == currentFolderId)
@@ -88,8 +88,8 @@ struct FolderOperationAuditTests {
         sut.addItem(itemId: grandchildId, parentId: subfolderId)
 
         let removing = sut.collectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
-        sut.confirmRemoval(of: removing, keeping: [])
-        sut.restore(itemIds: removing.map(\.itemId))
+        sut.confirmRemoval(of: removing, keeping: [], forceSave: false)
+        sut.restore(itemIds: removing.map(\.itemId), forceSave: false)
 
         #expect(root.itemController.itemSync(for: childId)?.parentId == folderId)
         #expect(root.itemController.itemSync(for: subfolderId)?.parentId == folderId)
@@ -134,7 +134,7 @@ struct FolderOperationAuditTests {
             #expect(root.itemController.itemSync(for: id)?.displayState == DisplayStateMask.fullVisible.rawValue)
         }
 
-        sut.confirmRemoval(of: candidates, keeping: [])
+        sut.confirmRemoval(of: candidates, keeping: [], forceSave: false)
         for id in [folderId, childId] {
             #expect(root.itemController.itemSync(for: id)?.displayState == DisplayStateMask.totalHidden.rawValue)
         }
@@ -153,9 +153,9 @@ struct FolderOperationAuditTests {
         sut.addItem(itemId: itemId, parentId: parentId)
         let staleFolder = try #require(sut.editModel(for: staleFolderId))
         staleFolder.entries.append(SpaceEntryModel.newChild(id: itemId))
-        sut.save(updated: staleFolder, message: "stale")
+        sut.save(updated: staleFolder, message: "stale", forceSave: false)
 
-        sut.repairFolder(itemId: itemId)
+        sut.repairFolder(itemId: itemId, forceSave: false)
 
         #expect(!childIds(root, of: staleFolderId).contains(itemId))
         #expect(childIds(root, of: parentId).contains(itemId))
@@ -169,9 +169,9 @@ struct FolderOperationAuditTests {
         let itemId = await addItem(root, name: "Item")
         let folder = try #require(sut.editModel(for: folderId))
         folder.entries.append(SpaceEntryModel.newChild(id: itemId))
-        sut.save(updated: folder, message: "stale")
+        sut.save(updated: folder, message: "stale", forceSave: false)
 
-        sut.repairFolder(itemId: itemId)
+        sut.repairFolder(itemId: itemId, forceSave: false)
 
         #expect(childIds(root, of: folderId).isEmpty)
     }
@@ -186,7 +186,7 @@ struct FolderOperationAuditTests {
         sut.addItem(itemId: itemId, parentId: currentFolderId)
         let staleFolder = try #require(sut.editModel(for: staleFolderId))
         staleFolder.entries.append(SpaceEntryModel.newChild(id: itemId))
-        sut.save(updated: staleFolder, message: "stale")
+        sut.save(updated: staleFolder, message: "stale", forceSave: false)
 
         sut.remove(itemId: itemId, parentId: staleFolderId, oneUp: false)
 
@@ -241,13 +241,13 @@ struct FolderOperationAuditTests {
         #expect(childIds(root, of: collectionId).contains(copyId))
     }
 
-    @Test("addGroup on a collection adds a reference without hiding the member (§5.16)")
-    func addGroupOnCollectionDoesNotHide() async {
+    @Test("Adding a member to a collection adds a reference without hiding it (§5.16)")
+    func addToCollectionDoesNotHide() async {
         let root = await makeRoot()
         let collectionId = await addItem(root, name: "Set", type: root.itemController.collectionCategory)
         let memberId = await addItem(root, name: "Member")
 
-        root.editController.addGroup(itemId: collectionId, childId: memberId)
+        root.editController.addItem(itemId: memberId, parentId: collectionId)
 
         #expect(childIds(root, of: collectionId) == [memberId])
         #expect(root.itemController.itemSync(for: memberId)?.displayState == DisplayStateMask.fullVisible.rawValue)
@@ -281,9 +281,9 @@ struct FolderOperationAuditTests {
         let tag = "tag-\(UUID().uuidString)"
         let itemId = await addItem(root, name: "Tagged")
 
-        sut.reset(tags: [tag], itemId: itemId)
+        sut.reset(tags: [tag], itemId: itemId, forceSave: false)
         #expect(sut.tagController.model.tags[.space]?[tag]?.count == 1)
-        sut.reset(tags: [], itemId: itemId)
+        sut.reset(tags: [], itemId: itemId, forceSave: false)
 
         #expect(sut.tagController.model.tags[.space]?[tag] == nil)
     }
@@ -295,12 +295,12 @@ struct FolderOperationAuditTests {
         let tag = "tag-\(UUID().uuidString)"
         let firstId = await addItem(root, name: "First")
         let secondId = await addItem(root, name: "Second")
-        sut.reset(tags: [tag], itemId: firstId)
-        sut.reset(tags: [tag], itemId: secondId)
+        sut.reset(tags: [tag], itemId: firstId, forceSave: false)
+        sut.reset(tags: [tag], itemId: secondId, forceSave: false)
         #expect(sut.tagController.model.tags[.space]?[tag]?.count == 2)
 
-        sut.markForDeletion(itemId: firstId)
-        sut.markForDeletion(itemId: firstId)
+        sut.markForDeletion(itemId: firstId, forceSave: false)
+        sut.markForDeletion(itemId: firstId, forceSave: false)
 
         #expect(sut.tagController.model.tags[.space]?[tag]?.count == 1)
         #expect(root.itemController.itemSync(for: firstId)?.displayState == trashed)

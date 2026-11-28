@@ -34,7 +34,11 @@ extension MasterController {
         try await cachedPackage(
             module: module,
             itemId: itemId,
-            fingerprint: { MasterPackageFingerprint(version: await controllable.networkVersion(for: itemId)) },
+            fingerprint: {
+                // Both versions, as the exported package carries them. See CODE_AUDIT_Edit_Save §5.10.
+                let versions = await controllable.packageVersions(for: itemId)
+                return MasterPackageFingerprint(version: versions.package, assetVersion: versions.asset)
+            },
             export: { try await controllable.createGameData(for: itemId) }
         )
     }

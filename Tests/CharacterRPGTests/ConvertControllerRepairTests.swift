@@ -132,7 +132,7 @@ struct ConvertControllerRepairTests {
         )
 
         let ownerId = await root.itemController.addNew(type: .item)
-        let entryId = await root.editController.addNewGroup(itemId: ownerId)
+        let entryId = await root.editController.addNewGroup(itemId: ownerId, forceSave: false)
         let owner = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
         let childId = try #require(groupEntry.valueId)
@@ -324,8 +324,8 @@ struct ConvertControllerRepairTests {
         )
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(category: .character, itemId: itemId)
-        root.editController.reset(tags: ["ExistingTag"], itemId: itemId)
+        root.editController.reset(category: .character, itemId: itemId, forceSave: false)
+        root.editController.reset(tags: ["ExistingTag"], itemId: itemId, forceSave: false)
 
         // When
         await sut.repairHiddenAndFolders(reportModel: ValidateRepairModel())
@@ -454,7 +454,7 @@ extension ConvertControllerRepairTests {
         try await MockRoot.resetTestData(for: root)
 
         let ownerId = await root.itemController.addNew(type: .item)
-        let entryId = await root.editController.addNewGroup(itemId: ownerId)
+        let entryId = await root.editController.addNewGroup(itemId: ownerId, forceSave: false)
 
         let owner     = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
@@ -519,9 +519,9 @@ extension ConvertControllerRepairTests {
         let alphaId   = await root.itemController.addNew(type: .item)
         let bravoId   = await root.itemController.addNew(type: .item)
 
-        root.editController.reset(name: "Charlie", itemId: charlieId)
-        root.editController.reset(name: "Alpha",   itemId: alphaId)
-        root.editController.reset(name: "Bravo",   itemId: bravoId)
+        root.editController.reset(name: "Charlie", itemId: charlieId, forceSave: false)
+        root.editController.reset(name: "Alpha",   itemId: alphaId, forceSave: false)
+        root.editController.reset(name: "Bravo",   itemId: bravoId, forceSave: false)
 
         // Set parentId on each child without going through addItem (which already sorts)
         for id in [charlieId, alphaId, bravoId] {
@@ -556,7 +556,7 @@ extension ConvertControllerRepairTests {
 
         let collectionId = await root.itemController.addNew(type: .collection)
         let ownerId      = await root.itemController.addNew(type: .item)
-        let entryId      = await root.editController.addNewGroup(itemId: ownerId)
+        let entryId      = await root.editController.addNewGroup(itemId: ownerId, forceSave: false)
 
         let owner      = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))
@@ -607,7 +607,7 @@ extension ConvertControllerRepairTests {
         let owner2Id = await root.itemController.addNew(type: .item)
 
         // Create GroupItem under owner1
-        let entryId   = await root.editController.addNewGroup(itemId: owner1Id)
+        let entryId   = await root.editController.addNewGroup(itemId: owner1Id, forceSave: false)
         let owner1    = root.itemController.itemOrEmpty(for: owner1Id)
         let groupEntry = try #require(owner1.entries.first(where: { $0.id == entryId }))
         let groupItemId = try #require(groupEntry.valueId)
@@ -639,7 +639,7 @@ extension ConvertControllerRepairTests {
         let items = root.itemController.itemDataModel.items
         try #require(items.firstIndex(of: decoyId) ?? Int.max < items.firstIndex(of: realOwnerId) ?? Int.min)
 
-        let entryId = await root.editController.addNewGroup(itemId: realOwnerId)
+        let entryId = await root.editController.addNewGroup(itemId: realOwnerId, forceSave: false)
         let realOwner = root.itemController.itemOrEmpty(for: realOwnerId)
         let groupItemId = try #require(realOwner.entries.first(where: { $0.id == entryId })?.valueId)
         #expect(root.itemController.itemOrEmpty(for: groupItemId).groupId == realOwnerId)
@@ -672,7 +672,7 @@ extension ConvertControllerRepairTests {
         try await MockRoot.resetTestData(for: root)
 
         let ownerId = await root.itemController.addNew(type: .item)
-        let entryId = await root.editController.addNewGroup(itemId: ownerId)
+        let entryId = await root.editController.addNewGroup(itemId: ownerId, forceSave: false)
 
         let owner      = root.itemController.itemOrEmpty(for: ownerId)
         let groupEntry = try #require(owner.entries.first(where: { $0.id == entryId }))

@@ -47,14 +47,16 @@ struct ImportReviewApplyController {
                 editController.removeItemFromParent(itemId: childId, oneUp: false, moveFiles: true, scope: .library)
                 detachedIds.insert(childId)
             }
-            editController.markForDeletion(itemId: itemId)
+            // The review's additions are persisted, so are its deletions, also during a game.
+            // See CODE_AUDIT_Edit_Save §5.17.
+            editController.markForDeletion(itemId: itemId, forceSave: true)
         }
         let repairIds = appliedIds.union(detachedIds)
         guard !repairIds.isEmpty else { return }
         // One pass over the folders for every applied item. See CODE_AUDIT_Folder §7.3.
-        editController.repairFolders(itemIds: appliedIds)
+        editController.repairFolders(itemIds: appliedIds, forceSave: true)
         let repair = ConvertController(itemController: root.itemControllable, editController: editController)
-        await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: repairIds)
+        await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: repairIds, forceSave: true)
     }
 
     /// Settles the files a manual-review parse wrote: those an applied item references stay

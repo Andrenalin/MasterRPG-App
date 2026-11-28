@@ -63,7 +63,7 @@ struct LinkRegisterControllerTests {
         let itemId = item!.id
         let entryId = UUID()
         let model = ValueModel(id: itemId, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryId, name: "Good \(photoLink)", type: .text, value: diceLink)])
-        root.editController.save(updated: model, message: "Test")
+        root.editController.save(updated: model, message: "Test", forceSave: false)
 
         #expect(sut.model.items.count == 19)
         var itemLinks = sut.model.items[diceId]
@@ -106,7 +106,7 @@ struct LinkRegisterControllerTests {
         #expect(sut.isUsed(link: ItemRowModel(itemId: photoId, typeId: .photo)) == false)
 
         let model = ValueModel(id: itemId, name: "Super", description: "Nix", entries: [ValueEntryModel(id: entryId, name: "Good \(photoLink)", type: .text, value: diceLink)])
-        root.editController.save(updated: model, message: "Test")
+        root.editController.save(updated: model, message: "Test", forceSave: false)
 
         #expect(sut.isUsed(link: ItemRowModel(itemId: diceId, typeId: .dice)))
         #expect(sut.isUsed(link: ItemRowModel(itemId: photoId, typeId: .photo)))

@@ -118,19 +118,19 @@ struct GroupEditorController {
         guard !model.name.isEmpty && model.name != model.namePlaceHolder ||
                 !model.description.isEmpty && model.description != model.descriptionPlaceHolder ||
                 tagsChanged else { return }
-        for itemId in ids {
-            // The standalone item editor always persists, even while a game is
-            // running — unlike in-game quick-edit surfaces, which stay memory-only.
-            if !model.name.isEmpty {
-                editController.reset(name: model.name, itemId: itemId, forceSave: true)
-            }
-
-            if !model.description.isEmpty {
-                editController.reset(description: model.description, itemId: itemId, forceSave: true)
-            }
-
-            if tagsChanged {
-                editController.reset(tags: tagsToSave(for: itemId), itemId: itemId, forceSave: true)
+        // One save per item and one undo step for the whole group edit; it saved up to three
+        // times per item. See CODE_AUDIT_Edit_Save §7.1.
+        editController.asOneUndoStep(String(localized: "Typing", bundle: .module)) {
+            for itemId in ids {
+                // The standalone item editor always persists, even while a game is
+                // running — unlike in-game quick-edit surfaces, which stay memory-only.
+                editController.reset(
+                    name: model.name.isEmpty ? nil : model.name,
+                    description: model.description.isEmpty ? nil : model.description,
+                    tags: tagsChanged ? tagsToSave(for: itemId) : nil,
+                    itemId: itemId,
+                    forceSave: true
+                )
             }
         }
     }

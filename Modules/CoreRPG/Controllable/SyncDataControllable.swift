@@ -130,7 +130,8 @@ public extension SyncDataControllable {
                 // imported on two devices): merge it like an update instead of replacing the
                 // live instance and listing the id twice. See CODE_AUDIT_Folder §3.10.
                 if itemControllable.itemSync(for: insertedId, noGame: true) != nil {
-                    await itemControllable.mergeUpdates(model: model)
+                    let hasLocalEdit = await dataControllable.hasPendingOperation(for: insertedId)
+                    await itemControllable.mergeUpdates(model: model, keepingLocalEdit: hasLocalEdit)
                 } else {
                     itemControllable.resetModel(with: model)
                     itemControllable.healDuplicateFolderMembers(itemId: insertedId)
@@ -146,8 +147,10 @@ public extension SyncDataControllable {
             do {
                 guard let model = try await dataControllable.fetch(id: updatedId),
                       !itemControllable.itemDataModel.deletingIds.contains(updatedId) else { continue }
-                // Use mergeUpdates to avoid database writes during sync
-                await itemControllable.mergeUpdates(model: model)
+                // Use mergeUpdates to avoid database writes during sync; an item with a queued
+                // local edit is merged with it instead. See CODE_AUDIT_Edit_Save §3.1.
+                let hasLocalEdit = await dataControllable.hasPendingOperation(for: updatedId)
+                await itemControllable.mergeUpdates(model: model, keepingLocalEdit: hasLocalEdit)
             } catch {
                 Logger.syncDataControllable.error("updateFromSync update \(updatedId, privacy: .public) failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 needsReconciliation = true

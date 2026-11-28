@@ -45,9 +45,9 @@ struct PdfEditorWindowDuringGameTests {
         let root = PdfRootModel.testRoot()
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.pdf.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Rulebook", description: Self.libraryDescription, category: nil, tags: ["core"])
+        root.editController.update(id: itemId, name: "Rulebook", description: Self.libraryDescription, category: nil, tags: ["core"], forceSave: false)
         let entry = PdfEntryModel(id: UUID(), name: "Combat", content: "Initiative", pageNumber: "12", bounds: .zero)
-        root.editController.addBookmark(itemId: itemId, entry: entry)
+        root.editController.addBookmark(itemId: itemId, entry: entry, forceSave: false)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId, entryId: entry.id)
         fixture.game.startGame()
@@ -55,7 +55,7 @@ struct PdfEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 
@@ -154,7 +154,7 @@ struct PdfEditorWindowDuringGameTests {
         let fixture = try await makeFixture()
         let bookmark = PdfEntryModel(id: UUID(), name: "Magic", content: "Spells", pageNumber: "40", bounds: .zero)
 
-        fixture.root.editController.addBookmark(itemId: fixture.itemId, entry: bookmark)
+        fixture.root.editController.addBookmark(itemId: fixture.itemId, entry: bookmark, forceSave: false)
 
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.entries.count == 2 }
     }

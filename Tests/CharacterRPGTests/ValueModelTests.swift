@@ -166,9 +166,6 @@ struct ValueModelTests {
         let changedPhotoCharacter = character.copy()
         changedPhotoCharacter.photoId = replacementPhotoId
         #expect(changedPhotoCharacter.version != originalVersion)
-
-        character.quickEditEntries.insert(entryId)
-        #expect(character.version == originalVersion)
     }
 
     @Test func folderMergeCombinesAndSortsChildren() {

@@ -33,24 +33,24 @@ struct LinkCalculationMovedEntryTests {
         let edit = root.editController
 
         let characterId = await root.itemController.addNew(type: .item)
-        edit.reset(name: "Hero", itemId: characterId)
+        edit.reset(name: "Hero", itemId: characterId, forceSave: false)
 
         // Entry b with group c, which holds entry d.
-        let groupEntryBId = await edit.addNewGroup(itemId: characterId)
+        let groupEntryBId = await edit.addNewGroup(itemId: characterId, forceSave: false)
         let groupCId = try #require(root.itemController.itemOrEmpty(for: characterId)[groupEntryBId].valueId)
         let entryD = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "12")
-        edit.add(entry: entryD, itemId: groupCId)
+        edit.add(entry: entryD, itemId: groupCId, forceSave: false)
 
         // Entry e on A: a formula that links to c / d.
         let entryE = ValueEntryModel(id: UUID(), name: "Bonus", type: .number, value: "3")
-        edit.add(entry: entryE, itemId: characterId)
-        edit.add(link: "Strength", module: .value, itemId: groupCId, entryId: entryD.id, destinationItemId: characterId, destinationEntryId: entryE.id)
+        edit.add(entry: entryE, itemId: characterId, forceSave: false)
+        edit.add(link: "Strength", module: .value, itemId: groupCId, entryId: entryD.id, destinationItemId: characterId, destinationEntryId: entryE.id, forceSave: false)
 
         // A second group entry f with group g, which holds entry h.
-        let groupEntryFId = await edit.addNewGroup(itemId: characterId)
+        let groupEntryFId = await edit.addNewGroup(itemId: characterId, forceSave: false)
         let groupGId = try #require(root.itemController.itemOrEmpty(for: characterId)[groupEntryFId].valueId)
         let entryH = ValueEntryModel(id: UUID(), name: "Mana", type: .number, value: "5")
-        edit.add(entry: entryH, itemId: groupGId)
+        edit.add(entry: entryH, itemId: groupGId, forceSave: false)
 
         return Fixture(
             root: root, characterId: characterId,
@@ -89,7 +89,8 @@ struct LinkCalculationMovedEntryTests {
         // Move d out of c to the root of the character.
         edit.moveOutOfGroup(
             itemId: fixture.groupCId, sourceEntryId: fixture.entryDId,
-            parent: FolderRepresentable(id: fixture.characterId, name: "Hero")
+            parent: FolderRepresentable(id: fixture.characterId, name: "Hero"),
+            forceSave: false
         )
         #expect(!entryIds(of: fixture.groupCId, in: fixture).contains(fixture.entryDId))
         #expect(entryIds(of: fixture.characterId, in: fixture).contains(fixture.entryDId), "d is a root entry of A now")
@@ -99,7 +100,8 @@ struct LinkCalculationMovedEntryTests {
         // Move d into group g.
         edit.move(
             itemId: fixture.characterId, sourceEntryId: fixture.entryDId,
-            into: FolderRepresentable(id: fixture.groupGId, name: "Magic")
+            into: FolderRepresentable(id: fixture.groupGId, name: "Magic"),
+            forceSave: false
         )
         #expect(!entryIds(of: fixture.characterId, in: fixture).contains(fixture.entryDId))
         #expect(entryIds(of: fixture.groupGId, in: fixture).contains(fixture.entryDId), "d is in group g now")
@@ -133,7 +135,8 @@ struct LinkCalculationMovedEntryTests {
         // d moves out of c to the root of A.
         edit.moveOutOfGroup(
             itemId: fixture.groupCId, sourceEntryId: fixture.entryDId,
-            parent: FolderRepresentable(id: fixture.characterId, name: "Hero")
+            parent: FolderRepresentable(id: fixture.characterId, name: "Hero"),
+            forceSave: false
         )
         await controller.performDetailSearch()
         row = try #require(rowD(), "d is listed after it moved to the root")
@@ -144,7 +147,8 @@ struct LinkCalculationMovedEntryTests {
         // d moves into group g.
         edit.move(
             itemId: fixture.characterId, sourceEntryId: fixture.entryDId,
-            into: FolderRepresentable(id: fixture.groupGId, name: "Magic")
+            into: FolderRepresentable(id: fixture.groupGId, name: "Magic"),
+            forceSave: false
         )
         await controller.performDetailSearch()
         row = try #require(rowD(), "d is listed after it moved into g")

@@ -98,14 +98,14 @@ extension EditController: EntryDataEditable {
         
         switch module {
         case .audio, .dice, .map, .pdf, .photo, .table:
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: forceSave)
         case .value:
             // The monster pin and the link are one edit: one save, one undo step, one
             // broadcast (it used to save three times). See CODE_AUDIT_29 §5.17.
             guard var editModel = editModel(for: destinationItemId) else { return }
             appendMonsters(to: editModel, entryId: destinationEntryId, location: nil, monsters: [ItemRowModel(itemId: itemId, typeId: .value)], number: 1)
             appendLink(link: link, module: module, itemId: itemId, entryId: entryId, to: &editModel, destinationEntryId: destinationEntryId)
-            save(updated: editModel, message: String(localized: "Added Monster", bundle: .module))
+            save(updated: editModel, message: String(localized: "Added Monster", bundle: .module), forceSave: forceSave)
         default:
             return
         }
@@ -145,7 +145,7 @@ extension EditController {
     @MainActor func add(photoId: UUID?, itemId: UUID) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module), forceSave: false)
         shareWithNextSend(itemId)
     }
 
@@ -198,7 +198,7 @@ extension EditController {
         mapEditModel.photoReplacement = nil
         guard let item = editModel(for: replacement.itemId) else { return }
         item.resetImage(with: replacement.photoId, size: replacement.imageSize, degrees: replacement.degrees, adaptContent: adaptContent, previousImage: replacement.previousImage)
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module), forceSave: false)
         shareWithNextSend(replacement.itemId)
     }
 
@@ -214,7 +214,7 @@ extension EditController {
         let updatedBorderThickness: CGFloat = CGFloat(borderThickness)
         if item.displayConfig.borderThickness != updatedBorderThickness {
             item.displayConfig.borderThickness = updatedBorderThickness
-            save(updated: item, message: String(localized: "Change border thickness", bundle: .module))
+            save(updated: item, message: String(localized: "Change border thickness", bundle: .module), forceSave: false)
         }
     }
 
@@ -222,7 +222,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.hasBorder != hasBorder {
             item.displayConfig.hasBorder = hasBorder
-            save(updated: item, message: String(localized: "toggle border", bundle: .module))
+            save(updated: item, message: String(localized: "toggle border", bundle: .module), forceSave: false)
         }
     }
 
@@ -230,7 +230,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.border.color != borderColor {
             item.displayConfig.border.color = borderColor
-            save(updated: item, message: String(localized: "Change border color", bundle: .module))
+            save(updated: item, message: String(localized: "Change border color", bundle: .module), forceSave: false)
         }
     }
     
@@ -238,7 +238,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.color != coverColor {
             item.displayConfig.color = coverColor
-            save(updated: item, message: String(localized: "Change cover color", bundle: .module))
+            save(updated: item, message: String(localized: "Change cover color", bundle: .module), forceSave: false)
         }
     }
     
@@ -246,7 +246,7 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         if item.displayConfig.tileCoordinates != tileCoordinates {
             item.displayConfig.tileCoordinates = tileCoordinates
-            save(updated: item, message: String(localized: "Change tile coordinates", bundle: .module))
+            save(updated: item, message: String(localized: "Change tile coordinates", bundle: .module), forceSave: false)
         }
     }
 }
@@ -288,6 +288,8 @@ extension EditController {
         let changedEntryIds = model.entries.compactMap { entry in
             itemController.itemOrEmpty(for: itemId)[entry.id].coordinates != entry.coordinates ? entry.id : nil
         }
+        // No room moved: no Task. See CODE_AUDIT_Edit_Save §3.6.
+        guard !changedEntryIds.isEmpty else { return }
         // Intentionally fire-and-forget: `validateBeforeSave` is a synchronous protocol
         // hook called right before `saveChanges`, and this is just room-thumbnail cache
         // invalidation — a render reading the cache in the brief window before this Task
@@ -444,29 +446,5 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return entries }
         let rooms = entriesMatchedByName(itemId: itemId, entries: entries.filter { !$0.isHexGrid })
         return rooms + item.entries.filter { $0.isHexGrid }
-    }
-
-    /// `forceSave` is intentionally not threaded through: map changes made while a
-    /// game is running must always stay in game memory, even when this is invoked
-    /// from the standalone item editor — matching every other mutation in this
-    /// controller (e.g. `addMonsters`), which relies on the same `isGameMode` gate.
-    @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
-        guard let item = editModel(for: itemId) else { return [] }
-        var newEntries = entriesKeepingHexGrid(itemId: itemId, entries: entries)
-        let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
-        let module = itemController.config.module
-        let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
-
-        // Named for what it means: no removed entry is linked from elsewhere. See CODE_AUDIT_29 §9.8.
-        let hasNoLinkedEntries = itemRowModels.allSatisfy { linkRegisterController.used(for: $0).isEmpty }
-        if recoverEntries != nil || hasNoLinkedEntries {
-            if let recoverEntries {
-                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
-            }
-            item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module))
-            return []
-        }
-        return itemRowModels
     }
 }

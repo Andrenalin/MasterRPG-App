@@ -23,13 +23,12 @@ struct UndoRedoTests {
         }
 
         func rename(_ name: String, id: UUID? = nil) {
-            root.editController.reset(name: name, itemId: id ?? self.id)
+            root.editController.reset(name: name, itemId: id ?? self.id, forceSave: false)
         }
 
         /// Selects the item the way the editor does, which starts a fresh undo history.
         func select(_ id: UUID? = nil) {
-            let itemId = id ?? self.id
-            root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+            root.editController.editorModel.undoManaged.removeAll()
         }
     }
 
@@ -38,7 +37,8 @@ struct UndoRedoTests {
         let id = await root.itemController.addNew(type: .item)
         root.editController.save(
             updated: TableModel(id: id, name: name, description: "", tags: [], category: .loot, displayState: 0, tableType: .list, diceId: nil, entries: [], parentId: nil),
-            message: "Create table"
+            message: "Create table",
+            forceSave: false
         )
         let fixture = Fixture(root: root, id: id)
         fixture.select()
@@ -81,7 +81,8 @@ struct UndoRedoTests {
         let secondId = await fixture.root.itemController.addNew(type: .item)
         fixture.root.editController.save(
             updated: TableModel(id: secondId, name: "Second", description: "", tags: [], category: .loot, displayState: 0, tableType: .list, diceId: nil, entries: [], parentId: nil),
-            message: "Create table"
+            message: "Create table",
+            forceSave: false
         )
         fixture.select()
 

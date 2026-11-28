@@ -127,8 +127,6 @@ public final class ValueModel: nonisolated Identifiable {
     public var parentId: UUID?
     public var diceId: UUID?
     public var groupId: UUID?
-
-    public var quickEditEntries: Set<UUID> = []
 }
 
 extension ValueModel: nonisolated Comparable {
@@ -140,49 +138,45 @@ extension ValueModel: nonisolated Comparable {
     }
 }
 
-extension ValueModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: ValueModel) -> ValueModel {
-        return assumeMainActorIsolated {
-            let mergedCategory = category_.merged(other: other.category_)
-            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
-            return ValueModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                photoId: photoId_.merged(other: other.photoId_),
-                photos: photos_.merged(other: other.photos_),
-                entries: mergedEntries,
-                parentId: other.parentId,
-                diceId: other.diceId,
-                groupId: other.groupId
-            )
-    
-        }
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension ValueModel: ItemDiffComparable {
+    public func merge(_ other: ValueModel) -> ValueModel {
+        let mergedCategory = category_.merged(other: other.category_)
+        // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
+        return ValueModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            photoId: photoId_.merged(other: other.photoId_),
+            photos: photos_.merged(other: other.photos_),
+            entries: mergedEntries,
+            parentId: other.parentId,
+            diceId: other.diceId,
+            groupId: other.groupId
+        )
     }
 
-    nonisolated public func isSame(_ other: ValueModel) -> Bool {
-        return assumeMainActorIsolated {
-            guard entries.count == other.entries.count else { return false }
-            // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
-            // that every load regenerates, and a position compare failed for a reordered list.
-            // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
-            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            photoId == other.photoId &&
-            photos_.update == other.photos_.update &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            diceId == other.diceId &&
-            groupId == other.groupId &&
-            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
-        }
+    public func isSame(_ other: ValueModel) -> Bool {
+        guard entries.count == other.entries.count else { return false }
+        // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
+        // that every load regenerates, and a position compare failed for a reordered list.
+        // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
+        let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        photoId == other.photoId &&
+        photos_.update == other.photos_.update &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        diceId == other.diceId &&
+        groupId == other.groupId &&
+        entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
     }
 }
 
@@ -198,7 +192,7 @@ extension ValueModel {
     }
 }
 
-extension ValueModel: nonisolated ItemDuplicatable {
+extension ValueModel: ItemDuplicatable {
     /// Shared clone construction for `duplicate()` and `duplicateWithoutCopy()` —
     /// both always mint a new id and re-duplicate entries; they only differ in
     /// whether the name is renamed and whether `parentId`/`groupId` carry over.
@@ -207,10 +201,8 @@ extension ValueModel: nonisolated ItemDuplicatable {
         ValueModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, photos: photos, entries: entries.map { $0.duplicate() }, parentId: parentId, diceId: diceId, groupId: groupId)
     }
 
-    nonisolated public func duplicate() -> ValueModel {
-        return assumeMainActorIsolated {
-            cloned(name: duplicateName(from: name), parentId: nil, groupId: nil)
-        }
+    public func duplicate() -> ValueModel {
+        cloned(name: duplicateName(from: name), parentId: nil, groupId: nil)
     }
 
     public func duplicateWithoutCopy() -> ValueModel {

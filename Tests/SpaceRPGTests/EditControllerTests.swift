@@ -20,7 +20,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newName = "Updated Item Name"
-        sut.reset(name: newName, itemId: item.id)
+        sut.reset(name: newName, itemId: item.id, forceSave: false)
 
         #expect(item.name == newName)
         #expect(item.name == newName)
@@ -35,7 +35,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newName = "  Trimmed Name  "
-        sut.reset(name: newName, itemId: item.id)
+        sut.reset(name: newName, itemId: item.id, forceSave: false)
 
         #expect(item.name == "Trimmed Name")
         #expect(item.name == "Trimmed Name")
@@ -52,7 +52,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newCategory = ItemListCategory.building
-        sut.reset(category: newCategory, itemId: item.id)
+        sut.reset(category: newCategory, itemId: item.id, forceSave: false)
 
         #expect(item.category == newCategory)
         #expect(item.category == newCategory)
@@ -68,7 +68,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset to the same category should not trigger changes
-        sut.reset(category: originalCategory, itemId: item.id)
+        sut.reset(category: originalCategory, itemId: item.id, forceSave: false)
 
         #expect(item.category == originalCategory)
         #expect(item.category == originalCategory)
@@ -83,7 +83,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         let newFileUrl = FileUrl(fileId: UUID(), url: URL(fileURLWithPath: "/test/path"), location: .local, module: "TEST", relativeUrl: nil)
-        sut.reset(fileUrl: newFileUrl, itemId: item.id)
+        sut.reset(fileUrl: newFileUrl, itemId: item.id, forceSave: false)
 
         #expect(item.fileUrl == newFileUrl)
         #expect(item.fileUrl == newFileUrl)
@@ -101,7 +101,7 @@ struct EditControllerTests {
         let targetItem = root.itemController.itemOrEmpty(for: newItemId)
 
         let newFileUrl = FileUrl(fileId: UUID(), url: URL(fileURLWithPath: "/test/path2"), location: .local, module: "TEST", relativeUrl: nil)
-        sut.reset(fileUrl: newFileUrl, itemId: targetItem.id)
+        sut.reset(fileUrl: newFileUrl, itemId: targetItem.id, forceSave: false)
 
         // The current model should remain unchanged
         #expect(item.fileUrl != newFileUrl)
@@ -120,7 +120,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset space with nil URL should remove the file URL
-        await sut.resetFile(url: nil, itemId: item.id)
+        await sut.resetFile(url: nil, itemId: item.id, forceSave: false)
 
         #expect(item.fileUrl == nil)
         #expect(item.fileUrl == nil)
@@ -136,115 +136,10 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
 
         // Reset to the same name should not trigger changes
-        sut.reset(name: originalName, itemId: item.id)
+        sut.reset(name: originalName, itemId: item.id, forceSave: false)
 
         #expect(item.name == originalName)
         #expect(item.name == originalName)
-    }
-
-    @Test func addGroup() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-
-        // Create parent item
-        let parentItemId = await root.itemController.addNew(type: .item)
-        let parent = root.itemController.itemOrEmpty(for: parentItemId)
-        #expect(parent.entries.count == 0)
-
-        // Create child item to add to the group
-        let childItemId = await root.itemController.addNew(type: .item)
-        let child = root.itemController.itemOrEmpty(for: childItemId)
-        #expect(child.displayState == 0)
-
-        // Add child to group
-        sut.addGroup(itemId: parent.id, childId: child.id)
-
-        // Verify the child was added to the parent's entries
-        #expect(parent.entries.count == 1)
-        #expect(parent.entries[0].spaceId == child.id)
-        #expect(parent.entries.count == 1)
-        #expect(parent.entries[0].spaceId == child.id)
-
-        // Verify child's display state was updated
-        let updatedChild = root.itemController.itemOrEmpty(for: child.id)
-        #expect(updatedChild.displayState == 1)
-    }
-
-    @Test func addGroupMultipleChildren() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-
-        // Create parent item
-        let parentItemId = await root.itemController.addNew(type: .item)
-        let parent = root.itemController.itemOrEmpty(for: parentItemId)
-
-        // Create multiple child items
-        let child1ItemId = await root.itemController.addNew(type: .item)
-        let child1 = root.itemController.itemOrEmpty(for: child1ItemId)
-
-        let child2Item = await root.itemController.addNew(type: .item)
-        let child2 = root.itemController.itemOrEmpty(for: child2Item)
-
-        // Set current item to parent
-        sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
-
-        // Add first child
-        sut.addGroup(itemId: parent.id, childId: child1.id)
-        #expect(parent.entries.count == 1)
-
-        // Add second child
-        sut.addGroup(itemId: parent.id, childId: child2.id)
-        #expect(parent.entries.count == 2)
-        #expect(parent.entries.count == 2)
-
-        // Verify both children are in the group
-        let childIds = parent.entries.map { $0.spaceId }
-        #expect(childIds.contains(child1.id))
-        #expect(childIds.contains(child2.id))
-    }
-
-    @Test func addGroupIgnoresSameId() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-
-        // Create parent item
-        let parentItem = await root.itemController.addNew(type: .item)
-        let parent = root.itemController.itemOrEmpty(for: parentItem)
-
-        sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
-
-        // Try to add parent to itself - should be ignored
-        sut.addGroup(itemId: parent.id, childId: parent.id)
-
-        #expect(parent.entries.count == 0)
-        #expect(parent.entries.count == 0)
-    }
-
-    @Test func addGroupIgnoresDuplicateEntry() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-
-        // Create parent and child items
-        let parentItem = await root.itemController.addNew(type: .item)
-        let parent = root.itemController.itemOrEmpty(for: parentItem)
-
-        let childItem = await root.itemController.addNew(type: .item)
-        let child = root.itemController.itemOrEmpty(for: childItem)
-
-        sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
-
-        // Add child first time
-        sut.addGroup(itemId: parent.id, childId: child.id)
-        #expect(parent.entries.count == 1)
-
-        // Try to add same child again - should be ignored
-        sut.addGroup(itemId: parent.id, childId: child.id)
-        #expect(parent.entries.count == 1)
-        #expect(parent.entries.count == 1)
     }
 
     @Test func removeGroup() async throws {
@@ -262,13 +157,13 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
 
         // Add child to group
-        sut.addGroup(itemId: parent.id, childId: child.id)
+        sut.groupForTest(itemId: parent.id, childId: child.id)
         #expect(parent.entries.count == 1)
         let updatedChild = root.itemController.itemOrEmpty(for: child.id)
         #expect(updatedChild.displayState == 1)
 
         // Remove child from group
-        sut.removeGroup(itemId: parent.id, childId: child.id)
+        sut.removeGroup(itemId: parent.id, childId: child.id, forceSave: false)
 
         #expect(parent.entries.count == 0)
         #expect(parent.entries.count == 0)
@@ -299,13 +194,13 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
 
         // Add all children
-        sut.addGroup(itemId: parent.id, childId: child1.id)
-        sut.addGroup(itemId: parent.id, childId: child2.id)
-        sut.addGroup(itemId: parent.id, childId: child3.id)
+        sut.groupForTest(itemId: parent.id, childId: child1.id)
+        sut.groupForTest(itemId: parent.id, childId: child2.id)
+        sut.groupForTest(itemId: parent.id, childId: child3.id)
         #expect(parent.entries.count == 3)
 
         // Remove middle child
-        sut.removeGroup(itemId: parent.id, childId: child2.id)
+        sut.removeGroup(itemId: parent.id, childId: child2.id, forceSave: false)
 
         #expect(parent.entries.count == 2)
         #expect(parent.entries.count == 2)
@@ -333,7 +228,7 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
 
         // Try to remove parent from itself - should be ignored
-        sut.removeGroup(itemId: parent.id, childId: parent.id)
+        sut.removeGroup(itemId: parent.id, childId: parent.id, forceSave: false)
 
         #expect(parent.entries.count == 0)
     }
@@ -356,11 +251,11 @@ struct EditControllerTests {
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
 
         // Add only child1 to group
-        sut.addGroup(itemId: parent.id, childId: child1.id)
+        sut.groupForTest(itemId: parent.id, childId: child1.id)
         #expect(parent.entries.count == 1)
 
         // Try to remove child2 (not in group) - should have no effect
-        sut.removeGroup(itemId: parent.id, childId: child2.id)
+        sut.removeGroup(itemId: parent.id, childId: child2.id, forceSave: false)
 
         #expect(parent.entries.count == 1)
         #expect(parent.entries.count == 1)
@@ -644,10 +539,10 @@ struct EditControllerTests {
         let child1 = await root.itemController.addNew(type: .item)
         let child2 = await root.itemController.addNew(type: .item)
 
-        // Add children to parent using addGroup
+        // Group the children into the parent
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
-        sut.addGroup(itemId: parent.id, childId: child1)
-        sut.addGroup(itemId: parent.id, childId: child2)
+        sut.groupForTest(itemId: parent.id, childId: child1)
+        sut.groupForTest(itemId: parent.id, childId: child2)
 
         let updatedParent = root.itemController.itemOrEmpty(for: parent.id)
         #expect(updatedParent.entries.count == 2)
@@ -829,7 +724,7 @@ struct EditControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
         let item = root.itemController.itemOrEmpty(for: itemId)
         sut.setCurrentItem(to: ItemRowTreeModel(itemId: item.id, typeId: .space))
-        sut.reset(name: "Original Item", itemId: item.id)
+        sut.reset(name: "Original Item", itemId: item.id, forceSave: false)
 
         let originalItem = root.itemController.itemOrEmpty(for: item.id)
         let initialCount = root.itemController.itemDataModel.items.count
@@ -852,7 +747,7 @@ struct EditControllerTests {
         #expect(item.displayState == 0)
 
         // Mark for deletion
-        sut.markForDeletion(itemId: item.id)
+        sut.markForDeletion(itemId: item.id, forceSave: false)
 
         // Verify item is marked for deletion
         let markedItem = root.itemController.itemOrEmpty(for: item.id)
@@ -869,11 +764,11 @@ struct EditControllerTests {
         let item = root.itemController.itemOrEmpty(for: itemId)
 
         // Mark for deletion
-        sut.markForDeletion(itemId: item.id)
+        sut.markForDeletion(itemId: item.id, forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: item.id).displayState == 2)
 
         // Restore the item
-        sut.restore(itemId: item.id)
+        sut.restore(itemId: item.id, forceSave: false)
 
         // Verify item is restored
         let restoredItem = root.itemController.itemOrEmpty(for: item.id)
@@ -899,16 +794,16 @@ struct EditControllerTests {
         sut.addItem(itemId: child2, parentId: folderModel.id)
 
         // Mark folder and children for deletion using markForDeletion
-        sut.markForDeletion(itemId: folderModel.id)
-        sut.markForDeletion(itemId: child1)
-        sut.markForDeletion(itemId: child2)
+        sut.markForDeletion(itemId: folderModel.id, forceSave: false)
+        sut.markForDeletion(itemId: child1, forceSave: false)
+        sut.markForDeletion(itemId: child2, forceSave: false)
         
         #expect(root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
         #expect(root.itemController.itemOrEmpty(for: child1).displayState == 2)
         #expect(root.itemController.itemOrEmpty(for: child2).displayState == 2)
 
         // Restore the folder
-        sut.restore(itemId: folderModel.id)
+        sut.restore(itemId: folderModel.id, forceSave: false)
 
         // Verify folder is restored
         let restoredFolder = root.itemController.itemOrEmpty(for: folderModel.id)
@@ -1099,10 +994,10 @@ struct EditControllerTests {
 
         // Simulate the actual UI workflow:
         // 1. Mark all for deletion (what confirmRemoval does on Remove)
-        sut.markForDeletion(itemId: folderModel.id)
-        sut.markForDeletion(itemId: child1)
-        sut.markForDeletion(itemId: child2)
-        sut.markForDeletion(itemId: child3)
+        sut.markForDeletion(itemId: folderModel.id, forceSave: false)
+        sut.markForDeletion(itemId: child1, forceSave: false)
+        sut.markForDeletion(itemId: child2, forceSave: false)
+        sut.markForDeletion(itemId: child3, forceSave: false)
 
         #expect(root.itemController.itemOrEmpty(for: folderModel.id).displayState == 2)
         #expect(root.itemController.itemOrEmpty(for: child1).displayState == 2)
@@ -1111,8 +1006,8 @@ struct EditControllerTests {
 
         // 2. User clicks Remove with only folder and child1 selected (child2 and child3 unchecked)
         //    Restore child2 and child3 (simulating unchecking them in UI)
-        sut.restore(itemId: child2)
-        sut.restore(itemId: child3)
+        sut.restore(itemId: child2, forceSave: false)
+        sut.restore(itemId: child3, forceSave: false)
 
         // Verify folder still marked for deletion
         let deletedFolder = root.itemController.itemOrEmpty(for: folderModel.id)
@@ -1171,59 +1066,16 @@ struct EditControllerTests {
         #expect(collection.entries[2].spaceId == child2)
         #expect(collection.entries[3].spaceId == child4)
     }
-
-    @Test func addGroupIgnoresFolderAsChild() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-
-        // Create a parent item (group container)
-        let parentItemId = await root.itemController.addNew(type: .item)
-        let parent = root.itemController.itemOrEmpty(for: parentItemId)
-        #expect(parent.entries.count == 0)
-
-        // Create a folder
-        let folderModel = SpaceModel(id: UUID(), name: "Test Folder", category: .folder, displayState: 0)
-        root.itemController.replace(model: folderModel, isInsert: true)
-
-        sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
-
-        // Try to add folder to group - should be ignored
-        sut.addGroup(itemId: parent.id, childId: folderModel.id)
-
-        // Verify folder was NOT added to parent's entries
-        #expect(parent.entries.count == 0)
-
-        // Verify folder's display state was NOT updated
-        let folder = root.itemController.itemOrEmpty(for: folderModel.id)
-        #expect(folder.displayState == 0)
-    }
-
-    @Test func addGroupIgnoresCollectionAsChild() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        let sut = root.editController
-
-        // Create a parent item (group container)
-        let parentItemId = await root.itemController.addNew(type: .item)
-        let parent = root.itemController.itemOrEmpty(for: parentItemId)
-        #expect(parent.entries.count == 0)
-
-        // Create a collection (album for spaces)
-        let collectionModel = SpaceModel(id: UUID(), name: "Test Collection", category: .album, displayState: 0)
-        root.itemController.replace(model: collectionModel, isInsert: true)
-
-        sut.setCurrentItem(to: ItemRowTreeModel(itemId: parent.id, typeId: .space))
-
-        // Try to add collection to group - should be ignored
-        sut.addGroup(itemId: parent.id, childId: collectionModel.id)
-
-        // Verify collection was NOT added to parent's entries
-        #expect(parent.entries.count == 0)
-
-        // Verify collection's display state was NOT updated
-        let collection = root.itemController.itemOrEmpty(for: collectionModel.id)
-        #expect(collection.displayState == 0)
-    }
 }
 
+
+private extension EditController {
+    /// The group the removed test-only `addGroup` built (CODE_AUDIT_Edit_Save §5.26): the child
+    /// listed in the item and group-hidden.
+    @MainActor func groupForTest(itemId: UUID, childId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.entries.append(SpaceModel.Entry.newChild(id: childId))
+        reset(hidden: true, itemId: childId, forceSave: false)
+        save(updated: item, message: "Group", forceSave: false)
+    }
+}

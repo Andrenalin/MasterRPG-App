@@ -111,16 +111,9 @@ extension AudioModel: nonisolated Comparable {
 
 extension AudioModel: nonisolated ItemLinkRegistrable {}
 
-extension AudioModel: nonisolated ItemDiffComparable {
-    // Legacy concrete shims remain nonisolated for direct Equatable-style calls.
-    // Generic ItemDiffComparable access is MainActor-isolated by the protocol.
-    nonisolated public func merge(_ other: AudioModel) -> AudioModel {
-        assumeMainActorIsolated {
-            mergeOnMain(other)
-        }
-    }
-
-    @MainActor private func mergeOnMain(_ other: AudioModel) -> AudioModel {
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension AudioModel: ItemDiffComparable {
+    public func merge(_ other: AudioModel) -> AudioModel {
         let mergedCategory = category_.merged(other: other.category_)
         // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
         let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
@@ -137,22 +130,20 @@ extension AudioModel: nonisolated ItemDiffComparable {
         )
     }
 
-    nonisolated public func isSame(_ other: AudioModel) -> Bool {
-        assumeMainActorIsolated {
-            guard entries.count == other.entries.count else { return false }
-            // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
-            // that every load regenerates, and a position compare failed for a reordered list.
-            // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
-            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return name == other.name &&
-            description == other.description &&
-            tags == other.tags &&
-            category == other.category &&
-            fileUrl_.update == other.fileUrl_.update &&
-            entries_.update == other.entries_.update &&
-            parentId == other.parentId &&
-            entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
-        }
+    public func isSame(_ other: AudioModel) -> Bool {
+        guard entries.count == other.entries.count else { return false }
+        // By id with the entry's own comparator, as `PdfModel.isSame`: `==` includes CRDT clocks
+        // that every load regenerates, and a position compare failed for a reordered list.
+        // First-wins, since imported data can repeat an entry id. See CODE_AUDIT_29 §5.10.
+        let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return name == other.name &&
+        description == other.description &&
+        tags == other.tags &&
+        category == other.category &&
+        fileUrl_.update == other.fileUrl_.update &&
+        entries_.update == other.entries_.update &&
+        parentId == other.parentId &&
+        entries.allSatisfy { otherEntriesById[$0.id]?.isSame($0) == true }
     }
 
     public var version: Int {
@@ -160,15 +151,11 @@ extension AudioModel: nonisolated ItemDiffComparable {
     }
 }
 
-extension AudioModel: nonisolated ItemDuplicatable {
-    // Nonisolated shim remains for legacy concrete callers. Generic item access
-    // is MainActor-isolated by ItemDuplicatable and ItemDataAccessible.
-    nonisolated public func duplicate() -> AudioModel {
-        assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
-            return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: nil)
-        }
+extension AudioModel: ItemDuplicatable {
+    public func duplicate() -> AudioModel {
+        let copyName = duplicateName(from: name)
+        // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
+        return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: nil)
     }
 }
 

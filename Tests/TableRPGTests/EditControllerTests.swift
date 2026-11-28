@@ -22,7 +22,7 @@ struct EditControllerTests {
         let originalEntries = item.entries
 
         item.entries[0].content = "New Content"
-        var result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        var result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil, forceSave: false)
         #expect(result.isEmpty)
 
         let savedItem = root.itemController.itemOrEmpty(for: itemId)
@@ -31,7 +31,7 @@ struct EditControllerTests {
 
         let newEntry = TableEntryModel(id: UUID(), name: "Newbee", content: "Super", displayState: 1, diceResult: "Perfect")
         item.entries.append(newEntry)
-        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil, forceSave: false)
         #expect(result.isEmpty)
 
         originalEntries.enumerated().forEach { index, entry in
@@ -41,7 +41,7 @@ struct EditControllerTests {
 
         let middleEntry = TableEntryModel(id: UUID(), name: "Middle", content: "Super", displayState: 1, diceResult: "Perfect")
         item.entries.insert(middleEntry, at: 4)
-        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil)
+        result = sut.merge(itemId: itemId, entries: item.entries, recoverEntries: nil, forceSave: false)
         #expect(result.isEmpty)
 
         originalEntries.enumerated().forEach { index, entry in
@@ -78,7 +78,7 @@ struct EditControllerTests {
         #expect(sut.canAddLink(module: .pdf, entryId: nil))
         #expect(!sut.canAddLink(module: .photo, entryId: nil))
 
-        sut.add(diceId: diceId, itemId: itemId)
+        sut.add(diceId: diceId, itemId: itemId, forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: itemId).diceId == diceId)
 
         let created = sut.create(name: "Created", content: "Content")
@@ -86,12 +86,13 @@ struct EditControllerTests {
         #expect(created.content == "Content")
 
         #expect(sut.merge(itemId: UUID(), entries: [created]).map(\.name) == ["Created"])
-        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil).isEmpty)
+        #expect(sut.merge(itemId: UUID(), entries: [created], recoverEntries: nil, forceSave: false).isEmpty)
 
         sut.applyExtractedContent(
             TableSummaryAnalysis(title: "Extracted Table", description: "Extracted description", tags: ["encounter", "loot"]),
             to: itemId,
-            selection: TextSummaryPropertySelection()
+            selection: TextSummaryPropertySelection(),
+            forceSave: false
         )
 
         let updated = root.itemController.itemOrEmpty(for: itemId)
@@ -102,7 +103,8 @@ struct EditControllerTests {
         sut.applyExtractedContent(
             TableSummaryAnalysis(title: "Skipped", description: "Skipped", tags: ["skip"]),
             to: itemId,
-            selection: TextSummaryPropertySelection(applyTitle: false, applyDescription: false, applyTags: false)
+            selection: TextSummaryPropertySelection(applyTitle: false, applyDescription: false, applyTags: false),
+            forceSave: false
         )
         #expect(root.itemController.itemOrEmpty(for: itemId).name == "Extracted Table")
     }

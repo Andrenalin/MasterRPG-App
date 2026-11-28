@@ -75,8 +75,9 @@ public extension GameControllable {
             gameModel.append(itemId: item.id, item: gameItem)
             return true
         }
-        return version == 0 || version == localItem.version
-
+        // The package version: a file-backed item whose metadata changed is not current although
+        // its file is. See CODE_AUDIT_Edit_Save §5.10.
+        return version == 0 || version == NetworkPackageVersion.of(localItem)
     }
 
     func setCurrent(itemId: UUID) async -> Bool {
@@ -163,9 +164,22 @@ public extension GameControllable {
         guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
             throw ItemGameStorableError.memoryStreamError
         }
-        let version = await networkVersion(for: itemId)
+        let versions = await packageVersions(for: itemId)
         let module = itemControllable.config.module
-        return NetworkCodableDataType(id: itemId, type: module, version: version, data: data)
+        return NetworkCodableDataType(id: itemId, type: module, version: versions.package, data: data, assetVersion: versions.asset)
+    }
+
+    /// The version of the item's game package and, for a file-backed item whose metadata is in
+    /// it, the file's own asset version (`nil` when the two are the same). Package versions
+    /// decide whether a player's copy is current; asset versions decide whether the file bytes
+    /// must travel. See CODE_AUDIT_Edit_Save §5.10.
+    /// Built on the module's `networkVersion(for:)` (Character's covers its linked items).
+    @MainActor func packageVersions(for itemId: UUID) async -> (package: Int, asset: Int?) {
+        let version = await networkVersion(for: itemId)
+        guard let item = await itemControllable.item(for: itemId), NetworkPackageVersion.hasMetadataDigest(item) else {
+            return (version, nil)
+        }
+        return (NetworkPackageVersion.of(item, version: version), version)
     }
 
     /// Returns the deterministic version used on the wire, lazily backfilling
@@ -207,8 +221,8 @@ public extension GameControllable {
     }
 
     func share(id: UUID) async -> NetworkCodableDataType {
-        let version = await networkVersion(for: id)
-        return NetworkCodableDataType(id: id, type: itemControllable.config.module, version: version)
+        let versions = await packageVersions(for: id)
+        return NetworkCodableDataType(id: id, type: itemControllable.config.module, version: versions.package, assetVersion: versions.asset)
     }
     
     /// Whether the item's backing file (if any) can be read on this device now. An iCloud Drive

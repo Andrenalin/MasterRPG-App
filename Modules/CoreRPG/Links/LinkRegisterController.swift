@@ -344,7 +344,12 @@ public extension LinkRegisterController {
         return nil
     }
 
-    /// Parses `text` for embedded markdown links, registers any that are new, and returns all matching `LinkRegisterModel`s for `source`.
+    /// Parses `text` for embedded markdown links and returns the matching `LinkRegisterModel`s for
+    /// `source`: the registered one where there is one, a new unregistered model otherwise.
+    /// Parsing has no side effect: it runs on every debounced keystroke and when editor text is
+    /// rendered, also for text that is never saved or only saved to game memory. Registering
+    /// there left synced phantom links. Links are registered by the persisted save
+    /// (`EditControllable.updateLinkRegister`). See CODE_AUDIT_Edit_Save §5.27.
     @MainActor func linkRegisterModel(in text: String, for source: ItemRowModel) -> [LinkRegisterModel] {
         let links = LinkReplaceController.links(for: text)
         return links.compactMap { rawLink -> LinkRegisterModel? in
@@ -362,8 +367,7 @@ public extension LinkRegisterController {
                 return linkRegisterModel
             }
             
-            // Create new link and register it
-            let newModel = LinkRegisterModel(
+            return LinkRegisterModel(
                 name: rawLink.name,
                 source: source,
                 destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module),
@@ -371,8 +375,6 @@ public extension LinkRegisterController {
                 command: rawLink.command,
                 markDown: rawLink.markDown
             )
-            register(links: [newModel])
-            return newModel
         }
     }
 }

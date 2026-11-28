@@ -53,9 +53,9 @@ struct SearchListControllerTests {
         let idA = await root.itemController.addNew(type: .item)
         let idM = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Zulu Station",  itemId: idZ)
-        root.editController.reset(name: "Alpha Station", itemId: idA)
-        root.editController.reset(name: "Midway Base",   itemId: idM)
+        root.editController.reset(name: "Zulu Station",  itemId: idZ, forceSave: false)
+        root.editController.reset(name: "Alpha Station", itemId: idA, forceSave: false)
+        root.editController.reset(name: "Midway Base",   itemId: idM, forceSave: false)
         
         // Add in Z, A, M order (entry order) — this is the insertion/membership order
         root.editController.addItem(itemId: idZ, parentId: folderId)
@@ -83,9 +83,9 @@ struct SearchListControllerTests {
         let idA = await root.itemController.addNew(type: .item)
         let idC = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "bravo Station", itemId: idB)
-        root.editController.reset(name: "Alpha Station", itemId: idA)
-        root.editController.reset(name: "charlie Base",  itemId: idC)
+        root.editController.reset(name: "bravo Station", itemId: idB, forceSave: false)
+        root.editController.reset(name: "Alpha Station", itemId: idA, forceSave: false)
+        root.editController.reset(name: "charlie Base",  itemId: idC, forceSave: false)
         
         // Add in B, A, C order
         root.editController.addItem(itemId: idB, parentId: folderId)
@@ -109,8 +109,8 @@ struct SearchListControllerTests {
         let innerFolderId = await root.itemController.addNew(type: .folder)
         let itemId        = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Inner Dock",   itemId: innerFolderId)
-        root.editController.reset(name: "Scout Vessel", itemId: itemId)
+        root.editController.reset(name: "Inner Dock",   itemId: innerFolderId, forceSave: false)
+        root.editController.reset(name: "Scout Vessel", itemId: itemId, forceSave: false)
         
         root.editController.addItem(itemId: innerFolderId, parentId: outerFolderId)
         root.editController.addItem(itemId: itemId,        parentId: outerFolderId)
@@ -133,8 +133,8 @@ struct SearchListControllerTests {
         let visibleId = await root.itemController.addNew(type: .item)
         let hiddenId  = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Visible Station", itemId: visibleId)
-        root.editController.reset(name: "Hidden Station",  itemId: hiddenId)
+        root.editController.reset(name: "Visible Station", itemId: visibleId, forceSave: false)
+        root.editController.reset(name: "Hidden Station",  itemId: hiddenId, forceSave: false)
         
         root.editController.addItem(itemId: visibleId, parentId: folderId)
         root.editController.addItem(itemId: hiddenId,  parentId: folderId)
@@ -244,9 +244,9 @@ struct SearchListControllerTests {
         let idB = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Charlie", itemId: idC)
-        root.editController.reset(name: "Bravo",   itemId: idB)
-        root.editController.reset(name: "Alpha",   itemId: idA)
+        root.editController.reset(name: "Charlie", itemId: idC, forceSave: false)
+        root.editController.reset(name: "Bravo",   itemId: idB, forceSave: false)
+        root.editController.reset(name: "Alpha",   itemId: idA, forceSave: false)
         
         // Add in C, B, A order
         root.editController.addItem(itemId: idC, parentId: folderId)
@@ -309,7 +309,7 @@ struct SearchListControllerTests {
         let controller = makeSearchLinkController(root: root)
         
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Galaxy Station", itemId: itemId)
+        root.editController.reset(name: "Galaxy Station", itemId: itemId, forceSave: false)
         
         let entryId = UUID()
         root.itemController.itemOrEmpty(for: itemId)
@@ -335,8 +335,8 @@ struct SearchListControllerTests {
         let idZ = await root.itemController.addNew(type: .item)
         let idA = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Zulu", itemId: idZ)
-        root.editController.reset(name: "Alpha", itemId: idA)
+        root.editController.reset(name: "Zulu", itemId: idZ, forceSave: false)
+        root.editController.reset(name: "Alpha", itemId: idA, forceSave: false)
         
         root.editController.addItem(itemId: idZ, parentId: folderId)
         root.editController.addItem(itemId: idA, parentId: folderId)
@@ -395,9 +395,9 @@ struct SearchListControllerTests {
         let id2 = await root.itemController.addNew(type: .item)
         let id3 = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Zebra Station",   itemId: id1)
-        root.editController.reset(name: "Apple Base",      itemId: id2)
-        root.editController.reset(name: "Midnight Outpost", itemId: id3)
+        root.editController.reset(name: "Zebra Station",   itemId: id1, forceSave: false)
+        root.editController.reset(name: "Apple Base",      itemId: id2, forceSave: false)
+        root.editController.reset(name: "Midnight Outpost", itemId: id3, forceSave: false)
         
         // Add in Z, A, M order (bug would return this order)
         root.editController.addItem(itemId: id1, parentId: folderId)
@@ -429,8 +429,8 @@ struct SearchListControllerTests {
         let id1 = await root.itemController.addNew(type: .item)
         let id2 = await root.itemController.addNew(type: .item)
         
-        root.editController.reset(name: "Zulu Dragon",  itemId: id1)
-        root.editController.reset(name: "Alpha Dragon", itemId: id2)
+        root.editController.reset(name: "Zulu Dragon",  itemId: id1, forceSave: false)
+        root.editController.reset(name: "Alpha Dragon", itemId: id2, forceSave: false)
         
         root.editController.addItem(itemId: id1, parentId: folderId)
         root.editController.addItem(itemId: id2, parentId: folderId)

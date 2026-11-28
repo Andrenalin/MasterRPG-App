@@ -76,12 +76,8 @@ struct WeatherStormEditor: View {
         guard model.id != directionEditModel.valueId || toggleValue != directionEditModel.value else { return }
         let editController = root.editController
         directionEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
-            guard let item = editController.editModel(for: itemId) else { return }
-            if value != item.rainDirection {
-                item.rainDirection = value
-                // The weather editor persists also during a game.
-                editController.save(updated: item, message: String(localized: "toggle rain direction", bundle: .module), forceSave: true)
-            }
+            // The weather editor persists also during a game.
+            editController.reset(rainDirection: value, itemId: itemId, forceSave: true)
         }
     }
 }

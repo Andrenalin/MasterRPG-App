@@ -60,7 +60,7 @@ struct ImportControllerTests {
     func cancelledImportThrows() async throws {
         let sourceRoot = TableRootModel.testRoot(diceRoot: DiceRootModel.testRoot(), pdfRoot: PdfRootModel.testRoot())
         let tableId = sourceRoot.itemController.addNewSync(type: .item)
-        sourceRoot.editController.save(updated: TableModel(id: tableId, name: "Loot", entries: []), message: "Create table")
+        sourceRoot.editController.save(updated: TableModel(id: tableId, name: "Loot", entries: []), message: "Create table", forceSave: false)
         let exportIds = sourceRoot.exportController.exporting(itemIds: ItemModuleIds(ids: Set([tableId]), module: .table))
         let stream = OutputStream.toMemory()
         stream.open()
@@ -93,7 +93,7 @@ struct ImportControllerTests {
                 TableEntryModel(id: entryCId, name: "Entry C", content: "Treasure")
             ]
         )
-        root.editController.save(updated: tableC, message: "Create Table C")
+        root.editController.save(updated: tableC, message: "Create Table C", forceSave: false)
 
         let tableCEntryLink = root.linkController.generateLink(linkNumber: 0, itemId: tableCId, entryId: entryCId)
         let tableBId = root.itemController.addNewSync(type: .item)
@@ -105,7 +105,7 @@ struct ImportControllerTests {
                 TableEntryModel(id: entryBId, name: "Entry B", content: tableCEntryLink)
             ]
         )
-        root.editController.save(updated: tableB, message: "Create Table B")
+        root.editController.save(updated: tableB, message: "Create Table B", forceSave: false)
 
         let tableBLink = root.linkController.generateLink(linkNumber: 0, itemId: tableBId, entryId: nil)
         let tableAId = root.itemController.addNewSync(type: .item)
@@ -117,7 +117,7 @@ struct ImportControllerTests {
                 TableEntryModel(id: entryAId, name: "Entry A", content: tableBLink)
             ]
         )
-        root.editController.save(updated: tableA, message: "Create Table A")
+        root.editController.save(updated: tableA, message: "Create Table A", forceSave: false)
 
         return NestedLinkedTables(
             tableAId: tableAId,

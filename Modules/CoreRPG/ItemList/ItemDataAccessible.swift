@@ -98,6 +98,18 @@ public protocol ItemDataAccessible: Sendable, Equatable {
     /// does for the properties every item has. Leave out what is session-only during a game
     /// (a map's pins and rooms). The default applies nothing.
     @MainActor mutating func applyModuleEdit(from base: Self, to edited: Self)
+
+    /// `applyModuleEdit` including what is session-only during a game: undo and redo of an edit
+    /// that was written where it was made (game memory, or the library outside a game) revert
+    /// all of it. The default is `applyModuleEdit`. See CODE_AUDIT_Edit_Save §5.2.
+    @MainActor mutating func applyModuleUndo(from base: Self, to edited: Self)
+
+    /// Whether the entries (with everything `applyModuleEdit` leaves out) are content that stays
+    /// in game memory while a game runs, also when the editor window saves with `forceSave`:
+    /// a forced save then persists only the item's metadata. A map's rooms are; the decision is
+    /// enforced in `EditControllable.writeForcedEditOfGameCopy` instead of in every map edit.
+    /// See CODE_AUDIT_Edit_Save §5.13.
+    nonisolated static var hasSessionOnlyEntries: Bool { get }
 }
 
 public extension ItemDataAccessible {
@@ -115,6 +127,10 @@ public extension ItemDataAccessible {
 
     var reviewProperties: [ReviewCustomProperty] { [] }
     @MainActor mutating func applyModuleEdit(from base: Self, to edited: Self) {}
+    @MainActor mutating func applyModuleUndo(from base: Self, to edited: Self) {
+        applyModuleEdit(from: base, to: edited)
+    }
+    nonisolated static var hasSessionOnlyEntries: Bool { false }
     var url: URL? {
         fileUrl?.rawUrl
     }

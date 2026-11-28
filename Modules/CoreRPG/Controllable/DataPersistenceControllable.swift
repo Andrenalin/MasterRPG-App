@@ -29,9 +29,13 @@ public protocol DataPersistenceControllable: Sendable {
     /// Ids of locally created items whose insert is not committed yet. The sync-deletion
     /// diff must not treat these as remotely deleted. See CODE_AUDIT_18 §5.2.
     func unsavedInsertIds() async -> Set<UUID>
+    /// Whether a local edit of `id` is queued (or flushed) but not committed yet.
+    /// See CODE_AUDIT_Edit_Save §3.1.
+    func hasPendingOperation(for id: UUID) async -> Bool
 }
 
 public extension DataPersistenceControllable {
     @MainActor func markUnsavedInsert(id: UUID) {}
     func unsavedInsertIds() async -> Set<UUID> { [] }
+    func hasPendingOperation(for id: UUID) async -> Bool { false }
 }

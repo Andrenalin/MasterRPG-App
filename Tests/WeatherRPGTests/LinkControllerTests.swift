@@ -145,7 +145,7 @@ struct LinkControllerTests {
         // saveChanges() fires changedLinkRegisterModels() and registers the link.
         let photoId = await root.photoRoot.itemController.addNew(type: .item)
         let weatherId = await root.itemController.addNew(type: .scenario)
-        root.editController.add(photoId: photoId, itemId: weatherId)
+        root.editController.add(photoId: photoId, itemId: weatherId, forceSave: false)
 
         let photoDestination = ItemRowModel(itemId: photoId, typeId: .photo)
 

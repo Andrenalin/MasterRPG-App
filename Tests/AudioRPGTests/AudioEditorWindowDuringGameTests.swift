@@ -47,7 +47,7 @@ struct AudioEditorWindowDuringGameTests {
         let root = AudioRootModel.testRoot()
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.audio.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Tavern", description: Self.libraryDescription, category: nil, tags: ["music"])
+        root.editController.update(id: itemId, name: "Tavern", description: Self.libraryDescription, category: nil, tags: ["music"], forceSave: false)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId)
         fixture.game.startGame()
@@ -55,7 +55,7 @@ struct AudioEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 
@@ -105,7 +105,7 @@ struct AudioEditorWindowDuringGameTests {
     func inGameEditStaysInGameMemory() async throws {
         let fixture = try await makeFixture()
 
-        fixture.editController.update(id: fixture.itemId, name: "Session name", description: nil, category: nil, tags: nil)
+        fixture.editController.update(id: fixture.itemId, name: "Session name", description: nil, category: nil, tags: nil, forceSave: false)
 
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.name == "Session name" }
     }

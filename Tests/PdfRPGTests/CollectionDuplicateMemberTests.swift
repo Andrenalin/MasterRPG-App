@@ -18,8 +18,8 @@ struct CollectionDuplicateMemberTests {
         await root.itemController.resetData()
         let collectionId = await root.itemController.addNew(type: root.itemController.collectionCategory)
         let memberId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Shelf", itemId: collectionId)
-        root.editController.reset(name: "Book", itemId: memberId)
+        root.editController.reset(name: "Shelf", itemId: collectionId, forceSave: false)
+        root.editController.reset(name: "Book", itemId: memberId, forceSave: false)
 
         root.editController.addItem(itemId: memberId, parentId: collectionId)
         root.editController.addItem(itemId: memberId, parentId: collectionId)

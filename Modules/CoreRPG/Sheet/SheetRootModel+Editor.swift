@@ -51,7 +51,11 @@ extension SheetRootModel {
 
     @MainActor func addNewGroup(in sheetModel: SheetModel) async -> UUID? {
         guard let editable = entryDataEditable(for: sheetModel.source), editable.canAddGroups else { return nil }
+        let shownItemId = self.sheetModel.source.itemId
         let entryId = await editable.addNewGroup(itemId: sheetModel.source.itemId, forceSave: persistsEdits)
+        // The sheet may show another item by now: its editor is not pointed at the old one.
+        // See CODE_AUDIT_Edit_Save §3.7.
+        guard self.sheetModel.source.itemId == shownItemId else { return entryId }
 
         editorModel.itemId = sheetModel.source.itemId
         editorModel.module = sheetModel.source.typeId
@@ -78,7 +82,13 @@ extension SheetRootModel {
         // the action only where `canConvertGroups` is true. See CODE_AUDIT_26 §5.71.
         guard let entryId = source.entryId,
               let editable = entryDataEditable(for: source) else { return nil }
+        let shownItemId = sheetModel.source.itemId
         let groupId = await editable.convertToGroup(itemId: source.itemId, entryId: entryId, existingItemId: existingItemId, forceSave: persistsEdits)
+        // Another item shown by now: this sheet's tree is not rebuilt for the old one.
+        // See CODE_AUDIT_Edit_Save §3.7.
+        guard sheetModel.source.itemId == shownItemId else {
+            return editable.itemControllable.itemSync(for: groupId)
+        }
         updateFromRoot()
 
         // The entry's rendered name now contains a freshly materialized link (or lost one).

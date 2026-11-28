@@ -20,8 +20,8 @@ struct FileReplacementTests {
     /// Adds an item with a stored file holding `text`.
     private func addItem(text: String, in root: AudioRootModel) async throws -> (itemId: UUID, fileUrl: FileUrl) {
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Cue-\(UUID().uuidString)", itemId: itemId)
-        try await root.editController.resetFile(data: Data(text.utf8), itemId: itemId, path: "")
+        root.editController.reset(name: "Cue-\(UUID().uuidString)", itemId: itemId, forceSave: false)
+        try await root.editController.resetFile(data: Data(text.utf8), itemId: itemId, path: "", forceSave: false)
         return (itemId, try fileUrl(of: itemId, in: root))
     }
 
@@ -60,7 +60,7 @@ struct FileReplacementTests {
         let root = try await makeRoot()
         let (itemId, old) = try await addItem(text: "old", in: root)
 
-        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "", replaced: .keep)
+        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "", replaced: .keep, forceSave: false)
 
         let new = try fileUrl(of: itemId, in: root)
         defer { remove(old, new, in: root) }
@@ -74,7 +74,7 @@ struct FileReplacementTests {
         let root = try await makeRoot()
         let (itemId, old) = try await addItem(text: "old", in: root)
 
-        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "")
+        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "", forceSave: false)
 
         let new = try fileUrl(of: itemId, in: root)
         defer { remove(old, new, in: root) }
@@ -92,7 +92,7 @@ struct FileReplacementTests {
         let picked = try pickedFile(text: "picked")
         defer { try? FileManager.default.removeItem(at: picked) }
 
-        #expect(await root.editController.resetFile(url: picked, itemId: itemId, replaced: .keep))
+        #expect(await root.editController.resetFile(url: picked, itemId: itemId, replaced: .keep, forceSave: true))
 
         let new = try fileUrl(of: itemId, in: root)
         defer { remove(old, new, in: root) }
@@ -107,7 +107,7 @@ struct FileReplacementTests {
         let picked = try pickedFile(text: "picked")
         defer { try? FileManager.default.removeItem(at: picked) }
 
-        #expect(await root.editController.resetFile(url: picked, itemId: itemId))
+        #expect(await root.editController.resetFile(url: picked, itemId: itemId, forceSave: true))
 
         let new = try fileUrl(of: itemId, in: root)
         defer { remove(old, new, in: root) }
@@ -162,7 +162,7 @@ struct FileReplacementTests {
         let root = try await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
         let remote = FileUrl(fileId: itemId, url: try #require(URL(string: "https://example.com/cue.m4a")), location: .url, module: NetworkModules.audio.token, relativeUrl: nil)
-        root.editController.reset(fileUrl: remote, itemId: itemId)
+        root.editController.reset(fileUrl: remote, itemId: itemId, forceSave: false)
 
         #expect(await root.editController.storedFileDeletedByReplacement(itemId: itemId) == nil)
     }
@@ -257,7 +257,7 @@ struct FileReplacementTests {
         let picked = try pickedFile(text: "new")
         defer { try? FileManager.default.removeItem(at: picked) }
 
-        let replaced = await root.editController.resetFile(url: picked, itemId: itemId)
+        let replaced = await root.editController.resetFile(url: picked, itemId: itemId, forceSave: true)
 
         #expect(replaced)
         let library = try fileUrl(of: itemId, in: root)
@@ -273,7 +273,7 @@ struct FileReplacementTests {
         let (itemId, old) = try await addItem(text: "old", in: root)
         root.itemController.itemDataModel.isGameMode = true
 
-        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "")
+        try await root.editController.resetFile(data: Data("new".utf8), itemId: itemId, path: "", forceSave: false)
 
         // The new data is written under the item's own name, in place of the old file, so the
         // library item still names a file that exists.

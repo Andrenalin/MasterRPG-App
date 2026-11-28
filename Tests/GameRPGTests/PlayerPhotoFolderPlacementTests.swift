@@ -231,7 +231,7 @@ private extension PlayerPhotoFolderPlacementTests {
         var folderIds: [UUID] = []
         for name in names {
             let folderId = await photoRoot.itemController.addNew(type: .folder)
-            photoRoot.editController.reset(name: name, itemId: folderId)
+            photoRoot.editController.reset(name: name, itemId: folderId, forceSave: false)
             if let parentId = folderIds.last {
                 photoRoot.editController.addItem(itemId: folderId, parentId: parentId)
             }

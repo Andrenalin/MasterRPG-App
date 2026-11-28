@@ -94,14 +94,14 @@ struct CloudScanController: Sendable {
         var changedIds = itemController.insertCloudScan(fresh, hashes: hashes)
         let movedIds = itemController.moveCloudScanItems(confirmed.moves)
         changedIds += movedIds
-        editController.repairFolders(itemIds: Set(changedIds))
+        editController.repairFolders(itemIds: Set(changedIds), forceSave: true)
 
         let module = itemController.config.module
         let trashed = confirmed.removals.filter { removal in
             guard let item = itemController.itemSync(for: removal.id, noGame: true) else { return false }
             return !item.isHidden
         }
-        editController.confirmRemoval(of: trashed.map { ItemRowModel(itemId: $0.id, typeId: module) }, keeping: [])
+        editController.confirmRemoval(of: trashed.map { ItemRowModel(itemId: $0.id, typeId: module) }, keeping: [], forceSave: true)
 
         await itemController.save()
         return .synced(added: fresh.items.count, folders: fresh.folders.count, moved: movedIds.count, trashed: trashed.count)

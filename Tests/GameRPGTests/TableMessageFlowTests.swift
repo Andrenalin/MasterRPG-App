@@ -477,7 +477,7 @@ private extension TableMessageFlowTests {
     static func preparedFixture() async throws -> Fixture {
         let environment = try await MultiConnectionTestEnvironment.create()
         let tableId = await environment.masterRoot.tableRoot.itemController.addNew(type: .item)
-        environment.masterRoot.tableRoot.editController.reset(name: "Encounter table", itemId: tableId)
+        environment.masterRoot.tableRoot.editController.reset(name: "Encounter table", itemId: tableId, forceSave: false)
 
         let version = await environment.masterRoot.tableRoot.gameControllable.networkVersion(for: tableId)
         try #require(version != 0)

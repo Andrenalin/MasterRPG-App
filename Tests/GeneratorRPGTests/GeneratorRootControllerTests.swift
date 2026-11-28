@@ -15,8 +15,8 @@ struct GeneratorRootControllerTests {
 
         let folderId = await root.itemController.addNew(type: .folder)
         let childId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Prompt Folder", itemId: folderId)
-        root.editController.reset(name: "Nested Prompt", itemId: childId)
+        root.editController.reset(name: "Prompt Folder", itemId: folderId, forceSave: false)
+        root.editController.reset(name: "Nested Prompt", itemId: childId, forceSave: false)
         root.itemController.itemOrEmpty(for: folderId).entries.append(ChildEntryModel(id: UUID(), childId: childId))
 
         let exported = root.exportController.exporting(itemIds: ItemModuleIds(ids: Set([folderId]), module: .generator))
@@ -29,8 +29,8 @@ struct GeneratorRootControllerTests {
         await root.itemController.resetData()
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Prompt", itemId: itemId)
-        root.editController.reset(description: "Original description", itemId: itemId)
+        root.editController.reset(name: "Prompt", itemId: itemId, forceSave: false)
+        root.editController.reset(description: "Original description", itemId: itemId, forceSave: false)
 
         let rootManager = RootManager(anyRoot: root)
         let sheet = root.sheetController.sheet(
@@ -49,14 +49,16 @@ struct GeneratorRootControllerTests {
         #expect(sheet.source.itemId == itemId)
         #expect(sheet.source.typeId == .generator)
 
-        root.editController.reset(name: "Prompt Revised", itemId: itemId)
+        root.editController.reset(name: "Prompt Revised", itemId: itemId, forceSave: false)
         root.sheetController.update(root: rootManager, sheetModel: sheet, isEditor: false)
         #expect(sheet.name == "Prompt Revised")
         #expect(sheet.hasChanged)
 
         let referenceId = UUID()
-        let model = root.itemController.itemOrEmpty(for: itemId)
-        root.editController.add(referenceId: referenceId, model: model)
+        // Through the generic save: the module setter had no production caller (CODE_AUDIT_Edit_Save §9.7).
+        let model = root.itemController.itemOrEmpty(for: itemId).copy()
+        model.referenceId = referenceId
+        root.editController.save(updated: model, message: "Reference added", forceSave: false)
         #expect(root.itemController.itemOrEmpty(for: itemId).referenceId == referenceId)
 
         root.gameController.setGame(item: root.itemController.itemOrEmpty(for: itemId), itemId: itemId)

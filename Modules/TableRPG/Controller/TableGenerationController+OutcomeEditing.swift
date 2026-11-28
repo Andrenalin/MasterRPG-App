@@ -32,7 +32,9 @@ extension TableGenerationController {
                 itemId: session.resultItemId,
                 name: selection.tableName,
                 content: selection.content,
-                position: .end
+                position: .end,
+                // The throwaway session never runs a game; its model is memory-only anyway.
+                forceSave: false
             )
         }
         // `SheetRootModel` already captured its `SheetModel` tree (with an
@@ -68,7 +70,9 @@ extension TableGenerationController {
     /// Adds the edited outcome as a new value on the character — via the
     /// real, whole-app `RootManager` (not this session's own throwaway
     /// one), resolving Character's real `editControllable` and calling
-    /// `EditControllable.addItem(sheet:)`, returning the new value's id.
+    /// `EditControllable.addItem(sheet:forceSave:)`, returning the new value's id.
+    /// Forced: "Save outcome as value" is an explicit library save, also during a game; without
+    /// it the new value stayed empty and nameless in the library. See CODE_AUDIT_Edit_Save §5.9.
     /// `nil` if the real `RootManager` isn't available yet (shouldn't happen
     /// once the app has finished setup, which always completes before the
     /// generation panel can be shown) or Character's own conformer didn't
@@ -76,7 +80,7 @@ extension TableGenerationController {
     @MainActor
     func addOutcomeToCharacter(session: SimpleSheetEditingSession) async -> UUID? {
         guard let editControllable = rootManagerBox.rootManager?.characterRoot.editControllable else { return nil }
-        return await editControllable.addItem(sheet: session.sheetRootModel.sheetModel)
+        return await editControllable.addItem(sheet: session.sheetRootModel.sheetModel, forceSave: true)
     }
 
     /// Joins the result item's current entries back into the plain outcome

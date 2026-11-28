@@ -8,7 +8,7 @@ import CharacterRPG
 extension PlayerController {
     /// Whether `characterId` is this player's Character or one of its companions; the master
     /// answers for either, also for a player without a Character of its own. See CODE_AUDIT_24 §5.5.
-    private func isOwnOrCompanionCharacter(_ characterId: UUID) -> Bool {
+    func isOwnOrCompanionCharacter(_ characterId: UUID) -> Bool {
         let player = root.gameModel.gamePlayer
         return player.characterId == characterId || player.companions.contains { $0.characterId == characterId }
     }

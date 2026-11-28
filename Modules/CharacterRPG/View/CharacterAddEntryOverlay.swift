@@ -7,11 +7,10 @@ import SwiftUI
 ///
 /// Mirrors the position and interaction of `sheetAIAssistant` (Ask AI) used by other
 /// modules' game views, but performs no AI generation: the typed text is split into
-/// a name/content pair and saved directly as a new `ValueEntryModel` via the
-/// `EditController`. Bypasses `EntryDataEditable.add(entry:itemId:)`, so it must
-/// reconcile the live game view's `SheetRootModel` itself afterward — per
-/// `Docu/SHEETS.md`, a `SheetModel` tree never re-derives from domain changes on
-/// its own — see `addForcingPersistence(entry:)`.
+/// a name/content pair and saved as a new `ValueEntryModel` through
+/// `EntryDataEditable.add(entry:itemId:forceSave:)`. It reconciles the live game
+/// view's `SheetRootModel` itself afterward — per `Docu/SHEETS.md`, a `SheetModel`
+/// tree never re-derives from domain changes on its own — see `addForcingPersistence(entry:)`.
 extension View {
     func characterAddEntryOverlay(root: CharacterRootModel, itemId: UUID) -> some View {
         safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
@@ -144,22 +143,12 @@ struct CharacterAddEntryControl: View {
         }
     }
 
-    /// `EntryDataEditable.add(entry:itemId:)` saves without `forceSave`, which
-    /// `ItemControllable.replace` routes into game-session memory only while a
-    /// game is running — it never reaches permanent storage. Entries added here
-    /// are meant to outlive the session, so persist with `forceSave: true`,
-    /// mirroring how `updateValue`'s `saveGameDataToPermanent` forces game edits
-    /// back to the permanent item.
+    /// Entries added here are meant to outlive the session, so they persist with
+    /// `forceSave: true`, like the inline editor's value changes. The edit goes through
+    /// the controller, not a model the view mutates. See CODE_AUDIT_Edit_Save §8.4.
     private func addForcingPersistence(entry: ValueEntryModel) {
-        guard let item = root.editController.editModel(for: itemId) else { return }
-        item.entries.append(entry)
-        root.editController.save(
-            updated: item,
-            message: String(localized: "Add entry", bundle: .module),
-            forceSave: true
-        )
-        // Reconcile the live game view's own SheetRootModel — this bypassed
-        // EntryDataEditable.add(entry:itemId:), so nothing else does it.
+        root.editController.add(entry: entry, itemId: itemId, forceSave: true)
+        // Reconcile the live game view's own SheetRootModel; the controller does not.
         root.editController.editorModel.gameSheetRootModel?.updateFromRoot()
     }
 }

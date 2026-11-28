@@ -2,8 +2,14 @@
 
 import Foundation
 
-/// Centralized escape hatch for `nonisolated` protocol conformances (`Comparable`,
-/// `ItemDiffComparable`, `ItemDuplicatable`) on `@MainActor @Observable` domain models.
+/// Centralized escape hatch for `nonisolated` protocol conformances (`Comparable`, `Equatable`,
+/// `Hashable`) on `@MainActor @Observable` domain models.
+///
+/// `ItemDiffComparable` and `ItemDuplicatable` are `@MainActor` protocols, and the models conform
+/// to them plainly, so an off-main caller fails to compile (CODE_AUDIT_Edit_Save §4.1). The
+/// standard-library protocols stay `nonisolated`: `ItemDataAccessible` refines `Sendable` and
+/// `Equatable`, and Swift rejects an isolated conformance to a protocol that implies
+/// `SendableMetatype`. Making those isolated means dropping `Sendable` from `ItemDataAccessible`.
 ///
 /// These conformances are declared `nonisolated` so their requirements are callable from
 /// non-isolated contexts (e.g. `Array.sorted()`, `Set`/`Dictionary` hashing, `Codable`

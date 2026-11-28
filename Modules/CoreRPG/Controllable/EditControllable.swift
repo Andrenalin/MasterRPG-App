@@ -19,7 +19,7 @@ public protocol EditControllable: Sendable {
     @MainActor func willDeleteChildren(of item: Model) async
     @MainActor func willRestore(item: inout Model)
     @MainActor func isOrphanedHidden(itemId: UUID) -> Bool
-    @MainActor func willRepairOrphan(itemId: UUID)
+    @MainActor func willRepairOrphan(itemId: UUID, forceSave: Bool)
 
     /// The ids of the group items `item`'s entries stand for. Empty for a module without groups.
     @MainActor func groupItemIds(of item: any ItemDataAccessible) -> Set<UUID>
@@ -51,10 +51,6 @@ public extension EditControllable {
     @MainActor func recordOperation(_ function: String) {
         CloudKitOperationCounter.shared.recordOperation(function: function)
     }
-
-    @MainActor func trackOperation(_ function: String) {
-        recordOperation(function)
-    }
 }
 
 public extension EditControllable {
@@ -74,13 +70,6 @@ public extension EditControllable {
     @MainActor func removeStaleGroups(_ groupOwners: [UUID: UUID]) async {}
     @MainActor func willRestore(item: inout Model) {}
     @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID? { nil }
-
-    /// Convenience overload preserving every pre-existing 1-argument call
-    /// site (memory-only during an active game, matching historical
-    /// behavior).
-    @MainActor func addItem(sheet: SheetModel) async -> UUID? {
-        await addItem(sheet: sheet, forceSave: false)
-    }
 }
 
 // MARK: - Editor Basic Properties
@@ -88,47 +77,94 @@ public extension EditControllable {
 public extension EditControllable {
     /// The header editor's save: one edit, one save and one undo step. `nil` leaves that field
     /// unchanged. See CODE_AUDIT_29 §5.5, §9.4.
-    @MainActor func update(id: UUID, name: String?, description: String?, category: ItemListCategory?, tags: [String]?, forceSave: Bool = false) {
+    @MainActor func update(id: UUID, name: String?, description: String?, category: ItemListCategory?, tags: [String]?, forceSave: Bool) {
         reset(name: name, description: description, category: category, tags: tags, itemId: id, forceSave: forceSave)
     }
 
     /// Changes name, description, category and tags as one edit: one save and one undo step, so
     /// no sync can pick up a half-applied item. `nil` leaves that property unchanged.
-    @MainActor func reset(name: String?, description: String?, category: ItemListCategory? = nil, tags: [String]?, itemId: UUID, forceSave: Bool = false) {
+    ///
+    /// A forced edit during a game compares with the library too: the game copy can already
+    /// hold the value (entered in the game view) while the library does not. See CODE_AUDIT_Edit_Save §5.14.
+    @MainActor func reset(name: String?, description: String?, category: ItemListCategory? = nil, tags: [String]?, itemId: UUID, forceSave: Bool) {
+        reset(name: name, description: description, category: category, tags: tags, itemId: itemId, forceSave: forceSave, message: String(localized: "Typing", bundle: .module))
+    }
+
+    @MainActor private func reset(name: String?, description: String?, category: ItemListCategory?, tags: [String]?, itemId: UUID, forceSave: Bool, message: String) {
         guard var item = editModel(for: itemId) else { return }
+        let library = forcedLibraryValue(for: itemId, forceSave: forceSave)
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sortedTags = tags?.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         var changed = false
-        if let category, item.category != category {
+        if let category, item.category != category || library.map({ $0.category != category }) == true {
             item.category = category
             changed = true
         }
-        if let name, item.name != name {
-            item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let name, let trimmedName, item.name != name || library.map({ $0.name != trimmedName }) == true {
+            item.name = trimmedName
             editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
             changed = true
         }
-        if let description, item.description != description {
-            item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let description, let trimmedDescription, item.description != description || library.map({ $0.description != trimmedDescription }) == true {
+            item.description = trimmedDescription
             editorModel.cacheItemListModel.reset(cacheType: .description, itemId: item.id, text: item.description.markDownText())
             changed = true
         }
-        if let tags {
-            let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-            if item.tags != sortedTags {
-                let addedTags = Array(Set(sortedTags).subtracting(item.tags))
-                let removedTags = Array(Set(item.tags).subtracting(sortedTags))
+        if let sortedTags {
+            // The persisted counts follow the value the library had.
+            let countedTags = library?.tags ?? item.tags
+            if item.tags != sortedTags || countedTags != sortedTags {
                 // Memory-only game edits leave the persisted tag counts alone. See CODE_AUDIT_29 §5.3.
                 if persistsEdit(forceSave: forceSave) {
-                    updateTags(addedTags: addedTags, removedTags: removedTags)
+                    updateTags(addedTags: Array(Set(sortedTags).subtracting(countedTags)), removedTags: Array(Set(countedTags).subtracting(sortedTags)))
                 }
                 item.tags = sortedTags
                 changed = true
             }
         }
         guard changed else { return }
-        save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
+        let base = library == nil ? nil : forcedBase(for: itemId) { base, library in
+            if category != nil { base.category = library.category }
+            if name != nil { base.name = library.name }
+            if description != nil { base.description = library.description }
+            if tags != nil { base.tags = library.tags }
+        }
+        save(updated: item, message: message, forceSave: forceSave, forcedBase: base)
         if name != nil {
             movedFolderChildren(of: item, forceSave: forceSave)
         }
+    }
+
+    /// The library value a forced edit compares with, when the item has a game copy during a
+    /// game; `nil` otherwise (the item readers see is the one written).
+    @MainActor private func forcedLibraryValue(for itemId: UUID, forceSave: Bool) -> Model? {
+        guard forceSave, gameCopy(of: itemId) != nil else { return nil }
+        return itemControllable.itemSync(for: itemId, noGame: true) as? Model
+    }
+
+    /// Saves a single-field edit (`edit` sets the field on the item and returns whether it
+    /// changed it). With a game copy, a forced edit is also written when only the library lacks
+    /// the value. See CODE_AUDIT_Edit_Save §5.14.
+    /// The shared single-field setter of every module (CODE_AUDIT_Edit_Save §9.5), with the write
+    /// policy as a required parameter.
+    @discardableResult
+    @MainActor func saveField<Value: Equatable>(
+        itemId: UUID,
+        _ keyPath: WritableKeyPath<Model, Value>,
+        to value: Value,
+        message: String,
+        forceSave: Bool
+    ) -> Model? {
+        guard var item = editModel(for: itemId) else { return nil }
+        let library = forcedLibraryValue(for: itemId, forceSave: forceSave)
+        guard item[keyPath: keyPath] != value || library.map({ $0[keyPath: keyPath] != value }) == true else { return nil }
+        item[keyPath: keyPath] = value
+        let base = library == nil ? nil : forcedBase(for: itemId) { base, library in
+            base[keyPath: keyPath] = library[keyPath: keyPath]
+        }
+        save(updated: item, message: message, forceSave: forceSave, forcedBase: base)
+        return item
     }
 
     /// A folder's name is part of its descendants' file paths. Renaming it left their files under
@@ -140,66 +176,41 @@ public extension EditControllable {
         }
     }
 
-    @MainActor func reset(category: ItemListCategory, itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        guard item.category != category else { return }
-        item.category = category
-        save(updated: item, message: String(localized: "Change to \(category.title)", bundle: .module), forceSave: forceSave)
+    @MainActor func reset(category: ItemListCategory, itemId: UUID, forceSave: Bool) {
+        _ = saveField(itemId: itemId, \.category, to: category, message: String(localized: "Change to \(category.title)", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func reset(description: String, itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        guard item.description != description else { return }
-        item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+    @MainActor func reset(description: String, itemId: UUID, forceSave: Bool) {
+        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let item = saveField(itemId: itemId, \.description, to: trimmed, message: String(localized: "Typing", bundle: .module), forceSave: forceSave) else { return }
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: item.id, text: item.description.markDownText())
-        save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
-    }
-    
-    @MainActor func reset(displayState: Int, itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        guard item.displayState != displayState else { return }
-        item.displayState = displayState
-        save(updated: item, message: String(localized: "Change Display", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func reset(name: String, itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        guard item.name != name else { return }
-        item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    @MainActor func reset(displayState: Int, itemId: UUID, forceSave: Bool) {
+        _ = saveField(itemId: itemId, \.displayState, to: displayState, message: String(localized: "Change Display", bundle: .module), forceSave: forceSave)
+    }
+
+    @MainActor func reset(name: String, itemId: UUID, forceSave: Bool) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let item = saveField(itemId: itemId, \.name, to: trimmed, message: String(localized: "Typing", bundle: .module), forceSave: forceSave) else { return }
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
-        save(updated: item, message: String(localized: "Typing", bundle: .module), forceSave: forceSave)
         movedFolderChildren(of: item, forceSave: forceSave)
     }
 
-    @MainActor func reset(tags: [String], itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        guard item.tags != sortedTags else { return }
-        let addedTags = Array(Set(sortedTags).subtracting(item.tags))
-        let removedTags = Array(Set(item.tags).subtracting(sortedTags))
-        // Memory-only game edits leave the persisted tag counts alone. See CODE_AUDIT_29 §5.3.
-        if persistsEdit(forceSave: forceSave) {
-            updateTags(addedTags: addedTags, removedTags: removedTags)
-        }
-        item.tags = sortedTags
-        save(updated: item, message: String(localized: "Changed tags", bundle: .module), forceSave: forceSave)
-    }
-    
-    @MainActor func reset(hidden: Bool, itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        guard item.isGroupHiddenToggle != hidden else { return }
-        item.isGroupHiddenToggle = hidden
-        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module), forceSave: forceSave)
+    @MainActor func reset(tags: [String], itemId: UUID, forceSave: Bool) {
+        reset(name: nil, description: nil, category: nil, tags: tags, itemId: itemId, forceSave: forceSave, message: String(localized: "Changed tags", bundle: .module))
     }
 
-    @MainActor func reset(fileUrl: FileUrl?, itemId: UUID, forceSave: Bool = false) {
-        guard var item = editModel(for: itemId) else { return }
-        guard item.fileUrl != fileUrl else { return }
-        item.fileUrl = fileUrl
-        save(updated: item, message: String(localized: "Change file", bundle: .module), forceSave: forceSave)
+    @MainActor func reset(hidden: Bool, itemId: UUID, forceSave: Bool) {
+        _ = saveField(itemId: itemId, \.isGroupHiddenToggle, to: hidden, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor private func updateTags(addedTags: [String], removedTags: [String]) {
+    @MainActor func reset(fileUrl: FileUrl?, itemId: UUID, forceSave: Bool) {
+        _ = saveField(itemId: itemId, \.fileUrl, to: fileUrl, message: String(localized: "Change file", bundle: .module), forceSave: forceSave)
+    }
+
+    /// Also used by `updateTagCounts` (EditControllable+Persistence.swift).
+    @MainActor internal func updateTags(addedTags: [String], removedTags: [String]) {
         tagController.add(tags: addedTags, module: itemControllable.config.module)
         // Removed tags lose their count too; otherwise they stayed in suggestions forever.
         // See CODE_AUDIT_Folder §5.19.
@@ -231,11 +242,11 @@ public extension EditControllable where Model: GroupableModel {
         return true // no parentId, no groupId → phase-1 orphan
     }
 
-    @MainActor func willRepairOrphan(itemId: UUID) {
+    @MainActor func willRepairOrphan(itemId: UUID, forceSave: Bool) {
         guard var item = editModel(for: itemId) else { return }
         guard item.groupId != nil else { return }
         item.groupId = nil
-        save(updated: item, message: String(localized: "Repair orphan", bundle: .module))
+        save(updated: item, message: String(localized: "Repair orphan", bundle: .module), forceSave: forceSave)
     }
 
     @MainActor func willRestore(item: inout Model) {
@@ -259,14 +270,14 @@ public extension EditControllable {
         return item.parentId == nil && item.displayState == DisplayStateMask.groupHidden.rawValue
     }
 
-    @MainActor func willRepairOrphan(itemId: UUID) {}
+    @MainActor func willRepairOrphan(itemId: UUID, forceSave: Bool) {}
 
     /// Removes `itemId` from every folder other than its own parent. After an import moved the
     /// item (to another folder or to root), its old folder still listed it. The loop used to
     /// stop at the first folder that did not contain the item, and skipped items moved to
     /// root entirely. See CODE_AUDIT_Folder §5.6.
-    @MainActor func repairFolder(itemId: UUID) {
-        repairFolders(itemIds: [itemId])
+    @MainActor func repairFolder(itemId: UUID, forceSave: Bool) {
+        repairFolders(itemIds: [itemId], forceSave: forceSave)
     }
 
     /// `repairFolder(itemId:)` for a whole import batch in one pass over the library: run per
@@ -279,7 +290,10 @@ public extension EditControllable {
     /// - A folder of the batch, whose members the merge unioned, drops members that now live
     ///   elsewhere (a removal made on another device does not come back) and lists the local
     ///   children it is missing. Members not known on this device stay; they may still arrive.
-    @MainActor func repairFolders(itemIds: Set<UUID>) {
+    ///
+    /// - Parameter forceSave: The import's own write policy: a persisted import repairs the
+    ///   library too, not only game memory. See CODE_AUDIT_Edit_Save §5.20.
+    @MainActor func repairFolders(itemIds: Set<UUID>, forceSave: Bool) {
         var parentIds: [UUID: UUID] = [:]
         var rootItemIds: Set<UUID> = []
         var batchFolderIds: Set<UUID> = []
@@ -332,7 +346,7 @@ public extension EditControllable {
             if let unique = FolderEntryMerge.deduplicated(folderItem.entries, id: \.id, childId: \.childId) {
                 folderItem.entries = unique
             }
-            save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module))
+            save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module), forceSave: forceSave)
         }
     }
     
@@ -341,39 +355,20 @@ public extension EditControllable {
 // MARK: - Group Items / Carousel Items
 
 public extension EditControllable {
-    /// Groups `childId` under the item `itemId`: the child is hidden and shown only as part of
-    /// that item. Folders and collections are not groups — a collection only references its
-    /// members and a folder only places them — so for those parents this adds the member like
-    /// "Add into" does, without hiding it. See CODE_AUDIT_Folder §5.16.
-    @MainActor func addGroup(itemId: UUID, childId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        if item.specialCategory {
-            guard item.id != childId, item.hasEntry(entryId: childId) == false else { return }
-            addItem(itemId: childId, parentId: itemId)
-            return
-        }
-        guard item.id != childId && item.hasEntry(entryId: childId) == false else { return }
-        let childItem = itemControllable.itemOrEmpty(for: childId)
-        guard childItem.category != .folder && childItem.category != itemControllable.collectionCategory  else { return }
-        var entries = item.entries
-
-        let entry =  Model.Entry.newChild(id: childId)
-        entries.append(entry)
-        item.entries = entries
-
-        reset(displayState: DisplayStateMask.groupHidden.rawValue, itemId: childId, forceSave: forceSave)
-        save(updated: item, message: String(localized: "Add groupped item", bundle: .module), forceSave: forceSave)
-    }
-
-    @MainActor func removeGroup(itemId: UUID, childId: UUID) {
+    /// Takes `childId` out of the group item `itemId` and shows it again. Only the group-hidden
+    /// bit is cleared: assigning the whole mask made a trashed child fully visible.
+    /// See CODE_AUDIT_Edit_Save §5.26.
+    @MainActor func removeGroup(itemId: UUID, childId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         guard item.id != childId else { return }
-        var entries = item.entries
-        entries.removeAll(where: { $0.childId == childId })
-        item.entries = entries
-        
-        reset(displayState: DisplayStateMask.fullVisible.rawValue, itemId: childId)
-        save(updated: item, message: String(localized: "Remove groupped item", bundle: .module))
+        asOneUndoStep(String(localized: "Remove groupped item", bundle: .module)) {
+            var entries = item.entries
+            entries.removeAll(where: { $0.childId == childId })
+            item.entries = entries
+
+            reset(hidden: false, itemId: childId, forceSave: forceSave)
+            save(updated: item, message: String(localized: "Remove groupped item", bundle: .module), forceSave: forceSave)
+        }
     }
 }
 
@@ -424,7 +419,7 @@ public extension EditControllable {
     /// Whether the entry was removed; a caller that mirrors the change in a view model does so only
     /// then. See CODE_AUDIT_26 §5.64.
     @discardableResult
-    @MainActor func removeEntry(source: ItemRowModel, forceSave: Bool = false) -> Bool {
+    @MainActor func removeEntry(source: ItemRowModel, forceSave: Bool) -> Bool {
         guard source.typeId == itemControllable.config.module, let entryId = source.entryId, let updatedModel = editModel(for: source.itemId) else { return false }
 
         var entries = updatedModel.entries
@@ -432,155 +427,5 @@ public extension EditControllable {
         updatedModel.entries = entries
         save(updated: updatedModel, message: String(localized: "Delete Entry", bundle: .module), forceSave: forceSave)
         return true
-    }
-}
-
-// MARK: - Controller Maintenance
-
-public extension EditControllable {
-    @MainActor func editModel(for itemId: UUID) -> Model? {
-        return itemControllable.itemSync(for: itemId)?.copy() as? Model
-    }
-
-    /// Clears any editor state still referencing a deleted item, so a stale/removed model
-    /// doesn't linger in the header editor, the group/sheet editor, or the item link cache.
-    @MainActor func removeFromEditors(itemId: UUID) {
-        if (editorModel.currentModel as? Model)?.id == itemId {
-            editorModel.undoManaged.resetValue(nil)
-        }
-        if editorModel.sheetEditorModel.itemId == itemId {
-            editorModel.sheetEditorModel.itemId = nil
-            editorModel.sheetEditorModel.entryId = nil
-        }
-        editorModel.cacheItemListModel.reset(itemId: itemId)
-    }
-
-    @MainActor func saveChanges(to newValue: Model, name: String, forceSave: Bool = false) {
-        // A fixed identifier: the counter logs it as public, and `name` can carry a user tag
-        // ("Add <tag>"). See CODE_AUDIT_Folder §6.5.
-        trackOperation("EditControllable.saveChanges(to:name:)")
-
-        let previous = itemControllable.itemOrEmpty(for: newValue.id).copy()
-        if forceSave {
-            // Undoing this step writes the library and the game copy too. See `applyUndoValue`.
-            editorModel.markForcedUndo(previous)
-        }
-        editorModel.undoManaged.previousValue(previous, title: name)
-
-        if forceSave, writeForcedEditOfGameCopy(newValue) {
-            return
-        }
-
-        // A memory-only game edit leaves the persisted link register alone: it describes the
-        // library, and nothing reverted it at game end. See CODE_AUDIT_29 §5.3.
-        if persistsEdit(forceSave: forceSave) {
-            updateLinkRegister(to: newValue)
-        }
-        itemControllable.replace(model: newValue, isInsert: false, forceSave: forceSave)
-    }
-
-    /// A forced save of an item that has a game copy: `newValue` was built on that copy, so
-    /// writing it whole put the game's session state (hit points, revealed values) into the
-    /// library, and the library state then overwrote the game copy. Only what this edit
-    /// changed goes to the library (`applyEdit`, module fields included); the game copy takes
-    /// the edited value. Returns `false`, writing nothing, when the item has no game copy.
-    /// Shared by the save and by undo/redo of a forced step. See CODE_AUDIT_29 §5.2.
-    @MainActor func writeForcedEditOfGameCopy(_ newValue: Model) -> Bool {
-        guard let gameCopy = gameCopy(of: newValue.id),
-              let library = itemControllable.itemSync(for: newValue.id, noGame: true)?.copy() as? Model else { return false }
-        var libraryValue = library
-        libraryValue.applyEdit(from: gameCopy, to: newValue)
-        if let stored = itemControllable.itemSync(for: newValue.id, noGame: true) as? Model {
-            updateLinkRegister(to: libraryValue, from: stored)
-        }
-        itemControllable.replace(model: libraryValue, isInsert: false, forceSave: true, syncGameMemory: false)
-        itemControllable.replaceInGameMemory(model: newValue)
-        return true
-    }
-
-    /// Whether an edit with `forceSave` reaches the library (and so the shared link register and
-    /// tag counts): always outside a game, only when forced during one.
-    @MainActor func persistsEdit(forceSave: Bool) -> Bool {
-        forceSave || !itemControllable.itemDataModel.isGameMode
-    }
-
-    /// The game-memory copy readers see for `itemId`, when it is not the library instance itself.
-    @MainActor func gameCopy(of itemId: UUID) -> Model? {
-        guard let current = itemControllable.itemSync(for: itemId) as? Model,
-              let library = itemControllable.itemSync(for: itemId, noGame: true) as? Model,
-              (current as AnyObject) !== (library as AnyObject)
-        else { return nil }
-        return current
-    }
-
-    /// Brings the link register in line with `newValue`: the links the item's stored value had and
-    /// `newValue` has not are removed, the new ones added. Shared by `saveChanges` and undo/redo,
-    /// which restore a stored value and must leave the register as a save would.
-    /// See CODE_AUDIT_28 §5.3.
-    @MainActor func updateLinkRegister(to newValue: Model) {
-        updateLinkRegister(to: newValue, from: itemControllable.itemSync(for: newValue.id) as? Model)
-    }
-
-    /// `updateLinkRegister(to:)` against an explicit previous value (the library copy for a
-    /// forced write during a game).
-    @MainActor func updateLinkRegister(to newValue: Model, from previous: Model?) {
-        if let previous {
-            let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
-
-            linkRegisterController.deregister(links: removed)
-            linkRegisterController.register(links: added)
-        } else {
-            let added = newValue.linkRegisterModels
-            linkRegisterController.register(links: added)
-        }
-    }
-
-    /// Brings the tag counts in line with `newValue`. A trashed item counts no tags (trashing
-    /// removes them, restoring adds them back), so the difference is taken between what the stored
-    /// value counts and what `newValue` counts. Used by undo/redo; the edits that change tags
-    /// adjust the counts themselves. See CODE_AUDIT_28 §5.3.
-    @MainActor func updateTagCounts(to newValue: Model) {
-        let counted: (Model?) -> Set<String> = { model in
-            guard let model, !model.isHidden else { return [] }
-            return Set(model.tags)
-        }
-        let before = counted(itemControllable.itemSync(for: newValue.id) as? Model)
-        let after = counted(newValue)
-        updateTags(addedTags: Array(after.subtracting(before)), removedTags: Array(before.subtracting(after)))
-    }
-
-    @MainActor func save(updated: any Observable) {
-        guard let updated = updated as? Model else { return }
-        save(with: String(localized: "update from sync", bundle: .module), currentModel: updated)
-    }
-
-    @MainActor func save(updated: Model, message: String, forceSave: Bool = false) {
-        save(with: message, currentModel: updated, forceSave: forceSave)
-    }
-
-    @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
-        guard editorModel.sheetEditorModel.itemId != item.model.itemId else {
-            editorModel.sheetEditorModel.entryId <=> item.model.entryId
-            editorModel.sheetEditorModel.module = item.model.typeId
-            return
-        }
-        guard let model = itemControllable.copy(of: item.model.itemId) as? Model else { return }
-        setCurrentItem(model: model, entryId: item.model.entryId, module: item.model.typeId)
-    }
-    
-    @MainActor func setCurrentItem(model: Model, entryId: UUID? = nil, module: NetworkModules? = nil) {
-        if model.id != editorModel.sheetEditorModel.itemId {
-            editorModel.cacheItemListModel.resetItemLink()
-            editorModel.undoManaged.resetValue(model)
-            editorModel.sheetEditorModel.itemId = model.id
-        }
-        editorModel.sheetEditorModel.entryId <=> entryId
-        editorModel.sheetEditorModel.module = module ?? itemControllable.config.module
-    }
-
-    @MainActor func save(with name: String, currentModel: Model, forceSave: Bool = false) {
-        validateBeforeSave(model: currentModel)
-        guard !itemControllable.isEqual(with: currentModel) else { return }
-        saveChanges(to: currentModel, name: name, forceSave: forceSave)
     }
 }

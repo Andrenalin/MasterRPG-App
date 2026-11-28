@@ -60,9 +60,9 @@ struct CharacterEditorWindowDuringGameTests {
         let store = try GameEditorStore(bundles: [CoreRPG.Resources.bundle, CharacterRPG.Resources.bundle])
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.value.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Aria", description: Self.libraryDescription, category: nil, tags: ["hero"])
+        root.editController.update(id: itemId, name: "Aria", description: Self.libraryDescription, category: nil, tags: ["hero"], forceSave: false)
         let entry = ValueEntryModel(id: UUID(), name: "Notes", type: .text, value: "Brave")
-        root.editController.add(entry: entry, itemId: itemId)
+        root.editController.add(entry: entry, itemId: itemId, forceSave: false)
 
         let fixture = Fixture(store: store, root: root, itemId: itemId, entryId: entry.id)
         fixture.game.startGame()
@@ -70,7 +70,7 @@ struct CharacterEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 
@@ -236,7 +236,7 @@ struct CharacterEditorWindowDuringGameTests {
         let fixture = try await makeFixture()
 
         fixture.root.editController.update(itemId: fixture.itemId, entryId: fixture.entryId, name: "Notes", content: "Scared", forceSave: false)
-        fixture.root.editController.add(diceId: UUID(), itemId: fixture.itemId)
+        fixture.root.editController.add(diceId: UUID(), itemId: fixture.itemId, forceSave: false)
 
         try await fixture.game.expectGameOnly(fixture.itemId) { fixture.entry(of: $0)?.value == "Scared" }
         try await fixture.game.expectGameOnly(fixture.itemId) { $0.diceId != nil }

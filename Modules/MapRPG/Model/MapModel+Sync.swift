@@ -93,92 +93,87 @@ extension MapModel: nonisolated ItemLinkRegistrable {
     }
 }
 
-extension MapModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: MapModel) -> MapModel {
-        return assumeMainActorIsolated {
-            let mergedPhotoId = photoId_.merged(other: other.photoId_)
-            let mergedMapPins = mapPins_.merged(other: other.mapPins_)
-            let mergedWalls = walls_.merged(other: other.walls_)
-            let mergedCategory = category_.merged(other: other.category_)
-            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
-            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
-            return MapModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                entries: mergedEntries,
-                displayConfig: displayConfig_.merged(other: other.displayConfig_),
-                photoId: mergedPhotoId,
-                width: mergedPhotoId.update == photoId_.update ? width : other.width,
-                height: mergedPhotoId.update == photoId_.update ? height : other.height,
-                mapPins: mergedMapPins,
-                walls: mergedWalls,
-                // Was always `pinScale` (self), silently discarding the
-                // peer's incoming change on every merge conflict — every
-                // other persisted scalar field here is arbitrated one way
-                // or another, this one wasn't. See CODE_AUDIT_13 §5.3.
-                pinScale: other.pinScale,
-                hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
-                scale: other.scale,
-                // An unrecorded rotation is only a placeholder 0; it never overrides a recorded one.
-                degrees: other.hasRecordedDegrees ? other.degrees : degrees,
-                parentId: other.parentId,
-                hasRecordedDegrees: hasRecordedDegrees || other.hasRecordedDegrees
-            )
-
-        }
+// A plain conformance to the `@MainActor` protocol. See CODE_AUDIT_Edit_Save §4.1.
+extension MapModel: ItemDiffComparable {
+    public func merge(_ other: MapModel) -> MapModel {
+        let mergedPhotoId = photoId_.merged(other: other.photoId_)
+        let mergedMapPins = mapPins_.merged(other: other.mapPins_)
+        let mergedWalls = walls_.merged(other: other.walls_)
+        let mergedCategory = category_.merged(other: other.category_)
+        // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+        let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
+        return MapModel(
+            id: id,
+            name: name_.merged(other: other.name_),
+            description: description_.merged(other: other.description_),
+            tags: tags_.merged(other: other.tags_),
+            category: mergedCategory,
+            displayState: other.displayState,
+            entries: mergedEntries,
+            displayConfig: displayConfig_.merged(other: other.displayConfig_),
+            photoId: mergedPhotoId,
+            width: mergedPhotoId.update == photoId_.update ? width : other.width,
+            height: mergedPhotoId.update == photoId_.update ? height : other.height,
+            mapPins: mergedMapPins,
+            walls: mergedWalls,
+            // Was always `pinScale` (self), silently discarding the
+            // peer's incoming change on every merge conflict — every
+            // other persisted scalar field here is arbitrated one way
+            // or another, this one wasn't. See CODE_AUDIT_13 §5.3.
+            pinScale: other.pinScale,
+            hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
+            scale: other.scale,
+            // An unrecorded rotation is only a placeholder 0; it never overrides a recorded one.
+            degrees: other.hasRecordedDegrees ? other.degrees : degrees,
+            parentId: other.parentId,
+            hasRecordedDegrees: hasRecordedDegrees || other.hasRecordedDegrees
+        )
     }
 
-    nonisolated public func isSame(_ other: MapModel) -> Bool {
-        return assumeMainActorIsolated {
-            // Split comparison into typed chunks for faster type-checking
-            let basicFieldsMatch: Bool = (
-                name == other.name &&
-                description == other.description &&
-                tags == other.tags &&
-                category == other.category
-            )
-            guard basicFieldsMatch else { return false }
+    public func isSame(_ other: MapModel) -> Bool {
+        // Split comparison into typed chunks for faster type-checking
+        let basicFieldsMatch: Bool = (
+            name == other.name &&
+            description == other.description &&
+            tags == other.tags &&
+            category == other.category
+        )
+        guard basicFieldsMatch else { return false }
 
-            let configMatch: Bool = (
-                displayState == other.displayState &&
-                entries_.update == other.entries_.update &&
-                displayConfig == other.displayConfig &&
-                photoId_.update == other.photoId_.update &&
-                width == other.width &&
-                height == other.height &&
-                mapPins_.update == other.mapPins_.update &&
-                walls_.update == other.walls_.update &&
-                hexMapScale == other.hexMapScale &&
-                pinScale == other.pinScale &&
-                scale == other.scale &&
-                degrees == other.degrees &&
-                hasRecordedDegrees == other.hasRecordedDegrees &&
-                parentId == other.parentId
-            )
-            guard configMatch else { return false }
+        let configMatch: Bool = (
+            displayState == other.displayState &&
+            entries_.update == other.entries_.update &&
+            displayConfig == other.displayConfig &&
+            photoId_.update == other.photoId_.update &&
+            width == other.width &&
+            height == other.height &&
+            mapPins_.update == other.mapPins_.update &&
+            walls_.update == other.walls_.update &&
+            hexMapScale == other.hexMapScale &&
+            pinScale == other.pinScale &&
+            scale == other.scale &&
+            degrees == other.degrees &&
+            hasRecordedDegrees == other.hasRecordedDegrees &&
+            parentId == other.parentId
+        )
+        guard configMatch else { return false }
 
-            // Sanity checks
-            guard entries.count == other.entries.count else { return false }
-            let entriesMatch: Bool = entries.enumerated().allSatisfy { index, entry in
-                entry == other.entries[index]
-            }
-            guard entriesMatch else { return false }
+        // Sanity checks
+        guard entries.count == other.entries.count else { return false }
+        let entriesMatch: Bool = entries.enumerated().allSatisfy { index, entry in
+            entry == other.entries[index]
+        }
+        guard entriesMatch else { return false }
 
-            guard mapPins.count == other.mapPins.count else { return false }
-            let pinsMatch: Bool = mapPins.enumerated().allSatisfy { index, pin in
-                pin == other.mapPins[index]
-            }
-            guard pinsMatch else { return false }
+        guard mapPins.count == other.mapPins.count else { return false }
+        let pinsMatch: Bool = mapPins.enumerated().allSatisfy { index, pin in
+            pin == other.mapPins[index]
+        }
+        guard pinsMatch else { return false }
 
-            guard walls.count == other.walls.count else { return false }
-            return walls.enumerated().allSatisfy { index, wall in
-                wall == other.walls[index]
-            }
-
+        guard walls.count == other.walls.count else { return false }
+        return walls.enumerated().allSatisfy { index, wall in
+            wall == other.walls[index]
         }
     }
 

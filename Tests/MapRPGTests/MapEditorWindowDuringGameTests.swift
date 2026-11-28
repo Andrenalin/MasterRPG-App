@@ -50,7 +50,7 @@ struct MapEditorWindowDuringGameTests {
         let store = try GameEditorStore(bundles: [CoreRPG.Resources.bundle, MapRPG.Resources.bundle])
         root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.map.token)
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.update(id: itemId, name: "Cellar", description: Self.libraryDescription, category: nil, tags: ["dungeon"])
+        root.editController.update(id: itemId, name: "Cellar", description: Self.libraryDescription, category: nil, tags: ["dungeon"], forceSave: false)
         let roomId = UUID()
         _ = root.editController.merge(itemId: itemId, entries: [MapEntryModel(id: roomId, name: "Vault", content: "Dusty", coordinates: [])], recoverEntries: nil, forceSave: false)
 
@@ -60,7 +60,7 @@ struct MapEditorWindowDuringGameTests {
             fixture.game.loadIntoGame(itemId) { $0.description = Self.sessionDescription }
         }
         // Selecting the item in the editor starts its undo history.
-        root.editController.editorModel.undoManaged.resetValue(root.editController.editModel(for: itemId))
+        root.editController.editorModel.undoManaged.removeAll()
         return fixture
     }
 

@@ -1001,8 +1001,8 @@ struct MapMasterMessageFlowTests {
         fixture.root.gameModel.playerController = localMasterPlayer
         let photoId = try #require(fixture.root.mapRoot.gameController.gameItem(for: fixture.currentMapId).photoId)
         let weatherId = await fixture.root.weatherRoot.itemController.addNew(type: .scenario)
-        fixture.root.weatherRoot.editController.reset(name: "Storm front", itemId: weatherId)
-        fixture.root.weatherRoot.editController.add(photoId: photoId, itemId: weatherId)
+        fixture.root.weatherRoot.editController.reset(name: "Storm front", itemId: weatherId, forceSave: false)
+        fixture.root.weatherRoot.editController.add(photoId: photoId, itemId: weatherId, forceSave: false)
 
         let reference = await fixture.root.weatherRoot.weatherGameControllable.shareWeather(id: weatherId)
         await fixture.master.show(for: reference)

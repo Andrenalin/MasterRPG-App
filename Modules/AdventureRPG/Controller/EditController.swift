@@ -93,15 +93,10 @@ extension EditController {
     }
 
     @MainActor public func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
-        guard let item = editModel(for: itemId) else { return }
-        if let adventureId = item[entryId].adventureId {
-            // The sheet shows a group entry as a link to its group item; its own name must not become
-            // that link. See CODE_AUDIT_26 §5.26.
-            reset(name: name.withoutLink(), itemId: adventureId, forceSave: forceSave)
-            reset(description: content, itemId: adventureId, forceSave: forceSave)
-        } else {
-            updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)
-        }
+        // The sheet shows a group entry as a link to its group item; its own name must not become
+        // that link, so a group entry's edit goes to the group item only. See CODE_AUDIT_26 §5.26.
+        guard !updateGroupItem(itemId: itemId, entryId: entryId, name: name, content: content, forceSave: forceSave) else { return }
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)
     }
 
     public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .rule, .space, .table, .weather] }
@@ -179,17 +174,13 @@ extension EditController {
 
 extension EditController {
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice", bundle: .module), forceSave: forceSave)
+    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool) {
+        saveField(itemId: itemId, \.diceId, to: diceId, message: String(localized: "Change Dice", bundle: .module), forceSave: forceSave)
     }
 
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    @MainActor func add(photoId: UUID?, itemId: UUID, forceSave: Bool = false) {
-        guard let item = editModel(for: itemId) else { return }
-        item.photoId = photoId
-        save(updated: item, message: String(localized: "Changed Photo", bundle: .module), forceSave: forceSave)
+    @MainActor func add(photoId: UUID?, itemId: UUID, forceSave: Bool) {
+        saveField(itemId: itemId, \.photoId, to: photoId, message: String(localized: "Changed Photo", bundle: .module), forceSave: forceSave)
     }
 }
 

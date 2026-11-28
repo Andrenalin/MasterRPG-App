@@ -27,7 +27,7 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Goblin Warrior", itemId: itemId)
+        root.editController.reset(name: "Goblin Warrior", itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Goblin")
         #expect(results.contains { $0.itemId == itemId })
@@ -39,8 +39,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Hidden Creature", itemId: itemId)
-        root.editController.reset(displayState: 1, itemId: itemId)
+        root.editController.reset(name: "Hidden Creature", itemId: itemId, forceSave: false)
+        root.editController.reset(displayState: 1, itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Hidden")
         #expect(results.contains { $0.itemId == itemId } == false)
@@ -52,8 +52,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Deleted Creature", itemId: itemId)
-        root.editController.reset(displayState: 2, itemId: itemId)
+        root.editController.reset(name: "Deleted Creature", itemId: itemId, forceSave: false)
+        root.editController.reset(displayState: 2, itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Deleted")
         #expect(results.contains { $0.itemId == itemId } == false)
@@ -65,7 +65,7 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Goblin", itemId: itemId)
+        root.editController.reset(name: "Goblin", itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Dragon")
         #expect(results.contains { $0.itemId == itemId } == false)
@@ -77,8 +77,8 @@ struct SearchControllerTests {
         let sut = root.searchController
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Loot Table", itemId: itemId)
-        root.editController.reset(description: "Found in dark dungeons", itemId: itemId)
+        root.editController.reset(name: "Loot Table", itemId: itemId, forceSave: false)
+        root.editController.reset(description: "Found in dark dungeons", itemId: itemId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "dungeons")
         #expect(results.contains { $0.itemId == itemId })
@@ -93,15 +93,15 @@ struct SearchControllerTests {
 
         // Exact name match → score 115
         let exactId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon", itemId: exactId)
+        root.editController.reset(name: "Dragon", itemId: exactId, forceSave: false)
 
         // Prefix name match → score 65
         let prefixId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragonborn", itemId: prefixId)
+        root.editController.reset(name: "Dragonborn", itemId: prefixId, forceSave: false)
 
         // Name contains match → score 40
         let containsId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "The Dragon Rider", itemId: containsId)
+        root.editController.reset(name: "The Dragon Rider", itemId: containsId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "Dragon")
         let matchIds = results.map(\.itemId)
@@ -121,12 +121,12 @@ struct SearchControllerTests {
 
         // Name match → score 40 (contains) + 15 = 40
         let nameMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dungeon Map", itemId: nameMatchId)
+        root.editController.reset(name: "Dungeon Map", itemId: nameMatchId, forceSave: false)
 
         // Description-only match → score 10 + 15 = 25
         let descMatchId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Random Encounter", itemId: descMatchId)
-        root.editController.reset(description: "A dungeon encounter table", itemId: descMatchId)
+        root.editController.reset(name: "Random Encounter", itemId: descMatchId, forceSave: false)
+        root.editController.reset(description: "A dungeon encounter table", itemId: descMatchId, forceSave: false)
 
         let results = await sut.globalSearchResults(searchText: "dungeon")
         let matchIds = results.map(\.itemId)

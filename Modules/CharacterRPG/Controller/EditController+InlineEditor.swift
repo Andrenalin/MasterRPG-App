@@ -60,13 +60,23 @@ extension EditController {
     /// overloads. `mutate` receives a working copy of the entry and returns
     /// whether it actually changed it; a `false` return skips the save entirely.
     /// See CODE_AUDIT_Character §9.12.
+    /// A forced save: during a game the changed entry reaches the library through the shared
+    /// game-copy diff (`writeForcedEditOfGameCopy`), and undo reverts both copies. The module's
+    /// own copy-to-library path (`saveGameDataToPermanent`) left undo reverting only game memory.
+    /// See CODE_AUDIT_Edit_Save §5.23.
     @MainActor private func applyEntryUpdate(itemId: UUID, entryId: UUID?, message: String, mutate: (inout ValueEntryModel) -> Bool) {
-        guard let entryId, let item = editModel(for: itemId) else { return }
+        guard let entryId else { return }
+        // The game reads a character from game memory (the player's entry update, the master's
+        // battle state), so during a game the edit lands there too, as it did before.
+        if itemController.itemDataModel.isGameMode, gameCopy(of: itemId) == nil,
+           let library = itemController.itemSync(for: itemId, noGame: true)?.copy() as? ValueModel {
+            itemController.replaceInGameMemory(model: library)
+        }
+        guard let item = editModel(for: itemId) else { return }
         var entry = item[entryId]
         guard mutate(&entry) else { return }
         item[entryId] = entry
-        save(updated: item, message: message)
-        saveGameDataToPermanent(itemId: itemId, entryId: entryId)
+        save(updated: item, message: message, forceSave: true)
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {
@@ -113,35 +123,6 @@ extension EditController {
             entry.value = value
             return true
         }
-    }
-
-    // MARK: - Save Game Changes to Permanent Storage
-
-    /// Saves the current game data entry to the permanent (non-game) storage
-    /// This is used by the inline editor to persist player changes made during gameplay
-    @MainActor private func saveGameDataToPermanent(itemId: UUID, entryId: UUID) {
-        // Only save to permanent if we're in game mode
-        guard itemController.itemDataModel.isGameMode else { return }
-
-        // Get the current game item
-        guard let gameItem = itemController.itemSync(for: itemId, noGame: false) else { return }
-
-        // Get the permanent item (or create copy from game item if doesn't exist)
-        guard let permanentItem = itemController.itemSync(for: itemId, noGame: true)?.copy() as? ValueModel else { return }
-
-        // Copy the specific entry from game to permanent
-        let gameEntry = gameItem[entryId]
-        permanentItem[entryId] = gameEntry
-
-        // The edit lives in game memory already (and the register skipped it there), so the
-        // library write brings the register along.
-        if let stored = itemController.itemSync(for: itemId, noGame: true) {
-            updateLinkRegister(to: permanentItem, from: stored)
-        }
-        // `syncGameMemory: false`: the game copy already has this entry, and copying the whole
-        // library item over it reverted the game's other session-only changes on that
-        // character. See CODE_AUDIT_29 §5.2.
-        itemController.replace(model: permanentItem, isInsert: false, forceSave: true, syncGameMemory: false)
     }
 }
 

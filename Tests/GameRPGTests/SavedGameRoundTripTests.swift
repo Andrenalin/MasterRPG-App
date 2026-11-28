@@ -26,7 +26,7 @@ struct SavedGameRoundTripTests {
         let root = try await MockRoot.createGameRoot()
 
         let mapId = await root.mapRoot.itemController.addNew(type: .item)
-        root.mapRoot.editController.reset(name: "Round Trip Map", itemId: mapId)
+        root.mapRoot.editController.reset(name: "Round Trip Map", itemId: mapId, forceSave: false)
 
         root.adventureRoot.startGame()
         #expect(root.mapRoot.itemController.itemDataModel.isGameMode)

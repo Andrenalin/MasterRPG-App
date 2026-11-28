@@ -20,7 +20,17 @@ extension EditController {
 
 extension EditController {
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    @MainActor func convert(itemId: UUID, forceSave: Bool = false) async throws {
+    ///
+    /// Queued with the item's other file operations, and the converted file is only stored when
+    /// the item still has the file it was converted from: a Replace Photo racing the convert
+    /// lost its file, or the converted old photo replaced the new one. See CODE_AUDIT_Edit_Save §3.3.
+    @MainActor func convert(itemId: UUID, forceSave: Bool) async throws {
+        try await enqueueFileOperation(itemId: itemId) {
+            try await convertQueued(itemId: itemId, forceSave: forceSave)
+        }.value
+    }
+
+    @MainActor private func convertQueued(itemId: UUID, forceSave: Bool) async throws {
         guard let item = editModel(for: itemId), let fileUrl = item.fileUrl else { return }
         // The original file is re-encoded off the main actor and at its own size. The cached image
         // is decoded at 8192 px at most, so converting from it permanently downscaled a bigger
@@ -39,7 +49,13 @@ extension EditController {
         var dataUrl = fileUrl
         dataUrl.convertFile(data, fileExtension: itemControllable.config.filenameExtension)
 
-        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemControllable.config.filenameExtension)
+        guard let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemControllable.config.filenameExtension) else { return }
+        guard editModel(for: itemId)?.fileUrl == fileUrl else {
+            // Deleted, or given another file, while the photo was converted: nothing uses the
+            // converted file.
+            fileUrlDataController?.delete(newFileUrl)
+            return
+        }
         await itemControllable.cacheControllable?.remove(itemId: itemId)
         reset(fileUrl: newFileUrl, itemId: item.id, forceSave: forceSave)
     }
@@ -131,7 +147,7 @@ extension EditController {
     /// data is no image. Decoding and encoding run off the main actor, and the image is decoded
     /// at most at the size the app shows images at; the library and drop paths used to decode
     /// and re-encode at full resolution on the main actor. See CODE_AUDIT_21 §7.10.
-    func resetPhoto(data: Data, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool = true) async throws -> Bool {
+    func resetPhoto(data: Data, itemId: UUID, replaced: ReplacedFileDisposal = .delete, forceSave: Bool) async throws -> Bool {
         guard let jpeg = await Self.importedJPEG(from: data) else { return false }
         try await resetFile(data: jpeg, itemId: itemId, path: "", replaced: replaced, forceSave: forceSave)
         return true
@@ -170,16 +186,17 @@ struct PhotoPropertySelection {
 
 extension EditController {
     /// - Parameter forceSave: `true` from the editor, which persists also during a game.
-    @MainActor func applyAnalysis(_ analysis: PhotoSummaryAnalysis, to itemId: UUID, selection: PhotoPropertySelection, forceSave: Bool = false) {
-        if selection.applyTitle {
-            reset(name: analysis.title, itemId: itemId, forceSave: forceSave)
-        }
-        if selection.applyDescription {
-            reset(description: analysis.summary, itemId: itemId, forceSave: forceSave)
-        }
-        if selection.applyTags {
-            reset(tags: analysis.tags, itemId: itemId, forceSave: forceSave)
-        }
+    /// One save and one undo step for the selected values; it saved up to three times.
+    /// See CODE_AUDIT_Edit_Save §7.1.
+    @MainActor func applyAnalysis(_ analysis: PhotoSummaryAnalysis, to itemId: UUID, selection: PhotoPropertySelection, forceSave: Bool) {
+        guard selection.hasAnySelected else { return }
+        reset(
+            name: selection.applyTitle ? analysis.title : nil,
+            description: selection.applyDescription ? analysis.summary : nil,
+            tags: selection.applyTags ? analysis.tags : nil,
+            itemId: itemId,
+            forceSave: forceSave
+        )
     }
 }
 #endif

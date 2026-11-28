@@ -21,11 +21,11 @@ struct ConvertControllerRepairTests {
         let folderID = await root.itemController.addNew(type: .folder)
 
         let aID = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "A", itemId: aID)
+        root.editController.reset(name: "A", itemId: aID, forceSave: false)
         root.editController.addItem(itemId: aID, parentId: folderID)
 
         let bID = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "B", itemId: bID)
+        root.editController.reset(name: "B", itemId: bID, forceSave: false)
         root.editController.addItem(itemId: bID, parentId: folderID)
 
         let folder = root.itemController.itemOrEmpty(for: folderID)
@@ -42,11 +42,11 @@ struct ConvertControllerRepairTests {
         let folderID = await root.itemController.addNew(type: .folder)
 
         let aID = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "A", itemId: aID)
+        root.editController.reset(name: "A", itemId: aID, forceSave: false)
         root.editController.addItem(itemId: aID, parentId: folderID)
 
         let bID = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "B", itemId: bID)
+        root.editController.reset(name: "B", itemId: bID, forceSave: false)
         root.editController.addItem(itemId: bID, parentId: folderID)
 
         let initialOrder = root.itemController.itemOrEmpty(for: folderID).entries
@@ -54,7 +54,7 @@ struct ConvertControllerRepairTests {
         #expect(initialOrder == ["A", "B"])
 
         let cID = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "C", itemId: cID)
+        root.editController.reset(name: "C", itemId: cID, forceSave: false)
         root.editController.addItem(itemId: cID, parentId: folderID)
 
         // Export only C — folder F is included as partial (carries the entry reference back to C)
@@ -66,7 +66,7 @@ struct ConvertControllerRepairTests {
         try await exportTask.value
 
         // Remove C from the folder and data model
-        root.editController.removeItemFromParent(itemId: cID, oneUp: false, moveFiles: false)
+        root.editController.removeItemFromParent(itemId: cID, oneUp: false, moveFiles: false, forceSave: false)
         await root.itemController.delete(itemId: cID)
 
         #expect(root.itemController.itemOrEmpty(for: folderID).entries.count == 2)
@@ -96,8 +96,8 @@ struct ConvertControllerRepairTests {
         let sut = ConvertController(itemController: root.itemController, editController: root.editController)
 
         let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Something", itemId: itemId)
-        root.editController.reset(category: .music, itemId: itemId)
+        root.editController.reset(name: "Something", itemId: itemId, forceSave: false)
+        root.editController.reset(category: .music, itemId: itemId, forceSave: false)
 
         let item = root.itemController.itemOrEmpty(for: itemId)
         item.fileUrl = FileUrl(
@@ -111,7 +111,7 @@ struct ConvertControllerRepairTests {
 
         let initialItemCount = root.itemController.itemDataModel.items.count
 
-        await sut.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: [itemId])
+        await sut.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: [itemId], forceSave: false)
 
         let repairedItem = root.itemController.itemOrEmpty(for: itemId)
         #expect(root.itemController.itemDataModel.items.count == initialItemCount)

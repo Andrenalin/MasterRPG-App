@@ -19,7 +19,7 @@ struct IntentGameModeWriteTests {
 
     private func addTable(_ root: TableRootModel, name: String) async -> UUID {
         let id = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: name, itemId: id)
+        root.editController.reset(name: name, itemId: id, forceSave: false)
         return id
     }
 

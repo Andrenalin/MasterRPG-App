@@ -107,7 +107,7 @@ private struct InlineImporterContentView: View {
                         return
                     }
                     guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: id, editControllable: root.editController) else { return }
-                    guard try await root.editController.resetPhoto(data: data, itemId: id, replaced: replaced) else {
+                    guard try await root.editController.resetPhoto(data: data, itemId: id, replaced: replaced, forceSave: true) else {
                         importErrorMessage = String(localized: "The selected photo could not be loaded.", bundle: .module)
                         return
                     }
@@ -136,7 +136,7 @@ private struct InlineImporterContentView: View {
                 do {
                     guard let data = try await ItemController.importImageFromProviders(providers) else { return }
                     guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: id, editControllable: root.editController) else { return }
-                    guard try await root.editController.resetPhoto(data: data, itemId: id, replaced: replaced) else {
+                    guard try await root.editController.resetPhoto(data: data, itemId: id, replaced: replaced, forceSave: true) else {
                         importErrorMessage = String(localized: "The dropped image could not be loaded.", bundle: .module)
                         return
                     }
