@@ -33,7 +33,7 @@ struct MapExtractionDestination: View {
                     ? nil
                     : LocalizedStringResource("Add a photo description and tags to improve the map information", bundle: .module)
             ) { content, selection in
-                root.editController.applyExtractedContent(content, to: itemId, selection: selection)
+                root.editController.applyExtractedContent(content, to: itemId, selection: selection, forceSave: true)
             }
         }
     }

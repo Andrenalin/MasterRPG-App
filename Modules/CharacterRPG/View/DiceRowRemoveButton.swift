@@ -32,7 +32,8 @@ struct DiceRowRemoveButton: View {
 
     private func removeDice() {
         withAnimation(reduceMotion ? nil : .default) {
-            root.editController.removeDice(itemId: itemId, entryId: entryId)
+            // Shown in the sheet editor only, which persists also during a game.
+            root.editController.removeDice(itemId: itemId, entryId: entryId, forceSave: true)
         }
     }
 }

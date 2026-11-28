@@ -38,14 +38,14 @@ struct WeatherConditionEditor: View {
     private func syncTimeModel() {
         let editController = root.editController
         timeEditModel.reset(valueId: model.id, value: model.time) { itemId, value in
-            editController.reset(time: value, itemId: itemId)
+            editController.reset(time: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncCloudModel() {
         let editController = root.editController
         cloudEditModel.reset(valueId: model.id, value: model.cloudThickness) { itemId, value in
-            editController.reset(cloudThickness: value, itemId: itemId)
+            editController.reset(cloudThickness: value, itemId: itemId, forceSave: true)
         }
     }
 }

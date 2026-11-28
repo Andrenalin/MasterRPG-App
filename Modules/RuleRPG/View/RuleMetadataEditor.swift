@@ -83,7 +83,7 @@ struct RuleMetadataEditor: View {
         } set: { value in
             var metadata = model.sourceMetadata
             metadata[keyPath: keyPath] = value
-            root.editController.reset(sourceMetadata: metadata, itemId: model.id)
+            root.editController.reset(sourceMetadata: metadata, itemId: model.id, forceSave: true)
         }
     }
 }

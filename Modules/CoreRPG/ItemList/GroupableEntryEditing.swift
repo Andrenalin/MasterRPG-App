@@ -11,16 +11,16 @@ public protocol GroupableEntry: EntryDataAccessible {
 /// The group functions Adventure and Character carried as line-for-line copies.
 /// See CODE_AUDIT_Folder §9.9.
 public extension EntryDataEditable where Model: GroupableModel, Model.Entry: GroupableEntry {
-    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
+    @MainActor func addNewGroup(itemId: UUID, forceSave: Bool) async -> UUID {
         let groupId = await itemControllable.addNew(type: .item)
-        reset(hidden: true, itemId: groupId)
+        reset(hidden: true, itemId: groupId, forceSave: forceSave)
         guard var group = editModel(for: groupId) else { return groupId }
         group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module))
+        save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
         var entry = Model.Entry.empty
         entry.name = group.name
         entry.groupItemId = groupId
-        add(entry: entry, itemId: itemId)
+        add(entry: entry, itemId: itemId, forceSave: forceSave)
         return entry.id
     }
 
@@ -37,7 +37,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         return canHostGroupValues(host)
     }
 
-    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
+    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?, forceSave: Bool) async -> UUID {
         guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return UUID() }
 
         let groupId: UUID
@@ -54,20 +54,20 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
             groupId = existingItemId
             existingGroup.groupId = itemId
             existingGroup.isGroupHiddenToggle = true
-            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module))
+            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
             item.entries[index].name = existingGroup.name
             item.entries[index].content = existingGroup.description
         } else {
             groupId = await itemControllable.addNew(type: .item)
-            reset(hidden: true, itemId: groupId)
+            reset(hidden: true, itemId: groupId, forceSave: forceSave)
             guard var group = editModel(for: groupId) else { return groupId }
             group.name = item.entries[index].name.withoutLink()
             group.description = item.entries[index].content
             group.groupId = itemId
-            save(updated: group, message: String(localized: "prepare group", bundle: .module))
+            save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
         }
         item.entries[index].groupItemId = groupId
-        save(updated: item, message: String(localized: "Convert to group", bundle: .module))
+        save(updated: item, message: String(localized: "Convert to group", bundle: .module), forceSave: forceSave)
         return groupId
     }
 
@@ -84,7 +84,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
     /// Turns the existing item `itemId` into a hidden group value of `targetId`: the new entry's
     /// group link is the item's id, the item gets `groupId = targetId` and is hidden. The item
     /// keeps its id, so every link to it stays valid.
-    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID? {
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID, forceSave: Bool) -> UUID? {
         guard canMoveIntoGroup(itemId: itemId, into: targetId), let item = editModel(for: itemId) else { return nil }
 
         // A hidden group has no folder; the folder would keep listing it.
@@ -94,7 +94,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         guard var group = editModel(for: itemId) else { return nil }
         group.groupId = targetId
         group.isGroupHiddenToggle = true
-        save(updated: group, message: String(localized: "prepare group", bundle: .module))
+        save(updated: group, message: String(localized: "prepare group", bundle: .module), forceSave: forceSave)
 
         // The entry mirrors the item's name and description, as `convertToGroup` does: editing
         // the entry writes both back to the item.
@@ -102,7 +102,7 @@ public extension EntryDataEditable where Model: GroupableModel, Model.Entry: Gro
         entry.name = group.name
         entry.content = group.description
         entry.groupItemId = itemId
-        add(entry: entry, itemId: targetId)
+        add(entry: entry, itemId: targetId, forceSave: forceSave)
         return entry.id
     }
 

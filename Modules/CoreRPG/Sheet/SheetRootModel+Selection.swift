@@ -110,7 +110,8 @@ extension SheetRootModel {
         editable.updateSheetEditType(
             itemId: entryModel.source.itemId,
             entryId: entryId,
-            editType: editType
+            editType: editType,
+            forceSave: persistsEdits
         )
         entryModel.editType = editType
         updateParent(parent)

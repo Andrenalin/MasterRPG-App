@@ -32,7 +32,7 @@ struct TableExtractionDestination: View {
                     entries: model.entries.map { ($0.name, $0.content) }
                 )
             ) { content, selection in
-                root.editController.applyExtractedContent(content, to: itemId, selection: selection)
+                root.editController.applyExtractedContent(content, to: itemId, selection: selection, forceSave: true)
             }
         }
     }

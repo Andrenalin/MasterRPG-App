@@ -426,7 +426,8 @@ private struct MoveIntoGroupMenu: View {
 
     private func move(itemId: UUID, into targetId: UUID, editable: any EntryDataEditable) {
         withAnimation {
-            guard editable.moveIntoGroup(itemId: itemId, into: targetId) != nil else { return }
+            // A list edit is a library edit, also during a game (like the list's folder edits).
+            guard editable.moveIntoGroup(itemId: itemId, into: targetId, forceSave: true) != nil else { return }
             // The item only changed fields (groupId, hidden) the list does not observe: ask for
             // a fresh list at once, like the sheet's group conversion does.
             listController?.update(debounce: false)

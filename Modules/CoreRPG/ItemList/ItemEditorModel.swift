@@ -72,6 +72,23 @@ public final class ItemEditorModel: Sendable {
         return libraryScopedUndoValues.contains { $0 === object }
     }
 
+    /// The undo and redo values of an edit the editor saved with `forceSave` (the editor window
+    /// during a game): restoring one writes the library and the game copy, as the edit did,
+    /// instead of only game memory. The newest are kept, like `libraryScopedUndoValues`.
+    @ObservationIgnored private var forcedUndoValues: [AnyObject] = []
+
+    func markForcedUndo(_ value: ModelType) {
+        forcedUndoValues.append(value as AnyObject)
+        if forcedUndoValues.count > UndoManaged<ModelType?>.maxDepth {
+            forcedUndoValues.removeFirst(forcedUndoValues.count - UndoManaged<ModelType?>.maxDepth)
+        }
+    }
+
+    func isForcedUndo(_ value: ModelType) -> Bool {
+        let object = value as AnyObject
+        return forcedUndoValues.contains { $0 === object }
+    }
+
     /// The running duplicate started from any menu of this module. A second Duplicate press
     /// while it runs is ignored. See CODE_AUDIT_Folder §3.18.
     @ObservationIgnored var duplicateTask: Task<Void, Never>?

@@ -16,7 +16,8 @@ struct PhotoDropSection: View {
         root.photoRoot.viewController.carouselPhotos(root: root.photoRoot, photoSelection: root.editController.valueEditModel.selectionPhoto)
             .onChange(of: root.editController.valueEditModel.selectionPhoto.selection) {
                 withAnimation(reduceMotion ? nil : .easeInOut) {
-                    root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, itemId: model.id)
+                    // The editor persists also during a game.
+                    root.editController.add(selection: root.editController.valueEditModel.selectionPhoto.selection, itemId: model.id, forceSave: true)
                 }
             }
             .task(id: model.photoId) {

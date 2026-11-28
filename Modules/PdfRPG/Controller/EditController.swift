@@ -50,12 +50,15 @@ extension EditController: @retroactive EntryDataEditable {
 }
 
 extension EditController {
-    @MainActor func addBookmark(itemId: UUID, entry: PdfEntryModel) {
+    /// - Parameter forceSave: `true` from the viewer's selection bar: a bookmark is library
+    ///   content, kept also when it is added during a game.
+    @MainActor func addBookmark(itemId: UUID, entry: PdfEntryModel, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         item.entries.append(entry)
         save(
             updated: item,
-            message: String(localized: "Added Bookmark", bundle: .module)
+            message: String(localized: "Added Bookmark", bundle: .module),
+            forceSave: forceSave
         )
     }
     
@@ -82,30 +85,31 @@ extension EditController {
         _ content: PdfSummaryAnalysis,
         to itemId: UUID,
         selection: PdfPropertySelection,
+        forceSave: Bool = false,
         pageLabel: (Int) -> String? = { _ in nil }
     ) {
         // Update name if selected and (empty or forcing update)
         if selection.applyTitle {
-            reset(name: content.title, itemId: itemId)
+            reset(name: content.title, itemId: itemId, forceSave: forceSave)
         }
 
         // Update description if selected and (empty or forcing update)
         if selection.applyDescription {
-            reset(description: content.summary, itemId: itemId)
+            reset(description: content.summary, itemId: itemId, forceSave: forceSave)
         }
 
         // Update tags if selected and (empty or forcing update)
         if selection.applyTags {
-            reset(tags: content.tags, itemId: itemId)
+            reset(tags: content.tags, itemId: itemId, forceSave: forceSave)
         }
 
         // Create entries from sections if selected
         if selection.applySections && !content.sections.isEmpty {
-            appendSectionsAsEntries(content.sections, to: itemId, pageLabel: pageLabel)
+            appendSectionsAsEntries(content.sections, to: itemId, forceSave: forceSave, pageLabel: pageLabel)
         }
     }
 
-    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID, pageLabel: (Int) -> String?) {
+    @MainActor private func appendSectionsAsEntries(_ sections: [PdfSection], to itemId: UUID, forceSave: Bool, pageLabel: (Int) -> String?) {
         guard let item = editModel(for: itemId) else { return }
 
         let newEntries = sections.map { PdfBookmarkMerge.entry(for: $0, pageLabel: pageLabel) }
@@ -113,7 +117,8 @@ extension EditController {
         
         save(
             updated: item,
-            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module)
+            message: String(localized: "Applied PDF sections as bookmarks", bundle: .module),
+            forceSave: forceSave
         )
     }
 

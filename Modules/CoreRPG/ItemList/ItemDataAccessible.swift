@@ -92,6 +92,12 @@ public protocol ItemDataAccessible: Sendable, Equatable {
 
     /// Custom model properties shown in the import review in addition to the standard ones.
     var reviewProperties: [ReviewCustomProperty] { get }
+
+    /// Applies to `self` (the library copy) the module's own properties that `edited` changed
+    /// relative to `base` (the game copy a forced editor save started from), as `applyEdit`
+    /// does for the properties every item has. Leave out what is session-only during a game
+    /// (a map's pins and rooms). The default applies nothing.
+    @MainActor mutating func applyModuleEdit(from base: Self, to edited: Self)
 }
 
 public extension ItemDataAccessible {
@@ -108,6 +114,7 @@ public extension ItemDataAccessible {
     }
 
     var reviewProperties: [ReviewCustomProperty] { [] }
+    @MainActor mutating func applyModuleEdit(from base: Self, to edited: Self) {}
     var url: URL? {
         fileUrl?.rawUrl
     }

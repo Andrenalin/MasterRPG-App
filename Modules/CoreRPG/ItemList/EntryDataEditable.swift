@@ -16,7 +16,15 @@ public enum AdditionalEntryViewType: Hashable, Sendable {
 
 public protocol SheetEditTypeControllable: Sendable {
     var supportedSheetEditTypes: [SheetModelEditType] { get }
-    @MainActor func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType)
+    /// `forceSave` persists the change also during a game (the editor). See `EditControllable.persistsEdit`.
+    @MainActor func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType, forceSave: Bool)
+}
+
+public extension SheetEditTypeControllable {
+    /// `updateSheetEditType(...forceSave:)` that stays in game memory during a game.
+    @MainActor func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType) {
+        updateSheetEditType(itemId: itemId, entryId: entryId, editType: editType, forceSave: false)
+    }
 }
 
 public protocol EntryDataEditable: EditControllable {
@@ -24,7 +32,9 @@ public protocol EntryDataEditable: EditControllable {
 
     // MARK: - EntryList editor
 
-    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID)
+    /// `forceSave` persists the link also during a game: the editor (entry editor drop, sheet
+    /// editor, link picker) passes `true`. The 6-argument overload passes `false`.
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool)
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool
 
     var linkModules: [NetworkModules] { get }
@@ -32,15 +42,18 @@ public protocol EntryDataEditable: EditControllable {
 
     var canAddGroups: Bool { get }
     var canConvertGroups: Bool { get }
-    @MainActor func addNewGroup(itemId: UUID) async -> UUID
+    /// `forceSave` persists the group and its entry also during a game (the editor).
+    @MainActor func addNewGroup(itemId: UUID, forceSave: Bool) async -> UUID
     @MainActor func canBecomeGroup(itemId: UUID, in hostItemId: UUID?) -> Bool
-    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID
+    /// `forceSave` persists the group and the converted entry also during a game (the editor).
+    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?, forceSave: Bool) async -> UUID
     /// Whether the item `itemId` can become a hidden group value inside `targetId`.
     @MainActor func canMoveIntoGroup(itemId: UUID, into targetId: UUID) -> Bool
     /// Moves the item `itemId` into `targetId`: a new entry of `targetId` stands for the item,
     /// which becomes a hidden group of the target. Returns the new entry's id, or `nil` if the
     /// item cannot be moved.
-    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID?
+    /// `forceSave` persists the move also during a game (the list and the editor).
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID, forceSave: Bool) -> UUID?
 
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     /// Whether `entry` has an image for its thumbnail slot. An entry with nothing to show (a map
@@ -111,10 +124,15 @@ public protocol EntryDataEditable: EditControllable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool) {
         guard canAddLink(module: module, entryId: entryId) else { return }
-        addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
+        addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: forceSave)
         MasterRPGTips.recordContentLinked()
+    }
+
+    /// `add(link:...forceSave:)` that stays in game memory during a game.
+    @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+        add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: false)
     }
 
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
@@ -124,7 +142,7 @@ public extension EntryDataEditable {
 
     /// The default has no group support and returns an id that belongs to nothing; callers check
     /// `canAddGroups` first (the sheet does in `addNewGroup(in:)`). See CODE_AUDIT_26 §5.71.
-    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
+    @MainActor func addNewGroup(itemId: UUID, forceSave: Bool) async -> UUID {
         UUID() // Default implementation does nothing, returns empty UUID
     }
 
@@ -134,22 +152,36 @@ public extension EntryDataEditable {
     @MainActor func canBecomeGroup(itemId: UUID) -> Bool { canBecomeGroup(itemId: itemId, in: nil) }
 
     /// As `addNewGroup`: callers check `canConvertGroups` first.
-    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
+    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?, forceSave: Bool) async -> UUID {
         UUID() // Default implementation does nothing, returns empty UUID
     }
 
     @MainActor func canMoveIntoGroup(itemId: UUID, into targetId: UUID) -> Bool { false }
 
-    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID? { nil }
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID, forceSave: Bool) -> UUID? { nil }
+
+    // The overloads without `forceSave` stay in game memory during a game.
+
+    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
+        await addNewGroup(itemId: itemId, forceSave: false)
+    }
+
+    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
+        await convertToGroup(itemId: itemId, entryId: entryId, existingItemId: existingItemId, forceSave: false)
+    }
+
+    @MainActor func moveIntoGroup(itemId: UUID, into targetId: UUID) -> UUID? {
+        moveIntoGroup(itemId: itemId, into: targetId, forceSave: false)
+    }
 
     @MainActor func entryContent(itemId: UUID, entryId: UUID) -> String {
         editModel(for: itemId)?[entryId].content ?? ""
     }
 
-    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ") {
+    @MainActor func addLinkInEntry(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, separator: String = " ", forceSave: Bool = false) {
         guard canAddLink(module: module, entryId: entryId), var item = editModel(for: destinationItemId) else { return }
         appendLink(link: link, module: module, itemId: itemId, entryId: entryId, to: &item, destinationEntryId: destinationEntryId, separator: separator)
-        save(updated: item, message: String(localized: "Add Link", bundle: .module))
+        save(updated: item, message: String(localized: "Add Link", bundle: .module), forceSave: forceSave)
     }
 
     /// Appends the link to the entry's content without saving, for a caller that saves it with

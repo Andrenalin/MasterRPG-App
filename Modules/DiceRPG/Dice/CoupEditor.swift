@@ -22,9 +22,9 @@ struct CoupEditor: View {
             valueFieldPrompt: "coup",
             removeAnimation: .default,
             addAnimation: .easeInOut,
-            onRemove: { root.editController.remove(coup: $0, itemId: model.id) },
+            onRemove: { root.editController.remove(coup: $0, itemId: model.id, forceSave: true) },
             onAdd: { value, isDiceValueCoup in
-                root.editController.add(coup: value, isDiceValueCoup: isDiceValueCoup, itemId: model.id)
+                root.editController.add(coup: value, isDiceValueCoup: isDiceValueCoup, itemId: model.id, forceSave: true)
             }
         )
     }

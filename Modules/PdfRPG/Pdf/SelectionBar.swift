@@ -80,7 +80,7 @@ private struct SelectionBarBookmarkButtonView: View {
     var body: some View {
         Button {
             if let selectedEntry = searchModel.selectedEntry {
-                editController.addBookmark(itemId: model.id, entry: selectedEntry)
+                editController.addBookmark(itemId: model.id, entry: selectedEntry, forceSave: true)
             }
             withAnimation(reduceMotion ? nil : .default) {
                 searchModel.selectedEntry = nil

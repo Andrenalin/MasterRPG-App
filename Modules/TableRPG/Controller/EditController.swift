@@ -74,10 +74,11 @@ extension EditController {
 // MARK: - Module Editor
 
 extension EditController {
-    @MainActor func add(diceId: UUID?, itemId: UUID) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool = false) {
         guard let editModel = editModel(for: itemId) else { return }
         editModel.diceId = diceId
-        save(updated: editModel, message: String(localized: "Added Dice", bundle: .module))
+        save(updated: editModel, message: String(localized: "Added Dice", bundle: .module), forceSave: forceSave)
     }
 }
 

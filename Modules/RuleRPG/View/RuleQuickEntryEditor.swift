@@ -79,10 +79,12 @@ struct RuleQuickEntryEditor: View {
                         systemImage: "checkmark"
                     ) {
                         entries = RuleEntryTree.normalized(entries)
+                        // The editor persists also during a game, like QuickEntryEditorView.
                         let removedEntries = root.editController.merge(
                             itemId: model.id,
                             entries: entries,
-                            recoverEntries: nil
+                            recoverEntries: nil,
+                            forceSave: true
                         )
                         if removedEntries.isEmpty {
                             finishSaving()
@@ -104,7 +106,8 @@ struct RuleQuickEntryEditor: View {
                 _ = root.editController.merge(
                     itemId: model.id,
                     entries: entries,
-                    recoverEntries: affectedEntries
+                    recoverEntries: affectedEntries,
+                    forceSave: true
                 )
                 finishSaving()
             }

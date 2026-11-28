@@ -22,9 +22,9 @@ struct FumbleEditor: View {
             valueFieldPrompt: "fumble",
             removeAnimation: .easeInOut,
             addAnimation: .easeInOut,
-            onRemove: { root.editController.remove(fumble: $0, itemId: model.id) },
+            onRemove: { root.editController.remove(fumble: $0, itemId: model.id, forceSave: true) },
             onAdd: { value, isDiceValueFumble in
-                root.editController.add(fumble: value, isDiceValueFumble: isDiceValueFumble, itemId: model.id)
+                root.editController.add(fumble: value, isDiceValueFumble: isDiceValueFumble, itemId: model.id, forceSave: true)
             }
         )
     }

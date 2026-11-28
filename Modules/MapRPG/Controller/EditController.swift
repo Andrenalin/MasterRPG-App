@@ -91,7 +91,9 @@ extension EditController: EntryDataEditable {
         return isSimpleModule || isValueWithoutEntry || isTableWithoutEntry
     }
     
-    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+    /// `forceSave` is ignored on purpose: a link (and a monster pin) is map content, which stays
+    /// in game memory while a game runs, also from the editor window — like `merge`.
+    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool) {
         guard canAddLink(module: module, entryId: entryId) else { return }
         
         switch module {

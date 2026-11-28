@@ -201,9 +201,10 @@ extension EditController: EntryDataEditable {
     }
 
     @MainActor
-    func reset(sourceMetadata: RuleSourceMetadata, itemId: UUID) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    func reset(sourceMetadata: RuleSourceMetadata, itemId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId), item.sourceMetadata != sourceMetadata else { return }
         item.sourceMetadata = sourceMetadata
-        save(updated: item, message: String(localized: "Rule source updated", bundle: .ruleModule))
+        save(updated: item, message: String(localized: "Rule source updated", bundle: .ruleModule), forceSave: forceSave)
     }
 }

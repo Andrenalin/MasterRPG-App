@@ -178,16 +178,18 @@ extension EditController {
 // MARK: - New Editor Functions
 
 extension EditController {
-    @MainActor func add(diceId: UUID?, itemId: UUID) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice", bundle: .module))
+        save(updated: item, message: String(localized: "Change Dice", bundle: .module), forceSave: forceSave)
     }
 
-    @MainActor func add(photoId: UUID?, itemId: UUID) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func add(photoId: UUID?, itemId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         item.photoId = photoId
-        save(updated: item, message: String(localized: "Changed Photo", bundle: .module))
+        save(updated: item, message: String(localized: "Changed Photo", bundle: .module), forceSave: forceSave)
     }
 }
 

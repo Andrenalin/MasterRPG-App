@@ -9,8 +9,8 @@ public extension ItemDataAccessible {
     /// during a game does not write the game's session state into the library.
     /// See CODE_AUDIT_29 §5.2.
     ///
-    /// Covers the properties every item has. Module-specific properties outside `entries` are not
-    /// edited by the forced editors (header editor, entry editors, add-entry) and are left alone.
+    /// Covers the properties every item has, then the module's own through `applyModuleEdit`
+    /// (dice, photos, weather or dice options edited in the editor window during a game).
     @MainActor mutating func applyEdit(from base: Self, to edited: Self) {
         if base.name != edited.name { name = edited.name }
         if base.description != edited.description { description = edited.description }
@@ -25,6 +25,7 @@ public extension ItemDataAccessible {
         if merged != entries {
             entries = merged
         }
+        applyModuleEdit(from: base, to: edited)
     }
 
     /// The library entries with the edit (`base` → `edited`) applied: entries removed by the
@@ -43,6 +44,30 @@ public extension ItemDataAccessible {
                 result.insert(entry, at: min(index, result.count))
             }
         }
-        return result
+        return reordered(result, base: base, edited: edited)
+    }
+
+    /// A move changes no entry, so the loop above keeps the library's order. When the edit
+    /// reordered the entries it saw, those entries take the edited order in the places they hold;
+    /// library entries the edit never saw stay where they are.
+    nonisolated private static func reordered(_ result: [Entry], base: [Entry], edited: [Entry]) -> [Entry] {
+        var editedPosition: [UUID: Int] = [:]
+        for (index, entry) in edited.enumerated() where editedPosition[entry.id] == nil {
+            editedPosition[entry.id] = index
+        }
+        let baseIds = Set(base.map(\.id))
+        let editedOrder = edited.map(\.id).filter { baseIds.contains($0) }
+        let baseOrder = base.map(\.id).filter { editedPosition[$0] != nil }
+        guard editedOrder != baseOrder else { return result }
+
+        var reordered = result
+        let slots = reordered.indices.filter { editedPosition[reordered[$0].id] != nil }
+        let ordered = slots.map { reordered[$0] }.sorted {
+            editedPosition[$0.id, default: 0] < editedPosition[$1.id, default: 0]
+        }
+        for (slot, entry) in zip(slots, ordered) {
+            reordered[slot] = entry
+        }
+        return reordered
     }
 }

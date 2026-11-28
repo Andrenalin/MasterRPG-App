@@ -44,7 +44,7 @@ struct ToggleDiceValue: View {
             guard var item = editController.editModel(for: itemId) else { return }
             if value != item[keyPath: toggleKeyPath] {
                 item[keyPath: toggleKeyPath] = value
-                editController.save(updated: item, message: saveMessage)
+                editController.save(updated: item, message: saveMessage, forceSave: true)
             }
         }
     }

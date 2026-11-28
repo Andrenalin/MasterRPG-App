@@ -39,7 +39,7 @@ struct SpecialOptionEditor: View {
     private func syncAddValueModel() {
         let editController = root.editController
         addValueModel.reset(valueId: model.id, value: Double(model.addDiceEvery)) { itemId, value in
-            editController.reset(addValue: value, itemId: itemId)
+            editController.reset(addValue: value, itemId: itemId, forceSave: true)
         }
     }
 }

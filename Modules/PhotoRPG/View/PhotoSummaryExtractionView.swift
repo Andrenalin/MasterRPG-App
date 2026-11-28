@@ -65,7 +65,7 @@ struct PhotoSummaryExtractionView: View {
 
     private func applyAndClose() {
         if case .extracted(let analysis) = viewState, propertySelection.hasAnySelected {
-            root.editController.applyAnalysis(analysis, to: itemId, selection: propertySelection)
+            root.editController.applyAnalysis(analysis, to: itemId, selection: propertySelection, forceSave: true)
         }
         navigator.back()
     }

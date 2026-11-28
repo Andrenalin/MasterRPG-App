@@ -460,23 +460,14 @@ public extension EditControllable {
         // ("Add <tag>"). See CODE_AUDIT_Folder §6.5.
         trackOperation("EditControllable.saveChanges(to:name:)")
 
-        editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
+        let previous = itemControllable.itemOrEmpty(for: newValue.id).copy()
+        if forceSave {
+            // Undoing this step writes the library and the game copy too. See `applyUndoValue`.
+            editorModel.markForcedUndo(previous)
+        }
+        editorModel.undoManaged.previousValue(previous, title: name)
 
-        // A forced save of an item that has a game copy: `newValue` was built on that copy, so
-        // writing it whole put the game's session state (hit points, revealed values) into the
-        // library, and the library state then overwrote the game copy. Only what this edit
-        // changed goes to the library; the game copy takes the edited value.
-        // See CODE_AUDIT_29 §5.2.
-        if forceSave,
-           let gameCopy = gameCopy(of: newValue.id),
-           let library = itemControllable.itemSync(for: newValue.id, noGame: true)?.copy() as? Model {
-            var libraryValue = library
-            libraryValue.applyEdit(from: gameCopy, to: newValue)
-            if let stored = itemControllable.itemSync(for: newValue.id, noGame: true) as? Model {
-                updateLinkRegister(to: libraryValue, from: stored)
-            }
-            itemControllable.replace(model: libraryValue, isInsert: false, forceSave: true, syncGameMemory: false)
-            itemControllable.replaceInGameMemory(model: newValue)
+        if forceSave, writeForcedEditOfGameCopy(newValue) {
             return
         }
 
@@ -486,6 +477,25 @@ public extension EditControllable {
             updateLinkRegister(to: newValue)
         }
         itemControllable.replace(model: newValue, isInsert: false, forceSave: forceSave)
+    }
+
+    /// A forced save of an item that has a game copy: `newValue` was built on that copy, so
+    /// writing it whole put the game's session state (hit points, revealed values) into the
+    /// library, and the library state then overwrote the game copy. Only what this edit
+    /// changed goes to the library (`applyEdit`, module fields included); the game copy takes
+    /// the edited value. Returns `false`, writing nothing, when the item has no game copy.
+    /// Shared by the save and by undo/redo of a forced step. See CODE_AUDIT_29 §5.2.
+    @MainActor func writeForcedEditOfGameCopy(_ newValue: Model) -> Bool {
+        guard let gameCopy = gameCopy(of: newValue.id),
+              let library = itemControllable.itemSync(for: newValue.id, noGame: true)?.copy() as? Model else { return false }
+        var libraryValue = library
+        libraryValue.applyEdit(from: gameCopy, to: newValue)
+        if let stored = itemControllable.itemSync(for: newValue.id, noGame: true) as? Model {
+            updateLinkRegister(to: libraryValue, from: stored)
+        }
+        itemControllable.replace(model: libraryValue, isInsert: false, forceSave: true, syncGameMemory: false)
+        itemControllable.replaceInGameMemory(model: newValue)
+        return true
     }
 
     /// Whether an edit with `forceSave` reaches the library (and so the shared link register and

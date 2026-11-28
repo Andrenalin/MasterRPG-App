@@ -77,7 +77,7 @@ struct SummaryAnalysisView: View {
         }
 
         let document = loadedDocument
-        root.editController.applyExtractedContent(content, to: itemId, selection: propertySelection) { position in
+        root.editController.applyExtractedContent(content, to: itemId, selection: propertySelection, forceSave: true) { position in
             document?.page(at: position - 1)?.label
         }
         navigator.back()

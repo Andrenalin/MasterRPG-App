@@ -57,7 +57,7 @@ struct DiceBag: View {
             Button {
                 withAnimation(Animation.default.reduced(if: reduceMotion)) {
                     // The button is disabled when the set is full, so the result needs no handling.
-                    _ = root.editController.add(die: die, itemId: model.id)
+                    _ = root.editController.add(die: die, itemId: model.id, forceSave: true)
                 }
             } label: {
                 ThumbnailDice(die: die)

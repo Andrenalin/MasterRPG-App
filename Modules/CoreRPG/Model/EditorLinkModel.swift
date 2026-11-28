@@ -157,7 +157,8 @@ public final class EditorLinkModel {
             let item = rootController.itemControllable.itemOrEmpty(for: itemSelection.itemId)
             let entryId = itemSelection.entryId
             let name = if let entryId { item.urlName(entryId: entryId) } else { item.urlName() }
-            editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
+            // The link picker belongs to the editor, which persists also during a game.
+            editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: true)
         }
         selection.resetSelection(itemId: nil, entryId: nil)
     }

@@ -19,7 +19,8 @@ extension EditController {
 }
 
 extension EditController {
-    @MainActor func convert(itemId: UUID) async throws {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func convert(itemId: UUID, forceSave: Bool = false) async throws {
         guard let item = editModel(for: itemId), let fileUrl = item.fileUrl else { return }
         // The original file is re-encoded off the main actor and at its own size. The cached image
         // is decoded at 8192 px at most, so converting from it permanently downscaled a bigger
@@ -40,7 +41,7 @@ extension EditController {
 
         let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemControllable.config.filenameExtension)
         await itemControllable.cacheControllable?.remove(itemId: itemId)
-        reset(fileUrl: newFileUrl, itemId: item.id)
+        reset(fileUrl: newFileUrl, itemId: item.id, forceSave: forceSave)
     }
     
     /// The JPEG of the file `fileUrl` names, written from the original bitmap by ImageIO (the
@@ -168,15 +169,16 @@ struct PhotoPropertySelection {
 }
 
 extension EditController {
-    @MainActor func applyAnalysis(_ analysis: PhotoSummaryAnalysis, to itemId: UUID, selection: PhotoPropertySelection) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func applyAnalysis(_ analysis: PhotoSummaryAnalysis, to itemId: UUID, selection: PhotoPropertySelection, forceSave: Bool = false) {
         if selection.applyTitle {
-            reset(name: analysis.title, itemId: itemId)
+            reset(name: analysis.title, itemId: itemId, forceSave: forceSave)
         }
         if selection.applyDescription {
-            reset(description: analysis.summary, itemId: itemId)
+            reset(description: analysis.summary, itemId: itemId, forceSave: forceSave)
         }
         if selection.applyTags {
-            reset(tags: analysis.tags, itemId: itemId)
+            reset(tags: analysis.tags, itemId: itemId, forceSave: forceSave)
         }
     }
 }

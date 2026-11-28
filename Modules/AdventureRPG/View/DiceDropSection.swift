@@ -14,7 +14,8 @@ struct DiceDropSection: View {
         root.diceRoot.viewController.dropChooseView(model: root.editController.adventureEditModel.selectionDice)
             .onChange(of: root.editController.adventureEditModel.selectionDice.selection) {
                 withAnimation(reduceMotion ? nil : .easeInOut) {
-                    root.editController.add(diceId: root.editController.adventureEditModel.selectionDice.itemId, itemId: model.id)
+                    // The editor persists also during a game.
+                    root.editController.add(diceId: root.editController.adventureEditModel.selectionDice.itemId, itemId: model.id, forceSave: true)
                 }
             }
             .task(id: model.diceId) {

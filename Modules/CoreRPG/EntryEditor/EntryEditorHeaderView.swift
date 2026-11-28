@@ -102,7 +102,9 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
                 itemId: link.itemId,
                 entryId: link.entryId,
                 destinationItemId: itemId,
-                destinationEntryId: entry.id
+                destinationEntryId: entry.id,
+                // Persists like the update above, also while a game is running.
+                forceSave: true
             )
         }
         

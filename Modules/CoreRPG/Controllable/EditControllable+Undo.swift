@@ -45,6 +45,10 @@ public extension EditControllable {
             editorModel.markLibraryScopedUndo(current)
             editorModel.undoManaged.updateValue(current)
         } else if let current = itemControllable.itemSync(for: next.id)?.copy() {
+            // The opposite step of a forced edit is forced too: redo writes the library again.
+            if editorModel.isForcedUndo(next) {
+                editorModel.markForcedUndo(current)
+            }
             editorModel.undoManaged.updateValue(current)
         }
     }
@@ -57,6 +61,15 @@ public extension EditControllable {
         guard let model = editorModel.undoManaged.value as? Model else { return }
         if editorModel.isLibraryScopedUndo(model) {
             itemControllable.persistMembershipChange(model: model)
+        } else if editorModel.isForcedUndo(model) {
+            // A step the editor saved with `forceSave` (the editor window during a game): undone
+            // like it was saved, into the library and the game copy, not only game memory. With
+            // a game copy only the change goes to the library, so its session state stays out.
+            if !writeForcedEditOfGameCopy(model) {
+                updateLinkRegister(to: model)
+                updateTagCounts(to: model)
+                itemControllable.replace(model: model, isInsert: false, forceSave: true)
+            }
         } else {
             // The same register and tag count steps as a save, before the stored value is replaced.
             // Not for a memory-only game write. See CODE_AUDIT_29 §5.3.

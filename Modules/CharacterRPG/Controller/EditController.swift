@@ -70,11 +70,11 @@ extension EditController: SheetEditTypeControllable {
     }
 
     @MainActor
-    func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType) {
+    func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType, forceSave: Bool) {
         guard let item = editModel(for: itemId), let valueType = ValueEntryModel.ValueType(editType: editType) else { return }
         guard item[entryId].type != valueType else { return }
         item[entryId].type = valueType
-        save(updated: item, message: String(localized: "Change Value Type", bundle: .module))
+        save(updated: item, message: String(localized: "Change Value Type", bundle: .module), forceSave: forceSave)
     }
 }
 
@@ -147,23 +147,23 @@ extension EditController {
         AnyView(AdditionalEntryRow(source: source, entry: entry, textModel: textModel).equatable())
     }
     
-    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID) {
+    @MainActor private func addLinkInName(link: String, module: NetworkModules, itemId: UUID, entryId: UUID, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool) {
         guard let editModel = editModel(for: destinationItemId) else { return }
         var entry = editModel[destinationEntryId]
         
         let linkText = " " + LinkBuilder.markdown(name: link, module: module, itemId: itemId, entryId: entryId)
         entry.name = linkText
         editModel[destinationEntryId] = entry
-        save(updated: editModel, message: String(localized: "Add Link", bundle: .module))
+        save(updated: editModel, message: String(localized: "Add Link", bundle: .module), forceSave: forceSave)
     }
     
-    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+    @MainActor public func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID, forceSave: Bool) {
         guard canAddLink(module: module, entryId: entryId), let item = editModel(for: destinationItemId) else { return }
         
         switch module {
         case .table:
             if let entryId {
-                addLinkInName(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId,  destinationEntryId: destinationEntryId)
+                addLinkInName(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId,  destinationEntryId: destinationEntryId, forceSave: forceSave)
             }
         case .dice:
             var entry = item[destinationEntryId]
@@ -172,23 +172,23 @@ extension EditController {
                 entry.type = .number
             }
             item[destinationEntryId] = entry
-            save(updated: item, message: String(localized: "Add Dice", bundle: .module))
+            save(updated: item, message: String(localized: "Add Dice", bundle: .module), forceSave: forceSave)
         case .pdf:
             var entry = item[destinationEntryId]
             if entry.type != .text {
                 entry.type = .text
                 item[destinationEntryId] = entry
-                save(updated: item, message: String(localized: "Change Value Type", bundle: .module))
+                save(updated: item, message: String(localized: "Change Value Type", bundle: .module), forceSave: forceSave)
             }
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, forceSave: forceSave)
         case .value:
             var entry = item[destinationEntryId]
             if entry.type != .number && entry.type != .decimal {
                 entry.type = .number
                 item[destinationEntryId] = entry
-                save(updated: item, message: String(localized: "Change Value Type", bundle: .module))
+                save(updated: item, message: String(localized: "Change Value Type", bundle: .module), forceSave: forceSave)
             }
-            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, separator: "+")
+            addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, separator: "+", forceSave: forceSave)
         default:
             return
         }
@@ -197,13 +197,14 @@ extension EditController {
 
     /// Unlinks an entry's dice, mirroring the `.dice` case of `add(link:...)`.
     /// The entry's value type is left as-is — only the link itself is removed.
-    @MainActor public func removeDice(itemId: UUID, entryId: UUID) {
+    /// - Parameter forceSave: `true` from the sheet editor, which persists also during a game.
+    @MainActor public func removeDice(itemId: UUID, entryId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         var entry = item[entryId]
         guard entry.diceId != nil else { return }
         entry.diceId = nil
         item[entryId] = entry
-        save(updated: item, message: String(localized: "Remove Dice", bundle: .module))
+        save(updated: item, message: String(localized: "Remove Dice", bundle: .module), forceSave: forceSave)
     }
 
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
@@ -237,17 +238,19 @@ extension EditController {
 // MARK: - Grouping & Entry Type Helpers
 
 extension EditController {
-    @MainActor func add(selection: [WindowItemSelection], itemId: UUID) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func add(selection: [WindowItemSelection], itemId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         item.photos <=> selection.map { $0.itemId }
         item.photoId <=> item.photos.first
-        save(updated: item, message: String(localized: "Change Photo", bundle: .module))
+        save(updated: item, message: String(localized: "Change Photo", bundle: .module), forceSave: forceSave)
     }
     
-    @MainActor func add(diceId: UUID?, itemId: UUID) {
+    /// - Parameter forceSave: `true` from the editor, which persists also during a game.
+    @MainActor func add(diceId: UUID?, itemId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         item.diceId = diceId
-        save(updated: item, message: String(localized: "Change Dice", bundle: .module))
+        save(updated: item, message: String(localized: "Change Dice", bundle: .module), forceSave: forceSave)
     }
     
     /// Clears the item's own dice. Unlike `removeDice(itemId:entryId:)`, which unlinks an entry's

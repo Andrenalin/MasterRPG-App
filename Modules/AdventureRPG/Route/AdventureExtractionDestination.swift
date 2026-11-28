@@ -24,7 +24,7 @@ struct AdventureExtractionDestination: View {
             }
         } else {
             TextSummaryExtractionView(module: .adventure, entriesText: formatEntries(model)) { content, selection in
-                root.editController.applyExtractedContent(content, to: itemId, selection: selection)
+                root.editController.applyExtractedContent(content, to: itemId, selection: selection, forceSave: true)
             }
         }
     }

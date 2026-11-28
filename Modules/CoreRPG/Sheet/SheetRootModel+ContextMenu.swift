@@ -178,7 +178,7 @@ extension SheetRootModel {
     func addLink(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, to destination: SheetModel, in parentModel: SheetModel) {
         guard let editable = entryDataEditable(for: destination.source),
               let destinationEntryId = destination.source.entryId else { return }
-        editable.add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destination.source.itemId, destinationEntryId: destinationEntryId)
+        editable.add(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destination.source.itemId, destinationEntryId: destinationEntryId, forceSave: persistsEdits)
         updateParent(parentModel)
     }
 }

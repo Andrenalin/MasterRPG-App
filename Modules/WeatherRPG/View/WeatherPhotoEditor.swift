@@ -17,7 +17,7 @@ struct WeatherPhotoEditor: View {
         Section {
             root.viewController.photoSelection(root: root, selectionModel: root.editController.weatherEditModel.selectionPhoto)
                 .onChange(of: root.editController.weatherEditModel.selectionPhoto.selection) {
-                    withAnimation(.easeInOut) { root.editController.add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId, itemId: model.id) }
+                    withAnimation(.easeInOut) { root.editController.add(photoId: root.editController.weatherEditModel.selectionPhoto.itemId, itemId: model.id, forceSave: true) }
                 }
                 .onChange(of: model.photoId, initial: true) {
                     withAnimation(.easeInOut) { root.editController.weatherEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }

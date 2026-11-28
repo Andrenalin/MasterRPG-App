@@ -53,21 +53,21 @@ struct WeatherStormEditor: View {
     private func syncStormModel() {
         let editController = root.editController
         stormEditModel.reset(valueId: model.id, value: model.stormType) { itemId, value in
-            editController.reset(stormType: value, itemId: itemId)
+            editController.reset(stormType: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncIntensityModel() {
         let editController = root.editController
         intensityEditModel.reset(valueId: model.id, value: model.rainIntensity) { itemId, value in
-            editController.reset(rainIntensity: value, itemId: itemId)
+            editController.reset(rainIntensity: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncAngleModel() {
         let editController = root.editController
         angleEditModel.reset(valueId: model.id, value: model.rainAngle) { itemId, value in
-            editController.reset(rainAngle: value, itemId: itemId)
+            editController.reset(rainAngle: value, itemId: itemId, forceSave: true)
         }
     }
 
@@ -79,7 +79,8 @@ struct WeatherStormEditor: View {
             guard let item = editController.editModel(for: itemId) else { return }
             if value != item.rainDirection {
                 item.rainDirection = value
-                editController.save(updated: item, message: String(localized: "toggle rain direction", bundle: .module))
+                // The weather editor persists also during a game.
+                editController.save(updated: item, message: String(localized: "toggle rain direction", bundle: .module), forceSave: true)
             }
         }
     }

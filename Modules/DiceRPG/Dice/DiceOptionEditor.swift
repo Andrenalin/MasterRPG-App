@@ -64,21 +64,21 @@ struct DiceOptionEditor: View {
     private func syncModifierEditModel() {
         let editController = root.editController
         modifierEditModel.reset(valueId: model.id, value: model.modifier) { itemId, value in
-            editController.reset(modifier: value, itemId: itemId)
+            editController.reset(modifier: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncCompareValueEditModel() {
         let editController = root.editController
         compareValueEditModel.reset(valueId: model.id, value: model.compareValue) { itemId, value in
-            editController.reset(compareValue: value, itemId: itemId)
+            editController.reset(compareValue: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncCompareOptionEditModel() {
         let editController = root.editController
         optionValueEditModel.reset(valueId: model.id, value: model.compareOption) { itemId, value in
-            editController.reset(compareOption: value, itemId: itemId)
+            editController.reset(compareOption: value, itemId: itemId, forceSave: true)
         }
     }
 }

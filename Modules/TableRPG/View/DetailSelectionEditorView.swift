@@ -18,7 +18,9 @@ struct DetailSelectionEditorView: View {
             withAnimation(reduceMotion ? nil : .easeInOut) {
                 root.editController.add(
                     diceId: root.editController.tableEditModel.selectionDice.itemId,
-                    itemId: model.id
+                    itemId: model.id,
+                    // The editor persists also during a game.
+                    forceSave: true
                 )
             }
         }

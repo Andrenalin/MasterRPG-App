@@ -48,21 +48,21 @@ struct WeatherThunderEditor: View {
     private func syncFrequencyModel() {
         let editController = root.editController
         lightningFrequency.reset(valueId: model.id, value: model.lightningFrequency) { itemId, value in
-            editController.reset(lightningFrequency: value, itemId: itemId)
+            editController.reset(lightningFrequency: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncMaxBoltsModel() {
         let editController = root.editController
         lightningMaxBolts.reset(valueId: model.id, value: model.lightningMaxBolts) { itemId, value in
-            editController.reset(lightningMaxBolts: value, itemId: itemId)
+            editController.reset(lightningMaxBolts: value, itemId: itemId, forceSave: true)
         }
     }
 
     private func syncForkModel() {
         let editController = root.editController
         lightningForkProbability.reset(valueId: model.id, value: model.lightningForkProbability) { itemId, value in
-            editController.reset(lightningForkProbability: value, itemId: itemId)
+            editController.reset(lightningForkProbability: value, itemId: itemId, forceSave: true)
         }
     }
 }

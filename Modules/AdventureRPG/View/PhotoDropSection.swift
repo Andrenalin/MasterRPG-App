@@ -14,7 +14,8 @@ struct PhotoDropSection: View {
         root.photoRoot.viewController.dropSelectionView(model: root.editController.adventureEditModel.selectionPhoto)
             .onChange(of: root.editController.adventureEditModel.selectionPhoto.itemId) {
                 withAnimation(reduceMotion ? nil : .easeInOut) {
-                    root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, itemId: model.id)
+                    // The editor persists also during a game.
+                    root.editController.add(photoId: root.editController.adventureEditModel.selectionPhoto.itemId, itemId: model.id, forceSave: true)
                 }
             }
             .task(id: model.photoId) {

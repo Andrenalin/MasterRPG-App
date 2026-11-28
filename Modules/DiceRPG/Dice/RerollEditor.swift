@@ -16,7 +16,7 @@ struct RerollEditor: View {
     var body: some View {
         Section {
             RerollEditorRerollValueView(rerollOptions: model.rerollOptions, reduceMotion: reduceMotion, onRemove: { reroll in
-                root.editController.remove(reroll: reroll, itemId: model.id)
+                root.editController.remove(reroll: reroll, itemId: model.id, forceSave: true)
             })
 
             RerollEditorRerollEditorView(model: model, isMaxDiceValue: isMaxDiceValue, rerollValue: $rerollValue, onAddReroll: addCurrentReroll)
@@ -45,7 +45,7 @@ private extension RerollEditor {
 
     func addCurrentReroll() {
         withAnimation(Animation.easeInOut.reduced(if: reduceMotion)) {
-            root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
+            root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id, forceSave: true)
             rerollValue = 0.0
             replaceValue = 0.0
         }

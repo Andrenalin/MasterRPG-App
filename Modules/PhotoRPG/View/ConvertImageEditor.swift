@@ -13,7 +13,7 @@ struct ConvertImageEditor: View {
             Button {
                 Task {
                     do {
-                        try await root.editController.convert(itemId: model.id)
+                        try await root.editController.convert(itemId: model.id, forceSave: true)
                     } catch {
                         conversionErrorMessage = error.localizedDescription
                     }
