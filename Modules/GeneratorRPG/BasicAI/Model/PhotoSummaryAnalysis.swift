@@ -29,7 +29,7 @@ public struct PhotoSummaryAnalysis: Equatable, Sendable, Codable {
     public var tags: [String]
 
     /// Words that fit every image and so say nothing about this one.
-    static let genericTags = ["Image", "Art", "Artwork", "Illustration"]
+    static let genericTags = ["Image", "Art", "Artwork", "Illustration", "Fantasy"]
 
     public init(title: String, summary: String, tags: [String]) {
         self.title = title

@@ -118,8 +118,8 @@ public struct PhotoSummaryAnalyzer: Sendable {
                 guard SystemLanguageModel.default.availability == .available else {
                     throw PhotoSummaryAnalysisError.modelUnavailable
                 }
-                return try await respond(
-                    session: LanguageModelSession(model: SystemLanguageModel.default, instructions: activeInstructions),
+                return try await respondOnDevice(
+                    instructions: activeInstructions,
                     image: image,
                     outputLanguage: outputLanguage
                 )
@@ -149,6 +149,43 @@ public struct PhotoSummaryAnalyzer: Sendable {
 
     // MARK: - Private
 
+    /// The on-device answer as three text lines under `.permissiveContentTransformations`.
+    ///
+    /// The default guardrails block ordinary RPG portraits (a pirate with a sabre, a bearded man
+    /// with glasses) for every prompt, and the permissive mode only covers `String` responses, so
+    /// guided generation is not used here. See `PhotoSummaryTextFormat`.
+    private func respondOnDevice(
+        instructions: String,
+        image: CGImage,
+        outputLanguage: String
+    ) async throws -> PhotoSummaryAnalysis {
+        let model = SystemLanguageModel(guardrails: .permissiveContentTransformations)
+        let session = LanguageModelSession(model: model, instructions: instructions)
+        let response = try await session.respond {
+            Self.textPrompt(outputLanguage: outputLanguage)
+            Attachment(image)
+        }
+        guard let analysis = PhotoSummaryTextFormat.analysis(from: response.content) else {
+            throw PhotoSummaryAnalysisError.declinedByModel
+        }
+        return PhotoSummaryAnalysis(
+            title: analysis.title,
+            summary: analysis.summary,
+            tags: Self.tags(GeneratedTagRules.cleaned(analysis.tags), withoutTitle: analysis.title)
+        )
+    }
+
+    /// `tags` without the one that only repeats a one-word title ("Magier" titled "Magier"), as
+    /// long as the minimum count remains.
+    static func tags(_ tags: [String], withoutTitle title: String) -> [String] {
+        let key = { (text: String) in
+            text.trimmingCharacters(in: .whitespaces).folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        }
+        let titleKey = key(title)
+        let remaining = tags.filter { key($0) != titleKey }
+        return remaining.count >= GeneratedTagRules.countRange.lowerBound ? remaining : tags
+    }
+
     private func respond(
         session: LanguageModelSession,
         image: CGImage,
@@ -175,6 +212,16 @@ public struct PhotoSummaryAnalyzer: Sendable {
         - A short title for the main subject
         - A description of what is visible, in 2 to 3 sentences
         - \(GeneratedTagRules.countText) specific tags in \(outputLanguage): what kind of image it is, what the main subject is, and the specific creatures, places, objects or mood you can see
+        """
+    }
+
+    /// The on-device prompt: the same content as `prompt(outputLanguage:)`, as labelled lines.
+    static func textPrompt(outputLanguage: String) -> String {
+        """
+        Write a catalogue entry for this picture. Answer in exactly three lines:
+        \(PhotoSummaryTextFormat.layout)
+        Keep the labels Title, Description and Tags in English, but write the title, the \
+        description and every tag in \(outputLanguage).
         """
     }
 
@@ -214,14 +261,20 @@ public struct PhotoSummaryAnalyzer: Sendable {
         return PhotoSummaryAnalysisError.generationFailed(error.localizedDescription)
     }
 
+    /// Character portraits are the most common photos, and their description and tags feed
+    /// `CharacterSummaryAnalyzer`, so a figure is described as a fictional character.
     private static let defaultInstructions = """
-    You describe images for a role-playing game library: art, portraits, creatures, items, maps, \
-    handouts and scenes.
-    Provide a short title, a concise description and tags. Describe only what is visible and do \
-    not invent names.
-    Tags are \(GeneratedTagRules.countText) short keywords that tell this image apart from other RPG \
-    images: what kind of image it is, its main subject, and specific things you can see such as \
-    creatures, places, objects or mood. \(GeneratedTagRules.rules(extraGenericTags: PhotoSummaryAnalysis.genericTags))
+    You write catalogue entries for fantasy artwork: painted or drawn pictures of fictional \
+    characters, creatures, places, items, maps, handouts and scenes.
+    Provide a title of 2 to 5 words, a concise description and tags. Describe only what is visible, \
+    neutrally and without judging. Do not invent names.
+    When the picture shows a figure, describe it as a fictional character: its fantasy folk (for \
+    example human, dwarf, elf, halfling, orc), its apparent role or profession, its clothing, \
+    equipment and notable features, and the setting.
+    Tags are \(GeneratedTagRules.countText) short keywords that tell this picture apart from other \
+    pictures. The first tag says what kind of picture it is (for example Portrait, Character, \
+    Landscape, Map, Creature, Item). The others name the main subject and specific things you can \
+    see such as the folk, role, equipment, creatures, places or mood. \(GeneratedTagRules.rules(extraGenericTags: PhotoSummaryAnalysis.genericTags))
     """
 }
 

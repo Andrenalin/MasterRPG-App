@@ -29,6 +29,9 @@ public final class ResourcesDebug {
     public static let adventurePhoto = "Adventure"
     public static let paladinPhoto = "Paladin"
     public static let wizardPhoto = "Zauberer"
+    public static let dwarfPhoto = "Alaaf Zazzaar"
+    public static let drunkenPiratePhoto = "Alte Saufnase"
+    public static let pirateCaptainPhoto = "Alter Pirat"
 
     public static let audioExample = "AudioExample"
     public static let pdfExample = "PdfExample"

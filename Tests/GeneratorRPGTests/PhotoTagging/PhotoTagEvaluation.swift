@@ -97,6 +97,73 @@ extension PhotoTagSample {
                     minimumMatchedGroups: 2,
                     forbiddenTerms: ["wizard", "portrait", "magic", "lightning", "hooded"]
                 )
+            ),
+            (
+                // Head-and-shoulders painting: bearded man (dwarf-like) with a circlet, round
+                // glasses, a blue scarf and a staff over the shoulder.
+                ResourcesDebug.dwarfPhoto,
+                PdfTagExpectation(
+                    conceptGroups: [
+                        ["portrait", "character", "figure", "bust", "headshot"],
+                        ["dwarf", "beard", "bearded", "man", "scholar", "monk", "cleric", "adventurer"],
+                        ["glasses", "spectacles", "circlet", "diadem", "crown", "headband", "scarf", "staff"]
+                    ],
+                    minimumMatchedGroups: 2
+                ),
+                PdfTagExpectation(
+                    conceptGroups: [
+                        ["porträt", "charakter", "figur", "büste"],
+                        ["zwerg", "bart", "bärtig", "mann", "gelehrter", "mönch", "kleriker", "abenteurer"],
+                        ["brille", "stirnreif", "diadem", "krone", "stirnband", "schal", "stab"]
+                    ],
+                    minimumMatchedGroups: 2,
+                    forbiddenTerms: ["dwarf", "portrait", "beard", "glasses", "scarf"]
+                )
+            ),
+            (
+                // Full figure: old white-bearded pirate with a wooden peg leg, a wine bottle raised,
+                // flintlock pistols on his belts, tattoos and a rope.
+                ResourcesDebug.drunkenPiratePhoto,
+                PdfTagExpectation(
+                    conceptGroups: [
+                        ["pirate", "sailor", "buccaneer", "seaman", "corsair"],
+                        ["old", "elderly", "drunk", "drunken", "beard", "bearded", "dwarf"],
+                        ["bottle", "rum", "wine", "peg leg", "wooden leg", "pistol", "flintlock", "rope", "tattoo"]
+                    ],
+                    minimumMatchedGroups: 2
+                ),
+                PdfTagExpectation(
+                    conceptGroups: [
+                        ["pirat", "seemann", "seeräuber", "matrose", "freibeuter", "korsar"],
+                        ["alter", "greis", "betrunken", "trunken", "säufer", "bart", "bärtig", "zwerg"],
+                        ["flasche", "rum", "wein", "holzbein", "pistole", "steinschloss", "seil", "tau", "tätowier", "tattoo"]
+                    ],
+                    minimumMatchedGroups: 2,
+                    // "pirate" is not forbidden: it is inside German "Piratenkapitän"/"Piraten".
+                    forbiddenTerms: ["sailor", "bottle", "drunk", "peg leg", "beard"]
+                )
+            ),
+            (
+                // Full figure: bearded pirate captain in a tricorn hat and a long blue coat with gold
+                // trim, a cutlass in hand and leather boots.
+                ResourcesDebug.pirateCaptainPhoto,
+                PdfTagExpectation(
+                    conceptGroups: [
+                        ["pirate", "captain", "buccaneer", "corsair", "privateer", "sailor"],
+                        ["tricorn", "hat", "coat", "cutlass", "saber", "sabre", "sword", "boots"],
+                        ["character", "figure", "beard", "bearded", "dwarf", "elderly"]
+                    ],
+                    minimumMatchedGroups: 2
+                ),
+                PdfTagExpectation(
+                    conceptGroups: [
+                        ["pirat", "kapitän", "seeräuber", "korsar", "freibeuter", "kaperfahrer", "seemann"],
+                        ["dreispitz", "hut", "mantel", "rock", "säbel", "entermesser", "schwert", "stiefel"],
+                        ["charakter", "figur", "bart", "bärtig", "zwerg", "greis"]
+                    ],
+                    minimumMatchedGroups: 2,
+                    forbiddenTerms: ["captain", "tricorn", "cutlass", "sword", "coat"]
+                )
             )
         ]
 

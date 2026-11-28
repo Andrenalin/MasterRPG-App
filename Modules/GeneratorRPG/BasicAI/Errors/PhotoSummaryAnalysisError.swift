@@ -16,6 +16,8 @@ public enum PhotoSummaryAnalysisError: LocalizedError, Equatable {
     /// Private Cloud Compute failed, for example offline or over its daily limit.
     case cloudFailed(String)
     case generationFailed(String)
+    /// The on-device model answered with a refusal instead of a description.
+    case declinedByModel
 
     public var errorDescription: String? {
         switch self {
@@ -40,6 +42,8 @@ public enum PhotoSummaryAnalysisError: LocalizedError, Equatable {
             String(localized: "Private Cloud Compute could not analyze the photo: \(details)", bundle: .module)
         case .generationFailed(let details):
             String(localized: "Failed to analyze the photo: \(details)", bundle: .module)
+        case .declinedByModel:
+            String(localized: "The on-device model declined to describe this photo.", bundle: .module)
         }
     }
 }

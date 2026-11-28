@@ -25,31 +25,6 @@
     },
   ],
   "files": [
-    {
-      "kind": "group",
-      "path": "Snapshots",
-      "children": [
-        {
-          "kind": "group",
-          "path": "Xcode27",
-          "children": [
-            { "kind": "folder", "path": "AdventureRPGSnapshotTests", "opaque-folders": [ "AdventureRPGDynamicPreviewSnapshotTests", "AdventureRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "AdventureRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "AudioRPGSnapshotTests", "opaque-folders": [ "AudioRPGDynamicPreviewSnapshotTests", "AudioRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "AudioRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "CharacterRPGSnapshotTests", "opaque-folders": [ "CharacterRPGDynamicPreviewSnapshotTests", "CharacterRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "CharacterRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "CoreRPGSnapshotTests", "opaque-folders": [ "CoreRPGAccessibilitySnapshotTests", "CoreRPGDynamicPreviewSnapshotTests", "CoreRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "CoreRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "DiceRPGSnapshotTests", "opaque-folders": [ "DiceRPGDynamicPreviewSnapshotTests", "DiceRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "DiceRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "GameRPGSnapshotTests", "opaque-folders": [ "GameRPGDynamicPreviewSnapshotTests", "GameRPGGeneratedPreviewSnapshotTests", "RolePlayGameKitGeneratedPreviewSnapshotTests" ], "target-membership": [ "GameRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "GeneratorRPGSnapshotTests", "opaque-folders": [ "GeneratorRPGDynamicPreviewSnapshotTests", "GeneratorRPGGeneratedPreviewSnapshotTests", "GeneratorRPGViewSnapshotTests" ], "target-membership": [ "GeneratorRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "MapRPGSnapshotTests", "opaque-folders": [ "MapRPGDynamicPreviewSnapshotTests", "MapRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "MapRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "PdfRPGSnapshotTests", "opaque-folders": [ "PdfRPGDynamicPreviewSnapshotTests", "PdfRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "PdfRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "PhotoRPGSnapshotTests", "opaque-folders": [ "PhotoRPGDynamicPreviewSnapshotTests", "PhotoRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "PhotoRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "SpaceRPGSnapshotTests", "opaque-folders": [ "SpaceRPGDynamicPreviewSnapshotTests", "SpaceRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "SpaceRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "TableRPGSnapshotTests", "opaque-folders": [ "TableRPGDynamicPreviewSnapshotTests", "TableRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "TableRPGSnapshotTests" ] },
-            { "kind": "folder", "path": "WeatherRPGSnapshotTests", "opaque-folders": [ "WeatherRPGDynamicPreviewSnapshotTests", "WeatherRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "WeatherRPGSnapshotTests" ] },
-          ],
-        },
-      ],
-    },
     { "kind": "folder", "path": ".agents", "opaque-folders": [ "skills/app-store-screenshots/scripts", "skills/app-store-screenshots/template/docs", "skills/app-store-screenshots/template/public/fonts", "skills/app-store-screenshots/template/public/screenshots", "skills/app-store-screenshots/template/src/components/editor", "skills/app-store-screenshots/template/src/components/ui", "skills/app-store-screenshots/template/src/lib", "skills/ios-marketing-capture", "skills/swift-concurrency/agents", "skills/swift-concurrency/assets", "skills/swift-concurrency/references", "skills/swiftui-expert-skill/agents", "skills/swiftui-expert-skill/assets", "skills/swiftui-expert-skill/references", "skills/swiftui-expert-skill/scripts" ] },
     { "path": "AGENTS.md" },
     { "path": "CLAUDE.md" },
@@ -528,6 +503,30 @@
         { "path": "MasterRPG-Release.entitlements" },
         { "path": "MasterTV-Debug.entitlements" },
         { "path": "MasterTV-Release.entitlements" },
+      ],
+    }, {
+      "kind": "group",
+      "path": "Snapshots",
+      "children": [
+        {
+          "kind": "group",
+          "path": "Xcode27",
+          "children": [
+            { "kind": "folder", "path": "AdventureRPGSnapshotTests", "opaque-folders": [ "AdventureRPGDynamicPreviewSnapshotTests", "AdventureRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "AdventureRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "AudioRPGSnapshotTests", "opaque-folders": [ "AudioRPGDynamicPreviewSnapshotTests", "AudioRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "AudioRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "CharacterRPGSnapshotTests", "opaque-folders": [ "CharacterRPGDynamicPreviewSnapshotTests", "CharacterRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "CharacterRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "CoreRPGSnapshotTests", "opaque-folders": [ "CoreRPGAccessibilitySnapshotTests", "CoreRPGDynamicPreviewSnapshotTests", "CoreRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "CoreRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "DiceRPGSnapshotTests", "opaque-folders": [ "DiceRPGDynamicPreviewSnapshotTests", "DiceRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "DiceRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "GameRPGSnapshotTests", "opaque-folders": [ "GameRPGDynamicPreviewSnapshotTests", "GameRPGGeneratedPreviewSnapshotTests", "RolePlayGameKitGeneratedPreviewSnapshotTests" ], "target-membership": [ "GameRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "GeneratorRPGSnapshotTests", "opaque-folders": [ "GeneratorRPGDynamicPreviewSnapshotTests", "GeneratorRPGGeneratedPreviewSnapshotTests", "GeneratorRPGViewSnapshotTests" ], "target-membership": [ "GeneratorRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "MapRPGSnapshotTests", "opaque-folders": [ "MapRPGDynamicPreviewSnapshotTests", "MapRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "MapRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "PdfRPGSnapshotTests", "opaque-folders": [ "PdfRPGDynamicPreviewSnapshotTests", "PdfRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "PdfRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "PhotoRPGSnapshotTests", "opaque-folders": [ "PhotoRPGDynamicPreviewSnapshotTests", "PhotoRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "PhotoRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "SpaceRPGSnapshotTests", "opaque-folders": [ "SpaceRPGDynamicPreviewSnapshotTests", "SpaceRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "SpaceRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "TableRPGSnapshotTests", "opaque-folders": [ "TableRPGDynamicPreviewSnapshotTests", "TableRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "TableRPGSnapshotTests" ] },
+            { "kind": "folder", "path": "WeatherRPGSnapshotTests", "opaque-folders": [ "WeatherRPGDynamicPreviewSnapshotTests", "WeatherRPGGeneratedPreviewSnapshotTests" ], "target-membership": [ "WeatherRPGSnapshotTests" ] },
+          ],
+        },
       ],
     }, {
       "kind": "group",

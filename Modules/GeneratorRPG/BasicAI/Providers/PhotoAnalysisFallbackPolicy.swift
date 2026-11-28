@@ -43,6 +43,9 @@ enum PhotoAnalysisFallbackPolicy {
         if error is SystemLanguageModel.Error {
             return .onDeviceUnavailable
         }
+        if error as? PhotoSummaryAnalysisError == .declinedByModel {
+            return .guardrail
+        }
         guard let error = error as? LanguageModelError else {
             return nil
         }

@@ -221,6 +221,22 @@
         }
       }
     },
+    "The on-device model declined to describe this photo." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Modell auf dem Gerät hat die Beschreibung dieses Fotos abgelehnt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The on-device model declined to describe this photo."
+          }
+        }
+      }
+    },
     "^[%lld Item](inflect: true)" : {
       "localizations" : {
         "de" : {
