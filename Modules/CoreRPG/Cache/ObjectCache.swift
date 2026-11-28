@@ -13,8 +13,10 @@ public actor ObjectCache<Object: AnyObject & Sendable> {
     /// `costLimit` bounds the decoded bytes, `diskDirectoryName` is the folder in Caches the
     /// disk copies go to: full images and thumbnails used to share one file per item id, so
     /// removing a full image deleted its thumbnail. See CODE_AUDIT_29 §7.3.
-    public init(countLimit: Int = 2500, costLimit: Int = 128 * ByteUnit.mebibyte, diskDirectoryName: String = "ImageCache") {
-        self.countLimit = countLimit
+    ///
+    /// There is no count limit: the bytes are what matter, and a count evicted the thumbnails of
+    /// a large library (about 1000 photos) although they fit the byte budget easily.
+    public init(costLimit: Int = 128 * ByteUnit.mebibyte, diskDirectoryName: String = "ImageCache") {
         self.costLimit = costLimit
         self.diskDirectoryName = diskDirectoryName
 #if !os(macOS)
@@ -31,12 +33,10 @@ public actor ObjectCache<Object: AnyObject & Sendable> {
 
     private lazy var objectCache: NSCache<AnyObject, AnyObject> = {
         let cache = NSCache<AnyObject, AnyObject>()
-        cache.countLimit = countLimit
         cache.totalCostLimit = costLimit
         return cache
     }()
 
-    private let countLimit: Int
     private let costLimit: Int
     private let diskDirectoryName: String
 

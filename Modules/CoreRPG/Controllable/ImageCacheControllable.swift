@@ -20,7 +20,7 @@ public struct ImageCacheControllableStorage: Sendable {
         // images are never written to disk but get their own folder so a removal cannot delete a
         // thumbnail. See CODE_AUDIT_29 §7.3.
         imageCacheController = ImageCacheController(costLimit: 128 * ByteUnit.mebibyte, diskDirectoryName: "FullImageCache")
-        thumbnailCacheController = ImageCacheController(costLimit: 32 * ByteUnit.mebibyte, diskDirectoryName: "ImageCache")
+        thumbnailCacheController = ImageCacheController(costLimit: ImageCacheController.thumbnailByteLimit, diskDirectoryName: "ImageCache")
         self.fileUrlDataController = fileUrlDataController
         observableImageCache = ObservableImageCache()
     }
@@ -254,8 +254,8 @@ extension ImageCacheControllable {
 /// Observable cache for synchronous image access in SwiftUI views
 /// This bridges the async ImageCacheController with SwiftUI's synchronous observation
 ///
-/// Bounded LRU by count — unlike the actor-isolated `ImageCacheController` (NSCache-backed,
-/// 2,500-object/256MB bound — see `ObjectCache`), this cache used to be a plain, unevicted
+/// Bounded LRU — full images by count and bytes, thumbnails by bytes only (see `ObjectCache`
+/// for the NSCache-backed `ImageCacheController`). This cache used to be a plain, unevicted
 /// dictionary that only shrank on item deletion, growing unboundedly for the app session's
 /// lifetime (every full-resolution image ever displayed stayed resident). See CODE_AUDIT_9 §7.1.
 @MainActor @Observable
@@ -266,8 +266,12 @@ public final class ObservableImageCache: Sendable {
     ///
     /// The byte budget is the app's, shared by every module's cache (`ImageMemoryBudget.shared`):
     /// four modules with a budget each held up to four times as much. See CODE_AUDIT_29 §7.3.
-    public init(budget: ImageMemoryBudget = .shared) {
+    ///
+    /// Thumbnails are bounded by `thumbnailByteLimit` only: a count of 400 evicted the thumbnails
+    /// of a library of nearly 1000 photos, so they reloaded on every scroll.
+    public init(budget: ImageMemoryBudget = .shared, thumbnailByteLimit: Int = ImageCacheController.thumbnailByteLimit) {
         self.budget = budget
+        self.thumbnailByteLimit = thumbnailByteLimit
         budget.register(self)
 #if !os(macOS)
         memoryWarningTask = Task { @MainActor [weak self] in
@@ -292,6 +296,9 @@ public final class ObservableImageCache: Sendable {
     }
 
     private let budget: ImageMemoryBudget
+    private let thumbnailByteLimit: Int
+    private var thumbnailCosts: [UUID: Int] = [:]
+    private var thumbnailBytes = 0
     private var imageCosts: [UUID: Int] = [:]
     private var imageBytes = 0
     /// When each full image was last set, in the budget's sequence across all caches.
@@ -316,10 +323,12 @@ public final class ObservableImageCache: Sendable {
     /// The decoded bytes the full images hold.
     var cachedImageBytes: Int { imageBytes }
 
+    /// The decoded bytes the thumbnails hold.
+    var cachedThumbnailBytes: Int { thumbnailBytes }
+
     /// Full images are the expensive ones (decompressed, uncapped resolution), so this stays
-    /// small; thumbnails are cheap and shown in list rows, so a larger bound is fine.
+    /// small. Thumbnails have no count, only `thumbnailByteLimit`.
     private static let imageCountLimit = 120
-    private static let thumbnailCountLimit = 400
 
     private var imageCache: [UUID: AKImage] = [:]
     private var imageOrder: [UUID] = []
@@ -359,7 +368,12 @@ public final class ObservableImageCache: Sendable {
         }
         touch(itemId, in: &thumbnailOrder, isNew: thumbnailCache[itemId] == nil)
         thumbnailCache[itemId] = image
-        evictLeastRecentlyUsed(cache: &thumbnailCache, order: &thumbnailOrder, limit: Self.thumbnailCountLimit)
+        let cost = ImageCacheController.bitmapCost(of: image)
+        thumbnailBytes += cost - (thumbnailCosts.updateValue(cost, forKey: itemId) ?? 0)
+        // Over the byte limit the least recently used thumbnails leave, never the one just set.
+        while thumbnailOrder.count > 1, thumbnailBytes > thumbnailByteLimit {
+            removeThumbnail(for: thumbnailOrder[0])
+        }
     }
 
     public func removeImage(for itemId: UUID) {
@@ -372,6 +386,7 @@ public final class ObservableImageCache: Sendable {
     public func removeThumbnail(for itemId: UUID) {
         thumbnailCache.removeValue(forKey: itemId)
         thumbnailOrder.removeAll { $0 == itemId }
+        thumbnailBytes -= thumbnailCosts.removeValue(forKey: itemId) ?? 0
     }
 
     public func reset(for itemId: UUID, includeImage: Bool = true) {
@@ -387,14 +402,6 @@ public final class ObservableImageCache: Sendable {
             order.removeAll { $0 == itemId }
         }
         order.append(itemId)
-    }
-
-    /// Drops the least-recently-used entries until `cache`/`order` are back at `limit`.
-    private func evictLeastRecentlyUsed(cache: inout [UUID: AKImage], order: inout [UUID], limit: Int) {
-        while order.count > limit {
-            let oldest = order.removeFirst()
-            cache.removeValue(forKey: oldest)
-        }
     }
 }
 

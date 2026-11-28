@@ -14,12 +14,18 @@ public struct ImageCacheController: Sendable {
         cache = ObjectCache<AKImage>()
     }
 
-    /// See `ObjectCache.init(countLimit:costLimit:diskDirectoryName:)`.
+    /// See `ObjectCache.init(costLimit:diskDirectoryName:)`.
     public init(costLimit: Int, diskDirectoryName: String) {
         cache = ObjectCache<AKImage>(costLimit: costLimit, diskDirectoryName: diskDirectoryName)
     }
 
     private let cache: ObjectCache<AKImage>
+
+    /// The decoded bytes the thumbnails of one module may hold, in the memory cache and in the
+    /// cache the views read (both hold the same image objects, so the memory is not doubled).
+    /// A 64 pt photo thumbnail at 3× is 192 × 192 px, about 144 KB, so this keeps about 1300 of
+    /// them: a library of nearly 1000 photos stays loaded instead of reloading while scrolling.
+    public static let thumbnailByteLimit = 192 * ByteUnit.mebibyte
     
     public func hasObject(for itemId: UUID) async -> Bool {
         await cache.hasObject(for: itemId)

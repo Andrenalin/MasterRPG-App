@@ -81,11 +81,11 @@ struct ImageCacheTests {
         #expect(await cache.cachedObject(for: id) === second)
     }
 
-    @Test("A cache over its count limit evicts instead of growing")
-    func countLimitEvicts() async {
+    @Test("A cache over its cost limit evicts instead of growing")
+    func costLimitEvicts() async {
         // `NSCache` documents its limits as not strict, so only the existence of eviction is
         // asserted, not which entries remain.
-        let cache = ObjectCache<AKImage>(countLimit: 5)
+        let cache = ObjectCache<AKImage>(costLimit: 5 * 256)
         let ids = (0..<60).map { _ in UUID() }
         for id in ids {
             await cache.insertObject(Self.image(), for: id, cost: 256)
@@ -228,19 +228,43 @@ struct ImageCacheTests {
         #expect(huge.image(for: ids[0]) != nil, "a single image over the budget is still kept")
     }
 
-    @Test("The observable cache keeps 400 thumbnails, separately from the images")
+    @Test("The observable cache keeps thumbnails by bytes, not by count, separately from the images")
     @MainActor
     func observableThumbnailsHaveTheirOwnLimit() {
         let cache = ObservableImageCache()
-        let ids = (0..<401).map { _ in UUID() }
+        // A library of nearly 1000 photos: a count of 400 used to evict most of them.
+        let ids = (0..<1_000).map { _ in UUID() }
         let keptImage = UUID()
         cache.setImage(Self.image(side: 2), for: keptImage)
 
         for id in ids { cache.setThumbnail(Self.image(side: 2), for: id) }
 
-        #expect(cache.thumbnail(for: ids[0]) == nil)
-        #expect(cache.thumbnail(for: ids[400]) != nil)
+        #expect(ids.allSatisfy { cache.thumbnail(for: $0) != nil }, "no thumbnail leaves under the byte limit")
         #expect(cache.image(for: keptImage) != nil, "thumbnails never evict full images")
+    }
+
+    @Test("Over the thumbnail byte limit the least recently used thumbnails leave, the newest stays")
+    @MainActor
+    func observableThumbnailByteLimit() {
+        let side = 100
+        let cost = ImageCacheController.bitmapCost(of: Self.image(side: side))
+        let cache = ObservableImageCache(budget: ImageMemoryBudget(byteLimit: .max), thumbnailByteLimit: cost * 2 + 1)
+        let ids = (0..<4).map { _ in UUID() }
+
+        for id in ids { cache.setThumbnail(Self.image(side: side), for: id) }
+
+        #expect(cache.thumbnail(for: ids[0]) == nil)
+        #expect(cache.thumbnail(for: ids[1]) == nil)
+        #expect(cache.thumbnail(for: ids[2]) != nil)
+        #expect(cache.thumbnail(for: ids[3]) != nil)
+        #expect(cache.cachedThumbnailBytes == cost * 2)
+
+        cache.reset(for: ids[3])
+        #expect(cache.cachedThumbnailBytes == cost)
+
+        let tiny = ObservableImageCache(budget: ImageMemoryBudget(byteLimit: .max), thumbnailByteLimit: 1)
+        tiny.setThumbnail(Self.image(side: side), for: ids[0])
+        #expect(tiny.thumbnail(for: ids[0]) != nil, "a single thumbnail over the limit is still kept")
     }
 
     @Test("Setting nil and resetting remove entries; reset can keep the full image")
