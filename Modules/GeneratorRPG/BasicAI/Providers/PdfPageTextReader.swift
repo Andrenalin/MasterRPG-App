@@ -20,6 +20,9 @@ enum PdfPageTextReader {
         let text: String
         /// The page had more characters than `maximumCharactersPerPage`; `text` is its start.
         var wasCapped = false
+        /// An imprint, credits or license page, see `PdfAnalysisTextCleaner.isBoilerplate`.
+        /// Only set when the pages are read with `cleansForAnalysis`.
+        var isBoilerplate = false
     }
 
     /// Non-empty page texts of the first `pageLimit` pages, in page order.
@@ -28,12 +31,16 @@ enum PdfPageTextReader {
     /// book does not stay in memory in full until the limiter trims it; `stopAfterCharacters`
     /// ends the read once that many characters are collected (the analyzers cap the combined
     /// text anyway). See CODE_AUDIT_26 §7.62.
+    ///
+    /// `cleansForAnalysis` passes each page through `PdfAnalysisTextCleaner` before it is capped
+    /// and counted, and marks boilerplate pages, which do not count towards `stopAfterCharacters`.
     @concurrent
     static func pages(
         of document: ReadOnlyDocument,
         pageLimit: Int,
         maximumCharactersPerPage: Int? = nil,
-        stopAfterCharacters: Int? = nil
+        stopAfterCharacters: Int? = nil,
+        cleansForAnalysis: Bool = false
     ) async throws -> [Page] {
         var pages: [Page] = []
         pages.reserveCapacity(pageLimit)
@@ -46,12 +53,25 @@ enum PdfPageTextReader {
                 continue
             }
             var wasCapped = false
+            var isBoilerplate = false
+            if cleansForAnalysis {
+                if let maximumCharactersPerPage, text.count > maximumCharactersPerPage * 2 {
+                    // Bounds the cleaning work for a huge page; the cleaned text is capped below.
+                    text = String(text.prefix(maximumCharactersPerPage * 2))
+                    wasCapped = true
+                }
+                text = PdfAnalysisTextCleaner.cleaned(text)
+                guard !text.isEmpty else { continue }
+                isBoilerplate = PdfAnalysisTextCleaner.isBoilerplate(text)
+            }
             if let maximumCharactersPerPage, text.count > maximumCharactersPerPage {
                 text = String(text.prefix(maximumCharactersPerPage))
                 wasCapped = true
             }
-            collected += text.count
-            pages.append(Page(pageNumber: pageIndex + 1, text: text, wasCapped: wasCapped))
+            if !isBoilerplate {
+                collected += text.count
+            }
+            pages.append(Page(pageNumber: pageIndex + 1, text: text, wasCapped: wasCapped, isBoilerplate: isBoilerplate))
             if let stopAfterCharacters, collected >= stopAfterCharacters { break }
         }
         return pages

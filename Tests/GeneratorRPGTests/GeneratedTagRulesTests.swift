@@ -64,6 +64,75 @@ struct GeneratedTagRulesTests {
         #expect(!tags.contains { $0.contains(":") })
     }
 
+    @Test("A tag that repeats the title is dropped", arguments: [
+        ("Wurzelnest", "Wurzelnest"),
+        ("wurzelnest ", "Wurzelnest"),
+        ("Feinschmecker", "feinschmecker"),
+        ("Räuber", "Rauber"),
+        ("Titel: Wurzelnest", "Wurzelnest")
+    ])
+    func titleIsDropped(tag: String, title: String) {
+        let tags = GeneratedTagRules.cleaned(["Abenteuer", tag, "Kobolde", "Kult"], title: title)
+
+        #expect(tags == ["Abenteuer", "Kobolde", "Kult"])
+    }
+
+    @Test("A tag that only contains the title is kept")
+    func partOfTitleIsKept() {
+        let tags = GeneratedTagRules.cleaned(["Abenteuer", "Wurzelnest", "Kobolde"], title: "Angriff auf das Wurzelnest")
+
+        #expect(tags == ["Abenteuer", "Wurzelnest", "Kobolde"])
+    }
+
+    @Test("A generic tag that fits every RPG document is dropped", arguments: [
+        "Game", "Spiel", "Rollenspiel", "Role-playing game", "Roleplaying game", "role playing Game",
+        "Pen & Paper", "Pen-and-Paper", "Tabletop", "TTRPG", "RPG", "Genre", "System", "Setting", "Genre: System"
+    ])
+    func genericIsDropped(tag: String) {
+        let tags = GeneratedTagRules.cleaned([tag, "Smugglers", "Outer Colonies", "Cyberware"], title: "Starlane Protocol")
+
+        #expect(tags == ["Smugglers", "Outer Colonies", "Cyberware"])
+    }
+
+    @Test("A tag with a banned word as a whole word is dropped", arguments: [
+        "RPG-Zufallstabelle", "Dark Setting", "Combat Mechanics", "Use Case Loot", "Kampf Mechanik", "Settings"
+    ])
+    func bannedWordIsDropped(tag: String) {
+        let tags = GeneratedTagRules.cleaned(["Dungeon", tag, "Undead", "Crypt"], title: "The Crypt of Ash")
+
+        #expect(tags == ["Dungeon", "Undead", "Crypt"])
+    }
+
+    @Test("Words that only contain a banned or generic word are kept")
+    func specificTagsAreKept() {
+        let tags = GeneratedTagRules.cleaned(
+            ["Mechanical Cart", "Briefcase", "Game system", "Spielwelt", "Regelwerk"], title: "Core Rules"
+        )
+
+        #expect(tags == ["Mechanical Cart", "Briefcase", "Game system", "Spielwelt", "Regelwerk"])
+    }
+
+    @Test("The spare candidates fill the dropped slots, no more than five remain")
+    func sparesFillUp() {
+        let tags = GeneratedTagRules.cleaned(
+            ["Fantasy", "Wurzelnest", "Kobolde", "Rollenspiel", "Höhle", "Kult", "Abenteuer"], title: "Wurzelnest"
+        )
+
+        #expect(tags == ["Fantasy", "Kobolde", "Höhle", "Kult", "Abenteuer"])
+    }
+
+    @Test("Seven valid candidates are cut to five")
+    func candidatesAreCut() {
+        let tags = GeneratedTagRules.cleaned(["A1", "B2", "C3", "D4", "E5", "F6", "G7"], title: "Title")
+
+        #expect(tags.count == GeneratedTagRules.countRange.upperBound)
+    }
+
+    @Test("Without a title the photo and table rules keep generic tags")
+    func cleanedWithoutTitleIsUnchanged() {
+        #expect(GeneratedTagRules.cleaned(["Setting", "Game", "Forest"]) == ["Setting", "Game", "Forest"])
+    }
+
     @Test("The rules forbid colons and give a German label example")
     func rulesMentionLabels() {
         let rules = GeneratedTagRules.rules()

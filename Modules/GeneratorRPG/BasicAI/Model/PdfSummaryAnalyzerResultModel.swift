@@ -24,7 +24,18 @@ struct PdfSummaryAnalysisProgress: Equatable, Sendable {
     init(_ partial: PdfSummaryAnalysis.PartiallyGenerated) {
         self.title = partial.title
         self.summary = partial.summary
-        self.tags = partial.tags
+        // Kind and genre lead the tags, filtered like the final result (no output language while
+        // streaming, so an unusable kind is left out until the result replaces it).
+        self.tags = partial.tags.map {
+            PdfSummaryAnalysis.tags(
+                category: partial.category,
+                documentKind: partial.documentKind,
+                genre: partial.genre,
+                tags: $0,
+                title: partial.title ?? "",
+                outputLanguage: nil
+            )
+        }
         self.sections = partial.sections?.map(PdfSectionProgress.init)
     }
 }

@@ -36,12 +36,15 @@ struct PdfSummaryAnalyzer: Sendable {
 
         let pageLimit = min(maxPages, pdfDocument.pageCount)
         // Off the main actor, see `PdfPageTextReader` (CODE_AUDIT_18 §3.5).
-        let pageTexts = try await PdfPageTextReader.pages(
+        // Cleaned and without imprint pages, so the character budget goes to the content.
+        let readPages = try await PdfPageTextReader.pages(
             of: .init(document: pdfDocument),
             pageLimit: pageLimit,
             maximumCharactersPerPage: maxCharacters,
-            stopAfterCharacters: maxCharacters
+            stopAfterCharacters: maxCharacters,
+            cleansForAnalysis: true
         )
+        let pageTexts = PdfAnalysisTextCleaner.contentPages(readPages)
             .map { (pageNumber: $0.pageNumber, text: $0.text) }
         let pageCount = pdfDocument.pageCount
         let limitedText = FoundationModelInputLimiter.limitedCombinedText(
@@ -103,7 +106,17 @@ struct PdfSummaryAnalyzer: Sendable {
             return PdfSummaryAnalysis(
                 title: title,
                 summary: summary,
-                tags: GeneratedTagRules.cleaned(tags),
+                category: partial.category ?? .otherSupplement,
+                documentKind: partial.documentKind ?? "",
+                genre: partial.genre ?? "",
+                tags: PdfSummaryAnalysis.tags(
+                    category: partial.category,
+                    documentKind: partial.documentKind,
+                    genre: partial.genre,
+                    tags: tags,
+                    title: title,
+                    outputLanguage: outputLanguage
+                ),
                 sections: sections
             )
         }
@@ -125,7 +138,8 @@ struct PdfSummaryAnalyzer: Sendable {
         Provide in \(outputLanguage) a structured summary analysis including:
         - The document title
         - A clear summary
-        - \(GeneratedTagRules.countText) specific tags in \(outputLanguage): what kind of document it is, what it is mainly about, and its specific places, peoples, creatures or themes
+        - Its category, its kind of document and the genre of its game world, in \(outputLanguage)
+        - \(PdfSummaryAnalysis.freeTagCountRange.lowerBound) to \(PdfSummaryAnalysis.freeTagCountRange.upperBound) specific tags in \(outputLanguage): its main subject, and its specific places, peoples, creatures or themes
         - Major sections or chapters
         """
     }
@@ -135,9 +149,11 @@ struct PdfSummaryAnalyzer: Sendable {
     private static let defaultInstructions = """
     Analyze and summarize RPG documents (rulebooks, adventures, supplements).
     Provide clear titles, concise summaries, tags, and major sections.
-    Tags are \(GeneratedTagRules.countText) short keywords that tell this document apart from other RPG \
-    documents: what kind of document it is, what it is mainly about, and its named places, \
-    peoples, creatures, factions and central themes. \(GeneratedTagRules.rules(extraGenericTags: ["Role-playing game"]))
+    Name the kind of document and the genre of its game world as content words, never as labels. \
+    Tags are \(PdfSummaryAnalysis.freeTagCountRange.lowerBound) to \(PdfSummaryAnalysis.freeTagCountRange.upperBound) \
+    short keywords that tell this document apart from other RPG documents: its main subject, and \
+    its named places, peoples, creatures, factions and central themes. \
+    \(GeneratedTagRules.rules(extraGenericTags: ["Role-playing game"]))
     Be precise and factual.
     """
 }
