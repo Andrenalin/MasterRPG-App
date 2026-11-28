@@ -29,16 +29,13 @@ struct AdventureExtractionDestination: View {
         }
     }
 
+    /// The same text the batch analyzes (`compactText(for:)`): markdown links reduced to their labels.
     private func formatEntries(_ model: AdventureModel) -> String {
-        var lines: [String] = []
-        if !model.name.isEmpty {
-            lines.append("Adventure: \(model.name)")
-            lines.append("")
-        }
-        for entry in model.entries {
-            lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
-        }
-        return lines.joined(separator: "\n")
+        TextSummaryExtractionFormatter.formatEntries(
+            title: "Adventure",
+            name: model.name,
+            entries: model.entries.map { ($0.name.withoutLink(), $0.content.withoutLink()) }
+        )
     }
 }
 

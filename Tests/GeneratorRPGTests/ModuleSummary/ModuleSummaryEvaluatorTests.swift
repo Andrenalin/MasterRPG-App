@@ -92,6 +92,43 @@ struct ModuleSummaryEvaluatorTests {
         #expect(table.descriptionRuleViolations.isEmpty)
     }
 
+    // MARK: - Adventure
+
+    @Test("An adventure description may have three sentences, not four")
+    func adventureDescriptionLength() {
+        let three = "The harbor master hires the heroes. The lighthouse is dark. A cult waits in the sea cave."
+        let four = three + " The tide rises."
+        let evaluator = TableSummaryEvaluator.forModule(.adventure)
+
+        #expect(evaluator.evaluate(title: "Chapel Crypt", description: three, tags: ["Crypt", "Undead", "Chapel"], expectation: expectation).descriptionRuleViolations.isEmpty)
+        #expect(!evaluator.evaluate(title: "Chapel Crypt", description: four, tags: ["Crypt", "Undead", "Chapel"], expectation: expectation).descriptionRuleViolations.isEmpty)
+    }
+
+    @Test("Adventure tags start with level, count and type", arguments: [
+        (["1-4", "3-5 PC", "Investigation", "Cult", "Lighthouse"], true),
+        (["3-5 PC", "1-4", "Investigation", "Cult"], false),
+        (["1-4", "3-5 PC", "Cult", "Investigation"], false),
+        (["1-4", "3-5 PC", "Investigation", "Level 2"], false)
+    ])
+    func adventureTagOrder(tags: [String], passes: Bool) {
+        let violations = TableSummaryEvaluator.adventureViolations(
+            tags: tags,
+            partyTags: ["1-4", "3-5 PC"],
+            acceptedKinds: [.investigation],
+            outputLanguage: "English"
+        )
+
+        #expect(violations.isEmpty == passes, "\(violations)")
+    }
+
+    @Test("Each adventure fixture's text names the level and count it expects", arguments: ModuleSummaryFixture.adventures)
+    func adventureFixturePartyFacts(fixture: ModuleSummaryFixture) {
+        let facts = AdventurePartyFacts(text: fixture.entriesText)
+
+        #expect(facts.tags(in: fixture.outputLanguage) == fixture.partyTags)
+        #expect(!fixture.adventureKinds.isEmpty)
+    }
+
     // MARK: - Fixtures
 
     static let allFixtures = ModuleSummaryKind.allCases.flatMap { ModuleSummaryFixture.all(for: $0) }

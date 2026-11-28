@@ -2682,6 +2682,38 @@
         }
       }
     },
+    "The adventure has too much text. Try an adventure with fewer entries." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Abenteuer hat zu viel Text. Versuche es mit einem Abenteuer mit weniger Einträgen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การผจญภัยมีข้อความมากเกินไป ลองใช้การผจญภัยที่มีรายการน้อยลง"
+          }
+        }
+      }
+    },
+    "The adventure's language is not supported by Apple Intelligence." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprache des Abenteuers wird von Apple Intelligence nicht unterstützt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apple Intelligence ไม่รองรับภาษาของการผจญภัย"
+          }
+        }
+      }
+    },
     "The character sheet is too large. Try a character with fewer values." : {
       "localizations" : {
         "de" : {

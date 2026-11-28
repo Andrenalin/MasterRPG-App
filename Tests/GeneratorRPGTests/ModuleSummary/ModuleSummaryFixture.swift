@@ -65,6 +65,11 @@ struct ModuleSummaryFixture: Codable, Sendable, CustomTestStringConvertible {
     /// The kinds of place a map's first tag may name (`MapPlaceKind`), written in `outputLanguage`.
     /// Empty for adventures.
     var mapKinds: [MapPlaceKind] = []
+    /// The adventure types the type tag may name (`AdventurePlotKind`). Empty for maps.
+    var adventureKinds: [AdventurePlotKind] = []
+    /// The level band and character count tags an adventure must start with, written out as the
+    /// user expects them ("1-4", "3-5 PC"); empty when the text names neither. Empty for maps.
+    var partyTags: [String] = []
     let expectation: TableSummaryExpectation
 
     var testDescription: String { "\(kind.textTitle) \(name) (\(outputLanguage))" }
@@ -116,10 +121,11 @@ private enum FixtureLink {
 // MARK: - Adventures
 
 extension ModuleSummaryFixture {
-    /// Original adventures written for this evaluation: horror, sci-fi heist (named), German with
-    /// German output, German with English output.
+    /// Original adventures written for this evaluation: horror, sci-fi heist (named, count only),
+    /// German with German output, German with English output, and a caravan escort. Each names its
+    /// level and character count in its own wording, the heist names no level.
     static let adventures: [ModuleSummaryFixture] = [
-        drownedLighthouse, glassOrchidHeist, fluchVonRabenstein, collapsedMineFromGerman
+        drownedLighthouse, glassOrchidHeist, fluchVonRabenstein, collapsedMineFromGerman, saltRoadCaravan
     ]
 
     static let drownedLighthouse = ModuleSummaryFixture(
@@ -133,8 +139,11 @@ extension ModuleSummaryFixture {
             Entry(name: "The keeper's diary", content: "In the cottage the party finds the diary of \(FixtureLink.character("Keeper Aldous", 2)). His last pages describe voices in the tide."),
             Entry(name: "The lighthouse", content: "Seaweed covers the spiral stairs. See \(FixtureLink.map("Lighthouse", 3)). At the top, the lamp has been smashed from inside."),
             Entry(name: "The drowned cult", content: "Villagers wearing kelp crowns meet in a sea cave at low tide and offer sailors to something beneath the waves."),
-            Entry(name: "Finale", content: "The party must relight the lamp before the high tide brings the drowned ones ashore. Roll on \(FixtureLink.table("Tide Horrors", 4)) each round.")
+            Entry(name: "Finale", content: "The party must relight the lamp before the high tide brings the drowned ones ashore. Roll on \(FixtureLink.table("Tide Horrors", 4)) each round."),
+            Entry(name: "Notes", content: "For 3-5 characters of levels 2 to 4.")
         ],
+        adventureKinds: [.investigation],
+        partyTags: ["1-4", "3-5 PC"],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -160,8 +169,11 @@ extension ModuleSummaryFixture {
             Entry(name: "Getting in", content: "A bribed croupier, forged invitations or a spacewalk along the hull. See \(FixtureLink.map("Halcyon Deck 3", 12))."),
             Entry(name: "The vault", content: "Laser grids, a security AI named WARDEN and a pressure plate floor protect the core."),
             Entry(name: "Double cross", content: "Varga sells the crew out to the casino's corporate owners once the core is out of the vault."),
-            Entry(name: "Escape", content: "A chase through the docking ring to the stolen shuttle while station security closes the airlocks.")
+            Entry(name: "Escape", content: "A chase through the docking ring to the stolen shuttle while station security closes the airlocks."),
+            Entry(name: "Crew", content: "Written for four to six player characters.")
         ],
+        adventureKinds: [.heist],
+        partyTags: ["4-6 PC"],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -187,8 +199,11 @@ extension ModuleSummaryFixture {
             Entry(name: "Die Kräuterfrau", content: "Im Moor lebt \(FixtureLink.character("Mutter Ilsabe", 22)). Sie hat den Fluch nicht gesprochen, kennt aber den Weg zur Burgruine."),
             Entry(name: "Die Burgruine", content: "In der Gruft der Ruine liegt die verfluchte Gräfin, deren Grab beim Steinraub geschändet wurde. Siehe \(FixtureLink.map("Burgruine Rabenstein", 23))."),
             Entry(name: "Showdown", content: "Die Helden müssen die geraubten Grabsteine zurückbringen oder den Geist der Gräfin im Kampf bannen."),
-            Entry(name: "Ausklang", content: "Wird der Fluch gebrochen, tragen die Felder wieder Frucht und das Dorf feiert ein Erntefest.")
+            Entry(name: "Ausklang", content: "Wird der Fluch gebrochen, tragen die Felder wieder Frucht und das Dorf feiert ein Erntefest."),
+            Entry(name: "Hinweise", content: "Für 3 bis 5 Helden der Stufen 5 bis 8.")
         ],
+        adventureKinds: [.investigation],
+        partyTags: ["5-8", "3-5 SC"],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -217,8 +232,11 @@ extension ModuleSummaryFixture {
             Entry(name: "Giftige Gase", content: "In den tiefen Stollen sammelt sich Grubengas; jede offene Flamme kann eine Explosion auslösen."),
             Entry(name: "Die Ursache", content: "Kein Unglück: Ein Felsenwurm hat sich durch die Stützbalken gefressen und lauert in einer Kaverne."),
             Entry(name: "Die Bergleute", content: "Die Verschütteten haben sich hinter einer Steinwand verbarrikadiert, \(FixtureLink.character("Vorarbeiterin Brunhild", 32)) ist verletzt."),
-            Entry(name: "Rückweg", content: "Mit den Geretteten muss die Gruppe vor dem nächsten Einsturz zurück an die Oberfläche.")
+            Entry(name: "Rückweg", content: "Mit den Geretteten muss die Gruppe vor dem nächsten Einsturz zurück an die Oberfläche."),
+            Entry(name: "Hinweise", content: "Für eine Gruppe von vier Spielercharakteren der 9. Stufe.")
         ],
+        adventureKinds: [.rescue],
+        partyTags: ["9-12", "4 PC"],
         expectation: TableSummaryExpectation(
             tags: PdfTagExpectation(
                 conceptGroups: [
@@ -231,6 +249,36 @@ extension ModuleSummaryFixture {
             titleConcepts: [["mine", "rescue", "miner", "collapse", "cave-in", "depths", "silver", "worm", "tunnel", "underground"]],
             descriptionConcepts: [["mine", "rescue", "miner", "collapse", "trapped", "dwar", "silver", "worm"]],
             forbiddenTerms: ["Zwerg", "Rettung", "Bergleute", "Stollen", "Grubengas"]
+        )
+    )
+
+    /// An escort on the road: the type is guarding (or travel), the level an ordinal before "level".
+    static let saltRoadCaravan = ModuleSummaryFixture(
+        kind: .adventure,
+        name: "Salt road caravan",
+        outputLanguage: "English",
+        itemName: "",
+        entries: [
+            Entry(name: "Hook", content: "\(FixtureLink.character("Merchant Odessa Vane", 61)) hires the party to guard her salt caravan on the twelve-day road to Karsk."),
+            Entry(name: "The road", content: "Three stops on the way: a river ferry, a ruined waystation and the Whispering Pass."),
+            Entry(name: "Bandits", content: "The Red Hand bandits attack at the ferry; one of the caravan guards is their spy."),
+            Entry(name: "Whispering Pass", content: "Snow and wolves in the mountains; a rockslide blocks the wagons. See \(FixtureLink.map("Whispering Pass", 62))."),
+            Entry(name: "Arrival", content: "In Karsk the party learns that the salt barrels hide smuggled weapons."),
+            Entry(name: "Notes", content: "A 1st-level adventure for a party of four.")
+        ],
+        adventureKinds: [.guarding, .travel],
+        partyTags: ["1-4", "4 PC"],
+        expectation: TableSummaryExpectation(
+            tags: PdfTagExpectation(
+                conceptGroups: [
+                    ["caravan", "merchant", "salt", "trade", "escort", "guard"],
+                    ["bandit", "red hand", "spy", "wolves", "wolf", "smuggl", "weapons"],
+                    ["road", "pass", "mountain", "snow", "karsk", "ferry", "wilderness", "travel", "journey"]
+                ],
+                minimumMatchedGroups: 2
+            ),
+            titleConcepts: [["salt", "caravan", "road", "karsk", "pass", "whisper"]],
+            descriptionConcepts: [["caravan", "escort", "guard", "salt", "karsk", "bandit", "road"]]
         )
     )
 }

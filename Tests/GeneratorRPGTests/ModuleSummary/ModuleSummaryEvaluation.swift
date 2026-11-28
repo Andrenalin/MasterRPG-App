@@ -55,14 +55,57 @@ extension TableSummaryEvaluator {
             ]
         }
         evaluator.genericTitles.formUnion(words)
-        // The analysis is the table's; its prompt makes the model call every item a table.
+        // Table wording leaks into other modules' descriptions ("This table tracks…").
         evaluator.misnamingWords = ["table", "tables", "tabelle", "tabellen"]
+        if kind == .adventure {
+            // An adventure's description is a short summary of its story.
+            evaluator.maximumDescriptionSentences = 3
+            evaluator.maximumDescriptionCharacters = 400
+        }
         evaluator.tagEvaluator.genericTags.formUnion(words)
         return evaluator
     }
 }
 
 extension MapPlaceKind: @retroactive Codable {}
+extension AdventurePlotKind: @retroactive Codable {}
+
+extension TableSummaryEvaluator {
+    /// The adventure rules on top of `forModule(.adventure)`: the tags start with the expected
+    /// level band and character count (as the fixture writes them out, not as the analyzer computes
+    /// them), then the type of adventure in the output language; no later tag is a level or a count.
+    static func adventureViolations(
+        tags: [String],
+        partyTags: [String],
+        acceptedKinds: [AdventurePlotKind],
+        outputLanguage: String
+    ) -> [String] {
+        var violations: [String] = []
+        let leading = Array(tags.prefix(partyTags.count))
+        if leading != partyTags {
+            violations.append("starts with \(leading) instead of the level and count \(partyTags)")
+        }
+        let rest = tags.dropFirst(partyTags.count)
+        if !acceptedKinds.isEmpty {
+            let names = acceptedKinds.map { $0.name(in: outputLanguage) }
+            if !names.contains(where: { rest.first == $0 }) {
+                violations.append("tag '\(rest.first ?? "")' after the level and count is not the type (\(names.joined(separator: " or ")))")
+            }
+        }
+        for tag in rest.dropFirst() where looksLikePartyTag(tag) {
+            violations.append("'\(tag)' is a level or character count in the wrong place")
+        }
+        return violations
+    }
+
+    /// "1-4", "Level 3", "Stufe 5", "4 PC", "3-5 SC".
+    private static func looksLikePartyTag(_ tag: String) -> Bool {
+        let words = tag.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
+        let partyWords: Set<String> = ["level", "levels", "stufe", "stufen", "pc", "pcs", "sc", "players", "spieler", "characters", "charaktere"]
+        let onlyNumbers = !words.isEmpty && words.allSatisfy { $0.allSatisfy(\.isNumber) }
+        return onlyNumbers || words.contains { partyWords.contains($0) }
+    }
+}
 
 extension TableSummaryEvaluator {
     /// Whole words that call a map a map. Deliberately not `MapSummaryGeneration.formWords`, so the
@@ -200,7 +243,8 @@ struct ModuleSummaryEvaluation: Evaluation {
         evaluate(title: analysis.title, description: analysis.description, tags: analysis.tags, fixture: sample.fixture)
     }
 
-    /// The module's rules, and for a map also `TableSummaryEvaluator.mapViolations`.
+    /// The module's rules, and for a map also `TableSummaryEvaluator.mapViolations`, for an
+    /// adventure `TableSummaryEvaluator.adventureViolations`.
     static func evaluate(title: String, description: String, tags: [String], fixture: ModuleSummaryFixture) -> TableSummaryVerdict {
         let verdict = TableSummaryEvaluator.forModule(fixture.kind).evaluate(
             title: title,
@@ -208,7 +252,24 @@ struct ModuleSummaryEvaluation: Evaluation {
             tags: tags,
             expectation: fixture.expectation
         )
-        guard fixture.kind == .map else { return verdict }
+        guard fixture.kind == .map else {
+            let adventure = TableSummaryEvaluator.adventureViolations(
+                tags: tags,
+                partyTags: fixture.partyTags,
+                acceptedKinds: fixture.adventureKinds,
+                outputLanguage: fixture.outputLanguage
+            )
+            return TableSummaryVerdict(
+                title: verdict.title,
+                description: verdict.description,
+                tags: verdict.tags,
+                titleRuleViolations: verdict.titleRuleViolations,
+                descriptionRuleViolations: verdict.descriptionRuleViolations,
+                tagRuleViolations: verdict.tagRuleViolations + adventure,
+                conceptViolations: verdict.conceptViolations,
+                conceptScore: verdict.conceptScore
+            )
+        }
         let map = TableSummaryEvaluator.mapViolations(
             title: title,
             tags: tags,
