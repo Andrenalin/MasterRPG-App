@@ -7,5 +7,4 @@ import Foundation
 /// needs no state beyond `config`/`collectionCategory`/`itemDataModel`.
 typealias ItemController = GenericItemController<AdventureModel>
 
-/// The shared search of `GenericSearchController` (CoreRPG); this module adds nothing to it.
-typealias SearchController = GenericSearchController<ItemController>
+// The search is the module's own `SearchController`: it adds the level search.

@@ -25,7 +25,7 @@ struct SearchGlobalController {
     let model: GlobalSearchModel
 
     func performSearch() async {
-        guard !model.searchText.isEmpty else {
+        guard model.hasSearch else {
             // Assigning nil still cancels any in-flight search via `currentTask`'s `didSet`.
             model.currentTask = nil
             model.results = [:]
@@ -45,7 +45,11 @@ struct SearchGlobalController {
 
             guard !Task.isCancelled else { return }
 
-            let results = await searchAllItems()
+            let results = if let levelQuery = model.levelQuery {
+                await searchLevel(levelQuery)
+            } else {
+                await searchAllItems()
+            }
             // The older term's results must not replace the newer term's.
             guard !Task.isCancelled else { return }
             model.results = results
@@ -75,6 +79,17 @@ struct SearchGlobalController {
         result[.photo] = await searchItems(in: root.photoRoot.rootController)
         result[.space] = await searchItems(in: root.spaceRoot.rootController)
 
+        return result
+    }
+
+    /// A level search ("level 4 adventures", "monsters for level 9") looks only at the modules
+    /// with levels: adventures (not in player mode, as in the text search) and monsters.
+    private func searchLevel(_ query: LevelSearchQuery) async -> [NetworkModules: [SearchResult]] {
+        var result: [NetworkModules: [SearchResult]] = [:]
+        if !model.playerMode {
+            result[.adventure] = await root.adventureRoot.rootController.searchControllable.levelSearchResults(query: query)
+        }
+        result[.value] = await root.characterRoot.rootController.searchControllable.levelSearchResults(query: query)
         return result
     }
 

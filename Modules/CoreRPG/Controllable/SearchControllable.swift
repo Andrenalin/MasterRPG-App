@@ -9,6 +9,14 @@ public protocol SearchControllable: Sendable  {
     @MainActor func globalSearchResults(searchText: String) async -> [SearchResult]
     @MainActor func listSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult]
     @MainActor func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult]
+    /// The items of this module that fit a level search ("level 4 adventures"), best match first.
+    /// Only Adventure (level tag or text) and Character (a monster's level or challenge rating)
+    /// have levels; every other module returns nothing.
+    @MainActor func levelSearchResults(query: LevelSearchQuery) async -> [SearchResult]
+}
+
+public extension SearchControllable {
+    @MainActor func levelSearchResults(query: LevelSearchQuery) async -> [SearchResult] { [] }
 }
 
 // MARK: - Global Search from Game View

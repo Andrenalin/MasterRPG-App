@@ -21,20 +21,20 @@ struct SearchListView: View {
     
     @State private var expandedModules: Set<NetworkModules> = []
     @State private var modules: [NetworkModules] = []
-    @State private var lastSearchedText: String = ""
+    @State private var lastSearchedRequest = GlobalSearchRequest(text: "", levelTokens: [])
 
     public var body: some View {
         @Bindable var model = searchController.model
-        
+
         Group {
             if model.isSearching {
                 ProgressView {
                     Text("Searching...", bundle: .module)
                 }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if model.searchText.isEmpty {
+            } else if !model.hasSearch {
                 SearchListUnavailableSearchView()
-            } else if model.results.isEmpty {
+            } else if !model.hasResults {
                 ContentUnavailableView.search(text: model.searchText)
             } else {
                 listView(model: $model)
@@ -42,13 +42,15 @@ struct SearchListView: View {
         }
         .navigationTitle(Text("Search Results", bundle: .module))
 #if !os(tvOS)
-        .searchable(text: $model.searchText, placement: .sidebar,
-                    prompt: Text("Search items and entries", bundle: .module))
+        .searchable(text: $model.searchText, tokens: $model.levelTokens, placement: .sidebar,
+                    prompt: Text("Search items and entries", bundle: .module)) { filter in
+            LevelSearchTokenText(filter: filter)
+        }
 #endif
-        .task(id: model.searchText) {
-            // Only perform search if the search text has actually changed
-            guard model.searchText != lastSearchedText else { return }
-            lastSearchedText = model.searchText
+        .task(id: model.request) {
+            // Only perform search if the search text or the level token has actually changed
+            guard model.request != lastSearchedRequest else { return }
+            lastSearchedRequest = model.request
             await searchController.performSearch()
         }
         .task(id: locale.identifier) {
@@ -149,6 +151,19 @@ private struct SearchListUnavailableSearchView: View {
             }
         } description: {
             Text("Enter text to search across all items and entries", bundle: .module)
+        }
+    }
+}
+
+/// The level token in the search field: "Level 4", "Level 4 Adventures", "Level 9 Monsters".
+private struct LevelSearchTokenText: View {
+    let filter: LevelSearchFilter
+
+    var body: some View {
+        switch filter.kind {
+        case .adventure: Text("Level \(filter.level) Adventures", bundle: .module)
+        case .monster: Text("Level \(filter.level) Monsters", bundle: .module)
+        case nil: Text("Level \(filter.level)", bundle: .module)
         }
     }
 }

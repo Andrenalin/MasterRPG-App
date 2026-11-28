@@ -68,6 +68,70 @@ extension SearchController {
         return foundResults.sortedByRelevance()
     }
 
+    /// The visible monsters whose level or challenge rating is within
+    /// `LevelSearchFilter.monsterTolerance` of the searched level and that match the rest of the
+    /// search text, closest first.
+    @MainActor func levelSearchResults(query: LevelSearchQuery) async -> [SearchResult] {
+        guard query.filter.includes(.monster) else { return [] }
+
+        var foundResults: [SearchResult] = []
+        for itemId in itemControllable.itemDataModel.items {
+            guard !Task.isCancelled else { break }
+            guard let item = await itemController.item(for: itemId),
+                  item.groupId == nil,
+                  item.category == .monster,
+                  item.displayState == DisplayStateMask.fullVisible.rawValue,
+                  itemMatchesFilter(item, searchText: query.text, displayMode: .regular),
+                  let rating = await rating(of: item),
+                  let distance = query.filter.monsterDistance(rating: rating) else { continue }
+
+            let textScore = query.text.isEmpty ? 100 : calculateRelevance(
+                searchText: query.text,
+                itemName: item.name,
+                entryName: nil,
+                content: item.description,
+                isItemMatch: true
+            )
+            foundResults.append(SearchResult(
+                itemId: item.id,
+                itemName: item.name,
+                module: itemControllable.config.module,
+                category: item.category,
+                matchedContent: item.description.isEmpty ? nil : item.description,
+                relevanceScore: textScore - Int((distance * 10).rounded())
+            ))
+        }
+        return foundResults.sortedByRelevance()
+    }
+
+    /// How many value groups deep a rating is looked for: Foundry keeps it in `details`
+    /// (`details.cr`, `details.level.value`).
+    private static let ratingGroupDepth = 1
+
+    /// The level or challenge rating of a character: the first value entry named Level, CR, …
+    /// with a number, in its own entries, then in its value groups. A rating entry that is a group
+    /// itself (`level` → `value`) holds the number in its first numeric entry. Only the
+    /// character's own sub-values are searched, never a linked root character.
+    @MainActor private func rating(of item: ValueModel, depth: Int = 0) async -> Double? {
+        for entry in item.entries where LevelSearchQuery.isRatingEntryName(entry.name) {
+            if let rating = LevelSearchQuery.rating(from: entry.value) { return rating }
+            if let groupId = entry.valueId,
+               let group = await itemController.item(for: groupId),
+               group.groupId != nil,
+               let rating = group.entries.lazy.compactMap({ LevelSearchQuery.rating(from: $0.value) }).first {
+                return rating
+            }
+        }
+        guard depth < Self.ratingGroupDepth else { return nil }
+        for entry in item.entries {
+            guard let groupId = entry.valueId, groupId != item.id,
+                  let group = await itemController.item(for: groupId),
+                  group.groupId != nil else { continue }
+            if let rating = await rating(of: group, depth: depth + 1) { return rating }
+        }
+        return nil
+    }
+
     /// A folder or collection matches by its own name and description. The characters inside it
     /// are found by the main loop in `globalSearchResults`.
     @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) {

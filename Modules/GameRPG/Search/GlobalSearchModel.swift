@@ -23,11 +23,53 @@ final class GlobalSearchModel {
     }
 
     var searchText: String
+    /// The level filter shown as a token in the search field ("Level 4 Adventures"). Holds at most
+    /// one filter; set by Siri and the Find by Level intent, removed by the user.
+    var levelTokens: [LevelSearchFilter] = []
     var results: [NetworkModules: [SearchResult]] = [:]
     var isSearching = false
     var selection: SearchResult?
 
     var playerMode: Bool = false
+
+    /// What the list searches for; a change starts a new search.
+    var request: GlobalSearchRequest {
+        GlobalSearchRequest(text: searchText, levelTokens: levelTokens)
+    }
+
+    var hasSearch: Bool {
+        !searchText.isEmpty || !levelTokens.isEmpty
+    }
+
+    /// `results` keeps an entry for every searched module, empty ones too.
+    var hasResults: Bool {
+        results.values.contains { !$0.isEmpty }
+    }
+
+    /// The level search the token or the typed text asks for: with a token the whole text narrows
+    /// it, without one the text itself may be a level search ("level 4 adventures").
+    var levelQuery: LevelSearchQuery? {
+        if let token = levelTokens.first {
+            return LevelSearchQuery(filter: token, text: searchText)
+        }
+        return LevelSearchQuery(parsing: searchText)
+    }
+
+    /// Shows the search for `term` from outside the list (Siri): a level search becomes the level
+    /// token and its leftover words the text, any other term the text alone.
+    func show(term: String) {
+        if let query = LevelSearchQuery(parsing: term) {
+            show(levelQuery: query)
+        } else {
+            levelTokens = []
+            searchText = term
+        }
+    }
+
+    func show(levelQuery: LevelSearchQuery) {
+        levelTokens = [levelQuery.filter]
+        searchText = levelQuery.text
+    }
 
     /// Tracks the most-recently-started search task. Assigning a new task automatically
     /// cancels the previous one via `didSet` — mirrors `CoreRPG.SearchModel.currentTask` so
@@ -39,4 +81,10 @@ final class GlobalSearchModel {
     deinit {
         currentTask?.cancel()
     }
+}
+
+/// The text and tokens of one search, the identity of the list's search task.
+struct GlobalSearchRequest: Hashable {
+    var text: String
+    var levelTokens: [LevelSearchFilter]
 }

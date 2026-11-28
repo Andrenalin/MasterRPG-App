@@ -185,9 +185,15 @@ public final class GameRoot {
     }()
 
     /// Fills the cross-module search with `term`; the search list runs it as soon as it is on
-    /// screen. Used by the app-level search intent (CODE_AUDIT_AppIntents §4.1).
+    /// screen. Used by the app-level search intent (CODE_AUDIT_AppIntents §4.1). A level search
+    /// ("level 4 adventures") becomes the level token.
     public func showSearchResults(for term: String) {
-        searchController.model.searchText = term
+        searchController.model.show(term: term)
+    }
+
+    /// Fills the cross-module search with a level search. Used by the Find by Level intent.
+    public func showLevelSearch(_ query: LevelSearchQuery) {
+        searchController.model.show(levelQuery: query)
     }
 
     /// The single battle-round controller for this game session. Owning it

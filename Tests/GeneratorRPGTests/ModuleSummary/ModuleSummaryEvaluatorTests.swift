@@ -2,6 +2,7 @@
 
 #if !os(tvOS)
 
+import CoreRPG
 import Foundation
 import Testing
 
